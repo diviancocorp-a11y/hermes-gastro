@@ -1,0 +1,76 @@
+import React from 'react';
+
+// ─── ICONS ──────────────────────────────────────────────────────────
+const Ic = ({ d, size = 20, color = "currentColor", d2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d={d} />
+    {d2 && <path d={d2} />}
+  </svg>
+);
+
+export const I = {
+  home: p => <Ic {...p} d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />,
+  box: p => <Ic {...p} d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />,
+  recipe: p => <Ic {...p} d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />,
+  dollar: p => <Ic {...p} d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />,
+  cart: p => <Ic {...p} d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" />,
+  plus: p => <Ic {...p} d="M12 5v14M5 12h14" />,
+  minus: p => <Ic {...p} d="M5 12h14" />,
+  trash: p => <Ic {...p} d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />,
+  edit: p => <Ic {...p} d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />,
+  alert: p => <Ic {...p} d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01" />,
+  back: p => <Ic {...p} d="M19 12H5M12 19l-7-7 7-7" />,
+  check: p => <Ic {...p} d="M20 6L9 17l-5-5" />,
+  search: p => <Ic {...p} d="M11 3a8 8 0 100 16 8 8 0 000-16zM21 21l-4.35-4.35" />,
+  settings: p => <Ic {...p} d="M12 15a3 3 0 100-6 3 3 0 000 6z" d2="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />,
+  truck: p => <Ic {...p} d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8zM5.5 21a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM18.5 21a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />,
+  x: p => <Ic {...p} d="M18 6L6 18M6 6l12 12" />,
+  orders: p => <Ic {...p} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />,
+  eye: p => <Ic {...p} d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" d2="M12 9a3 3 0 100 6 3 3 0 000-6z" />,
+  eyeOff: p => <Ic {...p} d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 01-4.24-4.24M1 1l22 22" />,
+  fire: p => <Ic {...p} d="M12 12c2-2.96 0-7-1-8 0 3.038-1.773 4.741-3 6-1.226 1.26-2 3.24-2 5a6 6 0 1012 0c0-1.532-1.056-3.94-2-5-1.786 3-2 2-4 2z" />,
+  zap: p => <Ic {...p} d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />,
+  hist: p => <Ic {...p} d="M3 3v5h5M3.05 13A9 9 0 1 0 5 5.3L3 8" />,
+  store: p => <Ic {...p} d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />,
+  mail: p => <Ic {...p} d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6" />,
+  phone: p => <Ic {...p} d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />,
+  user: p => <Ic {...p} d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 100 8 4 4 0 000-8z" />,
+  map: p => <Ic {...p} d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0zM12 7a3 3 0 100 6 3 3 0 000-6z" />,
+  globe: p => <Ic {...p} d="M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />,
+};
+
+// ─── CONSTANTS & HELPERS ────────────────────────────────────────────
+export const fm = (n) => typeof n === "number" ? n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00";
+export const fi = (n) => typeof n === "number" ? n.toLocaleString("es-AR") : "0";
+export const td = () => new Date().toISOString().split("T")[0];
+export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+export const ST = { new: "new", prep: "preparing", active: "active", done: "completed", cancel: "cancelled" };
+export const ST_L = { [ST.new]: "Nuevo", [ST.prep]: "En preparación", [ST.active]: "Activo", [ST.done]: "Completado", [ST.cancel]: "Cancelado" };
+export const ST_C = {
+  [ST.new]: { bg: "#E3F2FD", tx: "#1565C0" },
+  [ST.prep]: { bg: "#FFF8E1", tx: "#8D6E00" },
+  [ST.active]: { bg: "#E8F5E9", tx: "#3A7D44" },
+  [ST.done]: { bg: "#F3EDE4", tx: "#9C8B7A" },
+  [ST.cancel]: { bg: "#FFEBEE", tx: "#C62828" }
+};
+export const ST_B = { [ST.new]: "#1565C0", [ST.prep]: "#D4A017", [ST.active]: "#3A7D44", [ST.done]: "#9C8B7A", [ST.cancel]: "#C62828" };
+
+export const CAT_E = { "Tortas": "🎂", "Alfajores": "🍪", "Budines": "🍞", "Tartas": "🥧", "Postres": "🍮" };
+export const CAT_CO = ["#D4785C", "#7A9E5D", "#5C7AD4", "#D4A85C", "#8B5CD4", "#5CBBD4"];
+export const COLORS = [{ h: "#C45D3E" }, { h: "#5D7A2E" }, { h: "#2E5D7A" }, { h: "#7A2E4A" }, { h: "#C49A3E" }, { h: "#2D1B0E" }, { h: "#6B3FA0" }, { h: "#2E7A6B" }];
+
+export function playNotif() {
+  try {
+    const c = new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1108, 1318].forEach((f, i) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination);
+      o.type = "sine"; o.frequency.value = f;
+      g.gain.setValueAtTime(.3, c.currentTime + i * .12);
+      g.gain.exponentialRampToValueAtTime(.001, c.currentTime + i * .12 + .4);
+      o.start(c.currentTime + i * .12);
+      o.stop(c.currentTime + i * .12 + .4);
+    });
+  } catch { }
+}
