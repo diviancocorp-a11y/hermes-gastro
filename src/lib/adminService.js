@@ -115,7 +115,7 @@ export async function createPurchase(purchase, items) {
       if (item.ingredient_id) {
         const { data: ing } = await supabase.from('ingredients').select('stock').eq('id', item.ingredient_id).single();
         if (ing) {
-          await supabase.from('ingredients').update({ stock: (ing.stock || 0) + item.quantity, cost_per_unit: item.unit_price }).eq('id', item.ingredient_id);
+          await supabase.from('ingredients').update({ stock: (ing.stock || 0) + item.quantity, cost: item.unit_price }).eq('id', item.ingredient_id);
         }
       }
     }
@@ -213,7 +213,7 @@ export async function fetchDashboardStats() {
         let recipeCost = 0;
         ris.forEach(ri => {
           const ing = ingMap[ri.ingredient_id];
-          if (ing) recipeCost += Number(ri.quantity) * Number(ing.cost_per_unit);
+          if (ing) recipeCost += Number(ri.quantity) * Number(ing.cost);
         });
         costOfGoods += recipeCost * qty;
       });
@@ -241,7 +241,7 @@ export async function fetchDashboardStats() {
         let unitCost = 0;
         ris.forEach(ri => {
           const ing = ingMap[ri.ingredient_id];
-          if (ing) unitCost += Number(ri.quantity) * Number(ing.cost_per_unit);
+          if (ing) unitCost += Number(ri.quantity) * Number(ing.cost);
         });
         const prodMargin = d.revenue > 0 ? ((d.revenue - unitCost * d.qty) / d.revenue * 100) : 0;
         return { name, qty: d.qty, revenue: d.revenue, margin: Math.round(prodMargin) };
@@ -250,7 +250,7 @@ export async function fetchDashboardStats() {
       .slice(0, 5);
 
     // Inventory value
-    const inventoryValue = (ingredients || []).reduce((s, i) => s + (i.stock || 0) * (i.cost_per_unit || 0), 0);
+    const inventoryValue = (ingredients || []).reduce((s, i) => s + (i.stock || 0) * (i.cost || 0), 0);
 
     return {
       newOrders: newOrders.length,

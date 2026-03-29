@@ -53,7 +53,7 @@ export default function Admin(){
     if(!rec?.ingredients)return 0;
     return rec.ingredients.reduce((s,ri)=>{
       const ig=ings.find(i=>i.id===ri.ingredient_id);
-      return s+(ig?(ig.cost_per_unit||0)*(ri.quantity||0):0);
+      return s+(ig?(ig.cost||0)*(ri.quantity||0):0);
     },0);
   },[ings]);
 
@@ -134,6 +134,7 @@ export default function Admin(){
       <div><div className="hd-t">{sett.biz_name||DEF.biz_name}</div><div className="hd-s">Gestión Operativa</div></div>
       <div className="hd-r">
         <button className="hb" onClick={()=>setTab("settings")}>{I.settings({size:18})}</button>
+        <button className="hb" onClick={async()=>{await logout();setSession(null);}} title="Cerrar sesión"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
       </div>
     </div>
 
@@ -236,7 +237,7 @@ function Stock({ings,setIngs,ov,setOv,msg,sett,loadAll}){
     const ml=fil==="low"?(i.stock||0)<=(i.min_stock||0):true;
     return ms&&mf&&ml;
   });
-  const tI=ings.reduce((s,i)=>s+(i.cost_per_unit||0)*(i.stock||0),0);
+  const tI=ings.reduce((s,i)=>s+(i.cost||0)*(i.stock||0),0);
 
   return(<>
     <div className="s"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -255,7 +256,7 @@ function Stock({ings,setIngs,ov,setOv,msg,sett,loadAll}){
         <div className="lic" style={{background:(it.stock||0)<=(it.min_stock||0)?((it.stock||0)<=0?"var(--rl)":"var(--yl)"):"var(--gl)",color:(it.stock||0)<=(it.min_stock||0)?((it.stock||0)<=0?"var(--rd)":"var(--yw)"):"var(--gn)"}}>
           {(it.stock||0)<=(it.min_stock||0)?I.alert({size:16}):I.check({size:16})}
         </div>
-        <div className="lii"><div className="lin">{it.name}</div><div className="lid">{it.category||""} · ${fm(it.cost_per_unit||0)}/{it.unit}</div></div>
+        <div className="lii"><div className="lin">{it.name}</div><div className="lid">{it.category||""} · ${fm(it.cost||0)}/{it.unit}</div></div>
         <div className="lir"><div className="lia">{it.stock||0} {it.unit}</div><div className="lid">min: {it.min_stock||0}</div></div>
       </div>))}
     </div></div>
@@ -268,7 +269,7 @@ function Stock({ings,setIngs,ov,setOv,msg,sett,loadAll}){
 }
 
 function IngForm({data,onClose,onSave,onDel,sett}){
-  const [f,setF]=useState(data||{name:"",unit:"kg",cost_per_unit:0,stock:0,min_stock:0,category:"Secos"});
+  const [f,setF]=useState(data||{name:"",unit:"kg",cost:0,stock:0,min_stock:0,category:"Secos"});
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
   return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>{data?"Editar":"Nuevo"} Insumo</h2>
     {data&&<button onClick={()=>onDel(data.id)} style={{color:"var(--rd)"}}>{I.trash({})}</button>}
@@ -276,7 +277,7 @@ function IngForm({data,onClose,onSave,onDel,sett}){
     <div className="fg"><label className="fl">Nombre</label><input className="fin" value={f.name} onChange={e=>s("name",e.target.value)}/></div>
     <div className="fr"><div className="fg"><label className="fl">Unidad</label><select className="fin" value={f.unit} onChange={e=>s("unit",e.target.value)}>{["kg","g","lt","ml","uni"].map(u=><option key={u}>{u}</option>)}</select></div>
     <div className="fg"><label className="fl">Cat.</label><select className="fin" value={f.category||""} onChange={e=>s("category",e.target.value)}>{(sett?.ing_cats||DEF.ing_cats).map(c=><option key={c}>{c}</option>)}</select></div></div>
-    <div className="fg"><label className="fl">Costo/{f.unit}</label><input className="fin" type="number" value={f.cost_per_unit||""} onChange={e=>s("cost_per_unit",Number(e.target.value))}/></div>
+    <div className="fg"><label className="fl">Costo/{f.unit}</label><input className="fin" type="number" value={f.cost||""} onChange={e=>s("cost",Number(e.target.value))}/></div>
     <div className="fr"><div className="fg"><label className="fl">Stock</label><input className="fin" type="number" value={f.stock||""} onChange={e=>s("stock",Number(e.target.value))}/></div>
     <div className="fg"><label className="fl">Mín</label><input className="fin" type="number" value={f.min_stock||""} onChange={e=>s("min_stock",Number(e.target.value))}/></div></div>
     <button className="btn bp" style={{marginTop:8}} onClick={()=>f.name&&onSave(f)}>{I.check({size:18,color:"#fff"})} {data?"Guardar":"Agregar"}</button>
@@ -338,7 +339,7 @@ function RecDet({r,ings,rc,onClose,onEdit,onDel}){
     <div className="c" style={{padding:"8px 14px"}}>
       <div className="rir" style={{fontWeight:700,color:"var(--t3)",fontSize:11}}><div className="rin">INSUMO</div><div className="riq">CANT.</div><div className="ric">COSTO</div></div>
       {(r.ingredients||[]).map((ri,i)=>{const ig=ings.find(x=>x.id===ri.ingredient_id);if(!ig)return null;
-        return(<div key={i} className="rir"><div className="rin">{ig.name}</div><div className="riq">{ri.quantity} {ig.unit}</div><div className="ric">${fm((ig.cost_per_unit||0)*ri.quantity)}</div></div>);
+        return(<div key={i} className="rir"><div className="rin">{ig.name}</div><div className="riq">{ri.quantity} {ig.unit}</div><div className="ric">${fm((ig.cost||0)*ri.quantity)}</div></div>);
       })}
       <div className="rir" style={{fontWeight:700,borderTop:"2px solid var(--b2)"}}><div className="rin">TOTAL</div><div className="riq"></div><div className="ric">${fm(c)}</div></div>
     </div>
@@ -523,16 +524,16 @@ function ExpForm({onClose,onSave,sett}){
 function Purchase({ings,setIngs,exps,setExps,sett,onClose,msg,loadAll}){
   const [sup,setSup]=useState("");const [date,setDate]=useState(td());
   const [items,setItems]=useState([]);const [sn,setSn]=useState(false);
-  const [ni,setNi]=useState({name:"",unit:"kg",category:"Secos",cost_per_unit:0,min_stock:0});
+  const [ni,setNi]=useState({name:"",unit:"kg",category:"Secos",cost:0,min_stock:0});
   const add=()=>setItems(p=>[...p,{ingredient_id:"",qty:0,unitCost:0}]);
   const upd=(i,k,v)=>setItems(p=>p.map((x,j)=>j===i?{...x,[k]:v}:x));
   const rm=i=>setItems(p=>p.filter((_,j)=>j!==i));
-  const sel=(i,id)=>{const ig=ings.find(x=>x.id===id);upd(i,"ingredient_id",id);if(ig)upd(i,"unitCost",ig.cost_per_unit||0);};
+  const sel=(i,id)=>{const ig=ings.find(x=>x.id===id);upd(i,"ingredient_id",id);if(ig)upd(i,"unitCost",ig.cost||0);};
 
   const cr=async()=>{
     if(!ni.name)return;
     const saved=await upsertIngredient({...ni,stock:0});
-    if(saved){setIngs(p=>[...p,saved]);setSn(false);setNi({name:"",unit:"kg",category:"Secos",cost_per_unit:0,min_stock:0});msg("Insumo: "+saved.name);}
+    if(saved){setIngs(p=>[...p,saved]);setSn(false);setNi({name:"",unit:"kg",category:"Secos",cost:0,min_stock:0});msg("Insumo: "+saved.name);}
   };
 
   const tot=items.reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0);
@@ -543,7 +544,7 @@ function Purchase({ings,setIngs,exps,setExps,sett,onClose,msg,loadAll}){
     for(const it of v){
       await updateIngredientStock(it.ingredient_id,it.qty);
       if(it.unitCost>0){
-        await upsertIngredient({id:it.ingredient_id,cost_per_unit:it.unitCost});
+        await upsertIngredient({id:it.ingredient_id,cost:it.unitCost});
       }
     }
     // Register as expense if total > 0
@@ -568,7 +569,7 @@ function Purchase({ings,setIngs,exps,setExps,sett,onClose,msg,loadAll}){
       <div className="fg"><input className="fin" placeholder="Nombre" value={ni.name} onChange={e=>setNi(p=>({...p,name:e.target.value}))}/></div>
       <div className="fr"><div className="fg"><label className="fl">Unidad</label><select className="fin" value={ni.unit} onChange={e=>setNi(p=>({...p,unit:e.target.value}))}>{["kg","g","lt","ml","uni"].map(u=><option key={u}>{u}</option>)}</select></div>
       <div className="fg"><label className="fl">Cat.</label><select className="fin" value={ni.category} onChange={e=>setNi(p=>({...p,category:e.target.value}))}>{ic.map(c=><option key={c}>{c}</option>)}</select></div></div>
-      <div className="fr"><div className="fg"><label className="fl">$/u</label><input className="fin" type="number" value={ni.cost_per_unit||""} onChange={e=>setNi(p=>({...p,cost_per_unit:Number(e.target.value)}))}/></div>
+      <div className="fr"><div className="fg"><label className="fl">$/u</label><input className="fin" type="number" value={ni.cost||""} onChange={e=>setNi(p=>({...p,cost:Number(e.target.value)}))}/></div>
       <div className="fg"><label className="fl">Mín</label><input className="fin" type="number" value={ni.min_stock||""} onChange={e=>setNi(p=>({...p,min_stock:Number(e.target.value)}))}/></div></div>
       <div className="fr"><button className="btn bs" onClick={()=>setSn(false)}>Cancelar</button><button className="btn bp" onClick={cr}>{I.check({size:16,color:"#fff"})} Crear</button></div>
     </div>}
