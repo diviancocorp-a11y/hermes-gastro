@@ -31,7 +31,8 @@ export default function Catalog() {
   const [showCk, setShowCk] = useState(false);
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "" });
+  const [upsell, setUpsell] = useState(null); // {product, suggestions[]}
 
   const sf = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -80,6 +81,21 @@ export default function Catalog() {
       if (ex) return prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i);
       return [...prev, { id: p.id, name: p.name, price: p.sale_price, qty: 1, img: p.image_url }];
     });
+    // Upselling: mostrar sugerencias si el producto tiene related_ids
+    if (p.related_ids && p.related_ids.length > 0) {
+      const suggestions = products.filter(x => p.related_ids.includes(x.id) && !cart.find(c => c.id === x.id));
+      if (suggestions.length > 0) setUpsell({ product: p, suggestions: suggestions.slice(0, 3) });
+    }
+  };
+
+  // Agregar desde upsell y cerrar popup
+  const addFromUpsell = (p) => {
+    setCart(prev => {
+      const ex = prev.find(i => i.id === p.id);
+      if (ex) return prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i);
+      return [...prev, { id: p.id, name: p.name, price: p.sale_price, qty: 1, img: p.image_url }];
+    });
+    setUpsell(null);
   };
 
   // Actualizar cantidad en el carrito
@@ -99,6 +115,8 @@ export default function Catalog() {
       payment: form.payment,
       address: form.address,
       note: form.note,
+      is_gift: form.is_gift,
+      gift_note: form.is_gift ? form.gift_note : '',
       total: ct,
       items: cart.map(i => ({
         recipeId: i.id,
@@ -113,9 +131,8 @@ export default function Catalog() {
     if (ok) {
       setSent(true);
       setCart([]);
-      setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "" });
+      setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "" });
     } else {
-      // Si Supabase falla, igual mostramos confirmación (modo offline)
       console.warn("Pedido no se guardó en Supabase, pero se confirma al usuario.");
       setSent(true);
       setCart([]);
@@ -175,6 +192,32 @@ export default function Catalog() {
         </div>
 
         <div className="cks"><div className="ckl">💬 Notas para el pedido</div><input className="cki" value={form.note} onChange={e => sf("note", e.target.value)} placeholder="Ej: Sin azúcar, enviar ticket..." /></div>
+
+        {/* Modo Regalo */}
+        <div className="gift-box">
+          <div className="gift-hd" onClick={() => sf("is_gift", !form.is_gift)}>
+            <div className="gift-info">
+              <span className="gift-icon">🎁</span>
+              <div>
+                <div className="gift-title">¿Es un regalo?</div>
+                <div className="gift-sub">Incluimos una tarjeta especial</div>
+              </div>
+            </div>
+            <div className={`gift-toggle ${form.is_gift ? "on" : ""}`}><div className="gift-thumb" /></div>
+          </div>
+          {form.is_gift && (
+            <div className="gift-note-wrap">
+              <textarea
+                className="gift-note-input"
+                placeholder="Escribí tu mensaje para la tarjeta... (máx. 200 caracteres)"
+                maxLength={200}
+                value={form.gift_note}
+                onChange={e => sf("gift_note", e.target.value)}
+              />
+              <div className="gift-chars">{form.gift_note.length}/200</div>
+            </div>
+          )}
+        </div>
 
         <div className="ct"><span>Total a pagar</span><span style={{ color: "var(--tx)" }}>${fi(ct)}</span></div>
         <button className="abtn" style={{ width: "100%" }} disabled={!form.name || !form.phone || (form.delivery === "envio" && !form.address) || sending} onClick={send}>
@@ -270,6 +313,30 @@ export default function Catalog() {
           <div className="pcb-qty">{cc}</div>
           <div className="pcb-text">Ver pedido</div>
           <div className="pcb-price">${fi(ct)}</div>
+        </div>
+      )}
+
+      {/* Popup de Upselling */}
+      {upsell && (
+        <div className="ups-overlay" onClick={() => setUpsell(null)}>
+          <div className="ups-sheet" onClick={e => e.stopPropagation()}>
+            <div className="ups-drag" />
+            <p className="ups-added">✓ <strong>{upsell.product.name}</strong> agregado</p>
+            <h3 className="ups-title">¿Le sumás algo más?</h3>
+            <div className="ups-list">
+              {upsell.suggestions.map(s => (
+                <div key={s.id} className="ups-card" onClick={() => addFromUpsell(s)}>
+                  <img className="ups-img" src={s.image_url} alt={s.name} onError={e => { e.target.style.display='none'; }} />
+                  <div className="ups-info">
+                    <div className="ups-name">{s.name}</div>
+                    <div className="ups-price">${fi(s.sale_price)}</div>
+                  </div>
+                  <button className="ups-btn">+</button>
+                </div>
+              ))}
+            </div>
+            <button className="ups-skip" onClick={() => setUpsell(null)}>No, gracias</button>
+          </div>
         </div>
       )}
     </div>

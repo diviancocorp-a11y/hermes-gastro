@@ -315,8 +315,8 @@ function Recipes({recs,setRecs,ings,rc,ov,setOv,msg,loadAll}){
     </div>
     <button className="fab" onClick={()=>setOv({type:"editR",data:null})}>{I.plus({size:24,color:"#fff"})}</button>
     {ov?.type==="viewR"&&<RecDet r={ov.data} ings={ings} rc={rc} onClose={()=>setOv(null)} onEdit={()=>setOv({type:"editR",data:ov.data})} onDel={async(id)=>{await deleteRecipe(id);setRecs(p=>p.filter(x=>x.id!==id));setOv(null);msg("Eliminada");}}/>}
-    {ov?.type==="editR"&&<RecForm data={ov.data} ings={ings} onClose={()=>setOv(null)} onSave={async(r)=>{
-      const saved=await upsertRecipe({id:r.id,name:r.name,category:r.category,sale_price:r.sale_price,visible:r.visible,image_url:r.image_url,description:r.description});
+    {ov?.type==="editR"&&<RecForm data={ov.data} ings={ings} recs={recs} onClose={()=>setOv(null)} onSave={async(r)=>{
+      const saved=await upsertRecipe({id:r.id,name:r.name,category:r.category,sale_price:r.sale_price,visible:r.visible,image_url:r.image_url,description:r.description,related_ids:r.related_ids||[]});
       if(saved){
         await saveRecipeIngredients(saved.id,(r.ingredients||[]).map(ri=>({ingredient_id:ri.ingredient_id,quantity:ri.quantity})));
         await loadAll();setOv(null);msg(r.id?"Actualizada":"Creada");
@@ -347,11 +347,14 @@ function RecDet({r,ings,rc,onClose,onEdit,onDel}){
   </div></div>);
 }
 
-function RecForm({data,ings,onClose,onSave}){
-  const [f,setF]=useState(data||{name:"",category:"",sale_price:0,visible:true,image_url:"",description:"",ingredients:[]});
+function RecForm({data,ings,recs,onClose,onSave}){
+  const [f,setF]=useState(data||{name:"",category:"",sale_price:0,visible:true,image_url:"",description:"",ingredients:[],related_ids:[]});
   const [ad,setAd]=useState(false);const [si,setSi]=useState("");const [sq,setSq]=useState("");
+  const [showRel,setShowRel]=useState(false);
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
   const addI=()=>{if(!si||!sq)return;s("ingredients",[...f.ingredients,{ingredient_id:si,quantity:Number(sq)}]);setSi("");setSq("");setAd(false);};
+  const toggleRel=(id)=>{const cur=f.related_ids||[];s("related_ids",cur.includes(id)?cur.filter(x=>x!==id):[...cur,id]);};
+  const otherRecs=(recs||[]).filter(r=>r.id!==f.id);
 
   return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>{data?"Editar":"Nueva"} Receta</h2></div><div className="pb">
     <div className="fg"><label className="fl">Nombre</label><input className="fin" value={f.name} onChange={e=>s("name",e.target.value)}/></div>
@@ -375,6 +378,25 @@ function RecForm({data,ings,onClose,onSave}){
         return(<div key={i} className="rir"><div className="rin">{ig?.name||"?"}</div><div className="riq">{ri.quantity} {ig?.unit||""}</div>
           <button style={{background:"none",border:"none",color:"var(--rd)",cursor:"pointer"}} onClick={()=>s("ingredients",f.ingredients.filter((_,j)=>j!==i))}>{I.trash({size:14})}</button></div>);
       })}
+    </div>
+    {/* Sugerencias de upselling */}
+    <div style={{marginTop:12}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+        <label className="fl" style={{margin:0}}>🎯 Sugerencias de venta ({(f.related_ids||[]).length})</label>
+        <button className="btn bs bsm" onClick={()=>setShowRel(p=>!p)}>{showRel?"Ocultar":"Elegir"}</button>
+      </div>
+      {showRel&&<div className="c" style={{padding:"8px 14px",maxHeight:180,overflowY:"auto"}}>
+        {otherRecs.length===0?<div className="empty" style={{padding:8}}>No hay otras recetas</div>
+        :otherRecs.map(r=>{const sel=(f.related_ids||[]).includes(r.id);
+          return(<div key={r.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid var(--b2)",cursor:"pointer"}} onClick={()=>toggleRel(r.id)}>
+            <div style={{width:20,height:20,borderRadius:6,border:"2px solid",borderColor:sel?"var(--ac)":"var(--b2)",background:sel?"var(--ac)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>
+              {sel&&I.check({size:12,color:"#fff"})}
+            </div>
+            <span style={{flex:1,fontSize:14,color:"var(--tx)"}}>{r.name}</span>
+            <span style={{fontSize:12,color:"var(--t3)"}}>${fi(r.sale_price)}</span>
+          </div>);
+        })}
+      </div>}
     </div>
     <button className="btn bp" style={{marginTop:16}} onClick={()=>f.name&&onSave(f)}>{I.check({size:18,color:"#fff"})} {data?"Guardar":"Crear"}</button>
   </div></div>);
@@ -406,6 +428,7 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
             <span className="badge" style={{background:sc?.bg,color:sc?.tx}}>{ST_L[o.status]}</span>
           </div>
           {items.map((it,i)=>{const r=recs.find(x=>x.id===it.recipe_id);return(<div key={i} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",fontSize:13}}><span>{r?.name||"?"} × {it.quantity||it.qty||1}</span><span style={{fontWeight:600}}>${fi((it.quantity||it.qty||1)*(it.unit_price||0))}</span></div>);})}
+          {o.is_gift&&<div style={{fontSize:12,color:"var(--ac)",fontWeight:600,marginTop:4,padding:"4px 8px",background:"var(--al)",borderRadius:6}}>🎁 Pedido regalo{o.gift_note?`: "${o.gift_note}"`:""}</div>}
           {o.note&&<div style={{fontSize:12,color:"var(--t3)",fontStyle:"italic",marginTop:4,padding:"4px 8px",background:"var(--b2)",borderRadius:6}}>💬 {o.note}</div>}
           <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0 0",borderTop:"1px solid var(--b2)",marginTop:8,fontWeight:700,fontSize:16}}><span>Total</span><span>${fi(o.total)}</span></div>
           {act&&<div className="oa">{o.status!==ST.done&&o.status!==ST.cancel&&<button className="btn bd" onClick={()=>moveOrd(o.id,ST.cancel)}>{I.x({size:14})} Cancelar</button>}<button className={`btn ${act.c}`} onClick={()=>moveOrd(o.id,act.n)}>{act.i({size:14,color:"#fff"})} {act.l}</button></div>}

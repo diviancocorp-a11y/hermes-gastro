@@ -40,7 +40,7 @@ export async function fetchCatalog() {
     // 2. Traer recetas visibles
     const { data: products, error: prodErr } = await supabase
       .from('recipes')
-      .select('id, name, category, sale_price, image_url, description')
+      .select('id, name, category, sale_price, image_url, description, related_ids')
       .eq('visible', true)
       .order('category', { ascending: true });
 
@@ -95,7 +95,9 @@ export async function submitOrder(orderData) {
         delivery: orderData.delivery,
         payment: orderData.payment,
         note: orderData.note || null,
-        total: orderData.total
+        total: orderData.total,
+        is_gift: orderData.is_gift || false,
+        gift_note: orderData.gift_note || ''
       })
       .select('id')  // Necesitamos el ID para los items
       .single();
@@ -109,7 +111,7 @@ export async function submitOrder(orderData) {
     const items = orderData.items.map(item => ({
       order_id: order.id,
       recipe_id: item.recipeId,
-      quantity: item.qty,
+      qty: item.qty,
       unit_price: item.unitPrice,
       subtotal: item.qty * item.unitPrice
     }));
