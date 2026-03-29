@@ -80,7 +80,9 @@ export default function Admin(){
     if(ns===ST.cancel){
       if([ST.prep,ST.active].includes(o.status)){setOv({type:"cancel",orderId:id,order:o});return;}
       await updateOrderStatus(id,ST.cancel);
-      setOrders(p=>p.map(x=>x.id===id?{...x,status:ST.cancel}:x));msg("Cancelado");return;
+      setOrders(p=>p.map(x=>x.id===id?{...x,status:ST.cancel}:x));msg("Cancelado");
+      if(o.phone) notifyWhatsApp(o.phone,o.customer||"",ST.cancel,o.id).then(ok=>{if(ok)msg(p=>p+" · 📱 WhatsApp enviado");}).catch(()=>{});
+      return;
     }
     if(ns===ST.prep&&o.status===ST.new){
       const items=o.order_items||o.items||[];
@@ -145,6 +147,7 @@ export default function Admin(){
     }else{msg("Cancelado · Desperdicio registrado");}
     await updateOrderStatus(id,ST.cancel);
     setOrders(p=>p.map(x=>x.id===id?{...x,status:ST.cancel}:x));setOv(null);
+    if(o.phone) notifyWhatsApp(o.phone,o.customer||"",ST.cancel,o.id).catch(()=>{});
   };
 
   const addOrd=async(o)=>{

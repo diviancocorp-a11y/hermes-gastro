@@ -393,8 +393,10 @@ export async function fetchCoupons() {
 // ─── WHATSAPP NOTIFICATIONS ───────────────────────────
 export async function notifyWhatsApp(phone, customerName, status, orderId) {
   if (!phone) return false;
+  // En desarrollo (localhost) usar URL absoluta de producción; en producción usar relativa
+  const apiBase = import.meta.env.DEV ? 'https://la-nona-pato.vercel.app' : '';
   try {
-    const res = await fetch('/api/whatsapp', {
+    const res = await fetch(`${apiBase}/api/whatsapp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
