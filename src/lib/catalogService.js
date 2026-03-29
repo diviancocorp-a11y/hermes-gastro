@@ -97,7 +97,9 @@ export async function submitOrder(orderData) {
         note: orderData.note || null,
         total: orderData.total,
         is_gift: orderData.is_gift || false,
-        gift_note: orderData.gift_note || ''
+        gift_note: orderData.gift_note || '',
+        coupon_id: orderData.coupon_id || null,
+        discount: orderData.discount || 0
       })
       .select('id')  // Necesitamos el ID para los items
       .single();
@@ -132,4 +134,22 @@ export async function submitOrder(orderData) {
     console.error('Error inesperado en submitOrder:', err);
     return false;
   }
+}
+/**
+ * Valida un cupón de descuento para un cliente en el catálogo público.
+ * Retorna { discount_pct, id } si es válido, null si no.
+ */
+export async function validateCouponPublic(code, email) {
+  try {
+    const { data, error } = await supabase
+      .from('coupons')
+      .select('id, code, discount_pct, email, used, expires_at')
+      .eq('code', code.toUpperCase().trim())
+      .eq('used', false)
+      .single();
+    if (error || !data) return null;
+    if (data.email && email && data.email.toLowerCase() !== email.toLowerCase()) return null;
+    if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
+    return { id: data.id, discount_pct: data.discount_pct };
+  } catch { return null; }
 }

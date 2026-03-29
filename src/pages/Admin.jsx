@@ -9,7 +9,11 @@ import {
   fetchRecipeIngredients, fetchAllRecipeIngredients, saveRecipeIngredients,
   fetchExpenses, createExpense, deleteExpense,
   fetchSales, createSale,
-  fetchDashboardStats, updateIngredientStock
+  fetchDashboardStats, updateIngredientStock,
+  uploadRecipeImage,
+  fetchWasteLog, registerWaste,
+  fetchComboItems, saveComboItems, deductComboStock,
+  createCouponForOrder, fetchCoupons
 } from "../lib/adminService";
 
 const DEF={biz_name:"La Nona Pato",logo_letter:"N",logo_color:"#C45D3E",
@@ -78,15 +82,25 @@ export default function Admin(){
       setOrders(p=>p.map(x=>x.id===id?{...x,status:ST.cancel}:x));msg("Cancelado");return;
     }
     if(ns===ST.prep&&o.status===ST.new){
-      // Deduct stock
       const items=o.order_items||o.items||[];
+      // Construir mapas para deducción recursiva
+      const ingMap={};ings.forEach(i=>{ingMap[i.id]=i;});
+      const riMap={};
+      // fetchAllRecipeIngredients ya está en memory (recipeIngs no disponible aquí — usamos recs)
+      recs.forEach(r=>{riMap[r.id]=(r.ingredients||[]);});
       for(const it of items){
         const r=recs.find(x=>x.id===it.recipe_id);if(!r)continue;
-        for(const ri of (r.ingredients||[])){
-          await updateIngredientStock(ri.ingredient_id,-(ri.quantity*(it.quantity||it.qty||1)));
+        const qty=it.quantity||it.qty||1;
+        if(r.is_combo){
+          // Deducción recursiva para combos
+          await deductComboStock(r.id,qty,ingMap,riMap);
+        } else {
+          for(const ri of (r.ingredients||[])){
+            await updateIngredientStock(ri.ingredient_id,-(ri.quantity*qty));
+          }
         }
       }
-      setIngs(prev2=>{const n=[...prev2];items.forEach(it=>{const r=recs.find(x=>x.id===it.recipe_id);if(!r)return;(r.ingredients||[]).forEach(ri=>{const idx=n.findIndex(x=>x.id===ri.ingredient_id);if(idx>=0)n[idx]={...n[idx],stock:Math.max(0,(n[idx].stock||0)-ri.quantity*(it.quantity||it.qty||1))};});});return n;});
+      setIngs(prev2=>{const n=[...prev2];items.forEach(it=>{const r=recs.find(x=>x.id===it.recipe_id);if(!r||r.is_combo)return;(r.ingredients||[]).forEach(ri=>{const idx=n.findIndex(x=>x.id===ri.ingredient_id);if(idx>=0)n[idx]={...n[idx],stock:Math.max(0,(n[idx].stock||0)-ri.quantity*(it.quantity||it.qty||1))};});});return n;});
       msg("En preparación · Stock actualizado");
     }
     if(ns===ST.done){
@@ -95,7 +109,14 @@ export default function Admin(){
         await createSale({date:td(),recipe_id:it.recipe_id,qty:it.quantity||it.qty||1,unit_price:it.unit_price||0,total:(it.quantity||it.qty||1)*(it.unit_price||0)});
       }
       setSales(prev2=>{const nw=[...prev2];items.forEach(it=>{nw.push({id:uid(),date:td(),recipe_id:it.recipe_id,qty:it.quantity||it.qty||1,unit_price:it.unit_price||0,total:(it.quantity||it.qty||1)*(it.unit_price||0)});});return nw;});
-      msg("Completado · Venta registrada");
+      // Generar cupón para el cliente
+      if(o.email){
+        const coupon=await createCouponForOrder(o.id,o.email,10);
+        if(coupon)msg(`✅ Completado · Cupón ${coupon.code} enviado a ${o.email}`);
+        else msg("Completado · Venta registrada");
+      } else {
+        msg("Completado · Venta registrada");
+      }
     }
     if(ns===ST.active)msg("Activo · Listo para entrega");
     await updateOrderStatus(id,ns);
@@ -260,12 +281,61 @@ function Stock({ings,setIngs,ov,setOv,msg,sett,loadAll}){
         <div className="lir"><div className="lia">{it.stock||0} {it.unit}</div><div className="lid">min: {it.min_stock||0}</div></div>
       </div>))}
     </div></div>
+    <div style={{display:"flex",gap:8,padding:"0 16px 16px"}}>
+      <button className="btn bs" style={{flex:1,fontSize:13}} onClick={()=>setOv({type:"waste"})}>⚠️ Registrar Merma</button>
+    </div>
     <button className="fab" onClick={()=>setOv({type:"editIng",data:null})}>{I.plus({size:24,color:"#fff"})}</button>
     {ov?.type==="editIng"&&<IngForm data={ov.data} sett={sett} onClose={()=>setOv(null)} onSave={async(it)=>{
       const saved=await upsertIngredient(it);
       if(saved){if(it.id)setIngs(p=>p.map(i=>i.id===it.id?saved:i));else setIngs(p=>[...p,saved]);setOv(null);msg(it.id?"Actualizado":"Agregado");}
     }} onDel={async(id)=>{await deleteIngredient(id);setIngs(p=>p.filter(i=>i.id!==id));setOv(null);msg("Eliminado");}}/>}
+    {ov?.type==="waste"&&<WasteForm ings={ings} setIngs={setIngs} msg={msg} onClose={()=>setOv(null)}/>}
   </>);
+}
+
+function WasteForm({ings,setIngs,msg,onClose}){
+  const [ingId,setIngId]=useState("");const [qty,setQty]=useState("");const [reason,setReason]=useState("vencimiento");const [note,setNote]=useState("");const [saving,setSaving]=useState(false);
+  const reasons=["vencimiento","rotura","prueba","derrame","otro"];
+  const save=async()=>{
+    if(!ingId||!qty||Number(qty)<=0)return;
+    setSaving(true);
+    const ok=await registerWaste(ingId,Number(qty),reason,note);
+    setSaving(false);
+    if(ok){
+      setIngs(p=>p.map(i=>i.id===ingId?{...i,stock:Math.max(0,(i.stock||0)-Number(qty))}:i));
+      msg(`Merma registrada: ${Number(qty)} ${ings.find(x=>x.id===ingId)?.unit||""}`);
+      onClose();
+    }
+  };
+  const ing=ings.find(x=>x.id===ingId);
+  return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>Registrar Merma</h2></div><div className="pb">
+    <div className="waste-banner">⚠️ Este ajuste descuenta stock sin generar una venta. Usá esto para vencimientos, roturas y pruebas.</div>
+    <div className="fg"><label className="fl">Insumo</label>
+      <select className="fin" value={ingId} onChange={e=>setIngId(e.target.value)}>
+        <option value="">Seleccionar insumo...</option>
+        {ings.map(i=><option key={i.id} value={i.id}>{i.name} (Stock: {i.stock||0} {i.unit})</option>)}
+      </select>
+    </div>
+    <div className="fr">
+      <div className="fg"><label className="fl">Cantidad a descontar ({ing?.unit||"unidad"})</label>
+        <input className="fin" type="number" min="0.001" step="0.001" value={qty} onChange={e=>setQty(e.target.value)} placeholder="Ej: 0.5"/>
+      </div>
+    </div>
+    {ingId&&qty&&<div className="waste-preview">
+      Stock actual: <strong>{ing?.stock||0} {ing?.unit}</strong> → Nuevo: <strong style={{color:"var(--rd)"}}>{Math.max(0,(ing?.stock||0)-Number(qty))} {ing?.unit}</strong>
+    </div>}
+    <div className="fg"><label className="fl">Motivo</label>
+      <div className="cko" style={{flexWrap:"wrap",gap:6}}>
+        {reasons.map(r=><div key={r} className={`ckv ${reason===r?"on":""}`} onClick={()=>setReason(r)} style={{textTransform:"capitalize",flex:"none"}}>{r}</div>)}
+      </div>
+    </div>
+    <div className="fg"><label className="fl">Nota (opcional)</label>
+      <input className="fin" value={note} onChange={e=>setNote(e.target.value)} placeholder="Ej: Caja dañada al descargar"/>
+    </div>
+    <button className="btn bp" style={{width:"100%",marginTop:8}} onClick={save} disabled={saving||!ingId||!qty}>
+      {saving?"Guardando...":"⚠️ Confirmar Merma"}
+    </button>
+  </div></div>);
 }
 
 function IngForm({data,onClose,onSave,onDel,sett}){
@@ -314,11 +384,16 @@ function Recipes({recs,setRecs,ings,rc,ov,setOv,msg,loadAll}){
       })}
     </div>
     <button className="fab" onClick={()=>setOv({type:"editR",data:null})}>{I.plus({size:24,color:"#fff"})}</button>
-    {ov?.type==="viewR"&&<RecDet r={ov.data} ings={ings} rc={rc} onClose={()=>setOv(null)} onEdit={()=>setOv({type:"editR",data:ov.data})} onDel={async(id)=>{await deleteRecipe(id);setRecs(p=>p.filter(x=>x.id!==id));setOv(null);msg("Eliminada");}}/>}
+    {ov?.type==="viewR"&&<RecDet r={ov.data} ings={ings} rc={rc} onClose={()=>setOv(null)} onEdit={async()=>{
+      let d={...ov.data};
+      if(d.is_combo&&d.id){const ci=await fetchComboItems(d.id);d.comboItems=ci.map(x=>({sub_recipe_id:x.sub_recipe_id,qty:x.qty}));}
+      setOv({type:"editR",data:d});
+    }} onDel={async(id)=>{await deleteRecipe(id);setRecs(p=>p.filter(x=>x.id!==id));setOv(null);msg("Eliminada");}}/>}
     {ov?.type==="editR"&&<RecForm data={ov.data} ings={ings} recs={recs} onClose={()=>setOv(null)} onSave={async(r)=>{
-      const saved=await upsertRecipe({id:r.id,name:r.name,category:r.category,sale_price:r.sale_price,visible:r.visible,image_url:r.image_url,description:r.description,related_ids:r.related_ids||[]});
+      const saved=await upsertRecipe({id:r.id,name:r.name,category:r.category,sale_price:r.sale_price,visible:r.visible,image_url:r.image_url,description:r.description,related_ids:r.related_ids||[],is_combo:r.is_combo||false});
       if(saved){
         await saveRecipeIngredients(saved.id,(r.ingredients||[]).map(ri=>({ingredient_id:ri.ingredient_id,quantity:ri.quantity})));
+        if(r.is_combo) await saveComboItems(saved.id,(r.comboItems||[]).filter(ci=>ci.sub_recipe_id&&ci.qty>0));
         await loadAll();setOv(null);msg(r.id?"Actualizada":"Creada");
       }
     }}/>}
@@ -348,24 +423,76 @@ function RecDet({r,ings,rc,onClose,onEdit,onDel}){
 }
 
 function RecForm({data,ings,recs,onClose,onSave}){
-  const [f,setF]=useState(data||{name:"",category:"",sale_price:0,visible:true,image_url:"",description:"",ingredients:[],related_ids:[]});
+  const [f,setF]=useState(data||{name:"",category:"",sale_price:0,visible:true,image_url:"",description:"",ingredients:[],related_ids:[],is_combo:false});
   const [ad,setAd]=useState(false);const [si,setSi]=useState("");const [sq,setSq]=useState("");
   const [showRel,setShowRel]=useState(false);
+  const [showCombo,setShowCombo]=useState(false);
+  const [comboItems,setComboItems]=useState(data?.comboItems||[]);
+  const [uploading,setUploading]=useState(false);
+  const fileRef=useRef();
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
   const addI=()=>{if(!si||!sq)return;s("ingredients",[...f.ingredients,{ingredient_id:si,quantity:Number(sq)}]);setSi("");setSq("");setAd(false);};
   const toggleRel=(id)=>{const cur=f.related_ids||[];s("related_ids",cur.includes(id)?cur.filter(x=>x!==id):[...cur,id]);};
-  const otherRecs=(recs||[]).filter(r=>r.id!==f.id);
+  const otherRecs=(recs||[]).filter(r=>r.id!==f.id&&!r.is_combo);
+  const handleImageUpload=async(e)=>{
+    const file=e.target.files?.[0];if(!file)return;
+    setUploading(true);
+    const url=await uploadRecipeImage(file);
+    if(url)s("image_url",url);
+    setUploading(false);
+  };
+  const addComboItem=()=>setComboItems(p=>[...p,{sub_recipe_id:"",qty:1}]);
+  const updCombo=(i,k,v)=>setComboItems(p=>p.map((x,j)=>j===i?{...x,[k]:v}:x));
+  const delCombo=(i)=>setComboItems(p=>p.filter((_,j)=>j!==i));
 
   return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>{data?"Editar":"Nueva"} Receta</h2></div><div className="pb">
     <div className="fg"><label className="fl">Nombre</label><input className="fin" value={f.name} onChange={e=>s("name",e.target.value)}/></div>
     <div className="fr"><div className="fg"><label className="fl">Categoría</label><input className="fin" value={f.category} onChange={e=>s("category",e.target.value)} placeholder="Ej: Tortas"/></div>
     <div className="fg"><label className="fl">Precio</label><input className="fin" type="number" value={f.sale_price||""} onChange={e=>s("sale_price",Number(e.target.value))}/></div></div>
     <div className="fg"><label className="fl">Descripción</label><textarea className="fin" value={f.description||""} onChange={e=>s("description",e.target.value)} rows={2} style={{resize:"vertical"}}/></div>
-    <div className="fg"><label className="fl">URL imagen</label><input className="fin" value={f.image_url||""} onChange={e=>s("image_url",e.target.value)} placeholder="https://..."/></div>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0 16px"}}>
+    {/* Image upload */}
+    <div className="fg">
+      <label className="fl">Imagen</label>
+      <div className="img-upload-wrap">
+        {f.image_url?<img src={f.image_url} alt="" className="img-preview" onError={e=>e.target.style.display='none'}/>:null}
+        <div className="img-upload-row">
+          <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImageUpload}/>
+          <button className="btn bs bsm" onClick={()=>fileRef.current?.click()} disabled={uploading} style={{flex:1}}>
+            {uploading?"Subiendo...":f.image_url?`${I.edit({size:13})} Cambiar foto`:`📷 Subir foto`}
+          </button>
+          {f.image_url&&<button className="btn bd bsm" onClick={()=>s("image_url","")} style={{marginLeft:6}}>✕</button>}
+        </div>
+      </div>
+    </div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0 8px"}}>
       <label className="fl" style={{margin:0}}>Visible en catálogo</label>
       <button className={`toggle ${f.visible!==false?"on":"off"}`} onClick={()=>s("visible",!f.visible)}/>
     </div>
+    {/* Toggle Combo */}
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 0 12px"}}>
+      <div><label className="fl" style={{margin:0}}>Es un Combo</label><div style={{fontSize:11,color:"var(--t3)"}}>Compuesto por otras recetas</div></div>
+      <button className={`toggle ${f.is_combo?"on":"off"}`} onClick={()=>s("is_combo",!f.is_combo)}/>
+    </div>
+    {/* Combo Items */}
+    {f.is_combo&&(<div style={{marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+        <label className="fl" style={{margin:0}}>Sub-recetas ({comboItems.length})</label>
+        <button className="btn bs bsm" onClick={addComboItem}>{I.plus({size:14})} +</button>
+      </div>
+      <div className="c" style={{padding:"4px 14px"}}>
+        {comboItems.length===0?<div className="empty" style={{padding:10,fontSize:13}}>Agregá las recetas que forman este combo</div>
+        :comboItems.map((ci,i)=>(
+          <div key={i} className="fr" style={{alignItems:"center",padding:"4px 0",borderBottom:"1px solid var(--b2)"}}>
+            <select className="fin" style={{flex:2,marginBottom:0}} value={ci.sub_recipe_id} onChange={e=>updCombo(i,"sub_recipe_id",e.target.value)}>
+              <option value="">Seleccionar...</option>
+              {(recs||[]).filter(r=>r.id!==f.id).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+            <input className="fin" type="number" min="1" style={{flex:1,marginBottom:0,marginLeft:6}} placeholder="Cant" value={ci.qty} onChange={e=>updCombo(i,"qty",Number(e.target.value))}/>
+            <button style={{background:"none",border:"none",color:"var(--rd)",cursor:"pointer",marginLeft:4}} onClick={()=>delCombo(i)}>{I.trash({size:14})}</button>
+          </div>
+        ))}
+      </div>
+    </div>)}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",margin:"0 0 8px"}}><label className="fl" style={{margin:0}}>Ingredientes ({(f.ingredients||[]).length})</label><button className="btn bs bsm" onClick={()=>setAd(true)}>{I.plus({size:14})} +</button></div>
     {ad&&<div className="c" style={{background:"var(--b2)",marginBottom:10}}>
       <div className="fg"><select className="fin" value={si} onChange={e=>setSi(e.target.value)}><option value="">Seleccionar...</option>{ings.map(i=><option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}</select></div>
@@ -398,7 +525,7 @@ function RecForm({data,ings,recs,onClose,onSave}){
         })}
       </div>}
     </div>
-    <button className="btn bp" style={{marginTop:16}} onClick={()=>f.name&&onSave(f)}>{I.check({size:18,color:"#fff"})} {data?"Guardar":"Crear"}</button>
+    <button className="btn bp" style={{marginTop:16}} onClick={()=>f.name&&onSave({...f,comboItems})}>{I.check({size:18,color:"#fff"})} {data?"Guardar":"Crear"}</button>
   </div></div>);
 }
 

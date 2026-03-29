@@ -268,3 +268,124 @@ export async function fetchDashboardStats() {
     return null;
   }
 }
+
+// ─── STORAGE: IMAGE UPLOAD ────────────────────────────
+export async function uploadRecipeImage(file) {
+  const ext = file.name.split('.').pop();
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { data, error } = await supabase.storage
+    .from('recipe-images')
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) { console.error('uploadRecipeImage:', error.message); return null; }
+  const { data: urlData } = supabase.storage.from('recipe-images').getPublicUrl(data.path);
+  return urlData.publicUrl;
+}
+
+// ─── WASTE LOG (MERMAS) ───────────────────────────────
+export async function fetchWasteLog() {
+  const { data, error } = await supabase
+    .from('waste_log')
+    .select('*, ingredients(name, unit)')
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) { console.error('fetchWasteLog:', error.message); return []; }
+  return data || [];
+}
+export async function registerWaste(ingredientId, qty, reason, note = '') {
+  // 1. Registrar la merma
+  const { error: logErr } = await supabase.from('waste_log').insert({
+    ingredient_id: ingredientId, qty, reason, note,
+    date: new Date().toISOString().split('T')[0]
+  });
+  if (logErr) { console.error('registerWaste log:', logErr.message); return false; }
+  // 2. Descontar del stock
+  const { data: ing } = await supabase.from('ingredients').select('stock').eq('id', ingredientId).single();
+  if (ing) {
+    const newStock = Math.max(0, (ing.stock || 0) - qty);
+    await supabase.from('ingredients').update({ stock: newStock }).eq('id', ingredientId);
+  }
+  return true;
+}
+
+// ─── COMBO ITEMS ──────────────────────────────────────
+export async function fetchComboItems(recipeId) {
+  const { data, error } = await supabase
+    .from('combo_items')
+    .select('*, recipes!combo_items_sub_recipe_id_fkey(id, name, sale_price)')
+    .eq('recipe_id', recipeId);
+  if (error) { console.error('fetchComboItems:', error.message); return []; }
+  return data || [];
+}
+export async function saveComboItems(recipeId, items) {
+  await supabase.from('combo_items').delete().eq('recipe_id', recipeId);
+  if (!items.length) return true;
+  const rows = items.filter(i => i.sub_recipe_id && i.qty > 0)
+    .map(i => ({ recipe_id: recipeId, sub_recipe_id: i.sub_recipe_id, qty: Number(i.qty) }));
+  if (!rows.length) return true;
+  const { error } = await supabase.from('combo_items').insert(rows);
+  if (error) { console.error('saveComboItems:', error.message); return false; }
+  return true;
+}
+// Deducción recursiva de stock para combos
+export async function deductComboStock(recipeId, orderQty, ingMap, riMap) {
+  const { data: comboItems } = await supabase
+    .from('combo_items')
+    .select('sub_recipe_id, qty')
+    .eq('recipe_id', recipeId);
+  if (!comboItems || !comboItems.length) return;
+  for (const ci of comboItems) {
+    const totalSubQty = ci.qty * orderQty;
+    // Descontar ingredientes de la sub-receta
+    const subRIs = riMap[ci.sub_recipe_id] || [];
+    for (const ri of subRIs) {
+      await updateIngredientStock(ri.ingredient_id, -(ri.quantity * totalSubQty));
+    }
+    // Recursión: si la sub-receta también es combo
+    await deductComboStock(ci.sub_recipe_id, totalSubQty, ingMap, riMap);
+  }
+}
+
+// ─── COUPONS ──────────────────────────────────────────
+function generateCouponCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return 'NONA-' + Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+export async function createCouponForOrder(orderId, email, discountPct = 10) {
+  if (!email) return null;
+  const code = generateCouponCode();
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 30); // válido 30 días
+  const { data, error } = await supabase.from('coupons').insert({
+    code, discount_pct: discountPct, email, order_id: orderId,
+    expires_at: expires.toISOString()
+  }).select().single();
+  if (error) { console.error('createCouponForOrder:', error.message); return null; }
+  return data;
+}
+export async function validateCoupon(code, email) {
+  const { data, error } = await supabase
+    .from('coupons')
+    .select('*')
+    .eq('code', code.toUpperCase())
+    .eq('used', false)
+    .single();
+  if (error || !data) return null;
+  if (data.email && data.email.toLowerCase() !== email.toLowerCase()) return null;
+  if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
+  return data;
+}
+export async function redeemCoupon(couponId) {
+  const { error } = await supabase.from('coupons').update({
+    used: true, used_at: new Date().toISOString()
+  }).eq('id', couponId);
+  return !error;
+}
+export async function fetchCoupons() {
+  const { data, error } = await supabase
+    .from('coupons')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error) { console.error('fetchCoupons:', error.message); return []; }
+  return data || [];
+}

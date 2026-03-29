@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { I, fi } from "../lib/utils";
-import { fetchCatalog, submitOrder } from "../lib/catalogService";
+import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 
 // --- DATOS DE RESPALDO (se usan si Supabase no responde) ---
 const fallbackSettings = {
@@ -33,6 +33,10 @@ export default function Catalog() {
   const [sending, setSending] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "" });
   const [upsell, setUpsell] = useState(null); // {product, suggestions[]}
+  const [couponCode, setCouponCode] = useState("");
+  const [coupon, setCoupon] = useState(null); // {id, discount_pct}
+  const [couponErr, setCouponErr] = useState("");
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
 
   const sf = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -65,7 +69,18 @@ export default function Catalog() {
 
   // Totales del carrito
   const cc = cart.reduce((s, i) => s + i.qty, 0);
-  const ct = cart.reduce((s, i) => s + i.qty * i.price, 0);
+  const ctBase = cart.reduce((s, i) => s + i.qty * i.price, 0);
+  const discount = coupon ? Math.round(ctBase * coupon.discount_pct / 100) : 0;
+  const ct = ctBase - discount;
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setValidatingCoupon(true); setCouponErr("");
+    const result = await validateCouponPublic(couponCode, form.email);
+    setValidatingCoupon(false);
+    if (result) { setCoupon(result); setCouponErr(""); }
+    else setCouponErr("Cupón inválido, vencido o no corresponde a tu email.");
+  };
 
   // Obtener cantidad de un producto específico en el carrito
   const getQty = (id) => {
@@ -117,6 +132,8 @@ export default function Catalog() {
       note: form.note,
       is_gift: form.is_gift,
       gift_note: form.is_gift ? form.gift_note : '',
+      coupon_id: coupon?.id || null,
+      discount: discount,
       total: ct,
       items: cart.map(i => ({
         recipeId: i.id,
@@ -132,6 +149,7 @@ export default function Catalog() {
       setSent(true);
       setCart([]);
       setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "" });
+      setCoupon(null); setCouponCode("");
     } else {
       console.warn("Pedido no se guardó en Supabase, pero se confirma al usuario.");
       setSent(true);
@@ -219,7 +237,21 @@ export default function Catalog() {
           )}
         </div>
 
-        <div className="ct"><span>Total a pagar</span><span style={{ color: "var(--tx)" }}>${fi(ct)}</span></div>
+        {/* Campo de cupón */}
+        <div className="coupon-row">
+          <input className="coupon-input" placeholder="Tenés un cupón? Ingresalo acá" value={couponCode} onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCoupon(null); setCouponErr(""); }} disabled={!!coupon}/>
+          {!coupon
+            ? <button className="coupon-btn" onClick={applyCoupon} disabled={validatingCoupon || !couponCode.trim()}>{validatingCoupon ? "..." : "Aplicar"}</button>
+            : <button className="coupon-btn coupon-ok" onClick={() => { setCoupon(null); setCouponCode(""); }}>✓ -{coupon.discount_pct}%</button>
+          }
+        </div>
+        {couponErr && <p className="coupon-err">{couponErr}</p>}
+
+        {coupon && <div className="coupon-applied">🎉 Descuento <strong>{coupon.discount_pct}%</strong> aplicado — ahorrás <strong>${fi(discount)}</strong></div>}
+        <div className="ct">
+          {coupon && <><span style={{color:"var(--t3)",textDecoration:"line-through",fontSize:13}}>${fi(ctBase)}</span><span style={{flex:1}}/></>}
+          <span>Total a pagar</span><span style={{ color: coupon?"var(--gn)":"var(--tx)",fontWeight:700 }}>${fi(ct)}</span>
+        </div>
         <button className="abtn" style={{ width: "100%" }} disabled={!form.name || !form.phone || (form.delivery === "envio" && !form.address) || sending} onClick={send}>
           {sending ? "Enviando..." : "Confirmar y Enviar"}
         </button>
