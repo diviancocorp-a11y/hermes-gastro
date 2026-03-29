@@ -30,6 +30,7 @@ export default function Catalog() {
   const [showCart, setShowCart] = useState(false);
   const [showCk, setShowCk] = useState(false);
   const [sent, setSent] = useState(false);
+  const [orderId, setOrderId] = useState(null);
   const [sending, setSending] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "" });
   const [upsell, setUpsell] = useState(null); // {product, suggestions[]}
@@ -142,16 +143,18 @@ export default function Catalog() {
       }))
     };
 
-    const ok = await submitOrder(orderData);
+    const result = await submitOrder(orderData);
     setSending(false);
 
-    if (ok) {
+    if (result?.ok) {
+      setOrderId(result.orderId);
       setSent(true);
       setCart([]);
       setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "" });
       setCoupon(null); setCouponCode("");
     } else {
       console.warn("Pedido no se guardó en Supabase, pero se confirma al usuario.");
+      setOrderId(null);
       setSent(true);
       setCart([]);
     }
@@ -173,8 +176,17 @@ export default function Catalog() {
       <div className="success">
         <div className="suc-ic">{I.check({ size: 40, color: "#fff" })}</div>
         <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 28 }}>¡Pedido confirmado!</h2>
-        <p style={{ fontSize: 15, color: "var(--t3)", lineHeight: 1.6, marginTop: 12 }}>Estamos preparando todo. Te contactaremos por WhatsApp a la brevedad.</p>
-        <button className="abtn" onClick={() => setSent(false)} style={{ marginTop: 32, width: "100%" }}>Volver a la tienda</button>
+        <p style={{ fontSize: 15, color: "var(--t3)", lineHeight: 1.6, marginTop: 12 }}>
+          Estamos preparando todo con mucho amor 🦆
+        </p>
+        {orderId && (
+          <a href={`/order/${orderId}`} className="tracker-link-btn">
+            🔴 Seguir mi pedido en vivo
+          </a>
+        )}
+        <button className="abtn" onClick={() => { setSent(false); setOrderId(null); }} style={{ marginTop: 12, width: "100%", background: "transparent", color: "var(--t3)", border: "1.5px solid var(--b2)" }}>
+          Volver a la tienda
+        </button>
       </div>
     </div>
   );

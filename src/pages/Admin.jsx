@@ -13,7 +13,8 @@ import {
   uploadRecipeImage,
   fetchWasteLog, registerWaste,
   fetchComboItems, saveComboItems, deductComboStock,
-  createCouponForOrder, fetchCoupons
+  createCouponForOrder, fetchCoupons,
+  notifyWhatsApp
 } from "../lib/adminService";
 
 const DEF={biz_name:"La Nona Pato",logo_letter:"N",logo_color:"#C45D3E",
@@ -121,6 +122,12 @@ export default function Admin(){
     if(ns===ST.active)msg("Activo · Listo para entrega");
     await updateOrderStatus(id,ns);
     setOrders(p=>p.map(x=>x.id===id?{...x,status:ns,...(ns===ST.done?{completedAt:new Date().toISOString()}:{})}:x));
+    // Notificación WhatsApp al cliente (si tiene teléfono)
+    if(o.phone&&[ST.prep,ST.active,ST.done,ST.cancel].includes(ns)){
+      notifyWhatsApp(o.phone,o.customer||"",ns,o.id)
+        .then(ok=>{ if(ok)msg(prev=>prev+(prev?" · ":"")+"📱 WhatsApp enviado"); })
+        .catch(()=>{});
+    }
   };
 
   const confirmCancel=async(id,ret)=>{

@@ -290,3 +290,64 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .coupon-btn.coupon-ok{background:var(--gn)}
 .coupon-err{font-size:12px;color:var(--rd);margin:-4px 0 8px;padding:0 2px}
 .coupon-applied{background:var(--gl);border:1.5px solid var(--gn);color:var(--gn);border-radius:var(--rs);padding:10px 14px;font-size:13px;margin-bottom:12px;text-align:center}
+
+/* =========================================
+   PATO TRACKER (Real-time order tracking)
+========================================= */
+.tracker-shell{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);padding:0 0 40px;display:flex;flex-direction:column;align-items:center}
+.tracker-header{width:100%;background:var(--ac);padding:20px 20px 24px;display:flex;align-items:center;gap:14px;color:#fff}
+.tracker-logo-link{text-decoration:none}
+.tracker-logo{font-size:36px;line-height:1}
+.tracker-title{font-family:'DM Serif Display',serif;font-size:22px;color:#fff;margin:0}
+.tracker-sub{font-size:13px;color:rgba(255,255,255,.75);margin:2px 0 0}
+
+.tracker-card{width:calc(100% - 40px);background:var(--b3);border-radius:20px;padding:28px 24px;margin:-16px 20px 16px;box-shadow:0 8px 32px rgba(45,27,14,.12);text-align:center;transition:transform .2s,box-shadow .2s}
+.tracker-pulse{transform:scale(1.01);box-shadow:0 8px 40px rgba(196,93,62,.22)}
+.tracker-state-icon{font-size:56px;line-height:1;margin-bottom:12px}
+.tracker-state-label{font-family:'DM Serif Display',serif;font-size:22px;color:var(--tx);margin:0 0 8px}
+.tracker-state-desc{font-size:14px;color:var(--t3);line-height:1.6;margin:0 0 24px}
+
+/* Progress steps */
+.tracker-progress{display:flex;align-items:flex-start;justify-content:center;gap:0;width:100%;margin-top:8px}
+.tracker-progress-step{display:flex;flex-direction:column;align-items:center;position:relative;flex:1;min-width:0}
+.tracker-step-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--b2);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t3);font-weight:700;transition:all .3s;z-index:1;flex-shrink:0}
+.tracker-step-dot.done{background:var(--ac);border-color:var(--ac);color:#fff}
+.tracker-step-dot.active{background:var(--b3);border-color:var(--ac);color:var(--ac);box-shadow:0 0 0 3px rgba(196,93,62,.15)}
+.tracker-step-label{font-size:10px;color:var(--t3);margin-top:6px;text-align:center;line-height:1.3;padding:0 2px}
+.tracker-step-label.done{color:var(--ac);font-weight:600}
+.tracker-step-line{position:absolute;top:13px;left:calc(50% + 14px);right:calc(-50% + 14px);height:2px;background:var(--b2);transition:background .3s}
+.tracker-step-line.done{background:var(--ac)}
+
+/* Summary */
+.tracker-summary{width:calc(100% - 40px);background:var(--b3);border-radius:var(--r);padding:16px 18px;margin:0 20px 12px}
+.tracker-summary-hd{font-weight:700;font-size:15px;margin-bottom:10px;color:var(--tx)}
+.tracker-summary-info{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.tracker-summary-info span{font-size:13px;color:var(--t2);background:var(--b2);padding:4px 10px;border-radius:20px}
+.tracker-items{display:flex;flex-direction:column;gap:4px}
+.tracker-item{display:flex;justify-content:space-between;font-size:13px;color:var(--t2);padding:4px 0}
+.tracker-total{font-weight:700;font-size:15px;color:var(--tx);border-top:2px solid var(--b2);padding-top:8px;margin-top:4px}
+.tracker-note{font-size:12px;color:var(--t3);margin-top:10px;padding:8px 10px;background:var(--b2);border-radius:8px;font-style:italic}
+
+/* Live indicator */
+.tracker-live{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gn);font-weight:600;margin-bottom:16px}
+.tracker-live-dot{width:8px;height:8px;border-radius:50%;background:var(--gn);animation:livePulse 1.5s ease infinite}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+
+/* Loading / Not found */
+.tracker-loading,.tracker-notfound,.tracker-cancelled{text-align:center;padding:60px 20px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.tracker-loading p,.tracker-notfound p{font-size:15px;color:var(--t3)}
+.tracker-notfound h2,.tracker-cancelled h2{font-family:'DM Serif Display',serif;font-size:24px}
+
+/* Dots animation */
+.tracker-dots span{animation:dotBlink 1.2s infinite;opacity:0}
+.tracker-dots span:nth-child(2){animation-delay:.2s}
+.tracker-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dotBlink{0%,80%,100%{opacity:0}40%{opacity:1}}
+
+/* Back button & tracker link */
+.tracker-back-btn{display:block;text-align:center;padding:14px;color:var(--t3);font-size:14px;font-weight:600;text-decoration:none;font-family:'DM Sans',sans-serif}
+.tracker-link-btn{display:block;width:100%;padding:16px;background:var(--gn);color:#fff;border-radius:var(--rs);font-size:15px;font-weight:700;text-align:center;text-decoration:none;margin-top:20px;font-family:'DM Sans',sans-serif;box-shadow:0 4px 16px rgba(58,125,68,.25)}
+
+/* Success screen tweaks */
+.success{padding:40px 24px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.suc-ic{width:72px;height:72px;border-radius:50%;background:var(--gn);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}

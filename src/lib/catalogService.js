@@ -124,15 +124,14 @@ export async function submitOrder(orderData) {
 
     if (itemsErr) {
       console.error('Error creando items del pedido:', itemsErr.message);
-      // El pedido ya se creó pero sin items - esto no debería pasar
-      return false;
+      return { ok: false, orderId: null };
     }
 
-    return true;
+    return { ok: true, orderId: order.id };
 
   } catch (err) {
     console.error('Error inesperado en submitOrder:', err);
-    return false;
+    return { ok: false, orderId: null };
   }
 }
 /**

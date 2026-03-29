@@ -389,3 +389,23 @@ export async function fetchCoupons() {
   if (error) { console.error('fetchCoupons:', error.message); return []; }
   return data || [];
 }
+
+// ─── WHATSAPP NOTIFICATIONS ───────────────────────────
+export async function notifyWhatsApp(phone, customerName, status, orderId) {
+  if (!phone) return false;
+  try {
+    const res = await fetch('/api/whatsapp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-nona-secret': import.meta.env.VITE_NONA_WEBHOOK_SECRET || '',
+      },
+      body: JSON.stringify({ phone, customerName, status, orderId }),
+    });
+    if (!res.ok) { const d = await res.json(); console.error('WhatsApp error:', d); return false; }
+    return true;
+  } catch (err) {
+    console.error('notifyWhatsApp:', err);
+    return false;
+  }
+}
