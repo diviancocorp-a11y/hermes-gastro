@@ -270,6 +270,17 @@ export async function fetchDashboardStats() {
 }
 
 // ─── STORAGE: IMAGE UPLOAD ────────────────────────────
+export async function uploadCoverImage(file) {
+  const ext = file.name.split('.').pop();
+  const path = `cover-${Date.now()}.${ext}`;
+  const { data, error } = await supabase.storage
+    .from('recipe-images')
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) { console.error('uploadCoverImage:', error.message); return null; }
+  const { data: urlData } = supabase.storage.from('recipe-images').getPublicUrl(data.path);
+  return urlData.publicUrl;
+}
+
 export async function uploadRecipeImage(file) {
   const ext = file.name.split('.').pop();
   const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;

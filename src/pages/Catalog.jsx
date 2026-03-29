@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { I, fi } from "../lib/utils";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 
@@ -18,6 +19,8 @@ const fallbackProducts = [
 ];
 
 export default function Catalog() {
+  const navigate = useNavigate();
+
   // --- Estado de datos ---
   const [sett, setSett] = useState(fallbackSettings);
   const [products, setProducts] = useState([]);
@@ -38,6 +41,9 @@ export default function Catalog() {
   const [coupon, setCoupon] = useState(null); // {id, discount_pct}
   const [couponErr, setCouponErr] = useState("");
   const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [showTrackerInput, setShowTrackerInput] = useState(false);
+  const [trackerCode, setTrackerCode] = useState("");
 
   const sf = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -179,13 +185,28 @@ export default function Catalog() {
         <p style={{ fontSize: 15, color: "var(--t3)", lineHeight: 1.6, marginTop: 12 }}>
           Estamos preparando todo con mucho amor 🦆
         </p>
-        {orderId && (
+        {orderId && (<>
           <a href={`/order/${orderId}`} className="tracker-link-btn">
             🔴 Seguir mi pedido en vivo
           </a>
-        )}
-        <button className="abtn" onClick={() => { setSent(false); setOrderId(null); }} style={{ marginTop: 12, width: "100%", background: "transparent", color: "var(--t3)", border: "1.5px solid var(--b2)" }}>
-          Volver a la tienda
+          <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--b2)", borderRadius: 12, textAlign: "left" }}>
+            <div style={{ fontSize: 12, color: "var(--t3)", marginBottom: 6 }}>📋 Código de tu pedido</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <code style={{ flex: 1, fontSize: 12, color: "var(--tx)", wordBreak: "break-all", background: "var(--bg)", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--b2)" }}>
+                {orderId}
+              </code>
+              <button
+                onClick={() => { navigator.clipboard.writeText(orderId); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); }}
+                style={{ flexShrink: 0, padding: "6px 12px", background: copiedCode ? "var(--gn, #3A7D44)" : "var(--pr, #C45D3E)", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, cursor: "pointer", transition: "background .2s" }}
+              >
+                {copiedCode ? "✓ Copiado" : "Copiar"}
+              </button>
+            </div>
+            <p style={{ fontSize: 11, color: "var(--t3)", marginTop: 8, marginBottom: 0 }}>Guardá este código para seguir tu pedido cuando quieras.</p>
+          </div>
+        </>)}
+        <button className="abtn" onClick={() => { setSent(false); setOrderId(null); setShowCk(false); }} style={{ marginTop: 16, width: "100%", background: "transparent", color: "var(--t3)", border: "1.5px solid var(--b2)" }}>
+          ← Volver a la tienda
         </button>
       </div>
     </div>
@@ -299,23 +320,82 @@ export default function Catalog() {
     </div>
   );
 
+  const isOpen = sett.store_open !== false; // null/undefined = abierto por defecto
+
   // --- VISTA PRINCIPAL: CATÁLOGO ---
   return (
     <div className="app">
+      {/* Banner de anuncios (si hay texto configurado) */}
+      {sett.banner_text && (
+        <div style={{ background: sett.banner_color || "#2D1B0E", color: "#fff", textAlign: "center", padding: "10px 20px", fontSize: 13, fontWeight: 600, letterSpacing: 0.2 }}>
+          {sett.banner_text}
+        </div>
+      )}
+
       {/* Portada y Header */}
       <div className="store-cover" style={{ backgroundImage: `url(${sett.cover_url || fallbackSettings.cover_url})` }}></div>
       <div className="store-header">
         <div className="store-logo" style={{ background: sett.logo_color || fallbackSettings.logo_color }}>{sett.logo_letter || fallbackSettings.logo_letter}</div>
         <div className="store-info">
           <h1 className="store-name">{sett.biz_name || fallbackSettings.biz_name}</h1>
-          <div className="store-status">● Abierto ahora</div>
+          <div className="store-status" style={{ color: isOpen ? "#3A7D44" : "#C62828" }}>
+            {isOpen ? "● Abierto ahora" : "● Cerrado por hoy"}
+          </div>
         </div>
+      </div>
+
+      {/* Botón Seguí tu pedido */}
+      <div style={{ margin: "0 16px 4px" }}>
+        {!showTrackerInput ? (
+          <button
+            onClick={() => setShowTrackerInput(true)}
+            style={{ width: "100%", padding: "10px 16px", background: "var(--b2)", border: "none", borderRadius: 12, fontSize: 13, color: "var(--t3)", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 8 }}
+          >
+            🦆 <span>¿Ya hiciste un pedido? <strong style={{ color: "var(--tx)" }}>Seguí tu pedido →</strong></span>
+          </button>
+        ) : (
+          <div style={{ background: "var(--b2)", borderRadius: 12, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--tx)" }}>🦆 Seguí tu pedido</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                style={{ flex: 1, padding: "8px 12px", border: "1.5px solid var(--b2)", borderRadius: 10, fontSize: 13, background: "var(--bg)", color: "var(--tx)", outline: "none" }}
+                placeholder="Pegá tu código de pedido..."
+                value={trackerCode}
+                onChange={e => setTrackerCode(e.target.value.trim())}
+                onKeyDown={e => e.key === "Enter" && trackerCode && navigate(`/order/${trackerCode}`)}
+                autoFocus
+              />
+              <button
+                onClick={() => trackerCode && navigate(`/order/${trackerCode}`)}
+                disabled={!trackerCode}
+                style={{ padding: "8px 16px", background: "#C45D3E", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: trackerCode ? "pointer" : "not-allowed", opacity: trackerCode ? 1 : 0.5 }}
+              >
+                Ir
+              </button>
+              <button
+                onClick={() => { setShowTrackerInput(false); setTrackerCode(""); }}
+                style={{ padding: "8px 10px", background: "transparent", border: "1.5px solid var(--b2)", borderRadius: 10, fontSize: 13, cursor: "pointer", color: "var(--t3)" }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Banner offline */}
       {error === "offline" && (
         <div style={{ margin: "0 20px 8px", padding: "10px 16px", background: "#FFF8E1", borderRadius: 12, fontSize: 13, color: "#8D6E00", textAlign: "center" }}>
           ⚠️ Modo offline — mostrando productos de ejemplo
+        </div>
+      )}
+
+      {/* Banner tienda cerrada */}
+      {!isOpen && (
+        <div style={{ margin: "0 16px 12px", padding: "14px 18px", background: "#FFEBEE", borderRadius: 14, textAlign: "center" }}>
+          <div style={{ fontSize: 28, marginBottom: 4 }}>🌙</div>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "#C62828" }}>Estamos cerrados por hoy</div>
+          <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>Volvemos pronto. Podés ver el catálogo pero los pedidos están deshabilitados.</div>
         </div>
       )}
 
@@ -339,7 +419,7 @@ export default function Catalog() {
                 <div className="prod-desc">{p.description}</div>
                 <div className="prod-bot">
                   <div className="prod-price">${fi(p.sale_price)}</div>
-                  <button className={`btn-add ${inCartQty > 0 ? 'has-qty' : ''}`} onClick={(e) => addC(p, e)}>
+                  <button className={`btn-add ${inCartQty > 0 ? 'has-qty' : ''} ${!isOpen ? 'disabled' : ''}`} onClick={(e) => isOpen && addC(p, e)} disabled={!isOpen} style={!isOpen ? { opacity: 0.4, cursor: "not-allowed" } : {}}>
                     {inCartQty > 0 ? inCartQty : I.plus({ size: 16 })}
                   </button>
                 </div>

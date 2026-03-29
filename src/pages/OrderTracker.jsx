@@ -4,13 +4,13 @@ import { supabase } from "../lib/supabase";
 
 // ─── Mapa de estados ──────────────────────────────────
 const STEPS = [
-  { id: "new",       icon: "📋", label: "Pedido recibido",   desc: "Recibimos tu pedido y lo estamos revisando." },
-  { id: "prep",      icon: "👩‍🍳", label: "En preparación",    desc: "¡Manos a la obra! Estamos preparando todo con amor." },
-  { id: "active",    icon: "🎁", label: "Listo para entrega", desc: "Tu pedido está empaquetado y listo para vos." },
-  { id: "done",      icon: "✅", label: "¡Entregado!",        desc: "¡Gracias por elegirnos! Esperamos verte pronto." },
+  { id: "new",       icon: "📋", label: "Pedido recibido",    desc: "Recibimos tu pedido y lo estamos revisando." },
+  { id: "preparing", icon: "👩‍🍳", label: "En preparación",     desc: "¡Manos a la obra! Estamos preparando todo con amor." },
+  { id: "active",    icon: "🎁", label: "Listo para entrega",  desc: "Tu pedido está empaquetado y listo para vos." },
+  { id: "completed", icon: "✅", label: "¡Pedido completado!", desc: "¡Gracias por elegirnos! Tu pedido fue entregado. 🎂" },
 ];
 
-const STEP_IDX = { new: 0, prep: 1, active: 2, done: 3 };
+const STEP_IDX = { "new": 0, "preparing": 1, "active": 2, "completed": 3 };
 
 // ─── Animación de puntos ──────────────────────────────
 function Dots() {
@@ -71,7 +71,7 @@ export default function OrderTracker() {
     <div className="tracker-shell">
       <div className="tracker-loading">
         <div className="tracker-logo">🦆</div>
-        <p>Buscando tu pedido<Dots /></p>
+        <p>Buscando el pato pedido<Dots /></p>
       </div>
     </div>
   );
@@ -88,7 +88,7 @@ export default function OrderTracker() {
     </div>
   );
 
-  const isCancelled = order.status === "cancel";
+  const isCancelled = order.status === "cancelled";
   const stepIdx     = isCancelled ? -1 : (STEP_IDX[order.status] ?? 0);
 
   return (
@@ -124,7 +124,7 @@ export default function OrderTracker() {
               {STEPS.map((step, i) => (
                 <div key={step.id} className="tracker-progress-step">
                   <div className={`tracker-step-dot ${i <= stepIdx ? "done" : ""} ${i === stepIdx ? "active" : ""}`}>
-                    {i < stepIdx ? "✓" : i === stepIdx && order.status !== "done" ? <Dots /> : i === stepIdx ? "✓" : ""}
+                    {i < stepIdx ? "✓" : i === stepIdx && order.status !== "completed" ? <Dots /> : i === stepIdx ? "✓" : ""}
                   </div>
                   <div className={`tracker-step-label ${i <= stepIdx ? "done" : ""}`}>{step.label}</div>
                   {i < STEPS.length - 1 && (
@@ -163,7 +163,7 @@ export default function OrderTracker() {
       </div>
 
       {/* Live indicator */}
-      {!isCancelled && order.status !== "done" && (
+      {!isCancelled && order.status !== "completed" && (
         <div className="tracker-live">
           <span className="tracker-live-dot" />
           Actualización en tiempo real
