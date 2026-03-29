@@ -76,7 +76,7 @@ export default function Admin(){
   const mar=tS>0?(prof/tS*100):0;
 
   // Move order status
-  const moveOrd=async(id,ns)=>{
+  const moveOrd=async(id,ns,force=false)=>{
     const o=orders.find(x=>x.id===id);if(!o)return;
     if(ns===ST.cancel){
       if([ST.prep,ST.active].includes(o.status)){setOv({type:"cancel",orderId:id,order:o});return;}
@@ -87,6 +87,20 @@ export default function Admin(){
     }
     if(ns===ST.prep&&o.status===ST.new){
       const items=o.order_items||o.items||[];
+      // Verificar si algún ingrediente quedaría en negativo (salvo que se haya forzado)
+      if(!force){
+        const deficits=[];
+        for(const it of items){
+          const r=recs.find(x=>x.id===it.recipe_id);if(!r||r.is_combo)continue;
+          const qty=it.quantity||it.qty||1;
+          for(const ri of (r.ingredients||[])){
+            const ing=ings.find(x=>x.id===ri.ingredient_id);if(!ing)continue;
+            const after=(ing.stock||0)-(ri.quantity*qty);
+            if(after<0)deficits.push({name:ing.name,current:fi(ing.stock||0),needed:fi(ri.quantity*qty),unit:ing.unit,after:fi(after)});
+          }
+        }
+        if(deficits.length>0){setOv({type:"stockWarning",orderId:id,order:o,deficits});return;}
+      }
       // Construir mapas para deducción recursiva
       const ingMap={};ings.forEach(i=>{ingMap[i.id]=i;});
       const riMap={};
@@ -171,7 +185,7 @@ export default function Admin(){
     </div>
 
     {tab==="home"&&<Home {...{low,tS,tE,prof,mar,tCR,sales,recs,ings,rc,actOrd,sett}} onStock={()=>setTab("stock")} onPurchase={()=>setOv({type:"purchase"})} onOrders={()=>setTab("orders")} onExp={()=>setOv({type:"expenses"})}/>}
-    {tab==="stock"&&<Stock {...{ings,setIngs,ov,setOv,msg,sett,loadAll}}/>}
+    {tab==="stock"&&<Stock {...{ings,setIngs,recs,ov,setOv,msg,sett,loadAll}}/>}
     {tab==="recipes"&&<Recipes {...{recs,setRecs,ings,rc,ov,setOv,msg,loadAll}}/>}
     {tab==="orders"&&<Orders {...{orders,recs,moveOrd,addOrd,ov,setOv,msg}}/>}
     {tab==="sales"&&<SalesView {...{sales,setSales,recs,rc,ov,setOv,msg}}/>}
@@ -180,6 +194,7 @@ export default function Admin(){
     {ov?.type==="purchase"&&<Purchase {...{ings,setIngs,exps,setExps,sett}} onClose={()=>setOv(null)} msg={msg} loadAll={loadAll}/>}
     {ov?.type==="expenses"&&<Expenses {...{exps,setExps,sett,msg}} onClose={()=>setOv(null)}/>}
     {ov?.type==="cancel"&&<CancelDlg order={ov.order} recs={recs} ings={ings} onClose={()=>setOv(null)} onConfirm={ret=>confirmCancel(ov.orderId,ret)}/>}
+    {ov?.type==="stockWarning"&&<StockWarningDlg deficits={ov.deficits} onClose={()=>setOv(null)} onForce={async()=>{setOv(null);await moveOrd(ov.orderId,ST.prep,true);}}/>}
 
     <nav className="nv">
       {[{id:"home",icon:I.home,l:"Inicio"},{id:"stock",icon:I.box,l:"Stock"},{id:"recipes",icon:I.recipe,l:"Recetas"},{id:"orders",icon:I.orders,l:"Pedidos",badge:orders.filter(o=>o.status===ST.new).length},{id:"sales",icon:I.cart,l:"Ventas"}].map(t=>(
@@ -260,7 +275,7 @@ function Home({low,tS,tE,prof,mar,tCR,sales,recs,ings,rc,actOrd,sett,onStock,onP
 }
 
 // ═══════ STOCK ═══════
-function Stock({ings,setIngs,ov,setOv,msg,sett,loadAll}){
+function Stock({ings,setIngs,recs,ov,setOv,msg,sett,loadAll}){
   const [sr,setSr]=useState("");const [fil,setFil]=useState("all");
   const cats=[...new Set(ings.map(i=>i.category).filter(Boolean))];
   const filt=ings.filter(i=>{
@@ -299,7 +314,11 @@ function Stock({ings,setIngs,ov,setOv,msg,sett,loadAll}){
     {ov?.type==="editIng"&&<IngForm data={ov.data} sett={sett} onClose={()=>setOv(null)} onSave={async(it)=>{
       const saved=await upsertIngredient(it);
       if(saved){if(it.id)setIngs(p=>p.map(i=>i.id===it.id?saved:i));else setIngs(p=>[...p,saved]);setOv(null);msg(it.id?"Actualizado":"Agregado");}
-    }} onDel={async(id)=>{await deleteIngredient(id);setIngs(p=>p.filter(i=>i.id!==id));setOv(null);msg("Eliminado");}}/>}
+    }} onDel={async(id)=>{
+      const usedIn=(recs||[]).filter(r=>(r.ingredients||[]).some(ri=>ri.ingredient_id===id));
+      if(usedIn.length>0){msg(`No se puede eliminar: está en uso en "${usedIn.map(r=>r.name).join(", ")}"`);return;}
+      await deleteIngredient(id);setIngs(p=>p.filter(i=>i.id!==id));setOv(null);msg("Eliminado");
+    }}/>}
     {ov?.type==="waste"&&<WasteForm ings={ings} setIngs={setIngs} msg={msg} onClose={()=>setOv(null)}/>}
   </>);
 }
@@ -351,17 +370,26 @@ function WasteForm({ings,setIngs,msg,onClose}){
 
 function IngForm({data,onClose,onSave,onDel,sett}){
   const [f,setF]=useState(data||{name:"",unit:"kg",cost:0,stock:0,min_stock:0,category:"Secos"});
-  const s=(k,v)=>setF(p=>({...p,[k]:v}));
+  const [err,setErr]=useState("");
+  const s=(k,v)=>{setErr("");setF(p=>({...p,[k]:v}));};
+  const canSave=f.name&&(f.cost||0)>0&&(f.stock||0)>=0;
+  const handleSave=()=>{
+    if(!f.name){setErr("El nombre es obligatorio.");return;}
+    if((f.cost||0)<=0){setErr("El costo debe ser mayor a 0.");return;}
+    if((f.stock||0)<0){setErr("El stock no puede ser negativo.");return;}
+    onSave(f);
+  };
   return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>{data?"Editar":"Nuevo"} Insumo</h2>
     {data&&<button onClick={()=>onDel(data.id)} style={{color:"var(--rd)"}}>{I.trash({})}</button>}
   </div><div className="pb">
     <div className="fg"><label className="fl">Nombre</label><input className="fin" value={f.name} onChange={e=>s("name",e.target.value)}/></div>
     <div className="fr"><div className="fg"><label className="fl">Unidad</label><select className="fin" value={f.unit} onChange={e=>s("unit",e.target.value)}>{["kg","g","lt","ml","uni"].map(u=><option key={u}>{u}</option>)}</select></div>
     <div className="fg"><label className="fl">Cat.</label><select className="fin" value={f.category||""} onChange={e=>s("category",e.target.value)}>{(sett?.ing_cats||DEF.ing_cats).map(c=><option key={c}>{c}</option>)}</select></div></div>
-    <div className="fg"><label className="fl">Costo/{f.unit}</label><input className="fin" type="number" value={f.cost||""} onChange={e=>s("cost",Number(e.target.value))}/></div>
-    <div className="fr"><div className="fg"><label className="fl">Stock</label><input className="fin" type="number" value={f.stock||""} onChange={e=>s("stock",Number(e.target.value))}/></div>
-    <div className="fg"><label className="fl">Mín</label><input className="fin" type="number" value={f.min_stock||""} onChange={e=>s("min_stock",Number(e.target.value))}/></div></div>
-    <button className="btn bp" style={{marginTop:8}} onClick={()=>f.name&&onSave(f)}>{I.check({size:18,color:"#fff"})} {data?"Guardar":"Agregar"}</button>
+    <div className="fg"><label className="fl">Costo/{f.unit}</label><input className="fin" type="number" min="0.01" step="0.01" value={f.cost||""} onChange={e=>s("cost",Math.max(0,Number(e.target.value)))}/></div>
+    <div className="fr"><div className="fg"><label className="fl">Stock</label><input className="fin" type="number" min="0" step="0.001" value={f.stock||""} onChange={e=>s("stock",Math.max(0,Number(e.target.value)))}/></div>
+    <div className="fg"><label className="fl">Mín</label><input className="fin" type="number" min="0" step="0.001" value={f.min_stock||""} onChange={e=>s("min_stock",Math.max(0,Number(e.target.value)))} /></div></div>
+    {err&&<div style={{background:"#FFEBEE",color:"var(--rd)",fontSize:13,padding:"8px 12px",borderRadius:8,marginBottom:8}}>⚠️ {err}</div>}
+    <button className="btn bp" style={{marginTop:8}} disabled={!canSave} onClick={handleSave}>{I.check({size:18,color:"#fff"})} {data?"Guardar":"Agregar"}</button>
   </div></div>);
 }
 
@@ -456,6 +484,11 @@ function RecForm({data,ings,recs,onClose,onSave}){
   const updCombo=(i,k,v)=>setComboItems(p=>p.map((x,j)=>j===i?{...x,[k]:v}:x));
   const delCombo=(i)=>setComboItems(p=>p.filter((_,j)=>j!==i));
 
+  // Costo total de ingredientes
+  const totalCost=(f.ingredients||[]).reduce((s,ri)=>{const ig=ings.find(x=>x.id===ri.ingredient_id);return s+(ig?(ig.cost||0)*(ri.quantity||0):0);},0);
+  const profitNeg=!f.is_combo&&totalCost>0&&totalCost>(f.sale_price||0);
+  const canSave=f.name&&(f.sale_price||0)>0&&(f.is_combo||(f.ingredients||[]).length>0);
+
   return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>{data?"Editar":"Nueva"} Receta</h2></div><div className="pb">
     <div className="fg"><label className="fl">Nombre</label><input className="fin" value={f.name} onChange={e=>s("name",e.target.value)}/></div>
     <div className="fr"><div className="fg"><label className="fl">Categoría</label><input className="fin" value={f.category} onChange={e=>s("category",e.target.value)} placeholder="Ej: Tortas"/></div>
@@ -536,7 +569,14 @@ function RecForm({data,ings,recs,onClose,onSave}){
         })}
       </div>}
     </div>
-    <button className="btn bp" style={{marginTop:16}} onClick={()=>f.name&&onSave({...f,comboItems})}>{I.check({size:18,color:"#fff"})} {data?"Guardar":"Crear"}</button>
+    {profitNeg&&<div style={{background:"#FFF8E1",color:"#8D6E00",fontSize:13,padding:"10px 14px",borderRadius:10,marginTop:12,display:"flex",gap:8,alignItems:"flex-start"}}>
+      <span style={{fontSize:16}}>⚠️</span>
+      <div><strong>Precio por debajo del costo.</strong> El costo de ingredientes (${fm(totalCost)}) supera el precio de venta (${fi(f.sale_price||0)}). Podés guardar igual.</div>
+    </div>}
+    {!canSave&&<div style={{fontSize:12,color:"var(--t3)",marginTop:10,textAlign:"center"}}>
+      {!(f.sale_price>0)?"Ingresá un precio de venta mayor a 0":!(f.is_combo||(f.ingredients||[]).length>0)?"Agregá al menos un ingrediente":""}
+    </div>}
+    <button className="btn bp" style={{marginTop:12,opacity:canSave?1:0.5}} disabled={!canSave} onClick={()=>canSave&&onSave({...f,comboItems})}>{I.check({size:18,color:"#fff"})} {data?"Guardar":"Crear"}</button>
   </div></div>);
 }
 
@@ -642,6 +682,27 @@ function CancelDlg({order,recs,ings,onClose,onConfirm}){
   </div></div>);
 }
 
+function StockWarningDlg({deficits,onForce,onClose}){
+  return(<div className="modal"><div className="modal-c">
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+      <div style={{width:40,height:40,borderRadius:10,background:"#FFF8E1",display:"flex",alignItems:"center",justifyContent:"center"}}>{I.alert({size:20,color:"var(--yw)"})}</div>
+      <div><div style={{fontWeight:700,fontSize:16}}>Stock insuficiente</div><div style={{fontSize:12,color:"var(--t3)"}}>Algunos insumos quedarán en negativo</div></div>
+    </div>
+    <div className="c" style={{padding:"8px 12px",marginBottom:16,background:"var(--b2)"}}>
+      <div style={{fontSize:11,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",marginBottom:6}}>Insumos con déficit</div>
+      {deficits.map((d,i)=>(
+        <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",fontSize:13,borderBottom:"1px solid var(--b2)"}}>
+          <span style={{fontWeight:600}}>{d.name}</span>
+          <span style={{color:"var(--rd)",fontWeight:700}}>Stock: {d.current} → <strong>{d.after}</strong> {d.unit}</span>
+        </div>
+      ))}
+    </div>
+    <div style={{fontSize:13,color:"var(--t3)",marginBottom:16}}>Podés forzar la preparación igualmente. El stock quedará en negativo hasta que registres una compra.</div>
+    <button className="btn byw" style={{marginBottom:8}} onClick={onForce}>⚠️ Forzar preparación de todas formas</button>
+    <button className="btn bs" onClick={onClose}>Cancelar</button>
+  </div></div>);
+}
+
 // ═══════ EXPENSES ═══════
 function Expenses({exps,setExps,sett,msg,onClose}){
   const mo=td().slice(0,7)+"-01";
@@ -670,14 +731,34 @@ function Expenses({exps,setExps,sett,msg,onClose}){
 
 function ExpForm({onClose,onSave,sett}){
   const [f,setF]=useState({date:td(),description:"",amount:0,category:"Materia Prima",supplier:""});
-  const s=(k,v)=>setF(p=>({...p,[k]:v}));
+  const [err,setErr]=useState("");
+  const s=(k,v)=>{setErr("");setF(p=>({...p,[k]:v}));};
+  const descOk=f.description.trim().length>=4;
+  const amtOk=(f.amount||0)>0;
+  const canSave=descOk&&amtOk;
+  const handleSave=()=>{
+    if(!descOk){setErr("La descripción debe tener al menos 4 caracteres.");return;}
+    if(!amtOk){setErr("El monto debe ser mayor a 0.");return;}
+    onSave({...f,description:f.description.trim()});
+  };
   return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>Registrar Gasto</h2></div><div className="pb">
-    <div className="fg"><label className="fl">Descripción</label><input className="fin" value={f.description} onChange={e=>s("description",e.target.value)} placeholder="Ej: Gas"/></div>
-    <div className="fr"><div className="fg"><label className="fl">Monto</label><input className="fin" type="number" value={f.amount||""} onChange={e=>s("amount",Number(e.target.value))}/></div>
-    <div className="fg"><label className="fl">Fecha</label><input className="fin" type="date" value={f.date} onChange={e=>s("date",e.target.value)}/></div></div>
+    <div className="fg">
+      <label className="fl">Descripción</label>
+      <input className="fin" value={f.description} onChange={e=>s("description",e.target.value)} placeholder="Ej: Compra de harina"/>
+      {f.description&&!descOk&&<p style={{fontSize:11,color:"var(--rd)",margin:"3px 0 0 2px"}}>Mínimo 4 caracteres · ({f.description.trim().length}/4)</p>}
+    </div>
+    <div className="fr">
+      <div className="fg">
+        <label className="fl">Monto</label>
+        <input className="fin" type="number" min="0.01" step="0.01" value={f.amount||""} onChange={e=>s("amount",Math.max(0,Number(e.target.value)))}/>
+        {f.amount!==0&&!amtOk&&<p style={{fontSize:11,color:"var(--rd)",margin:"3px 0 0 2px"}}>Debe ser mayor a 0</p>}
+      </div>
+      <div className="fg"><label className="fl">Fecha</label><input className="fin" type="date" value={f.date} onChange={e=>s("date",e.target.value)}/></div>
+    </div>
     <div className="fg"><label className="fl">Categoría</label><select className="fin" value={f.category} onChange={e=>s("category",e.target.value)}>{(sett?.exp_cats||DEF.exp_cats).map(c=><option key={c}>{c}</option>)}</select></div>
     <div className="fg"><label className="fl">Proveedor</label><input className="fin" value={f.supplier} onChange={e=>s("supplier",e.target.value)}/></div>
-    <button className="btn bp" onClick={()=>f.description&&f.amount>0&&onSave(f)}>{I.check({size:18,color:"#fff"})} Registrar</button>
+    {err&&<div style={{background:"#FFEBEE",color:"var(--rd)",fontSize:13,padding:"8px 12px",borderRadius:8,marginBottom:8}}>⚠️ {err}</div>}
+    <button className="btn bp" disabled={!canSave} style={{opacity:canSave?1:0.5}} onClick={handleSave}>{I.check({size:18,color:"#fff"})} Registrar</button>
   </div></div>);
 }
 

@@ -221,7 +221,10 @@ export default function Catalog() {
       </div>
       <div className="pb" style={{ paddingBottom: 100 }}>
         <div className="cks"><div className="ckl">👤 Tus Datos</div><input className="cki" value={form.name} onChange={e => sf("name", e.target.value)} placeholder="Nombre y Apellido" /></div>
-        <div className="cks"><input className="cki" type="tel" value={form.phone} onChange={e => sf("phone", e.target.value)} placeholder="Teléfono (Ej: 1155443322)" /></div>
+        <div className="cks">
+          <input className="cki" type="tel" value={form.phone} onChange={e => sf("phone", e.target.value.replace(/\D/g, ""))} placeholder="Teléfono (Ej: 1155443322)" maxLength={15}/>
+          {form.phone && form.phone.length < 10 && <p style={{fontSize:11,color:"#C62828",margin:"4px 0 0 4px"}}>Mínimo 10 dígitos · ({form.phone.length}/10)</p>}
+        </div>
         <div className="cks"><input className="cki" type="email" value={form.email} onChange={e => sf("email", e.target.value)} placeholder="Email (opcional, para recibir tu pedido)" /></div>
 
         <div className="cks">
@@ -285,7 +288,7 @@ export default function Catalog() {
           {coupon && <><span style={{color:"var(--t3)",textDecoration:"line-through",fontSize:13}}>${fi(ctBase)}</span><span style={{flex:1}}/></>}
           <span>Total a pagar</span><span style={{ color: coupon?"var(--gn)":"var(--tx)",fontWeight:700 }}>${fi(ct)}</span>
         </div>
-        <button className="abtn" style={{ width: "100%" }} disabled={!form.name || !form.phone || (form.delivery === "envio" && !form.address) || sending} onClick={send}>
+        <button className="abtn" style={{ width: "100%" }} disabled={!form.name || !form.phone || form.phone.length < 10 || (form.delivery === "envio" && !form.address) || sending || ct === 0} onClick={send}>
           {sending ? "Enviando..." : "Confirmar y Enviar"}
         </button>
       </div>
@@ -315,7 +318,7 @@ export default function Catalog() {
           </div>
         ))}
         <div className="ct"><span>Total</span><span>${fi(ct)}</span></div>
-        <button className="abtn" style={{ width: "100%" }} onClick={() => { setShowCart(false); setShowCk(true); }}>Continuar</button>
+        <button className="abtn" style={{ width: "100%" }} disabled={cc === 0 || ct === 0} onClick={() => { setShowCart(false); setShowCk(true); }}>Continuar</button>
       </div>
     </div>
   );
