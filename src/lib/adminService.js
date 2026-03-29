@@ -147,7 +147,7 @@ export async function fetchDashboardStats() {
 
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('id, status, total, date, order_items(quantity, recipes(name))')
+      .select('id, status, total, date, order_items(*, recipes(name))')
       .neq('status', 'cancelled');
 
     if (error) { console.error('fetchDashboardStats:', error.message); return null; }
@@ -167,7 +167,7 @@ export async function fetchDashboardStats() {
     all.forEach(o => {
       (o.order_items || []).forEach(item => {
         const name = item.recipes?.name || 'Desconocido';
-        productCounts[name] = (productCounts[name] || 0) + (item.quantity || 1);
+        productCounts[name] = (productCounts[name] || 0) + (item.quantity || item.qty || 1);
       });
     });
     const topProducts = Object.entries(productCounts)
