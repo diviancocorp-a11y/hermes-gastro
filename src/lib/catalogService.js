@@ -37,11 +37,12 @@ export async function fetchCatalog() {
       cover_url: ''
     };
 
-    // 2. Traer recetas visibles
+    // 2. Traer recetas visibles y no archivadas
     const { data: products, error: prodErr } = await supabase
       .from('recipes')
       .select('id, name, category, sale_price, image_url, description, related_ids')
       .eq('visible', true)
+      .eq('is_archived', false)
       .order('category', { ascending: true });
 
     if (prodErr) {
@@ -99,7 +100,8 @@ export async function submitOrder(orderData) {
         is_gift: orderData.is_gift || false,
         gift_note: orderData.gift_note || '',
         coupon_id: orderData.coupon_id || null,
-        discount: orderData.discount || 0
+        discount: orderData.discount || 0,
+        delivery_date: orderData.delivery_date || null
       })
       .select('id')  // Necesitamos el ID para los items
       .single();
@@ -109,12 +111,24 @@ export async function submitOrder(orderData) {
       return false;
     }
 
-    // 3. Insertar los items del pedido
+    // 3. Calcular unit_cost por receta en el momento exacto del pedido (snapshot financiero)
+    const costMap = {};
+    const recipeIds = [...new Set(orderData.items.map(i => i.recipeId))];
+    for (const rid of recipeIds) {
+      const { data: ris } = await supabase
+        .from('recipe_ingredients')
+        .select('quantity, ingredients(cost)')
+        .eq('recipe_id', rid);
+      costMap[rid] = (ris || []).reduce((s, ri) => s + (ri.ingredients?.cost || 0) * (ri.quantity || 0), 0);
+    }
+
+    // 4. Insertar los items del pedido con snapshot de precio y costo
     const items = orderData.items.map(item => ({
       order_id: order.id,
       recipe_id: item.recipeId,
       qty: item.qty,
       unit_price: item.unitPrice,
+      unit_cost: costMap[item.recipeId] || 0,
       subtotal: item.qty * item.unitPrice
     }));
 

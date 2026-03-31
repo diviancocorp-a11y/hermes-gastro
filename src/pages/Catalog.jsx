@@ -35,7 +35,15 @@ export default function Catalog() {
   const [sent, setSent] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [sending, setSending] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "", delivery_date: "" });
+
+  // Fecha mínima para agendamiento: hoy o mañana si ya pasaron las 18:00
+  const getMinDate = () => {
+    const now = new Date();
+    const cutoff = new Date(); cutoff.setHours(18, 0, 0, 0);
+    const base = now >= cutoff ? new Date(now.getTime() + 86400000) : now;
+    return base.toISOString().split("T")[0];
+  };
   const [upsell, setUpsell] = useState(null); // {product, suggestions[]}
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState(null); // {id, discount_pct}
@@ -142,6 +150,7 @@ export default function Catalog() {
       coupon_id: coupon?.id || null,
       discount: discount,
       total: ct,
+      delivery_date: form.delivery_date || null,
       items: cart.map(i => ({
         recipeId: i.id,
         qty: i.qty,
@@ -156,7 +165,7 @@ export default function Catalog() {
       setOrderId(result.orderId);
       setSent(true);
       setCart([]);
-      setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "" });
+      setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "", delivery_date: "" });
       setCoupon(null); setCouponCode("");
     } else {
       console.warn("Pedido no se guardó en Supabase, pero se confirma al usuario.");
@@ -227,6 +236,20 @@ export default function Catalog() {
         </div>
         <div className="cks"><input className="cki" type="email" value={form.email} onChange={e => sf("email", e.target.value)} placeholder="Email (opcional, para recibir tu pedido)" /></div>
 
+        {/* Fecha de entrega / retiro */}
+        <div className="cks">
+          <div className="ckl">📅 ¿Para cuándo lo necesitás? <span style={{color:"var(--rd)",fontWeight:700}}>*</span></div>
+          <input
+            className="cki"
+            type="date"
+            value={form.delivery_date}
+            min={getMinDate()}
+            onChange={e => sf("delivery_date", e.target.value)}
+            style={{colorScheme:"light"}}
+          />
+          {!form.delivery_date && <p style={{fontSize:11,color:"var(--rd)",margin:"4px 0 0 4px"}}>Seleccioná la fecha de entrega o retiro</p>}
+        </div>
+
         <div className="cks">
           <div className="ckl">🛵 ¿Cómo lo recibís?</div>
           <div className="cko">
@@ -288,7 +311,7 @@ export default function Catalog() {
           {coupon && <><span style={{color:"var(--t3)",textDecoration:"line-through",fontSize:13}}>${fi(ctBase)}</span><span style={{flex:1}}/></>}
           <span>Total a pagar</span><span style={{ color: coupon?"var(--gn)":"var(--tx)",fontWeight:700 }}>${fi(ct)}</span>
         </div>
-        <button className="abtn" style={{ width: "100%" }} disabled={!form.name || !form.phone || form.phone.length < 10 || (form.delivery === "envio" && !form.address) || sending || ct === 0} onClick={send}>
+        <button className="abtn" style={{ width: "100%" }} disabled={!form.name || !form.phone || form.phone.length < 10 || !form.delivery_date || (form.delivery === "envio" && !form.address) || sending || ct === 0} onClick={send}>
           {sending ? "Enviando..." : "Confirmar y Enviar"}
         </button>
       </div>

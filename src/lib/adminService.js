@@ -28,6 +28,15 @@ export async function deleteRecipe(id) {
   const { error } = await supabase.from('recipes').delete().eq('id', id);
   return !error;
 }
+// Soft delete — marca como archivada sin borrar el historial
+export async function archiveRecipe(id) {
+  const { error } = await supabase.from('recipes').update({ is_archived: true }).eq('id', id);
+  return !error;
+}
+export async function unarchiveRecipe(id) {
+  const { error } = await supabase.from('recipes').update({ is_archived: false }).eq('id', id);
+  return !error;
+}
 
 // ─── ORDERS ───────────────────────────────────────────
 export async function fetchOrders() {

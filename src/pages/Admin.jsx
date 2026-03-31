@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { supabase } from "../lib/supabase";
 import { I, fi, fm, td, uid, ST, ST_L, ST_C, ST_B, CAT_E, CAT_CO, COLORS, playNotif } from "../lib/utils";
 import {
   login, logout, getSession,
-  fetchAllRecipes, upsertRecipe, deleteRecipe,
+  fetchAllRecipes, upsertRecipe, deleteRecipe, archiveRecipe, unarchiveRecipe,
   fetchOrders, updateOrderStatus,
   fetchSettings, updateSettings,
   fetchIngredients, upsertIngredient, deleteIngredient,
@@ -29,7 +30,30 @@ export default function Admin(){
   const [ings,setIngs]=useState([]);const [recs,setRecs]=useState([]);const [sales,setSales]=useState([]);
   const [exps,setExps]=useState([]);const [orders,setOrders]=useState([]);const [sett,setSett]=useState(DEF);
   const [loaded,setLoaded]=useState(false);const [ov,setOv]=useState(null);const [toast,setToast]=useState("");
+  const [newAlertCount,setNewAlertCount]=useState(0);
   const prev=useRef(0);
+  const alarmRef=useRef(null);
+
+  // Inicializar audio del pato + desbloquear en primer clic (browser autoplay policy)
+  useEffect(()=>{
+    const audio=new Audio('/quack.wav');
+    audio.loop=true;
+    alarmRef.current=audio;
+    // Los browsers bloquean audio hasta que haya interacción del usuario.
+    // En el primer clic, hacemos play+pause para desbloquear el contexto de audio.
+    const unlock=()=>{
+      audio.play().then(()=>{ audio.pause(); audio.currentTime=0; }).catch(()=>{});
+      document.removeEventListener('click',unlock);
+      document.removeEventListener('keydown',unlock);
+    };
+    document.addEventListener('click',unlock);
+    document.addEventListener('keydown',unlock);
+    return()=>{
+      audio.pause();
+      document.removeEventListener('click',unlock);
+      document.removeEventListener('keydown',unlock);
+    };
+  },[]);
 
   useEffect(()=>{getSession().then(s=>{setSession(s);setChecking(false);});},[]);
 
@@ -49,8 +73,56 @@ export default function Admin(){
 
   useEffect(()=>{if(session)loadAll();},[session,loadAll]);
 
-  // New order notification
-  useEffect(()=>{const n=orders.filter(o=>o.status===ST.new).length;if(loaded&&n>prev.current)playNotif();prev.current=n;},[orders,loaded]);
+  // Suscripción Realtime + Polling de respaldo (por si el WS falla)
+  const lastSeenAt=useRef(new Date().toISOString());
+  const knownIds=useRef(new Set());
+
+  const handleNewOrders=useCallback((newOrders)=>{
+    if(!newOrders||newOrders.length===0)return;
+    const genuinelyNew=newOrders.filter(o=>!knownIds.current.has(o.id));
+    if(genuinelyNew.length===0)return;
+    genuinelyNew.forEach(o=>knownIds.current.add(o.id));
+    if(genuinelyNew[0]?.created_at>lastSeenAt.current) lastSeenAt.current=genuinelyNew[0].created_at;
+    setOrders(p=>{
+      const existIds=new Set(p.map(x=>x.id));
+      const toAdd=genuinelyNew.filter(o=>!existIds.has(o.id));
+      return toAdd.length>0?[...toAdd,...p]:p;
+    });
+    setNewAlertCount(c=>c+genuinelyNew.length);
+    if(alarmRef.current){ alarmRef.current.currentTime=0; alarmRef.current.play().catch(()=>{}); }
+  },[]);
+
+  useEffect(()=>{
+    if(!session)return;
+
+    // Registrar IDs de pedidos ya cargados para no contarlos como nuevos
+    setOrders(cur=>{ cur.forEach(o=>knownIds.current.add(o.id)); return cur; });
+
+    // 1. Realtime (WebSocket) — llega instantáneo si el WS está activo
+    const ch=supabase
+      .channel('admin-new-orders-v2')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},async(payload)=>{
+        const {data}=await supabase
+          .from('orders').select('*, order_items(*, recipes(name))')
+          .eq('id',payload.new.id).single();
+        if(data) handleNewOrders([data]);
+      })
+      .subscribe((status)=>{
+        console.log('[Realtime] orders channel status:',status);
+      });
+
+    // 2. Polling fallback — cada 20s verifica si hay pedidos más nuevos que el último conocido
+    const poll=setInterval(async()=>{
+      const {data}=await supabase
+        .from('orders')
+        .select('*, order_items(*, recipes(name))')
+        .gt('created_at',lastSeenAt.current)
+        .order('created_at',{ascending:false});
+      if(data&&data.length>0) handleNewOrders(data);
+    },20000);
+
+    return()=>{ supabase.removeChannel(ch); clearInterval(poll); };
+  },[session,handleNewOrders]);
 
   const msg=useCallback(m=>{setToast(m);setTimeout(()=>setToast(""),2200);},[]);
 
@@ -70,7 +142,10 @@ export default function Admin(){
   const tS=useMemo(()=>sales.filter(s=>s.date>=mo).reduce((a,x)=>a+(x.total||0),0),[sales,mo]);
   const tE=useMemo(()=>exps.filter(e=>e.date>=mo).reduce((a,e)=>a+(e.amount||0),0),[exps,mo]);
   const prof=tS-tE;
+  // Costo histórico: usa unit_cost guardado en el momento de la venta (snapshot financiero)
+  // Si el campo no existe (ventas viejas), cae al costo actual como respaldo
   const tCR=useMemo(()=>sales.filter(s=>s.date>=mo).reduce((a,x)=>{
+    if(x.unit_cost!=null&&x.unit_cost>0) return a+(x.unit_cost*(x.qty||1));
     const r=recs.find(r2=>r2.id===x.recipe_id);return a+(r?rc(r)*(x.qty||1):0);
   },0),[sales,recs,rc,mo]);
   const mar=tS>0?(prof/tS*100):0;
@@ -124,7 +199,7 @@ export default function Admin(){
     if(ns===ST.done){
       const items=o.order_items||o.items||[];
       for(const it of items){
-        await createSale({date:td(),recipe_id:it.recipe_id,qty:it.quantity||it.qty||1,unit_price:it.unit_price||0,total:(it.quantity||it.qty||1)*(it.unit_price||0)});
+        await createSale({date:td(),recipe_id:it.recipe_id,qty:it.quantity||it.qty||1,unit_price:it.unit_price||0,unit_cost:it.unit_cost||0,total:(it.quantity||it.qty||1)*(it.unit_price||0)});
       }
       setSales(prev2=>{const nw=[...prev2];items.forEach(it=>{nw.push({id:uid(),date:td(),recipe_id:it.recipe_id,qty:it.quantity||it.qty||1,unit_price:it.unit_price||0,total:(it.quantity||it.qty||1)*(it.unit_price||0)});});return nw;});
       // Generar cupón para el cliente
@@ -170,6 +245,13 @@ export default function Admin(){
     setOrders(p=>[o,...p]);playNotif();msg("Pedido creado");
   };
 
+  // Acuse de recibo: apaga alarma, cierra overlay, navega a pedidos
+  const ackOrders=useCallback(()=>{
+    if(alarmRef.current){ alarmRef.current.pause(); alarmRef.current.currentTime=0; }
+    setNewAlertCount(0);
+    setTab('orders');
+  },[]);
+
   if(checking)return <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",color:"var(--t3)"}}>Cargando...</div>;
   if(!session)return <LoginScreen onLogin={async()=>{const s=await getSession();setSession(s);}}/>;
 
@@ -195,6 +277,9 @@ export default function Admin(){
     {ov?.type==="expenses"&&<Expenses {...{exps,setExps,sett,msg}} onClose={()=>setOv(null)}/>}
     {ov?.type==="cancel"&&<CancelDlg order={ov.order} recs={recs} ings={ings} onClose={()=>setOv(null)} onConfirm={ret=>confirmCancel(ov.orderId,ret)}/>}
     {ov?.type==="stockWarning"&&<StockWarningDlg deficits={ov.deficits} onClose={()=>setOv(null)} onForce={async()=>{setOv(null);await moveOrd(ov.orderId,ST.prep,true);}}/>}
+
+    {/* Overlay bloqueante de nuevos pedidos — z-index 9999, por encima de todo */}
+    {newAlertCount>0&&<NewOrderOverlay count={newAlertCount} onAck={ackOrders}/>}
 
     <nav className="nv">
       {[{id:"home",icon:I.home,l:"Inicio"},{id:"stock",icon:I.box,l:"Stock"},{id:"recipes",icon:I.recipe,l:"Recetas"},{id:"orders",icon:I.orders,l:"Pedidos",badge:orders.filter(o=>o.status===ST.new).length},{id:"sales",icon:I.cart,l:"Ventas"}].map(t=>(
@@ -396,19 +481,28 @@ function IngForm({data,onClose,onSave,onDel,sett}){
 // ═══════ RECIPES ═══════
 function Recipes({recs,setRecs,ings,rc,ov,setOv,msg,loadAll}){
   const [sr,setSr]=useState("");
-  const filt=recs.filter(r=>r.name?.toLowerCase().includes(sr.toLowerCase()));
+  const [showArchived,setShowArchived]=useState(false);
+  const active=recs.filter(r=>!r.is_archived);
+  const archived=recs.filter(r=>r.is_archived);
+  const base=showArchived?archived:active;
+  const filt=base.filter(r=>r.name?.toLowerCase().includes(sr.toLowerCase()));
 
   return(<>
-    <div className="s"><div className="st">Recetas</div></div>
+    <div className="s"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div className="st" style={{margin:0}}>Recetas</div>
+      {archived.length>0&&<button className="btn bs bsm" onClick={()=>setShowArchived(p=>!p)} style={{color:showArchived?"var(--ac)":"var(--t3)",borderColor:showArchived?"var(--ac)":"var(--b2)"}}>
+        📦 Archivadas ({archived.length})
+      </button>}
+    </div></div>
     <div className="sb">{I.search({size:16})}<input className="fin" placeholder="Buscar..." value={sr} onChange={e=>setSr(e.target.value)}/></div>
+    {showArchived&&<div className="ab" style={{margin:"0 16px 8px",background:"var(--yl)",color:"var(--yw)"}}>Mostrando recetas archivadas · No aparecen en el catálogo</div>}
     <div className="s">
-      {filt.length===0?<div className="c"><div className="empty"><div className="eic">📋</div><div>Sin recetas</div></div></div>
+      {filt.length===0?<div className="c"><div className="empty"><div className="eic">📋</div><div>{showArchived?"Sin recetas archivadas":"Sin recetas"}</div></div></div>
       :filt.map(r=>{
         const c=rc(r);const m=r.sale_price>0?((r.sale_price-c)/r.sale_price*100):0;
         const bc=m>=50?"var(--gn)":m>=30?"var(--yw)":"var(--rd)";
-        return(<div key={r.id} className="c" onClick={()=>setOv({type:"viewR",data:r})}>
+        return(<div key={r.id} className="c" style={{opacity:r.is_archived?0.6:1}} onClick={()=>setOv({type:"viewR",data:r})}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-            <div><div style={{fontWeight:700,fontSize:15}}>{r.name}</div><div style={{fontSize:12,color:"var(--t3)"}}>{r.category} · {(r.ingredients||[]).length} ins.</div></div>
+            <div><div style={{fontWeight:700,fontSize:15}}>{r.name}{r.is_archived&&<span style={{marginLeft:6,fontSize:11,background:"var(--rl)",color:"var(--rd)",padding:"1px 6px",borderRadius:8,fontWeight:700}}>ARCHIVADA</span>}</div><div style={{fontSize:12,color:"var(--t3)"}}>{r.category} · {(r.ingredients||[]).length} ins.</div></div>
             <div style={{textAlign:"right",display:"flex",alignItems:"center",gap:8}}>
               <div><div style={{fontWeight:700,fontSize:15}}>${fi(r.sale_price)}</div><div style={{fontSize:12,color:"var(--t3)"}}>C: ${fm(c)}</div></div>
               {r.visible!==false?<span style={{color:"var(--gn)"}}>{I.eye({size:14})}</span>:<span style={{color:"var(--t3)"}}>{I.eyeOff({size:14})}</span>}
@@ -427,7 +521,10 @@ function Recipes({recs,setRecs,ings,rc,ov,setOv,msg,loadAll}){
       let d={...ov.data};
       if(d.is_combo&&d.id){const ci=await fetchComboItems(d.id);d.comboItems=ci.map(x=>({sub_recipe_id:x.sub_recipe_id,qty:x.qty}));}
       setOv({type:"editR",data:d});
-    }} onDel={async(id)=>{await deleteRecipe(id);setRecs(p=>p.filter(x=>x.id!==id));setOv(null);msg("Eliminada");}}/>}
+    }}
+    onArchive={async(id)=>{await archiveRecipe(id);setRecs(p=>p.map(x=>x.id===id?{...x,is_archived:true}:x));setOv(null);msg("Receta archivada · El historial se conserva");}}
+    onUnarchive={async(id)=>{await unarchiveRecipe(id);setRecs(p=>p.map(x=>x.id===id?{...x,is_archived:false}:x));setOv(null);msg("Receta restaurada");}}
+    />}
     {ov?.type==="editR"&&<RecForm data={ov.data} ings={ings} recs={recs} onClose={()=>setOv(null)} onSave={async(r)=>{
       const saved=await upsertRecipe({id:r.id,name:r.name,category:r.category,sale_price:r.sale_price,visible:r.visible,image_url:r.image_url,description:r.description,related_ids:r.related_ids||[],is_combo:r.is_combo||false});
       if(saved){
@@ -439,10 +536,13 @@ function Recipes({recs,setRecs,ings,rc,ov,setOv,msg,loadAll}){
   </>);
 }
 
-function RecDet({r,ings,rc,onClose,onEdit,onDel}){
+function RecDet({r,ings,rc,onClose,onEdit,onArchive,onUnarchive}){
   const c=rc(r);const m=r.sale_price>0?((r.sale_price-c)/r.sale_price*100):0;
-  return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>{r.name}</h2><button onClick={onEdit}>{I.edit({})}</button></div><div className="pb">
-    <span className="badge" style={{background:r.visible!==false?"var(--gl)":"var(--rl)",color:r.visible!==false?"var(--gn)":"var(--rd)",marginBottom:12,display:"inline-block"}}>{r.visible!==false?"Visible":"Oculto"}</span>
+  return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>{r.name}</h2>{!r.is_archived&&<button onClick={onEdit}>{I.edit({})}</button>}</div><div className="pb">
+    <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+      <span className="badge" style={{background:r.visible!==false?"var(--gl)":"var(--rl)",color:r.visible!==false?"var(--gn)":"var(--rd)"}}>{r.visible!==false?"Visible":"Oculto"}</span>
+      {r.is_archived&&<span className="badge" style={{background:"var(--rl)",color:"var(--rd)"}}>📦 Archivada</span>}
+    </div>
     <div className="sg" style={{padding:0,marginBottom:16}}>
       <div className="sc"><div className="sl">Venta</div><div className="sv2">${fi(r.sale_price)}</div></div>
       <div className="sc"><div className="sl">Costo</div><div className="sv2 sva">${fm(c)}</div></div>
@@ -457,7 +557,11 @@ function RecDet({r,ings,rc,onClose,onEdit,onDel}){
       })}
       <div className="rir" style={{fontWeight:700,borderTop:"2px solid var(--b2)"}}><div className="rin">TOTAL</div><div className="riq"></div><div className="ric">${fm(c)}</div></div>
     </div>
-    <button className="btn bd" style={{marginTop:16}} onClick={()=>onDel(r.id)}>{I.trash({size:16})} Eliminar</button>
+    {r.is_archived
+      ?(<><div style={{fontSize:12,color:"var(--t3)",marginTop:12,padding:"8px 12px",background:"var(--b2)",borderRadius:8}}>Esta receta está archivada. No aparece en el catálogo pero su historial se conserva.</div>
+        <button className="btn bgn" style={{marginTop:12}} onClick={()=>onUnarchive(r.id)}>↩ Restaurar receta</button></>)
+      :(<button className="btn bd" style={{marginTop:16}} onClick={()=>{if(window.confirm(`¿Archivar "${r.name}"? No se eliminará el historial de ventas.`))onArchive(r.id);}}>{I.trash({size:16})} Archivar receta</button>)
+    }
   </div></div>);
 }
 
@@ -581,6 +685,18 @@ function RecForm({data,ings,recs,onClose,onSave}){
 }
 
 // ═══════ ORDERS ═══════
+// Devuelve el badge de fecha de entrega con etiqueta contextual
+function DeliveryBadge({date}){
+  if(!date)return null;
+  const today=td();
+  const tom=new Date();tom.setDate(tom.getDate()+1);const tomStr=tom.toISOString().split("T")[0];
+  const past=date<today;
+  const label=date===today?"🔴 Para HOY":date===tomStr?"🟡 Para MAÑANA":past?`⚠️ Vencido ${new Date(date+"T12:00:00").toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}`:`📅 Para el ${new Date(date+"T12:00:00").toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}`;
+  const bg=past?"var(--rl)":date===today?"var(--rl)":date===tomStr?"var(--yl)":"var(--b2)";
+  const co=past?"var(--rd)":date===today?"var(--rd)":date===tomStr?"var(--yw)":"var(--t3)";
+  return(<span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:8,background:bg,color:co}}>{label}</span>);
+}
+
 function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
   const [fil,setFil]=useState(ST.new);const [showH,setShowH]=useState(false);const t=td();
   const cts=useMemo(()=>{const c={};Object.values(ST).forEach(s=>{c[s]=orders.filter(o=>o.status===s&&(s===ST.done||s===ST.cancel?o.date===t:true)).length;});return c;},[orders,t]);
@@ -606,6 +722,7 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
             <span className="badge" style={{background:sc?.bg,color:sc?.tx}}>{ST_L[o.status]}</span>
           </div>
           {items.map((it,i)=>{const r=recs.find(x=>x.id===it.recipe_id);return(<div key={i} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",fontSize:13}}><span>{r?.name||"?"} × {it.quantity||it.qty||1}</span><span style={{fontWeight:600}}>${fi((it.quantity||it.qty||1)*(it.unit_price||0))}</span></div>);})}
+          {o.delivery_date&&<div style={{marginTop:6}}><DeliveryBadge date={o.delivery_date}/></div>}
           {o.is_gift&&<div style={{fontSize:12,color:"var(--ac)",fontWeight:600,marginTop:4,padding:"4px 8px",background:"var(--al)",borderRadius:6}}>🎁 Pedido regalo{o.gift_note?`: "${o.gift_note}"`:""}</div>}
           {o.note&&<div style={{fontSize:12,color:"var(--t3)",fontStyle:"italic",marginTop:4,padding:"4px 8px",background:"var(--b2)",borderRadius:6}}>💬 {o.note}</div>}
           <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0 0",borderTop:"1px solid var(--b2)",marginTop:8,fontWeight:700,fontSize:16}}><span>Total</span><span>${fi(o.total)}</span></div>
@@ -631,28 +748,31 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
 
 function OrdForm({recs,onClose,onSave}){
   const [cust,setCust]=useState("");const [ph,setPh]=useState("");const [note,setNote]=useState("");
+  const [delivDate,setDelivDate]=useState("");
   const [items,setItems]=useState([{recipe_id:"",qty:1}]);
   const add=()=>setItems(p=>[...p,{recipe_id:"",qty:1}]);
   const upd=(i,k,v)=>setItems(p=>p.map((x,j)=>j===i?{...x,[k]:v}:x));
   const rm=i=>setItems(p=>p.filter((_,j)=>j!==i));
   const tot=items.reduce((s,it)=>{const r=recs.find(x=>x.id===it.recipe_id);return s+(r?(r.sale_price||0)*it.qty:0);},0);
   const ok=cust&&items.some(it=>it.recipe_id&&it.qty>0);
+  const todayStr=td();
 
   return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>Nuevo Pedido</h2></div><div className="pb">
     <div className="fg"><label className="fl">Cliente</label><input className="fin" value={cust} onChange={e=>setCust(e.target.value)} placeholder="Nombre"/></div>
     <div className="fr"><div className="fg"><label className="fl">Teléfono</label><input className="fin" value={ph} onChange={e=>setPh(e.target.value)}/></div>
     <div className="fg"><label className="fl">Nota</label><input className="fin" value={note} onChange={e=>setNote(e.target.value)}/></div></div>
+    <div className="fg"><label className="fl">📅 Fecha de entrega</label><input className="fin" type="date" value={delivDate} min={todayStr} onChange={e=>setDelivDate(e.target.value)} style={{colorScheme:"light"}}/></div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",margin:"4px 0 12px"}}><label className="fl" style={{margin:0}}>Productos</label><button className="btn bp bsm" onClick={add}>{I.plus({size:14})} Producto</button></div>
     {items.map((it,i)=>{const r=recs.find(x=>x.id===it.recipe_id);return(<div key={i} className="c" style={{padding:10,marginBottom:8,position:"relative"}}>
       {items.length>1&&<button onClick={()=>rm(i)} style={{position:"absolute",top:6,right:6,background:"none",border:"none",cursor:"pointer",color:"var(--rd)"}}>{I.x({size:14})}</button>}
-      <div className="fg" style={{marginBottom:6}}><select className="fin" value={it.recipe_id} onChange={e=>upd(i,"recipe_id",e.target.value)}><option value="">Seleccionar...</option>{recs.filter(r2=>r2.visible!==false).map(r2=><option key={r2.id} value={r2.id}>{r2.name} — ${fi(r2.sale_price)}</option>)}</select></div>
+      <div className="fg" style={{marginBottom:6}}><select className="fin" value={it.recipe_id} onChange={e=>upd(i,"recipe_id",e.target.value)}><option value="">Seleccionar...</option>{recs.filter(r2=>r2.visible!==false&&!r2.is_archived).map(r2=><option key={r2.id} value={r2.id}>{r2.name} — ${fi(r2.sale_price)}</option>)}</select></div>
       <div className="fr"><div className="fg" style={{marginBottom:0}}><label className="fl">Cant.</label><input className="fin" type="number" min="1" value={it.qty} onChange={e=>upd(i,"qty",Number(e.target.value))}/></div>
       {r&&<div className="fg" style={{marginBottom:0}}><label className="fl">Sub</label><div style={{padding:"12px 0",fontWeight:700}}>${fi((r.sale_price||0)*it.qty)}</div></div>}</div>
     </div>);})}
     {tot>0&&<div className="c" style={{background:"var(--al)",textAlign:"center",marginTop:8}}><div style={{fontSize:12,fontWeight:600,color:"var(--ac)"}}>TOTAL</div><div style={{fontSize:28,fontWeight:700,fontFamily:"'DM Serif Display',serif",color:"var(--ac)"}}>${fi(tot)}</div></div>}
     <button className="btn bp" style={{marginTop:16}} disabled={!ok} onClick={()=>{if(!ok)return;
       const f=items.filter(it=>it.recipe_id&&it.qty>0).map(it=>{const r=recs.find(x=>x.id===it.recipe_id);return{recipe_id:it.recipe_id,quantity:it.qty,unit_price:r?.sale_price||0,subtotal:(r?.sale_price||0)*it.qty};});
-      onSave({id:uid(),customer:cust,phone:ph,note,order_items:f,items:f,total:f.reduce((s,it)=>s+it.subtotal,0),status:ST.new,date:td(),created_at:new Date().toISOString()});
+      onSave({id:uid(),customer:cust,phone:ph,note,delivery_date:delivDate||null,order_items:f,items:f,total:f.reduce((s,it)=>s+it.subtotal,0),status:ST.new,date:td(),created_at:new Date().toISOString()});
     }}>{I.check({size:18,color:"#fff"})} Crear</button>
   </div></div>);
 }
@@ -701,6 +821,37 @@ function StockWarningDlg({deficits,onForce,onClose}){
     <button className="btn byw" style={{marginBottom:8}} onClick={onForce}>⚠️ Forzar preparación de todas formas</button>
     <button className="btn bs" onClick={onClose}>Cancelar</button>
   </div></div>);
+}
+
+// ═══════ NEW ORDER OVERLAY ═══════
+function NewOrderOverlay({count,onAck}){
+  return(
+    <div onClick={onAck} style={{
+      position:"fixed",inset:0,zIndex:9999,
+      background:"var(--ac,#C45D3E)",
+      display:"flex",flexDirection:"column",
+      alignItems:"center",justifyContent:"center",
+      cursor:"pointer",userSelect:"none",
+      padding:32,textAlign:"center"
+    }}>
+      <div style={{fontSize:80,marginBottom:16,animation:"bounce 0.6s infinite alternate"}}>🦆</div>
+      <div style={{fontSize:48,fontWeight:900,color:"#fff",lineHeight:1.1,marginBottom:12,textShadow:"0 2px 8px rgba(0,0,0,0.2)"}}>
+        ¡{count} PEDIDO{count!==1?"S":""} NUEVO{count!==1?"S":""}!
+      </div>
+      <div style={{fontSize:18,color:"rgba(255,255,255,0.85)",marginBottom:32,fontWeight:500}}>
+        Tocá en cualquier lugar para ver
+      </div>
+      <div style={{
+        background:"rgba(255,255,255,0.25)",
+        border:"2px solid rgba(255,255,255,0.6)",
+        borderRadius:40,padding:"14px 36px",
+        fontSize:18,fontWeight:700,color:"#fff",
+        backdropFilter:"blur(4px)"
+      }}>
+        Ver pedidos →
+      </div>
+    </div>
+  );
 }
 
 // ═══════ EXPENSES ═══════
