@@ -34,13 +34,12 @@ export default function Admin(){
   const prev=useRef(0);
   const alarmRef=useRef(null);
 
-  // Inicializar audio del pato + desbloquear en primer clic (browser autoplay policy)
+  // Inicializar audio del pato (MP3, loop 3s) + desbloquear en primer clic
+  const alarmTimer=useRef(null);
   useEffect(()=>{
-    const audio=new Audio('/quack.wav');
+    const audio=new Audio('/quack.mp3');
     audio.loop=true;
     alarmRef.current=audio;
-    // Los browsers bloquean audio hasta que haya interacción del usuario.
-    // En el primer clic, hacemos play+pause para desbloquear el contexto de audio.
     const unlock=()=>{
       audio.play().then(()=>{ audio.pause(); audio.currentTime=0; }).catch(()=>{});
       document.removeEventListener('click',unlock);
@@ -50,6 +49,7 @@ export default function Admin(){
     document.addEventListener('keydown',unlock);
     return()=>{
       audio.pause();
+      if(alarmTimer.current) clearTimeout(alarmTimer.current);
       document.removeEventListener('click',unlock);
       document.removeEventListener('keydown',unlock);
     };
@@ -89,7 +89,13 @@ export default function Admin(){
       return toAdd.length>0?[...toAdd,...p]:p;
     });
     setNewAlertCount(c=>c+genuinelyNew.length);
-    if(alarmRef.current){ alarmRef.current.currentTime=0; alarmRef.current.play().catch(()=>{}); }
+    // Audio loop por 3 segundos
+    if(alarmRef.current){
+      if(alarmTimer.current) clearTimeout(alarmTimer.current);
+      alarmRef.current.currentTime=0;
+      alarmRef.current.play().catch(()=>{});
+      alarmTimer.current=setTimeout(()=>{ if(alarmRef.current){ alarmRef.current.pause(); alarmRef.current.currentTime=0; } },3000);
+    }
   },[]);
 
   useEffect(()=>{
@@ -248,6 +254,7 @@ export default function Admin(){
   // Acuse de recibo: apaga alarma, cierra overlay, navega a pedidos
   const ackOrders=useCallback(()=>{
     if(alarmRef.current){ alarmRef.current.pause(); alarmRef.current.currentTime=0; }
+    if(alarmTimer.current){ clearTimeout(alarmTimer.current); alarmTimer.current=null; }
     setNewAlertCount(0);
     setTab('orders');
   },[]);

@@ -35,7 +35,8 @@ export default function Catalog() {
   const [sent, setSent] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [sending, setSending] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "", delivery_date: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "" });
+  const [scheduleMode, setScheduleMode] = useState("now"); // "now" | "later"
 
   // Fecha mínima para agendamiento: hoy o mañana si ya pasaron las 18:00
   const getMinDate = () => {
@@ -137,6 +138,13 @@ export default function Catalog() {
   // Enviar pedido a Supabase
   const send = async () => {
     setSending(true);
+    // Construir nota con hora programada si aplica
+    let finalNote = form.note || "";
+    if (scheduleMode === "later" && form.delivery_time) {
+      const timeTag = `[Hora programada: ${form.delivery_time}]`;
+      finalNote = finalNote ? `${timeTag} ${finalNote}` : timeTag;
+    }
+
     const orderData = {
       customer: form.name,
       phone: form.phone,
@@ -144,13 +152,13 @@ export default function Catalog() {
       delivery: form.delivery,
       payment: form.payment,
       address: form.address,
-      note: form.note,
+      note: finalNote,
       is_gift: form.is_gift,
       gift_note: form.is_gift ? form.gift_note : '',
       coupon_id: coupon?.id || null,
       discount: discount,
       total: ct,
-      delivery_date: form.delivery_date || null,
+      delivery_date: scheduleMode === "later" ? (form.delivery_date || null) : null,
       items: cart.map(i => ({
         recipeId: i.id,
         qty: i.qty,
@@ -165,7 +173,8 @@ export default function Catalog() {
       setOrderId(result.orderId);
       setSent(true);
       setCart([]);
-      setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "", delivery_date: "" });
+      setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "" });
+      setScheduleMode("now");
       setCoupon(null); setCouponCode("");
     } else {
       console.warn("Pedido no se guardó en Supabase, pero se confirma al usuario.");
@@ -236,19 +245,29 @@ export default function Catalog() {
         </div>
         <div className="cks"><input className="cki" type="email" value={form.email} onChange={e => sf("email", e.target.value)} placeholder="Email (opcional, para recibir tu pedido)" /></div>
 
-        {/* Fecha de entrega / retiro */}
+        {/* Cuándo lo necesitás: Ahora o Programar */}
         <div className="cks">
-          <div className="ckl">📅 ¿Para cuándo lo necesitás? <span style={{color:"var(--rd)",fontWeight:700}}>*</span></div>
-          <input
-            className="cki"
-            type="date"
-            value={form.delivery_date}
-            min={getMinDate()}
-            onChange={e => sf("delivery_date", e.target.value)}
-            style={{colorScheme:"light"}}
-          />
-          {!form.delivery_date && <p style={{fontSize:11,color:"var(--rd)",margin:"4px 0 0 4px"}}>Seleccioná la fecha de entrega o retiro</p>}
+          <div className="ckl">📅 ¿Para cuándo lo necesitás?</div>
+          <div className="cko">
+            <div className={`ckv ${scheduleMode === "now" ? "on" : ""}`} onClick={() => { setScheduleMode("now"); sf("delivery_date", ""); sf("delivery_time", ""); }}>Pedir ahora</div>
+            <div className={`ckv ${scheduleMode === "later" ? "on" : ""}`} onClick={() => setScheduleMode("later")}>Programar</div>
+          </div>
         </div>
+        {scheduleMode === "later" && (
+          <div className="cks" style={{background:"var(--b2)",borderRadius:12,padding:"12px 14px",marginTop:-4}}>
+            <div style={{display:"flex",gap:10}}>
+              <div style={{flex:1}}>
+                <label style={{fontSize:11,fontWeight:700,color:"var(--t3)",marginBottom:4,display:"block"}}>Fecha</label>
+                <input className="cki" type="date" value={form.delivery_date} min={getMinDate()} onChange={e => sf("delivery_date", e.target.value)} style={{colorScheme:"light"}} />
+              </div>
+              <div style={{flex:1}}>
+                <label style={{fontSize:11,fontWeight:700,color:"var(--t3)",marginBottom:4,display:"block"}}>Hora (aprox.)</label>
+                <input className="cki" type="time" value={form.delivery_time} onChange={e => sf("delivery_time", e.target.value)} style={{colorScheme:"light"}} />
+              </div>
+            </div>
+            {!form.delivery_date && <p style={{fontSize:11,color:"var(--rd)",margin:"6px 0 0 2px"}}>Seleccioná fecha y hora para tu pedido</p>}
+          </div>
+        )}
 
         <div className="cks">
           <div className="ckl">🛵 ¿Cómo lo recibís?</div>
@@ -311,7 +330,7 @@ export default function Catalog() {
           {coupon && <><span style={{color:"var(--t3)",textDecoration:"line-through",fontSize:13}}>${fi(ctBase)}</span><span style={{flex:1}}/></>}
           <span>Total a pagar</span><span style={{ color: coupon?"var(--gn)":"var(--tx)",fontWeight:700 }}>${fi(ct)}</span>
         </div>
-        <button className="abtn" style={{ width: "100%" }} disabled={!form.name || !form.phone || form.phone.length < 10 || !form.delivery_date || (form.delivery === "envio" && !form.address) || sending || ct === 0} onClick={send}>
+        <button className="abtn" style={{ width: "100%" }} disabled={!form.name || !form.phone || form.phone.length < 10 || (scheduleMode === "later" && !form.delivery_date) || (form.delivery === "envio" && !form.address) || sending || ct === 0} onClick={send}>
           {sending ? "Enviando..." : "Confirmar y Enviar"}
         </button>
       </div>

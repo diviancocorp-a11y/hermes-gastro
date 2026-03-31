@@ -99,7 +99,7 @@ export default function OrderTracker() {
           <div className="tracker-logo">🦆</div>
         </Link>
         <div>
-          <h1 className="tracker-title">Pato Tracker</h1>
+          <h1 className="tracker-title">Sigue tu pato pedido</h1>
           <p className="tracker-sub">Seguimiento en tiempo real</p>
         </div>
       </div>
