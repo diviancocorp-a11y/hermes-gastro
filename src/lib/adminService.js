@@ -21,7 +21,13 @@ export async function fetchAllRecipes() {
 }
 export async function upsertRecipe(recipe) {
   const { data, error } = await supabase.from('recipes').upsert(recipe).select().single();
-  if (error) { console.error('upsertRecipe:', error.message); return null; }
+  if (error) {
+    console.error('upsertRecipe:', error.message);
+    if (error.message?.includes('unique') || error.message?.includes('duplicate') || error.code === '23505') {
+      return { __error: 'duplicate', message: 'Ya existe una receta activa con ese nombre' };
+    }
+    return null;
+  }
   return data;
 }
 export async function deleteRecipe(id) {
@@ -431,3 +437,36 @@ export async function notifyWhatsApp(phone, customerName, status, orderId) {
     return false;
   }
 }
+
+// ─── CRM / CUSTOMERS ─────────────────────────────────
+export async function fetchCustomers() {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .order('last_order_at', { ascending: false });
+  if (error) { console.error('fetchCustomers:', error.message); return []; }
+  return data || [];
+}
+
+export async function fetchCustomerStats() {
+  // Build CRM from orders data (more reliable than customers table)
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select('customer, phone, email, total, status, created_at')
+    .neq('status', 'cancelled');
+  if (error || !orders) return [];
+  const map = {};
+  orders.forEach(o => {
+    const key = o.phone || o.email || o.customer;
+    if (!key) return;
+    if (!map[key]) map[key] = { name: o.customer, phone: o.phone || '', email: o.email || '', orders: 0, total: 0, last_order: '' };
+    map[key].orders++;
+    map[key].total += (o.total || 0);
+    if (!map[key].name && o.customer) map[key].name = o.customer;
+    if (!map[key].phone && o.phone) map[key].phone = o.phone;
+    if (!map[key].email && o.email) map[key].email = o.email;
+    if (o.created_at > map[key].last_order) map[key].last_order = o.created_at;
+  });
+  return Object.values(map).sort((a, b) => b.total - a.total);
+}
+   

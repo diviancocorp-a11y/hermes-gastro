@@ -56,6 +56,30 @@ export default function Catalog() {
 
   const sf = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
+  // --- Verificar si el local está abierto ahora según store_hours ---
+  const getStoreStatus = () => {
+    const hrs = sett?.store_hours;
+    if (!hrs) return { open: true, msg: "" }; // sin horarios configurados = siempre abierto
+    const now = new Date();
+    const dayIdx = (now.getDay() + 6) % 7; // JS: 0=Dom → nuestro: 0=Lun
+    const today = hrs[dayIdx];
+    if (!today || today.closed) return { open: false, msg: "Hoy no abrimos" };
+    if (!today.open || !today.close) return { open: true, msg: "" };
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const [oh, om] = today.open.split(":").map(Number);
+    const [ch, cm] = today.close.split(":").map(Number);
+    const openMins = oh * 60 + om;
+    const closeMins = ch * 60 + cm;
+    if (nowMins < openMins) return { open: false, msg: `Abrimos a las ${today.open}` };
+    if (nowMins >= closeMins) return { open: false, msg: `Cerramos a las ${today.close}. Podés programar tu pedido.` };
+    return { open: true, msg: `Abierto hasta las ${today.close}` };
+  };
+  const storeStatus = getStoreStatus();
+  // Si el local está cerrado, forzar modo "Programar"
+  useEffect(() => {
+    if (!storeStatus.open && scheduleMode === "now") setScheduleMode("later");
+  }, [storeStatus.open]);
+
   // --- Cargar datos de Supabase al montar ---
   useEffect(() => {
     async function loadData() {
@@ -249,9 +273,11 @@ export default function Catalog() {
         <div className="cks">
           <div className="ckl">📅 ¿Para cuándo lo necesitás?</div>
           <div className="cko">
-            <div className={`ckv ${scheduleMode === "now" ? "on" : ""}`} onClick={() => { setScheduleMode("now"); sf("delivery_date", ""); sf("delivery_time", ""); }}>Pedir ahora</div>
+            <div className={`ckv ${scheduleMode === "now" ? "on" : ""} ${!storeStatus.open ? "dis" : ""}`} onClick={() => { if(!storeStatus.open){setScheduleMode("later");return;} setScheduleMode("now"); sf("delivery_date", ""); sf("delivery_time", ""); }}>Pedir ahora</div>
             <div className={`ckv ${scheduleMode === "later" ? "on" : ""}`} onClick={() => setScheduleMode("later")}>Programar</div>
           </div>
+          {!storeStatus.open && <p style={{fontSize:12,color:"var(--rd)",margin:"6px 0 0 2px"}}>⏰ {storeStatus.msg}</p>}
+          {storeStatus.open && storeStatus.msg && scheduleMode === "now" && <p style={{fontSize:11,color:"var(--gn)",margin:"4px 0 0 2px"}}>✓ {storeStatus.msg}</p>}
         </div>
         {scheduleMode === "later" && (
           <div className="cks" style={{background:"var(--b2)",borderRadius:12,padding:"12px 14px",marginTop:-4}}>
@@ -495,19 +521,4 @@ export default function Catalog() {
             <div className="ups-list">
               {upsell.suggestions.map(s => (
                 <div key={s.id} className="ups-card" onClick={() => addFromUpsell(s)}>
-                  <img className="ups-img" src={s.image_url} alt={s.name} onError={e => { e.target.style.display='none'; }} />
-                  <div className="ups-info">
-                    <div className="ups-name">{s.name}</div>
-                    <div className="ups-price">${fi(s.sale_price)}</div>
-                  </div>
-                  <button className="ups-btn">+</button>
-                </div>
-              ))}
-            </div>
-            <button className="ups-skip" onClick={() => setUpsell(null)}>No, gracias</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+                  <img className="ups-img" src={s.image_url} alt={s.name} onError={e => { e.target.styl

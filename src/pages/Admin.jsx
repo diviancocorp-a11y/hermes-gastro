@@ -13,7 +13,7 @@ import {
   fetchDashboardStats, updateIngredientStock,
   uploadRecipeImage,
   uploadCoverImage,
-  fetchWasteLog, registerWaste,
+  fetchWasteLog, registerWaste, fetchCustomerStats,
   fetchComboItems, saveComboItems, deductComboStock,
   createCouponForOrder, fetchCoupons,
   notifyWhatsApp
@@ -29,6 +29,7 @@ export default function Admin(){
   const [tab,setTab]=useState("home");
   const [ings,setIngs]=useState([]);const [recs,setRecs]=useState([]);const [sales,setSales]=useState([]);
   const [exps,setExps]=useState([]);const [orders,setOrders]=useState([]);const [sett,setSett]=useState(DEF);
+  const [waste,setWaste]=useState([]);
   const [loaded,setLoaded]=useState(false);const [ov,setOv]=useState(null);const [toast,setToast]=useState("");
   const [newAlertCount,setNewAlertCount]=useState(0);
   const prev=useRef(0);
@@ -59,16 +60,16 @@ export default function Admin(){
 
   // Load all data after login
   const loadAll=useCallback(async()=>{
-    const [ig,rc,ri,sl,ex,od,st]=await Promise.all([
+    const [ig,rc,ri,sl,ex,od,st,wl]=await Promise.all([
       fetchIngredients(),fetchAllRecipes(),fetchAllRecipeIngredients(),
-      fetchSales(),fetchExpenses(),fetchOrders(),fetchSettings()
+      fetchSales(),fetchExpenses(),fetchOrders(),fetchSettings(),fetchWasteLog()
     ]);
     setIngs(ig||[]);
     // merge recipe ingredients into recipes
     const riMap={};(ri||[]).forEach(r=>{if(!riMap[r.recipe_id])riMap[r.recipe_id]=[];riMap[r.recipe_id].push(r);});
     setRecs((rc||[]).map(r=>({...r,ingredients:riMap[r.id]||[]})));
     setSales(sl||[]);setExps(ex||[]);setOrders(od||[]);
-    setSett(st||DEF);setLoaded(true);
+    setSett(st||DEF);setWaste(wl||[]);setLoaded(true);
   },[]);
 
   useEffect(()=>{if(session)loadAll();},[session,loadAll]);
@@ -89,12 +90,12 @@ export default function Admin(){
       return toAdd.length>0?[...toAdd,...p]:p;
     });
     setNewAlertCount(c=>c+genuinelyNew.length);
-    // Audio loop por 3 segundos
+    // Audio loop por 10 segundos (varias repeticiones para que el cocinero escuche)
     if(alarmRef.current){
       if(alarmTimer.current) clearTimeout(alarmTimer.current);
       alarmRef.current.currentTime=0;
       alarmRef.current.play().catch(()=>{});
-      alarmTimer.current=setTimeout(()=>{ if(alarmRef.current){ alarmRef.current.pause(); alarmRef.current.currentTime=0; } },3000);
+      alarmTimer.current=setTimeout(()=>{ if(alarmRef.current){ alarmRef.current.pause(); alarmRef.current.currentTime=0; } },10000);
     }
   },[]);
 
@@ -154,7 +155,11 @@ export default function Admin(){
     if(x.unit_cost!=null&&x.unit_cost>0) return a+(x.unit_cost*(x.qty||1));
     const r=recs.find(r2=>r2.id===x.recipe_id);return a+(r?rc(r)*(x.qty||1):0);
   },0),[sales,recs,rc,mo]);
-  const mar=tS>0?(prof/tS*100):0;
+  // Costo de merma del mes: qty * costo del ingrediente
+  const tW=useMemo(()=>waste.filter(w=>w.date>=mo).reduce((a,w)=>{
+    const ig=ings.find(i=>i.id===w.ingredient_id);return a+((ig?.cost||0)*(w.qty||0));
+  },0),[waste,ings,mo]);
+  const mar=tS>0?((tS-tE-tW)/tS*100):0;
 
   // Move order status
   const moveOrd=async(id,ns,force=false)=>{
@@ -273,11 +278,12 @@ export default function Admin(){
       </div>
     </div>
 
-    {tab==="home"&&<Home {...{low,tS,tE,prof,mar,tCR,sales,recs,ings,rc,actOrd,sett}} onStock={()=>setTab("stock")} onPurchase={()=>setOv({type:"purchase"})} onOrders={()=>setTab("orders")} onExp={()=>setOv({type:"expenses"})}/>}
+    {tab==="home"&&<Home {...{low,tS,tE,tW,prof,mar,tCR,sales,recs,ings,rc,actOrd,sett,waste}} onStock={()=>setTab("stock")} onPurchase={()=>setOv({type:"purchase"})} onOrders={()=>setTab("orders")} onExp={()=>setOv({type:"expenses"})}/>}
     {tab==="stock"&&<Stock {...{ings,setIngs,recs,ov,setOv,msg,sett,loadAll}}/>}
     {tab==="recipes"&&<Recipes {...{recs,setRecs,ings,rc,ov,setOv,msg,loadAll}}/>}
     {tab==="orders"&&<Orders {...{orders,recs,moveOrd,addOrd,ov,setOv,msg}}/>}
     {tab==="sales"&&<SalesView {...{sales,setSales,recs,rc,ov,setOv,msg}}/>}
+    {tab==="crm"&&<CRM {...{orders,recs,ings,msg}}/>}
     {tab==="settings"&&<Settings sett={sett} setSett={setSett} msg={msg} onBack={()=>setTab("home")}/>}
 
     {ov?.type==="purchase"&&<Purchase {...{ings,setIngs,exps,setExps,sett}} onClose={()=>setOv(null)} msg={msg} loadAll={loadAll}/>}
@@ -289,7 +295,7 @@ export default function Admin(){
     {newAlertCount>0&&<NewOrderOverlay count={newAlertCount} onAck={ackOrders}/>}
 
     <nav className="nv">
-      {[{id:"home",icon:I.home,l:"Inicio"},{id:"stock",icon:I.box,l:"Stock"},{id:"recipes",icon:I.recipe,l:"Recetas"},{id:"orders",icon:I.orders,l:"Pedidos",badge:orders.filter(o=>o.status===ST.new).length},{id:"sales",icon:I.cart,l:"Ventas"}].map(t=>(
+      {[{id:"home",icon:I.home,l:"Inicio"},{id:"stock",icon:I.box,l:"Stock"},{id:"recipes",icon:I.recipe,l:"Recetas"},{id:"orders",icon:I.orders,l:"Pedidos",badge:orders.filter(o=>o.status===ST.new).length},{id:"sales",icon:I.cart,l:"Ventas"},{id:"crm",icon:I.user,l:"CRM"}].map(t=>(
         <button key={t.id} className={`ni ${tab===t.id||(tab==="settings"&&t.id==="home")?"on":""}`} onClick={()=>setTab(t.id)}>
           {t.badge>0&&<span className="nb">{t.badge}</span>}
           {t.icon({size:20})}{t.l}
@@ -323,7 +329,7 @@ function LoginScreen({onLogin}){
 }
 
 // ═══════ HOME ═══════
-function Home({low,tS,tE,prof,mar,tCR,sales,recs,ings,rc,actOrd,sett,onStock,onPurchase,onOrders,onExp}){
+function Home({low,tS,tE,tW,prof,mar,tCR,sales,recs,ings,rc,actOrd,sett,waste,onStock,onPurchase,onOrders,onExp}){
   const nw=actOrd.filter(o=>o.status===ST.new);
   const mo=td().slice(0,7)+"-01";
   const top=useMemo(()=>{
@@ -351,7 +357,29 @@ function Home({low,tS,tE,prof,mar,tCR,sales,recs,ings,rc,actOrd,sett,onStock,onP
       <div className="sc f2"><div className="sl">Ganancia</div><div className={`sv2 ${prof>=0?"svg2":"svr"}`}>${fi(prof)}</div><div className="sd">Margen: {mar.toFixed(1)}%</div></div>
       <div className="sc f3"><div className="sl">Costo Insumos</div><div className="sv2">${fi(tCR)}</div><div className="sd">Ref. producción</div></div>
       <div className="sc f4"><div className="sl">Gastos</div><div className="sv2 svr">${fi(tE)}</div></div>
+      {tW>0&&<div className="sc" style={{background:"#FFF3E0"}}><div className="sl">⚠️ Merma</div><div className="sv2 svr">${fi(tW)}</div><div className="sd">Pérdida en insumos</div></div>}
     </div>
+
+    {/* Reporte de Mermas del mes */}
+    {waste&&waste.length>0&&(()=>{
+      const mo2=td().slice(0,7)+"-01";
+      const mw=waste.filter(w=>w.date>=mo2);
+      if(mw.length===0)return null;
+      // Agrupar por motivo
+      const byReason={};mw.forEach(w=>{const r=w.reason||"otro";if(!byReason[r])byReason[r]={count:0,cost:0};byReason[r].count+=w.qty||0;const ig=ings.find(i=>i.id===w.ingredient_id);byReason[r].cost+=(ig?.cost||0)*(w.qty||0);});
+      return(<div className="s"><div className="st">Mermas del mes</div>
+        <div className="c" style={{padding:0,overflow:"hidden"}}>
+          {Object.entries(byReason).sort((a,b)=>b[1].cost-a[1].cost).map(([reason,data])=>(
+            <div key={reason} className="li">
+              <div className="lic" style={{background:"var(--rl)",color:"var(--rd)"}}>{reason==="vencimiento"?"📅":reason==="rotura"?"💔":reason==="derrame"?"💧":"⚠️"}</div>
+              <div className="lii"><div className="lin" style={{textTransform:"capitalize"}}>{reason}</div><div className="lid">{data.count} unidades</div></div>
+              <div className="lir"><div className="lia" style={{color:"var(--rd)"}}>-${fi(data.cost)}</div></div>
+            </div>
+          ))}
+        </div>
+        <div style={{fontSize:12,color:"var(--t3)",textAlign:"right",padding:"6px 0"}}>Rentabilidad = Ventas - Gastos - Merma</div>
+      </div>);
+    })()}
 
     {top.length>0&&<div className="s"><div className="st">Más vendidos</div>
       <div className="c" style={{padding:0,overflow:"hidden"}}>{top.map((t,i)=>{
@@ -512,7 +540,7 @@ function Recipes({recs,setRecs,ings,rc,ov,setOv,msg,loadAll}){
             <div><div style={{fontWeight:700,fontSize:15}}>{r.name}{r.is_archived&&<span style={{marginLeft:6,fontSize:11,background:"var(--rl)",color:"var(--rd)",padding:"1px 6px",borderRadius:8,fontWeight:700}}>ARCHIVADA</span>}</div><div style={{fontSize:12,color:"var(--t3)"}}>{r.category} · {(r.ingredients||[]).length} ins.</div></div>
             <div style={{textAlign:"right",display:"flex",alignItems:"center",gap:8}}>
               <div><div style={{fontWeight:700,fontSize:15}}>${fi(r.sale_price)}</div><div style={{fontSize:12,color:"var(--t3)"}}>C: ${fm(c)}</div></div>
-              {r.visible!==false?<span style={{color:"var(--gn)"}}>{I.eye({size:14})}</span>:<span style={{color:"var(--t3)"}}>{I.eyeOff({size:14})}</span>}
+              <button style={{background:"none",border:"none",cursor:"pointer",padding:4}} onClick={async(e)=>{e.stopPropagation();const nv=r.visible===false;await upsertRecipe({id:r.id,visible:nv});setRecs(p=>p.map(x=>x.id===r.id?{...x,visible:nv}:x));msg(nv?"Visible en catálogo":"Oculta del catálogo");}}>{r.visible!==false?<span style={{color:"var(--gn)"}}>{I.eye({size:14})}</span>:<span style={{color:"var(--t3)"}}>{I.eyeOff({size:14})}</span>}</button>
             </div>
           </div>
           <div className="pbar"><div className="pfill" style={{width:`${Math.min(m,100)}%`,background:bc}}/></div>
@@ -526,6 +554,8 @@ function Recipes({recs,setRecs,ings,rc,ov,setOv,msg,loadAll}){
     <button className="fab" onClick={()=>setOv({type:"editR",data:null})}>{I.plus({size:24,color:"#fff"})}</button>
     {ov?.type==="viewR"&&<RecDet r={ov.data} ings={ings} rc={rc} onClose={()=>setOv(null)} onEdit={async()=>{
       let d={...ov.data};
+      // Siempre cargar ingredientes frescos desde la DB para evitar datos stale
+      if(d.id){const ri=await fetchRecipeIngredients(d.id);d.ingredients=ri||[];}
       if(d.is_combo&&d.id){const ci=await fetchComboItems(d.id);d.comboItems=ci.map(x=>({sub_recipe_id:x.sub_recipe_id,qty:x.qty}));}
       setOv({type:"editR",data:d});
     }}
@@ -534,6 +564,7 @@ function Recipes({recs,setRecs,ings,rc,ov,setOv,msg,loadAll}){
     />}
     {ov?.type==="editR"&&<RecForm data={ov.data} ings={ings} recs={recs} onClose={()=>setOv(null)} onSave={async(r)=>{
       const saved=await upsertRecipe({id:r.id,name:r.name,category:r.category,sale_price:r.sale_price,visible:r.visible,image_url:r.image_url,description:r.description,related_ids:r.related_ids||[],is_combo:r.is_combo||false});
+      if(saved?.__error==='duplicate'){msg("⚠️ Ya existe una receta activa con ese nombre");return;}
       if(saved){
         await saveRecipeIngredients(saved.id,(r.ingredients||[]).map(ri=>({ingredient_id:ri.ingredient_id,quantity:ri.quantity})));
         if(r.is_combo) await saveComboItems(saved.id,(r.comboItems||[]).filter(ci=>ci.sub_recipe_id&&ci.qty>0));
@@ -598,7 +629,9 @@ function RecForm({data,ings,recs,onClose,onSave}){
   // Costo total de ingredientes
   const totalCost=(f.ingredients||[]).reduce((s,ri)=>{const ig=ings.find(x=>x.id===ri.ingredient_id);return s+(ig?(ig.cost||0)*(ri.quantity||0):0);},0);
   const profitNeg=!f.is_combo&&totalCost>0&&totalCost>(f.sale_price||0);
-  const canSave=f.name&&(f.sale_price||0)>0&&(f.is_combo||(f.ingredients||[]).length>0);
+  // Receta existente: solo nombre + precio. Nueva: también requiere ingredientes o ser combo
+  const isExisting=!!f.id;
+  const canSave=f.name&&(f.sale_price||0)>0&&(isExisting||f.is_combo||(f.ingredients||[]).length>0);
 
   return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>{data?"Editar":"Nueva"} Receta</h2></div><div className="pb">
     <div className="fg"><label className="fl">Nombre</label><input className="fin" value={f.name} onChange={e=>s("name",e.target.value)}/></div>
@@ -685,7 +718,7 @@ function RecForm({data,ings,recs,onClose,onSave}){
       <div><strong>Precio por debajo del costo.</strong> El costo de ingredientes (${fm(totalCost)}) supera el precio de venta (${fi(f.sale_price||0)}). Podés guardar igual.</div>
     </div>}
     {!canSave&&<div style={{fontSize:12,color:"var(--t3)",marginTop:10,textAlign:"center"}}>
-      {!(f.sale_price>0)?"Ingresá un precio de venta mayor a 0":!(f.is_combo||(f.ingredients||[]).length>0)?"Agregá al menos un ingrediente":""}
+      {!f.name?"Ingresá un nombre":!(f.sale_price>0)?"Ingresá un precio de venta mayor a 0":!isExisting&&!f.is_combo&&(f.ingredients||[]).length===0?"Agregá al menos un ingrediente":""}
     </div>}
     <button className="btn bp" style={{marginTop:12,opacity:canSave?1:0.5}} disabled={!canSave} onClick={()=>canSave&&onSave({...f,comboItems})}>{I.check({size:18,color:"#fff"})} {data?"Guardar":"Crear"}</button>
   </div></div>);
@@ -705,7 +738,8 @@ function DeliveryBadge({date}){
 }
 
 function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
-  const [fil,setFil]=useState(ST.new);const [showH,setShowH]=useState(false);const t=td();
+  const [fil,setFil]=useState(ST.new);const [showH,setShowH]=useState(false);const [showSched,setShowSched]=useState(false);const t=td();
+  const scheduled=useMemo(()=>orders.filter(o=>o.delivery_date&&o.status!==ST.done&&o.status!==ST.cancel).sort((a,b)=>(a.delivery_date||"").localeCompare(b.delivery_date||"")),[orders]);
   const cts=useMemo(()=>{const c={};Object.values(ST).forEach(s=>{c[s]=orders.filter(o=>o.status===s&&(s===ST.done||s===ST.cancel?o.date===t:true)).length;});return c;},[orders,t]);
   const filt=orders.filter(o=>{if(fil===ST.done||fil===ST.cancel)return o.status===fil&&o.date===t;return o.status===fil;}).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||""));
   const hist=orders.filter(o=>(o.status===ST.done||o.status===ST.cancel)&&o.date<t).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||""));
@@ -713,7 +747,10 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
   const sfs=[{id:ST.new,l:"Nuevos",i:I.orders,co:"var(--bl)"},{id:ST.prep,l:"Preparando",i:I.fire,co:"var(--yw)"},{id:ST.active,l:"Activos",i:I.zap,co:"var(--gn)"},{id:ST.done,l:"Listos",i:I.check,co:"var(--t3)"},{id:ST.cancel,l:"Cancel.",i:I.x,co:"var(--rd)"}];
 
   return(<>
-    <div className="s"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div className="st" style={{margin:0}}>Pedidos</div><button className="btn bs bsm" onClick={()=>setShowH(true)}>{I.hist({size:14})} Historial</button></div></div>
+    <div className="s"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div className="st" style={{margin:0}}>Pedidos</div><div style={{display:"flex",gap:6}}>
+      <button className="btn bs bsm" onClick={()=>setShowSched(true)}>📅 Programados{scheduled.length>0&&<span style={{marginLeft:4,background:"var(--yl)",color:"var(--yw)",borderRadius:8,padding:"0 5px",fontSize:11,fontWeight:700}}>{scheduled.length}</span>}</button>
+      <button className="btn bs bsm" onClick={()=>setShowH(true)}>{I.hist({size:14})} Historial</button>
+    </div></div></div>
     <div className="sf">{sfs.map(sf=>(<button key={sf.id} className={`sfi ${fil===sf.id?"on":""}`} style={{color:fil===sf.id?sf.co:"var(--t3)",borderColor:fil===sf.id?sf.co:"var(--b2)"}} onClick={()=>setFil(sf.id)}>
       {sf.i({size:14,color:fil===sf.id?sf.co:"var(--t3)"})}{sf.l}{cts[sf.id]>0&&<span className="sfc" style={{background:sf.co+"20",color:sf.co}}>{cts[sf.id]}</span>}
     </button>))}</div>
@@ -739,6 +776,24 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
     </div>
     <button className="fab" onClick={()=>setOv({type:"addOrder"})}>{I.plus({size:24,color:"#fff"})}</button>
     {ov?.type==="addOrder"&&<OrdForm recs={recs} onClose={()=>setOv(null)} onSave={o=>{addOrd(o);setOv(null);}}/>}
+    {showSched&&<div className="po"><div className="ph"><button onClick={()=>setShowSched(false)}>{I.back({})}</button><h2>📅 Programados</h2></div><div className="pb">
+      {scheduled.length===0?<div className="c"><div className="empty"><div className="eic">📅</div><div>No hay pedidos programados</div></div></div>
+      :scheduled.map(o=>{const items=o.order_items||o.items||[];const sc=ST_C[o.status];
+        return(<div key={o.id} className="c" style={{padding:12}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+            <div><div style={{fontWeight:700,fontSize:14}}>{o.customer}</div>
+              <div style={{fontSize:11,color:"var(--t3)"}}>{items.map(it=>{const r=recs.find(x=>x.id===it.recipe_id);return r?`${r.name} ×${it.quantity||it.qty||1}`:"";}).filter(Boolean).join(", ")}</div>
+              {o.note&&<div style={{fontSize:11,color:"var(--t3)",marginTop:2}}>💬 {o.note}</div>}
+            </div>
+            <div style={{textAlign:"right"}}><div style={{fontWeight:700}}>${fi(o.total)}</div><span className="badge" style={{background:sc?.bg,color:sc?.tx}}>{ST_L[o.status]}</span></div>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <DeliveryBadge date={o.delivery_date}/>
+            <span style={{fontSize:11,color:"var(--t3)"}}>{o.phone||""}</span>
+          </div>
+        </div>);
+      })}
+    </div></div>}
     {showH&&<div className="po"><div className="ph"><button onClick={()=>setShowH(false)}>{I.back({})}</button><h2>Historial</h2></div><div className="pb">
       {hist.length===0?<div className="c"><div className="empty"><div className="eic">📜</div><div>Sin historial</div></div></div>
       :Object.entries(hist.reduce((a,o)=>{const d=(o.created_at||o.date||"").split("T")[0];if(!a[d])a[d]=[];a[d].push(o);return a;},{})).sort((a,b)=>b[0].localeCompare(a[0])).map(([d,os])=>(<div key={d}>
@@ -1030,6 +1085,78 @@ function SaleForm({recs,onClose,onSave}){
   </div></div>);
 }
 
+// ═══════ CRM ═══════
+function CRM({orders,recs,ings,msg}){
+  const [customers,setCustomers]=useState([]);const [loading,setLoading]=useState(true);const [search,setSearch]=useState("");
+  useEffect(()=>{fetchCustomerStats().then(c=>{setCustomers(c);setLoading(false);});},[]);
+
+  // Estadísticas rápidas
+  const payMethods=useMemo(()=>{const m={};orders.filter(o=>o.status!=='cancelled').forEach(o=>{const p=o.payment||"otro";m[p]=(m[p]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1]);},[orders]);
+
+  const filt=customers.filter(c=>{const q=search.toLowerCase();return !q||(c.name||"").toLowerCase().includes(q)||(c.phone||"").includes(q)||(c.email||"").toLowerCase().includes(q);});
+
+  const exportCSV=()=>{
+    const header="Nombre,Teléfono,Email,Pedidos,Gasto Total,Última compra\n";
+    const rows=filt.map(c=>`"${c.name||""}","${c.phone||""}","${c.email||""}",${c.orders},${c.total},"${c.last_order?new Date(c.last_order).toLocaleDateString("es-AR"):""}"`).join("\n");
+    const blob=new Blob([header+rows],{type:"text/csv;charset=utf-8;"});
+    const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`clientes_${td()}.csv`;a.click();URL.revokeObjectURL(url);
+    msg("CSV descargado ✓");
+  };
+
+  if(loading)return <div className="s" style={{textAlign:"center",padding:40,color:"var(--t3)"}}>Cargando clientes...</div>;
+
+  return(<>
+    <div className="s"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div className="st" style={{margin:0}}>CRM · Clientes</div>
+      <button className="btn bs bsm" onClick={exportCSV}>📥 Exportar CSV</button>
+    </div></div>
+
+    {/* Stats rápidas */}
+    <div style={{display:"flex",gap:10,padding:"0 16px 12px"}}>
+      <div className="c" style={{flex:1,padding:12,textAlign:"center"}}><div style={{fontSize:24,fontWeight:700}}>{customers.length}</div><div style={{fontSize:11,color:"var(--t3)"}}>Clientes</div></div>
+      <div className="c" style={{flex:1,padding:12,textAlign:"center"}}><div style={{fontSize:24,fontWeight:700}}>${fi(customers.reduce((a,c)=>a+c.total,0))}</div><div style={{fontSize:11,color:"var(--t3)"}}>Facturado total</div></div>
+    </div>
+
+    {/* Método de pago más usado */}
+    {payMethods.length>0&&<div className="s"><div className="st" style={{fontSize:14}}>Métodos de pago</div>
+      <div className="c" style={{padding:0,overflow:"hidden"}}>{payMethods.map(([method,count])=>{
+        const total=payMethods.reduce((a,x)=>a+x[1],0);const pct=total>0?(count/total*100):0;
+        const icon=method==="efectivo"?"💵":method==="transferencia"?"🏦":method==="tarjeta"?"💳":"📱";
+        return(<div key={method} className="li">
+          <div className="lic" style={{background:"var(--b2)",fontSize:16}}>{icon}</div>
+          <div className="lii"><div className="lin" style={{textTransform:"capitalize"}}>{method}</div>
+            <div style={{height:4,background:"var(--b2)",borderRadius:2,marginTop:4}}><div style={{height:4,background:"var(--ac)",borderRadius:2,width:`${pct}%`}}/></div>
+          </div>
+          <div className="lir"><div className="lia">{count}</div><div style={{fontSize:11,color:"var(--t3)"}}>{pct.toFixed(0)}%</div></div>
+        </div>);
+      })}</div>
+    </div>}
+
+    {/* Lista de clientes */}
+    <div className="s">
+      <input className="fin" placeholder="🔍 Buscar cliente..." value={search} onChange={e=>setSearch(e.target.value)} style={{marginBottom:12}}/>
+      <div style={{fontSize:12,color:"var(--t3)",marginBottom:8}}>{filt.length} cliente{filt.length!==1?"s":""}</div>
+      {filt.length===0?<div className="c"><div className="empty"><div className="eic">👥</div><div>Sin clientes registrados</div></div></div>
+      :filt.slice(0,50).map((c,i)=>(
+        <div key={i} className="c" style={{padding:12,marginBottom:6}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+            <div>
+              <div style={{fontWeight:700,fontSize:14}}>{c.name||"Sin nombre"}</div>
+              <div style={{fontSize:12,color:"var(--t3)",marginTop:2}}>
+                {c.phone&&<span>📱 {c.phone}</span>}{c.phone&&c.email&&" · "}{c.email&&<span>✉️ {c.email}</span>}
+              </div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontWeight:700,color:"var(--gn)"}}>${fi(c.total)}</div>
+              <div style={{fontSize:11,color:"var(--t3)"}}>{c.orders} pedido{c.orders!==1?"s":""}</div>
+            </div>
+          </div>
+          {c.last_order&&<div style={{fontSize:11,color:"var(--t3)",marginTop:4}}>Último: {new Date(c.last_order).toLocaleDateString("es-AR",{day:"2-digit",month:"short",year:"numeric"})}</div>}
+        </div>
+      ))}
+    </div>
+  </>);
+}
+
 // ═══════ SETTINGS ═══════
 const BANNER_COLORS=[{h:"#2D1B0E",l:"Café oscuro"},{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#333333",l:"Negro"}];
 
@@ -1120,6 +1247,26 @@ function Settings({sett,setSett,msg,onBack}){
         <div className="clist">{(s.ing_cats||[]).map(c=><div key={c} className="ctag">{c}<button onClick={()=>set("ing_cats",(s.ing_cats||[]).filter(x=>x!==c))}>×</button></div>)}</div>
         <div style={{display:"flex",gap:8,marginTop:8}}><input className="fin" placeholder="Nueva..." value={ni} onChange={e=>setNi2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ni.trim()&&(set("ing_cats",[...(s.ing_cats||[]),ni.trim()]),setNi2(""))} style={{fontSize:13}}/>
         <button className="btn bs bsm" onClick={()=>ni.trim()&&(set("ing_cats",[...(s.ing_cats||[]),ni.trim()]),setNi2(""))}>+</button></div>
+      </div>
+
+      {/* ── Horarios del local ── */}
+      <div className="c">
+        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>🕐 Horarios del local</label>
+        <div style={{fontSize:12,color:"var(--t3)",marginBottom:10}}>Define cuándo el local acepta pedidos. Se usa para validar "Pedir ahora".</div>
+        {["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map((day,i)=>{
+          const hrs=s.store_hours||{};const d=hrs[i]||{open:"",close:"",closed:false};
+          const upd=(k,v)=>{const nh={...hrs};nh[i]={...d,[k]:v};set("store_hours",nh);};
+          return(<div key={day} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<6?"1px solid var(--b2)":"none"}}>
+            <div style={{width:80,fontSize:13,fontWeight:600,color:d.closed?"var(--t3)":"var(--tx)"}}>{day}</div>
+            {d.closed?<div style={{flex:1,fontSize:12,color:"var(--t3)",fontStyle:"italic"}}>Cerrado</div>
+            :<>
+              <input type="time" value={d.open||""} onChange={e=>upd("open",e.target.value)} style={{flex:1,padding:"4px 6px",borderRadius:6,border:"1px solid var(--b2)",fontSize:13,colorScheme:"light"}}/>
+              <span style={{fontSize:12,color:"var(--t3)"}}>a</span>
+              <input type="time" value={d.close||""} onChange={e=>upd("close",e.target.value)} style={{flex:1,padding:"4px 6px",borderRadius:6,border:"1px solid var(--b2)",fontSize:13,colorScheme:"light"}}/>
+            </>}
+            <button style={{background:"none",border:"none",fontSize:11,color:d.closed?"var(--gn)":"var(--rd)",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}} onClick={()=>upd("closed",!d.closed)}>{d.closed?"Abrir":"Cerrar"}</button>
+          </div>);
+        })}
       </div>
 
       <button className="btn bp" style={{marginTop:8}} onClick={async()=>{const saved=await updateSettings(s);if(saved){setSett(saved);msg("Guardado ✓");onBack();}else{msg("Error al guardar");}}}>{I.check({size:18,color:"#fff"})} Guardar cambios</button>
