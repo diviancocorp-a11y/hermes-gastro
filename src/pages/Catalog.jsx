@@ -521,4 +521,19 @@ export default function Catalog() {
             <div className="ups-list">
               {upsell.suggestions.map(s => (
                 <div key={s.id} className="ups-card" onClick={() => addFromUpsell(s)}>
-                  <img className="ups-img" src={s.image_url} alt={s.name} onError={e => { e.target.styl
+                  <img className="ups-img" src={s.image_url} alt={s.name} onError={e => { e.target.style.display='none'; }} />
+                  <div className="ups-info">
+                    <div className="ups-name">{s.name}</div>
+                    <div className="ups-price">${fi(s.sale_price)}</div>
+                  </div>
+                  <button className="ups-btn">+</button>
+                </div>
+              ))}
+            </div>
+            <button className="ups-skip" onClick={() => setUpsell(null)}>No, gracias</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
