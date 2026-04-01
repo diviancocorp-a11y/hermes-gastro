@@ -66,7 +66,7 @@ export default function Admin(){
     ]);
     setIngs(ig||[]);
     // merge recipe ingredients into recipes
-    const riMap={};(ri||[]).forEach(r=>{if(!riMap[r.recipe_id])riMap[r.recipe_id]=[];riMap[r.recipe_id].push(r);});
+    const riMap={};(ri||[]).forEach(r=>{if(!riMap[r.recipe_id])riMap[r.recipe_id]=[];riMap[r.recipe_id].push({...r,quantity:r.qty||r.quantity||0,qty:r.qty||r.quantity||0});});
     setRecs((rc||[]).map(r=>({...r,ingredients:riMap[r.id]||[]})));
     setSales(sl||[]);setExps(ex||[]);setOrders(od||[]);
     setSett(st||DEF);setWaste(wl||[]);setLoaded(true);
@@ -555,7 +555,7 @@ function Recipes({recs,setRecs,ings,rc,ov,setOv,msg,loadAll}){
     {ov?.type==="viewR"&&<RecDet r={ov.data} ings={ings} rc={rc} onClose={()=>setOv(null)} onEdit={async()=>{
       let d={...ov.data};
       // Siempre cargar ingredientes frescos desde la DB para evitar datos stale
-      if(d.id){const ri=await fetchRecipeIngredients(d.id);d.ingredients=ri||[];}
+      if(d.id){const ri=await fetchRecipeIngredients(d.id);d.ingredients=(ri||[]).map(x=>({...x,quantity:x.qty||x.quantity||0,qty:x.qty||x.quantity||0}));}
       if(d.is_combo&&d.id){const ci=await fetchComboItems(d.id);d.comboItems=ci.map(x=>({sub_recipe_id:x.sub_recipe_id,qty:x.qty}));}
       setOv({type:"editR",data:d});
     }}
@@ -566,7 +566,7 @@ function Recipes({recs,setRecs,ings,rc,ov,setOv,msg,loadAll}){
       const saved=await upsertRecipe({id:r.id,name:r.name,category:r.category,sale_price:r.sale_price,visible:r.visible,image_url:r.image_url,description:r.description,related_ids:r.related_ids||[],is_combo:r.is_combo||false});
       if(saved?.__error==='duplicate'){msg("⚠️ Ya existe una receta activa con ese nombre");return;}
       if(saved){
-        await saveRecipeIngredients(saved.id,(r.ingredients||[]).map(ri=>({ingredient_id:ri.ingredient_id,quantity:ri.quantity})));
+        await saveRecipeIngredients(saved.id,(r.ingredients||[]).map(ri=>({ingredient_id:ri.ingredient_id,qty:ri.qty||ri.quantity})));
         if(r.is_combo) await saveComboItems(saved.id,(r.comboItems||[]).filter(ci=>ci.sub_recipe_id&&ci.qty>0));
         await loadAll();setOv(null);msg(r.id?"Actualizada":"Creada");
       }
@@ -612,7 +612,7 @@ function RecForm({data,ings,recs,onClose,onSave}){
   const [uploading,setUploading]=useState(false);
   const fileRef=useRef();
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
-  const addI=()=>{if(!si||!sq)return;s("ingredients",[...f.ingredients,{ingredient_id:si,quantity:Number(sq)}]);setSi("");setSq("");setAd(false);};
+  const addI=()=>{if(!si||!sq)return;const n=Number(sq);s("ingredients",[...f.ingredients,{ingredient_id:si,quantity:n,qty:n}]);setSi("");setSq("");setAd(false);};
   const toggleRel=(id)=>{const cur=f.related_ids||[];s("related_ids",cur.includes(id)?cur.filter(x=>x!==id):[...cur,id]);};
   const otherRecs=(recs||[]).filter(r=>r.id!==f.id&&!r.is_combo);
   const handleImageUpload=async(e)=>{

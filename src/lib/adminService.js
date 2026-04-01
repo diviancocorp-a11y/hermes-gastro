@@ -102,8 +102,8 @@ export async function saveRecipeIngredients(recipeId, ingredients) {
   if (delErr) { console.error('deleteRecipeIngredients:', delErr.message); return false; }
   if (!ingredients.length) return true;
   const rows = ingredients
-    .filter(i => i.ingredient_id && i.quantity > 0)
-    .map(i => ({ recipe_id: recipeId, ingredient_id: i.ingredient_id, quantity: Number(i.quantity) }));
+    .filter(i => i.ingredient_id && (i.qty > 0 || i.quantity > 0))
+    .map(i => ({ recipe_id: recipeId, ingredient_id: i.ingredient_id, qty: Number(i.qty || i.quantity) }));
   if (!rows.length) return true;
   const { error } = await supabase.from('recipe_ingredients').insert(rows);
   if (error) { console.error('saveRecipeIngredients:', error.message); return false; }
