@@ -125,12 +125,12 @@ export async function createPurchase(purchase, items) {
   if (items.length) {
     const rows = items.map(i => ({ ...i, purchase_id: data.id }));
     await supabase.from('purchase_items').insert(rows);
-    // Update ingredient stock
+    // Update ingredient stock (atómico) + actualizar costo
     for (const item of items) {
       if (item.ingredient_id) {
-        const { data: ing } = await supabase.from('ingredients').select('stock').eq('id', item.ingredient_id).single();
-        if (ing) {
-          await supabase.from('ingredients').update({ stock: (ing.stock || 0) + item.quantity, cost: item.unit_price }).eq('id', item.ingredient_id);
+        await updateIngredientStock(item.ingredient_id, item.quantity);
+        if (item.unit_price > 0) {
+          await supabase.from('ingredients').update({ cost: item.unit_price }).eq('id', item.ingredient_id);
         }
       }
     }
@@ -170,8 +170,16 @@ export async function deleteSale(id) {
   return !error;
 }
 
-// ─── STOCK UPDATE (for order operations) ─────────────
+// ─── STOCK UPDATE (atómico — evita race conditions) ─────────────
 export async function updateIngredientStock(ingredientId, deltaQty) {
+  // Intentar usar RPC atómico primero
+  const { error: rpcErr } = await supabase.rpc('adjust_stock', {
+    p_ingredient_id: ingredientId,
+    p_delta: deltaQty
+  });
+  if (!rpcErr) return;
+  // Fallback: read-then-write (si la función RPC no existe aún)
+  console.warn('adjust_stock RPC not available, using fallback:', rpcErr.message);
   const { data: ing } = await supabase.from('ingredients').select('stock').eq('id', ingredientId).single();
   if (ing) {
     const newStock = Math.max(0, (ing.stock || 0) + deltaQty);
@@ -324,12 +332,8 @@ export async function registerWaste(ingredientId, qty, reason, note = '') {
     date: new Date().toISOString().split('T')[0]
   });
   if (logErr) { console.error('registerWaste log:', logErr.message); return false; }
-  // 2. Descontar del stock
-  const { data: ing } = await supabase.from('ingredients').select('stock').eq('id', ingredientId).single();
-  if (ing) {
-    const newStock = Math.max(0, (ing.stock || 0) - qty);
-    await supabase.from('ingredients').update({ stock: newStock }).eq('id', ingredientId);
-  }
+  // 2. Descontar del stock (atómico)
+  await updateIngredientStock(ingredientId, -qty);
   return true;
 }
 

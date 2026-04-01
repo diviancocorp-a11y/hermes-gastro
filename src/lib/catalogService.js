@@ -84,52 +84,100 @@ export async function submitOrder(orderData) {
       // Si falla el upsert de cliente, no bloqueamos el pedido
     }
 
-    // 2. Insertar el pedido en la tabla orders
+    // 2. Validar items y recalcular total server-side (prevenir manipulación)
+    if (!orderData.items || orderData.items.length === 0) {
+      console.error('submitOrder: no items');
+      return { ok: false, orderId: null };
+    }
+
+    // Obtener precios reales de la DB para recalcular
+    const recipeIds = [...new Set(orderData.items.map(i => i.recipeId))];
+    const { data: dbRecipes } = await supabase
+      .from('recipes')
+      .select('id, sale_price')
+      .in('id', recipeIds);
+    const priceMap = {};
+    (dbRecipes || []).forEach(r => { priceMap[r.id] = r.sale_price; });
+
+    // Recalcular total desde precios reales de la DB
+    let serverTotal = 0;
+    const validatedItems = orderData.items.map(item => {
+      const realPrice = priceMap[item.recipeId] || 0;
+      const qty = Math.max(1, Math.round(item.qty || 1));
+      const subtotal = qty * realPrice;
+      serverTotal += subtotal;
+      return { recipeId: item.recipeId, qty, unitPrice: realPrice, subtotal };
+    });
+
+    // Aplicar descuento solo si hay cupón válido
+    let validDiscount = 0;
+    let validCouponId = null;
+    if (orderData.coupon_id && orderData.discount > 0) {
+      const { data: coupon } = await supabase
+        .from('coupons')
+        .select('id, discount_pct, used, expires_at, email')
+        .eq('id', orderData.coupon_id)
+        .eq('used', false)
+        .single();
+      if (coupon && (!coupon.expires_at || new Date(coupon.expires_at) >= new Date())) {
+        if (!coupon.email || !orderData.email || coupon.email.toLowerCase() === orderData.email.toLowerCase()) {
+          validDiscount = Math.round(serverTotal * (coupon.discount_pct / 100));
+          validCouponId = coupon.id;
+        }
+      }
+    }
+    const finalTotal = Math.max(0, serverTotal - validDiscount);
+
+    // 3. Insertar el pedido con total recalculado
     const { data: order, error: orderErr } = await supabase
       .from('orders')
       .insert({
         status: 'new',
         date: new Date().toISOString().split('T')[0],
-        customer: orderData.customer,
-        phone: orderData.phone,
-        email: orderData.email || null,
-        delivery: orderData.delivery,
-        payment: orderData.payment,
-        note: orderData.note || null,
-        total: orderData.total,
+        customer: (orderData.customer || '').trim().slice(0, 200),
+        phone: (orderData.phone || '').replace(/\D/g, '').slice(0, 20),
+        email: orderData.email ? orderData.email.trim().toLowerCase().slice(0, 200) : null,
+        delivery: ['retiro', 'envio'].includes(orderData.delivery) ? orderData.delivery : 'retiro',
+        payment: ['efectivo', 'transferencia', 'mercadopago'].includes(orderData.payment) ? orderData.payment : 'efectivo',
+        note: orderData.note ? orderData.note.trim().slice(0, 500) : null,
+        total: finalTotal,
         is_gift: orderData.is_gift || false,
-        gift_note: orderData.gift_note || '',
-        coupon_id: orderData.coupon_id || null,
-        discount: orderData.discount || 0,
+        gift_note: orderData.gift_note ? orderData.gift_note.trim().slice(0, 300) : '',
+        coupon_id: validCouponId,
+        discount: validDiscount,
         delivery_date: orderData.delivery_date || null
       })
-      .select('id')  // Necesitamos el ID para los items
+      .select('id')
       .single();
 
     if (orderErr) {
       console.error('Error creando pedido:', orderErr.message);
-      return false;
+      return { ok: false, orderId: null };
     }
 
-    // 3. Calcular unit_cost por receta en el momento exacto del pedido (snapshot financiero)
+    // 4. Marcar cupón como usado (Fix: antes no se hacía)
+    if (validCouponId) {
+      await supabase.from('coupons').update({ used: true }).eq('id', validCouponId);
+    }
+
+    // 5. Calcular unit_cost por receta (snapshot financiero)
     const costMap = {};
-    const recipeIds = [...new Set(orderData.items.map(i => i.recipeId))];
     for (const rid of recipeIds) {
       const { data: ris } = await supabase
         .from('recipe_ingredients')
-        .select('quantity, ingredients(cost)')
+        .select('qty, ingredients(cost)')
         .eq('recipe_id', rid);
-      costMap[rid] = (ris || []).reduce((s, ri) => s + (ri.ingredients?.cost || 0) * (ri.quantity || 0), 0);
+      costMap[rid] = (ris || []).reduce((s, ri) => s + (ri.ingredients?.cost || 0) * (ri.qty || ri.quantity || 0), 0);
     }
 
-    // 4. Insertar los items del pedido con snapshot de precio y costo
-    const items = orderData.items.map(item => ({
+    // 6. Insertar items con precios verificados
+    const items = validatedItems.map(item => ({
       order_id: order.id,
       recipe_id: item.recipeId,
       qty: item.qty,
       unit_price: item.unitPrice,
       unit_cost: costMap[item.recipeId] || 0,
-      subtotal: item.qty * item.unitPrice
+      subtotal: item.subtotal
     }));
 
     const { error: itemsErr } = await supabase
@@ -138,6 +186,8 @@ export async function submitOrder(orderData) {
 
     if (itemsErr) {
       console.error('Error creando items del pedido:', itemsErr.message);
+      // Limpiar la orden huérfana
+      await supabase.from('orders').delete().eq('id', order.id);
       return { ok: false, orderId: null };
     }
 
