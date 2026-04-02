@@ -102,13 +102,26 @@ export default function Catalog() {
     loadData();
   }, []);
 
-  // Categorías únicas (memoizado)
-  const categories = useMemo(() => ["Todos", ...new Set(products.map(r => r.category))], [products]);
+  // Categorías únicas con imagen representativa (primer producto con imagen de cada cat)
+  const categories = useMemo(() => {
+    const cats = [...new Set(products.map(r => r.category))];
+    const catData = cats.map(c => {
+      const rep = products.find(p => p.category === c && p.image_url);
+      return { name: c, img: rep?.image_url || null };
+    });
+    return [{ name: "Todos", img: null }, ...catData];
+  }, [products]);
 
   // Filtrar productos (memoizado)
   const filteredProds = useMemo(() => selCat === "Todos"
     ? products
     : products.filter(r => r.category === selCat), [selCat, products]);
+
+  // Colores para avatares de productos sin imagen
+  const avatarColors = useMemo(() => [
+    "#C45D3E", "#3A7D44", "#8D6E00", "#5C6BC0", "#AB47BC",
+    "#00897B", "#D84315", "#6D4C41", "#546E7A", "#7B1FA2"
+  ], []);
 
   // Mapa rápido de cantidades en carrito: O(1) lookup en vez de O(n) find
   const cartQtyMap = useMemo(() => {
@@ -387,7 +400,10 @@ export default function Catalog() {
       <div className="pb">
         {cart.map(it => (
           <div key={it.id} className="ci2">
-            <img className="ci-img" src={it.img} alt="" loading="lazy" />
+            {it.img ? (
+              <img className="ci-img" src={it.img} alt="" loading="lazy" onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }} />
+            ) : null}
+            <div className="ci-img prod-avatar" style={{ display: it.img ? 'none' : 'flex', background: avatarColors[it.name.charCodeAt(0) % avatarColors.length], width: 56, height: 56, fontSize: 22 }}>{it.name.charAt(0)}</div>
             <div className="ci-i">
               <div className="ci-n">{it.name}</div>
               <div className="ci-p" style={{ marginBottom: 12 }}>${fi(it.price * it.qty)}</div>
@@ -484,11 +500,13 @@ export default function Catalog() {
         </div>
       )}
 
-      {/* Menú de Categorías (Pills) */}
+      {/* Menú de Categorías — tarjetas con imagen */}
       <div className="cat-scroll">
         {categories.map(c => (
-          <div key={c} className={`cat-pill ${selCat === c ? "active" : ""}`} onClick={() => setSelCat(c)}>
-            {c}
+          <div key={c.name} className={`cat-card ${selCat === c.name ? "active" : ""}`} onClick={() => setSelCat(c.name)}>
+            {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" />}
+            <div className="cat-card-overlay" />
+            <span className="cat-card-label">{c.name}</span>
           </div>
         ))}
       </div>
@@ -509,8 +527,19 @@ export default function Catalog() {
                   </button>
                 </div>
               </div>
-              <img className="prod-img" src={p.image_url} alt={p.name} loading="lazy" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
-              <div className="prod-img prod-img-placeholder" style={{ display:'none', alignItems:'center', justifyContent:'center', fontSize:32, fontFamily:"'DM Serif Display',serif", color:'var(--t3)', background:'var(--b2)' }}>{p.name.charAt(0)}</div>
+              {p.image_url ? (
+                <img className="prod-img" src={p.image_url} alt={p.name} loading="lazy"
+                  onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }}
+                />
+              ) : null}
+              {(!p.image_url || true) && (
+                <div className="prod-img prod-avatar" style={{
+                  display: p.image_url ? 'none' : 'flex',
+                  background: avatarColors[p.name.charCodeAt(0) % avatarColors.length]
+                }}>
+                  {p.name.charAt(0)}
+                </div>
+              )}
             </div>
           )
         })}
@@ -535,7 +564,10 @@ export default function Catalog() {
             <div className="ups-list">
               {upsell.suggestions.map(s => (
                 <div key={s.id} className="ups-card" onClick={() => addFromUpsell(s)}>
-                  <img className="ups-img" src={s.image_url} alt={s.name} loading="lazy" onError={e => { e.target.style.display='none'; }} />
+                  {s.image_url ? (
+                    <img className="ups-img" src={s.image_url} alt={s.name} loading="lazy" onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }} />
+                  ) : null}
+                  <div className="ups-img prod-avatar" style={{ display: s.image_url ? 'none' : 'flex', background: avatarColors[s.name.charCodeAt(0) % avatarColors.length], width: 48, height: 48, fontSize: 20, borderRadius: 10 }}>{s.name.charAt(0)}</div>
                   <div className="ups-info">
                     <div className="ups-name">{s.name}</div>
                     <div className="ups-price">${fi(s.sale_price)}</div>
