@@ -644,7 +644,7 @@ function RecForm({data,ings,recs,onClose,onSave}){
     <div className="fg">
       <label className="fl">Imagen</label>
       <div className="img-upload-wrap">
-        {f.image_url?<img src={f.image_url} alt="" className="img-preview" onError={e=>e.target.style.display='none'}/>:null}
+        {f.image_url?<img src={f.image_url} alt="" className="img-preview" loading="lazy" onError={e=>e.target.style.display='none'}/>:null}
         <div className="img-upload-row">
           <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImageUpload}/>
           <button className="btn bs bsm" onClick={()=>fileRef.current?.click()} disabled={uploading} style={{flex:1}}>
@@ -742,10 +742,13 @@ function DeliveryBadge({date}){
 
 function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
   const [fil,setFil]=useState(ST.new);const [showH,setShowH]=useState(false);const [showSched,setShowSched]=useState(false);const t=td();
+  const [histPage,setHistPage]=useState(1);const HIST_PER_PAGE=20;
   const scheduled=useMemo(()=>orders.filter(o=>o.delivery_date&&o.status!==ST.done&&o.status!==ST.cancel).sort((a,b)=>(a.delivery_date||"").localeCompare(b.delivery_date||"")),[orders]);
   const cts=useMemo(()=>{const c={};Object.values(ST).forEach(s=>{c[s]=orders.filter(o=>o.status===s&&(s===ST.done||s===ST.cancel?o.date===t:true)).length;});return c;},[orders,t]);
-  const filt=orders.filter(o=>{if(fil===ST.done||fil===ST.cancel)return o.status===fil&&o.date===t;return o.status===fil;}).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||""));
-  const hist=orders.filter(o=>(o.status===ST.done||o.status===ST.cancel)&&o.date<t).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||""));
+  const filt=useMemo(()=>orders.filter(o=>{if(fil===ST.done||fil===ST.cancel)return o.status===fil&&o.date===t;return o.status===fil;}).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||"")),[orders,fil,t]);
+  const hist=useMemo(()=>orders.filter(o=>(o.status===ST.done||o.status===ST.cancel)&&o.date<t).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||"")),[orders,t]);
+  const histPaged=useMemo(()=>hist.slice(0,histPage*HIST_PER_PAGE),[hist,histPage]);
+  const histGrouped=useMemo(()=>Object.entries(histPaged.reduce((a,o)=>{const d=(o.created_at||o.date||"").split("T")[0];if(!a[d])a[d]=[];a[d].push(o);return a;},{})).sort((a,b)=>b[0].localeCompare(a[0])),[histPaged]);
   const nxt=s=>({[ST.new]:{l:"Preparar",c:"byw",i:I.fire,n:ST.prep},[ST.prep]:{l:"Marcar activo",c:"bgn",i:I.zap,n:ST.active},[ST.active]:{l:"Completar",c:"bbl",i:I.check,n:ST.done}}[s]||null);
   const sfs=[{id:ST.new,l:"Nuevos",i:I.orders,co:"var(--bl)"},{id:ST.prep,l:"Preparando",i:I.fire,co:"var(--yw)"},{id:ST.active,l:"Activos",i:I.zap,co:"var(--gn)"},{id:ST.done,l:"Listos",i:I.check,co:"var(--t3)"},{id:ST.cancel,l:"Cancel.",i:I.x,co:"var(--rd)"}];
 
@@ -797,9 +800,9 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
         </div>);
       })}
     </div></div>}
-    {showH&&<div className="po"><div className="ph"><button onClick={()=>setShowH(false)}>{I.back({})}</button><h2>Historial</h2></div><div className="pb">
+    {showH&&<div className="po"><div className="ph"><button onClick={()=>{setShowH(false);setHistPage(1);}}>{I.back({})}</button><h2>Historial ({hist.length})</h2></div><div className="pb">
       {hist.length===0?<div className="c"><div className="empty"><div className="eic">📜</div><div>Sin historial</div></div></div>
-      :Object.entries(hist.reduce((a,o)=>{const d=(o.created_at||o.date||"").split("T")[0];if(!a[d])a[d]=[];a[d].push(o);return a;},{})).sort((a,b)=>b[0].localeCompare(a[0])).map(([d,os])=>(<div key={d}>
+      :<>{histGrouped.map(([d,os])=>(<div key={d}>
         <div style={{fontSize:12,fontWeight:700,color:"var(--t3)",padding:"8px 0 4px"}}>{new Date(d+"T12:00:00").toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}</div>
         {os.map(o=>{const sc=ST_C[o.status];const items=o.order_items||o.items||[];return(<div key={o.id} className="c" style={{padding:12}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontWeight:700,fontSize:14}}>{o.customer}</div>
@@ -807,6 +810,8 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
             <div style={{textAlign:"right"}}><div style={{fontWeight:700}}>${fi(o.total)}</div><span className="badge" style={{background:sc?.bg,color:sc?.tx}}>{ST_L[o.status]}</span></div>
           </div></div>);})}
       </div>))}
+      {histPaged.length<hist.length&&<button className="btn bs" style={{width:"100%",marginTop:12}} onClick={()=>setHistPage(p=>p+1)}>Cargar más ({hist.length-histPaged.length} restantes)</button>}
+      </>}
     </div></div>}
   </>);
 }
@@ -1091,12 +1096,15 @@ function SaleForm({recs,onClose,onSave}){
 // ═══════ CRM ═══════
 function CRM({orders,recs,ings,msg}){
   const [customers,setCustomers]=useState([]);const [loading,setLoading]=useState(true);const [search,setSearch]=useState("");
+  const [crmPage,setCrmPage]=useState(1);const CRM_PER_PAGE=30;
   useEffect(()=>{fetchCustomerStats().then(c=>{setCustomers(c);setLoading(false);});},[]);
 
-  // Estadísticas rápidas
+  // Estadísticas rápidas (memoizado)
   const payMethods=useMemo(()=>{const m={};orders.filter(o=>o.status!=='cancelled').forEach(o=>{const p=o.payment||"otro";m[p]=(m[p]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1]);},[orders]);
+  const totalFacturado=useMemo(()=>customers.reduce((a,c)=>a+c.total,0),[customers]);
 
-  const filt=customers.filter(c=>{const q=search.toLowerCase();return !q||(c.name||"").toLowerCase().includes(q)||(c.phone||"").includes(q)||(c.email||"").toLowerCase().includes(q);});
+  const filt=useMemo(()=>{const q=search.toLowerCase();return customers.filter(c=>!q||(c.name||"").toLowerCase().includes(q)||(c.phone||"").includes(q)||(c.email||"").toLowerCase().includes(q));},[customers,search]);
+  const filtPaged=useMemo(()=>filt.slice(0,crmPage*CRM_PER_PAGE),[filt,crmPage]);
 
   const exportCSV=()=>{
     const header="Nombre,Teléfono,Email,Pedidos,Gasto Total,Última compra\n";
@@ -1116,7 +1124,7 @@ function CRM({orders,recs,ings,msg}){
     {/* Stats rápidas */}
     <div style={{display:"flex",gap:10,padding:"0 16px 12px"}}>
       <div className="c" style={{flex:1,padding:12,textAlign:"center"}}><div style={{fontSize:24,fontWeight:700}}>{customers.length}</div><div style={{fontSize:11,color:"var(--t3)"}}>Clientes</div></div>
-      <div className="c" style={{flex:1,padding:12,textAlign:"center"}}><div style={{fontSize:24,fontWeight:700}}>${fi(customers.reduce((a,c)=>a+c.total,0))}</div><div style={{fontSize:11,color:"var(--t3)"}}>Facturado total</div></div>
+      <div className="c" style={{flex:1,padding:12,textAlign:"center"}}><div style={{fontSize:24,fontWeight:700}}>${fi(totalFacturado)}</div><div style={{fontSize:11,color:"var(--t3)"}}>Facturado total</div></div>
     </div>
 
     {/* Método de pago más usado */}
@@ -1139,7 +1147,7 @@ function CRM({orders,recs,ings,msg}){
       <input className="fin" placeholder="🔍 Buscar cliente..." value={search} onChange={e=>setSearch(e.target.value)} style={{marginBottom:12}}/>
       <div style={{fontSize:12,color:"var(--t3)",marginBottom:8}}>{filt.length} cliente{filt.length!==1?"s":""}</div>
       {filt.length===0?<div className="c"><div className="empty"><div className="eic">👥</div><div>Sin clientes registrados</div></div></div>
-      :filt.slice(0,50).map((c,i)=>(
+      :<>{filtPaged.map((c,i)=>(
         <div key={i} className="c" style={{padding:12,marginBottom:6}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div>
@@ -1156,6 +1164,8 @@ function CRM({orders,recs,ings,msg}){
           {c.last_order&&<div style={{fontSize:11,color:"var(--t3)",marginTop:4}}>Último: {new Date(c.last_order).toLocaleDateString("es-AR",{day:"2-digit",month:"short",year:"numeric"})}</div>}
         </div>
       ))}
+      {filtPaged.length<filt.length&&<button className="btn bs" style={{width:"100%",marginTop:8}} onClick={()=>setCrmPage(p=>p+1)}>Cargar más ({filt.length-filtPaged.length} restantes)</button>}
+      </>}
     </div>
   </>);
 }
@@ -1193,7 +1203,7 @@ function Settings({sett,setSett,msg,onBack}){
       {/* ── Portada ── */}
       <div className="c">
         <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>🖼️ Foto de portada</label>
-        {s.cover_url&&<img src={s.cover_url} alt="portada" style={{width:"100%",height:140,objectFit:"cover",borderRadius:10,marginBottom:10}}/>}
+        {s.cover_url&&<img src={s.cover_url} alt="portada" loading="lazy" style={{width:"100%",height:140,objectFit:"cover",borderRadius:10,marginBottom:10}}/>}
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           <label style={{flex:1,padding:"9px 14px",background:"var(--pr,#C45D3E)",color:"#fff",borderRadius:10,fontSize:13,fontWeight:600,cursor:"pointer",textAlign:"center"}}>
             {uploadingCover?"Subiendo...":"📷 Subir foto"}

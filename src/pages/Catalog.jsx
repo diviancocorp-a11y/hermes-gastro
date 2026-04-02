@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { I, fi } from "../lib/utils";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
@@ -41,12 +41,12 @@ export default function Catalog() {
 
   // Fecha mínima para agendamiento: hoy o mañana si ya pasaron las 18:00
   // Usa hora del servidor si está disponible para evitar manipulación del reloj
-  const getMinDate = () => {
+  const minDate = useMemo(() => {
     const now = serverNow || new Date();
     const cutoff = new Date(now); cutoff.setHours(18, 0, 0, 0);
     const base = now >= cutoff ? new Date(now.getTime() + 86400000) : now;
     return base.toISOString().split("T")[0];
-  };
+  }, [serverNow]);
   const [upsell, setUpsell] = useState(null); // {product, suggestions[]}
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState(null); // {id, discount_pct}
@@ -60,7 +60,7 @@ export default function Catalog() {
 
   // --- Verificar si el local está abierto ahora según store_hours ---
   // Usa hora del servidor (serverNow) para evitar que el cliente manipule su reloj
-  const getStoreStatus = () => {
+  const storeStatus = useMemo(() => {
     const hrs = sett?.store_hours;
     if (!hrs) return { open: true, msg: "" }; // sin horarios configurados = siempre abierto
     const now = serverNow || new Date();
@@ -76,8 +76,7 @@ export default function Catalog() {
     if (nowMins < openMins) return { open: false, msg: `Abrimos a las ${today.open}` };
     if (nowMins >= closeMins) return { open: false, msg: `Cerramos a las ${today.close}. Podés programar tu pedido.` };
     return { open: true, msg: `Abierto hasta las ${today.close}` };
-  };
-  const storeStatus = getStoreStatus();
+  }, [sett, serverNow]);
   // Si el local está cerrado, forzar modo "Programar"
   useEffect(() => {
     if (!storeStatus.open && scheduleMode === "now") setScheduleMode("later");
@@ -103,19 +102,29 @@ export default function Catalog() {
     loadData();
   }, []);
 
-  // Categorías únicas
-  const categories = ["Todos", ...new Set(products.map(r => r.category))];
+  // Categorías únicas (memoizado)
+  const categories = useMemo(() => ["Todos", ...new Set(products.map(r => r.category))], [products]);
 
-  // Filtrar productos
-  const filteredProds = selCat === "Todos"
+  // Filtrar productos (memoizado)
+  const filteredProds = useMemo(() => selCat === "Todos"
     ? products
-    : products.filter(r => r.category === selCat);
+    : products.filter(r => r.category === selCat), [selCat, products]);
 
-  // Totales del carrito
-  const cc = cart.reduce((s, i) => s + i.qty, 0);
-  const ctBase = cart.reduce((s, i) => s + i.qty * i.price, 0);
-  const discount = coupon ? Math.round(ctBase * coupon.discount_pct / 100) : 0;
-  const ct = ctBase - discount;
+  // Mapa rápido de cantidades en carrito: O(1) lookup en vez de O(n) find
+  const cartQtyMap = useMemo(() => {
+    const m = {};
+    cart.forEach(i => { m[i.id] = i.qty; });
+    return m;
+  }, [cart]);
+
+  // Totales del carrito (memoizado)
+  const { cc, ctBase, discount, ct } = useMemo(() => {
+    const cc = cart.reduce((s, i) => s + i.qty, 0);
+    const ctBase = cart.reduce((s, i) => s + i.qty * i.price, 0);
+    const discount = coupon ? Math.round(ctBase * coupon.discount_pct / 100) : 0;
+    const ct = ctBase - discount;
+    return { cc, ctBase, discount, ct };
+  }, [cart, coupon]);
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -126,14 +135,13 @@ export default function Catalog() {
     else setCouponErr("Cupón inválido, vencido o no corresponde a tu email.");
   };
 
-  // Obtener cantidad de un producto específico en el carrito
-  const getQty = (id) => {
-    const item = cart.find(i => i.id === id);
-    return item ? item.qty : 0;
-  };
+  // Obtener cantidad de un producto específico en el carrito (O(1) con mapa)
+  const getQty = useCallback((id) => {
+    return cartQtyMap[id] || 0;
+  }, [cartQtyMap]);
 
-  // Agregar al carrito
-  const addC = (p, e) => {
+  // Agregar al carrito (memoizado)
+  const addC = useCallback((p, e) => {
     e.stopPropagation();
     setCart(prev => {
       const ex = prev.find(i => i.id === p.id);
@@ -142,20 +150,20 @@ export default function Catalog() {
     });
     // Upselling: mostrar sugerencias si el producto tiene related_ids
     if (p.related_ids && p.related_ids.length > 0) {
-      const suggestions = products.filter(x => p.related_ids.includes(x.id) && !cart.find(c => c.id === x.id));
+      const suggestions = products.filter(x => p.related_ids.includes(x.id));
       if (suggestions.length > 0) setUpsell({ product: p, suggestions: suggestions.slice(0, 3) });
     }
-  };
+  }, [products]);
 
-  // Agregar desde upsell y cerrar popup
-  const addFromUpsell = (p) => {
+  // Agregar desde upsell y cerrar popup (memoizado)
+  const addFromUpsell = useCallback((p) => {
     setCart(prev => {
       const ex = prev.find(i => i.id === p.id);
       if (ex) return prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i);
       return [...prev, { id: p.id, name: p.name, price: p.sale_price, qty: 1, img: p.image_url }];
     });
     setUpsell(null);
-  };
+  }, []);
 
   // Actualizar cantidad en el carrito
   const updQ = (id, nq) => {
@@ -290,7 +298,7 @@ export default function Catalog() {
             <div style={{display:"flex",gap:10}}>
               <div style={{flex:1}}>
                 <label style={{fontSize:11,fontWeight:700,color:"var(--t3)",marginBottom:4,display:"block"}}>Fecha</label>
-                <input className="cki" type="date" value={form.delivery_date} min={getMinDate()} onChange={e => sf("delivery_date", e.target.value)} style={{colorScheme:"light"}} />
+                <input className="cki" type="date" value={form.delivery_date} min={minDate} onChange={e => sf("delivery_date", e.target.value)} style={{colorScheme:"light"}} />
               </div>
               <div style={{flex:1}}>
                 <label style={{fontSize:11,fontWeight:700,color:"var(--t3)",marginBottom:4,display:"block"}}>Hora (aprox.)</label>
@@ -379,7 +387,7 @@ export default function Catalog() {
       <div className="pb">
         {cart.map(it => (
           <div key={it.id} className="ci2">
-            <img className="ci-img" src={it.img} alt="" />
+            <img className="ci-img" src={it.img} alt="" loading="lazy" />
             <div className="ci-i">
               <div className="ci-n">{it.name}</div>
               <div className="ci-p" style={{ marginBottom: 12 }}>${fi(it.price * it.qty)}</div>
@@ -501,7 +509,7 @@ export default function Catalog() {
                   </button>
                 </div>
               </div>
-              <img className="prod-img" src={p.image_url} alt={p.name} onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+              <img className="prod-img" src={p.image_url} alt={p.name} loading="lazy" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
               <div className="prod-img prod-img-placeholder" style={{ display:'none', alignItems:'center', justifyContent:'center', fontSize:32, fontFamily:"'DM Serif Display',serif", color:'var(--t3)', background:'var(--b2)' }}>{p.name.charAt(0)}</div>
             </div>
           )
@@ -527,7 +535,7 @@ export default function Catalog() {
             <div className="ups-list">
               {upsell.suggestions.map(s => (
                 <div key={s.id} className="ups-card" onClick={() => addFromUpsell(s)}>
-                  <img className="ups-img" src={s.image_url} alt={s.name} onError={e => { e.target.style.display='none'; }} />
+                  <img className="ups-img" src={s.image_url} alt={s.name} loading="lazy" onError={e => { e.target.style.display='none'; }} />
                   <div className="ups-info">
                     <div className="ups-name">{s.name}</div>
                     <div className="ups-price">${fi(s.sale_price)}</div>
