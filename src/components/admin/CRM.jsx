@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { I, fi } from "../../lib/utils";
+import { I, fi, td } from "../../lib/utils";
 import { fetchCustomerStats } from "../../lib/adminService";
 
 function CRM({orders,recs,ings,msg}){
@@ -72,4 +72,10 @@ function CRM({orders,recs,ings,msg}){
           {c.last_order&&<div style={{fontSize:11,color:"var(--t3)",marginTop:4}}>Último: {new Date(c.last_order).toLocaleDateString("es-AR",{day:"2-digit",month:"short",year:"numeric"})}</div>}
         </div>
       ))}
-      {filtPaged.length<filt.length&&<button className="btn bs" style={{width:"100%",marginTop:8}} onClick={()=>setCrmPage(p=>p+1)}>Cargar más ({filt.length-filtPaged.length} 
+      {filtPaged.length<filt.length&&<button className="btn bs" style={{width:"100%",marginTop:8}} onClick={()=>setCrmPage(p=>p+1)}>Cargar más ({filt.length-filtPaged.length} restantes)</button>}
+      </>}
+    </div>
+  </>);
+}
+
+export default CRM;

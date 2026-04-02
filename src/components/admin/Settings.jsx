@@ -116,4 +116,9 @@ function Settings({sett,setSett,msg,onBack}){
         })}
       </div>
 
-      <button className="btn bp" style={{marginTop:8}} onClick={async()=>{const saved=await updateSettings(s);if(saved){setSett(saved);msg("Guardado ✓");onBack();}else{msg("Error al gu
+      <button className="btn bp" style={{marginTop:8}} onClick={async()=>{const saved=await updateSettings(s);if(saved){setSett(saved);msg("Guardado ✓");onBack();}else{msg("Error al guardar");}}}>{I.check({size:18,color:"#fff"})} Guardar cambios</button>
+    </div>
+  </>);
+}
+
+export default Settings;

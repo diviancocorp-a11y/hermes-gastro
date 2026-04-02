@@ -71,4 +71,8 @@ function NewOrderOverlay({count,onAck}){
       }}>
         Ver pedidos →
       </div>
-  
+    </div>
+  );
+}
+
+export { CancelDlg, StockWarningDlg, NewOrderOverlay };
