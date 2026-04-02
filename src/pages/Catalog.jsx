@@ -3,13 +3,26 @@ import { useNavigate } from "react-router-dom";
 import { I, fi } from "../lib/utils";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 
-// --- DESCUENTOS ROTATIVOS POR CATEGORÍA (Lunes a Jueves, 15% OFF) ---
+// --- CATEGORÍAS MADRE (agrupan subcategorías de Supabase) ---
+const CAT_GROUPS = [
+  { name: "Primeros Mimos",         icon: "🫕", subs: ["Brusquetas", "Escabeches", "Aperitivos"] },
+  { name: "La Mesa Principal",      icon: "🍕", subs: ["Rotisería", "Pizzas"] },
+  { name: "El Sanguche de la Nona", icon: "🥪", subs: ["Sandwiches"] },
+  { name: "La Nona Amasó",          icon: "🥖", subs: ["Panadería", "Panificados"] },
+  { name: "La Última Mordida",      icon: "🍰", subs: ["Tortas", "torta", "Budines", "Alfajores"] },
+  { name: "Cocina Consciente",      icon: "🥗", subs: ["Saludable"] },
+];
+// Mapa inverso: subcategoría → categoría madre
+const SUB_TO_PARENT = {};
+CAT_GROUPS.forEach(g => g.subs.forEach(s => { SUB_TO_PARENT[s] = g.name; }));
+
+// --- DESCUENTOS ROTATIVOS POR CATEGORÍA MADRE (Lunes a Jueves, 15% OFF) ---
 // dayIdx: 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves  (JS getDay: 1-4)
 const DAILY_DEALS = {
-  1: ["Pizzas", "Panificados", "Panadería"],          // Lunes
-  2: ["Tortas", "Budines", "Alfajores"],               // Martes
-  3: ["Sandwiches", "Rotisería", "Empanadas"],         // Miércoles (hoy no tiene "Empanadas" pero queda listo)
-  4: ["Brusquetas", "Escabeches", "Aperitivos", "Saludable"], // Jueves
+  1: ["La Nona Amasó", "La Mesa Principal"],              // Lunes
+  2: ["La Última Mordida"],                                // Martes
+  3: ["El Sanguche de la Nona", "Primeros Mimos"],         // Miércoles
+  4: ["Cocina Consciente", "Primeros Mimos"],              // Jueves
 };
 const DEAL_PCT = 15; // porcentaje de descuento
 
@@ -112,33 +125,44 @@ export default function Catalog() {
     loadData();
   }, []);
 
-  // Categorías con descuento del día (usa hora del servidor)
+  // Categorías madre con descuento del día (usa hora del servidor)
   const dealCats = useMemo(() => {
     const now = serverNow || new Date();
     const dow = now.getDay(); // 0=Dom, 1=Lun ... 4=Jue
     return new Set(DAILY_DEALS[dow] || []);
   }, [serverNow]);
 
-  // Categorías únicas con imagen representativa (primer producto con imagen de cada cat)
+  // Categorías madre con imagen representativa (primer producto con imagen de cada grupo)
   const categories = useMemo(() => {
-    const cats = [...new Set(products.map(r => r.category))];
-    const catData = cats.map(c => {
-      const rep = products.find(p => p.category === c && p.image_url);
-      return { name: c, img: rep?.image_url || null, deal: dealCats.has(c) };
-    });
-    return [{ name: "Todos", img: null, deal: false }, ...catData];
+    const existingSubs = new Set(products.map(r => r.category));
+    const catData = CAT_GROUPS
+      .filter(g => g.subs.some(s => existingSubs.has(s))) // solo grupos que tienen productos
+      .map(g => {
+        const rep = products.find(p => g.subs.includes(p.category) && p.image_url);
+        return { name: g.name, icon: g.icon, subs: g.subs, img: rep?.image_url || null, deal: dealCats.has(g.name) };
+      });
+    return [{ name: "Todos", icon: "🏠", subs: [], img: null, deal: false }, ...catData];
   }, [products, dealCats]);
 
-  // Precio con descuento del día aplicado
-  const getPrice = useCallback((p) => {
-    if (dealCats.has(p.category)) return Math.round(p.sale_price * (1 - DEAL_PCT / 100));
-    return p.sale_price;
+  // Helper: ¿un producto pertenece a una categoría madre con descuento?
+  const hasDeal = useCallback((p) => {
+    const parent = SUB_TO_PARENT[p.category];
+    return parent ? dealCats.has(parent) : false;
   }, [dealCats]);
 
-  // Filtrar productos (memoizado)
-  const filteredProds = useMemo(() => selCat === "Todos"
-    ? products
-    : products.filter(r => r.category === selCat), [selCat, products]);
+  // Precio con descuento del día aplicado (basado en categoría madre)
+  const getPrice = useCallback((p) => {
+    if (hasDeal(p)) return Math.round(p.sale_price * (1 - DEAL_PCT / 100));
+    return p.sale_price;
+  }, [hasDeal]);
+
+  // Filtrar productos por categoría madre seleccionada
+  const filteredProds = useMemo(() => {
+    if (selCat === "Todos") return products;
+    const group = CAT_GROUPS.find(g => g.name === selCat);
+    if (!group) return products;
+    return products.filter(r => group.subs.includes(r.category));
+  }, [selCat, products]);
 
   // Colores para avatares de productos sin imagen
   const avatarColors = useMemo(() => [
@@ -526,15 +550,22 @@ export default function Catalog() {
       )}
 
       {/* Menú de Categorías — tarjetas con imagen */}
-      <div className="cat-scroll">
-        {categories.map(c => (
-          <div key={c.name} className={`cat-card ${selCat === c.name ? "active" : ""}`} onClick={() => setSelCat(c.name)}>
-            {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" />}
-            <div className="cat-card-overlay" />
-            <span className="cat-card-label">{c.name}</span>
-            {c.deal && <span className="cat-deal-badge">{DEAL_PCT}% OFF</span>}
-          </div>
-        ))}
+      <div className="cat-section">
+        <div className="cat-header">
+          <h2 className="cat-title">Categorías</h2>
+        </div>
+        <div className="cat-scroll">
+          {categories.map(c => (
+            <div key={c.name} className={`cat-card ${selCat === c.name ? "active" : ""} ${c.deal ? "has-deal" : ""}`} onClick={() => setSelCat(c.name)}>
+              {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" />}
+              <div className="cat-card-overlay" />
+              <div className="cat-card-content">
+                <span className="cat-card-label">{c.name}</span>
+              </div>
+              {c.deal && <span className="cat-deal-badge">{DEAL_PCT}% OFF</span>}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Lista de Productos */}
@@ -548,12 +579,12 @@ export default function Catalog() {
                 <div className="prod-desc">{p.description}</div>
                 <div className="prod-bot">
                   <div className="prod-price">
-                    {dealCats.has(p.category) ? (<>
+                    {hasDeal(p) ? (<>
                       <span className="price-old">${fi(p.sale_price)}</span>
                       <span className="price-deal">${fi(getPrice(p))}</span>
                     </>) : `$${fi(p.sale_price)}`}
                   </div>
-                  {dealCats.has(p.category) && <span className="prod-deal-tag">-{DEAL_PCT}%</span>}
+                  {hasDeal(p) && <span className="prod-deal-tag">-{DEAL_PCT}%</span>}
                   <button className={`btn-add ${inCartQty > 0 ? 'has-qty' : ''} ${!isOpen ? 'disabled' : ''}`} onClick={(e) => isOpen && addC(p, e)} disabled={!isOpen} style={!isOpen ? { opacity: 0.4, cursor: "not-allowed" } : {}}>
                     {inCartQty > 0 ? inCartQty : I.plus({ size: 16 })}
                   </button>
