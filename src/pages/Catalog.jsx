@@ -3,6 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { I, fi } from "../lib/utils";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 
+// --- DESCUENTOS ROTATIVOS POR CATEGORÍA (Lunes a Jueves, 15% OFF) ---
+// dayIdx: 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves  (JS getDay: 1-4)
+const DAILY_DEALS = {
+  1: ["Pizzas", "Panificados", "Panadería"],          // Lunes
+  2: ["Tortas", "Budines", "Alfajores"],               // Martes
+  3: ["Sandwiches", "Rotisería", "Empanadas"],         // Miércoles (hoy no tiene "Empanadas" pero queda listo)
+  4: ["Brusquetas", "Escabeches", "Aperitivos", "Saludable"], // Jueves
+};
+const DEAL_PCT = 15; // porcentaje de descuento
+
 // --- DATOS DE RESPALDO (se usan si Supabase no responde) ---
 const fallbackSettings = {
   biz_name: "La Nona Pato",
@@ -102,15 +112,28 @@ export default function Catalog() {
     loadData();
   }, []);
 
+  // Categorías con descuento del día (usa hora del servidor)
+  const dealCats = useMemo(() => {
+    const now = serverNow || new Date();
+    const dow = now.getDay(); // 0=Dom, 1=Lun ... 4=Jue
+    return new Set(DAILY_DEALS[dow] || []);
+  }, [serverNow]);
+
   // Categorías únicas con imagen representativa (primer producto con imagen de cada cat)
   const categories = useMemo(() => {
     const cats = [...new Set(products.map(r => r.category))];
     const catData = cats.map(c => {
       const rep = products.find(p => p.category === c && p.image_url);
-      return { name: c, img: rep?.image_url || null };
+      return { name: c, img: rep?.image_url || null, deal: dealCats.has(c) };
     });
-    return [{ name: "Todos", img: null }, ...catData];
-  }, [products]);
+    return [{ name: "Todos", img: null, deal: false }, ...catData];
+  }, [products, dealCats]);
+
+  // Precio con descuento del día aplicado
+  const getPrice = useCallback((p) => {
+    if (dealCats.has(p.category)) return Math.round(p.sale_price * (1 - DEAL_PCT / 100));
+    return p.sale_price;
+  }, [dealCats]);
 
   // Filtrar productos (memoizado)
   const filteredProds = useMemo(() => selCat === "Todos"
@@ -153,30 +176,32 @@ export default function Catalog() {
     return cartQtyMap[id] || 0;
   }, [cartQtyMap]);
 
-  // Agregar al carrito (memoizado)
+  // Agregar al carrito (memoizado) — usa precio con descuento del día
   const addC = useCallback((p, e) => {
     e.stopPropagation();
+    const finalPrice = getPrice(p);
     setCart(prev => {
       const ex = prev.find(i => i.id === p.id);
       if (ex) return prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i);
-      return [...prev, { id: p.id, name: p.name, price: p.sale_price, qty: 1, img: p.image_url }];
+      return [...prev, { id: p.id, name: p.name, price: finalPrice, qty: 1, img: p.image_url }];
     });
     // Upselling: mostrar sugerencias si el producto tiene related_ids
     if (p.related_ids && p.related_ids.length > 0) {
       const suggestions = products.filter(x => p.related_ids.includes(x.id));
       if (suggestions.length > 0) setUpsell({ product: p, suggestions: suggestions.slice(0, 3) });
     }
-  }, [products]);
+  }, [products, getPrice]);
 
   // Agregar desde upsell y cerrar popup (memoizado)
   const addFromUpsell = useCallback((p) => {
+    const finalPrice = getPrice(p);
     setCart(prev => {
       const ex = prev.find(i => i.id === p.id);
       if (ex) return prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i);
-      return [...prev, { id: p.id, name: p.name, price: p.sale_price, qty: 1, img: p.image_url }];
+      return [...prev, { id: p.id, name: p.name, price: finalPrice, qty: 1, img: p.image_url }];
     });
     setUpsell(null);
-  }, []);
+  }, [getPrice]);
 
   // Actualizar cantidad en el carrito
   const updQ = (id, nq) => {
@@ -507,6 +532,7 @@ export default function Catalog() {
             {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" />}
             <div className="cat-card-overlay" />
             <span className="cat-card-label">{c.name}</span>
+            {c.deal && <span className="cat-deal-badge">{DEAL_PCT}% OFF</span>}
           </div>
         ))}
       </div>
@@ -521,7 +547,13 @@ export default function Catalog() {
                 <div className="prod-title">{p.name}</div>
                 <div className="prod-desc">{p.description}</div>
                 <div className="prod-bot">
-                  <div className="prod-price">${fi(p.sale_price)}</div>
+                  <div className="prod-price">
+                    {dealCats.has(p.category) ? (<>
+                      <span className="price-old">${fi(p.sale_price)}</span>
+                      <span className="price-deal">${fi(getPrice(p))}</span>
+                    </>) : `$${fi(p.sale_price)}`}
+                  </div>
+                  {dealCats.has(p.category) && <span className="prod-deal-tag">-{DEAL_PCT}%</span>}
                   <button className={`btn-add ${inCartQty > 0 ? 'has-qty' : ''} ${!isOpen ? 'disabled' : ''}`} onClick={(e) => isOpen && addC(p, e)} disabled={!isOpen} style={!isOpen ? { opacity: 0.4, cursor: "not-allowed" } : {}}>
                     {inCartQty > 0 ? inCartQty : I.plus({ size: 16 })}
                   </button>
