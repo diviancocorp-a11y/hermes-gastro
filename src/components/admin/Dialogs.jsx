@@ -1,4 +1,4 @@
-import { I } from "../lib/utils";
+import { I } from "../../lib/utils";
 
 function CancelDlg({order,recs,ings,onClose,onConfirm}){
   const used=[];const items=order.order_items||order.items||[];
@@ -71,8 +71,4 @@ function NewOrderOverlay({count,onAck}){
       }}>
         Ver pedidos →
       </div>
-    </div>
-  );
-}
-
-export { CancelDlg, StockWarningDlg, NewOrderOverlay };
+  
