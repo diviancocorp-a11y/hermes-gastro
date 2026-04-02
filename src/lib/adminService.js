@@ -292,9 +292,23 @@ export async function fetchDashboardStats() {
   }
 }
 
-// ─── STORAGE: IMAGE UPLOAD ────────────────────────────
+// ─── STORAGE: IMAGE UPLOAD (con validación) ──────────
+const ALLOWED_IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_IMG_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+const MAX_IMG_SIZE = 5 * 1024 * 1024; // 5MB
+
+function validateImageFile(file) {
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (!ALLOWED_IMG_EXTS.includes(ext)) return 'Extensión no permitida. Usá JPG, PNG o WebP.';
+  if (!ALLOWED_IMG_TYPES.includes(file.type)) return 'Tipo de archivo no permitido.';
+  if (file.size > MAX_IMG_SIZE) return `Archivo muy grande (${(file.size/1024/1024).toFixed(1)}MB). Máximo 5MB.`;
+  return null;
+}
+
 export async function uploadCoverImage(file) {
-  const ext = file.name.split('.').pop();
+  const err = validateImageFile(file);
+  if (err) { console.error('uploadCoverImage:', err); return { __error: err }; }
+  const ext = file.name.split('.').pop().toLowerCase();
   const path = `cover-${Date.now()}.${ext}`;
   const { data, error } = await supabase.storage
     .from('recipe-images')
@@ -305,7 +319,9 @@ export async function uploadCoverImage(file) {
 }
 
 export async function uploadRecipeImage(file) {
-  const ext = file.name.split('.').pop();
+  const err = validateImageFile(file);
+  if (err) { console.error('uploadRecipeImage:', err); return { __error: err }; }
+  const ext = file.name.split('.').pop().toLowerCase();
   const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
   const { data, error } = await supabase.storage
     .from('recipe-images')

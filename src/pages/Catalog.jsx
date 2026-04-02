@@ -26,6 +26,7 @@ export default function Catalog() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [serverNow, setServerNow] = useState(null); // hora del servidor para validar horarios
 
   // --- Estado de UI ---
   const [selCat, setSelCat] = useState("Todos");
@@ -39,9 +40,10 @@ export default function Catalog() {
   const [scheduleMode, setScheduleMode] = useState("now"); // "now" | "later"
 
   // Fecha mínima para agendamiento: hoy o mañana si ya pasaron las 18:00
+  // Usa hora del servidor si está disponible para evitar manipulación del reloj
   const getMinDate = () => {
-    const now = new Date();
-    const cutoff = new Date(); cutoff.setHours(18, 0, 0, 0);
+    const now = serverNow || new Date();
+    const cutoff = new Date(now); cutoff.setHours(18, 0, 0, 0);
     const base = now >= cutoff ? new Date(now.getTime() + 86400000) : now;
     return base.toISOString().split("T")[0];
   };
@@ -57,10 +59,11 @@ export default function Catalog() {
   const sf = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   // --- Verificar si el local está abierto ahora según store_hours ---
+  // Usa hora del servidor (serverNow) para evitar que el cliente manipule su reloj
   const getStoreStatus = () => {
     const hrs = sett?.store_hours;
     if (!hrs) return { open: true, msg: "" }; // sin horarios configurados = siempre abierto
-    const now = new Date();
+    const now = serverNow || new Date();
     const dayIdx = (now.getDay() + 6) % 7; // JS: 0=Dom → nuestro: 0=Lun
     const today = hrs[dayIdx];
     if (!today || today.closed) return { open: false, msg: "Hoy no abrimos" };
@@ -88,6 +91,7 @@ export default function Catalog() {
       if (data) {
         setSett(data.settings);
         setProducts(data.products);
+        if (data.serverNow) setServerNow(new Date(data.serverNow));
       } else {
         // Si Supabase falla, usamos datos de respaldo
         console.warn("No se pudo conectar a Supabase. Usando datos de respaldo.");
@@ -262,12 +266,14 @@ export default function Catalog() {
         <h2>Finalizar Pedido</h2>
       </div>
       <div className="pb" style={{ paddingBottom: 100 }}>
-        <div className="cks"><div className="ckl">👤 Tus Datos</div><input className="cki" value={form.name} onChange={e => sf("name", e.target.value)} placeholder="Nombre y Apellido" /></div>
+        <div className="cks"><div className="ckl">👤 Tus Datos</div><input className="cki" value={form.name} onChange={e => sf("name", e.target.value.slice(0, 200))} placeholder="Nombre y Apellido" /></div>
         <div className="cks">
-          <input className="cki" type="tel" value={form.phone} onChange={e => sf("phone", e.target.value.replace(/\D/g, ""))} placeholder="Teléfono (Ej: 1155443322)" maxLength={15}/>
+          <input className="cki" type="tel" value={form.phone} onChange={e => sf("phone", e.target.value.replace(/\D/g, "").slice(0, 15))} placeholder="Teléfono (Ej: 1155443322)" maxLength={15}/>
           {form.phone && form.phone.length < 10 && <p style={{fontSize:11,color:"#C62828",margin:"4px 0 0 4px"}}>Mínimo 10 dígitos · ({form.phone.length}/10)</p>}
         </div>
-        <div className="cks"><input className="cki" type="email" value={form.email} onChange={e => sf("email", e.target.value)} placeholder="Email (opcional, para recibir tu pedido)" /></div>
+        <div className="cks"><input className="cki" type="email" value={form.email} onChange={e => sf("email", e.target.value.slice(0, 200))} placeholder="Email (opcional, para recibir tu pedido)" />
+          {form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && <p style={{fontSize:11,color:"#C62828",margin:"4px 0 0 4px"}}>Email no válido</p>}
+        </div>
 
         {/* Cuándo lo necesitás: Ahora o Programar */}
         <div className="cks">
@@ -356,7 +362,7 @@ export default function Catalog() {
           {coupon && <><span style={{color:"var(--t3)",textDecoration:"line-through",fontSize:13}}>${fi(ctBase)}</span><span style={{flex:1}}/></>}
           <span>Total a pagar</span><span style={{ color: coupon?"var(--gn)":"var(--tx)",fontWeight:700 }}>${fi(ct)}</span>
         </div>
-        <button className="abtn" style={{ width: "100%" }} disabled={!form.name || !form.phone || form.phone.length < 10 || (scheduleMode === "later" && !form.delivery_date) || (form.delivery === "envio" && !form.address) || sending || ct === 0} onClick={send}>
+        <button className="abtn" style={{ width: "100%" }} disabled={!form.name.trim() || !form.phone || form.phone.length < 10 || (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) || (scheduleMode === "later" && !form.delivery_date) || (form.delivery === "envio" && !form.address.trim()) || sending || ct === 0} onClick={send}>
           {sending ? "Enviando..." : "Confirmar y Enviar"}
         </button>
       </div>

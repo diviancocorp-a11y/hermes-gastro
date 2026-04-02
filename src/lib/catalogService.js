@@ -50,7 +50,18 @@ export async function fetchCatalog() {
       return null;
     }
 
-    return { settings, products: products || [] };
+    // 3. Traer hora del servidor (evita manipulación de reloj del cliente)
+    let serverNow = new Date().toISOString(); // fallback al cliente
+    try {
+      const { data: timeData, error: timeErr } = await supabase
+        .rpc('get_server_time');
+      if (!timeErr && timeData) serverNow = timeData;
+    } catch {
+      // Si la función RPC no existe, usar hora del cliente como fallback
+      console.warn('get_server_time RPC no disponible, usando hora local');
+    }
+
+    return { settings, products: products || [], serverNow };
 
   } catch (err) {
     console.error('Error inesperado en fetchCatalog:', err);

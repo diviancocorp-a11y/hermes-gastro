@@ -615,12 +615,14 @@ function RecForm({data,ings,recs,onClose,onSave}){
   const addI=()=>{if(!si||!sq)return;const n=Number(sq);s("ingredients",[...f.ingredients,{ingredient_id:si,quantity:n,qty:n}]);setSi("");setSq("");setAd(false);};
   const toggleRel=(id)=>{const cur=f.related_ids||[];s("related_ids",cur.includes(id)?cur.filter(x=>x!==id):[...cur,id]);};
   const otherRecs=(recs||[]).filter(r=>r.id!==f.id&&!r.is_combo);
+  const [uploadErr,setUploadErr]=useState("");
   const handleImageUpload=async(e)=>{
     const file=e.target.files?.[0];if(!file)return;
-    setUploading(true);
-    const url=await uploadRecipeImage(file);
-    if(url)s("image_url",url);
+    setUploadErr("");setUploading(true);
+    const result=await uploadRecipeImage(file);
     setUploading(false);
+    if(result?.__error){setUploadErr(result.__error);return;}
+    if(result)s("image_url",result);
   };
   const addComboItem=()=>setComboItems(p=>[...p,{sub_recipe_id:"",qty:1}]);
   const updCombo=(i,k,v)=>setComboItems(p=>p.map((x,j)=>j===i?{...x,[k]:v}:x));
@@ -650,6 +652,7 @@ function RecForm({data,ings,recs,onClose,onSave}){
           </button>
           {f.image_url&&<button className="btn bd bsm" onClick={()=>s("image_url","")} style={{marginLeft:6}}>✕</button>}
         </div>
+        {uploadErr&&<div style={{fontSize:12,color:"var(--rd)",marginTop:6}}>{uploadErr}</div>}
       </div>
     </div>
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0 8px"}}>
@@ -1169,9 +1172,10 @@ function Settings({sett,setSett,msg,onBack}){
   const handleCoverFile=async(e)=>{
     const file=e.target.files?.[0];if(!file)return;
     setUploadingCover(true);
-    const url=await uploadCoverImage(file);
+    const result=await uploadCoverImage(file);
     setUploadingCover(false);
-    if(url){set("cover_url",url);msg("Imagen cargada ✓");}else{msg("Error al subir imagen");}
+    if(result?.__error){msg(result.__error);return;}
+    if(result){set("cover_url",result);msg("Imagen cargada ✓");}else{msg("Error al subir imagen");}
   };
 
   return(<>
