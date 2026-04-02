@@ -363,4 +363,32 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 
 /* Back button & tracker link */
 .tracker-back-btn{display:block;text-align:center;padding:14px;color:var(--t3);font-size:14px;font-weight:600;text-decoration:none;font-family:'DM Sans',sans-serif}
-.tracker-link-btn{display:block;width:100%;padding:16px;background:var(--gn);color:#fff;border-radius:var(--rs);font-size:15px;font-weight:700;text-align:center;text-decoration:none;margin-top:20
+.tracker-link-btn{display:block;width:100%;padding:16px;background:var(--gn);color:#fff;border-radius:var(--rs);font-size:15px;font-weight:700;text-align:center;text-decoration:none;margin-top:20px;font-family:'DM Sans',sans-serif;box-shadow:0 4px 16px rgba(58,125,68,.25)}
+
+/* Success screen tweaks */
+.success{padding:40px 24px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.suc-ic{width:72px;height:72px;border-radius:50%;background:var(--gn);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+
+/* ═══ Category Cards ═══ */
+.cat-section{padding:0 16px 8px}
+.cat-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.cat-title{font-family:'DM Serif Display',serif;font-size:18px;font-weight:700;color:var(--tx)}
+.cat-cards{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cat-cards::-webkit-scrollbar{display:none}
+.cat-card{position:relative;min-width:140px;height:80px;border-radius:16px;overflow:hidden;cursor:pointer;flex-shrink:0;transition:transform .15s,box-shadow .15s}
+.cat-card:active{transform:scale(.96)}
+.cat-card.active{box-shadow:0 0 0 3px var(--ac),0 4px 16px rgba(196,93,62,.25)}
+.cat-card-bg{position:absolute;inset:0;background-size:cover;background-position:center}
+.cat-card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,rgba(0,0,0,.2) 100%)}
+.cat-card-content{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:10px 12px;z-index:1}
+.cat-card-label{color:#fff;font-size:13px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.cat-deal-badge{background:#FF6B35;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:4px;width:fit-content;letter-spacing:.5px}
+.cat-card.has-deal .cat-card-label{margin-bottom:0}
+
+/* ═══ Product Avatar ═══ */
+.prod-avatar{width:100%;aspect-ratio:1;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:32px;font-weight:700;color:#fff}
+
+/* ═══ Deal Prices ═══ */
+.price-old{text-decoration:line-through;color:var(--t3);font-size:12px;font-weight:400}
+.price-deal{color:#C62828;font-weight:800;font-size:16px}
+.prod-deal-tag{background:#FF6B35;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;position:absolute;top:8px;right:8px}
