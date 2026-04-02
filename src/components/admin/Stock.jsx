@@ -42,7 +42,9 @@ function Stock({ings,setIngs,recs,ov,setOv,msg,sett,loadAll}){
     <button className="fab" onClick={()=>setOv({type:"editIng",data:null})}>{I.plus({size:24,color:"#fff"})}</button>
     {ov?.type==="editIng"&&<IngForm data={ov.data} sett={sett} onClose={()=>setOv(null)} onSave={async(it)=>{
       const saved=await upsertIngredient(it);
+      if(saved?.__error){msg("Error: "+saved.__error);return;}
       if(saved){if(it.id)setIngs(p=>p.map(i=>i.id===it.id?saved:i));else setIngs(p=>[...p,saved]);setOv(null);msg(it.id?"Actualizado":"Agregado");}
+      else{msg("Error al guardar insumo");}
     }} onDel={async(id)=>{
       const usedIn=(recs||[]).filter(r=>(r.ingredients||[]).some(ri=>ri.ingredient_id===id));
       if(usedIn.length>0){msg(`No se puede eliminar: está en uso en "${usedIn.map(r=>r.name).join(", ")}"`);return;}

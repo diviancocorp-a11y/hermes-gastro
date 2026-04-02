@@ -77,8 +77,11 @@ export async function fetchIngredients() {
   return data || [];
 }
 export async function upsertIngredient(ingredient) {
-  const { data, error } = await supabase.from('ingredients').upsert(ingredient).select().single();
-  if (error) { console.error('upsertIngredient:', error.message); return null; }
+  // Only send relevant fields to avoid conflicts with auto-generated columns
+  const clean = { name: ingredient.name, unit: ingredient.unit, cost: ingredient.cost, stock: ingredient.stock, min_stock: ingredient.min_stock, category: ingredient.category };
+  if (ingredient.id) clean.id = ingredient.id;
+  const { data, error } = await supabase.from('ingredients').upsert(clean).select().single();
+  if (error) { console.error('upsertIngredient:', error.message); return { __error: error.message }; }
   return data;
 }
 export async function deleteIngredient(id) {

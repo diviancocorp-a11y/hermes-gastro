@@ -59,6 +59,7 @@ export default function Catalog() {
   const [sent, setSent] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [sending, setSending] = useState(false);
+  const [orderErr, setOrderErr] = useState("");
   const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "" });
   const [scheduleMode, setScheduleMode] = useState("now"); // "now" | "later"
 
@@ -235,7 +236,7 @@ export default function Catalog() {
 
   // Enviar pedido a Supabase
   const send = async () => {
-    setSending(true);
+    setSending(true); setOrderErr("");
     // Construir nota con hora programada si aplica
     let finalNote = form.note || "";
     if (scheduleMode === "later" && form.delivery_time) {
@@ -275,10 +276,8 @@ export default function Catalog() {
       setScheduleMode("now");
       setCoupon(null); setCouponCode("");
     } else {
-      console.warn("Pedido no se guardó en Supabase, pero se confirma al usuario.");
-      setOrderId(null);
-      setSent(true);
-      setCart([]);
+      console.error("Pedido no se guardó en Supabase.");
+      setOrderErr("No pudimos procesar tu pedido. Revisá tu conexión e intentá de nuevo.");
     }
   };
 
@@ -419,7 +418,7 @@ export default function Catalog() {
 
         {/* Campo de cupón */}
         <div className="coupon-row">
-          <input className="coupon-input" placeholder="Tenés un cupón? Ingresalo acá" value={couponCode} onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCoupon(null); setCouponErr(""); }} disabled={!!coupon}/>
+          <input className="coupon-input" placeholder="Tenés un cupón? Ingresalo acá" value={couponCode} onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCoupon(null); setCouponErr(""); }} disabled={!!coupon || validatingCoupon}/>
           {!coupon
             ? <button className="coupon-btn" onClick={applyCoupon} disabled={validatingCoupon || !couponCode.trim()}>{validatingCoupon ? "..." : "Aplicar"}</button>
             : <button className="coupon-btn coupon-ok" onClick={() => { setCoupon(null); setCouponCode(""); }}>✓ -{coupon.discount_pct}%</button>
@@ -432,6 +431,7 @@ export default function Catalog() {
           {coupon && <><span style={{color:"var(--t3)",textDecoration:"line-through",fontSize:13}}>${fi(ctBase)}</span><span style={{flex:1}}/></>}
           <span>Total a pagar</span><span style={{ color: coupon?"var(--gn)":"var(--tx)",fontWeight:700 }}>${fi(ct)}</span>
         </div>
+        {orderErr && <div style={{background:"#FFEBEE",color:"#C62828",fontSize:13,padding:"10px 14px",borderRadius:10,marginBottom:8,textAlign:"center"}}>{orderErr}</div>}
         <button className="abtn" style={{ width: "100%" }} disabled={!form.name.trim() || !form.phone || form.phone.length < 10 || (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) || (scheduleMode === "later" && !form.delivery_date) || (form.delivery === "envio" && !form.address.trim()) || sending || ct === 0} onClick={send}>
           {sending ? "Enviando..." : "Confirmar y Enviar"}
         </button>
