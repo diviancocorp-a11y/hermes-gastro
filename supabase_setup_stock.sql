@@ -42,5 +42,4 @@ CREATE POLICY "Admin all recipe_ingredients"
 -- ──────────────────────────────────────────
 SELECT tablename, policyname, cmd, qual
 FROM pg_policies
-WHERE tablename IN ('ingredients', 'recipe_ingredients', 'recipes', 'orders', 'order_items', 'settings')
-ORDER BY tablename, policyname;
+WHERE tablename IN ('ingredients', 'recipe_ingredients', 'recipes', 'orders', 'order_items', 

@@ -110,14 +110,21 @@ export async function submitOrder(orderData) {
     const priceMap = {};
     (dbRecipes || []).forEach(r => { priceMap[r.id] = r.sale_price; });
 
-    // Recalcular total desde precios reales de la DB
+    // Recalcular total validando precios (acepta descuentos del día hasta 15%)
+    const MAX_DEAL_PCT = 15;
     let serverTotal = 0;
     const validatedItems = orderData.items.map(item => {
-      const realPrice = priceMap[item.recipeId] || 0;
+      const basePrice = priceMap[item.recipeId] || 0;
+      const minAllowed = Math.round(basePrice * (1 - MAX_DEAL_PCT / 100));
+      // Aceptar precio del frontend si está dentro del rango válido (deal o normal)
+      let unitPrice = basePrice;
+      if (item.unitPrice && item.unitPrice >= minAllowed && item.unitPrice <= basePrice) {
+        unitPrice = item.unitPrice;
+      }
       const qty = Math.max(1, Math.round(item.qty || 1));
-      const subtotal = qty * realPrice;
+      const subtotal = qty * unitPrice;
       serverTotal += subtotal;
-      return { recipeId: item.recipeId, qty, unitPrice: realPrice, subtotal };
+      return { recipeId: item.recipeId, qty, unitPrice, subtotal };
     });
 
     // Aplicar descuento solo si hay cupón válido

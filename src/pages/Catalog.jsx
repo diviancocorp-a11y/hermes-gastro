@@ -578,7 +578,7 @@ export default function Catalog() {
         <div className="cat-scroll">
           {categories.map(c => (
             <div key={c.name} className={`cat-card ${selCat === c.name ? "active" : ""} ${c.deal ? "has-deal" : ""}`} onClick={() => setSelCat(c.name)}>
-              {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" />}
+              {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" onError={e=>{e.target.style.display='none'}} />}
               <div className="cat-card-overlay" />
               <div className="cat-card-content">
                 <span className="cat-card-label">{c.name}</span>

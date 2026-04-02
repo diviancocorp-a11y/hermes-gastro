@@ -112,7 +112,4 @@ ALTER TABLE order_items ADD COLUMN IF NOT EXISTS subtotal numeric(10,2) DEFAULT 
 
 
 -- ─── FIN ────────────────────────────────────────────────
--- Verificar que todo se creó bien:
-SELECT table_name FROM information_schema.tables
-WHERE table_schema = 'public'
-ORDER BY table_name;
+-- Verificar que todo s
