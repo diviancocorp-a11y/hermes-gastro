@@ -494,11 +494,11 @@ export default function Catalog() {
           </div>
         </div>
         <button onClick={() => setShowMenu(true)} style={{ background: "var(--b2)", border: "none", borderRadius: 12, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} aria-label="Menú">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--tx)" strokeWidth="2.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--tx)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
         </button>
       </div>
 
-      {/* Menú lateral con categorías y accesos rápidos */}
+      {/* Menú lateral (hamburguesa) — solo accesos rápidos */}
       {showMenu && (
         <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex" }}>
           <div onClick={() => setShowMenu(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
@@ -506,29 +506,12 @@ export default function Catalog() {
             <div style={{ padding: "24px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--b2)" }}>
               <div>
                 <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "var(--tx)" }}>{sett.biz_name || fallbackSettings.biz_name}</div>
-                <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 2 }}>Menú y accesos rápidos</div>
+                <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 2 }}>Accesos rápidos</div>
               </div>
               <button onClick={() => setShowMenu(false)} style={{ background: "var(--b2)", border: "none", borderRadius: 10, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: "var(--t2)" }}>✕</button>
             </div>
 
             <div style={{ padding: "16px" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Categorías</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {categories.map(c => (
-                  <div key={c.name} className={`cat-card ${selCat === c.name ? "active" : ""} ${c.deal ? "has-deal" : ""}`} onClick={() => { setSelCat(c.name); setShowMenu(false); }}>
-                    {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" />}
-                    <div className="cat-card-overlay" />
-                    <div className="cat-card-content">
-                      <span className="cat-card-label">{c.name}</span>
-                    </div>
-                    {c.deal && <span className="cat-deal-badge">{DEAL_PCT}% OFF</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ padding: "0 16px 16px" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12, paddingTop: 12, borderTop: "1px solid var(--b2)" }}>Accesos rápidos</div>
               <button onClick={() => { setShowMenu(false); setShowTrackerInput(true); }} style={{ width: "100%", padding: "14px 16px", background: "var(--b3)", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, color: "var(--tx)", boxShadow: "var(--sh)", marginBottom: 8 }}>
                 🦆 Seguí tu pedido
               </button>
@@ -537,16 +520,9 @@ export default function Catalog() {
         </div>
       )}
 
-      {/* Botón Seguí tu pedido */}
-      <div style={{ margin: "0 16px 4px" }}>
-        {!showTrackerInput ? (
-          <button
-            onClick={() => setShowTrackerInput(true)}
-            style={{ width: "100%", padding: "10px 16px", background: "var(--b2)", border: "none", borderRadius: 12, fontSize: 13, color: "var(--t3)", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 8 }}
-          >
-            🦆 <span>¿Ya hiciste un pedido? <strong style={{ color: "var(--tx)" }}>Seguí tu pedido →</strong></span>
-          </button>
-        ) : (
+      {/* Tracker input (se muestra cuando se activa desde el menú) */}
+      {showTrackerInput && (
+        <div style={{ margin: "0 16px 4px" }}>
           <div style={{ background: "var(--b2)", borderRadius: 12, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--tx)" }}>🦆 Seguí tu pedido</div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -573,8 +549,8 @@ export default function Catalog() {
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Banner offline */}
       {error === "offline" && (
@@ -592,20 +568,34 @@ export default function Catalog() {
         </div>
       )}
 
-      {/* Barra de categoría seleccionada */}
-      <div className="cat-section" style={{ position: "sticky", top: 0, zIndex: 40 }}>
-        <div style={{ display: "flex", alignItems: "center", padding: "10px 16px", gap: 10 }}>
-          <button onClick={() => setShowMenu(true)} style={{ background: "var(--b2)", border: "none", borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 14, color: "var(--tx)" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            {selCat}
-          </button>
-          {selCat !== "Todos" && (
-            <button onClick={() => setSelCat("Todos")} style={{ background: "none", border: "none", fontSize: 12, color: "var(--ac)", cursor: "pointer", fontWeight: 600, padding: "4px 8px" }}>
-              Ver todo ✕
-            </button>
-          )}
+      {/* Categorías verticales — lo primero que ve el usuario */}
+      <div className="cat-section">
+        <div className="cat-header">
+          <h2 className="cat-title">Categorías</h2>
+        </div>
+        <div className="cat-scroll">
+          {categories.map(c => (
+            <div key={c.name} className={`cat-card ${selCat === c.name ? "active" : ""} ${c.deal ? "has-deal" : ""}`} onClick={() => setSelCat(c.name)}>
+              {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" />}
+              <div className="cat-card-overlay" />
+              <div className="cat-card-content">
+                <span className="cat-card-label">{c.name}</span>
+              </div>
+              {c.deal && <span className="cat-deal-badge">{DEAL_PCT}% OFF</span>}
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Barra sticky de filtro activo */}
+      {selCat !== "Todos" && (
+        <div style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--bg)", borderBottom: "1px solid rgba(0,0,0,0.05)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: "var(--tx)" }}>{selCat}</span>
+          <button onClick={() => setSelCat("Todos")} style={{ background: "none", border: "none", fontSize: 12, color: "var(--ac)", cursor: "pointer", fontWeight: 600, padding: "4px 8px" }}>
+            Ver todo ✕
+          </button>
+        </div>
+      )}
 
       {/* Lista de Productos */}
       <div className="prod-list">
