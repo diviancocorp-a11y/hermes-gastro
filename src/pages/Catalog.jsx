@@ -79,6 +79,7 @@ export default function Catalog() {
   const [copiedCode, setCopiedCode] = useState(false);
   const [showTrackerInput, setShowTrackerInput] = useState(false);
   const [trackerCode, setTrackerCode] = useState("");
+  const [showMenu, setShowMenu] = useState(false);
 
   const sf = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -492,7 +493,49 @@ export default function Catalog() {
             {isOpen ? "● Abierto ahora" : "● Cerrado por hoy"}
           </div>
         </div>
+        <button onClick={() => setShowMenu(true)} style={{ background: "var(--b2)", border: "none", borderRadius: 12, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} aria-label="Menú">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--tx)" strokeWidth="2.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
       </div>
+
+      {/* Menú lateral con categorías y accesos rápidos */}
+      {showMenu && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex" }}>
+          <div onClick={() => setShowMenu(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
+          <div style={{ position: "relative", width: "85%", maxWidth: 380, background: "var(--bg)", height: "100%", overflowY: "auto", boxShadow: "4px 0 30px rgba(0,0,0,0.2)", animation: "slideIn .25s ease" }}>
+            <div style={{ padding: "24px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--b2)" }}>
+              <div>
+                <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "var(--tx)" }}>{sett.biz_name || fallbackSettings.biz_name}</div>
+                <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 2 }}>Menú y accesos rápidos</div>
+              </div>
+              <button onClick={() => setShowMenu(false)} style={{ background: "var(--b2)", border: "none", borderRadius: 10, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: "var(--t2)" }}>✕</button>
+            </div>
+
+            <div style={{ padding: "16px" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Categorías</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {categories.map(c => (
+                  <div key={c.name} className={`cat-card ${selCat === c.name ? "active" : ""} ${c.deal ? "has-deal" : ""}`} onClick={() => { setSelCat(c.name); setShowMenu(false); }}>
+                    {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" />}
+                    <div className="cat-card-overlay" />
+                    <div className="cat-card-content">
+                      <span className="cat-card-label">{c.name}</span>
+                    </div>
+                    {c.deal && <span className="cat-deal-badge">{DEAL_PCT}% OFF</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ padding: "0 16px 16px" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12, paddingTop: 12, borderTop: "1px solid var(--b2)" }}>Accesos rápidos</div>
+              <button onClick={() => { setShowMenu(false); setShowTrackerInput(true); }} style={{ width: "100%", padding: "14px 16px", background: "var(--b3)", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, color: "var(--tx)", boxShadow: "var(--sh)", marginBottom: 8 }}>
+                🦆 Seguí tu pedido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Botón Seguí tu pedido */}
       <div style={{ margin: "0 16px 4px" }}>
@@ -549,22 +592,18 @@ export default function Catalog() {
         </div>
       )}
 
-      {/* Menú de Categorías — tarjetas con imagen */}
-      <div className="cat-section">
-        <div className="cat-header">
-          <h2 className="cat-title">Categorías</h2>
-        </div>
-        <div className="cat-scroll">
-          {categories.map(c => (
-            <div key={c.name} className={`cat-card ${selCat === c.name ? "active" : ""} ${c.deal ? "has-deal" : ""}`} onClick={() => setSelCat(c.name)}>
-              {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" />}
-              <div className="cat-card-overlay" />
-              <div className="cat-card-content">
-                <span className="cat-card-label">{c.name}</span>
-              </div>
-              {c.deal && <span className="cat-deal-badge">{DEAL_PCT}% OFF</span>}
-            </div>
-          ))}
+      {/* Barra de categoría seleccionada */}
+      <div className="cat-section" style={{ position: "sticky", top: 0, zIndex: 40 }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "10px 16px", gap: 10 }}>
+          <button onClick={() => setShowMenu(true)} style={{ background: "var(--b2)", border: "none", borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 14, color: "var(--tx)" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            {selCat}
+          </button>
+          {selCat !== "Todos" && (
+            <button onClick={() => setSelCat("Todos")} style={{ background: "none", border: "none", fontSize: 12, color: "var(--ac)", cursor: "pointer", fontWeight: 600, padding: "4px 8px" }}>
+              Ver todo ✕
+            </button>
+          )}
         </div>
       </div>
 
