@@ -1,4 +1,4 @@
-import { I, fi } from "../../lib/utils";
+import { I } from "../lib/utils";
 
 function CancelDlg({order,recs,ings,onClose,onConfirm}){
   const used=[];const items=order.order_items||order.items||[];

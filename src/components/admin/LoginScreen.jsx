@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { login } from "../../lib/adminService";
 
-export default function LoginScreen({onLogin}){
+function LoginScreen({onLogin}){
   const [email,setEmail]=useState("");const [pass,setPass]=useState("");
   const [err,setErr]=useState("");const [loading,setLoading]=useState(false);
   const handle=async(e)=>{
@@ -22,3 +22,5 @@ export default function LoginScreen({onLogin}){
     </form></div>
   );
 }
+
+export default LoginScreen;

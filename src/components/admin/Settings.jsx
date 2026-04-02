@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { I, fi } from "../../lib/utils";
-import { updateSettings, uploadCoverImage } from "../../lib/adminService";
-import { COLORS } from "../../lib/utils";
+import { I } from "../lib/utils";
+import { updateSettings, uploadCoverImage } from "../lib/adminService";
 
 const BANNER_COLORS=[{h:"#2D1B0E",l:"Café oscuro"},{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#333333",l:"Negro"}];
+const DEF={biz_name:"La Nona Pato",logo_letter:"N",logo_color:"#C45D3E",exp_cats:["Materia Prima","Servicios","Packaging","Transporte","Alquiler","Equipamiento","Otros"],ing_cats:["Secos","Frescos","Packaging","Otros"]};
+const COLORS=[{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#2D1B0E",l:"Negro"}];
 
-const DEF={exp_cats:["Materia Prima","Servicios","Packaging","Transporte","Alquiler","Equipamiento","Otros"],ing_cats:["Secos","Frescos","Packaging","Otros"]};
-
-export default function Settings({sett,setSett,msg,onBack}){
+function Settings({sett,setSett,msg,onBack}){
   const [s,setS]=useState({...sett});
   const [nc,setNc]=useState("");const [ni,setNi2]=useState("");
   const [uploadingCover,setUploadingCover]=useState(false);
@@ -121,3 +120,5 @@ export default function Settings({sett,setSett,msg,onBack}){
     </div>
   </>);
 }
+
+export default Settings;

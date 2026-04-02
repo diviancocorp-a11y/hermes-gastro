@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { I, fi, td, uid, ST, ST_L, ST_C, ST_B } from "../../lib/utils";
 
-// Devuelve el badge de fecha de entrega con etiqueta contextual
 function DeliveryBadge({date}){
   if(!date)return null;
   const today=td();

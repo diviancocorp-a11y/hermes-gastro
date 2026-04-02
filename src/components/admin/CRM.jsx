@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from "react"
-import { I, fi, td } from "../../lib/utils"
-import { fetchCustomerStats } from "../../lib/adminService"
+import { useState, useEffect, useMemo } from "react";
+import { I, fi } from "../lib/utils";
+import { fetchCustomerStats } from "../lib/adminService";
 
-export default function CRM({orders,recs,ings,msg}){
+function CRM({orders,recs,ings,msg}){
   const [customers,setCustomers]=useState([]);const [loading,setLoading]=useState(true);const [search,setSearch]=useState("");
   const [crmPage,setCrmPage]=useState(1);const CRM_PER_PAGE=30;
   useEffect(()=>{fetchCustomerStats().then(c=>{setCustomers(c);setLoading(false);});},[]);
@@ -77,3 +77,5 @@ export default function CRM({orders,recs,ings,msg}){
     </div>
   </>);
 }
+
+export default CRM;

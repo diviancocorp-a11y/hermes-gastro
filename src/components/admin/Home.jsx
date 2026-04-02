@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import { I, fi, fm, td } from "../../lib/utils";
+import { I, fi, td, ST } from "../../lib/utils";
 
-export default function Home({low,tS,tE,tW,prof,mar,tCR,sales,recs,ings,rc,actOrd,sett,waste,onStock,onPurchase,onOrders,onExp}){
-  const nw=actOrd.filter(o=>o.status==="new");
+function Home({low,tS,tE,tW,prof,mar,tCR,sales,recs,ings,rc,actOrd,sett,waste,onStock,onPurchase,onOrders,onExp}){
+  const nw=actOrd.filter(o=>o.status===ST.new);
   const mo=td().slice(0,7)+"-01";
   const top=useMemo(()=>{
     const m={};sales.filter(s=>s.date>=mo).forEach(s=>{m[s.recipe_id]=(m[s.recipe_id]||0)+(s.qty||1);});
@@ -37,6 +37,7 @@ export default function Home({low,tS,tE,tW,prof,mar,tCR,sales,recs,ings,rc,actOr
       const mo2=td().slice(0,7)+"-01";
       const mw=waste.filter(w=>w.date>=mo2);
       if(mw.length===0)return null;
+      // Agrupar por motivo
       const byReason={};mw.forEach(w=>{const r=w.reason||"otro";if(!byReason[r])byReason[r]={count:0,cost:0};byReason[r].count+=w.qty||0;const ig=ings.find(i=>i.id===w.ingredient_id);byReason[r].cost+=(ig?.cost||0)*(w.qty||0);});
       return(<div className="s"><div className="st">Mermas del mes</div>
         <div className="c" style={{padding:0,overflow:"hidden"}}>
@@ -58,9 +59,11 @@ export default function Home({low,tS,tE,tW,prof,mar,tCR,sales,recs,ings,rc,actOr
         return(<div key={t.r.id} className="li">
           <div className="lic" style={{background:["var(--al)","var(--yl)","var(--gl)"][i],color:["var(--ac)","var(--yw)","var(--gn)"][i]}}>#{i+1}</div>
           <div className="lii"><div className="lin">{t.r.name}</div><div className="lid">{t.q} uni · Rent. {rt.toFixed(0)}%</div></div>
-          <div className="lir"><div className="lia">${fi(t.r.sale_price)}</div></div>
+          <div className="lir"><div className="lia">${fi(t.q*t.r.sale_price)}</div></div>
         </div>);
       })}</div>
     </div>}
   </>);
 }
+
+export default Home;

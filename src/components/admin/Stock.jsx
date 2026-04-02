@@ -118,7 +118,9 @@ function IngForm({data,onClose,onSave,onDel,sett}){
     <div className="fr"><div className="fg"><label className="fl">Stock</label><input className="fin" type="number" min="0" step="0.001" value={f.stock||""} onChange={e=>s("stock",Math.max(0,Number(e.target.value)))}/></div>
     <div className="fg"><label className="fl">Mín</label><input className="fin" type="number" min="0" step="0.001" value={f.min_stock||""} onChange={e=>s("min_stock",Math.max(0,Number(e.target.value)))} /></div></div>
     {err&&<div style={{background:"#FFEBEE",color:"var(--rd)",fontSize:13,padding:"8px 12px",borderRadius:8,marginBottom:8}}>⚠️ {err}</div>}
-    <button className="btn bp" style={{marginTop:8}} disabled={!canSave} onClick={handleSave}>{I.check({size:18,color:"#fff"})} {data?"Guardar":"Agregar"}</button>
+    <button className="btn bp" style={{marginTop:8}} disabled={!canSave} onClick={handleSave}>
+      {data?"Guardar Cambios":"Agregar Insumo"}
+    </button>
   </div></div>);
 }
 
