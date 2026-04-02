@@ -1,0 +1,123 @@
+import { useState } from "react";
+import { I, fi } from "../../lib/utils";
+import { updateSettings, uploadCoverImage } from "../../lib/adminService";
+import { COLORS } from "../../lib/utils";
+
+const BANNER_COLORS=[{h:"#2D1B0E",l:"Café oscuro"},{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#333333",l:"Negro"}];
+
+const DEF={exp_cats:["Materia Prima","Servicios","Packaging","Transporte","Alquiler","Equipamiento","Otros"],ing_cats:["Secos","Frescos","Packaging","Otros"]};
+
+export default function Settings({sett,setSett,msg,onBack}){
+  const [s,setS]=useState({...sett});
+  const [nc,setNc]=useState("");const [ni,setNi2]=useState("");
+  const [uploadingCover,setUploadingCover]=useState(false);
+  const set=(k,v)=>setS(p=>({...p,[k]:v}));
+
+  const handleCoverFile=async(e)=>{
+    const file=e.target.files?.[0];if(!file)return;
+    setUploadingCover(true);
+    const result=await uploadCoverImage(file);
+    setUploadingCover(false);
+    if(result?.__error){msg(result.__error);return;}
+    if(result){set("cover_url",result);msg("Imagen cargada ✓");}else{msg("Error al subir imagen");}
+  };
+
+  return(<>
+    <div className="s" style={{paddingTop:4}}><div className="st">Ajustes</div></div>
+    <div className="s">
+
+      {/* ── Identidad ── */}
+      <div className="c">
+        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>🏪 Identidad</label>
+        <div className="fg"><label className="fl">Nombre del negocio</label><input className="fin" value={s.biz_name||""} onChange={e=>set("biz_name",e.target.value)}/></div>
+        <div className="fg"><label className="fl">Inicial del logo</label><input className="fin" value={s.logo_letter||""} onChange={e=>set("logo_letter",e.target.value.slice(0,2).toUpperCase())} maxLength={2} style={{width:80,textAlign:"center",fontSize:20,fontWeight:700}}/></div>
+        <div className="fg"><label className="fl">Color del logo</label><div className="cgrid">{COLORS.map(c=>(<div key={c.h} className={`copt ${s.logo_color===c.h?"on":""}`} style={{background:c.h}} onClick={()=>set("logo_color",c.h)}>{s.logo_letter||"N"}</div>))}</div></div>
+      </div>
+
+      {/* ── Portada ── */}
+      <div className="c">
+        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>🖼️ Foto de portada</label>
+        {s.cover_url&&<img src={s.cover_url} alt="portada" loading="lazy" style={{width:"100%",height:140,objectFit:"cover",borderRadius:10,marginBottom:10}}/>}
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <label style={{flex:1,padding:"9px 14px",background:"var(--pr,#C45D3E)",color:"#fff",borderRadius:10,fontSize:13,fontWeight:600,cursor:"pointer",textAlign:"center"}}>
+            {uploadingCover?"Subiendo...":"📷 Subir foto"}
+            <input type="file" accept="image/*" style={{display:"none"}} onChange={handleCoverFile} disabled={uploadingCover}/>
+          </label>
+          {s.cover_url&&<button className="btn bs" style={{fontSize:13}} onClick={()=>set("cover_url","")}>Quitar</button>}
+        </div>
+        <div className="fg" style={{marginTop:10}}><label className="fl">O pegá una URL de imagen</label><input className="fin" value={s.cover_url||""} onChange={e=>set("cover_url",e.target.value)} placeholder="https://..."/></div>
+      </div>
+
+      {/* ── Banner de anuncios ── */}
+      <div className="c">
+        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>📢 Banner de anuncios</label>
+        <div className="fg"><label className="fl">Mensaje (vacío = oculto)</label><input className="fin" value={s.banner_text||""} onChange={e=>set("banner_text",e.target.value)} placeholder="Ej: 🎂 ¡Pedidos navideños disponibles!"/></div>
+        {s.banner_text&&<>
+          <label className="fl" style={{marginTop:8}}>Color de fondo</label>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:6}}>
+            {BANNER_COLORS.map(c=>(
+              <div key={c.h} onClick={()=>set("banner_color",c.h)}
+                style={{padding:"6px 12px",borderRadius:8,background:c.h,color:"#fff",fontSize:12,cursor:"pointer",fontWeight:s.banner_color===c.h?700:400,outline:s.banner_color===c.h?"2px solid var(--tx)":"none",outlineOffset:2}}>
+                {c.l}
+              </div>
+            ))}
+          </div>
+          {s.banner_text&&<div style={{marginTop:10,padding:"9px 14px",background:s.banner_color||"#2D1B0E",color:"#fff",borderRadius:8,fontSize:13,fontWeight:600,textAlign:"center"}}>
+            {s.banner_text}
+          </div>}
+        </>}
+      </div>
+
+      {/* ── Estado de la tienda ── */}
+      <div className="c">
+        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>🚦 Estado de la tienda</label>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0"}}>
+          <div>
+            <div style={{fontWeight:600,fontSize:14,color:s.store_open!==false?"#3A7D44":"#C62828"}}>
+              {s.store_open!==false?"● Abierta":"● Cerrada"}
+            </div>
+            <div style={{fontSize:12,color:"var(--t3)",marginTop:2}}>{s.store_open!==false?"Los clientes pueden hacer pedidos":"El catálogo es visible pero sin compra"}</div>
+          </div>
+          <div className={`gift-toggle ${s.store_open!==false?"on":""}`} style={{flexShrink:0}} onClick={()=>set("store_open",s.store_open===false?true:false)}>
+            <div className="gift-thumb"/>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Categorías ── */}
+      <div className="c"><label className="fl">Categorías de gastos</label>
+        <div className="clist">{(s.exp_cats||[]).map(c=><div key={c} className="ctag">{c}<button onClick={()=>set("exp_cats",(s.exp_cats||[]).filter(x=>x!==c))}>×</button></div>)}</div>
+        <div style={{display:"flex",gap:8,marginTop:8}}><input className="fin" placeholder="Nueva..." value={nc} onChange={e=>setNc(e.target.value)} onKeyDown={e=>e.key==="Enter"&&nc.trim()&&(set("exp_cats",[...(s.exp_cats||[]),nc.trim()]),setNc(""))} style={{fontSize:13}}/>
+        <button className="btn bs bsm" onClick={()=>nc.trim()&&(set("exp_cats",[...(s.exp_cats||[]),nc.trim()]),setNc(""))}>+</button></div>
+      </div>
+
+      <div className="c"><label className="fl">Categorías de insumos</label>
+        <div className="clist">{(s.ing_cats||[]).map(c=><div key={c} className="ctag">{c}<button onClick={()=>set("ing_cats",(s.ing_cats||[]).filter(x=>x!==c))}>×</button></div>)}</div>
+        <div style={{display:"flex",gap:8,marginTop:8}}><input className="fin" placeholder="Nueva..." value={ni} onChange={e=>setNi2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ni.trim()&&(set("ing_cats",[...(s.ing_cats||[]),ni.trim()]),setNi2(""))} style={{fontSize:13}}/>
+        <button className="btn bs bsm" onClick={()=>ni.trim()&&(set("ing_cats",[...(s.ing_cats||[]),ni.trim()]),setNi2(""))}>+</button></div>
+      </div>
+
+      {/* ── Horarios del local ── */}
+      <div className="c">
+        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>🕐 Horarios del local</label>
+        <div style={{fontSize:12,color:"var(--t3)",marginBottom:10}}>Define cuándo el local acepta pedidos. Se usa para validar "Pedir ahora".</div>
+        {["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map((day,i)=>{
+          const hrs=s.store_hours||{};const d=hrs[i]||{open:"",close:"",closed:false};
+          const upd=(k,v)=>{const nh={...hrs};nh[i]={...d,[k]:v};set("store_hours",nh);};
+          return(<div key={day} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<6?"1px solid var(--b2)":"none"}}>
+            <div style={{width:80,fontSize:13,fontWeight:600,color:d.closed?"var(--t3)":"var(--tx)"}}>{day}</div>
+            {d.closed?<div style={{flex:1,fontSize:12,color:"var(--t3)",fontStyle:"italic"}}>Cerrado</div>
+            :<>
+              <input type="time" value={d.open||""} onChange={e=>upd("open",e.target.value)} style={{flex:1,padding:"4px 6px",borderRadius:6,border:"1px solid var(--b2)",fontSize:13,colorScheme:"light"}}/>
+              <span style={{fontSize:12,color:"var(--t3)"}}>a</span>
+              <input type="time" value={d.close||""} onChange={e=>upd("close",e.target.value)} style={{flex:1,padding:"4px 6px",borderRadius:6,border:"1px solid var(--b2)",fontSize:13,colorScheme:"light"}}/>
+            </>}
+            <button style={{background:"none",border:"none",fontSize:11,color:d.closed?"var(--gn)":"var(--rd)",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}} onClick={()=>upd("closed",!d.closed)}>{d.closed?"Abrir":"Cerrar"}</button>
+          </div>);
+        })}
+      </div>
+
+      <button className="btn bp" style={{marginTop:8}} onClick={async()=>{const saved=await updateSettings(s);if(saved){setSett(saved);msg("Guardado ✓");onBack();}else{msg("Error al guardar");}}}>{I.check({size:18,color:"#fff"})} Guardar cambios</button>
+    </div>
+  </>);
+}
