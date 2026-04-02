@@ -134,17 +134,19 @@ export default function Catalog() {
     return new Set(DAILY_DEALS[dow] || []);
   }, [serverNow]);
 
-  // Categorías madre con imagen representativa (primer producto con imagen de cada grupo)
+  // Categorías madre con imagen: prioridad settings > primer producto con foto
   const categories = useMemo(() => {
+    const catImgs = sett.cat_images || {};
     const existingSubs = new Set(products.map(r => r.category));
     const catData = CAT_GROUPS
-      .filter(g => g.subs.some(s => existingSubs.has(s))) // solo grupos que tienen productos
+      .filter(g => g.subs.some(s => existingSubs.has(s)))
       .map(g => {
-        const rep = products.find(p => g.subs.includes(p.category) && p.image_url);
-        return { name: g.name, icon: g.icon, subs: g.subs, img: rep?.image_url || null, deal: dealCats.has(g.name) };
+        const customImg = catImgs[g.name];
+        const rep = !customImg ? products.find(p => g.subs.includes(p.category) && p.image_url) : null;
+        return { name: g.name, icon: g.icon, subs: g.subs, img: customImg || rep?.image_url || null, deal: dealCats.has(g.name) };
       });
-    return [{ name: "Todos", icon: "🏠", subs: [], img: null, deal: false }, ...catData];
-  }, [products, dealCats]);
+    return [{ name: "Todos", icon: "🏠", subs: [], img: catImgs["Todos"] || null, deal: false }, ...catData];
+  }, [products, dealCats, sett]);
 
   // Helper: ¿un producto pertenece a una categoría madre con descuento?
   const hasDeal = useCallback((p) => {

@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { I } from "../../lib/utils";
-import { updateSettings, uploadCoverImage } from "../../lib/adminService";
+import { updateSettings, uploadCoverImage, uploadCatImage } from "../../lib/adminService";
 
 const BANNER_COLORS=[{h:"#2D1B0E",l:"Café oscuro"},{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#333333",l:"Negro"}];
-const DEF={biz_name:"La Nona Pato",logo_letter:"N",logo_color:"#C45D3E",exp_cats:["Materia Prima","Servicios","Packaging","Transporte","Alquiler","Equipamiento","Otros"],ing_cats:["Secos","Frescos","Packaging","Otros"]};
+const DEF={biz_name:"La Nona Pato",logo_letter:"N",logo_color:"#C45D3E",exp_cats:["Materia Prima","Servicios","Packaging","Transporte","Alquiler","Equipamiento","Otros"],ing_cats:["Secos","Frescos","Packaging","Otros"],cat_images:{}};
+const CAT_NAMES=["Todos","Primeros Mimos","La Mesa Principal","El Sanguche de la Nona","La Nona Amasó","La Última Mordida","Cocina Consciente"];
 const COLORS=[{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#2D1B0E",l:"Negro"}];
 
 function Settings({sett,setSett,msg,onBack}){
   const [s,setS]=useState({...sett});
   const [nc,setNc]=useState("");const [ni,setNi2]=useState("");
   const [uploadingCover,setUploadingCover]=useState(false);
+  const [uploadingCat,setUploadingCat]=useState(null);
   const set=(k,v)=>setS(p=>({...p,[k]:v}));
+  const setCatImg=(name,url)=>setS(p=>({...p,cat_images:{...(p.cat_images||{}),[name]:url}}));
 
   const handleCoverFile=async(e)=>{
     const file=e.target.files?.[0];if(!file)return;
@@ -19,6 +22,14 @@ function Settings({sett,setSett,msg,onBack}){
     setUploadingCover(false);
     if(result?.__error){msg(result.__error);return;}
     if(result){set("cover_url",result);msg("Imagen cargada ✓");}else{msg("Error al subir imagen");}
+  };
+  const handleCatFile=async(catName,e)=>{
+    const file=e.target.files?.[0];if(!file)return;
+    setUploadingCat(catName);
+    const result=await uploadCatImage(file,catName);
+    setUploadingCat(null);
+    if(result?.__error){msg(result.__error);return;}
+    if(result){setCatImg(catName,result);msg(`Imagen de "${catName}" cargada ✓`);}else{msg("Error al subir imagen");}
   };
 
   return(<>
@@ -45,6 +56,29 @@ function Settings({sett,setSett,msg,onBack}){
           {s.cover_url&&<button className="btn bs" style={{fontSize:13}} onClick={()=>set("cover_url","")}>Quitar</button>}
         </div>
         <div className="fg" style={{marginTop:10}}><label className="fl">O pegá una URL de imagen</label><input className="fin" value={s.cover_url||""} onChange={e=>set("cover_url",e.target.value)} placeholder="https://..."/></div>
+      </div>
+
+      {/* ── Carátulas de categorías ── */}
+      <div className="c">
+        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:6,display:"block"}}>🏷️ Carátulas de categorías</label>
+        <div style={{fontSize:12,color:"var(--t3)",marginBottom:12}}>Elegí una imagen para cada categoría del catálogo. Si no ponés imagen, se usa la foto del primer producto.</div>
+        {CAT_NAMES.map(name=>{
+          const img=(s.cat_images||{})[name];
+          return(<div key={name} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid var(--b2)"}}>
+            <div style={{width:60,height:42,borderRadius:10,overflow:"hidden",background:"var(--b2)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              {img?<img src={img} alt={name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+              :<span style={{fontSize:11,color:"var(--t3)"}}>Sin img</span>}
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:600,color:"var(--tx)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
+            </div>
+            <label style={{padding:"5px 10px",background:"var(--b2)",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",color:"var(--t2)",whiteSpace:"nowrap"}}>
+              {uploadingCat===name?"...":"📷"}
+              <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleCatFile(name,e)} disabled={uploadingCat===name}/>
+            </label>
+            {img&&<button onClick={()=>setCatImg(name,"")} style={{background:"none",border:"none",fontSize:14,color:"var(--rd)",cursor:"pointer",padding:4}}>✕</button>}
+          </div>);
+        })}
       </div>
 
       {/* ── Banner de anuncios ── */}

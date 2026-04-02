@@ -321,6 +321,20 @@ export async function uploadCoverImage(file) {
   return urlData.publicUrl;
 }
 
+export async function uploadCatImage(file, catName) {
+  const err = validateImageFile(file);
+  if (err) { console.error('uploadCatImage:', err); return { __error: err }; }
+  const ext = file.name.split('.').pop().toLowerCase();
+  const slug = catName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const path = `cat-${slug}-${Date.now()}.${ext}`;
+  const { data, error } = await supabase.storage
+    .from('recipe-images')
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) { console.error('uploadCatImage:', error.message); return null; }
+  const { data: urlData } = supabase.storage.from('recipe-images').getPublicUrl(data.path);
+  return urlData.publicUrl;
+}
+
 export async function uploadRecipeImage(file) {
   const err = validateImageFile(file);
   if (err) { console.error('uploadRecipeImage:', err); return { __error: err }; }
