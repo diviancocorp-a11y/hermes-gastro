@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { I, fi, fm, td } from "../../lib/utils";
+import { I, fi, fm, td, saleCode } from "../../lib/utils";
 import {
   createExpense, deleteExpense,
   createSale,
@@ -306,12 +306,6 @@ function SalesView({ sales, setSales, orders, recs, rc, ov, setOv, msg }) {
   // Combinar: pedidos completados + ventas manuales, todo como "ventas"
   const ST_DONE = "completed";
   const completedOrders = (orders || []).filter(o => o.status === ST_DONE);
-
-  // Generar código de venta único (últimos 6 chars del ID)
-  const saleCode = (id) => {
-    const s = String(id || "").replace(/-/g, "");
-    return "#" + s.slice(-6).toUpperCase();
-  };
 
   // Todas las ventas (orders completados + ventas manuales) ordenadas por fecha
   const allSales = [

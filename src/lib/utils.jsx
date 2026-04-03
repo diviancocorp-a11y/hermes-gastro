@@ -44,6 +44,8 @@ export const fm = (n) => typeof n === "number" ? n.toLocaleString("es-AR", { min
 export const fi = (n) => typeof n === "number" ? n.toLocaleString("es-AR") : "0";
 export const td = () => new Date().toISOString().split("T")[0];
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+// Código corto unificado para pedidos y recibos: #XXXXXX (últimos 6 chars del ID sin guiones)
+export const saleCode = (id) => { const s = String(id || "").replace(/-/g, ""); return "#" + s.slice(-6).toUpperCase(); };
 
 export const ST = { new: "new", prep: "preparing", active: "active", done: "completed", cancel: "cancelled" };
 export const ST_L = { [ST.new]: "Nuevo", [ST.prep]: "En preparación", [ST.active]: "Activo", [ST.done]: "Completado", [ST.cancel]: "Cancelado" };

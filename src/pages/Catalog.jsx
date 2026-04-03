@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { I, fi } from "../lib/utils";
+import { I, fi, saleCode } from "../lib/utils";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 
 // --- CATEGORÍAS MADRE (agrupan subcategorías de Supabase) ---
@@ -310,20 +310,20 @@ export default function Catalog() {
           <a href={`/order/${orderId}`} className="tracker-link-btn">
             🔴 Seguir mi pedido en vivo
           </a>
-          <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--b2)", borderRadius: 12, textAlign: "left" }}>
+          <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--b2)", borderRadius: 12, textAlign: "center" }}>
             <div style={{ fontSize: 12, color: "var(--t3)", marginBottom: 6 }}>📋 Código de tu pedido</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <code style={{ flex: 1, fontSize: 12, color: "var(--tx)", wordBreak: "break-all", background: "var(--bg)", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--b2)" }}>
-                {orderId}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <code style={{ fontSize: 22, fontWeight: 700, color: "var(--tx)", letterSpacing: 2, fontFamily: "'DM Serif Display',monospace" }}>
+                {saleCode(orderId)}
               </code>
               <button
-                onClick={() => { navigator.clipboard.writeText(orderId); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); }}
+                onClick={() => { navigator.clipboard.writeText(saleCode(orderId)); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); }}
                 style={{ flexShrink: 0, padding: "6px 12px", background: copiedCode ? "var(--gn, #3A7D44)" : "var(--pr, #C45D3E)", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, cursor: "pointer", transition: "background .2s" }}
               >
                 {copiedCode ? "✓ Copiado" : "Copiar"}
               </button>
             </div>
-            <p style={{ fontSize: 11, color: "var(--t3)", marginTop: 8, marginBottom: 0 }}>Guardá este código para seguir tu pedido cuando quieras.</p>
+            <p style={{ fontSize: 11, color: "var(--t3)", marginTop: 8, marginBottom: 0 }}>Usá este código para reclamos, factura o seguimiento.</p>
           </div>
         </>)}
         <button className="abtn" onClick={() => { setSent(false); setOrderId(null); setShowCk(false); }} style={{ marginTop: 16, width: "100%", background: "transparent", color: "var(--t3)", border: "1.5px solid var(--b2)" }}>

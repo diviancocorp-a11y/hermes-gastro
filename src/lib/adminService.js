@@ -30,6 +30,12 @@ export async function upsertRecipe(recipe) {
   }
   return data;
 }
+// Toggle de visibilidad rápido (usa update, no upsert, para evitar conflictos con NOT NULL)
+export async function toggleRecipeVisibility(id, visible) {
+  const { error } = await supabase.from('recipes').update({ visible }).eq('id', id);
+  if (error) { console.error('toggleRecipeVisibility:', error.message); return false; }
+  return true;
+}
 export async function deleteRecipe(id) {
   const { error } = await supabase.from('recipes').delete().eq('id', id);
   return !error;
@@ -64,8 +70,20 @@ export async function fetchSettings() {
   if (error) { console.error('fetchSettings:', error.message); return null; }
   return data?.[0] || null;
 }
+// Columnas válidas de la tabla settings (evita enviar campos desconocidos)
+const SETTINGS_COLS = [
+  'id', 'biz_name', 'logo_letter', 'logo_color', 'logo_url',
+  'cover_url', 'cat_images', 'hidden_cats', 'cat_names',
+  'banner_text', 'banner_color', 'store_open', 'store_hours',
+  'exp_cats', 'ing_cats'
+];
 export async function updateSettings(settings) {
-  const { data, error } = await supabase.from('settings').upsert(settings).select().single();
+  // Filtrar solo columnas conocidas para evitar errores de Supabase
+  const clean = {};
+  for (const k of SETTINGS_COLS) {
+    if (k in settings) clean[k] = settings[k];
+  }
+  const { data, error } = await supabase.from('settings').upsert(clean).select().single();
   if (error) { console.error('updateSettings:', error.message); return null; }
   return data;
 }

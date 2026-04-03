@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { I, fi, td, uid, ST, ST_L, ST_C, ST_B } from "../../lib/utils";
+import { I, fi, td, uid, ST, ST_L, ST_C, ST_B, saleCode } from "../../lib/utils";
 
 function DeliveryBadge({date}){
   if(!date)return null;
@@ -67,7 +67,7 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg,sett}){
       :filt.map(o=>{const act=nxt(o.status);const sc=ST_C[o.status];const items=o.order_items||o.items||[];
         return(<div key={o.id} className="ocard" style={{borderLeftColor:ST_B[o.status]}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-            <div><div style={{fontWeight:700,fontSize:15}}>{o.customer}</div>
+            <div><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,fontSize:15}}>{o.customer}</span><span style={{fontSize:10,fontWeight:700,color:"var(--t3)",background:"var(--b2)",padding:"1px 6px",borderRadius:6}}>{saleCode(o.id)}</span></div>
               <div style={{fontSize:12,color:"var(--t3)"}}>{new Date(o.created_at||o.date).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}
                 {o.phone&&` · ${o.phone}`}{o.delivery&&` · ${o.delivery==="envio"?"Envío":"Retiro"}`}{o.payment&&` · ${o.payment}`}
               </div></div>
