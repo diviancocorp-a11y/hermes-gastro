@@ -47,6 +47,21 @@ export const uid = () => Date.now().toString(36) + Math.random().toString(36).sl
 // Código corto unificado para pedidos y recibos: #XXXXXX (últimos 6 chars del ID sin guiones)
 export const saleCode = (id) => { const s = String(id || "").replace(/-/g, ""); return "#" + s.slice(-6).toUpperCase(); };
 
+// ─── Supabase Storage image transform ───────────────────────────────
+// Convierte una URL pública de Supabase Storage a la variante con resize.
+// Ej: .../object/public/bucket/path → .../render/image/public/bucket/path?width=300&quality=75
+export const imgOpt = (url, { width, height, quality = 75 } = {}) => {
+  if (!url || typeof url !== 'string') return url;
+  // Solo transformar URLs de Supabase Storage
+  if (!url.includes('/storage/v1/object/public/')) return url;
+  let out = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
+  const params = [];
+  if (width) params.push(`width=${width}`);
+  if (height) params.push(`height=${height}`);
+  params.push(`quality=${quality}`);
+  return out + '?' + params.join('&');
+};
+
 export const ST = { new: "new", prep: "preparing", active: "active", done: "completed", cancel: "cancelled" };
 export const ST_L = { [ST.new]: "Nuevo", [ST.prep]: "En preparación", [ST.active]: "Activo", [ST.done]: "Completado", [ST.cancel]: "Cancelado" };
 export const ST_C = {

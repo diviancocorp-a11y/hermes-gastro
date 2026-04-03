@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { I, fi, saleCode } from "../lib/utils";
+import { I, fi, saleCode, imgOpt } from "../lib/utils";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 
 // --- CATEGORÍAS MADRE (agrupan subcategorías de Supabase) ---
@@ -490,10 +490,10 @@ export default function Catalog() {
       )}
 
       {/* Portada y Header */}
-      <div className="store-cover" style={{ backgroundImage: `url(${sett.cover_url || fallbackSettings.cover_url})` }}></div>
+      <div className="store-cover" style={{ backgroundImage: `url(${imgOpt(sett.cover_url, { width: 800, quality: 70 }) || fallbackSettings.cover_url})` }}></div>
       <div className="store-header">
         <div className="store-logo" style={{ background: sett.logo_url ? "transparent" : (sett.logo_color || fallbackSettings.logo_color), overflow: "hidden" }}>
-          {sett.logo_url ? <img src={sett.logo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} onError={e => { e.target.style.display = "none"; e.target.parentElement.textContent = sett.logo_letter || fallbackSettings.logo_letter; e.target.parentElement.style.background = sett.logo_color || fallbackSettings.logo_color; }} /> : (sett.logo_letter || fallbackSettings.logo_letter)}
+          {sett.logo_url ? <img src={imgOpt(sett.logo_url, { width: 150, height: 150 })} alt="" width={72} height={72} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} onError={e => { e.target.style.display = "none"; e.target.parentElement.textContent = sett.logo_letter || fallbackSettings.logo_letter; e.target.parentElement.style.background = sett.logo_color || fallbackSettings.logo_color; }} /> : (sett.logo_letter || fallbackSettings.logo_letter)}
         </div>
         <div className="store-info">
           <h1 className="store-name">{sett.biz_name || fallbackSettings.biz_name}</h1>
@@ -588,7 +588,7 @@ export default function Catalog() {
         <div className="cat-scroll">
           {categories.map(c => (
             <div key={c.name} className={`cat-card ${selCat === c.name ? "active" : ""} ${c.deal ? "has-deal" : ""}`} onClick={() => setSelCat(c.name)}>
-              {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" onError={e=>{e.target.style.display='none'}} />}
+              {c.img && <img className="cat-card-bg" src={imgOpt(c.img, { width: 400, quality: 70 })} alt="" loading="eager" width={180} height={120} onError={e=>{e.target.style.display='none'}} />}
               <div className="cat-card-overlay" />
               <div className="cat-card-content">
                 <span className="cat-card-label">{c.displayName || c.name}</span>
@@ -632,7 +632,7 @@ export default function Catalog() {
                 </div>
               </div>
               {p.image_url ? (
-                <img className="prod-img" src={p.image_url} alt={p.name} loading="lazy"
+                <img className="prod-img" src={imgOpt(p.image_url, { width: 300 })} alt={p.name} loading="lazy" width={120} height={120}
                   onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }}
                 />
               ) : null}
@@ -669,7 +669,7 @@ export default function Catalog() {
               {upsell.suggestions.map(s => (
                 <div key={s.id} className="ups-card" onClick={() => addFromUpsell(s)}>
                   {s.image_url ? (
-                    <img className="ups-img" src={s.image_url} alt={s.name} loading="lazy" onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }} />
+                    <img className="ups-img" src={imgOpt(s.image_url, { width: 200 })} alt={s.name} loading="lazy" width={48} height={48} onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }} />
                   ) : null}
                   <div className="ups-img prod-avatar" style={{ display: s.image_url ? 'none' : 'flex', background: avatarColors[s.name.charCodeAt(0) % avatarColors.length], width: 48, height: 48, fontSize: 20, borderRadius: 10 }}>{s.name.charAt(0)}</div>
                   <div className="ups-info">
