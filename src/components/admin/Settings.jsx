@@ -14,6 +14,8 @@ function Settings({sett,setSett,msg,onBack}){
   const [uploadingCat,setUploadingCat]=useState(null);
   const set=(k,v)=>setS(p=>({...p,[k]:v}));
   const setCatImg=(name,url)=>setS(p=>({...p,cat_images:{...(p.cat_images||{}),[name]:url}}));
+  const toggleCatHidden=(name)=>setS(p=>{const cur=p.hidden_cats||[];return{...p,hidden_cats:cur.includes(name)?cur.filter(x=>x!==name):[...cur,name]};});
+  const setCatName=(origName,val)=>setS(p=>({...p,cat_names:{...(p.cat_names||{}),[origName]:val}}));
 
   const handleCoverFile=async(e)=>{
     const file=e.target.files?.[0];if(!file)return;
@@ -61,22 +63,35 @@ function Settings({sett,setSett,msg,onBack}){
       {/* ── Carátulas de categorías ── */}
       <div className="c">
         <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:6,display:"block"}}>🏷️ Carátulas de categorías</label>
-        <div style={{fontSize:12,color:"var(--t3)",marginBottom:12}}>Elegí una imagen para cada categoría del catálogo. Si no ponés imagen, se usa la foto del primer producto.</div>
+        <div style={{fontSize:12,color:"var(--t3)",marginBottom:12}}>Imagen, nombre y visibilidad de cada categoría. Usá el ojito para ocultar/mostrar y editá el nombre directamente.</div>
         {CAT_NAMES.map(name=>{
           const img=(s.cat_images||{})[name];
-          return(<div key={name} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid var(--b2)"}}>
-            <div style={{width:60,height:42,borderRadius:10,overflow:"hidden",background:"var(--b2)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              {img?<img src={img} alt={name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-              :<span style={{fontSize:11,color:"var(--t3)"}}>Sin img</span>}
+          const isHidden=(s.hidden_cats||[]).includes(name);
+          const customName=(s.cat_names||{})[name]||"";
+          const isTodos=name==="Todos";
+          return(<div key={name} style={{padding:"10px 0",borderBottom:"1px solid var(--b2)",opacity:isHidden?0.45:1,transition:"opacity .2s"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              {/* Eye toggle — no aplica a "Todos" */}
+              {!isTodos&&<button onClick={()=>toggleCatHidden(name)} style={{background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0}} title={isHidden?"Mostrar categoría":"Ocultar categoría"}>
+                {isHidden?<span style={{color:"var(--t3)"}}>{I.eyeOff({size:16})}</span>:<span style={{color:"var(--gn)"}}>{I.eye({size:16})}</span>}
+              </button>}
+              <div style={{width:60,height:42,borderRadius:10,overflow:"hidden",background:"var(--b2)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                {img?<img src={img} alt={name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                :<span style={{fontSize:11,color:"var(--t3)"}}>Sin img</span>}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                {isTodos
+                  ?<div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{name}</div>
+                  :<input className="fin" value={customName||name} onChange={e=>setCatName(name,e.target.value)} placeholder={name} style={{fontSize:13,fontWeight:600,padding:"4px 8px",marginBottom:0,border:"1px solid var(--b2)",borderRadius:8}}/>
+                }
+              </div>
+              <label style={{padding:"5px 10px",background:"var(--b2)",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",color:"var(--t2)",whiteSpace:"nowrap"}}>
+                {uploadingCat===name?"...":"📷"}
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleCatFile(name,e)} disabled={uploadingCat===name}/>
+              </label>
+              {img&&<button onClick={()=>setCatImg(name,"")} style={{background:"none",border:"none",fontSize:14,color:"var(--rd)",cursor:"pointer",padding:4}}>✕</button>}
             </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:13,fontWeight:600,color:"var(--tx)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
-            </div>
-            <label style={{padding:"5px 10px",background:"var(--b2)",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",color:"var(--t2)",whiteSpace:"nowrap"}}>
-              {uploadingCat===name?"...":"📷"}
-              <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleCatFile(name,e)} disabled={uploadingCat===name}/>
-            </label>
-            {img&&<button onClick={()=>setCatImg(name,"")} style={{background:"none",border:"none",fontSize:14,color:"var(--rd)",cursor:"pointer",padding:4}}>✕</button>}
+            {isHidden&&<div style={{fontSize:11,color:"var(--rd)",marginTop:4,marginLeft:30}}>Oculta del catálogo</div>}
           </div>);
         })}
       </div>

@@ -138,14 +138,17 @@ export default function Catalog() {
   const categories = useMemo(() => {
     const catImgs = sett.cat_images || {};
     const existingSubs = new Set(products.map(r => r.category));
+    const hiddenCats = new Set(sett.hidden_cats || []);
+    const catNames = sett.cat_names || {};
     const catData = CAT_GROUPS
-      .filter(g => g.subs.some(s => existingSubs.has(s)))
+      .filter(g => !hiddenCats.has(g.name) && g.subs.some(s => existingSubs.has(s)))
       .map(g => {
         const customImg = catImgs[g.name];
         const rep = !customImg ? products.find(p => g.subs.includes(p.category) && p.image_url) : null;
-        return { name: g.name, icon: g.icon, subs: g.subs, img: customImg || rep?.image_url || null, deal: dealCats.has(g.name) };
+        const displayName = catNames[g.name] || g.name;
+        return { name: g.name, displayName, icon: g.icon, subs: g.subs, img: customImg || rep?.image_url || null, deal: dealCats.has(g.name) };
       });
-    return [{ name: "Todos", icon: "🏠", subs: [], img: catImgs["Todos"] || null, deal: false }, ...catData];
+    return [{ name: "Todos", icon: "🏠", subs: [], img: catImgs["Todos"] || null, deal: false, displayName: "Todos" }, ...catData];
   }, [products, dealCats, sett]);
 
   // Helper: ¿un producto pertenece a una categoría madre con descuento?
@@ -585,7 +588,7 @@ export default function Catalog() {
               {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" onError={e=>{e.target.style.display='none'}} />}
               <div className="cat-card-overlay" />
               <div className="cat-card-content">
-                <span className="cat-card-label">{c.name}</span>
+                <span className="cat-card-label">{c.displayName || c.name}</span>
               </div>
               {c.deal && <span className="cat-deal-badge">{DEAL_PCT}% OFF</span>}
             </div>
@@ -596,7 +599,7 @@ export default function Catalog() {
       {/* Barra sticky de filtro activo */}
       {selCat !== "Todos" && (
         <div style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--bg)", borderBottom: "1px solid rgba(0,0,0,0.05)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: "var(--tx)" }}>{selCat}</span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: "var(--tx)" }}>{(sett.cat_names || {})[selCat] || selCat}</span>
           <button onClick={() => setSelCat("Todos")} style={{ background: "none", border: "none", fontSize: 12, color: "var(--ac)", cursor: "pointer", fontWeight: 600, padding: "4px 8px" }}>
             Ver todo ✕
           </button>
