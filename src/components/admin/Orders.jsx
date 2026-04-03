@@ -12,12 +12,42 @@ function DeliveryBadge({date}){
   return(<span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:8,background:bg,color:co}}>{label}</span>);
 }
 
-function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
+function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg,sett}){
   const [fil,setFil]=useState(ST.new);const [showH,setShowH]=useState(false);const [showSched,setShowSched]=useState(false);const t=td();
   const [histPage,setHistPage]=useState(1);const HIST_PER_PAGE=20;
-  const scheduled=useMemo(()=>orders.filter(o=>o.delivery_date&&o.status!==ST.done&&o.status!==ST.cancel).sort((a,b)=>(a.delivery_date||"").localeCompare(b.delivery_date||"")),[orders]);
-  const cts=useMemo(()=>{const c={};Object.values(ST).forEach(s=>{c[s]=orders.filter(o=>o.status===s&&(s===ST.done||s===ST.cancel?o.date===t:true)).length;});return c;},[orders,t]);
-  const filt=useMemo(()=>orders.filter(o=>{if(fil===ST.done||fil===ST.cancel)return o.status===fil&&o.date===t;return o.status===fil;}).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||"")),[orders,fil,t]);
+
+  // Calcular si el local está abierto ahora (misma lógica que Catalog)
+  const storeIsOpen=useMemo(()=>{
+    if(sett?.store_open===false)return false;
+    const hrs=sett?.store_hours;if(!hrs)return true;
+    const now=new Date();const dayIdx=(now.getDay()+6)%7;
+    const day=hrs[dayIdx];if(!day||day.closed)return false;
+    if(!day.open||!day.close)return true;
+    const nowMins=now.getHours()*60+now.getMinutes();
+    const [oh,om]=day.open.split(":").map(Number);
+    const [ch,cm]=day.close.split(":").map(Number);
+    return nowMins>=oh*60+om&&nowMins<ch*60+cm;
+  },[sett]);
+
+  // Pedidos programados: solo los de HOY (o vencidos) que no estén finalizados
+  // Se muestran solo cuando el local está abierto
+  const scheduled=useMemo(()=>orders.filter(o=>o.delivery_date&&o.status!==ST.done&&o.status!==ST.cancel&&(o.delivery_date<=t)).sort((a,b)=>(a.delivery_date||"").localeCompare(b.delivery_date||"")),[orders,t]);
+  // Programados futuros (para referencia)
+  const scheduledFuture=useMemo(()=>orders.filter(o=>o.delivery_date&&o.status!==ST.done&&o.status!==ST.cancel&&o.delivery_date>t).sort((a,b)=>(a.delivery_date||"").localeCompare(b.delivery_date||"")),[orders,t]);
+
+  // Counts: para "new" solo contar pedidos de hoy sin delivery_date
+  const cts=useMemo(()=>{const c={};Object.values(ST).forEach(s=>{
+    if(s===ST.new)c[s]=orders.filter(o=>o.status===s&&o.date===t&&!o.delivery_date).length;
+    else if(s===ST.done||s===ST.cancel)c[s]=orders.filter(o=>o.status===s&&o.date===t).length;
+    else c[s]=orders.filter(o=>o.status===s).length;
+  });return c;},[orders,t]);
+
+  // Filtrado: "new" = solo hoy sin delivery_date; "done"/"cancel" = solo hoy; resto = todos
+  const filt=useMemo(()=>orders.filter(o=>{
+    if(fil===ST.new)return o.status===fil&&o.date===t&&!o.delivery_date;
+    if(fil===ST.done||fil===ST.cancel)return o.status===fil&&o.date===t;
+    return o.status===fil;
+  }).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||"")),[orders,fil,t]);
   const hist=useMemo(()=>orders.filter(o=>(o.status===ST.done||o.status===ST.cancel)&&o.date<t).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||"")),[orders,t]);
   const histPaged=useMemo(()=>hist.slice(0,histPage*HIST_PER_PAGE),[hist,histPage]);
   const histGrouped=useMemo(()=>Object.entries(histPaged.reduce((a,o)=>{const d=(o.created_at||o.date||"").split("T")[0];if(!a[d])a[d]=[];a[d].push(o);return a;},{})).sort((a,b)=>b[0].localeCompare(a[0])),[histPaged]);
@@ -26,7 +56,7 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
 
   return(<>
     <div className="s"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div className="st" style={{margin:0}}>Pedidos</div><div style={{display:"flex",gap:6}}>
-      <button className="btn bs bsm" onClick={()=>setShowSched(true)}>📅 Programados{scheduled.length>0&&<span style={{marginLeft:4,background:"var(--yl)",color:"var(--yw)",borderRadius:8,padding:"0 5px",fontSize:11,fontWeight:700}}>{scheduled.length}</span>}</button>
+      <button className="btn bs bsm" onClick={()=>setShowSched(true)}>📅 Programados{(scheduled.length+scheduledFuture.length)>0&&<span style={{marginLeft:4,background:"var(--yl)",color:"var(--yw)",borderRadius:8,padding:"0 5px",fontSize:11,fontWeight:700}}>{scheduled.length+scheduledFuture.length}</span>}</button>
       <button className="btn bs bsm" onClick={()=>setShowH(true)}>{I.hist({size:14})} Historial</button>
     </div></div></div>
     <div className="sf">{sfs.map(sf=>(<button key={sf.id} className={`sfi ${fil===sf.id?"on":""}`} style={{color:fil===sf.id?sf.co:"var(--t3)",borderColor:fil===sf.id?sf.co:"var(--b2)"}} onClick={()=>setFil(sf.id)}>
@@ -55,8 +85,9 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
     <button className="fab" onClick={()=>setOv({type:"addOrder"})}>{I.plus({size:24,color:"#fff"})}</button>
     {ov?.type==="addOrder"&&<OrdForm recs={recs} onClose={()=>setOv(null)} onSave={o=>{addOrd(o);setOv(null);}}/>}
     {showSched&&<div className="po"><div className="ph"><button onClick={()=>setShowSched(false)}>{I.back({})}</button><h2>📅 Programados</h2></div><div className="pb">
-      {scheduled.length===0?<div className="c"><div className="empty"><div className="eic">📅</div><div>No hay pedidos programados</div></div></div>
-      :scheduled.map(o=>{const items=o.order_items||o.items||[];const sc=ST_C[o.status];
+      {!storeIsOpen&&scheduled.length>0&&<div className="ab" style={{margin:"0 0 12px",background:"var(--yl)",color:"var(--yw)"}}>El local está cerrado · Los programados de hoy se activan al abrir</div>}
+      {scheduled.length>0&&<><div style={{fontSize:12,fontWeight:700,color:"var(--ac)",marginBottom:8}}>Para hoy ({scheduled.length})</div>
+      {scheduled.map(o=>{const items=o.order_items||o.items||[];const sc=ST_C[o.status];
         return(<div key={o.id} className="c" style={{padding:12}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
             <div><div style={{fontWeight:700,fontSize:14}}>{o.customer}</div>
@@ -70,7 +101,23 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg}){
             <span style={{fontSize:11,color:"var(--t3)"}}>{o.phone||""}</span>
           </div>
         </div>);
-      })}
+      })}</>}
+      {scheduledFuture.length>0&&<><div style={{fontSize:12,fontWeight:700,color:"var(--t3)",marginBottom:8,marginTop:scheduled.length>0?16:0}}>Próximos días ({scheduledFuture.length})</div>
+      {scheduledFuture.map(o=>{const items=o.order_items||o.items||[];const sc=ST_C[o.status];
+        return(<div key={o.id} className="c" style={{padding:12,opacity:0.7}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+            <div><div style={{fontWeight:700,fontSize:14}}>{o.customer}</div>
+              <div style={{fontSize:11,color:"var(--t3)"}}>{items.map(it=>{const r=recs.find(x=>x.id===it.recipe_id);return r?`${r.name} ×${it.quantity||it.qty||1}`:"";}).filter(Boolean).join(", ")}</div>
+            </div>
+            <div style={{textAlign:"right"}}><div style={{fontWeight:700}}>${fi(o.total)}</div><span className="badge" style={{background:sc?.bg,color:sc?.tx}}>{ST_L[o.status]}</span></div>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <DeliveryBadge date={o.delivery_date}/>
+            <span style={{fontSize:11,color:"var(--t3)"}}>{o.phone||""}</span>
+          </div>
+        </div>);
+      })}</>}
+      {scheduled.length===0&&scheduledFuture.length===0&&<div className="c"><div className="empty"><div className="eic">📅</div><div>No hay pedidos programados</div></div></div>}
     </div></div>}
     {showH&&<div className="po"><div className="ph"><button onClick={()=>{setShowH(false);setHistPage(1);}}>{I.back({})}</button><h2>Historial ({hist.length})</h2></div><div className="pb">
       {hist.length===0?<div className="c"><div className="empty"><div className="eic">📜</div><div>Sin historial</div></div></div>

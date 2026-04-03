@@ -288,7 +288,7 @@ export default function Admin(){
     {tab==="home"&&<Home {...{low,tS,tE,tW,prof,mar,tCR,sales,recs,ings,rc,actOrd,sett,waste}} onStock={()=>setTab("stock")} onPurchase={()=>setOv({type:"purchase"})} onOrders={()=>setTab("orders")} onExp={()=>setOv({type:"expenses"})}/>}
     {tab==="stock"&&<Stock {...{ings,setIngs,recs,ov,setOv,msg,sett,loadAll}}/>}
     {tab==="recipes"&&<Recipes {...{recs,setRecs,ings,rc,ov,setOv,msg,loadAll}}/>}
-    {tab==="orders"&&<Orders {...{orders,recs,moveOrd,addOrd,ov,setOv,msg}}/>}
+    {tab==="orders"&&<Orders {...{orders,recs,moveOrd,addOrd,ov,setOv,msg,sett}}/>}
     {tab==="sales"&&<SalesView {...{sales,setSales,recs,rc,ov,setOv,msg}}/>}
     {tab==="crm"&&<CRM {...{orders,recs,ings,msg}}/>}
     {tab==="settings"&&<Settings sett={sett} setSett={setSett} msg={msg} onBack={()=>setTab("home")}/>}

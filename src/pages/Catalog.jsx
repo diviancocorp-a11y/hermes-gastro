@@ -476,7 +476,8 @@ export default function Catalog() {
     </div>
   );
 
-  const isOpen = sett.store_open !== false; // null/undefined = abierto por defecto
+  // isOpen = automático por horario + override manual (store_open=false fuerza cerrado)
+  const isOpen = sett.store_open === false ? false : storeStatus.open;
 
   // --- VISTA PRINCIPAL: CATÁLOGO ---
   return (
@@ -495,7 +496,7 @@ export default function Catalog() {
         <div className="store-info">
           <h1 className="store-name">{sett.biz_name || fallbackSettings.biz_name}</h1>
           <div className="store-status" style={{ color: isOpen ? "#3A7D44" : "#C62828" }}>
-            {isOpen ? "● Abierto ahora" : "● Cerrado — pedidos programados"}
+            {isOpen ? (storeStatus.msg ? `● Abierto · ${storeStatus.msg}` : "● Abierto ahora") : `● Cerrado${storeStatus.msg ? ` · ${storeStatus.msg}` : " — pedidos programados"}`}
           </div>
         </div>
         <button onClick={() => setShowMenu(true)} style={{ background: "var(--b2)", border: "none", borderRadius: 12, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} aria-label="Menú">
