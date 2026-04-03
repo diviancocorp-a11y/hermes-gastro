@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { I } from "../../lib/utils";
-import { updateSettings, uploadCoverImage, uploadCatImage } from "../../lib/adminService";
+import { updateSettings, uploadCoverImage, uploadCatImage, uploadLogoImage } from "../../lib/adminService";
 
 const BANNER_COLORS=[{h:"#2D1B0E",l:"Café oscuro"},{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#333333",l:"Negro"}];
 const DEF={biz_name:"La Nona Pato",logo_letter:"N",logo_color:"#C45D3E",exp_cats:["Materia Prima","Servicios","Packaging","Transporte","Alquiler","Equipamiento","Otros"],ing_cats:["Secos","Frescos","Packaging","Otros"],cat_images:{}};
@@ -12,6 +12,7 @@ function Settings({sett,setSett,msg,onBack}){
   const [nc,setNc]=useState("");const [ni,setNi2]=useState("");
   const [uploadingCover,setUploadingCover]=useState(false);
   const [uploadingCat,setUploadingCat]=useState(null);
+  const [uploadingLogo,setUploadingLogo]=useState(false);
   const set=(k,v)=>setS(p=>({...p,[k]:v}));
   const setCatImg=(name,url)=>setS(p=>({...p,cat_images:{...(p.cat_images||{}),[name]:url}}));
   const toggleCatHidden=(name)=>setS(p=>{const cur=p.hidden_cats||[];return{...p,hidden_cats:cur.includes(name)?cur.filter(x=>x!==name):[...cur,name]};});
@@ -33,6 +34,14 @@ function Settings({sett,setSett,msg,onBack}){
     if(result?.__error){msg(result.__error);return;}
     if(result){setCatImg(catName,result);msg(`Imagen de "${catName}" cargada ✓`);}else{msg("Error al subir imagen");}
   };
+  const handleLogoFile=async(e)=>{
+    const file=e.target.files?.[0];if(!file)return;
+    setUploadingLogo(true);
+    const result=await uploadLogoImage(file);
+    setUploadingLogo(false);
+    if(result?.__error){msg(result.__error);return;}
+    if(result){set("logo_url",result);msg("Logo cargado ✓");}else{msg("Error al subir logo");}
+  };
 
   return(<>
     <div className="s" style={{paddingTop:4}}><div className="st">Ajustes</div></div>
@@ -42,8 +51,26 @@ function Settings({sett,setSett,msg,onBack}){
       <div className="c">
         <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>🏪 Identidad</label>
         <div className="fg"><label className="fl">Nombre del negocio</label><input className="fin" value={s.biz_name||""} onChange={e=>set("biz_name",e.target.value)}/></div>
-        <div className="fg"><label className="fl">Inicial del logo</label><input className="fin" value={s.logo_letter||""} onChange={e=>set("logo_letter",e.target.value.slice(0,2).toUpperCase())} maxLength={2} style={{width:80,textAlign:"center",fontSize:20,fontWeight:700}}/></div>
-        <div className="fg"><label className="fl">Color del logo</label><div className="cgrid">{COLORS.map(c=>(<div key={c.h} className={`copt ${s.logo_color===c.h?"on":""}`} style={{background:c.h}} onClick={()=>set("logo_color",c.h)}>{s.logo_letter||"N"}</div>))}</div></div>
+        {/* Logo: imagen o letra+color */}
+        <div className="fg">
+          <label className="fl">Logo</label>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:56,height:56,borderRadius:16,overflow:"hidden",background:s.logo_url?"transparent":(s.logo_color||"#C45D3E"),display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:24,fontWeight:700,fontFamily:"'DM Serif Display',serif",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,0.12)"}}>
+              {s.logo_url?<img src={s.logo_url} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display='none'}}/>:(s.logo_letter||"N")}
+            </div>
+            <div style={{flex:1}}>
+              <label style={{display:"inline-block",padding:"7px 14px",background:"var(--pr,#C45D3E)",color:"#fff",borderRadius:10,fontSize:12,fontWeight:600,cursor:"pointer",textAlign:"center"}}>
+                {uploadingLogo?"Subiendo...":"📷 Subir logo"}
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={handleLogoFile} disabled={uploadingLogo}/>
+              </label>
+              {s.logo_url&&<button className="btn bs bsm" style={{marginLeft:6,fontSize:11}} onClick={()=>set("logo_url","")}>Quitar</button>}
+            </div>
+          </div>
+        </div>
+        {!s.logo_url&&<>
+          <div className="fg"><label className="fl">Inicial (si no hay imagen)</label><input className="fin" value={s.logo_letter||""} onChange={e=>set("logo_letter",e.target.value.slice(0,2).toUpperCase())} maxLength={2} style={{width:80,textAlign:"center",fontSize:20,fontWeight:700}}/></div>
+          <div className="fg"><label className="fl">Color del logo</label><div className="cgrid">{COLORS.map(c=>(<div key={c.h} className={`copt ${s.logo_color===c.h?"on":""}`} style={{background:c.h}} onClick={()=>set("logo_color",c.h)}>{s.logo_letter||"N"}</div>))}</div></div>
+        </>}
       </div>
 
       {/* ── Portada ── */}

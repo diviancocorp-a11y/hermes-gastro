@@ -492,7 +492,9 @@ export default function Catalog() {
       {/* Portada y Header */}
       <div className="store-cover" style={{ backgroundImage: `url(${sett.cover_url || fallbackSettings.cover_url})` }}></div>
       <div className="store-header">
-        <div className="store-logo" style={{ background: sett.logo_color || fallbackSettings.logo_color }}>{sett.logo_letter || fallbackSettings.logo_letter}</div>
+        <div className="store-logo" style={{ background: sett.logo_url ? "transparent" : (sett.logo_color || fallbackSettings.logo_color), overflow: "hidden" }}>
+          {sett.logo_url ? <img src={sett.logo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} onError={e => { e.target.style.display = "none"; e.target.parentElement.textContent = sett.logo_letter || fallbackSettings.logo_letter; e.target.parentElement.style.background = sett.logo_color || fallbackSettings.logo_color; }} /> : (sett.logo_letter || fallbackSettings.logo_letter)}
+        </div>
         <div className="store-info">
           <h1 className="store-name">{sett.biz_name || fallbackSettings.biz_name}</h1>
           <div className="store-status" style={{ color: isOpen ? "#3A7D44" : "#C62828" }}>
