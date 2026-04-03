@@ -23,6 +23,7 @@ import Recipes from "../components/admin/Recipes";
 import Orders from "../components/admin/Orders";
 import { Expenses, Purchase, SalesView } from "../components/admin/Finance";
 import CRM from "../components/admin/CRM";
+import Waste from "../components/admin/Waste";
 import Settings from "../components/admin/Settings";
 import { CancelDlg, StockWarningDlg, NewOrderOverlay } from "../components/admin/Dialogs";
 
@@ -291,6 +292,7 @@ export default function Admin(){
     {tab==="orders"&&<Orders {...{orders,recs,moveOrd,addOrd,ov,setOv,msg,sett}}/>}
     {tab==="sales"&&<SalesView {...{sales,setSales,orders,recs,rc,ov,setOv,msg}}/>}
     {tab==="crm"&&<CRM {...{orders,recs,ings,msg}}/>}
+    {tab==="waste"&&<Waste {...{waste,orders,recs,ings}}/>}
     {tab==="settings"&&<Settings sett={sett} setSett={setSett} msg={msg} onBack={()=>setTab("home")}/>}
 
     {ov?.type==="purchase"&&<Purchase {...{ings,setIngs,exps,setExps,sett}} onClose={()=>setOv(null)} msg={msg} loadAll={loadAll}/>}
@@ -302,7 +304,7 @@ export default function Admin(){
     {newAlertCount>0&&<NewOrderOverlay count={newAlertCount} onAck={ackOrders}/>}
 
     <nav className="nv">
-      {[{id:"home",icon:I.home,l:"Inicio"},{id:"stock",icon:I.box,l:"Stock"},{id:"recipes",icon:I.recipe,l:"Recetas"},{id:"orders",icon:I.orders,l:"Pedidos",badge:orders.filter(o=>o.status===ST.new).length},{id:"sales",icon:I.cart,l:"Ventas"},{id:"crm",icon:I.user,l:"CRM"}].map(t=>(
+      {[{id:"home",icon:I.home,l:"Inicio"},{id:"stock",icon:I.box,l:"Stock"},{id:"recipes",icon:I.recipe,l:"Recetas"},{id:"orders",icon:I.orders,l:"Pedidos",badge:orders.filter(o=>o.status===ST.new).length},{id:"sales",icon:I.cart,l:"Ventas"},{id:"waste",icon:I.alert,l:"Mermas"},{id:"crm",icon:I.user,l:"CRM"}].map(t=>(
         <button key={t.id} className={`ni ${tab===t.id||(tab==="settings"&&t.id==="home")?"on":""}`} onClick={()=>setTab(t.id)}>
           {t.badge>0&&<span className="nb">{t.badge}</span>}
           {t.icon({size:20})}{t.l}
