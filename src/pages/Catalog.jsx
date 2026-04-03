@@ -492,7 +492,7 @@ export default function Catalog() {
         <div className="store-info">
           <h1 className="store-name">{sett.biz_name || fallbackSettings.biz_name}</h1>
           <div className="store-status" style={{ color: isOpen ? "#3A7D44" : "#C62828" }}>
-            {isOpen ? "● Abierto ahora" : "● Cerrado por hoy"}
+            {isOpen ? "● Abierto ahora" : "● Cerrado — pedidos programados"}
           </div>
         </div>
         <button onClick={() => setShowMenu(true)} style={{ background: "var(--b2)", border: "none", borderRadius: 12, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} aria-label="Menú">
@@ -563,10 +563,14 @@ export default function Catalog() {
 
       {/* Banner tienda cerrada */}
       {!isOpen && (
-        <div style={{ margin: "0 16px 12px", padding: "14px 18px", background: "#FFEBEE", borderRadius: 14, textAlign: "center" }}>
-          <div style={{ fontSize: 28, marginBottom: 4 }}>🌙</div>
-          <div style={{ fontWeight: 700, fontSize: 15, color: "#C62828" }}>Estamos cerrados por hoy</div>
-          <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>Volvemos pronto. Podés ver el catálogo pero los pedidos están deshabilitados.</div>
+        <div style={{ margin: "0 16px 12px", padding: "18px 20px", background: "linear-gradient(135deg, #FFF8E1, #FFF3E0)", borderRadius: 16, textAlign: "center", border: "1px solid rgba(196,93,62,0.15)" }}>
+          <div style={{ fontSize: 32, marginBottom: 6 }}>🌙</div>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "#5D4037", lineHeight: 1.5, maxWidth: 340, margin: "0 auto" }}>
+            ¡Ay, llegaste un poquitito tarde! Ya cerramos la cocina por hoy. Pero dejame tu pedido programado y apenas abramos me pongo a preparar todo para vos.
+          </div>
+          <button onClick={() => { setScheduleMode("later"); document.querySelector(".cat-section")?.scrollIntoView({ behavior: "smooth" }); }} style={{ marginTop: 14, padding: "12px 28px", background: "var(--ac)", color: "#fff", border: "none", borderRadius: 12, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", boxShadow: "0 2px 8px rgba(196,93,62,0.3)" }}>
+            📅 Programar pedido
+          </button>
         </div>
       )}
 
@@ -616,7 +620,7 @@ export default function Catalog() {
                     </>) : `$${fi(p.sale_price)}`}
                   </div>
                   {hasDeal(p) && <span className="prod-deal-tag">-{DEAL_PCT}%</span>}
-                  <button className={`btn-add ${inCartQty > 0 ? 'has-qty' : ''} ${!isOpen ? 'disabled' : ''}`} onClick={(e) => isOpen && addC(p, e)} disabled={!isOpen} style={!isOpen ? { opacity: 0.4, cursor: "not-allowed" } : {}}>
+                  <button className={`btn-add ${inCartQty > 0 ? 'has-qty' : ''}`} onClick={(e) => addC(p, e)}>
                     {inCartQty > 0 ? inCartQty : I.plus({ size: 16 })}
                   </button>
                 </div>
@@ -654,7 +658,7 @@ export default function Catalog() {
           <div className="ups-sheet" onClick={e => e.stopPropagation()}>
             <div className="ups-drag" />
             <p className="ups-added">✓ <strong>{upsell.product.name}</strong> agregado</p>
-            <h3 className="ups-title">¿Le sumás algo más?</h3>
+            <h3 className="ups-title">¡Llevate un antojito!</h3>
             <div className="ups-list">
               {upsell.suggestions.map(s => (
                 <div key={s.id} className="ups-card" onClick={() => addFromUpsell(s)}>
@@ -674,6 +678,16 @@ export default function Catalog() {
           </div>
         </div>
       )}
+
+      {/* Footer legal */}
+      <footer className="catalog-footer">
+        <div className="footer-links">
+          <a href="/terminos" target="_blank" rel="noopener noreferrer">Términos y Condiciones</a>
+          <span className="footer-dot">·</span>
+          <a href="/privacidad" target="_blank" rel="noopener noreferrer">Política de Privacidad</a>
+        </div>
+        <p className="footer-copy">Copyright © 2026 {sett.biz_name || "La Nona Pato"}. Todos los derechos reservados.</p>
+      </footer>
     </div>
   );
 }

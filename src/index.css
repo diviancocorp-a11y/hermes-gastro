@@ -283,6 +283,16 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .ups-skip{width:100%;margin-top:16px;padding:14px;border:none;background:transparent;color:var(--t3);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
 
 /* =========================================
+   CATALOG FOOTER
+========================================= */
+.catalog-footer{text-align:center;padding:40px 16px 100px;margin-top:24px;border-top:1px solid rgba(0,0,0,0.06)}
+.footer-links{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.footer-links a{font-size:12px;color:var(--t3);text-decoration:none;transition:color .15s}
+.footer-links a:hover{color:var(--ac);text-decoration:underline}
+.footer-dot{color:var(--b2);font-size:12px}
+.footer-copy{font-size:11px;color:var(--t3);opacity:.7;margin:0}
+
+/* =========================================
    IMAGE UPLOAD (Admin RecForm)
 ========================================= */
 .img-upload-wrap{display:flex;flex-direction:column;gap:8px}
