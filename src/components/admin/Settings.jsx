@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { I } from "../../lib/utils";
-import { updateSettings, uploadCoverImage, uploadCatImage, uploadLogoImage } from "../../lib/adminService";
+import { updateSettings, uploadCoverImage, uploadCatImage, uploadLogoImage, resetHistoricalData } from "../../lib/adminService";
 
 const BANNER_COLORS=[{h:"#2D1B0E",l:"Café oscuro"},{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#333333",l:"Negro"}];
 const DEF={biz_name:"La Nona Pato",logo_letter:"N",logo_color:"#C45D3E",exp_cats:["Materia Prima","Servicios","Packaging","Transporte","Alquiler","Equipamiento","Otros"],ing_cats:["Secos","Frescos","Packaging","Otros"],cat_images:{}};
@@ -13,6 +13,10 @@ function Settings({sett,setSett,msg,onBack}){
   const [uploadingCover,setUploadingCover]=useState(false);
   const [uploadingCat,setUploadingCat]=useState(null);
   const [uploadingLogo,setUploadingLogo]=useState(false);
+  const [resetPin,setResetPin]=useState("");
+  const [showReset,setShowReset]=useState(false);
+  const [resetting,setResetting]=useState(false);
+  const [resetConfirm,setResetConfirm]=useState(false);
   const set=(k,v)=>setS(p=>({...p,[k]:v}));
   const setCatImg=(name,url)=>setS(p=>({...p,cat_images:{...(p.cat_images||{}),[name]:url}}));
   const toggleCatHidden=(name)=>setS(p=>{const cur=p.hidden_cats||[];return{...p,hidden_cats:cur.includes(name)?cur.filter(x=>x!==name):[...cur,name]};});
@@ -190,6 +194,66 @@ function Settings({sett,setSett,msg,onBack}){
             <button style={{background:"none",border:"none",fontSize:11,color:d.closed?"var(--gn)":"var(--rd)",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}} onClick={()=>upd("closed",!d.closed)}>{d.closed?"Abrir":"Cerrar"}</button>
           </div>);
         })}
+      </div>
+
+      {/* ── Zona de peligro ── */}
+      <div className="c" style={{border:"1.5px solid #C62828",background:"#FFF5F5"}}>
+        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:6,display:"block",color:"#C62828"}}>⚠️ Zona de peligro</label>
+        <div style={{fontSize:12,color:"#5D4037",marginBottom:12,lineHeight:1.5}}>Reiniciar datos históricos elimina <strong>pedidos, ventas, gastos, compras, mermas, cupones y datos CRM</strong>. No afecta recetas, ingredientes ni configuración.</div>
+        {!showReset
+          ?<button onClick={()=>setShowReset(true)} style={{width:"100%",padding:"12px",background:"#C62828",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer"}}>🗑️ Reiniciar datos históricos</button>
+          :<div style={{background:"#FFEBEE",borderRadius:10,padding:14}}>
+            <div style={{fontSize:13,fontWeight:600,color:"#C62828",marginBottom:10}}>Ingresá la clave de seguridad para confirmar:</div>
+            <div style={{display:"flex",gap:8}}>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={resetPin}
+                onChange={e=>setResetPin(e.target.value.replace(/\D/g,"").slice(0,4))}
+                placeholder="****"
+                style={{flex:1,padding:"10px 14px",border:"1.5px solid #C62828",borderRadius:8,fontSize:18,textAlign:"center",letterSpacing:8,fontWeight:700,background:"#fff"}}
+                autoFocus
+              />
+              <button
+                disabled={resetPin!=="4477"||resetting}
+                onClick={()=>setResetConfirm(true)}
+                style={{padding:"10px 20px",background:resetPin==="4477"?"#C62828":"#ccc",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:resetPin==="4477"?"pointer":"not-allowed",opacity:resetPin==="4477"?1:0.5}}
+              >
+                {resetting?"...":"Confirmar"}
+              </button>
+              <button onClick={()=>{setShowReset(false);setResetPin("");setResetConfirm(false);}} style={{padding:"10px 14px",background:"transparent",border:"1.5px solid #C62828",borderRadius:8,fontSize:13,color:"#C62828",cursor:"pointer",fontWeight:600}}>✕</button>
+            </div>
+            {resetPin.length===4&&resetPin!=="4477"&&<div style={{fontSize:12,color:"#C62828",marginTop:6}}>Clave incorrecta</div>}
+            {resetConfirm&&resetPin==="4477"&&!resetting&&(
+              <div style={{marginTop:12,padding:12,background:"#fff",borderRadius:8,border:"1.5px solid #C62828"}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#C62828",marginBottom:8}}>⚠️ ESTA ACCIÓN ES IRREVERSIBLE</div>
+                <div style={{fontSize:12,color:"#5D4037",marginBottom:12}}>Se borrarán todos los pedidos, ventas, gastos, compras, mermas, cupones y datos de clientes. ¿Estás seguro?</div>
+                <div style={{display:"flex",gap:8}}>
+                  <button
+                    onClick={async()=>{
+                      setResetting(true);
+                      const result=await resetHistoricalData();
+                      setResetting(false);
+                      if(result.ok){
+                        msg("Datos históricos eliminados ✓");
+                        setShowReset(false);setResetPin("");setResetConfirm(false);
+                      }else{
+                        msg("Errores: "+result.errors.join(", "));
+                      }
+                    }}
+                    style={{flex:1,padding:"10px",background:"#C62828",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}
+                  >
+                    Sí, borrar todo
+                  </button>
+                  <button onClick={()=>setResetConfirm(false)} style={{flex:1,padding:"10px",background:"#fff",color:"#C62828",border:"1.5px solid #C62828",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        }
       </div>
 
       <button className="btn bp" style={{marginTop:8}} onClick={async()=>{const saved=await updateSettings(s);if(saved){setSett(saved);msg("Guardado ✓");onBack();}else{msg("Error al guardar");}}}>{I.check({size:18,color:"#fff"})} Guardar cambios</button>

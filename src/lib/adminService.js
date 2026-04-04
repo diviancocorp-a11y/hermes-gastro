@@ -537,4 +537,27 @@ export async function fetchCustomerStats() {
   });
   return Object.values(map).sort((a, b) => b.total - a.total);
 }
-   
+
+// ─── RESET HISTORICAL DATA ───────────────────────────
+// Borra pedidos, ventas, gastos, compras y mermas.
+// NO toca recetas, ingredientes ni settings.
+export async function resetHistoricalData() {
+  const tables = [
+    { name: 'order_items', label: 'items de pedidos' },
+    { name: 'orders', label: 'pedidos' },
+    { name: 'sales', label: 'ventas' },
+    { name: 'expenses', label: 'gastos' },
+    { name: 'purchase_items', label: 'items de compras' },
+    { name: 'purchases', label: 'compras' },
+    { name: 'waste_log', label: 'mermas' },
+    { name: 'coupons', label: 'cupones' },
+    { name: 'customers', label: 'clientes CRM' },
+  ];
+  const errors = [];
+  for (const t of tables) {
+    // neq con id != '' borra todas las filas
+    const { error } = await supabase.from(t.name).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (error) errors.push(`${t.label}: ${error.message}`);
+  }
+  return errors.length ? { ok: false, errors } : { ok: true };
+}
