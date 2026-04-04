@@ -83,29 +83,6 @@ export default function Admin(){
 
   useEffect(()=>{if(session)loadAll();},[session,loadAll]);
 
-  // ═══ Promover pedidos programados para hoy → "new" (cuando el local está abierto) ═══
-  const promotedRef=useRef(new Set());
-  useEffect(()=>{
-    if(!loaded||!orders.length)return;
-    const today=td();
-    const storeOpen=sett.store_open!==false;
-    if(!storeOpen)return;
-    const toPromote=orders.filter(o=>o.delivery_date&&o.delivery_date<=today&&o.status===ST.new&&!promotedRef.current.has(o.id));
-    if(toPromote.length===0)return;
-    toPromote.forEach(o=>promotedRef.current.add(o.id));
-    // Limpiar delivery_date en DB y en estado local para que aparezcan en "Nuevos"
-    (async()=>{
-      for(const o of toPromote){
-        await supabase.from('orders').update({delivery_date:null}).eq('id',o.id);
-      }
-      setOrders(p=>p.map(o=>{
-        if(toPromote.find(tp=>tp.id===o.id))return{...o,delivery_date:null};
-        return o;
-      }));
-      msg(`📅 ${toPromote.length} pedido${toPromote.length>1?'s':''} programado${toPromote.length>1?'s':''} activado${toPromote.length>1?'s':''}`);
-    })();
-  },[loaded,orders,sett.store_open]);
-
   // Suscripción Realtime + Polling de respaldo (por si el WS falla)
   const lastSeenAt=useRef(new Date().toISOString());
   const knownIds=useRef(new Set());
@@ -164,6 +141,28 @@ export default function Admin(){
   },[session,handleNewOrders]);
 
   const msg=useCallback(m=>{setToast(m);setTimeout(()=>setToast(""),2200);},[]);
+
+  // ═══ Promover pedidos programados para hoy → "new" (cuando el local está abierto) ═══
+  const promotedRef=useRef(new Set());
+  useEffect(()=>{
+    if(!loaded||!orders.length)return;
+    const today=td();
+    const storeOpen=sett.store_open!==false;
+    if(!storeOpen)return;
+    const toPromote=orders.filter(o=>o.delivery_date&&o.delivery_date<=today&&o.status===ST.new&&!promotedRef.current.has(o.id));
+    if(toPromote.length===0)return;
+    toPromote.forEach(o=>promotedRef.current.add(o.id));
+    (async()=>{
+      for(const o of toPromote){
+        await supabase.from('orders').update({delivery_date:null}).eq('id',o.id);
+      }
+      setOrders(p=>p.map(o=>{
+        if(toPromote.find(tp=>tp.id===o.id))return{...o,delivery_date:null};
+        return o;
+      }));
+      msg(`📅 ${toPromote.length} pedido${toPromote.length>1?'s':''} programado${toPromote.length>1?'s':''} activado${toPromote.length>1?'s':''}`);
+    })();
+  },[loaded,orders,sett.store_open,msg]);
 
   // Recipe cost calculator
   const rc=useCallback(rec=>{
