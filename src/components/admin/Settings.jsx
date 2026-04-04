@@ -228,7 +228,7 @@ function Settings({sett,setSett,msg,onBack}){
             {resetConfirm&&resetPin==="4477"&&!resetting&&(
               <div style={{marginTop:12,padding:12,background:"#fff",borderRadius:8,border:"1.5px solid #C62828"}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#C62828",marginBottom:8}}>⚠️ ESTA ACCIÓN ES IRREVERSIBLE</div>
-                <div style={{fontSize:12,color:"#5D4037",marginBottom:12}}>Se borrarán todos los pedidos, ventas, gastos, compras, mermas, cupones y datos de clientes. ¿Estás seguro?</div>
+                <div style={{fontSize:12,color:"#5D4037",marginBottom:12}}>Se descargará un <strong>respaldo automático de clientes</strong> (CSV) y luego se borrarán todos los pedidos, ventas, gastos, compras, mermas, cupones y datos de clientes. ¿Estás seguro?</div>
                 <div style={{display:"flex",gap:8}}>
                   <button
                     onClick={async()=>{
@@ -236,10 +236,12 @@ function Settings({sett,setSett,msg,onBack}){
                       const result=await resetHistoricalData();
                       setResetting(false);
                       if(result.ok){
-                        msg("Datos históricos eliminados ✓");
+                        const bk=result.backup;
+                        msg(bk?.count?`✓ Respaldo de ${bk.count} clientes descargado → ${bk.fileName}. Datos eliminados.`:"Datos históricos eliminados ✓");
                         setShowReset(false);setResetPin("");setResetConfirm(false);
                       }else{
-                        msg("Errores: "+result.errors.join(", "));
+                        const bk=result.backup;
+                        msg((bk?.count?`Respaldo OK (${bk.count} clientes). `:"")+"Errores: "+result.errors.join(", "));
                       }
                     }}
                     style={{flex:1,padding:"10px",background:"#C62828",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}
