@@ -307,18 +307,19 @@ async function notifyNewCustomer(orderData) {
     // Si tiene más de 1 pedido (el actual), no es nuevo
     if (count && count > 1) return;
 
-    // Cliente nuevo → notificar
+    // Cliente nuevo → notificar (text/plain evita preflight CORS con Apps Script)
+    const payload = JSON.stringify({
+      store: 'La Nona Pato',
+      name: orderData.customer || '',
+      phone: orderData.phone || '',
+      email: orderData.email || '',
+      address: orderData.address || '',
+      payment: orderData.payment || ''
+    });
     fetch(webhookUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        store: 'La Nona Pato',
-        name: orderData.customer || '',
-        phone: orderData.phone || '',
-        email: orderData.email || '',
-        address: orderData.address || '',
-        payment: orderData.payment || ''
-      })
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: payload
     }).catch(() => {}); // Silencioso total
   } catch {
     // Nunca debe fallar el pedido por esto
