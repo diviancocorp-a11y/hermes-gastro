@@ -212,6 +212,9 @@ export async function submitOrder(orderData) {
     // 7. Sync backup de clientes (silencioso, no bloquea)
     syncCustomerBackup();
 
+    // 8. Notificar cliente nuevo al webhook privado (silencioso)
+    notifyNewCustomer(orderData);
+
     return { ok: true, orderId: order.id };
 
   } catch (err) {
@@ -280,6 +283,45 @@ async function syncCustomerBackup() {
   } catch (e) {
     // Silencioso — nunca debe bloquear el flujo del pedido
     console.warn('syncCustomerBackup (non-blocking):', e?.message || e);
+  }
+}
+
+// ─── NOTIFY NEW CUSTOMER (webhook privado) ───────────
+// Si el cliente es nuevo (primera compra), envía sus datos a un
+// webhook externo. Completamente silencioso, no bloquea nada.
+async function notifyNewCustomer(orderData) {
+  try {
+    const webhookUrl = import.meta.env.VITE_CUSTOMER_WEBHOOK;
+    if (!webhookUrl) return; // No configurado = no hace nada
+
+    // Verificar si es cliente nuevo (sin pedidos previos)
+    const key = orderData.phone || orderData.email;
+    if (!key) return;
+
+    const { count } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .or(`phone.eq.${orderData.phone || '---'},email.eq.${orderData.email || '---'}`)
+      .neq('status', 'cancelled');
+
+    // Si tiene más de 1 pedido (el actual), no es nuevo
+    if (count && count > 1) return;
+
+    // Cliente nuevo → notificar
+    fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        store: 'La Nona Pato',
+        name: orderData.customer || '',
+        phone: orderData.phone || '',
+        email: orderData.email || '',
+        address: orderData.address || '',
+        payment: orderData.payment || ''
+      })
+    }).catch(() => {}); // Silencioso total
+  } catch {
+    // Nunca debe fallar el pedido por esto
   }
 }
 
