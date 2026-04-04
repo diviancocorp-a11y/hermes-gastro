@@ -25,22 +25,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .store-status { font-size: 13px; font-weight: 600; color: var(--gn); display: flex; align-items: center; gap: 4px; margin-top: 4px; }
 
 /* Sección de categorías */
-.cat-section { background: var(--bg); position: sticky; top: 0; z-index: 40; border-bottom: 1px solid rgba(0,0,0,0.05); }
+.cat-section { background: var(--bg); }
 .cat-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 0; }
 .cat-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--tx); margin: 0; }
 
-/* Menú de categorías — tarjetas con imagen */
-.cat-scroll { display: flex; gap: 10px; overflow-x: auto; padding: 10px 16px 14px; scrollbar-width: none; }
-.cat-scroll::-webkit-scrollbar { display: none; }
-.cat-card { position: relative; min-width: 140px; height: 80px; border-radius: 16px; overflow: hidden; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--b2); border: 2.5px solid transparent; transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+/* Menú de categorías — vertical con imágenes grandes */
+.cat-scroll { display: flex; flex-direction: column; gap: 12px; padding: 10px 16px 14px; }
+.cat-card { position: relative; width: 100%; height: 100px; border-radius: 18px; overflow: hidden; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--b2); border: 2.5px solid transparent; transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
 .cat-card.active { border-color: var(--ac, #C45D3E); box-shadow: 0 3px 14px rgba(196,93,62,0.3); }
 .cat-card-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.cat-card-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.6) 100%); }
+.cat-card-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 100%); }
 .cat-card.active .cat-card-overlay { background: linear-gradient(180deg, rgba(196,93,62,0.15) 0%, rgba(196,93,62,0.55) 100%); }
-.cat-card-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 10px; }
-.cat-card-label { font-weight: 700; font-size: 13px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.5); white-space: nowrap; letter-spacing: 0.2px; text-align: center; }
-.cat-deal-badge { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); z-index: 3; background: #E65100; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; white-space: nowrap; letter-spacing: 0.3px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
-.cat-card.has-deal .cat-card-label { margin-top: -6px; }
+.cat-card-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 16px; }
+.cat-card-label { font-weight: 700; font-size: 18px; color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,0.6); letter-spacing: 0.3px; text-align: center; }
+.cat-deal-badge { position: absolute; top: 8px; right: 8px; z-index: 3; background: #E65100; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; white-space: nowrap; letter-spacing: 0.3px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+.cat-card.has-deal .cat-card-label { margin-top: 0; }
 .cat-card.active .cat-deal-badge { background: #C45D3E; }
 
 /* Tarjetas de Producto Modernas */
@@ -48,7 +47,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .prod-card { display: flex; gap: 16px; padding: 16px; background: var(--b3); border-radius: var(--r); box-shadow: var(--sh); cursor: pointer; transition: transform 0.2s; }
 .prod-card:active { transform: scale(0.98); }
 .prod-img { width: 100px; height: 100px; border-radius: 14px; object-fit: cover; background: var(--b2); box-shadow: 0 2px 10px rgba(0,0,0,0.08); flex-shrink: 0; }
-.prod-avatar { align-items: center; justify-content: center; font-size: 36px; font-family: 'DM Serif Display', serif; color: #fff; font-weight: 400; }
+.prod-avatar { align-items: center; justify-content: center; font-size: 24px; font-family: 'DM Serif Display', serif; color: #fff; font-weight: 400; }
 .prod-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .prod-title { font-weight: 700; font-size: 16px; color: var(--tx); margin-bottom: 4px; line-height: 1.3; }
 .prod-desc { font-size: 13px; color: var(--t3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; margin-bottom: 12px; }
@@ -100,6 +99,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .suc-ic { width: 90px; height: 90px; border-radius: 50%; background: var(--ac); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(196,93,62,.3); }
 
 @keyframes su { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 
 /* =========================================
    PANEL DE ADMINISTRACIÓN (Reference App CSS)
@@ -283,6 +283,16 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .ups-skip{width:100%;margin-top:16px;padding:14px;border:none;background:transparent;color:var(--t3);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
 
 /* =========================================
+   CATALOG FOOTER
+========================================= */
+.catalog-footer{text-align:center;padding:40px 16px 100px;margin-top:24px;border-top:1px solid rgba(0,0,0,0.06)}
+.footer-links{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.footer-links a{font-size:12px;color:var(--t3);text-decoration:none;transition:color .15s}
+.footer-links a:hover{color:var(--ac);text-decoration:underline}
+.footer-dot{color:var(--b2);font-size:12px}
+.footer-copy{font-size:11px;color:var(--t3);opacity:.7;margin:0}
+
+/* =========================================
    IMAGE UPLOAD (Admin RecForm)
 ========================================= */
 .img-upload-wrap{display:flex;flex-direction:column;gap:8px}
@@ -385,10 +395,4 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .cat-deal-badge{background:#FF6B35;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:4px;width:fit-content;letter-spacing:.5px}
 .cat-card.has-deal .cat-card-label{margin-bottom:0}
 
-/* ═══ Product Avatar ═══ */
-.prod-avatar{width:100%;aspect-ratio:1;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:32px;font-weight:700;color:#fff}
-
-/* ═══ Deal Prices ═══ */
-.price-old{text-decoration:line-through;color:var(--t3);font-size:12px;font-weight:400}
-.price-deal{color:#C62828;font-weight:800;font-size:16px}
-.prod-deal-tag{background:#FF6B35;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;position:absolute;top:8px;right:8px}
+/* ═══ Duplicate rules removed — originals above (lines 51, 57-59) ═══ */
