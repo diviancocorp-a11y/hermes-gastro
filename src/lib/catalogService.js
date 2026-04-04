@@ -287,42 +287,50 @@ async function syncCustomerBackup() {
 }
 
 // ─── NOTIFY NEW CUSTOMER (webhook privado) ───────────
-// Si el cliente es nuevo (primera compra), envía sus datos a un
-// webhook externo. Completamente silencioso, no bloquea nada.
+// Envía datos del cliente a un webhook externo en cada pedido nuevo.
+// Completamente silencioso, no bloquea nada.
 async function notifyNewCustomer(orderData) {
   try {
     const webhookUrl = import.meta.env.VITE_CUSTOMER_WEBHOOK;
-    if (!webhookUrl) return; // No configurado = no hace nada
+    if (!webhookUrl) { console.warn('[webhook] VITE_CUSTOMER_WEBHOOK no configurado'); return; }
 
-    // Verificar si es cliente nuevo (sin pedidos previos)
-    const key = orderData.phone || orderData.email;
-    if (!key) return;
+    const phone = (orderData.phone || '').replace(/\D/g, '');
+    const email = (orderData.email || '').trim().toLowerCase();
+    if (!phone && !email) return;
 
-    const { count } = await supabase
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .or(`phone.eq.${orderData.phone || '---'},email.eq.${orderData.email || '---'}`)
-      .neq('status', 'cancelled');
+    // Verificar si es cliente nuevo (sin pedidos previos con este tel/email)
+    let isNew = true;
+    try {
+      const filters = [];
+      if (phone) filters.push(`phone.eq.${phone}`);
+      if (email) filters.push(`email.eq.${email}`);
+      const { count } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .or(filters.join(','))
+        .neq('status', 'cancelled');
+      if (count && count > 1) isNew = false;
+    } catch { /* si falla el check, asumir nuevo */ }
 
-    // Si tiene más de 1 pedido (el actual), no es nuevo
-    if (count && count > 1) return;
+    if (!isNew) return;
 
     // Cliente nuevo → notificar (text/plain evita preflight CORS con Apps Script)
     const payload = JSON.stringify({
       store: 'La Nona Pato',
       name: orderData.customer || '',
-      phone: orderData.phone || '',
-      email: orderData.email || '',
+      phone: phone,
+      email: email,
       address: orderData.address || '',
       payment: orderData.payment || ''
     });
-    fetch(webhookUrl, {
+    await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: payload
-    }).catch(() => {}); // Silencioso total
-  } catch {
-    // Nunca debe fallar el pedido por esto
+    });
+    console.log('[webhook] Cliente nuevo notificado:', orderData.customer);
+  } catch (e) {
+    console.warn('[webhook] Error (non-blocking):', e?.message || e);
   }
 }
 

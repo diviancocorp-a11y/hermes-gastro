@@ -171,4 +171,4 @@ CREATE POLICY "combo_items_admin_all" ON combo_items
 -- NOTA: La función adjust_stock ya fue creada en Phase 1
 -- como SECURITY DEFINER, lo que permite que funcione
 -- independientemente de las RLS policies de ingredients.
--- ═�
+-- ═══════════════════════════════════════════════════════════

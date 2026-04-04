@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { I, fi, fm, td, saleCode } from "../../lib/utils";
+import { I, fi, fm, td } from "../../lib/utils";
 import {
   createExpense, deleteExpense,
   createSale,
@@ -298,129 +298,57 @@ function Purchase({ ings, setIngs, exps, setExps, sett, onClose, msg, loadAll })
 }
 
 // ═══════ SALES ═══════
-function SalesView({ sales, setSales, orders, recs, rc, ov, setOv, msg }) {
+function SalesView({ sales, setSales, recs, rc, ov, setOv, msg }) {
   const mo = td().slice(0, 7) + "-01";
-  const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState(null);
-
-  // Combinar: pedidos completados + ventas manuales, todo como "ventas"
-  const ST_DONE = "completed";
-  const completedOrders = (orders || []).filter(o => o.status === ST_DONE);
-
-  // Todas las ventas (orders completados + ventas manuales) ordenadas por fecha
-  const allSales = [
-    ...completedOrders.map(o => ({
-      id: o.id, type: "order", code: saleCode(o.id),
-      customer: o.customer || "Sin nombre", date: o.date || (o.created_at || "").split("T")[0],
-      items: (o.order_items || o.items || []).map(it => {
-        const r = recs.find(x => x.id === it.recipe_id);
-        return { name: r?.name || "?", qty: it.quantity || it.qty || 1, price: it.unit_price || 0 };
-      }),
-      itemCount: (o.order_items || o.items || []).reduce((s, it) => s + (it.quantity || it.qty || 1), 0),
-      total: o.total || 0, payment: o.payment || "—", phone: o.phone || "",
-      completedAt: o.completedAt || o.created_at || ""
-    })),
-    ...sales.map(s => {
-      const r = recs.find(x => x.id === s.recipe_id);
-      return {
-        id: s.id, type: "manual", code: saleCode(s.id),
-        customer: "Venta manual", date: s.date,
-        items: [{ name: r?.name || "?", qty: s.qty || 1, price: s.unit_price || 0 }],
-        itemCount: s.qty || 1,
-        total: s.total || 0, payment: "—", phone: "",
-        completedAt: s.created_at || s.date || ""
-      };
-    })
-  ].sort((a, b) => (b.completedAt || b.date || "").localeCompare(a.completedAt || a.date || ""));
-
-  // Filtro de búsqueda
-  const filtered = search.trim()
-    ? allSales.filter(s => s.customer.toLowerCase().includes(search.toLowerCase()) || s.code.toLowerCase().includes(search.toLowerCase()) || s.items.some(it => it.name.toLowerCase().includes(search.toLowerCase())))
-    : allSales;
-
-  // Agrupar por fecha
-  const grouped = filtered.reduce((a, s) => { const d = s.date || "sin-fecha"; if (!a[d]) a[d] = []; a[d].push(s); return a; }, {});
-  const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
-
-  // Totales del mes
-  const tM = allSales.filter(s => s.date >= mo).reduce((a, x) => a + (x.total || 0), 0);
-  const countM = allSales.filter(s => s.date >= mo).length;
+  const sorted = [...sales].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const gr = sorted.reduce((a, s) => { if (!a[s.date]) a[s.date] = []; a[s.date].push(s); return a; }, {});
+  const tM = sales.filter(s => s.date >= mo).reduce((a, x) => a + (x.total || 0), 0);
 
   return (
     <>
       <div className="s">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div className="st" style={{ margin: 0 }}>Ventas</div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gn)" }}>${fi(tM)}</div>
-            <div style={{ fontSize: 11, color: "var(--t3)" }}>{countM} ventas este mes</div>
-          </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gn)" }}>Mes: ${fi(tM)}</div>
         </div>
       </div>
-      {/* Barra de búsqueda */}
-      <div className="sb">{I.search({ size: 16 })}<input className="fin" placeholder="Buscar por cliente, código o producto..." value={search} onChange={e => setSearch(e.target.value)} /></div>
       <div className="s">
-        {sortedDates.length === 0 ? (
-          <div className="c"><div className="empty"><div className="eic">🛒</div><div>{search ? "Sin resultados" : "Sin ventas"}</div></div></div>
-        ) : sortedDates.map(d => {
-          const daySales = grouped[d];
-          const dayTotal = daySales.reduce((a, s) => a + s.total, 0);
+        {Object.entries(gr).map(([d, its]) => {
+          const dt = its.reduce((a, i) => a + (i.total || 0), 0);
           return (
             <div key={d}>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 4px 6px", fontSize: 12, fontWeight: 700, color: "var(--t3)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 4px 4px", fontSize: 12, fontWeight: 700, color: "var(--t3)" }}>
                 <span>{new Date(d + "T12:00:00").toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" })}</span>
-                <span>{daySales.length} ventas · ${fi(dayTotal)}</span>
+                <span>${fi(dt)}</span>
               </div>
-              {daySales.map(s => {
-                const isExp = expanded === s.id;
-                return (
-                  <div key={s.id} className="c" style={{ padding: 0, marginBottom: 8, overflow: "hidden", cursor: "pointer", transition: "all .2s" }} onClick={() => setExpanded(isExp ? null : s.id)}>
-                    {/* Card header */}
-                    <div style={{ padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                          <span style={{ fontWeight: 700, fontSize: 14, color: "var(--tx)" }}>{s.customer}</span>
-                          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--t3)", background: "var(--b2)", padding: "1px 6px", borderRadius: 6 }}>{s.code}</span>
-                        </div>
-                        <div style={{ fontSize: 12, color: "var(--t3)" }}>
-                          {s.itemCount} {s.itemCount === 1 ? "item" : "items"}{s.payment !== "—" ? ` · ${s.payment}` : ""}
-                        </div>
+              <div className="c" style={{ padding: 0, overflow: "hidden" }}>
+                {its.map(s => {
+                  const r = recs.find(x => x.id === s.recipe_id);
+                  return (
+                    <div key={s.id} className="li">
+                      <div className="lic" style={{ background: "var(--gl)", color: "var(--gn)" }}>{I.cart({ size: 16 })}</div>
+                      <div className="lii">
+                        <div className="lin">{r?.name || "?"}</div>
+                        <div className="lid">{s.qty || 1} × ${fi(s.unit_price || 0)}</div>
                       </div>
-                      <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: 16, color: "var(--gn)" }}>${fi(s.total)}</div>
-                        <div style={{ fontSize: 10, color: "var(--t3)" }}>{isExp ? "▲" : "▼"}</div>
+                      <div className="lir">
+                        <div className="lia" style={{ color: "var(--gn)" }}>${fi(s.total)}</div>
                       </div>
                     </div>
-                    {/* Expanded details */}
-                    {isExp && (
-                      <div style={{ borderTop: "1px solid var(--b2)", padding: "10px 14px", background: "var(--bg)" }}>
-                        {s.items.map((it, i) => (
-                          <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13 }}>
-                            <span>{it.name} × {it.qty}</span>
-                            <span style={{ fontWeight: 600 }}>${fi(it.qty * it.price)}</span>
-                          </div>
-                        ))}
-                        <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0 2px", borderTop: "1px solid var(--b2)", marginTop: 4, fontWeight: 700, fontSize: 14 }}>
-                          <span>Total</span><span>${fi(s.total)}</span>
-                        </div>
-                        {s.phone && <div style={{ fontSize: 11, color: "var(--t3)", marginTop: 4 }}>📞 {s.phone}</div>}
-                        {/* Print placeholders */}
-                        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                          <button className="btn bs bsm" style={{ flex: 1 }} onClick={e => { e.stopPropagation(); msg("🖨️ Impresión de recibo próximamente"); }}>
-                            🖨️ Recibo
-                          </button>
-                          <button className="btn bs bsm" style={{ flex: 1 }} onClick={e => { e.stopPropagation(); msg("🖨️ Impresión de factura próximamente"); }}>
-                            🧾 Factura
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           );
         })}
+        {sales.length === 0 && (
+          <div className="c">
+            <div className="empty">
+              <div className="eic">🛒</div>
+              <div>Sin ventas</div>
+            </div>
+          </div>
+        )}
       </div>
       <button className="fab" onClick={() => setOv({ type: "addSale" })}>
         {I.plus({ size: 24, color: "#fff" })}

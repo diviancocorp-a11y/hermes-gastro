@@ -7,6 +7,8 @@ const DEF={biz_name:"La Nona Pato",logo_letter:"N",logo_color:"#C45D3E",exp_cats
 const CAT_NAMES=["Todos","Primeros Mimos","La Mesa Principal","El Sanguche de la Nona","La Nona Amasó","La Última Mordida","Cocina Consciente"];
 const COLORS=[{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#2D1B0E",l:"Negro"}];
 
+const SECTIONS=["identity","cover","catImages","banner","storeState","expCats","ingCats","hours","backup","reset"];
+
 function Settings({sett,setSett,msg,onBack}){
   const [s,setS]=useState({...sett});
   const [nc,setNc]=useState("");const [ni,setNi2]=useState("");
@@ -17,6 +19,8 @@ function Settings({sett,setSett,msg,onBack}){
   const [showReset,setShowReset]=useState(false);
   const [resetting,setResetting]=useState(false);
   const [resetConfirm,setResetConfirm]=useState(false);
+  const [open,setOpen]=useState({});
+  const tog=(k)=>setOpen(p=>({...p,[k]:!p[k]}));
   const set=(k,v)=>setS(p=>({...p,[k]:v}));
   const setCatImg=(name,url)=>setS(p=>({...p,cat_images:{...(p.cat_images||{}),[name]:url}}));
   const toggleCatHidden=(name)=>setS(p=>{const cur=p.hidden_cats||[];return{...p,hidden_cats:cur.includes(name)?cur.filter(x=>x!==name):[...cur,name]};});
@@ -53,7 +57,11 @@ function Settings({sett,setSett,msg,onBack}){
 
       {/* ── Identidad ── */}
       <div className="c">
-        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>🏪 Identidad</label>
+        <div onClick={()=>tog("identity")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>🏪 Identidad</label>
+          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.identity?"rotate(180deg)":"rotate(0)"}}>▾</span>
+        </div>
+        {open.identity&&<div style={{marginTop:10}}>
         <div className="fg"><label className="fl">Nombre del negocio</label><input className="fin" value={s.biz_name||""} onChange={e=>set("biz_name",e.target.value)}/></div>
         {/* Logo: imagen o letra+color */}
         <div className="fg">
@@ -75,11 +83,16 @@ function Settings({sett,setSett,msg,onBack}){
           <div className="fg"><label className="fl">Inicial (si no hay imagen)</label><input className="fin" value={s.logo_letter||""} onChange={e=>set("logo_letter",e.target.value.slice(0,2).toUpperCase())} maxLength={2} style={{width:80,textAlign:"center",fontSize:20,fontWeight:700}}/></div>
           <div className="fg"><label className="fl">Color del logo</label><div className="cgrid">{COLORS.map(c=>(<div key={c.h} className={`copt ${s.logo_color===c.h?"on":""}`} style={{background:c.h}} onClick={()=>set("logo_color",c.h)}>{s.logo_letter||"N"}</div>))}</div></div>
         </>}
+      </div>}
       </div>
 
       {/* ── Portada ── */}
       <div className="c">
-        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>🖼️ Foto de portada</label>
+        <div onClick={()=>tog("cover")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>🖼️ Foto de portada</label>
+          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.cover?"rotate(180deg)":"rotate(0)"}}>▾</span>
+        </div>
+        {open.cover&&<div style={{marginTop:10}}>
         {s.cover_url&&<img src={s.cover_url} alt="portada" loading="lazy" style={{width:"100%",height:140,objectFit:"cover",borderRadius:10,marginBottom:10}}/>}
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           <label style={{flex:1,padding:"9px 14px",background:"var(--pr,#C45D3E)",color:"#fff",borderRadius:10,fontSize:13,fontWeight:600,cursor:"pointer",textAlign:"center"}}>
@@ -89,11 +102,16 @@ function Settings({sett,setSett,msg,onBack}){
           {s.cover_url&&<button className="btn bs" style={{fontSize:13}} onClick={()=>set("cover_url","")}>Quitar</button>}
         </div>
         <div className="fg" style={{marginTop:10}}><label className="fl">O pegá una URL de imagen</label><input className="fin" value={s.cover_url||""} onChange={e=>set("cover_url",e.target.value)} placeholder="https://..."/></div>
+      </div>}
       </div>
 
       {/* ── Carátulas de categorías ── */}
       <div className="c">
-        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:6,display:"block"}}>🏷️ Carátulas de categorías</label>
+        <div onClick={()=>tog("catImages")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>🏷️ Carátulas de categorías</label>
+          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.catImages?"rotate(180deg)":"rotate(0)"}}>▾</span>
+        </div>
+        {open.catImages&&<div style={{marginTop:10}}>
         <div style={{fontSize:12,color:"var(--t3)",marginBottom:12}}>Imagen, nombre y visibilidad de cada categoría. Usá el ojito para ocultar/mostrar y editá el nombre directamente.</div>
         {CAT_NAMES.map(name=>{
           const img=(s.cat_images||{})[name];
@@ -125,11 +143,16 @@ function Settings({sett,setSett,msg,onBack}){
             {isHidden&&<div style={{fontSize:11,color:"var(--rd)",marginTop:4,marginLeft:30}}>Oculta del catálogo</div>}
           </div>);
         })}
+      </div>}
       </div>
 
       {/* ── Banner de anuncios ── */}
       <div className="c">
-        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>📢 Banner de anuncios</label>
+        <div onClick={()=>tog("banner")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>📢 Banner de anuncios</label>
+          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.banner?"rotate(180deg)":"rotate(0)"}}>▾</span>
+        </div>
+        {open.banner&&<div style={{marginTop:10}}>
         <div className="fg"><label className="fl">Mensaje (vacío = oculto)</label><input className="fin" value={s.banner_text||""} onChange={e=>set("banner_text",e.target.value)} placeholder="Ej: 🎂 ¡Pedidos navideños disponibles!"/></div>
         {s.banner_text&&<>
           <label className="fl" style={{marginTop:8}}>Color de fondo</label>
@@ -145,11 +168,16 @@ function Settings({sett,setSett,msg,onBack}){
             {s.banner_text}
           </div>}
         </>}
+      </div>}
       </div>
 
       {/* ── Estado de la tienda ── */}
       <div className="c">
-        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>🚦 Estado de la tienda</label>
+        <div onClick={()=>tog("storeState")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>🚦 Estado de la tienda</label>
+          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.storeState?"rotate(180deg)":"rotate(0)"}}>▾</span>
+        </div>
+        {open.storeState&&<div style={{marginTop:10}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0"}}>
           <div>
             <div style={{fontWeight:600,fontSize:14,color:s.store_open!==false?"#3A7D44":"#C62828"}}>
@@ -161,24 +189,42 @@ function Settings({sett,setSett,msg,onBack}){
             <div className="gift-thumb"/>
           </div>
         </div>
+      </div>}
       </div>
 
-      {/* ── Categorías ── */}
-      <div className="c"><label className="fl">Categorías de gastos</label>
+      {/* ── Categorías de gastos ── */}
+      <div className="c">
+        <div onClick={()=>tog("expCats")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>💰 Categorías de gastos</label>
+          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.expCats?"rotate(180deg)":"rotate(0)"}}>▾</span>
+        </div>
+        {open.expCats&&<div style={{marginTop:10}}>
         <div className="clist">{(s.exp_cats||[]).map(c=><div key={c} className="ctag">{c}<button onClick={()=>set("exp_cats",(s.exp_cats||[]).filter(x=>x!==c))}>×</button></div>)}</div>
         <div style={{display:"flex",gap:8,marginTop:8}}><input className="fin" placeholder="Nueva..." value={nc} onChange={e=>setNc(e.target.value)} onKeyDown={e=>e.key==="Enter"&&nc.trim()&&(set("exp_cats",[...(s.exp_cats||[]),nc.trim()]),setNc(""))} style={{fontSize:13}}/>
         <button className="btn bs bsm" onClick={()=>nc.trim()&&(set("exp_cats",[...(s.exp_cats||[]),nc.trim()]),setNc(""))}>+</button></div>
+      </div>}
       </div>
 
-      <div className="c"><label className="fl">Categorías de insumos</label>
+      {/* ── Categorías de insumos ── */}
+      <div className="c">
+        <div onClick={()=>tog("ingCats")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>📦 Categorías de insumos</label>
+          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.ingCats?"rotate(180deg)":"rotate(0)"}}>▾</span>
+        </div>
+        {open.ingCats&&<div style={{marginTop:10}}>
         <div className="clist">{(s.ing_cats||[]).map(c=><div key={c} className="ctag">{c}<button onClick={()=>set("ing_cats",(s.ing_cats||[]).filter(x=>x!==c))}>×</button></div>)}</div>
         <div style={{display:"flex",gap:8,marginTop:8}}><input className="fin" placeholder="Nueva..." value={ni} onChange={e=>setNi2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ni.trim()&&(set("ing_cats",[...(s.ing_cats||[]),ni.trim()]),setNi2(""))} style={{fontSize:13}}/>
         <button className="btn bs bsm" onClick={()=>ni.trim()&&(set("ing_cats",[...(s.ing_cats||[]),ni.trim()]),setNi2(""))}>+</button></div>
+      </div>}
       </div>
 
       {/* ── Horarios del local ── */}
       <div className="c">
-        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:10,display:"block"}}>🕐 Horarios del local</label>
+        <div onClick={()=>tog("hours")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>🕐 Horarios del local</label>
+          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.hours?"rotate(180deg)":"rotate(0)"}}>▾</span>
+        </div>
+        {open.hours&&<div style={{marginTop:10}}>
         <div style={{fontSize:12,color:"var(--t3)",marginBottom:10}}>Define cuándo el local acepta pedidos. Se usa para validar "Pedir ahora".</div>
         {["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map((day,i)=>{
           const hrs=s.store_hours||{};const d=hrs[i]||{open:"",close:"",closed:false};
@@ -194,12 +240,16 @@ function Settings({sett,setSett,msg,onBack}){
             <button style={{background:"none",border:"none",fontSize:11,color:d.closed?"var(--gn)":"var(--rd)",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}} onClick={()=>upd("closed",!d.closed)}>{d.closed?"Abrir":"Cerrar"}</button>
           </div>);
         })}
+      </div>}
       </div>
 
       {/* ── Respaldo de clientes ── */}
       <div className="c">
-        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:6,display:"block"}}>📁 Respaldo de clientes</label>
-        <div style={{fontSize:12,color:"var(--t3)",marginBottom:12,lineHeight:1.5}}>El sistema guarda automáticamente un CSV con todos los clientes en los servidores cada vez que entra un pedido nuevo. Descargá la última versión acá.</div>
+        <div onClick={()=>tog("backup")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>📁 Respaldo de clientes</label>
+          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.backup?"rotate(180deg)":"rotate(0)"}}>▾</span>
+        </div>
+        {open.backup&&<div style={{marginTop:10}}>
         <button
           onClick={async()=>{
             const r=await downloadServerBackup();
@@ -208,11 +258,16 @@ function Settings({sett,setSett,msg,onBack}){
           }}
           style={{width:"100%",padding:"12px",background:"var(--pr,#C45D3E)",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:600,cursor:"pointer"}}
         >📥 Descargar backup de clientes</button>
+      </div>}
       </div>
 
-      {/* ── Zona de peligro ── */}
+      {/* ── Reinicio administrativo ── */}
       <div className="c" style={{border:"1.5px solid #C62828",background:"#FFF5F5"}}>
-        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:6,display:"block",color:"#C62828"}}>⚠️ Zona de peligro</label>
+        <div onClick={()=>tog("reset")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",color:"#C62828",cursor:"pointer"}}>⚠️ Reinicio administrativo</label>
+          <span style={{fontSize:18,color:"#C62828",transition:"transform .2s",transform:open.reset?"rotate(180deg)":"rotate(0)"}}>▾</span>
+        </div>
+        {open.reset&&<div style={{marginTop:10}}>
         <div style={{fontSize:12,color:"#5D4037",marginBottom:12,lineHeight:1.5}}>Reiniciar datos históricos elimina <strong>pedidos, ventas, gastos, compras, mermas, cupones y datos CRM</strong>. No afecta recetas, ingredientes ni configuración.</div>
         {!showReset
           ?<button onClick={()=>setShowReset(true)} style={{width:"100%",padding:"12px",background:"#C62828",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer"}}>🗑️ Reiniciar datos históricos</button>
@@ -270,6 +325,7 @@ function Settings({sett,setSett,msg,onBack}){
             )}
           </div>
         }
+      </div>}
       </div>
 
       <button className="btn bp" style={{marginTop:8}} onClick={async()=>{const saved=await updateSettings(s);if(saved){setSett(saved);msg("Guardado ✓");onBack();}else{msg("Error al guardar");}}}>{I.check({size:18,color:"#fff"})} Guardar cambios</button>

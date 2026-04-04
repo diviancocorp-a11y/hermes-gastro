@@ -21,4 +21,4 @@ ALTER TABLE sales
 -- 4. Agendamiento de Pedidos — fecha de entrega
 --    El cliente elige para cuándo quiere su pedido.
 ALTER TABLE orders
-  ADD COLUMN IF NOT EXIS
+  ADD COLUMN IF NOT EXISTS delivery_date date;

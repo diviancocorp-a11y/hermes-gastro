@@ -7,7 +7,6 @@ import {
   fetchComboItems,
   saveComboItems,
   upsertRecipe,
-  toggleRecipeVisibility,
   archiveRecipe,
   unarchiveRecipe,
   uploadRecipeImage,
@@ -39,7 +38,7 @@ function Recipes({recs,setRecs,ings,rc,ov,setOv,msg,loadAll}){
             <div><div style={{fontWeight:700,fontSize:15}}>{r.name}{r.is_archived&&<span style={{marginLeft:6,fontSize:11,background:"var(--rl)",color:"var(--rd)",padding:"1px 6px",borderRadius:8,fontWeight:700}}>ARCHIVADA</span>}</div><div style={{fontSize:12,color:"var(--t3)"}}>{r.category} · {(r.ingredients||[]).length} ins.</div></div>
             <div style={{textAlign:"right",display:"flex",alignItems:"center",gap:8}}>
               <div><div style={{fontWeight:700,fontSize:15}}>${fi(r.sale_price)}</div><div style={{fontSize:12,color:"var(--t3)"}}>C: ${fm(c)}</div></div>
-              <button style={{background:"none",border:"none",cursor:"pointer",padding:4}} onClick={async(e)=>{e.stopPropagation();const nv=r.visible===false;const ok=await toggleRecipeVisibility(r.id,nv);if(ok){setRecs(p=>p.map(x=>x.id===r.id?{...x,visible:nv}:x));msg(nv?"Visible en catálogo":"Oculta del catálogo");}else{msg("Error al cambiar visibilidad");}}}>{r.visible!==false?<span style={{color:"var(--gn)"}}>{I.eye({size:14})}</span>:<span style={{color:"var(--t3)"}}>{I.eyeOff({size:14})}</span>}</button>
+              <button style={{background:"none",border:"none",cursor:"pointer",padding:4}} onClick={async(e)=>{e.stopPropagation();const nv=r.visible===false;await upsertRecipe({id:r.id,visible:nv});setRecs(p=>p.map(x=>x.id===r.id?{...x,visible:nv}:x));msg(nv?"Visible en catálogo":"Oculta del catálogo");}}>{r.visible!==false?<span style={{color:"var(--gn)"}}>{I.eye({size:14})}</span>:<span style={{color:"var(--t3)"}}>{I.eyeOff({size:14})}</span>}</button>
             </div>
           </div>
           <div className="pbar"><div className="pfill" style={{width:`${Math.min(m,100)}%`,background:bc}}/></div>

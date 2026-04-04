@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { I, fi, saleCode, imgOpt } from "../lib/utils";
+import { I, fi } from "../lib/utils";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 
 // --- CATEGORÍAS MADRE (agrupan subcategorías de Supabase) ---
@@ -79,7 +79,6 @@ export default function Catalog() {
   const [copiedCode, setCopiedCode] = useState(false);
   const [showTrackerInput, setShowTrackerInput] = useState(false);
   const [trackerCode, setTrackerCode] = useState("");
-  const [showMenu, setShowMenu] = useState(false);
 
   const sf = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -134,22 +133,17 @@ export default function Catalog() {
     return new Set(DAILY_DEALS[dow] || []);
   }, [serverNow]);
 
-  // Categorías madre con imagen: prioridad settings > primer producto con foto
+  // Categorías madre con imagen representativa (primer producto con imagen de cada grupo)
   const categories = useMemo(() => {
-    const catImgs = sett.cat_images || {};
     const existingSubs = new Set(products.map(r => r.category));
-    const hiddenCats = new Set(sett.hidden_cats || []);
-    const catNames = sett.cat_names || {};
     const catData = CAT_GROUPS
-      .filter(g => !hiddenCats.has(g.name) && g.subs.some(s => existingSubs.has(s)))
+      .filter(g => g.subs.some(s => existingSubs.has(s))) // solo grupos que tienen productos
       .map(g => {
-        const customImg = catImgs[g.name];
-        const rep = !customImg ? products.find(p => g.subs.includes(p.category) && p.image_url) : null;
-        const displayName = catNames[g.name] || g.name;
-        return { name: g.name, displayName, icon: g.icon, subs: g.subs, img: customImg || rep?.image_url || null, deal: dealCats.has(g.name) };
+        const rep = products.find(p => g.subs.includes(p.category) && p.image_url);
+        return { name: g.name, icon: g.icon, subs: g.subs, img: rep?.image_url || null, deal: dealCats.has(g.name) };
       });
-    return [{ name: "Todos", icon: "🏠", subs: [], img: catImgs["Todos"] || null, deal: false, displayName: "Todos" }, ...catData];
-  }, [products, dealCats, sett]);
+    return [{ name: "Todos", icon: "🏠", subs: [], img: null, deal: false }, ...catData];
+  }, [products, dealCats]);
 
   // Helper: ¿un producto pertenece a una categoría madre con descuento?
   const hasDeal = useCallback((p) => {
@@ -310,20 +304,20 @@ export default function Catalog() {
           <a href={`/order/${orderId}`} className="tracker-link-btn">
             🔴 Seguir mi pedido en vivo
           </a>
-          <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--b2)", borderRadius: 12, textAlign: "center" }}>
+          <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--b2)", borderRadius: 12, textAlign: "left" }}>
             <div style={{ fontSize: 12, color: "var(--t3)", marginBottom: 6 }}>📋 Código de tu pedido</div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              <code style={{ fontSize: 22, fontWeight: 700, color: "var(--tx)", letterSpacing: 2, fontFamily: "'DM Serif Display',monospace" }}>
-                {saleCode(orderId)}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <code style={{ flex: 1, fontSize: 12, color: "var(--tx)", wordBreak: "break-all", background: "var(--bg)", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--b2)" }}>
+                {orderId}
               </code>
               <button
-                onClick={() => { navigator.clipboard.writeText(saleCode(orderId)); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); }}
+                onClick={() => { navigator.clipboard.writeText(orderId); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); }}
                 style={{ flexShrink: 0, padding: "6px 12px", background: copiedCode ? "var(--gn, #3A7D44)" : "var(--pr, #C45D3E)", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, cursor: "pointer", transition: "background .2s" }}
               >
                 {copiedCode ? "✓ Copiado" : "Copiar"}
               </button>
             </div>
-            <p style={{ fontSize: 11, color: "var(--t3)", marginTop: 8, marginBottom: 0 }}>Usá este código para reclamos, factura o seguimiento.</p>
+            <p style={{ fontSize: 11, color: "var(--t3)", marginTop: 8, marginBottom: 0 }}>Guardá este código para seguir tu pedido cuando quieras.</p>
           </div>
         </>)}
         <button className="abtn" onClick={() => { setSent(false); setOrderId(null); setShowCk(false); }} style={{ marginTop: 16, width: "100%", background: "transparent", color: "var(--t3)", border: "1.5px solid var(--b2)" }}>
@@ -476,8 +470,7 @@ export default function Catalog() {
     </div>
   );
 
-  // isOpen = automático por horario + override manual (store_open=false fuerza cerrado)
-  const isOpen = sett.store_open === false ? false : storeStatus.open;
+  const isOpen = sett.store_open !== false; // null/undefined = abierto por defecto
 
   // --- VISTA PRINCIPAL: CATÁLOGO ---
   return (
@@ -490,47 +483,27 @@ export default function Catalog() {
       )}
 
       {/* Portada y Header */}
-      <div className="store-cover" style={{ backgroundImage: `url(${imgOpt(sett.cover_url, { width: 800, quality: 70 }) || fallbackSettings.cover_url})` }}></div>
+      <div className="store-cover" style={{ backgroundImage: `url(${sett.cover_url || fallbackSettings.cover_url})` }}></div>
       <div className="store-header">
-        <div className="store-logo" style={{ background: sett.logo_url ? "transparent" : (sett.logo_color || fallbackSettings.logo_color), overflow: "hidden" }}>
-          {sett.logo_url ? <img src={imgOpt(sett.logo_url, { width: 150, height: 150 })} alt="" width={72} height={72} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} onError={e => { e.target.style.display = "none"; e.target.parentElement.textContent = sett.logo_letter || fallbackSettings.logo_letter; e.target.parentElement.style.background = sett.logo_color || fallbackSettings.logo_color; }} /> : (sett.logo_letter || fallbackSettings.logo_letter)}
-        </div>
+        <div className="store-logo" style={{ background: sett.logo_color || fallbackSettings.logo_color }}>{sett.logo_letter || fallbackSettings.logo_letter}</div>
         <div className="store-info">
           <h1 className="store-name">{sett.biz_name || fallbackSettings.biz_name}</h1>
           <div className="store-status" style={{ color: isOpen ? "#3A7D44" : "#C62828" }}>
-            {isOpen ? (storeStatus.msg ? `● Abierto · ${storeStatus.msg}` : "● Abierto ahora") : `● Cerrado${storeStatus.msg ? ` · ${storeStatus.msg}` : " — pedidos programados"}`}
+            {isOpen ? "● Abierto ahora" : "● Cerrado por hoy"}
           </div>
         </div>
-        <button onClick={() => setShowMenu(true)} style={{ background: "var(--b2)", border: "none", borderRadius: 12, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} aria-label="Menú">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--tx)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
-        </button>
       </div>
 
-      {/* Menú lateral (hamburguesa) — solo accesos rápidos */}
-      {showMenu && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex" }}>
-          <div onClick={() => setShowMenu(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
-          <div style={{ position: "relative", width: "85%", maxWidth: 380, background: "var(--bg)", height: "100%", overflowY: "auto", boxShadow: "4px 0 30px rgba(0,0,0,0.2)", animation: "slideIn .25s ease" }}>
-            <div style={{ padding: "24px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--b2)" }}>
-              <div>
-                <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "var(--tx)" }}>{sett.biz_name || fallbackSettings.biz_name}</div>
-                <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 2 }}>Accesos rápidos</div>
-              </div>
-              <button onClick={() => setShowMenu(false)} style={{ background: "var(--b2)", border: "none", borderRadius: 10, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: "var(--t2)" }}>✕</button>
-            </div>
-
-            <div style={{ padding: "16px" }}>
-              <button onClick={() => { setShowMenu(false); setShowTrackerInput(true); }} style={{ width: "100%", padding: "14px 16px", background: "var(--b3)", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, color: "var(--tx)", boxShadow: "var(--sh)", marginBottom: 8 }}>
-                🦆 Seguí tu pedido
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tracker input (se muestra cuando se activa desde el menú) */}
-      {showTrackerInput && (
-        <div style={{ margin: "0 16px 4px" }}>
+      {/* Botón Seguí tu pedido */}
+      <div style={{ margin: "0 16px 4px" }}>
+        {!showTrackerInput ? (
+          <button
+            onClick={() => setShowTrackerInput(true)}
+            style={{ width: "100%", padding: "10px 16px", background: "var(--b2)", border: "none", borderRadius: 12, fontSize: 13, color: "var(--t3)", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 8 }}
+          >
+            🦆 <span>¿Ya hiciste un pedido? <strong style={{ color: "var(--tx)" }}>Seguí tu pedido →</strong></span>
+          </button>
+        ) : (
           <div style={{ background: "var(--b2)", borderRadius: 12, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--tx)" }}>🦆 Seguí tu pedido</div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -557,8 +530,8 @@ export default function Catalog() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Banner offline */}
       {error === "offline" && (
@@ -569,18 +542,14 @@ export default function Catalog() {
 
       {/* Banner tienda cerrada */}
       {!isOpen && (
-        <div style={{ margin: "0 16px 12px", padding: "18px 20px", background: "linear-gradient(135deg, #FFF8E1, #FFF3E0)", borderRadius: 16, textAlign: "center", border: "1px solid rgba(196,93,62,0.15)" }}>
-          <div style={{ fontSize: 32, marginBottom: 6 }}>🌙</div>
-          <div style={{ fontWeight: 700, fontSize: 15, color: "#5D4037", lineHeight: 1.5, maxWidth: 340, margin: "0 auto" }}>
-            ¡Ay, llegaste un poquitito tarde! Ya cerramos la cocina por hoy. Pero dejame tu pedido programado y apenas abramos me pongo a preparar todo para vos.
-          </div>
-          <button onClick={() => { setScheduleMode("later"); document.querySelector(".cat-section")?.scrollIntoView({ behavior: "smooth" }); }} style={{ marginTop: 14, padding: "12px 28px", background: "var(--ac)", color: "#fff", border: "none", borderRadius: 12, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", boxShadow: "0 2px 8px rgba(196,93,62,0.3)" }}>
-            📅 Programar pedido
-          </button>
+        <div style={{ margin: "0 16px 12px", padding: "14px 18px", background: "#FFEBEE", borderRadius: 14, textAlign: "center" }}>
+          <div style={{ fontSize: 28, marginBottom: 4 }}>🌙</div>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "#C62828" }}>Estamos cerrados por hoy</div>
+          <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>Volvemos pronto. Podés ver el catálogo pero los pedidos están deshabilitados.</div>
         </div>
       )}
 
-      {/* Categorías verticales — lo primero que ve el usuario */}
+      {/* Menú de Categorías — tarjetas con imagen */}
       <div className="cat-section">
         <div className="cat-header">
           <h2 className="cat-title">Categorías</h2>
@@ -588,26 +557,16 @@ export default function Catalog() {
         <div className="cat-scroll">
           {categories.map(c => (
             <div key={c.name} className={`cat-card ${selCat === c.name ? "active" : ""} ${c.deal ? "has-deal" : ""}`} onClick={() => setSelCat(c.name)}>
-              {c.img && <img className="cat-card-bg" src={imgOpt(c.img, { width: 400, quality: 70 })} alt="" loading="eager" width={180} height={120} onError={e=>{e.target.style.display='none'}} />}
+              {c.img && <img className="cat-card-bg" src={c.img} alt="" loading="lazy" />}
               <div className="cat-card-overlay" />
               <div className="cat-card-content">
-                <span className="cat-card-label">{c.displayName || c.name}</span>
+                <span className="cat-card-label">{c.name}</span>
               </div>
               {c.deal && <span className="cat-deal-badge">{DEAL_PCT}% OFF</span>}
             </div>
           ))}
         </div>
       </div>
-
-      {/* Barra sticky de filtro activo */}
-      {selCat !== "Todos" && (
-        <div style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--bg)", borderBottom: "1px solid rgba(0,0,0,0.05)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: "var(--tx)" }}>{(sett.cat_names || {})[selCat] || selCat}</span>
-          <button onClick={() => setSelCat("Todos")} style={{ background: "none", border: "none", fontSize: 12, color: "var(--ac)", cursor: "pointer", fontWeight: 600, padding: "4px 8px" }}>
-            Ver todo ✕
-          </button>
-        </div>
-      )}
 
       {/* Lista de Productos */}
       <div className="prod-list">
@@ -626,13 +585,13 @@ export default function Catalog() {
                     </>) : `$${fi(p.sale_price)}`}
                   </div>
                   {hasDeal(p) && <span className="prod-deal-tag">-{DEAL_PCT}%</span>}
-                  <button className={`btn-add ${inCartQty > 0 ? 'has-qty' : ''}`} onClick={(e) => addC(p, e)}>
+                  <button className={`btn-add ${inCartQty > 0 ? 'has-qty' : ''} ${!isOpen ? 'disabled' : ''}`} onClick={(e) => isOpen && addC(p, e)} disabled={!isOpen} style={!isOpen ? { opacity: 0.4, cursor: "not-allowed" } : {}}>
                     {inCartQty > 0 ? inCartQty : I.plus({ size: 16 })}
                   </button>
                 </div>
               </div>
               {p.image_url ? (
-                <img className="prod-img" src={imgOpt(p.image_url, { width: 300 })} alt={p.name} loading="lazy" width={120} height={120}
+                <img className="prod-img" src={p.image_url} alt={p.name} loading="lazy"
                   onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }}
                 />
               ) : null}
@@ -664,12 +623,12 @@ export default function Catalog() {
           <div className="ups-sheet" onClick={e => e.stopPropagation()}>
             <div className="ups-drag" />
             <p className="ups-added">✓ <strong>{upsell.product.name}</strong> agregado</p>
-            <h3 className="ups-title">¡Llevate un antojito!</h3>
+            <h3 className="ups-title">¿Le sumás algo más?</h3>
             <div className="ups-list">
               {upsell.suggestions.map(s => (
                 <div key={s.id} className="ups-card" onClick={() => addFromUpsell(s)}>
                   {s.image_url ? (
-                    <img className="ups-img" src={imgOpt(s.image_url, { width: 200 })} alt={s.name} loading="lazy" width={48} height={48} onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }} />
+                    <img className="ups-img" src={s.image_url} alt={s.name} loading="lazy" onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }} />
                   ) : null}
                   <div className="ups-img prod-avatar" style={{ display: s.image_url ? 'none' : 'flex', background: avatarColors[s.name.charCodeAt(0) % avatarColors.length], width: 48, height: 48, fontSize: 20, borderRadius: 10 }}>{s.name.charAt(0)}</div>
                   <div className="ups-info">
@@ -684,16 +643,6 @@ export default function Catalog() {
           </div>
         </div>
       )}
-
-      {/* Footer legal */}
-      <footer className="catalog-footer">
-        <div className="footer-links">
-          <a href="/terminos" target="_blank" rel="noopener noreferrer">Términos y Condiciones</a>
-          <span className="footer-dot">·</span>
-          <a href="/privacidad" target="_blank" rel="noopener noreferrer">Política de Privacidad</a>
-        </div>
-        <p className="footer-copy">Copyright © 2026 {sett.biz_name || "La Nona Pato"}. Todos los derechos reservados.</p>
-      </footer>
     </div>
   );
 }

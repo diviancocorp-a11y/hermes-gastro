@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { saleCode } from "../lib/utils";
 
 // ─── Mapa de estados ──────────────────────────────────
 const STEPS = [
@@ -27,48 +26,33 @@ export default function OrderTracker() {
   const [pulse, setPulse]   = useState(false); // feedback visual de actualización
   const channelRef          = useRef(null);
 
-  // ─── Carga inicial (soporta UUID completo o código corto #XXXXXX) ──
-  const [resolvedId, setResolvedId] = useState(null);
+  // ─── Carga inicial ────────────────────────────────
   useEffect(() => {
     async function load() {
       setLoading(true);
-      let query;
-      const cleanId = (id || "").replace(/^#/, "").trim();
-      // Si parece UUID (contiene guiones o >20 chars), buscar directo
-      if (cleanId.includes("-") || cleanId.length > 20) {
-        query = supabase.from("orders")
-          .select("id, status, customer, date, total, is_gift, note, delivery, created_at, order_items(qty, unit_price, recipes(name))")
-          .eq("id", cleanId).single();
-      } else {
-        // Código corto: buscar todos los recientes y filtrar por últimos 6 chars
-        const { data: candidates, error: cErr } = await supabase.from("orders")
-          .select("id, status, customer, date, total, is_gift, note, delivery, created_at, order_items(qty, unit_price, recipes(name))")
-          .order("created_at", { ascending: false }).limit(200);
-        if (cErr || !candidates) { setNotFound(true); setLoading(false); return; }
-        const match = candidates.find(o => {
-          const s = String(o.id).replace(/-/g, "");
-          return s.slice(-6).toUpperCase() === cleanId.toUpperCase();
-        });
-        if (!match) { setNotFound(true); setLoading(false); return; }
-        setOrder(match); setItems(match.order_items || []); setResolvedId(match.id); setLoading(false); return;
-      }
-      const { data, error } = await query;
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, status, customer, date, total, is_gift, note, delivery, created_at, order_items(qty, unit_price, recipes(name))")
+        .eq("id", id)
+        .single();
+
       if (error || !data) { setNotFound(true); setLoading(false); return; }
-      setOrder(data); setItems(data.order_items || []); setResolvedId(data.id); setLoading(false);
+      setOrder(data);
+      setItems(data.order_items || []);
+      setLoading(false);
     }
     load();
   }, [id]);
 
   // ─── Suscripción Realtime ─────────────────────────
   useEffect(() => {
-    const rid = resolvedId;
-    if (!rid) return;
+    if (!id) return;
 
     const channel = supabase
-      .channel(`order-${rid}`)
+      .channel(`order-${id}`)
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${rid}` },
+        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${id}` },
         (payload) => {
           setOrder(prev => ({ ...prev, ...payload.new }));
           // Feedback visual: parpadeo al actualizar
@@ -80,7 +64,7 @@ export default function OrderTracker() {
 
     channelRef.current = channel;
     return () => { supabase.removeChannel(channel); };
-  }, [resolvedId]);
+  }, [id]);
 
   // ─── Loading ──────────────────────────────────────
   if (loading) return (
@@ -155,10 +139,7 @@ export default function OrderTracker() {
 
       {/* Resumen del pedido */}
       <div className="tracker-summary">
-        <div className="tracker-summary-hd" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span>📦 Tu pedido</span>
-          <span style={{fontSize:13,fontWeight:700,color:"var(--pr,#C45D3E)",letterSpacing:1}}>{saleCode(resolvedId||id)}</span>
-        </div>
+        <div className="tracker-summary-hd">📦 Tu pedido</div>
         <div className="tracker-summary-info">
           <span>👤 {order.customer}</span>
           <span>{order.delivery === "envio" ? "🛵 Delivery" : "🏪 Retiro en local"}</span>

@@ -40,6 +40,7 @@ export default function Admin(){
   const [waste,setWaste]=useState([]);
   const [loaded,setLoaded]=useState(false);const [ov,setOv]=useState(null);const [toast,setToast]=useState("");
   const [newAlertCount,setNewAlertCount]=useState(0);
+  const [menuOpen,setMenuOpen]=useState(false);
   const prev=useRef(0);
   const alarmRef=useRef(null);
 
@@ -81,6 +82,29 @@ export default function Admin(){
   },[]);
 
   useEffect(()=>{if(session)loadAll();},[session,loadAll]);
+
+  // ═══ Promover pedidos programados para hoy → "new" (cuando el local está abierto) ═══
+  const promotedRef=useRef(new Set());
+  useEffect(()=>{
+    if(!loaded||!orders.length)return;
+    const today=td();
+    const storeOpen=sett.store_open!==false;
+    if(!storeOpen)return;
+    const toPromote=orders.filter(o=>o.delivery_date&&o.delivery_date<=today&&o.status===ST.new&&!promotedRef.current.has(o.id));
+    if(toPromote.length===0)return;
+    toPromote.forEach(o=>promotedRef.current.add(o.id));
+    // Limpiar delivery_date en DB y en estado local para que aparezcan en "Nuevos"
+    (async()=>{
+      for(const o of toPromote){
+        await supabase.from('orders').update({delivery_date:null}).eq('id',o.id);
+      }
+      setOrders(p=>p.map(o=>{
+        if(toPromote.find(tp=>tp.id===o.id))return{...o,delivery_date:null};
+        return o;
+      }));
+      msg(`📅 ${toPromote.length} pedido${toPromote.length>1?'s':''} programado${toPromote.length>1?'s':''} activado${toPromote.length>1?'s':''}`);
+    })();
+  },[loaded,orders,sett.store_open]);
 
   // Suscripción Realtime + Polling de respaldo (por si el WS falla)
   const lastSeenAt=useRef(new Date().toISOString());
@@ -303,13 +327,29 @@ export default function Admin(){
     {/* Overlay bloqueante de nuevos pedidos — z-index 9999, por encima de todo */}
     {newAlertCount>0&&<NewOrderOverlay count={newAlertCount} onAck={ackOrders}/>}
 
+    {/* Hamburger menu overlay */}
+    {menuOpen&&<>
+      <div onClick={()=>setMenuOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",zIndex:900}}/>
+      <div style={{position:"fixed",bottom:64,right:12,background:"#fff",borderRadius:14,boxShadow:"0 8px 32px rgba(0,0,0,0.18)",zIndex:901,padding:"6px 0",minWidth:180,animation:"fadeIn .15s ease"}}>
+        {[{id:"stock",icon:I.box,l:"Stock"},{id:"recipes",icon:I.recipe,l:"Recetas"},{id:"sales",icon:I.cart,l:"Ventas"},{id:"waste",icon:I.alert,l:"Mermas"},{id:"crm",icon:I.user,l:"CRM"}].map(t=>(
+          <button key={t.id} onClick={()=>{setTab(t.id);setMenuOpen(false);}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 18px",border:"none",background:tab===t.id?"var(--b1,#f5f0eb)":"transparent",color:tab===t.id?"var(--pr,#C45D3E)":"var(--tx,#333)",fontSize:14,fontWeight:tab===t.id?700:500,cursor:"pointer",textAlign:"left"}}>
+            {t.icon({size:18})}{t.l}
+          </button>
+        ))}
+      </div>
+    </>}
+
     <nav className="nv">
-      {[{id:"home",icon:I.home,l:"Inicio"},{id:"stock",icon:I.box,l:"Stock"},{id:"recipes",icon:I.recipe,l:"Recetas"},{id:"orders",icon:I.orders,l:"Pedidos",badge:orders.filter(o=>o.status===ST.new).length},{id:"sales",icon:I.cart,l:"Ventas"},{id:"waste",icon:I.alert,l:"Mermas"},{id:"crm",icon:I.user,l:"CRM"}].map(t=>(
-        <button key={t.id} className={`ni ${tab===t.id||(tab==="settings"&&t.id==="home")?"on":""}`} onClick={()=>setTab(t.id)}>
+      {[{id:"home",icon:I.home,l:"Inicio"},{id:"orders",icon:I.orders,l:"Pedidos",badge:orders.filter(o=>o.status===ST.new).length},{id:"purchase",icon:I.truck,l:"Compras",action:()=>setOv({type:"purchase"})},{id:"expenses",icon:I.dollar,l:"Gastos",action:()=>setOv({type:"expenses"})}].map(t=>(
+        <button key={t.id} className={`ni ${tab===t.id||(tab==="settings"&&t.id==="home")?"on":""}`} onClick={()=>{if(t.action){t.action();}else{setTab(t.id);}}}>
           {t.badge>0&&<span className="nb">{t.badge}</span>}
           {t.icon({size:20})}{t.l}
         </button>
       ))}
+      <button className={`ni ${["stock","recipes","sales","waste","crm"].includes(tab)?"on":""}`} onClick={()=>setMenuOpen(p=>!p)}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        Más
+      </button>
     </nav>
   </div>);
 }
