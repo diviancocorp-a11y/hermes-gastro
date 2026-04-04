@@ -209,6 +209,9 @@ export async function submitOrder(orderData) {
       return { ok: false, orderId: null };
     }
 
+    // 7. Sync backup de clientes (silencioso, no bloquea)
+    syncCustomerBackup();
+
     return { ok: true, orderId: order.id };
 
   } catch (err) {
@@ -220,6 +223,66 @@ export async function submitOrder(orderData) {
  * Valida un cupón de descuento para un cliente en el catálogo público.
  * Retorna { discount_pct, id } si es válido, null si no.
  */
+// ─── SYNC CUSTOMER BACKUP (automático, silencioso) ───
+// Consolida clientes desde orders y sube CSV al bucket privado "backups"
+// Se ejecuta después de cada pedido exitoso. Si falla, no bloquea nada.
+async function syncCustomerBackup() {
+  try {
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('customer, phone, email, total, status, created_at, delivery, payment, address')
+      .order('created_at', { ascending: false });
+    if (!orders || orders.length === 0) return;
+
+    // Consolidar clientes únicos
+    const map = {};
+    orders.forEach(o => {
+      const key = (o.phone || o.email || o.customer || '').toLowerCase();
+      if (!key) return;
+      if (!map[key]) map[key] = {
+        nombre: '', telefono: '', email: '',
+        pedidos: 0, total_gastado: 0, ultimo_pedido: '',
+        direccion: '', metodo_pago: '', metodo_entrega: ''
+      };
+      const c = map[key];
+      c.pedidos++;
+      c.total_gastado += (o.total || 0);
+      if (!c.nombre && o.customer) c.nombre = o.customer;
+      if (!c.telefono && o.phone) c.telefono = o.phone;
+      if (!c.email && o.email) c.email = o.email;
+      if (!c.direccion && o.address) c.direccion = o.address;
+      if (o.created_at > c.ultimo_pedido) {
+        c.ultimo_pedido = o.created_at;
+        c.metodo_pago = o.payment || '';
+        c.metodo_entrega = o.delivery || '';
+      }
+    });
+
+    const customers = Object.values(map).sort((a, b) => b.total_gastado - a.total_gastado);
+
+    // Generar CSV con BOM para Excel
+    const esc = (v) => {
+      const s = String(v || '');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const hdr = 'Nombre,Teléfono,Email,Pedidos,Total Gastado,Último Pedido,Dirección,Método Pago,Método Entrega';
+    const rows = customers.map(c =>
+      [esc(c.nombre), esc(c.telefono), esc(c.email), c.pedidos, c.total_gastado,
+       esc(c.ultimo_pedido?.split('T')[0] || ''), esc(c.direccion), esc(c.metodo_pago), esc(c.metodo_entrega)].join(',')
+    );
+    const csv = '\uFEFF' + hdr + '\n' + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+    // Subir al bucket privado "backups" (sobreescribe el anterior)
+    await supabase.storage
+      .from('backups')
+      .upload('clientes/clientes_la_nona_pato.csv', blob, { upsert: true, contentType: 'text/csv' });
+  } catch (e) {
+    // Silencioso — nunca debe bloquear el flujo del pedido
+    console.warn('syncCustomerBackup (non-blocking):', e?.message || e);
+  }
+}
+
 export async function validateCouponPublic(code, email) {
   try {
     const { data, error } = await supabase

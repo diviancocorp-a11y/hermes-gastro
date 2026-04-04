@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { I } from "../../lib/utils";
-import { updateSettings, uploadCoverImage, uploadCatImage, uploadLogoImage, resetHistoricalData } from "../../lib/adminService";
+import { updateSettings, uploadCoverImage, uploadCatImage, uploadLogoImage, resetHistoricalData, downloadServerBackup } from "../../lib/adminService";
 
 const BANNER_COLORS=[{h:"#2D1B0E",l:"Café oscuro"},{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#333333",l:"Negro"}];
 const DEF={biz_name:"La Nona Pato",logo_letter:"N",logo_color:"#C45D3E",exp_cats:["Materia Prima","Servicios","Packaging","Transporte","Alquiler","Equipamiento","Otros"],ing_cats:["Secos","Frescos","Packaging","Otros"],cat_images:{}};
@@ -194,6 +194,20 @@ function Settings({sett,setSett,msg,onBack}){
             <button style={{background:"none",border:"none",fontSize:11,color:d.closed?"var(--gn)":"var(--rd)",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}} onClick={()=>upd("closed",!d.closed)}>{d.closed?"Abrir":"Cerrar"}</button>
           </div>);
         })}
+      </div>
+
+      {/* ── Respaldo de clientes ── */}
+      <div className="c">
+        <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:6,display:"block"}}>📁 Respaldo de clientes</label>
+        <div style={{fontSize:12,color:"var(--t3)",marginBottom:12,lineHeight:1.5}}>El sistema guarda automáticamente un CSV con todos los clientes en los servidores cada vez que entra un pedido nuevo. Descargá la última versión acá.</div>
+        <button
+          onClick={async()=>{
+            const r=await downloadServerBackup();
+            if(r.ok) msg("Backup descargado ✓");
+            else msg("No hay backup aún o error: "+r.msg);
+          }}
+          style={{width:"100%",padding:"12px",background:"var(--pr,#C45D3E)",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:600,cursor:"pointer"}}
+        >📥 Descargar backup de clientes</button>
       </div>
 
       {/* ── Zona de peligro ── */}

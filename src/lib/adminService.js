@@ -538,6 +538,22 @@ export async function fetchCustomerStats() {
   return Object.values(map).sort((a, b) => b.total - a.total);
 }
 
+// ─── DOWNLOAD SERVER BACKUP ──────────────────────────
+// Descarga el CSV de clientes almacenado en Supabase Storage (bucket privado)
+export async function downloadServerBackup() {
+  const { data, error } = await supabase.storage
+    .from('backups')
+    .download('clientes/clientes_la_nona_pato.csv');
+  if (error) { console.error('downloadServerBackup:', error.message); return { ok: false, msg: error.message }; }
+  // Trigger download en el navegador
+  const url = URL.createObjectURL(data);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().split('T')[0];
+  a.href = url; a.download = `Clientes_La_Nona_Pato_${dateStr}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  return { ok: true };
+}
+
 // ─── BACKUP CUSTOMERS (respaldo antes de reset) ──────
 // Genera y descarga un CSV con todos los clientes (datos de orders + customers)
 export async function backupCustomers() {
