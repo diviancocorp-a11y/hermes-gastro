@@ -164,6 +164,32 @@ export default function Admin(){
     })();
   },[loaded,orders,sett.store_open,msg]);
 
+  // ═══ Auto-cancelar pedidos olvidados (de días anteriores sin procesar) ═══
+  const cleanedRef=useRef(new Set());
+  useEffect(()=>{
+    if(!loaded||!orders.length)return;
+    const today=td();
+    // Pedidos de días anteriores que siguen en new/prep/active (sin delivery_date futuro)
+    const stale=orders.filter(o=>
+      [ST.new,ST.prep,ST.active].includes(o.status)&&
+      o.date<today&&
+      (!o.delivery_date||o.delivery_date<today)&&
+      !cleanedRef.current.has(o.id)
+    );
+    if(stale.length===0)return;
+    stale.forEach(o=>cleanedRef.current.add(o.id));
+    (async()=>{
+      for(const o of stale){
+        await supabase.from('orders').update({status:ST.cancel}).eq('id',o.id);
+      }
+      setOrders(p=>p.map(o=>{
+        if(stale.find(s=>s.id===o.id))return{...o,status:ST.cancel};
+        return o;
+      }));
+      msg(`🧹 ${stale.length} pedido${stale.length>1?'s':''} vencido${stale.length>1?'s':''} cancelado${stale.length>1?'s':''} automáticamente`);
+    })();
+  },[loaded,orders,msg]);
+
   // Recipe cost calculator
   const rc=useCallback(rec=>{
     if(!rec?.ingredients)return 0;
