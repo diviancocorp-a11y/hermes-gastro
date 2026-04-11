@@ -76,15 +76,7 @@ export function AuthProvider({ children }) {
         if (error) return { ok: false, error: translateError(error.message) };
         // Supabase retorna user con identities vacías si ya existe
         if (data?.user?.identities?.length === 0) return { ok: false, error: "already_registered" };
-        // Guardar datos en profile si se creó el usuario
-        if (data?.user?.id && (metadata.name || metadata.phone)) {
-          await supabase.from("profiles").upsert({
-            id: data.user.id,
-            email,
-            name: metadata.name || null,
-            phone: metadata.phone || null,
-          });
-        }
+        // El trigger handle_new_user() guarda nombre y teléfono en profiles automáticamente
         return { ok: true };
       }
       // Login: enviar OTP
