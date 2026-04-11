@@ -794,6 +794,32 @@ export default function Catalog() {
               <button onClick={() => { setShowMenu(false); setShowTrackerInput(true); }} style={{ width: "100%", padding: "14px 16px", background: "var(--b3)", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, color: "var(--tx)", boxShadow: "var(--sh)", marginBottom: 8 }}>
                 🦆 Seguí tu pedido
               </button>
+              <a href="https://wa.me/5491165706805?text=Hola!%20Tengo%20una%20consulta" target="_blank" rel="noopener noreferrer" style={{ width: "100%", padding: "14px 16px", background: "#25D366", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, color: "#fff", boxShadow: "var(--sh)", marginBottom: 8, textDecoration: "none" }}>
+                💬 WhatsApp
+              </a>
+            </div>
+
+            {/* FAQ */}
+            <div style={{ padding: "0 16px 20px" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>Preguntas frecuentes</div>
+              {[
+                { q: "¿Cómo hago un pedido?", a: "Elegí los productos que quieras del catálogo, tocá el botón + para agregarlos, ajustá la cantidad y luego tocá \"Ver pedido\" para continuar con el checkout." },
+                { q: "¿Cuáles son los medios de pago?", a: "Aceptamos Efectivo (pagás al recibir), Transferencia bancaria (CBU: 0000003100000535412820) y MercadoPago (alias: pato.jhs). Para transferencia y MP, subí el comprobante en el checkout." },
+                { q: "¿Hacen delivery?", a: "Sí, hacemos delivery. También podés retirar en nuestro local: Andrés Chazarreta 1435, Villa Rosa, Pilar, Buenos Aires." },
+                { q: "¿Puedo programar un pedido?", a: "Sí, en el checkout elegí \"Programar\" y seleccioná la fecha y hora. Ideal si querés tu pedido para otro día o si el local ya cerró." },
+                { q: "¿Cómo sé el estado de mi pedido?", a: "Al confirmar tu pedido recibís un código. Tocá \"Seguí tu pedido\" en el menú e ingresá el código para ver el estado en tiempo real." },
+                { q: "¿Puedo enviar un pedido como regalo?", a: "Sí, en el paso de pago activá la opción \"¿Es un regalo?\" y escribí un mensaje para la tarjeta." },
+                { q: "¿Tienen cupones de descuento?", a: "Sí, si tenés un cupón podés ingresarlo en el paso de pago. Se aplica automáticamente al total." },
+                { q: "¿Cuál es el horario de atención?", a: "Nuestro horario se muestra en la parte superior del catálogo. Fuera de horario podés programar tu pedido para el próximo día hábil." },
+              ].map((f, i) => (
+                <div key={i} style={{ borderBottom: "1px solid var(--b2)", overflow: "hidden" }}>
+                  <button onClick={() => setFaqOpen(faqOpen === i ? null : i)} style={{ width: "100%", padding: "12px 0", background: "none", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", textAlign: "left", fontSize: 14, fontWeight: 600, color: "var(--tx)", fontFamily: "'DM Sans',sans-serif" }}>
+                    {f.q}
+                    <span style={{ fontSize: 16, color: "var(--t3)", transition: "transform .2s", transform: faqOpen === i ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
+                  </button>
+                  {faqOpen === i && <div style={{ padding: "0 0 12px", fontSize: 13, color: "var(--t2)", lineHeight: 1.6 }}>{f.a}</div>}
+                </div>
+              ))}
             </div>
           </div>
         </div>
