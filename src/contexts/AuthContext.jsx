@@ -46,15 +46,41 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // --- MAGIC LINK ---
-  const sendMagicLink = async (email) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    return { ok: !error, error: error?.message };
+  // --- MAGIC LINK (login o registro) ---
+  // Helper: traducir errores de Supabase al español
+  const translateError = (msg) => {
+    if (!msg) return "Error desconocido. Intentá de nuevo.";
+    const m = msg.toLowerCase();
+    if (m.includes("rate limit") || m.includes("too many")) return "rate_limit";
+    if (m.includes("already registered") || m.includes("already been registered")) return "already_registered";
+    if (m.includes("signups not allowed") || m.includes("not allowed") || m.includes("otp_disabled")) return "not_registered";
+    if (m.includes("invalid email")) return "Email no válido.";
+    if (m.includes("network") || m.includes("fetch")) return "Error de conexión. Revisá tu internet e intentá de nuevo.";
+    return msg;
+  };
+
+  const sendMagicLink = async (email, isSignUp = false) => {
+    try {
+      if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          options: { emailRedirectTo: window.location.origin },
+        });
+        if (error) return { ok: false, error: translateError(error.message) };
+        // Supabase retorna user con identities vacías si ya existe
+        if (data?.user?.identities?.length === 0) return { ok: false, error: "already_registered" };
+        return { ok: true };
+      }
+      // Login: enviar OTP
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin, shouldCreateUser: false },
+      });
+      if (error) return { ok: false, error: translateError(error.message) };
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: "Error de conexión. Revisá tu internet e intentá de nuevo." };
+    }
   };
 
   // --- LOGOUT ---

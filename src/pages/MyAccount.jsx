@@ -19,6 +19,8 @@ export default function MyAccount() {
   const [linkSent, setLinkSent] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [sendingLink, setSendingLink] = useState(false);
+  const [authMode, setAuthMode] = useState("login"); // "login" | "register"
+  const [showNotRegistered, setShowNotRegistered] = useState(false);
 
   // Profile edit state
   const [editName, setEditName] = useState("");
@@ -55,8 +57,34 @@ export default function MyAccount() {
     </div>
   );
 
-  // --- LOGIN SCREEN ---
-  if (!user) return (
+  // --- LOGIN / REGISTER SCREEN ---
+  if (!user) {
+    const validEmail = loginEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail);
+
+    const handleAuth = async () => {
+      setSendingLink(true);
+      setLoginError("");
+      setShowNotRegistered(false);
+      const isSignUp = authMode === "register";
+      const { ok, error } = await sendMagicLink(loginEmail, isSignUp);
+      setSendingLink(false);
+
+      if (ok) {
+        setLinkSent(true);
+      } else if (error === "not_registered") {
+        setShowNotRegistered(true);
+        setLoginError("");
+      } else if (error === "already_registered") {
+        setLoginError("Este email ya tiene cuenta. Usá \"Iniciar sesión\" para entrar.");
+        setAuthMode("login");
+      } else if (error === "rate_limit") {
+        setLoginError("Enviamos demasiados emails en poco tiempo. Esperá unos minutos antes de intentar de nuevo. Si ya recibiste un email, revisá tu bandeja de entrada y spam.");
+      } else {
+        setLoginError(error || "Error al enviar el link. Intentá de nuevo.");
+      }
+    };
+
+    return (
     <div className="app" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid var(--b2)" }}>
         <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--tx)", padding: 4 }}>←</button>
@@ -66,23 +94,39 @@ export default function MyAccount() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center" }}>
         <div style={{ fontSize: 56, marginBottom: 16 }}>🦆</div>
         <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 24, marginBottom: 8, color: "var(--tx)" }}>
-          {linkSent ? "¡Revisá tu email!" : "Iniciá sesión"}
+          {linkSent ? "¡Revisá tu email!" : authMode === "register" ? "Crear cuenta" : "Iniciá sesión"}
         </h2>
 
         {linkSent ? (
           <div style={{ maxWidth: 340 }}>
             <p style={{ fontSize: 14, color: "var(--t2)", lineHeight: 1.6, marginBottom: 20 }}>
-              Te enviamos un link mágico a <strong>{loginEmail}</strong>. Tocá el link en tu email para entrar. Si no lo ves, revisá spam.
+              Te enviamos un link mágico a <strong>{loginEmail}</strong>. Tocá el link en tu email para entrar. Si no lo ves, revisá la carpeta de spam.
             </p>
-            <button onClick={() => { setLinkSent(false); setLoginEmail(""); }} style={{ fontSize: 13, color: "var(--ac)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+            <button onClick={() => { setLinkSent(false); setLoginEmail(""); setShowNotRegistered(false); }} style={{ fontSize: 13, color: "var(--ac)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
               Usar otro email
             </button>
           </div>
         ) : (
           <div style={{ width: "100%", maxWidth: 340 }}>
             <p style={{ fontSize: 14, color: "var(--t2)", lineHeight: 1.6, marginBottom: 20 }}>
-              Ingresá tu email y te mandamos un link para entrar. Sin contraseña, simple y seguro.
+              {authMode === "register"
+                ? "Registrate con tu email. Te mandamos un link mágico para activar tu cuenta, sin contraseña."
+                : "Ingresá tu email y te mandamos un link para entrar. Sin contraseña, simple y seguro."}
             </p>
+
+            {/* Toggle Login / Registro */}
+            <div style={{ display: "flex", gap: 4, marginBottom: 16, background: "var(--b2)", borderRadius: 12, padding: 4 }}>
+              <button onClick={() => { setAuthMode("login"); setLoginError(""); setShowNotRegistered(false); }} style={{
+                flex: 1, padding: "10px 0", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                background: authMode === "login" ? "var(--ac)" : "transparent", color: authMode === "login" ? "#fff" : "var(--t2)",
+                transition: "all .2s",
+              }}>Iniciar sesión</button>
+              <button onClick={() => { setAuthMode("register"); setLoginError(""); setShowNotRegistered(false); }} style={{
+                flex: 1, padding: "10px 0", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                background: authMode === "register" ? "var(--ac)" : "transparent", color: authMode === "register" ? "#fff" : "var(--t2)",
+                transition: "all .2s",
+              }}>Registrarse</button>
+            </div>
 
             <div style={{ background: "var(--b2)", borderRadius: 16, padding: "20px", textAlign: "left" }}>
               <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 6, display: "block" }}>Email</label>
@@ -90,30 +134,66 @@ export default function MyAccount() {
                 type="email"
                 className="cki"
                 value={loginEmail}
-                onChange={e => { setLoginEmail(e.target.value); setLoginError(""); }}
+                onChange={e => { setLoginEmail(e.target.value); setLoginError(""); setShowNotRegistered(false); }}
                 placeholder="tu@email.com"
                 autoFocus
+                onKeyDown={e => e.key === "Enter" && validEmail && handleAuth()}
                 style={{ marginBottom: 12 }}
               />
-              {loginError && <p style={{ fontSize: 12, color: "#C62828", margin: "0 0 8px" }}>{loginError}</p>}
-              <button
-                className="abtn"
-                style={{ width: "100%", fontSize: 15 }}
-                disabled={sendingLink || !loginEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail)}
-                onClick={async () => {
-                  setSendingLink(true);
-                  setLoginError("");
-                  const { ok, error } = await sendMagicLink(loginEmail);
-                  setSendingLink(false);
-                  if (ok) setLinkSent(true);
-                  else setLoginError(error || "Error al enviar el link. Intentá de nuevo.");
-                }}
-              >
-                {sendingLink ? "Enviando..." : "Enviar Magic Link"}
-              </button>
+
+              {/* Error genérico */}
+              {loginError && <p style={{ fontSize: 12, color: "#C62828", margin: "0 0 8px", lineHeight: 1.4 }}>{loginError}</p>}
+
+              {/* Error: usuario no registrado → ofrecer registrarse */}
+              {showNotRegistered && (
+                <div style={{ background: "#FFF3E0", border: "1px solid #FFB74D", borderRadius: 12, padding: "12px 14px", marginBottom: 12 }}>
+                  <p style={{ fontSize: 13, color: "#E65100", fontWeight: 700, margin: "0 0 6px" }}>
+                    Este email no está registrado
+                  </p>
+                  <p style={{ fontSize: 12, color: "#BF360C", margin: "0 0 10px", lineHeight: 1.4 }}>
+                    No encontramos una cuenta con <strong>{loginEmail}</strong>. Registrate para crear tu cuenta en La Nona Pato.
+                  </p>
+                  <button
+                    className="abtn"
+                    style={{ width: "100%", fontSize: 13, background: "#E65100" }}
+                    disabled={sendingLink}
+                    onClick={() => { setAuthMode("register"); setShowNotRegistered(false); handleAuth(); }}
+                  >
+                    Registrarme con este email
+                  </button>
+                </div>
+              )}
+
+              {!showNotRegistered && (
+                <button
+                  className="abtn"
+                  style={{ width: "100%", fontSize: 15 }}
+                  disabled={sendingLink || !validEmail}
+                  onClick={handleAuth}
+                >
+                  {sendingLink ? "Enviando..." : authMode === "register" ? "Crear mi cuenta" : "Enviar Magic Link"}
+                </button>
+              )}
             </div>
 
-            <div style={{ marginTop: 24, padding: "16px", background: "linear-gradient(135deg, #FFF8E1, #FFF3E0)", borderRadius: 14, textAlign: "left" }}>
+            {authMode === "login" && !showNotRegistered && (
+              <p style={{ marginTop: 14, fontSize: 12, color: "var(--t3)" }}>
+                ¿No tenés cuenta?{" "}
+                <button onClick={() => { setAuthMode("register"); setLoginError(""); setShowNotRegistered(false); }} style={{ background: "none", border: "none", color: "var(--ac)", fontWeight: 700, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}>
+                  Registrate acá
+                </button>
+              </p>
+            )}
+            {authMode === "register" && (
+              <p style={{ marginTop: 14, fontSize: 12, color: "var(--t3)" }}>
+                ¿Ya tenés cuenta?{" "}
+                <button onClick={() => { setAuthMode("login"); setLoginError(""); setShowNotRegistered(false); }} style={{ background: "none", border: "none", color: "var(--ac)", fontWeight: 700, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}>
+                  Iniciá sesión
+                </button>
+              </p>
+            )}
+
+            <div style={{ marginTop: 20, padding: "16px", background: "linear-gradient(135deg, #FFF8E1, #FFF3E0)", borderRadius: 14, textAlign: "left" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#5D4037", marginBottom: 8 }}>Beneficios de tener cuenta</div>
               <div style={{ fontSize: 13, color: "#5D4037", lineHeight: 1.7 }}>
                 {["Guardá tus direcciones para pedir más rápido", "Accedé a tu historial de pedidos", "Marcá productos como favoritos", "Cupones y descuentos exclusivos", "No volvés a cargar tus datos"].map((b, i) => (
@@ -130,6 +210,7 @@ export default function MyAccount() {
       </div>
     </div>
   );
+  }
 
   // --- LOGGED IN: MY ACCOUNT ---
   return (
