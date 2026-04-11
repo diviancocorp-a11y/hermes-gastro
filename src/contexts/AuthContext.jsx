@@ -55,6 +55,7 @@ export function AuthProvider({ children }) {
     if (m.includes("already registered") || m.includes("already been registered")) return "already_registered";
     if (m.includes("signups not allowed") || m.includes("not allowed") || m.includes("otp_disabled")) return "not_registered";
     if (m.includes("password")) return "Error interno de registro. Intentá de nuevo.";
+    if (m.includes("error sending confirmation") || m.includes("sending confirmation email")) return "Error enviando el email de confirmación. Intentá de nuevo en unos minutos.";
     if (m.includes("invalid email")) return "Email no válido.";
     if (m.includes("network") || m.includes("fetch")) return "Error de conexión. Revisá tu internet e intentá de nuevo.";
     return msg;
