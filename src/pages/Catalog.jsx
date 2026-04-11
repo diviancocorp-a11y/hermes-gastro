@@ -69,6 +69,10 @@ export default function Catalog() {
   const [receiptPreview, setReceiptPreview] = useState(null);
   const [verifyingReceipt, setVerifyingReceipt] = useState(false);
   const [receiptStatus, setReceiptStatus] = useState(""); // "" | "ok" | "error"
+  const [guestMode, setGuestMode] = useState(true); // true=invitado, false=registrar email
+  const [waitingReceipt, setWaitingReceipt] = useState(false); // pantalla de espera post-envío
+  const [waitTimer, setWaitTimer] = useState(60); // countdown 60s
+  const [geoLoading, setGeoLoading] = useState(false);
 
   // Fecha mínima para agendamiento: hoy o mañana si ya pasaron las 18:00
   // Usa hora del servidor si está disponible para evitar manipulación del reloj
@@ -287,20 +291,45 @@ export default function Catalog() {
     setSending(false);
 
     if (result?.ok) {
-      // Si pagó con transferencia/MP y subió comprobante, subirlo al storage
-      if (receiptFile && result.orderId && (form.payment === "transferencia" || form.payment === "mercadopago")) {
+      const isDigital = form.payment === "transferencia" || form.payment === "mercadopago";
+      // Si pagó con transferencia/MP y subió comprobante, subirlo al storage + notificar
+      if (receiptFile && result.orderId && isDigital) {
         try {
           const ext = receiptFile.name.split(".").pop() || "jpg";
           const path = `receipts/${result.orderId}.${ext}`;
           await supabase.storage.from("receipts").upload(path, receiptFile, { upsert: true });
-          // Guardar referencia en la orden
           await supabase.from("orders").update({ receipt_url: path }).eq("id", result.orderId);
+          // Notificar al grupo admin via webhook
+          try {
+            const webhookUrl = import.meta.env.VITE_CUSTOMER_WEBHOOK;
+            if (webhookUrl) {
+              await fetch(webhookUrl, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                  type: "receipt",
+                  store: "La Nona Pato",
+                  customer: form.name,
+                  phone: form.phone,
+                  payment: form.payment,
+                  total: ct,
+                  orderId: result.orderId
+                })
+              });
+            }
+          } catch {}
         } catch (e) {
           console.warn("Error subiendo comprobante (no bloquea):", e);
         }
       }
       setOrderId(result.orderId);
-      setSent(true);
+      // Para pagos digitales con comprobante: mostrar pantalla de espera
+      if (isDigital && receiptFile) {
+        setWaitingReceipt(true);
+        setWaitTimer(60);
+      } else {
+        setSent(true);
+      }
       setCart([]);
       setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "", change_amount: "" });
       setScheduleMode("now");
@@ -320,6 +349,46 @@ export default function Catalog() {
         <div style={{ width: 60, height: 60, borderRadius: 18, background: "#C45D3E", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Serif Display',serif", fontSize: 28, margin: "0 auto 16px" }}>N</div>
         <p style={{ color: "var(--t3)", fontSize: 15 }}>Cargando catálogo...</p>
       </div>
+    </div>
+  );
+
+  // --- VISTA: ESPERANDO VERIFICACIÓN DE COMPROBANTE ---
+  // useEffect para countdown de 60s — auto-confirma si no se verificó
+  useEffect(() => {
+    if (!waitingReceipt) return;
+    if (waitTimer <= 0) { setWaitingReceipt(false); setSent(true); return; }
+    const t = setTimeout(() => setWaitTimer(p => p - 1), 1000);
+    return () => clearTimeout(t);
+  }, [waitingReceipt, waitTimer]);
+
+  // Polling: chequear si el admin verificó el comprobante
+  useEffect(() => {
+    if (!waitingReceipt || !orderId) return;
+    const iv = setInterval(async () => {
+      try {
+        const { data } = await supabase.from("orders").select("receipt_verified").eq("id", orderId).single();
+        if (data?.receipt_verified) { clearInterval(iv); setWaitingReceipt(false); setSent(true); }
+      } catch {}
+    }, 5000);
+    return () => clearInterval(iv);
+  }, [waitingReceipt, orderId]);
+
+  if (waitingReceipt) return (
+    <div className="po" style={{ zIndex: 250, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32 }}>
+      <div style={{ fontSize: 48, marginBottom: 16, animation: "duckWalk 2s linear infinite" }}>🦆🦆🦆</div>
+      <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, marginBottom: 8 }}>Verificando tu comprobante...</h2>
+      <p style={{ fontSize: 14, color: "var(--t3)", lineHeight: 1.6, maxWidth: 300 }}>
+        La Nona está revisando tu pago. En unos segundos confirmamos tu pedido.
+      </p>
+      <div style={{ marginTop: 20, width: "100%", maxWidth: 280 }}>
+        <div style={{ background: "var(--b2)", borderRadius: 20, height: 8, overflow: "hidden" }}>
+          <div style={{ background: "var(--ac)", height: "100%", borderRadius: 20, transition: "width 1s linear", width: `${((60 - waitTimer) / 60) * 100}%` }} />
+        </div>
+        <p style={{ fontSize: 12, color: "var(--t3)", marginTop: 8 }}>Confirmación automática en {waitTimer}s</p>
+      </div>
+      <button onClick={() => { setWaitingReceipt(false); setSent(true); }} style={{ marginTop: 24, fontSize: 12, color: "var(--t3)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+        Saltar espera
+      </button>
     </div>
   );
 
@@ -405,6 +474,17 @@ export default function Catalog() {
 
         {/* ─── PASO 0: DATOS ─── */}
         {ckStep === 0 && <>
+          {/* Toggle invitado / registrarse */}
+          <div className="cks">
+            <div className="cko">
+              <div className={`ckv ${guestMode ? "on" : ""}`} onClick={() => setGuestMode(true)}>Invitado</div>
+              <div className={`ckv ${!guestMode ? "on" : ""}`} onClick={() => setGuestMode(false)}>Crear cuenta</div>
+            </div>
+            {!guestMode && <div style={{marginTop:8,padding:"10px 12px",background:"var(--b2)",borderRadius:10,fontSize:12,color:"var(--t2)",lineHeight:1.5}}>
+              Registrarte es tan simple como poner tu email. Beneficios: historial de pedidos, cupones exclusivos y no volvés a cargar tus datos.
+            </div>}
+          </div>
+
           <div className="cks">
             <div className="ckl">👤 Tus datos</div>
             <input className="cki" value={form.name} onChange={e => sf("name", e.target.value.slice(0, 200))} placeholder="Nombre y Apellido" autoFocus />
@@ -414,8 +494,9 @@ export default function Catalog() {
             {form.phone && form.phone.length < 10 && <p style={{fontSize:11,color:"#C62828",margin:"4px 0 0 4px"}}>Mínimo 10 dígitos · ({form.phone.length}/10)</p>}
           </div>
           <div className="cks">
-            <input className="cki" type="email" value={form.email} onChange={e => sf("email", e.target.value.slice(0, 200))} placeholder="Email (opcional, para recibir tu pedido)" />
+            <input className="cki" type="email" value={form.email} onChange={e => sf("email", e.target.value.slice(0, 200))} placeholder={guestMode ? "Email (opcional)" : "Email (requerido para tu cuenta)"} />
             {form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && <p style={{fontSize:11,color:"#C62828",margin:"4px 0 0 4px"}}>Email no válido</p>}
+            {guestMode && !form.email && <p style={{fontSize:11,color:"var(--t3)",margin:"4px 0 0 4px"}}>Con tu email recibís confirmación y podés seguir tu pedido</p>}
           </div>
 
           {/* Cuándo lo necesitás */}
@@ -436,15 +517,15 @@ export default function Catalog() {
                   <input className="cki" type="date" value={form.delivery_date} min={minDate} onChange={e => sf("delivery_date", e.target.value)} style={{colorScheme:"light"}} />
                 </div>
                 <div style={{flex:1}}>
-                  <label style={{fontSize:11,fontWeight:700,color:"var(--t3)",marginBottom:4,display:"block"}}>Hora (aprox.)</label>
+                  <label style={{fontSize:11,fontWeight:700,color:"var(--t3)",marginBottom:4,display:"block"}}>Hora de entrega</label>
                   <input className="cki" type="time" value={form.delivery_time} onChange={e => sf("delivery_time", e.target.value)} style={{colorScheme:"light"}} />
                 </div>
               </div>
-              {!form.delivery_date && <p style={{fontSize:11,color:"var(--rd)",margin:"6px 0 0 2px"}}>Elegí fecha y hora</p>}
+              {(!form.delivery_date || !form.delivery_time) && <p style={{fontSize:11,color:"var(--rd)",margin:"6px 0 0 2px"}}>{!form.delivery_date ? "Seleccioná una fecha" : "Seleccioná la hora de entrega"}</p>}
             </div>
           )}
 
-          <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "later" && !form.delivery_date)} onClick={goNext}>Siguiente →</button>
+          <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time)) || (!guestMode && !form.email)} onClick={goNext}>Siguiente →</button>
         </>}
 
         {/* ─── PASO 1: ENTREGA ─── */}
@@ -457,7 +538,20 @@ export default function Catalog() {
                 <div style={{fontWeight:700,fontSize:14}}>Retiro en local</div>
                 <div style={{fontSize:12,color:"var(--t3)",marginTop:4,lineHeight:1.4}}>Andrés Chazarreta 1435, Villa Rosa, Pilar, Buenos Aires</div>
               </div>
-              <div className={`ckv-card ${form.delivery === "envio" ? "on" : ""}`} onClick={() => sf("delivery", "envio")}>
+              <div className={`ckv-card ${form.delivery === "envio" ? "on" : ""}`} onClick={() => {
+                sf("delivery", "envio");
+                // Auto-trigger geolocation al elegir delivery
+                if (navigator.geolocation && !form.address) {
+                  setGeoLoading(true);
+                  navigator.geolocation.getCurrentPosition(async (pos) => {
+                    try {
+                      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+                      const d = await r.json();
+                      if (d.display_name) sf("address", d.display_name.split(",").slice(0,4).join(","));
+                    } catch {} finally { setGeoLoading(false); }
+                  }, () => setGeoLoading(false), {enableHighAccuracy:true});
+                }
+              }}>
                 <div style={{fontSize:22,marginBottom:6}}>🚚</div>
                 <div style={{fontWeight:700,fontSize:14}}>Delivery</div>
                 <div style={{fontSize:12,color:"var(--t3)",marginTop:4}}>Te lo llevamos a tu dirección</div>
@@ -478,21 +572,8 @@ export default function Catalog() {
           {form.delivery === "envio" && (
             <div className="cks">
               <div className="ckl">📍 Tu dirección</div>
-              <div style={{position:"relative"}}>
-                <input className="cki" value={form.address} onChange={e => sf("address", e.target.value)} placeholder="Calle, número, piso, localidad..." style={{paddingRight:44}} />
-                <button onClick={() => {
-                  if (!navigator.geolocation) return;
-                  navigator.geolocation.getCurrentPosition(async (pos) => {
-                    try {
-                      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
-                      const d = await r.json();
-                      if (d.display_name) sf("address", d.display_name.split(",").slice(0,4).join(","));
-                    } catch {}
-                  }, () => {}, {enableHighAccuracy:true});
-                }} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"var(--ac)",border:"none",borderRadius:8,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:16}} title="Usar mi ubicación">
-                  📍
-                </button>
-              </div>
+              {geoLoading && <div style={{padding:"10px 0",fontSize:13,color:"var(--ac)",fontWeight:600}}>📍 Obteniendo tu ubicación...</div>}
+              <input className="cki" value={form.address} onChange={e => sf("address", e.target.value)} placeholder="Calle, número, piso, localidad..." />
               {form.address && form.address.length < 5 && <p style={{fontSize:11,color:"var(--rd)",margin:"4px 0 0 4px"}}>Ingresá una dirección más completa</p>}
             </div>
           )}
@@ -531,13 +612,16 @@ export default function Catalog() {
           {/* Detalles de Efectivo */}
           {form.payment === "efectivo" && (
             <div className="ck-pay-detail">
-              <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>¿Con cuánto pagás? (para darte el vuelto)</div>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {[500, 1000, 2000, 5000, 10000, 20000].map(v => (
-                  <button key={v} className={`ck-denom ${form.change_amount === String(v) ? "on" : ""}`} onClick={() => sf("change_amount", String(v))}>${fi(v)}</button>
-                ))}
-                <button className={`ck-denom ${form.change_amount === "justo" ? "on" : ""}`} onClick={() => sf("change_amount", "justo")}>Justo</button>
+              <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>¿Con cuánto pagás?</div>
+              <div style={{display:"flex",gap:10}}>
+                <button className={`ck-denom ${form.change_amount === "justo" ? "on" : ""}`} style={{flex:1,padding:"14px"}} onClick={() => sf("change_amount", "justo")}>Pago justo</button>
+                <button className={`ck-denom ${form.change_amount !== "justo" && form.change_amount ? "on" : ""}`} style={{flex:1,padding:"14px"}} onClick={() => sf("change_amount", "")}>Necesito vuelto</button>
               </div>
+              {form.change_amount !== "justo" && form.change_amount !== undefined && form.change_amount !== "justo" && (
+                <div style={{marginTop:10}}>
+                  <input className="cki" type="number" inputMode="numeric" value={form.change_amount === "justo" ? "" : form.change_amount} onChange={e => sf("change_amount", e.target.value.replace(/\D/g,""))} placeholder={`Ej: si pagás con $${fi(Math.ceil(ct/1000)*1000)}`} style={{fontSize:16}} />
+                </div>
+              )}
             </div>
           )}
 

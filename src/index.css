@@ -455,3 +455,4 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 
 /* Receipt pulse animation */
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+@keyframes duckWalk{0%{transform:translateX(-40px)}50%{transform:translateX(40px)}100%{transform:translateX(-40px)}}
