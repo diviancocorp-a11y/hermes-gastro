@@ -447,3 +447,8 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .wa-float{position:fixed;bottom:90px;right:16px;z-index:90;width:52px;height:52px;border-radius:50%;background:#25D366;color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(37,211,102,0.4);transition:transform .2s}
 .wa-float:active{transform:scale(0.92)}
 .wa-float svg{width:28px;height:28px;fill:#fff}
+
+/* Banner Eventos / Catering */
+.event-banner{display:block;text-decoration:none;background:linear-gradient(135deg,#2D1B0E 0%,#5D4037 50%,#C45D3E 100%);border-radius:16px;padding:18px 16px;overflow:hidden;transition:transform .2s}
+.event-banner:active{transform:scale(0.98)}
+.event-banner-content{display:flex;align-items:center;gap:14px}

@@ -821,6 +821,18 @@ export default function Catalog() {
                 </div>
               ))}
             </div>
+
+            {/* Banner Eventos / Catering */}
+            <div style={{ padding: "0 16px 24px" }}>
+              <a href="https://wa.me/5491165706805?text=Hola!%20Tengo%20una%20consulta%20sobre%20los%20eventos" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", background: "linear-gradient(135deg, #2D1B0E 0%, #5D4037 100%)", borderRadius: 16, padding: "20px 18px", color: "#fff", position: "relative", overflow: "hidden" }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>🍾🥂</div>
+                <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 18, lineHeight: 1.3, marginBottom: 6 }}>¿Necesitás catering o coctelería para tu evento?</div>
+                <div style={{ fontSize: 13, opacity: 0.85, lineHeight: 1.5, marginBottom: 14 }}>Personal, catering completo y coctelería para cumpleaños, reuniones, empresas y más.</div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#25D366", padding: "10px 18px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
+                  💬 Consultanos por WhatsApp
+                </div>
+              </a>
+            </div>
           </div>
         </div>
       )}
@@ -987,6 +999,19 @@ export default function Catalog() {
           </div>
         </div>
       )}
+
+      {/* Banner Eventos / Catering inline */}
+      <div style={{ padding: "8px 16px 0" }}>
+        <a href="https://wa.me/5491165706805?text=Hola!%20Tengo%20una%20consulta%20sobre%20los%20eventos" target="_blank" rel="noopener noreferrer" className="event-banner">
+          <div className="event-banner-content">
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 16, color: "#fff", lineHeight: 1.3 }}>¿Tenés un evento?</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 4, lineHeight: 1.4 }}>Personal, catering y coctelería. Preguntá por nuestro servicio.</div>
+            </div>
+            <div style={{ background: "#25D366", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", flexShrink: 0 }}>💬 Consultar</div>
+          </div>
+        </a>
+      </div>
 
       {/* WhatsApp flotante para soporte */}
       <a href="https://wa.me/5491165706805?text=Hola!%20Tengo%20una%20consulta%20sobre%20La%20Nona%20Pato" target="_blank" rel="noopener noreferrer" className="wa-float" aria-label="WhatsApp">
