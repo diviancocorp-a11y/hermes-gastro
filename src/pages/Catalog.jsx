@@ -73,6 +73,52 @@ export default function Catalog() {
   const [waitingReceipt, setWaitingReceipt] = useState(false); // pantalla de espera post-envío
   const [waitTimer, setWaitTimer] = useState(60); // countdown 60s
   const [geoLoading, setGeoLoading] = useState(false);
+  const [deliveryCost, setDeliveryCost] = useState(0);
+  const [deliveryKm, setDeliveryKm] = useState(null);
+  const [calcingDelivery, setCalcingDelivery] = useState(false);
+
+  // Coordenadas del local: Andrés Chazarreta 1435, Villa Rosa, Pilar
+  const STORE_LAT = -34.4295;
+  const STORE_LNG = -58.7267;
+
+  // Haversine: distancia en km entre 2 coordenadas
+  const haversine = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  };
+
+  // Tarifa de envío por distancia (ajustable)
+  const calcDeliveryCost = (km) => {
+    if (km <= 2) return 500;
+    if (km <= 5) return 1000;
+    if (km <= 10) return 1800;
+    if (km <= 15) return 2500;
+    if (km <= 25) return 3500;
+    return 5000; // +25km
+  };
+
+  // Calcular envío cuando cambia la dirección
+  const estimateDelivery = useCallback(async (address) => {
+    if (!address || address.length < 5) { setDeliveryCost(0); setDeliveryKm(null); return; }
+    setCalcingDelivery(true);
+    try {
+      const q = encodeURIComponent(address + ", Buenos Aires, Argentina");
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`);
+      const data = await r.json();
+      if (data?.[0]) {
+        const km = haversine(STORE_LAT, STORE_LNG, parseFloat(data[0].lat), parseFloat(data[0].lon));
+        const cost = calcDeliveryCost(km);
+        setDeliveryKm(Math.round(km * 10) / 10);
+        setDeliveryCost(cost);
+      } else {
+        setDeliveryCost(0); setDeliveryKm(null);
+      }
+    } catch { setDeliveryCost(0); setDeliveryKm(null); }
+    setCalcingDelivery(false);
+  }, []);
 
   // Fecha mínima para agendamiento: hoy o mañana si ya pasaron las 18:00
   // Usa hora del servidor si está disponible para evitar manipulación del reloj
@@ -216,13 +262,14 @@ export default function Catalog() {
   }, [cart]);
 
   // Totales del carrito (memoizado)
-  const { cc, ctBase, discount, ct } = useMemo(() => {
+  const { cc, ctBase, discount, ct, ctWithDelivery } = useMemo(() => {
     const cc = cart.reduce((s, i) => s + i.qty, 0);
     const ctBase = cart.reduce((s, i) => s + i.qty * i.price, 0);
     const discount = coupon ? Math.round(ctBase * coupon.discount_pct / 100) : 0;
     const ct = ctBase - discount;
-    return { cc, ctBase, discount, ct };
-  }, [cart, coupon]);
+    const ctWithDelivery = ct + (form.delivery === "envio" ? deliveryCost : 0);
+    return { cc, ctBase, discount, ct, ctWithDelivery };
+  }, [cart, coupon, deliveryCost, form.delivery]);
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -298,7 +345,8 @@ export default function Catalog() {
       gift_note: form.is_gift ? form.gift_note : '',
       coupon_id: coupon?.id || null,
       discount: discount,
-      total: ct,
+      delivery_cost: form.delivery === "envio" ? deliveryCost : 0,
+      total: ctWithDelivery,
       delivery_date: scheduleMode === "later" ? (form.delivery_date || null) : null,
       items: cart.map(i => ({
         recipeId: i.id,
@@ -332,7 +380,7 @@ export default function Catalog() {
                   customer: form.name,
                   phone: form.phone,
                   payment: form.payment,
-                  total: ct,
+                  total: ctWithDelivery,
                   orderId: result.orderId
                 })
               });
@@ -478,7 +526,7 @@ export default function Catalog() {
           <div className="cks">
             <div className="cko">
               <div className={`ckv ${!guestMode ? "on" : ""}`} onClick={() => setGuestMode(false)}>Crear cuenta</div>
-              <div className={`ckv ${guestMode ? "on" : ""}`} onClick={() => setGuestMode(true)}>Invitado</div>
+              <div className={`ckv ${guestMode ? "on" : ""}`} onClick={() => { setGuestMode(true); sf("email",""); }}>Invitado</div>
             </div>
             {!guestMode && <div style={{marginTop:8,padding:"10px 12px",background:"var(--b2)",borderRadius:10,fontSize:12,color:"var(--t2)",lineHeight:1.5}}>
               Registrarte es tan simple como poner tu email. Beneficios: historial de pedidos, cupones exclusivos y no volvés a cargar tus datos.
@@ -493,11 +541,10 @@ export default function Catalog() {
             <input className="cki" type="tel" value={form.phone} onChange={e => sf("phone", e.target.value.replace(/\D/g, "").slice(0, 15))} placeholder="Teléfono (Ej: 1155443322)" maxLength={15}/>
             {form.phone && form.phone.length < 10 && <p style={{fontSize:11,color:"#C62828",margin:"4px 0 0 4px"}}>Mínimo 10 dígitos · ({form.phone.length}/10)</p>}
           </div>
-          <div className="cks">
-            <input className="cki" type="email" value={form.email} onChange={e => sf("email", e.target.value.slice(0, 200))} placeholder={guestMode ? "Email (opcional)" : "Email (requerido para tu cuenta)"} />
+          {!guestMode && <div className="cks">
+            <input className="cki" type="email" value={form.email} onChange={e => sf("email", e.target.value.slice(0, 200))} placeholder="Email (requerido para tu cuenta)" />
             {form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && <p style={{fontSize:11,color:"#C62828",margin:"4px 0 0 4px"}}>Email no válido</p>}
-            {guestMode && !form.email && <p style={{fontSize:11,color:"var(--t3)",margin:"4px 0 0 4px"}}>Con tu email recibís confirmación y podés seguir tu pedido</p>}
-          </div>
+          </div>}
 
           {/* Cuándo lo necesitás */}
           <div className="cks">
@@ -533,7 +580,7 @@ export default function Catalog() {
           <div className="cks">
             <div className="ckl">🛵 ¿Cómo lo recibís?</div>
             <div className="cko" style={{flexDirection:"column"}}>
-              <div className={`ckv-card ${form.delivery === "retiro" ? "on" : ""}`} onClick={() => sf("delivery", "retiro")}>
+              <div className={`ckv-card ${form.delivery === "retiro" ? "on" : ""}`} onClick={() => { sf("delivery", "retiro"); setDeliveryCost(0); setDeliveryKm(null); }}>
                 <div style={{fontSize:22,marginBottom:6}}>🏠</div>
                 <div style={{fontWeight:700,fontSize:14}}>Retiro en local</div>
                 <div style={{fontSize:12,color:"var(--t3)",marginTop:4,lineHeight:1.4}}>Andrés Chazarreta 1435, Villa Rosa, Pilar, Buenos Aires</div>
@@ -547,7 +594,14 @@ export default function Catalog() {
                     try {
                       const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
                       const d = await r.json();
-                      if (d.display_name) sf("address", d.display_name.split(",").slice(0,4).join(","));
+                      if (d.display_name) {
+                        const addr = d.display_name.split(",").slice(0,4).join(",");
+                        sf("address", addr);
+                        // Calcular costo con coordenadas directas (más preciso)
+                        const km = haversine(STORE_LAT, STORE_LNG, pos.coords.latitude, pos.coords.longitude);
+                        setDeliveryKm(Math.round(km * 10) / 10);
+                        setDeliveryCost(calcDeliveryCost(km));
+                      }
                     } catch {} finally { setGeoLoading(false); }
                   }, () => setGeoLoading(false), {enableHighAccuracy:true});
                 }
@@ -573,8 +627,27 @@ export default function Catalog() {
             <div className="cks">
               <div className="ckl">📍 Tu dirección</div>
               {geoLoading && <div style={{padding:"10px 0",fontSize:13,color:"var(--ac)",fontWeight:600}}>📍 Obteniendo tu ubicación...</div>}
-              <input className="cki" value={form.address} onChange={e => sf("address", e.target.value)} placeholder="Calle, número, piso, localidad..." />
+              <input className="cki" value={form.address} onChange={e => {
+                sf("address", e.target.value);
+                // Debounce: estimar envío 1.5s después de dejar de tipear
+                clearTimeout(window._deliveryTimer);
+                window._deliveryTimer = setTimeout(() => estimateDelivery(e.target.value), 1500);
+              }} placeholder="Calle, número, piso, localidad..." />
               {form.address && form.address.length < 5 && <p style={{fontSize:11,color:"var(--rd)",margin:"4px 0 0 4px"}}>Ingresá una dirección más completa</p>}
+
+              {/* Estimación de envío */}
+              {calcingDelivery && <div style={{marginTop:8,fontSize:13,color:"var(--ac)",fontWeight:600}}>🔄 Calculando costo de envío...</div>}
+              {!calcingDelivery && deliveryKm !== null && deliveryCost > 0 && (
+                <div style={{marginTop:10,padding:"12px 14px",background:"var(--b2)",borderRadius:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>🚚 Costo de envío</div>
+                      <div style={{fontSize:11,color:"var(--t3)",marginTop:2}}>~{deliveryKm} km desde el local</div>
+                    </div>
+                    <div style={{fontSize:18,fontWeight:800,color:"var(--ac)"}}>${fi(deliveryCost)}</div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -619,7 +692,7 @@ export default function Catalog() {
               </div>
               {form.change_amount !== "justo" && form.change_amount !== undefined && form.change_amount !== "justo" && (
                 <div style={{marginTop:10}}>
-                  <input className="cki" type="number" inputMode="numeric" value={form.change_amount === "justo" ? "" : form.change_amount} onChange={e => sf("change_amount", e.target.value.replace(/\D/g,""))} placeholder={`Ej: si pagás con $${fi(Math.ceil(ct/1000)*1000)}`} style={{fontSize:16}} />
+                  <input className="cki" type="number" inputMode="numeric" value={form.change_amount === "justo" ? "" : form.change_amount} onChange={e => sf("change_amount", e.target.value.replace(/\D/g,""))} placeholder={`Ej: si pagás con $${fi(Math.ceil(ctWithDelivery/1000)*1000)}`} style={{fontSize:16}} />
                 </div>
               )}
             </div>
@@ -633,7 +706,7 @@ export default function Catalog() {
                 <div className="ck-bank-row"><span style={{color:"var(--t3)",fontSize:12}}>CBU</span><span style={{fontWeight:700,fontSize:14,letterSpacing:0.5}}>0000003100000535412820</span></div>
                 <button onClick={() => {navigator.clipboard.writeText("0000003100000535412820");}} className="ck-copy-btn">Copiar CBU</button>
               </div>
-              <div style={{fontSize:13,color:"var(--t2)",marginTop:12,fontWeight:700}}>Monto a transferir: <span style={{color:"var(--ac)"}}>${fi(ct)}</span></div>
+              <div style={{fontSize:13,color:"var(--t2)",marginTop:12,fontWeight:700}}>Monto a transferir: <span style={{color:"var(--ac)"}}>${fi(ctWithDelivery)}</span></div>
 
               {/* Upload comprobante */}
               <div style={{marginTop:16}}>
@@ -676,7 +749,7 @@ export default function Catalog() {
                 <div className="ck-bank-row"><span style={{color:"var(--t3)",fontSize:12}}>Alias</span><span style={{fontWeight:700,fontSize:16}}>pato.jhs</span></div>
                 <button onClick={() => {navigator.clipboard.writeText("pato.jhs");}} className="ck-copy-btn">Copiar alias</button>
               </div>
-              <div style={{fontSize:13,color:"var(--t2)",marginTop:12,fontWeight:700}}>Monto a pagar: <span style={{color:"var(--ac)"}}>${fi(ct)}</span></div>
+              <div style={{fontSize:13,color:"var(--t2)",marginTop:12,fontWeight:700}}>Monto a pagar: <span style={{color:"var(--ac)"}}>${fi(ctWithDelivery)}</span></div>
 
               {/* Upload comprobante */}
               <div style={{marginTop:16}}>
@@ -783,15 +856,22 @@ export default function Catalog() {
               ))}
             </div>
 
+            {form.delivery === "envio" && deliveryCost > 0 && (
+              <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid var(--b2)",fontSize:14}}>
+                <span>🚚 Envío (~{deliveryKm} km)</span>
+                <span style={{fontWeight:700}}>${fi(deliveryCost)}</span>
+              </div>
+            )}
+
             <div className="ct" style={{marginTop:12}}>
-              {coupon && <><span style={{color:"var(--t3)",textDecoration:"line-through",fontSize:13}}>${fi(ctBase)}</span><span style={{flex:1}}/></>}
+              {(coupon || (form.delivery === "envio" && deliveryCost > 0)) && <><span style={{color:"var(--t3)",fontSize:13}}>Productos: ${fi(ct)}</span><span style={{flex:1}}/></>}
               <span style={{fontSize:16,fontWeight:700}}>Total</span>
-              <span style={{fontSize:18,fontWeight:800,color:coupon?"var(--gn)":"var(--tx)"}}>${fi(ct)}</span>
+              <span style={{fontSize:18,fontWeight:800,color:coupon?"var(--gn)":"var(--tx)"}}>${fi(ctWithDelivery)}</span>
             </div>
           </div>
 
           {orderErr && <div style={{background:"#FFEBEE",color:"#C62828",fontSize:13,padding:"10px 14px",borderRadius:10,marginBottom:8,textAlign:"center"}}>{orderErr}</div>}
-          <button className="abtn ck-next" style={{background:"var(--gn, #3A7D44)"}} disabled={sending || ct === 0} onClick={send}>
+          <button className="abtn ck-next" style={{background:"var(--gn, #3A7D44)"}} disabled={sending || ctWithDelivery === 0} onClick={send}>
             {sending ? "Enviando..." : "✓ Confirmar Pedido"}
           </button>
         </>}
