@@ -5,14 +5,12 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    // Separar chunks para mejor caching
+    // Separar chunks para mejor caching (función requerida por Vite 8 / Rolldown)
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Supabase SDK en su propio chunk (no cambia seguido → se cachea)
-          supabase: ['@supabase/supabase-js'],
-          // React core en su propio chunk
-          react: ['react', 'react-dom', 'react-router-dom'],
+        manualChunks(id) {
+          if (id.includes('node_modules/@supabase')) return 'supabase';
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) return 'react-vendor';
         },
       },
     },
