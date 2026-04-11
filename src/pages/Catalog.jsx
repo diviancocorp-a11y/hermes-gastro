@@ -69,7 +69,7 @@ export default function Catalog() {
   const [receiptPreview, setReceiptPreview] = useState(null);
   const [verifyingReceipt, setVerifyingReceipt] = useState(false);
   const [receiptStatus, setReceiptStatus] = useState(""); // "" | "ok" | "error"
-  const [guestMode, setGuestMode] = useState(true); // true=invitado, false=registrar email
+  const [guestMode, setGuestMode] = useState(false); // false=crear cuenta (default), true=invitado
   const [waitingReceipt, setWaitingReceipt] = useState(false); // pantalla de espera post-envío
   const [waitTimer, setWaitTimer] = useState(60); // countdown 60s
   const [geoLoading, setGeoLoading] = useState(false);
@@ -477,8 +477,8 @@ export default function Catalog() {
           {/* Toggle invitado / registrarse */}
           <div className="cks">
             <div className="cko">
-              <div className={`ckv ${guestMode ? "on" : ""}`} onClick={() => setGuestMode(true)}>Invitado</div>
               <div className={`ckv ${!guestMode ? "on" : ""}`} onClick={() => setGuestMode(false)}>Crear cuenta</div>
+              <div className={`ckv ${guestMode ? "on" : ""}`} onClick={() => setGuestMode(true)}>Invitado</div>
             </div>
             {!guestMode && <div style={{marginTop:8,padding:"10px 12px",background:"var(--b2)",borderRadius:10,fontSize:12,color:"var(--t2)",lineHeight:1.5}}>
               Registrarte es tan simple como poner tu email. Beneficios: historial de pedidos, cupones exclusivos y no volvés a cargar tus datos.
