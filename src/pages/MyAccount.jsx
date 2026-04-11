@@ -21,6 +21,10 @@ export default function MyAccount() {
   const [sendingLink, setSendingLink] = useState(false);
   const [authMode, setAuthMode] = useState("login"); // "login" | "register"
   const [showNotRegistered, setShowNotRegistered] = useState(false);
+  // Registration fields
+  const [regName, setRegName] = useState("");
+  const [regLastName, setRegLastName] = useState("");
+  const [regPhone, setRegPhone] = useState("");
 
   // Profile edit state
   const [editName, setEditName] = useState("");
@@ -61,12 +65,19 @@ export default function MyAccount() {
   if (!user) {
     const validEmail = loginEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail);
 
+    const validRegister = authMode === "register" ? (regName.trim().length >= 2 && regLastName.trim().length >= 2 && regPhone.trim().length >= 6) : true;
+
     const handleAuth = async () => {
+      if (authMode === "register" && !validRegister) {
+        setLoginError("Completá todos los campos para registrarte.");
+        return;
+      }
       setSendingLink(true);
       setLoginError("");
       setShowNotRegistered(false);
       const isSignUp = authMode === "register";
-      const { ok, error } = await sendMagicLink(loginEmail, isSignUp);
+      const metadata = isSignUp ? { name: `${regName.trim()} ${regLastName.trim()}`, phone: regPhone.trim() } : {};
+      const { ok, error } = await sendMagicLink(loginEmail, isSignUp, metadata);
       setSendingLink(false);
 
       if (ok) {
@@ -129,6 +140,24 @@ export default function MyAccount() {
             </div>
 
             <div style={{ background: "var(--b2)", borderRadius: 16, padding: "20px", textAlign: "left" }}>
+              {/* Campos de registro: nombre, apellido, teléfono */}
+              {authMode === "register" && (
+                <>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Nombre</label>
+                      <input className="cki" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Juan" />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Apellido</label>
+                      <input className="cki" value={regLastName} onChange={e => setRegLastName(e.target.value)} placeholder="Pérez" />
+                    </div>
+                  </div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Teléfono</label>
+                  <input className="cki" type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value.replace(/\D/g, ""))} placeholder="Ej: 1155443322" style={{ marginBottom: 8 }} />
+                </>
+              )}
+
               <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 6, display: "block" }}>Email</label>
               <input
                 type="email"
@@ -156,8 +185,7 @@ export default function MyAccount() {
                   <button
                     className="abtn"
                     style={{ width: "100%", fontSize: 13, background: "#E65100" }}
-                    disabled={sendingLink}
-                    onClick={() => { setAuthMode("register"); setShowNotRegistered(false); handleAuth(); }}
+                    onClick={() => { setAuthMode("register"); setShowNotRegistered(false); }}
                   >
                     Registrarme con este email
                   </button>
@@ -168,7 +196,7 @@ export default function MyAccount() {
                 <button
                   className="abtn"
                   style={{ width: "100%", fontSize: 15 }}
-                  disabled={sendingLink || !validEmail}
+                  disabled={sendingLink || !validEmail || (authMode === "register" && !validRegister)}
                   onClick={handleAuth}
                 >
                   {sendingLink ? "Enviando..." : authMode === "register" ? "Crear mi cuenta" : "Enviar Magic Link"}

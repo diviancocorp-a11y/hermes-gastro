@@ -54,21 +54,37 @@ export function AuthProvider({ children }) {
     if (m.includes("rate limit") || m.includes("too many")) return "rate_limit";
     if (m.includes("already registered") || m.includes("already been registered")) return "already_registered";
     if (m.includes("signups not allowed") || m.includes("not allowed") || m.includes("otp_disabled")) return "not_registered";
+    if (m.includes("password")) return "Error interno de registro. Intentá de nuevo.";
     if (m.includes("invalid email")) return "Email no válido.";
     if (m.includes("network") || m.includes("fetch")) return "Error de conexión. Revisá tu internet e intentá de nuevo.";
     return msg;
   };
 
-  const sendMagicLink = async (email, isSignUp = false) => {
+  const sendMagicLink = async (email, isSignUp = false, metadata = {}) => {
     try {
       if (isSignUp) {
+        // Generar password aleatorio — el usuario siempre usa Magic Link
+        const randomPwd = crypto.randomUUID() + "Aa1!";
         const { data, error } = await supabase.auth.signUp({
           email,
-          options: { emailRedirectTo: window.location.origin },
+          password: randomPwd,
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: metadata, // nombre, apellido, phone
+          },
         });
         if (error) return { ok: false, error: translateError(error.message) };
         // Supabase retorna user con identities vacías si ya existe
         if (data?.user?.identities?.length === 0) return { ok: false, error: "already_registered" };
+        // Guardar datos en profile si se creó el usuario
+        if (data?.user?.id && (metadata.name || metadata.phone)) {
+          await supabase.from("profiles").upsert({
+            id: data.user.id,
+            email,
+            name: metadata.name || null,
+            phone: metadata.phone || null,
+          });
+        }
         return { ok: true };
       }
       // Login: enviar OTP
