@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { I, fi, td, uid, ST, ST_L, ST_C, ST_B, saleCode } from "../../lib/utils";
+import { verifyReceipt, getReceiptUrl } from "../../lib/adminService";
 
 function DeliveryBadge({date}){
   if(!date)return null;
@@ -12,9 +13,10 @@ function DeliveryBadge({date}){
   return(<span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:8,background:bg,color:co}}>{label}</span>);
 }
 
-function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg,sett}){
+function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg,sett,onUpdateOrder}){
   const [fil,setFil]=useState(ST.new);const [showH,setShowH]=useState(false);const [showSched,setShowSched]=useState(false);const t=td();
   const [histPage,setHistPage]=useState(1);const HIST_PER_PAGE=20;
+  const [viewReceipt,setViewReceipt]=useState(null); // order object to view receipt
 
   // Calcular si el local está abierto ahora (misma lógica que Catalog)
   const storeIsOpen=useMemo(()=>{
@@ -77,6 +79,22 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg,sett}){
           {o.delivery_date&&<div style={{marginTop:6}}><DeliveryBadge date={o.delivery_date}/></div>}
           {o.is_gift&&<div style={{fontSize:12,color:"var(--ac)",fontWeight:600,marginTop:4,padding:"4px 8px",background:"var(--al)",borderRadius:6}}>🎁 Pedido regalo{o.gift_note?`: "${o.gift_note}"`:""}</div>}
           {o.note&&<div style={{fontSize:12,color:"var(--t3)",fontStyle:"italic",marginTop:4,padding:"4px 8px",background:"var(--b2)",borderRadius:6}}>💬 {o.note}</div>}
+          {/* Comprobante de pago */}
+          {o.receipt_url && (
+            <div style={{marginTop:6,display:"flex",alignItems:"center",gap:8}}>
+              {o.receipt_verified ? (
+                <span style={{fontSize:12,fontWeight:700,color:"var(--gn,#3A7D44)",padding:"4px 10px",background:"#E8F5E9",borderRadius:8}}>✓ Comprobante verificado</span>
+              ) : (
+                <>
+                  <span style={{fontSize:12,fontWeight:700,color:"#E65100",padding:"4px 10px",background:"#FFF3E0",borderRadius:8,animation:"pulse 2s infinite"}}>📎 Comprobante pendiente</span>
+                  <button onClick={()=>setViewReceipt(o)} style={{fontSize:12,fontWeight:700,color:"#fff",background:"var(--ac)",border:"none",borderRadius:8,padding:"4px 12px",cursor:"pointer"}}>Ver y verificar</button>
+                </>
+              )}
+            </div>
+          )}
+          {(o.payment==="transferencia"||o.payment==="mercadopago")&&!o.receipt_url && (
+            <div style={{marginTop:6}}><span style={{fontSize:11,fontWeight:600,color:"var(--rd)",padding:"3px 8px",background:"#FFEBEE",borderRadius:6}}>⚠ Sin comprobante</span></div>
+          )}
           <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0 0",borderTop:"1px solid var(--b2)",marginTop:8,fontWeight:700,fontSize:16}}><span>Total</span><span>${fi(o.total)}</span></div>
           {act&&<div className="oa">{o.status!==ST.done&&o.status!==ST.cancel&&<button className="btn bd" onClick={()=>moveOrd(o.id,ST.cancel)}>{I.x({size:14})} Cancelar</button>}<button className={`btn ${act.c}`} onClick={()=>moveOrd(o.id,act.n)}>{act.i({size:14,color:"#fff"})} {act.l}</button></div>}
         </div>);
@@ -132,6 +150,58 @@ function Orders({orders,recs,moveOrd,addOrd,ov,setOv,msg,sett}){
       {histPaged.length<hist.length&&<button className="btn bs" style={{width:"100%",marginTop:12}} onClick={()=>setHistPage(p=>p+1)}>Cargar más ({hist.length-histPaged.length} restantes)</button>}
       </>}
     </div></div>}
+
+    {/* Overlay: Ver y verificar comprobante */}
+    {viewReceipt&&(()=>{
+      const o=viewReceipt;
+      const url=getReceiptUrl(o.receipt_url);
+      const isImg=o.receipt_url&&/\.(jpg|jpeg|png|webp|gif)$/i.test(o.receipt_url);
+      return(<div className="po" style={{background:"rgba(0,0,0,0.85)",display:"flex",flexDirection:"column"}}>
+        <div className="ph" style={{background:"transparent"}}>
+          <button onClick={()=>setViewReceipt(null)}>{I.back({size:20,color:"#fff"})}</button>
+          <h2 style={{color:"#fff"}}>Comprobante</h2>
+        </div>
+        <div style={{flex:1,overflow:"auto",padding:16,display:"flex",flexDirection:"column",gap:16}}>
+          {/* Info del pedido */}
+          <div style={{background:"rgba(255,255,255,0.1)",borderRadius:14,padding:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+              <span style={{fontWeight:700,color:"#fff",fontSize:15}}>{o.customer}</span>
+              <span style={{fontWeight:700,color:"#fff",fontSize:10,background:"rgba(255,255,255,0.2)",padding:"2px 8px",borderRadius:6}}>{saleCode(o.id)}</span>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:13,color:"rgba(255,255,255,0.7)",textTransform:"capitalize"}}>{o.payment==="mercadopago"?"MercadoPago":o.payment}</span>
+              <span style={{fontSize:22,fontWeight:800,color:"#4CAF50",fontFamily:"'DM Serif Display',monospace"}}>$ {fi(o.total)}</span>
+            </div>
+            <div style={{marginTop:8,fontSize:12,color:"rgba(255,255,255,0.5)"}}>Verificá que el monto y la cuenta destino coincidan con el comprobante</div>
+          </div>
+
+          {/* Imagen del comprobante */}
+          <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",minHeight:200}}>
+            {url ? (
+              isImg ? <img src={url} alt="Comprobante" style={{maxWidth:"100%",maxHeight:"60vh",borderRadius:12,boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}} />
+              : <a href={url} target="_blank" rel="noopener noreferrer" style={{padding:"20px 32px",background:"rgba(255,255,255,0.15)",borderRadius:14,color:"#fff",fontSize:15,fontWeight:600,textDecoration:"none"}}>📄 Abrir PDF del comprobante</a>
+            ) : <div style={{color:"rgba(255,255,255,0.5)",fontSize:14}}>No se pudo cargar el comprobante</div>}
+          </div>
+
+          {/* Botones */}
+          <div style={{display:"flex",gap:10,paddingBottom:20}}>
+            <button onClick={()=>setViewReceipt(null)} style={{flex:1,padding:"14px",background:"rgba(255,255,255,0.15)",border:"none",borderRadius:12,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>Cerrar</button>
+            {!o.receipt_verified && (
+              <button onClick={async()=>{
+                const ok=await verifyReceipt(o.id);
+                if(ok){
+                  if(onUpdateOrder) onUpdateOrder(o.id,{receipt_verified:true});
+                  msg("✓ Comprobante verificado");
+                  setViewReceipt(null);
+                } else { msg("Error al verificar"); }
+              }} style={{flex:2,padding:"14px",background:"#4CAF50",border:"none",borderRadius:12,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 16px rgba(76,175,80,0.4)"}}>
+                ✓ Verificar comprobante
+              </button>
+            )}
+          </div>
+        </div>
+      </div>);
+    })()}
   </>);
 }
 

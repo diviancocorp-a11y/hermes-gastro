@@ -63,6 +63,15 @@ export async function updateOrderStatus(id, status) {
   const { error } = await supabase.from('orders').update({ status }).eq('id', id);
   return !error;
 }
+export async function verifyReceipt(id) {
+  const { error } = await supabase.from('orders').update({ receipt_verified: true }).eq('id', id);
+  return !error;
+}
+export function getReceiptUrl(receiptPath) {
+  if (!receiptPath) return null;
+  const { data } = supabase.storage.from('receipts').getPublicUrl(receiptPath);
+  return data?.publicUrl || null;
+}
 
 // ─── SETTINGS ─────────────────────────────────────────
 export async function fetchSettings() {
