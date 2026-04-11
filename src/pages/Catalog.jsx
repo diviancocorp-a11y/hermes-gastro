@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { I, fi, saleCode, imgOpt } from "../lib/utils";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
 
 // --- CATEGORÍAS MADRE (agrupan subcategorías de Supabase) ---
 const CAT_GROUPS = [
@@ -44,6 +45,7 @@ const fallbackProducts = [
 
 export default function Catalog() {
   const navigate = useNavigate();
+  const { user, profile, addresses, isFavorite, toggleFavorite } = useAuth();
 
   // --- Estado de datos ---
   const [sett, setSett] = useState(fallbackSettings);
@@ -139,6 +141,19 @@ export default function Catalog() {
   const [showMenu, setShowMenu] = useState(false);
 
   const sf = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  // Auto-fill checkout form from profile when opening checkout
+  useEffect(() => {
+    if (showCk && user && profile) {
+      setForm(p => ({
+        ...p,
+        name: p.name || profile.name || "",
+        phone: p.phone || profile.phone || "",
+        email: p.email || user.email || "",
+      }));
+      setGuestMode(false);
+    }
+  }, [showCk, user, profile]);
 
   // --- Verificar si el local está abierto ahora según store_hours ---
   // Usa hora del servidor (serverNow) para evitar que el cliente manipule su reloj
@@ -336,7 +351,7 @@ export default function Catalog() {
     const orderData = {
       customer: form.name,
       phone: form.phone,
-      email: form.email,
+      email: user ? user.email : form.email,
       delivery: form.delivery,
       payment: form.payment,
       address: form.address,
@@ -348,6 +363,7 @@ export default function Catalog() {
       delivery_cost: form.delivery === "envio" ? deliveryCost : 0,
       total: ctWithDelivery,
       delivery_date: scheduleMode === "later" ? (form.delivery_date || null) : null,
+      user_id: user?.id || null,
       items: cart.map(i => ({
         recipeId: i.id,
         qty: i.qty,
@@ -522,16 +538,30 @@ export default function Catalog() {
 
         {/* ─── PASO 0: DATOS ─── */}
         {ckStep === 0 && <>
-          {/* Toggle invitado / registrarse */}
-          <div className="cks">
-            <div className="cko">
-              <div className={`ckv ${!guestMode ? "on" : ""}`} onClick={() => setGuestMode(false)}>Crear cuenta</div>
-              <div className={`ckv ${guestMode ? "on" : ""}`} onClick={() => { setGuestMode(true); sf("email",""); }}>Invitado</div>
+          {/* Si está logueado, mostrar saludo */}
+          {user ? (
+            <div className="cks">
+              <div style={{padding:"12px 14px",background:"linear-gradient(135deg, #E8F5E9, #F1F8E9)",borderRadius:12,display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:36,height:36,borderRadius:"50%",background:"var(--ac)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:15}}>{(profile?.name || user.email)?.[0]?.toUpperCase() || "U"}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>{profile?.name || "Mi cuenta"}</div>
+                  <div style={{fontSize:12,color:"var(--t3)"}}>{user.email}</div>
+                </div>
+                <div style={{fontSize:11,color:"#3A7D44",fontWeight:600,background:"#C8E6C9",padding:"4px 10px",borderRadius:20}}>Registrado</div>
+              </div>
             </div>
-            {!guestMode && <div style={{marginTop:8,padding:"10px 12px",background:"var(--b2)",borderRadius:10,fontSize:12,color:"var(--t2)",lineHeight:1.5}}>
-              Registrarte es tan simple como poner tu email. Beneficios: historial de pedidos, cupones exclusivos y no volvés a cargar tus datos.
-            </div>}
-          </div>
+          ) : (
+            /* Toggle invitado / registrarse */
+            <div className="cks">
+              <div className="cko">
+                <div className={`ckv ${!guestMode ? "on" : ""}`} onClick={() => setGuestMode(false)}>Crear cuenta</div>
+                <div className={`ckv ${guestMode ? "on" : ""}`} onClick={() => { setGuestMode(true); sf("email",""); }}>Invitado</div>
+              </div>
+              {!guestMode && <div style={{marginTop:8,padding:"10px 12px",background:"var(--b2)",borderRadius:10,fontSize:12,color:"var(--t2)",lineHeight:1.5}}>
+                Registrarte es tan simple como poner tu email. Beneficios: historial de pedidos, direcciones guardadas, cupones exclusivos y favoritos.
+              </div>}
+            </div>
+          )}
 
           <div className="cks">
             <div className="ckl">👤 Tus datos</div>
@@ -541,7 +571,7 @@ export default function Catalog() {
             <input className="cki" type="tel" value={form.phone} onChange={e => sf("phone", e.target.value.replace(/\D/g, "").slice(0, 15))} placeholder="Teléfono (Ej: 1155443322)" maxLength={15}/>
             {form.phone && form.phone.length < 10 && <p style={{fontSize:11,color:"#C62828",margin:"4px 0 0 4px"}}>Mínimo 10 dígitos · ({form.phone.length}/10)</p>}
           </div>
-          {!guestMode && <div className="cks">
+          {!user && !guestMode && <div className="cks">
             <input className="cki" type="email" value={form.email} onChange={e => sf("email", e.target.value.slice(0, 200))} placeholder="Email (requerido para tu cuenta)" />
             {form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && <p style={{fontSize:11,color:"#C62828",margin:"4px 0 0 4px"}}>Email no válido</p>}
           </div>}
@@ -572,7 +602,7 @@ export default function Catalog() {
             </div>
           )}
 
-          <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time)) || (!guestMode && !form.email)} onClick={goNext}>Siguiente →</button>
+          <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time)) || (!user && !guestMode && !form.email)} onClick={goNext}>Siguiente →</button>
         </>}
 
         {/* ─── PASO 1: ENTREGA ─── */}
@@ -626,6 +656,34 @@ export default function Catalog() {
           {form.delivery === "envio" && (
             <div className="cks">
               <div className="ckl">📍 Tu dirección</div>
+
+              {/* Direcciones guardadas del usuario */}
+              {user && addresses.length > 0 && (
+                <div style={{marginBottom:10}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"var(--t3)",marginBottom:6}}>Direcciones guardadas</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {addresses.map(a => (
+                      <button key={a.id} onClick={() => {
+                        sf("address", a.address + (a.notes ? ` (${a.notes})` : ""));
+                        if (a.lat && a.lng) {
+                          const km = haversine(STORE_LAT, STORE_LNG, a.lat, a.lng);
+                          setDeliveryKm(Math.round(km * 10) / 10);
+                          setDeliveryCost(calcDeliveryCost(km));
+                        } else {
+                          estimateDelivery(a.address);
+                        }
+                      }} style={{
+                        width:"100%",padding:"10px 14px",background: form.address.includes(a.address) ? "var(--ac)" : "var(--b2)",
+                        color: form.address.includes(a.address) ? "#fff" : "var(--tx)",
+                        border:"none",borderRadius:12,textAlign:"left",cursor:"pointer",fontSize:13,lineHeight:1.4
+                      }}>
+                        <span style={{fontWeight:700}}>{a.label}:</span> {a.address}{a.notes ? ` · ${a.notes}` : ""}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {geoLoading && <div style={{padding:"10px 0",fontSize:13,color:"var(--ac)",fontWeight:600}}>📍 Obteniendo tu ubicación...</div>}
               <input className="cki" value={form.address} onChange={e => {
                 sf("address", e.target.value);
@@ -936,9 +994,15 @@ export default function Catalog() {
             {isOpen ? (storeStatus.msg ? `● Abierto · ${storeStatus.msg}` : "● Abierto ahora") : `● Cerrado${storeStatus.msg ? ` · ${storeStatus.msg}` : " — pedidos programados"}`}
           </div>
         </div>
-        <button onClick={() => setShowMenu(true)} style={{ background: "var(--b2)", border: "none", borderRadius: 12, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} aria-label="Menú">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--tx)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
-        </button>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <button onClick={() => navigate("/mi-cuenta")} style={{ background: user ? "var(--ac)" : "var(--b2)", border: "none", borderRadius: 12, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", position: "relative" }} aria-label="Mi cuenta">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={user ? "#fff" : "var(--tx)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            {user && <div style={{ position: "absolute", top: -2, right: -2, width: 10, height: 10, background: "#3A7D44", borderRadius: "50%", border: "2px solid var(--bg)" }} />}
+          </button>
+          <button onClick={() => setShowMenu(true)} style={{ background: "var(--b2)", border: "none", borderRadius: 12, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }} aria-label="Menú">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--tx)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+          </button>
+        </div>
       </div>
 
       {/* Menú lateral (hamburguesa) — solo accesos rápidos */}
@@ -1088,6 +1152,11 @@ export default function Catalog() {
           const inCartQty = getQty(p.id);
           return (
             <div key={p.id} className="prod-card">
+              {user && (
+                <button onClick={(e) => { e.stopPropagation(); toggleFavorite(p.id); }} style={{ position: "absolute", top: 8, right: 8, zIndex: 5, background: "rgba(255,255,255,0.9)", border: "none", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+                  {isFavorite(p.id) ? "❤️" : "🤍"}
+                </button>
+              )}
               <div className="prod-info">
                 <div className="prod-title">{p.name}</div>
                 <div className="prod-desc">{p.description}</div>

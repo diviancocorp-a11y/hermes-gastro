@@ -163,7 +163,8 @@ export async function submitOrder(orderData) {
         gift_note: orderData.gift_note ? orderData.gift_note.trim().slice(0, 300) : '',
         coupon_id: validCouponId,
         discount: validDiscount,
-        delivery_date: orderData.delivery_date || null
+        delivery_date: orderData.delivery_date || null,
+        user_id: orderData.user_id || null
       })
       .select('id')
       .single();
