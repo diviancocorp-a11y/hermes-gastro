@@ -118,6 +118,26 @@ export default function Catalog() {
     if (!storeStatus.open && scheduleMode === "now") setScheduleMode("later");
   }, [storeStatus.open]);
 
+  // Countdown 60s para auto-confirmar comprobante
+  useEffect(() => {
+    if (!waitingReceipt) return;
+    if (waitTimer <= 0) { setWaitingReceipt(false); setSent(true); return; }
+    const t = setTimeout(() => setWaitTimer(p => p - 1), 1000);
+    return () => clearTimeout(t);
+  }, [waitingReceipt, waitTimer]);
+
+  // Polling: chequear si el admin verificó el comprobante
+  useEffect(() => {
+    if (!waitingReceipt || !orderId) return;
+    const iv = setInterval(async () => {
+      try {
+        const { data } = await supabase.from("orders").select("receipt_verified").eq("id", orderId).single();
+        if (data?.receipt_verified) { clearInterval(iv); setWaitingReceipt(false); setSent(true); }
+      } catch {}
+    }, 5000);
+    return () => clearInterval(iv);
+  }, [waitingReceipt, orderId]);
+
   // --- Cargar datos de Supabase al montar ---
   useEffect(() => {
     async function loadData() {
@@ -353,26 +373,6 @@ export default function Catalog() {
   );
 
   // --- VISTA: ESPERANDO VERIFICACIÓN DE COMPROBANTE ---
-  // useEffect para countdown de 60s — auto-confirma si no se verificó
-  useEffect(() => {
-    if (!waitingReceipt) return;
-    if (waitTimer <= 0) { setWaitingReceipt(false); setSent(true); return; }
-    const t = setTimeout(() => setWaitTimer(p => p - 1), 1000);
-    return () => clearTimeout(t);
-  }, [waitingReceipt, waitTimer]);
-
-  // Polling: chequear si el admin verificó el comprobante
-  useEffect(() => {
-    if (!waitingReceipt || !orderId) return;
-    const iv = setInterval(async () => {
-      try {
-        const { data } = await supabase.from("orders").select("receipt_verified").eq("id", orderId).single();
-        if (data?.receipt_verified) { clearInterval(iv); setWaitingReceipt(false); setSent(true); }
-      } catch {}
-    }, 5000);
-    return () => clearInterval(iv);
-  }, [waitingReceipt, orderId]);
-
   if (waitingReceipt) return (
     <div className="po" style={{ zIndex: 250, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32 }}>
       <div style={{ fontSize: 48, marginBottom: 16, animation: "duckWalk 2s linear infinite" }}>🦆🦆🦆</div>
