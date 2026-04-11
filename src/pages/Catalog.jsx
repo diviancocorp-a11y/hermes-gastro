@@ -626,9 +626,15 @@ export default function Catalog() {
                     </>) : `$${fi(p.sale_price)}`}
                   </div>
                   {hasDeal(p) && <span className="prod-deal-tag">-{DEAL_PCT}%</span>}
-                  <button className={`btn-add ${inCartQty > 0 ? 'has-qty' : ''}`} onClick={(e) => addC(p, e)}>
-                    {inCartQty > 0 ? inCartQty : I.plus({ size: 16 })}
-                  </button>
+                  {inCartQty > 0 ? (
+                    <div className="qty-inline" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => updQ(p.id, inCartQty - 1)}>{inCartQty <= 1 ? <span style={{fontSize:12}}>🗑</span> : I.minus({size:14})}</button>
+                      <span>{inCartQty}</span>
+                      <button onClick={(e) => addC(p, e)}>{I.plus({size:14})}</button>
+                    </div>
+                  ) : (
+                    <button className="btn-add" onClick={(e) => addC(p, e)}>{I.plus({size:16})}</button>
+                  )}
                 </div>
               </div>
               {p.image_url ? (
