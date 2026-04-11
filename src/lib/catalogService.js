@@ -179,15 +179,15 @@ export async function submitOrder(orderData) {
       await supabase.from('coupons').update({ used: true }).eq('id', validCouponId);
     }
 
-    // 5. Calcular unit_cost por receta (snapshot financiero)
+    // 5. Calcular unit_cost por receta (snapshot financiero) — en paralelo
     const costMap = {};
-    for (const rid of recipeIds) {
+    await Promise.all(recipeIds.map(async (rid) => {
       const { data: ris } = await supabase
         .from('recipe_ingredients')
         .select('qty, ingredients(cost)')
         .eq('recipe_id', rid);
       costMap[rid] = (ris || []).reduce((s, ri) => s + (ri.ingredients?.cost || 0) * (ri.qty || ri.quantity || 0), 0);
-    }
+    }));
 
     // 6. Insertar items con precios verificados
     const items = validatedItems.map(item => ({
@@ -210,11 +210,11 @@ export async function submitOrder(orderData) {
       return { ok: false, orderId: null };
     }
 
-    // 7. Sync backup de clientes (silencioso, no bloquea)
-    syncCustomerBackup();
+    // 7. Sync backup de clientes — diferido 5s para no bloquear UI post-pedido
+    setTimeout(() => syncCustomerBackup(), 5000);
 
     // 8. Notificar cliente nuevo al webhook privado (silencioso)
-    notifyNewCustomer(orderData);
+    setTimeout(() => notifyNewCustomer(orderData), 1000);
 
     return { ok: true, orderId: order.id };
 

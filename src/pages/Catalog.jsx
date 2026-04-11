@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { I, fi, saleCode, imgOpt } from "../lib/utils";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
@@ -27,7 +27,7 @@ function BannerCarousel({ banners }) {
       onClick={() => len > 1 && go(1)}>
       {b.image_url ? (
         <div style={{ position: "relative", width: "100%", height: 130 }}>
-          <img src={imgOpt(b.image_url, { width: 800, quality: 75 })} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          <img src={imgOpt(b.image_url, { width: 800, quality: 65 })} alt="" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           {b.text && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent, rgba(0,0,0,0.75))", color: "#fff", padding: "20px 16px 10px", fontSize: 14, fontWeight: 700, letterSpacing: 0.2 }}>{b.text}</div>}
         </div>
       ) : (
@@ -45,6 +45,56 @@ function BannerCarousel({ banners }) {
     </div>
   );
 }
+
+// ── Memoized Product Card (evita re-render de todas las cards al cambiar carrito) ──
+const avatarColors = ["#C45D3E", "#3A7D44", "#8D6E00", "#5C6BC0", "#AB47BC", "#00897B", "#D84315", "#6D4C41", "#546E7A", "#7B1FA2"];
+
+const ProductCard = memo(function ProductCard({ p, qty, hasDeal, dealPrice, originalPrice, onAdd, onUpdate, isFav, onToggleFav, isLoggedIn }) {
+  return (
+    <div className="prod-card">
+      {isLoggedIn && (
+        <button onClick={(e) => { e.stopPropagation(); onToggleFav(p.id); }} style={{ position: "absolute", top: 8, right: 8, zIndex: 5, background: "rgba(255,255,255,0.9)", border: "none", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+          {isFav ? "❤️" : "🤍"}
+        </button>
+      )}
+      <div className="prod-info">
+        <div className="prod-title">{p.name}</div>
+        <div className="prod-desc">{p.description}</div>
+        <div className="prod-bot">
+          <div className="prod-price">
+            {hasDeal ? (<>
+              <span className="price-old">${fi(originalPrice)}</span>
+              <span className="price-deal">${fi(dealPrice)}</span>
+            </>) : `$${fi(originalPrice)}`}
+          </div>
+          {hasDeal && <span className="prod-deal-tag">-{DEAL_PCT}%</span>}
+          {qty > 0 ? (
+            <div className="qty-inline" onClick={e => e.stopPropagation()}>
+              <button onClick={() => onUpdate(p.id, qty - 1)}>{qty <= 1 ? <span style={{fontSize:12}}>🗑</span> : I.minus({size:14})}</button>
+              <span>{qty}</span>
+              <button onClick={(e) => onAdd(p, e)}>{I.plus({size:14})}</button>
+            </div>
+          ) : (
+            <button className="btn-add" onClick={(e) => onAdd(p, e)}>{I.plus({size:16})}</button>
+          )}
+        </div>
+      </div>
+      {p.image_url ? (
+        <img className="prod-img" src={imgOpt(p.image_url, { width: 300, quality: 65 })} alt={p.name} loading="lazy" decoding="async" width={120} height={120}
+          onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }}
+        />
+      ) : null}
+      {(!p.image_url || true) && (
+        <div className="prod-img prod-avatar" style={{
+          display: p.image_url ? 'none' : 'flex',
+          background: avatarColors[p.name.charCodeAt(0) % avatarColors.length]
+        }}>
+          {p.name.charAt(0)}
+        </div>
+      )}
+    </div>
+  );
+});
 
 // --- CATEGORÍAS MADRE (agrupan subcategorías de Supabase) ---
 const CAT_GROUPS = [
@@ -304,11 +354,7 @@ export default function Catalog() {
     return products.filter(r => group.subs.includes(r.category));
   }, [selCat, products]);
 
-  // Colores para avatares de productos sin imagen
-  const avatarColors = useMemo(() => [
-    "#C45D3E", "#3A7D44", "#8D6E00", "#5C6BC0", "#AB47BC",
-    "#00897B", "#D84315", "#6D4C41", "#546E7A", "#7B1FA2"
-  ], []);
+  // avatarColors: definido fuera del componente como constante estática
 
   // Mapa rápido de cantidades en carrito: O(1) lookup en vez de O(n) find
   const cartQtyMap = useMemo(() => {
@@ -1026,10 +1072,10 @@ export default function Catalog() {
       })()}
 
       {/* Portada y Header */}
-      <div className="store-cover" style={{ backgroundImage: `url(${imgOpt(sett.cover_url, { width: 800, quality: 70 }) || fallbackSettings.cover_url})` }}></div>
+      <div className="store-cover" style={{ backgroundImage: `url(${imgOpt(sett.cover_url, { width: 600, quality: 55 }) || fallbackSettings.cover_url})` }}></div>
       <div className="store-header">
         <div className="store-logo" style={{ background: sett.logo_url ? "transparent" : (sett.logo_color || fallbackSettings.logo_color), overflow: "hidden" }}>
-          {sett.logo_url ? <img src={imgOpt(sett.logo_url, { width: 150, height: 150 })} alt="" width={72} height={72} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} onError={e => { e.target.style.display = "none"; e.target.parentElement.textContent = sett.logo_letter || fallbackSettings.logo_letter; e.target.parentElement.style.background = sett.logo_color || fallbackSettings.logo_color; }} /> : (sett.logo_letter || fallbackSettings.logo_letter)}
+          {sett.logo_url ? <img src={imgOpt(sett.logo_url, { width: 150, height: 150, quality: 60 })} alt="" width={72} height={72} decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} onError={e => { e.target.style.display = "none"; e.target.parentElement.textContent = sett.logo_letter || fallbackSettings.logo_letter; e.target.parentElement.style.background = sett.logo_color || fallbackSettings.logo_color; }} /> : (sett.logo_letter || fallbackSettings.logo_letter)}
         </div>
         <div className="store-info">
           <h1 className="store-name">{sett.biz_name || fallbackSettings.biz_name}</h1>
@@ -1168,7 +1214,7 @@ export default function Catalog() {
         <div className="cat-scroll">
           {categories.map(c => (
             <div key={c.name} className={`cat-card ${selCat === c.name ? "active" : ""} ${c.deal ? "has-deal" : ""}`} onClick={() => setSelCat(c.name)}>
-              {c.img && <img className="cat-card-bg" src={imgOpt(c.img, { width: 400, quality: 70 })} alt="" loading="eager" width={180} height={120} onError={e=>{e.target.style.display='none'}} />}
+              {c.img && <img className="cat-card-bg" src={imgOpt(c.img, { width: 300, quality: 60 })} alt="" loading="lazy" fetchpriority="low" width={180} height={120} decoding="async" onError={e=>{e.target.style.display='none'}} />}
               <div className="cat-card-overlay" />
               <div className="cat-card-content">
                 <span className="cat-card-label">{c.displayName || c.name}</span>
@@ -1189,55 +1235,23 @@ export default function Catalog() {
         </div>
       )}
 
-      {/* Lista de Productos */}
+      {/* Lista de Productos (memoized cards) */}
       <div className="prod-list">
-        {filteredProds.map(p => {
-          const inCartQty = getQty(p.id);
-          return (
-            <div key={p.id} className="prod-card">
-              {user && (
-                <button onClick={(e) => { e.stopPropagation(); toggleFavorite(p.id); }} style={{ position: "absolute", top: 8, right: 8, zIndex: 5, background: "rgba(255,255,255,0.9)", border: "none", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
-                  {isFavorite(p.id) ? "❤️" : "🤍"}
-                </button>
-              )}
-              <div className="prod-info">
-                <div className="prod-title">{p.name}</div>
-                <div className="prod-desc">{p.description}</div>
-                <div className="prod-bot">
-                  <div className="prod-price">
-                    {hasDeal(p) ? (<>
-                      <span className="price-old">${fi(p.sale_price)}</span>
-                      <span className="price-deal">${fi(getPrice(p))}</span>
-                    </>) : `$${fi(p.sale_price)}`}
-                  </div>
-                  {hasDeal(p) && <span className="prod-deal-tag">-{DEAL_PCT}%</span>}
-                  {inCartQty > 0 ? (
-                    <div className="qty-inline" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => updQ(p.id, inCartQty - 1)}>{inCartQty <= 1 ? <span style={{fontSize:12}}>🗑</span> : I.minus({size:14})}</button>
-                      <span>{inCartQty}</span>
-                      <button onClick={(e) => addC(p, e)}>{I.plus({size:14})}</button>
-                    </div>
-                  ) : (
-                    <button className="btn-add" onClick={(e) => addC(p, e)}>{I.plus({size:16})}</button>
-                  )}
-                </div>
-              </div>
-              {p.image_url ? (
-                <img className="prod-img" src={imgOpt(p.image_url, { width: 300 })} alt={p.name} loading="lazy" width={120} height={120}
-                  onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }}
-                />
-              ) : null}
-              {(!p.image_url || true) && (
-                <div className="prod-img prod-avatar" style={{
-                  display: p.image_url ? 'none' : 'flex',
-                  background: avatarColors[p.name.charCodeAt(0) % avatarColors.length]
-                }}>
-                  {p.name.charAt(0)}
-                </div>
-              )}
-            </div>
-          )
-        })}
+        {filteredProds.map(p => (
+          <ProductCard
+            key={p.id}
+            p={p}
+            qty={getQty(p.id)}
+            hasDeal={hasDeal(p)}
+            dealPrice={getPrice(p)}
+            originalPrice={p.sale_price}
+            onAdd={addC}
+            onUpdate={updQ}
+            isFav={isFavorite(p.id)}
+            onToggleFav={toggleFavorite}
+            isLoggedIn={!!user}
+          />
+        ))}
       </div>
 
       {/* Carrito Flotante "Pedix Style" */}

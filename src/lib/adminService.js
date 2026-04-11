@@ -83,7 +83,7 @@ export async function fetchSettings() {
 const SETTINGS_COLS = [
   'id', 'biz_name', 'logo_letter', 'logo_color', 'logo_url',
   'cover_url', 'cat_images', 'hidden_cats', 'cat_names',
-  'banner_text', 'banner_color', 'store_open', 'store_hours',
+  'banner_text', 'banner_color', 'banners', 'store_open', 'store_hours',
   'exp_cats', 'ing_cats'
 ];
 export async function updateSettings(settings) {
