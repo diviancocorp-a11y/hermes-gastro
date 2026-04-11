@@ -1,9 +1,50 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { I, fi, saleCode, imgOpt } from "../lib/utils";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+
+// ── Banner Carousel ──
+function BannerCarousel({ banners }) {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const timerRef = useRef(null);
+  const len = banners.length;
+
+  useEffect(() => {
+    if (len <= 1 || paused) return;
+    timerRef.current = setInterval(() => setIdx(p => (p + 1) % len), 4500);
+    return () => clearInterval(timerRef.current);
+  }, [len, paused]);
+
+  const go = (dir) => { setPaused(true); setIdx(p => (p + dir + len) % len); setTimeout(() => setPaused(false), 8000); };
+  const b = banners[idx];
+  if (!b) return null;
+
+  return (
+    <div style={{ position: "relative", overflow: "hidden", cursor: len > 1 ? "pointer" : "default" }}
+      onClick={() => len > 1 && go(1)}>
+      {b.image_url ? (
+        <div style={{ position: "relative", width: "100%", height: 130 }}>
+          <img src={imgOpt(b.image_url, { width: 800, quality: 75 })} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          {b.text && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent, rgba(0,0,0,0.75))", color: "#fff", padding: "20px 16px 10px", fontSize: 14, fontWeight: 700, letterSpacing: 0.2 }}>{b.text}</div>}
+        </div>
+      ) : (
+        <div style={{ background: b.color || "#2D1B0E", color: "#fff", textAlign: "center", padding: "12px 20px", fontSize: 14, fontWeight: 700, letterSpacing: 0.2 }}>{b.text}</div>
+      )}
+      {/* Dots */}
+      {len > 1 && (
+        <div style={{ position: "absolute", bottom: b.image_url ? 4 : 2, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 5 }}>
+          {banners.map((_, i) => (
+            <div key={i} onClick={e => { e.stopPropagation(); setPaused(true); setIdx(i); setTimeout(() => setPaused(false), 8000); }}
+              style={{ width: i === idx ? 16 : 6, height: 6, borderRadius: 3, background: i === idx ? "#fff" : "rgba(255,255,255,0.5)", transition: "all .3s", cursor: "pointer" }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // --- CATEGORÍAS MADRE (agrupan subcategorías de Supabase) ---
 const CAT_GROUPS = [
@@ -975,12 +1016,14 @@ export default function Catalog() {
   // --- VISTA PRINCIPAL: CATÁLOGO ---
   return (
     <div className="app">
-      {/* Banner de anuncios (si hay texto configurado) */}
-      {sett.banner_text && (
-        <div style={{ background: sett.banner_color || "#2D1B0E", color: "#fff", textAlign: "center", padding: "10px 20px", fontSize: 13, fontWeight: 600, letterSpacing: 0.2 }}>
-          {sett.banner_text}
-        </div>
-      )}
+      {/* Banner carrusel de eventos */}
+      {(()=>{
+        const banners = (sett.banners||[]).filter(b=>b.active!==false&&(b.text||b.image_url));
+        // Fallback al banner viejo si no hay nuevos
+        if(!banners.length && sett.banner_text) banners.push({text:sett.banner_text,color:sett.banner_color||"#2D1B0E"});
+        if(!banners.length) return null;
+        return <BannerCarousel banners={banners}/>;
+      })()}
 
       {/* Portada y Header */}
       <div className="store-cover" style={{ backgroundImage: `url(${imgOpt(sett.cover_url, { width: 800, quality: 70 }) || fallbackSettings.cover_url})` }}></div>
