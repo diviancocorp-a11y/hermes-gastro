@@ -83,7 +83,7 @@ export async function fetchSettings() {
 const SETTINGS_COLS = [
   'id', 'biz_name', 'logo_letter', 'logo_color', 'logo_url',
   'cover_url', 'cat_images', 'hidden_cats', 'cat_names',
-  'banner_text', 'banner_color', 'banners', 'store_open', 'store_hours',
+  'banner_text', 'banner_color', 'store_open', 'store_hours',
   'exp_cats', 'ing_cats'
 ];
 export async function updateSettings(settings) {
@@ -371,19 +371,6 @@ export async function uploadCatImage(file, catName) {
     .from('recipe-images')
     .upload(path, file, { upsert: true, contentType: file.type });
   if (error) { console.error('uploadCatImage:', error.message); return null; }
-  const { data: urlData } = supabase.storage.from('recipe-images').getPublicUrl(data.path);
-  return urlData.publicUrl;
-}
-
-export async function uploadBannerImage(file) {
-  const err = validateImageFile(file);
-  if (err) { console.error('uploadBannerImage:', err); return { __error: err }; }
-  const ext = file.name.split('.').pop().toLowerCase();
-  const path = `banner-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  const { data, error } = await supabase.storage
-    .from('recipe-images')
-    .upload(path, file, { upsert: true, contentType: file.type });
-  if (error) { console.error('uploadBannerImage:', error.message); return null; }
   const { data: urlData } = supabase.storage.from('recipe-images').getPublicUrl(data.path);
   return urlData.publicUrl;
 }

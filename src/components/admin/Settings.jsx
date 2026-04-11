@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { I } from "../../lib/utils";
-import { updateSettings, uploadCoverImage, uploadCatImage, uploadLogoImage, uploadBannerImage, resetHistoricalData, downloadServerBackup } from "../../lib/adminService";
+import { updateSettings, uploadCoverImage, uploadCatImage, uploadLogoImage, resetHistoricalData, downloadServerBackup } from "../../lib/adminService";
 
-const BANNER_COLORS=[{h:"#2D1B0E",l:"Café oscuro"},{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#333333",l:"Negro"}];
 const DEF={biz_name:"La Nona Pato",logo_letter:"N",logo_color:"#C45D3E",exp_cats:["Materia Prima","Servicios","Packaging","Transporte","Alquiler","Equipamiento","Otros"],ing_cats:["Secos","Frescos","Packaging","Otros"],cat_images:{}};
 const CAT_NAMES=["Todos","Primeros Mimos","La Mesa Principal","El Sanguche de la Nona","La Nona Amasó","La Última Mordida","Cocina Consciente"];
 const COLORS=[{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#2D1B0E",l:"Negro"}];
 
-const SECTIONS=["identity","cover","catImages","banner","storeState","expCats","ingCats","hours","backup","reset"];
+const SECTIONS=["identity","cover","catImages","storeState","expCats","ingCats","hours","backup","reset"];
 
 function Settings({sett,setSett,msg,onBack}){
   const [s,setS]=useState({...sett});
@@ -15,7 +14,6 @@ function Settings({sett,setSett,msg,onBack}){
   const [uploadingCover,setUploadingCover]=useState(false);
   const [uploadingCat,setUploadingCat]=useState(null);
   const [uploadingLogo,setUploadingLogo]=useState(false);
-  const [uploadingBanner,setUploadingBanner]=useState(null);
   const [resetPin,setResetPin]=useState("");
   const [showReset,setShowReset]=useState(false);
   const [resetting,setResetting]=useState(false);
@@ -144,105 +142,6 @@ function Settings({sett,setSett,msg,onBack}){
             {isHidden&&<div style={{fontSize:11,color:"var(--rd)",marginTop:4,marginLeft:30}}>Oculta del catálogo</div>}
           </div>);
         })}
-      </div>}
-      </div>
-
-      {/* ── Banners / Eventos (carrusel) ── */}
-      <div className="c">
-        <div onClick={()=>tog("banner")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>📢 Banners y eventos</label>
-          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.banner?"rotate(180deg)":"rotate(0)"}}>▾</span>
-        </div>
-        {open.banner&&<div style={{marginTop:10}}>
-        <div style={{fontSize:12,color:"var(--t3)",marginBottom:12}}>Creá banners con imagen o texto. Se muestran como carrusel rotativo en el catálogo. Máximo 5 banners.</div>
-
-        {/* Lista de banners existentes */}
-        {(s.banners||[]).map((b,i)=>(
-          <div key={i} style={{background:"var(--bg)",border:"1px solid var(--b2)",borderRadius:12,padding:12,marginBottom:10}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <span style={{fontSize:12,fontWeight:700,color:"var(--t3)"}}>Banner {i+1}</span>
-              <div style={{display:"flex",gap:6}}>
-                {/* Toggle activo */}
-                <button onClick={()=>{const nb=[...(s.banners||[])];nb[i]={...nb[i],active:!nb[i].active};set("banners",nb);}}
-                  style={{padding:"3px 10px",borderRadius:8,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",
-                    background:b.active!==false?"#E8F5E9":"var(--b2)",color:b.active!==false?"#2E7D32":"var(--t3)"}}>
-                  {b.active!==false?"Activo":"Inactivo"}
-                </button>
-                <button onClick={()=>{const nb=[...(s.banners||[])];nb.splice(i,1);set("banners",nb);}}
-                  style={{background:"none",border:"none",fontSize:16,color:"var(--rd)",cursor:"pointer",padding:"0 4px"}}>✕</button>
-              </div>
-            </div>
-
-            {/* Imagen del banner */}
-            <div style={{marginBottom:8}}>
-              {b.image_url?
-                <div style={{position:"relative"}}>
-                  <img src={b.image_url} alt="" style={{width:"100%",height:120,objectFit:"cover",borderRadius:8}}/>
-                  <button onClick={()=>{const nb=[...(s.banners||[])];nb[i]={...nb[i],image_url:""};set("banners",nb);}}
-                    style={{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.6)",color:"#fff",border:"none",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:12}}>✕</button>
-                </div>
-              :
-                <label style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"16px",background:"var(--b2)",borderRadius:8,cursor:"pointer",fontSize:12,color:"var(--t2)",fontWeight:600}}>
-                  {uploadingBanner===i?"Subiendo...":"📷 Subir imagen del banner"}
-                  <input type="file" accept="image/*" style={{display:"none"}} onChange={async(e)=>{
-                    const file=e.target.files?.[0];if(!file)return;
-                    setUploadingBanner(i);
-                    const result=await uploadBannerImage(file);
-                    setUploadingBanner(null);
-                    if(result?.__error){msg(result.__error);return;}
-                    if(result){const nb=[...(s.banners||[])];nb[i]={...nb[i],image_url:result};set("banners",nb);msg("Imagen subida ✓");}else{msg("Error al subir imagen");}
-                  }} disabled={uploadingBanner===i}/>
-                </label>
-              }
-            </div>
-
-            {/* Texto del banner */}
-            <input className="fin" value={b.text||""} onChange={e=>{const nb=[...(s.banners||[])];nb[i]={...nb[i],text:e.target.value};set("banners",nb);}}
-              placeholder="Texto del banner (opcional si hay imagen)" style={{fontSize:13,marginBottom:6}}/>
-
-            {/* URL de imagen por link */}
-            {!b.image_url&&<input className="fin" value={b.image_url||""} onChange={e=>{const nb=[...(s.banners||[])];nb[i]={...nb[i],image_url:e.target.value};set("banners",nb);}}
-              placeholder="O pegá URL de imagen..." style={{fontSize:12}}/>}
-
-            {/* Color de fondo (solo si no hay imagen) */}
-            {!b.image_url&&b.text&&<div style={{marginTop:6}}>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {BANNER_COLORS.map(c=>(
-                  <div key={c.h} onClick={()=>{const nb=[...(s.banners||[])];nb[i]={...nb[i],color:c.h};set("banners",nb);}}
-                    style={{width:24,height:24,borderRadius:6,background:c.h,cursor:"pointer",outline:b.color===c.h?"2px solid var(--tx)":"none",outlineOffset:2}}/>
-                ))}
-              </div>
-            </div>}
-
-            {/* Preview */}
-            {(b.text||b.image_url)&&<div style={{marginTop:8,borderRadius:8,overflow:"hidden",border:"1px solid var(--b2)"}}>
-              {b.image_url?
-                <div style={{position:"relative",height:80}}>
-                  <img src={b.image_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                  {b.text&&<div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(transparent,rgba(0,0,0,0.7))",color:"#fff",padding:"12px 10px 6px",fontSize:12,fontWeight:600}}>{b.text}</div>}
-                </div>
-              :
-                <div style={{padding:"8px 12px",background:b.color||"#2D1B0E",color:"#fff",fontSize:12,fontWeight:600,textAlign:"center"}}>{b.text}</div>
-              }
-            </div>}
-          </div>
-        ))}
-
-        {/* Botón agregar banner */}
-        {(s.banners||[]).length<5&&(
-          <button onClick={()=>set("banners",[...(s.banners||[]),{text:"",image_url:"",color:"#2D1B0E",active:true}])}
-            style={{width:"100%",padding:"10px",background:"var(--b2)",border:"1.5px dashed var(--t3)",borderRadius:10,fontSize:13,fontWeight:600,cursor:"pointer",color:"var(--t2)"}}>
-            + Agregar banner
-          </button>
-        )}
-
-        {/* Migración: si hay banner_text viejo, ofrecer migrar */}
-        {s.banner_text&&!(s.banners||[]).length&&(
-          <button onClick={()=>{set("banners",[{text:s.banner_text,color:s.banner_color||"#2D1B0E",active:true,image_url:""}]);set("banner_text","");set("banner_color","");}}
-            style={{width:"100%",marginTop:8,padding:"10px",background:"#FFF8E1",border:"1px solid #FFB74D",borderRadius:10,fontSize:12,fontWeight:600,cursor:"pointer",color:"#E65100"}}>
-            Migrar banner actual al nuevo sistema de carrusel
-          </button>
-        )}
       </div>}
       </div>
 
