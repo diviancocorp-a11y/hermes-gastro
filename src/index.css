@@ -400,3 +400,50 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .cat-card.has-deal .cat-card-label{margin-bottom:0}
 
 /* ═══ Duplicate rules removed — originals above (lines 51, 57-59) ═══ */
+
+/* ═══ CHECKOUT STEPPER ═══ */
+.ck-stepper{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 20px 12px;position:relative;overflow:hidden}
+.ck-step{display:flex;flex-direction:column;align-items:center;gap:4px;z-index:1;flex:1}
+.ck-step-dot{width:28px;height:28px;border-radius:50%;background:var(--b2);color:var(--t3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;transition:all .3s}
+.ck-step.active .ck-step-dot{background:var(--ac);color:#fff;box-shadow:0 2px 10px rgba(196,93,62,0.35)}
+.ck-step.done .ck-step-dot{background:var(--gn,#3A7D44);color:#fff}
+.ck-step-label{font-size:10px;font-weight:600;color:var(--t3);text-align:center}
+.ck-step.active .ck-step-label{color:var(--ac);font-weight:700}
+.ck-step.done .ck-step-label{color:var(--gn,#3A7D44)}
+.ck-step-line{position:absolute;top:29px;left:10%;height:3px;background:var(--ac);border-radius:3px;transition:width .4s ease;z-index:0}
+
+.ck-next{width:100%;margin-top:24px;font-size:15px;font-weight:700}
+
+/* Cards para delivery/pago */
+.ckv-card{padding:16px;border:2px solid var(--b2);border-radius:16px;cursor:pointer;transition:all .2s;background:var(--b3)}
+.ckv-card.on{border-color:var(--ac);background:rgba(196,93,62,0.06);box-shadow:0 2px 12px rgba(196,93,62,0.12)}
+.ckv-card+.ckv-card{margin-top:10px}
+
+/* Pickup info */
+.ck-pickup-info{background:var(--b2);border-radius:14px;padding:16px;margin-bottom:16px}
+
+/* Payment detail boxes */
+.ck-pay-detail{background:var(--b2);border-radius:14px;padding:16px;margin-top:12px}
+.ck-bank-box{background:var(--b3);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.ck-bank-row{display:flex;justify-content:space-between;align-items:center}
+.ck-copy-btn{background:var(--ac);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%}
+.ck-copy-btn:active{opacity:.8}
+
+/* Denomination buttons */
+.ck-denom{padding:10px 14px;border:2px solid var(--b2);border-radius:10px;background:var(--b3);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--tx);transition:all .2s}
+.ck-denom.on{border-color:var(--ac);background:var(--ac);color:#fff}
+
+/* Upload area */
+.ck-upload-area{display:block;border:2px dashed var(--b2);border-radius:14px;cursor:pointer;overflow:hidden;transition:border-color .2s;background:var(--b3)}
+.ck-upload-area:hover{border-color:var(--ac)}
+
+/* Summary */
+.ck-summary{display:flex;flex-direction:column;gap:16px}
+.ck-sum-section{background:var(--b3);border-radius:14px;padding:14px 16px;box-shadow:var(--sh)}
+.ck-sum-title{font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.ck-sum-val{font-size:14px;color:var(--tx);line-height:1.5}
+
+/* WhatsApp floating button */
+.wa-float{position:fixed;bottom:90px;right:16px;z-index:90;width:52px;height:52px;border-radius:50%;background:#25D366;color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(37,211,102,0.4);transition:transform .2s}
+.wa-float:active{transform:scale(0.92)}
+.wa-float svg{width:28px;height:28px;fill:#fff}
