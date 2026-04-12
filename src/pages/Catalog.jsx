@@ -121,7 +121,7 @@ export default function Catalog() {
   const [receiptPreview, setReceiptPreview] = useState(null);
   const [verifyingReceipt, setVerifyingReceipt] = useState(false);
   const [receiptStatus, setReceiptStatus] = useState(""); // "" | "ok" | "error"
-  const [guestMode, setGuestMode] = useState(false); // false=crear cuenta (default), true=invitado
+  const [guestMode, setGuestMode] = useState(true); // invitado por defecto
   const [waitingReceipt, setWaitingReceipt] = useState(false); // pantalla de espera post-envío
   const [waitTimer, setWaitTimer] = useState(60); // countdown 60s
   const [geoLoading, setGeoLoading] = useState(false);
@@ -173,13 +173,10 @@ export default function Catalog() {
     setCalcingDelivery(false);
   }, []);
 
-  // Fecha mínima para agendamiento: hoy o mañana si ya pasaron las 18:00
-  // Usa hora del servidor si está disponible para evitar manipulación del reloj
+  // Fecha mínima para agendamiento: hoy (siempre permite programar para hoy y mañana)
   const minDate = useMemo(() => {
     const now = serverNow || new Date();
-    const cutoff = new Date(now); cutoff.setHours(18, 0, 0, 0);
-    const base = now >= cutoff ? new Date(now.getTime() + 86400000) : now;
-    return base.toISOString().split("T")[0];
+    return now.toISOString().split("T")[0];
   }, [serverNow]);
   const [upsell, setUpsell] = useState(null); // {product, suggestions[]}
   const [couponCode, setCouponCode] = useState("");
@@ -190,7 +187,7 @@ export default function Catalog() {
   const [showTrackerInput, setShowTrackerInput] = useState(false);
   const [trackerCode, setTrackerCode] = useState("");
   const [showMenu, setShowMenu] = useState(false);
-  const [scheduleTimeErr, setScheduleTimeErr] = useState(""); // error validación hora programada
+  // scheduleTimeErr eliminado — ahora usamos dropdown con horas válidas
 
   const sf = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -203,7 +200,6 @@ export default function Catalog() {
         phone: p.phone || profile.phone || "",
         email: p.email || user.email || "",
       }));
-      setGuestMode(false);
     }
   }, [showCk, user, profile]);
 
@@ -227,34 +223,51 @@ export default function Catalog() {
     return { open: true, msg: `Abierto hasta las ${today.close}` };
   }, [sett, serverNow]);
 
-  // Validar horario de entrega programada (debe estar dentro del horario del local)
-  const validateScheduledTime = (time) => {
-    if (!time || !sett?.store_hours) return "";
-    const hrs = sett.store_hours;
+  // Generar horas disponibles para una fecha según horario del local
+  const getAvailableHours = useCallback((dateStr) => {
+    if (!dateStr || !sett?.store_hours) return [];
+    // Calcular día de semana de la fecha seleccionada
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const selectedDate = new Date(y, m - 1, d);
+    const jsDow = selectedDate.getDay(); // 0=Dom
+    const dayIdx = (jsDow + 6) % 7; // → 0=Lun
+    const dayHrs = sett.store_hours[dayIdx];
+    if (!dayHrs || dayHrs.closed || !dayHrs.open || !dayHrs.close) return [];
+
+    const [oh] = dayHrs.open.split(":").map(Number);
+    const [ch] = dayHrs.close.split(":").map(Number);
+    const firstHour = oh + 1; // +1h después de abrir (preparación)
+    const lastHour = ch - 1;  // -1h antes de cerrar
+    if (firstHour > lastHour) return [];
+
     const now = serverNow || new Date();
-    const dayIdx = (now.getDay() + 6) % 7; // JS: 0=Dom → nuestro: 0=Lun
-    const today = hrs[dayIdx];
-    if (!today || today.closed) return "El local no abre hoy. Elegí otro día para tu pedido.";
-    if (!today.open || !today.close) return "";
+    const isToday = dateStr === now.toISOString().split("T")[0];
+    const currentHour = now.getHours();
 
-    const [oh, om] = today.open.split(":").map(Number);
-    const [ch, cm] = today.close.split(":").map(Number);
-    const [th, tm] = time.split(":").map(Number);
-
-    const openMins = oh * 60 + om + 60; // +1h después de abrir
-    const closeMins = ch * 60 + cm - 60; // -1h antes de cerrar
-    const timeMins = th * 60 + tm;
-
-    if (timeMins < openMins) {
-      const minTime = `${String(Math.floor(openMins / 60)).padStart(2, "0")}:${String(openMins % 60).padStart(2, "0")}`;
-      return `La hora elegida es muy temprana. Nuestro horario de entrega empieza a las ${minTime} (abrimos a las ${today.open} y necesitamos 1h para preparar). Elegí una hora a partir de las ${minTime}.`;
+    const hours = [];
+    for (let h = firstHour; h <= lastHour; h++) {
+      // Si es hoy, solo mostrar horas futuras (+1h de margen)
+      if (isToday && h <= currentHour + 1) continue;
+      hours.push(h);
     }
-    if (timeMins > closeMins) {
-      const maxTime = `${String(Math.floor(closeMins / 60)).padStart(2, "0")}:${String(closeMins % 60).padStart(2, "0")}`;
-      return `La hora elegida es muy tarde. Cerramos a las ${today.close} y el último horario de entrega es a las ${maxTime}. Elegí una hora antes de las ${maxTime}.`;
-    }
-    return "";
-  };
+    return hours;
+  }, [sett, serverNow]);
+
+  // Horas disponibles para la fecha seleccionada (reactivo)
+  const availableHours = useMemo(() => getAvailableHours(form.delivery_date), [form.delivery_date, getAvailableHours]);
+
+  // Info del día seleccionado
+  const selectedDayInfo = useMemo(() => {
+    if (!form.delivery_date || !sett?.store_hours) return null;
+    const [y, m, d] = form.delivery_date.split("-").map(Number);
+    const selectedDate = new Date(y, m - 1, d);
+    const jsDow = selectedDate.getDay();
+    const dayIdx = (jsDow + 6) % 7;
+    const dayHrs = sett.store_hours[dayIdx];
+    const dayNames = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+    if (!dayHrs || dayHrs.closed) return { closed: true, dayName: dayNames[dayIdx] };
+    return { closed: false, dayName: dayNames[dayIdx], open: dayHrs.open, close: dayHrs.close };
+  }, [form.delivery_date, sett]);
 
   // Si el local está cerrado, forzar modo "Programar"
   useEffect(() => {
@@ -299,6 +312,21 @@ export default function Catalog() {
       setLoading(false);
     }
     loadData();
+  }, []);
+
+  // Restaurar carrito si vuelve del registro
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("lnp_cart");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCart(parsed);
+          setShowCk(true); // reabrir checkout
+        }
+        sessionStorage.removeItem("lnp_cart");
+      }
+    } catch {}
   }, []);
 
   // Categorías madre con descuento del día (usa hora del servidor)
@@ -692,30 +720,45 @@ export default function Catalog() {
               </div>
             </div>
           ) : (
-            /* Toggle invitado / registrarse */
-            <div className="cks">
-              <div className="cko">
-                <div className={`ckv ${!guestMode ? "on" : ""}`} onClick={() => setGuestMode(false)}>Crear cuenta</div>
-                <div className={`ckv ${guestMode ? "on" : ""}`} onClick={() => { setGuestMode(true); sf("email",""); }}>Invitado</div>
+            /* INVITADO: datos + banner para registrarse */
+            <>
+              <div className="cks">
+                <div className="ckl">👤 Tus datos</div>
+                <input className="cki" value={form.name} onChange={e => sf("name", e.target.value.slice(0, 200))} placeholder="Nombre y Apellido" autoFocus />
+                <input className="cki" type="tel" value={form.phone} onChange={e => sf("phone", e.target.value.replace(/\D/g, "").slice(0, 15))} placeholder="Teléfono (Ej: 1155443322)" maxLength={15} style={{marginTop:10}} />
+                {form.phone && form.phone.length < 10 && <p style={{fontSize:11,color:"#C62828",margin:"4px 0 0 4px"}}>Mínimo 10 dígitos · ({form.phone.length}/10)</p>}
               </div>
-              {!guestMode && <div style={{marginTop:8,padding:"10px 12px",background:"var(--b2)",borderRadius:10,fontSize:12,color:"var(--t2)",lineHeight:1.5}}>
-                Registrarte es tan simple como poner tu email. Beneficios: historial de pedidos, direcciones guardadas, cupones exclusivos y favoritos.
-              </div>}
-            </div>
-          )}
 
-          <div className="cks">
-            <div className="ckl">👤 Tus datos</div>
-            <input className="cki" value={form.name} onChange={e => sf("name", e.target.value.slice(0, 200))} placeholder="Nombre y Apellido" autoFocus />
-          </div>
-          <div className="cks">
-            <input className="cki" type="tel" value={form.phone} onChange={e => sf("phone", e.target.value.replace(/\D/g, "").slice(0, 15))} placeholder="Teléfono (Ej: 1155443322)" maxLength={15}/>
-            {form.phone && form.phone.length < 10 && <p style={{fontSize:11,color:"#C62828",margin:"4px 0 0 4px"}}>Mínimo 10 dígitos · ({form.phone.length}/10)</p>}
-          </div>
-          {!user && !guestMode && <div className="cks">
-            <input className="cki" type="email" value={form.email} onChange={e => sf("email", e.target.value.slice(0, 200))} placeholder="Email (requerido para tu cuenta)" />
-            {form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && <p style={{fontSize:11,color:"#C62828",margin:"4px 0 0 4px"}}>Email no válido</p>}
-          </div>}
+              {/* Banner: registrate para esta compra */}
+              <div className="cks">
+                <div style={{padding:"16px",background:"linear-gradient(135deg, #FFF8E1, #FFF3E0)",borderRadius:14,border:"1.5px solid #FFE0B2"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                    <span style={{fontSize:22}}>🦆</span>
+                    <span style={{fontSize:15,fontWeight:700,color:"#5D4037"}}>¡Registrate y aprovechá en esta compra!</span>
+                  </div>
+                  <div style={{fontSize:13,color:"#5D4037",lineHeight:1.7,marginBottom:4}}>
+                    <div>✓ Guardá tus direcciones y pedí más rápido</div>
+                    <div>✓ Seguí tus pedidos en vivo</div>
+                    <div>✓ Accedé a cupones y descuentos exclusivos</div>
+                    <div>✓ Tus datos quedan guardados para la próxima</div>
+                  </div>
+                  <p style={{fontSize:12,color:"#8D6E00",fontWeight:600,margin:"8px 0 12px",lineHeight:1.4}}>
+                    Creá tu cuenta ahora y volvé directo a terminar tu pedido con todos los beneficios activos.
+                  </p>
+                  <button
+                    onClick={() => {
+                      // Guardar carrito para restaurar después del registro
+                      try { sessionStorage.setItem("lnp_cart", JSON.stringify(cart)); } catch {}
+                      navigate("/mi-cuenta");
+                    }}
+                    style={{width:"100%",padding:"14px",background:"var(--ac)",color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 15px rgba(196,93,62,.3)"}}
+                  >
+                    Registrarme gratis
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Cuándo lo necesitás */}
           <div className="cks">
@@ -732,24 +775,47 @@ export default function Catalog() {
               <div style={{display:"flex",gap:10}}>
                 <div style={{flex:1}}>
                   <label style={{fontSize:11,fontWeight:700,color:"var(--t3)",marginBottom:4,display:"block"}}>Fecha</label>
-                  <input className="cki" type="date" value={form.delivery_date} min={minDate} onChange={e => sf("delivery_date", e.target.value)} style={{colorScheme:"light"}} />
+                  <input className="cki" type="date" value={form.delivery_date} min={minDate} onChange={e => {
+                    sf("delivery_date", e.target.value);
+                    sf("delivery_time", ""); // resetear hora al cambiar fecha
+                  }} style={{colorScheme:"light"}} />
                 </div>
                 <div style={{flex:1}}>
                   <label style={{fontSize:11,fontWeight:700,color:"var(--t3)",marginBottom:4,display:"block"}}>Hora de entrega</label>
-                  <input className="cki" type="time" value={form.delivery_time} onChange={e => {
-                    sf("delivery_time", e.target.value);
-                    const err = validateScheduledTime(e.target.value);
-                    setScheduleTimeErr(err);
-                  }} style={{colorScheme:"light"}} />
+                  <select
+                    className="cki"
+                    value={form.delivery_time}
+                    onChange={e => sf("delivery_time", e.target.value)}
+                    disabled={!form.delivery_date || availableHours.length === 0}
+                    style={{colorScheme:"light",appearance:"none",backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239C8B7A' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",backgroundRepeat:"no-repeat",backgroundPosition:"right 14px center"}}
+                  >
+                    <option value="">Elegí una hora</option>
+                    {availableHours.map(h => (
+                      <option key={h} value={`${String(h).padStart(2,"0")}:00`}>
+                        {String(h).padStart(2,"0")}:00 hs
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
-              {(!form.delivery_date || !form.delivery_time) && <p style={{fontSize:11,color:"var(--rd)",margin:"6px 0 0 2px"}}>{!form.delivery_date ? "Seleccioná una fecha" : "Seleccioná la hora de entrega"}</p>}
-              {scheduleTimeErr && (
-                <div style={{marginTop:10,padding:"12px 14px",background:"var(--rl)",border:"1px solid var(--rd)",borderRadius:10,fontSize:13,color:"var(--rd)",lineHeight:1.5,display:"flex",gap:8,alignItems:"flex-start"}}>
-                  <span style={{fontSize:18,lineHeight:1,flexShrink:0}}>⏰</span>
-                  <span>{scheduleTimeErr}</span>
+
+              {/* Info del día seleccionado */}
+              {selectedDayInfo && selectedDayInfo.closed && (
+                <div style={{marginTop:10,padding:"10px 12px",background:"var(--rl)",border:"1px solid var(--rd)",borderRadius:10,fontSize:13,color:"var(--rd)",lineHeight:1.4}}>
+                  ⏰ El {selectedDayInfo.dayName} no abrimos. Elegí otro día.
                 </div>
               )}
+              {selectedDayInfo && !selectedDayInfo.closed && availableHours.length === 0 && form.delivery_date && (
+                <div style={{marginTop:10,padding:"10px 12px",background:"var(--yl)",border:"1px solid var(--yw)",borderRadius:10,fontSize:13,color:"#8D6E00",lineHeight:1.4}}>
+                  ⏰ No hay horarios disponibles para hoy. El local abre de {selectedDayInfo.open} a {selectedDayInfo.close} — probá con otro día.
+                </div>
+              )}
+              {selectedDayInfo && !selectedDayInfo.closed && availableHours.length > 0 && (
+                <p style={{fontSize:11,color:"var(--t3)",margin:"8px 0 0 2px"}}>
+                  {selectedDayInfo.dayName}: abrimos {selectedDayInfo.open} – {selectedDayInfo.close}
+                </p>
+              )}
+              {!form.delivery_date && <p style={{fontSize:11,color:"var(--rd)",margin:"6px 0 0 2px"}}>Seleccioná una fecha</p>}
             </div>
           )}
 
@@ -759,7 +825,7 @@ export default function Catalog() {
             <input className="cki" value={form.note} onChange={e => sf("note", e.target.value)} placeholder="Ej: Sin azúcar, sin cebolla, para las 15hs..." />
           </div>
 
-          <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time)) || (!user && !guestMode && !form.email) || (scheduleMode === "later" && scheduleTimeErr)} onClick={goNext}>Siguiente →</button>
+          <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time))} onClick={goNext}>Siguiente →</button>
         </>}
 
         {/* ─── PASO 1: ENTREGA ─── */}

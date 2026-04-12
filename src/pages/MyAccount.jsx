@@ -60,6 +60,18 @@ export default function MyAccount() {
     }
   }, [profile]);
 
+  // Si el usuario se logueó y tiene un carrito pendiente, volver al checkout
+  useEffect(() => {
+    if (user && !loading) {
+      try {
+        const saved = sessionStorage.getItem("lnp_cart");
+        if (saved && JSON.parse(saved).length > 0) {
+          navigate("/");
+        }
+      } catch {}
+    }
+  }, [user, loading]);
+
   // Load orders on tab switch
   useEffect(() => {
     if (tab === "historial" && user && orders.length === 0) {
