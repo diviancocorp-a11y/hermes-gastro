@@ -234,7 +234,8 @@ export default function Catalog() {
     const now = serverNow || new Date();
     const dayIdx = (now.getDay() + 6) % 7; // JS: 0=Dom → nuestro: 0=Lun
     const today = hrs[dayIdx];
-    if (!today || !today.open || !today.close) return "";
+    if (!today || today.closed) return "El local no abre hoy. Elegí otro día para tu pedido.";
+    if (!today.open || !today.close) return "";
 
     const [oh, om] = today.open.split(":").map(Number);
     const [ch, cm] = today.close.split(":").map(Number);
@@ -246,11 +247,11 @@ export default function Catalog() {
 
     if (timeMins < openMins) {
       const minTime = `${String(Math.floor(openMins / 60)).padStart(2, "0")}:${String(openMins % 60).padStart(2, "0")}`;
-      return `Horario mínimo: ${minTime}`;
+      return `La hora elegida es muy temprana. Nuestro horario de entrega empieza a las ${minTime} (abrimos a las ${today.open} y necesitamos 1h para preparar). Elegí una hora a partir de las ${minTime}.`;
     }
     if (timeMins > closeMins) {
       const maxTime = `${String(Math.floor(closeMins / 60)).padStart(2, "0")}:${String(closeMins % 60).padStart(2, "0")}`;
-      return `Horario máximo: ${maxTime}`;
+      return `La hora elegida es muy tarde. Cerramos a las ${today.close} y el último horario de entrega es a las ${maxTime}. Elegí una hora antes de las ${maxTime}.`;
     }
     return "";
   };
@@ -743,7 +744,12 @@ export default function Catalog() {
                 </div>
               </div>
               {(!form.delivery_date || !form.delivery_time) && <p style={{fontSize:11,color:"var(--rd)",margin:"6px 0 0 2px"}}>{!form.delivery_date ? "Seleccioná una fecha" : "Seleccioná la hora de entrega"}</p>}
-              {scheduleTimeErr && <p style={{fontSize:11,color:"var(--rd)",margin:"6px 0 0 2px"}}>⏰ {scheduleTimeErr}</p>}
+              {scheduleTimeErr && (
+                <div style={{marginTop:10,padding:"12px 14px",background:"var(--rl)",border:"1px solid var(--rd)",borderRadius:10,fontSize:13,color:"var(--rd)",lineHeight:1.5,display:"flex",gap:8,alignItems:"flex-start"}}>
+                  <span style={{fontSize:18,lineHeight:1,flexShrink:0}}>⏰</span>
+                  <span>{scheduleTimeErr}</span>
+                </div>
+              )}
             </div>
           )}
 

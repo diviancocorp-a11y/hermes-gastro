@@ -41,6 +41,8 @@ export default function MyAccount() {
   const [addrNotes, setAddrNotes] = useState("");
   const [addingAddr, setAddingAddr] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deletingAddr, setDeletingAddr] = useState(false);
 
   // Favorites products
   const [favProducts, setFavProducts] = useState([]);
@@ -403,17 +405,31 @@ export default function MyAccount() {
             )}
 
             {addresses.map(a => (
-              <div key={a.id} style={{ background: "var(--bg)", border: "1px solid var(--b2)", borderRadius: 14, padding: "14px 16px", marginBottom: 8 }}>
+              <div key={a.id} style={{ background: "var(--bg)", border: confirmDeleteId === a.id ? "1.5px solid var(--rd)" : "1px solid var(--b2)", borderRadius: 14, padding: "14px 16px", marginBottom: 8, transition: "border .2s" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ac)", marginBottom: 4 }}>{a.label}</div>
                     <div style={{ fontSize: 14, color: "var(--tx)", lineHeight: 1.4 }}>{a.address}</div>
                     {a.notes && <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 4 }}>{a.notes}</div>}
                   </div>
-                  <button onClick={async () => { if (confirm("¿Eliminar esta dirección?")) await removeAddress(a.id); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "var(--t3)", padding: "4px 8px" }}>
+                  <button onClick={() => setConfirmDeleteId(confirmDeleteId === a.id ? null : a.id)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "var(--t3)", padding: "4px 8px" }}>
                     🗑
                   </button>
                 </div>
+                {confirmDeleteId === a.id && (
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--b2)", display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 13, color: "var(--rd)", fontWeight: 600, flex: 1 }}>¿Eliminar esta dirección?</span>
+                    <button
+                      disabled={deletingAddr}
+                      onClick={async () => { setDeletingAddr(true); await removeAddress(a.id); setDeletingAddr(false); setConfirmDeleteId(null); }}
+                      style={{ padding: "7px 16px", background: "var(--rd)", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                    >{deletingAddr ? "..." : "Eliminar"}</button>
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      style={{ padding: "7px 16px", background: "var(--b2)", color: "var(--tx)", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                    >Cancelar</button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
