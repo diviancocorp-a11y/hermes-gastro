@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { fi, saleCode } from "../lib/utils";
+import { fi, saleCode, imgOpt } from "../lib/utils";
+import { supabase } from "../lib/supabase";
+import { validateCouponPublic } from "../lib/catalogService";
 
-const TABS = ["perfil", "direcciones", "historial", "favoritos"];
-const TAB_ICONS = { perfil: "👤", direcciones: "📍", historial: "📦", favoritos: "❤️" };
+const TABS = ["perfil", "direcciones", "historial", "favoritos", "cupones"];
+const TAB_ICONS = { perfil: "👤", direcciones: "📍", historial: "📦", favoritos: "❤️", cupones: "🎟️" };
 
 export default function MyAccount() {
   const navigate = useNavigate();
@@ -38,6 +40,15 @@ export default function MyAccount() {
   const [addrText, setAddrText] = useState("");
   const [addrNotes, setAddrNotes] = useState("");
   const [addingAddr, setAddingAddr] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
+
+  // Favorites products
+  const [favProducts, setFavProducts] = useState([]);
+
+  // Cupones
+  const [couponCode, setCouponCode] = useState("");
+  const [couponCheckLoading, setCouponCheckLoading] = useState(false);
+  const [couponCheckResult, setCouponCheckResult] = useState(null);
 
   // Sync profile fields
   useEffect(() => {
@@ -54,6 +65,24 @@ export default function MyAccount() {
       getOrderHistory().then(data => { setOrders(data); setLoadingOrders(false); });
     }
   }, [tab, user]);
+
+  // Load favorite products
+  useEffect(() => {
+    if (tab === "favoritos" && favorites.length > 0) {
+      const fetchFavProducts = async () => {
+        const { data, error } = await supabase
+          .from('recipes')
+          .select('id, name, sale_price, image_url, category')
+          .in('id', favorites);
+        if (!error && data) {
+          setFavProducts(data);
+        }
+      };
+      fetchFavProducts();
+    } else if (tab === "favoritos" && favorites.length === 0) {
+      setFavProducts([]);
+    }
+  }, [tab, favorites]);
 
   if (loading) return (
     <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
@@ -324,6 +353,27 @@ export default function MyAccount() {
                     }}>{l}</button>
                   ))}
                 </div>
+                <button
+                  onClick={async () => {
+                    setGeoLoading(true);
+                    try {
+                      const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject);
+                      });
+                      const { latitude, longitude } = position.coords;
+                      const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+                      const geoData = await geoRes.json();
+                      setAddrText(geoData.address?.road ? `${geoData.address.road}${geoData.address.house_number ? ' ' + geoData.address.house_number : ''}, ${geoData.address.city || geoData.address.town || geoData.address.village || ''}` : geoData.display_name);
+                    } catch (err) {
+                      alert("No pudimos obtener tu ubicación. Asegúrate de permitir acceso a la ubicación en tu navegador.");
+                    }
+                    setGeoLoading(false);
+                  }}
+                  disabled={geoLoading}
+                  style={{ padding: "8px 14px", background: "var(--bg)", border: "1px solid var(--b2)", borderRadius: 10, fontSize: 12, fontWeight: 600, color: "var(--t2)", cursor: "pointer", marginBottom: 8, width: "100%" }}
+                >
+                  {geoLoading ? "Localizando..." : "📍 Usar mi ubicación actual"}
+                </button>
                 <input className="cki" value={addrText} onChange={e => setAddrText(e.target.value)} placeholder="Calle, número, localidad..." style={{ marginBottom: 8 }} />
                 <input className="cki" value={addrNotes} onChange={e => setAddrNotes(e.target.value)} placeholder="Piso, depto, timbre (opcional)" style={{ marginBottom: 12 }} />
                 <button
@@ -387,17 +437,33 @@ export default function MyAccount() {
             {orders.map(o => {
               const statusMap = { new: "Nuevo", confirmed: "Confirmado", preparing: "Preparando", ready: "Listo", delivering: "En camino", delivered: "Entregado", cancelled: "Cancelado" };
               const statusColors = { new: "#1976D2", confirmed: "#7B1FA2", preparing: "#E65100", ready: "#2E7D32", delivering: "#0277BD", delivered: "#388E3C", cancelled: "#C62828" };
+              const isActive = ["new", "confirmed", "preparing", "ready", "delivering"].includes(o.status);
+              const isDelivered = o.status === "delivered";
               return (
-                <div key={o.id} onClick={() => navigate(`/order/${o.id}`)} style={{ background: "var(--bg)", border: "1px solid var(--b2)", borderRadius: 14, padding: "14px 16px", marginBottom: 8, cursor: "pointer" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <code style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", letterSpacing: 1 }}>{saleCode(o.id)}</code>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: statusColors[o.status] || "var(--t3)", background: `${statusColors[o.status] || "#999"}15`, padding: "3px 10px", borderRadius: 20 }}>
-                      {statusMap[o.status] || o.status}
-                    </span>
+                <div key={o.id} style={{ background: "var(--bg)", border: "1px solid var(--b2)", borderRadius: 14, padding: "14px 16px", marginBottom: 8 }}>
+                  <div onClick={() => navigate(`/order/${o.id}`)} style={{ cursor: "pointer" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <code style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", letterSpacing: 1 }}>{saleCode(o.id)}</code>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: statusColors[o.status] || "var(--t3)", background: `${statusColors[o.status] || "#999"}15`, padding: "3px 10px", borderRadius: 20 }}>
+                        {statusMap[o.status] || o.status}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--t3)" }}>
+                      <span>{o.date || o.created_at?.split("T")[0]}</span>
+                      <span style={{ fontWeight: 700, color: "var(--tx)" }}>${fi(o.total)}</span>
+                    </div>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--t3)" }}>
-                    <span>{o.date || o.created_at?.split("T")[0]}</span>
-                    <span style={{ fontWeight: 700, color: "var(--tx)" }}>${fi(o.total)}</span>
+                  <div style={{ display: "flex", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--b2)" }}>
+                    {isActive && (
+                      <button onClick={() => navigate(`/order/${o.id}`)} style={{ flex: 1, padding: "6px 8px", background: "var(--ac)", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                        🔴 Seguir pedido
+                      </button>
+                    )}
+                    {isDelivered && (
+                      <button onClick={() => navigate("/")} style={{ flex: 1, padding: "6px 8px", background: "var(--ac)", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                        🔄 Repetir pedido
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -419,15 +485,99 @@ export default function MyAccount() {
               </div>
             )}
 
-            {favorites.length > 0 && (
-              <p style={{ fontSize: 13, color: "var(--t3)", marginBottom: 12 }}>
-                Tenés {favorites.length} producto{favorites.length > 1 ? "s" : ""} en favoritos. Visitá la tienda para verlos destacados.
-              </p>
+            {favorites.length > 0 && favProducts.length > 0 && (
+              <div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12, marginBottom: 16 }}>
+                  {favProducts.map(p => (
+                    <div key={p.id} style={{ background: "var(--bg)", border: "1px solid var(--b2)", borderRadius: 12, overflow: "hidden", cursor: "pointer" }} onClick={() => navigate(`/product/${p.id}`)}>
+                      <div style={{ width: "100%", aspectRatio: "1", overflow: "hidden", background: "var(--b2)" }}>
+                        {p.image_url && <img src={imgOpt(p.image_url, 200, 200)} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                      </div>
+                      <div style={{ padding: "12px", fontSize: 12 }}>
+                        <div style={{ fontWeight: 600, color: "var(--tx)", marginBottom: 4, minHeight: "2.4em", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{p.name}</div>
+                        {p.category && <div style={{ fontSize: 11, color: "var(--t3)", marginBottom: 6 }}>{p.category}</div>}
+                        {p.sale_price && <div style={{ fontWeight: 700, color: "var(--ac)" }}>${fi(p.sale_price)}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => navigate("/")} className="abtn" style={{ width: "100%", fontSize: 14 }}>
+                  Ir a la tienda
+                </button>
+              </div>
             )}
+          </div>
+        )}
 
-            <button onClick={() => navigate("/")} className="abtn" style={{ width: "100%", fontSize: 14 }}>
-              Ir a la tienda
-            </button>
+        {/* ─── CUPONES Y DESCUENTOS ─── */}
+        {tab === "cupones" && (
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 16 }}>Descuentos y cupones</div>
+
+            <div style={{ background: "linear-gradient(135deg, #E3F2FD, #F3E5F5)", borderRadius: 14, padding: "16px", marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1565C0", marginBottom: 8 }}>Descuentos Rotativos Diarios</div>
+              <p style={{ fontSize: 12, color: "#283593", lineHeight: 1.6, marginBottom: 10 }}>
+                Cada lunes a jueves tenemos un descuento del 15% en diferentes categorías:
+              </p>
+              <div style={{ display: "grid", gap: 6 }}>
+                {[
+                  { day: "Lunes", categories: "Pastas" },
+                  { day: "Martes", categories: "Salsas y condimentos" },
+                  { day: "Miércoles", categories: "Conservas" },
+                  { day: "Jueves", categories: "Bebidas" }
+                ].map((d, i) => (
+                  <div key={i} style={{ fontSize: 12, color: "#1565C0" }}>
+                    <strong>{d.day}:</strong> {d.categories}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ background: "var(--b2)", borderRadius: 14, padding: "16px" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", marginBottom: 10 }}>Validar cupón</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  className="cki"
+                  type="text"
+                  value={couponCode}
+                  onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponCheckResult(null); }}
+                  placeholder="Ingresá tu código"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  onClick={async () => {
+                    if (!couponCode.trim()) return;
+                    setCouponCheckLoading(true);
+                    try {
+                      const result = await validateCouponPublic(couponCode);
+                      setCouponCheckResult(result);
+                    } catch (err) {
+                      setCouponCheckResult({ valid: false, message: "Error al validar el cupón" });
+                    }
+                    setCouponCheckLoading(false);
+                  }}
+                  disabled={couponCheckLoading || !couponCode.trim()}
+                  className="abtn"
+                  style={{ fontSize: 13, padding: "10px 16px", whiteSpace: "nowrap" }}
+                >
+                  {couponCheckLoading ? "Validando..." : "Validar"}
+                </button>
+              </div>
+
+              {couponCheckResult && (
+                <div style={{
+                  marginTop: 12,
+                  padding: "12px",
+                  borderRadius: 10,
+                  background: couponCheckResult.valid ? "#E8F5E9" : "#FFEBEE",
+                  border: `1px solid ${couponCheckResult.valid ? "#81C784" : "#EF5350"}`,
+                  fontSize: 12,
+                  color: couponCheckResult.valid ? "#2E7D32" : "#C62828"
+                }}>
+                  {couponCheckResult.valid ? "✓" : "✕"} {couponCheckResult.message || (couponCheckResult.valid ? "Cupón válido" : "Cupón no válido")}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

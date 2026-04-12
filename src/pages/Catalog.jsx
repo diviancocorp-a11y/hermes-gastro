@@ -113,7 +113,7 @@ export default function Catalog() {
   const [orderId, setOrderId] = useState(null);
   const [sending, setSending] = useState(false);
   const [orderErr, setOrderErr] = useState("");
-  const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "", change_amount: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", address_piso: "", address_notas: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "", change_amount: null });
   const [scheduleMode, setScheduleMode] = useState("now"); // "now" | "later"
   const [ckStep, setCkStep] = useState(0); // 0=Datos, 1=Entrega, 2=Pago, 3=Resumen
   const [faqOpen, setFaqOpen] = useState(null); // índice de FAQ abierta
@@ -128,6 +128,7 @@ export default function Catalog() {
   const [deliveryCost, setDeliveryCost] = useState(0);
   const [deliveryKm, setDeliveryKm] = useState(null);
   const [calcingDelivery, setCalcingDelivery] = useState(false);
+  const [confirmAnim, setConfirmAnim] = useState(false); // animación de confirmación
 
   // Coordenadas del local: Andrés Chazarreta 1435, Villa Rosa, Pilar
   const STORE_LAT = -34.4295;
@@ -189,6 +190,7 @@ export default function Catalog() {
   const [showTrackerInput, setShowTrackerInput] = useState(false);
   const [trackerCode, setTrackerCode] = useState("");
   const [showMenu, setShowMenu] = useState(false);
+  const [scheduleTimeErr, setScheduleTimeErr] = useState(""); // error validación hora programada
 
   const sf = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -224,6 +226,35 @@ export default function Catalog() {
     if (nowMins >= closeMins) return { open: false, msg: `Cerramos a las ${today.close}. Podés programar tu pedido.` };
     return { open: true, msg: `Abierto hasta las ${today.close}` };
   }, [sett, serverNow]);
+
+  // Validar horario de entrega programada (debe estar dentro del horario del local)
+  const validateScheduledTime = (time) => {
+    if (!time || !sett?.store_hours) return "";
+    const hrs = sett.store_hours;
+    const now = serverNow || new Date();
+    const dayIdx = (now.getDay() + 6) % 7; // JS: 0=Dom → nuestro: 0=Lun
+    const today = hrs[dayIdx];
+    if (!today || !today.open || !today.close) return "";
+
+    const [oh, om] = today.open.split(":").map(Number);
+    const [ch, cm] = today.close.split(":").map(Number);
+    const [th, tm] = time.split(":").map(Number);
+
+    const openMins = oh * 60 + om + 60; // +1h después de abrir
+    const closeMins = ch * 60 + cm - 60; // -1h antes de cerrar
+    const timeMins = th * 60 + tm;
+
+    if (timeMins < openMins) {
+      const minTime = `${String(Math.floor(openMins / 60)).padStart(2, "0")}:${String(openMins % 60).padStart(2, "0")}`;
+      return `Horario mínimo: ${minTime}`;
+    }
+    if (timeMins > closeMins) {
+      const maxTime = `${String(Math.floor(closeMins / 60)).padStart(2, "0")}:${String(closeMins % 60).padStart(2, "0")}`;
+      return `Horario máximo: ${maxTime}`;
+    }
+    return "";
+  };
+
   // Si el local está cerrado, forzar modo "Programar"
   useEffect(() => {
     if (!storeStatus.open && scheduleMode === "now") setScheduleMode("later");
@@ -351,15 +382,17 @@ export default function Catalog() {
     e.stopPropagation();
     const finalPrice = getPrice(p);
     setCart(prev => {
-      const ex = prev.find(i => i.id === p.id);
-      if (ex) return prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i);
-      return [...prev, { id: p.id, name: p.name, price: finalPrice, qty: 1, img: p.image_url }];
+      const isNewProduct = !prev.find(i => i.id === p.id);
+      const newCart = isNewProduct
+        ? [...prev, { id: p.id, name: p.name, price: finalPrice, qty: 1, img: p.image_url }]
+        : prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i);
+      // Upselling: mostrar sugerencias SOLO si el producto es nuevo en el carrito
+      if (isNewProduct && p.related_ids && p.related_ids.length > 0) {
+        const suggestions = products.filter(x => p.related_ids.includes(x.id));
+        if (suggestions.length > 0) setUpsell({ product: p, suggestions: suggestions.slice(0, 3) });
+      }
+      return newCart;
     });
-    // Upselling: mostrar sugerencias si el producto tiene related_ids
-    if (p.related_ids && p.related_ids.length > 0) {
-      const suggestions = products.filter(x => p.related_ids.includes(x.id));
-      if (suggestions.length > 0) setUpsell({ product: p, suggestions: suggestions.slice(0, 3) });
-    }
   }, [products, getPrice]);
 
   // Agregar desde upsell y cerrar popup (memoizado)
@@ -382,6 +415,13 @@ export default function Catalog() {
   // Enviar pedido a Supabase
   const send = async () => {
     setSending(true); setOrderErr("");
+    // Construir dirección completa con piso y notas de referencia
+    let fullAddress = form.address || "";
+    if (form.delivery === "envio") {
+      if (form.address_piso) fullAddress += ` - Piso/Depto: ${form.address_piso}`;
+      if (form.address_notas) fullAddress += ` - ${form.address_notas}`;
+    }
+
     // Construir nota con hora programada si aplica
     let finalNote = form.note || "";
     if (scheduleMode === "later" && form.delivery_time) {
@@ -400,7 +440,7 @@ export default function Catalog() {
       email: user ? user.email : form.email,
       delivery: form.delivery,
       payment: form.payment,
-      address: form.address,
+      address: fullAddress,
       note: finalNote,
       is_gift: form.is_gift,
       gift_note: form.is_gift ? form.gift_note : '',
@@ -453,19 +493,21 @@ export default function Catalog() {
         }
       }
       setOrderId(result.orderId);
-      // Para pagos digitales con comprobante: mostrar pantalla de espera
-      if (isDigital && receiptFile) {
-        setWaitingReceipt(true);
-        setWaitTimer(60);
-      } else {
-        setSent(true);
-      }
+      // Mostrar animación de confirmación
+      setConfirmAnim(true);
       setCart([]);
-      setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "", change_amount: "" });
+      setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", address_piso: "", address_notas: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "", change_amount: null });
       setScheduleMode("now");
       setCoupon(null); setCouponCode("");
       setCkStep(0);
       setReceiptFile(null); setReceiptPreview(null); setReceiptStatus("");
+      // Después de 1.5s, pasar a la siguiente pantalla
+      setTimeout(() => {
+        setConfirmAnim(false);
+        // Todos los pedidos pasan por la pantalla de 60s
+        setWaitingReceipt(true);
+        setWaitTimer(60);
+      }, 1500);
     } else {
       console.error("Pedido no se guardó en Supabase.");
       setOrderErr("No pudimos procesar tu pedido. Revisá tu conexión e intentá de nuevo.");
@@ -479,6 +521,47 @@ export default function Catalog() {
         <div style={{ width: 60, height: 60, borderRadius: 18, background: "#C45D3E", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Serif Display',serif", fontSize: 28, margin: "0 auto 16px" }}>N</div>
         <p style={{ color: "var(--t3)", fontSize: 15 }}>Cargando catálogo...</p>
       </div>
+    </div>
+  );
+
+  // --- VISTA: ANIMACIÓN DE CONFIRMACIÓN ---
+  if (confirmAnim) return (
+    <div className="po" style={{ zIndex: 250, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32 }}>
+      <style>{`
+        @keyframes confirmCheckmark {
+          0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes heartBeat {
+          0%, 100% { transform: scale(1); }
+          25% { transform: scale(1.2); }
+          50% { transform: scale(1.3); }
+        }
+        .confirm-circle { animation: confirmCheckmark 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards; }
+        .confirm-heart { animation: heartBeat 1.2s ease-in-out 0.6s forwards; opacity: 0; }
+      `}</style>
+      <div style={{ position: "relative", width: 120, height: 120, marginBottom: 32 }}>
+        <div className="confirm-circle" style={{
+          width: 120,
+          height: 120,
+          borderRadius: "50%",
+          background: "var(--gn, #3A7D44)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 60,
+          color: "#fff",
+          fontWeight: 700
+        }}>✓</div>
+        <div className="confirm-heart" style={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          fontSize: 40
+        }}>❤️</div>
+      </div>
+      <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 24, margin: 0 }}>¡Pedido confirmado!</h2>
     </div>
   );
 
@@ -536,6 +619,17 @@ export default function Catalog() {
             </div>
             <p style={{ fontSize: 11, color: "var(--t3)", marginTop: 8, marginBottom: 0 }}>Usá este código para reclamos, factura o seguimiento.</p>
           </div>
+          {form.delivery === "retiro" && (
+            <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--b2)", borderRadius: 12 }}>
+              <div style={{ fontSize: 12, color: "var(--t3)", marginBottom: 8, fontWeight: 600 }}>📍 Retirá en:</div>
+              <div style={{ fontSize: 14, color: "var(--tx)", lineHeight: 1.5, marginBottom: 10 }}>
+                Andrés Chazarreta 1435<br/>Villa Rosa, Pilar<br/>Buenos Aires
+              </div>
+              <a href="https://maps.google.com/?q=Andrés+Chazarreta+1435+Villa+Rosa+Pilar+Buenos+Aires" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ac)", fontWeight: 600, textDecoration: "none" }}>
+                📌 Ver en Google Maps
+              </a>
+            </div>
+          )}
         </>)}
         {wasPaidDigital && (
           <a href="https://wa.me/5491165706805?text=Hola!%20Acabo%20de%20hacer%20un%20pedido%20y%20tengo%20una%20consulta" target="_blank" rel="noopener noreferrer"
@@ -641,14 +735,19 @@ export default function Catalog() {
                 </div>
                 <div style={{flex:1}}>
                   <label style={{fontSize:11,fontWeight:700,color:"var(--t3)",marginBottom:4,display:"block"}}>Hora de entrega</label>
-                  <input className="cki" type="time" value={form.delivery_time} onChange={e => sf("delivery_time", e.target.value)} style={{colorScheme:"light"}} />
+                  <input className="cki" type="time" value={form.delivery_time} onChange={e => {
+                    sf("delivery_time", e.target.value);
+                    const err = validateScheduledTime(e.target.value);
+                    setScheduleTimeErr(err);
+                  }} style={{colorScheme:"light"}} />
                 </div>
               </div>
               {(!form.delivery_date || !form.delivery_time) && <p style={{fontSize:11,color:"var(--rd)",margin:"6px 0 0 2px"}}>{!form.delivery_date ? "Seleccioná una fecha" : "Seleccioná la hora de entrega"}</p>}
+              {scheduleTimeErr && <p style={{fontSize:11,color:"var(--rd)",margin:"6px 0 0 2px"}}>⏰ {scheduleTimeErr}</p>}
             </div>
           )}
 
-          <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time)) || (!user && !guestMode && !form.email)} onClick={goNext}>Siguiente →</button>
+          <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time)) || (!user && !guestMode && !form.email) || (scheduleMode === "later" && scheduleTimeErr)} onClick={goNext}>Siguiente →</button>
         </>}
 
         {/* ─── PASO 1: ENTREGA ─── */}
@@ -736,8 +835,14 @@ export default function Catalog() {
                 // Debounce: estimar envío 1.5s después de dejar de tipear
                 clearTimeout(window._deliveryTimer);
                 window._deliveryTimer = setTimeout(() => estimateDelivery(e.target.value), 1500);
-              }} placeholder="Calle, número, piso, localidad..." />
+              }} placeholder="Calle y número" />
               {form.address && form.address.length < 5 && <p style={{fontSize:11,color:"var(--rd)",margin:"4px 0 0 4px"}}>Ingresá una dirección más completa</p>}
+
+              {/* Piso / Depto */}
+              <input className="cki" value={form.address_piso} onChange={e => sf("address_piso", e.target.value)} placeholder="Piso / Depto (opcional)" style={{marginTop:10}} />
+
+              {/* Notas de referencia */}
+              <input className="cki" value={form.address_notas} onChange={e => sf("address_notas", e.target.value)} placeholder="Notas de referencia (timbre, esquina, etc.)" style={{marginTop:10}} />
 
               {/* Estimación de envío */}
               {calcingDelivery && <div style={{marginTop:8,fontSize:13,color:"var(--ac)",fontWeight:600}}>🔄 Calculando costo de envío...</div>}
@@ -755,7 +860,8 @@ export default function Catalog() {
             </div>
           )}
 
-          <div className="cks"><div className="ckl">💬 Notas</div><input className="cki" value={form.note} onChange={e => sf("note", e.target.value)} placeholder="Ej: Sin azúcar, timbre 2B..." /></div>
+          {form.delivery === "envio" && <div className="cks"><div className="ckl">💬 Notas adicionales</div><input className="cki" value={form.note} onChange={e => sf("note", e.target.value)} placeholder="Ej: Sin azúcar, no abierto..." /></div>}
+          {form.delivery === "retiro" && <div className="cks"><div className="ckl">💬 Notas</div><input className="cki" value={form.note} onChange={e => sf("note", e.target.value)} placeholder="Ej: Sin azúcar, sin cebolla..." /></div>}
 
           <button className="abtn ck-next" disabled={!canNext1} onClick={goNext}>Siguiente →</button>
         </>}
@@ -791,12 +897,34 @@ export default function Catalog() {
             <div className="ck-pay-detail">
               <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>¿Con cuánto pagás?</div>
               <div style={{display:"flex",gap:10}}>
-                <button className={`ck-denom ${form.change_amount === "justo" ? "on" : ""}`} style={{flex:1,padding:"14px"}} onClick={() => sf("change_amount", "justo")}>Pago justo</button>
-                <button className={`ck-denom ${form.change_amount !== "justo" && form.change_amount ? "on" : ""}`} style={{flex:1,padding:"14px"}} onClick={() => sf("change_amount", "")}>Necesito vuelto</button>
+                <button style={{
+                  flex:1,
+                  padding:"14px",
+                  background: form.change_amount === "justo" ? "var(--ac)" : "var(--b2)",
+                  color: form.change_amount === "justo" ? "#fff" : "var(--tx)",
+                  border:"none",
+                  borderRadius:12,
+                  fontWeight:700,
+                  fontSize:14,
+                  cursor:"pointer",
+                  transition:"all .2s"
+                }} onClick={() => sf("change_amount", "justo")}>Pago justo</button>
+                <button style={{
+                  flex:1,
+                  padding:"14px",
+                  background: form.change_amount !== null && form.change_amount !== "justo" ? "var(--ac)" : "var(--b2)",
+                  color: form.change_amount !== null && form.change_amount !== "justo" ? "#fff" : "var(--tx)",
+                  border:"none",
+                  borderRadius:12,
+                  fontWeight:700,
+                  fontSize:14,
+                  cursor:"pointer",
+                  transition:"all .2s"
+                }} onClick={() => sf("change_amount", "")}>Necesito vuelto</button>
               </div>
-              {form.change_amount !== "justo" && form.change_amount !== undefined && form.change_amount !== "justo" && (
+              {form.change_amount !== null && form.change_amount !== "justo" && (
                 <div style={{marginTop:10}}>
-                  <input className="cki" type="number" inputMode="numeric" value={form.change_amount === "justo" ? "" : form.change_amount} onChange={e => sf("change_amount", e.target.value.replace(/\D/g,""))} placeholder={`Ej: si pagás con $${fi(Math.ceil(ctWithDelivery/1000)*1000)}`} style={{fontSize:16}} />
+                  <input className="cki" type="number" inputMode="numeric" value={form.change_amount === "justo" ? "" : form.change_amount} onChange={e => sf("change_amount", e.target.value.replace(/\D/g,""))} placeholder="Ej: pago con $20.000" style={{fontSize:16}} />
                 </div>
               )}
             </div>
