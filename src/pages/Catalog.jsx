@@ -753,6 +753,12 @@ export default function Catalog() {
             </div>
           )}
 
+          {/* Notas del pedido */}
+          <div className="cks">
+            <div className="ckl">💬 Notas del pedido</div>
+            <input className="cki" value={form.note} onChange={e => sf("note", e.target.value)} placeholder="Ej: Sin azúcar, sin cebolla, para las 15hs..." />
+          </div>
+
           <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time)) || (!user && !guestMode && !form.email) || (scheduleMode === "later" && scheduleTimeErr)} onClick={goNext}>Siguiente →</button>
         </>}
 
@@ -766,27 +772,7 @@ export default function Catalog() {
                 <div style={{fontWeight:700,fontSize:14}}>Retiro en local</div>
                 <div style={{fontSize:12,color:"var(--t3)",marginTop:4,lineHeight:1.4}}>Andrés Chazarreta 1435, Villa Rosa, Pilar, Buenos Aires</div>
               </div>
-              <div className={`ckv-card ${form.delivery === "envio" ? "on" : ""}`} onClick={() => {
-                sf("delivery", "envio");
-                // Auto-trigger geolocation al elegir delivery
-                if (navigator.geolocation && !form.address) {
-                  setGeoLoading(true);
-                  navigator.geolocation.getCurrentPosition(async (pos) => {
-                    try {
-                      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
-                      const d = await r.json();
-                      if (d.display_name) {
-                        const addr = d.display_name.split(",").slice(0,4).join(",");
-                        sf("address", addr);
-                        // Calcular costo con coordenadas directas (más preciso)
-                        const km = haversine(STORE_LAT, STORE_LNG, pos.coords.latitude, pos.coords.longitude);
-                        setDeliveryKm(Math.round(km * 10) / 10);
-                        setDeliveryCost(calcDeliveryCost(km));
-                      }
-                    } catch {} finally { setGeoLoading(false); }
-                  }, () => setGeoLoading(false), {enableHighAccuracy:true});
-                }
-              }}>
+              <div className={`ckv-card ${form.delivery === "envio" ? "on" : ""}`} onClick={() => sf("delivery", "envio")}>
                 <div style={{fontSize:22,marginBottom:6}}>🚚</div>
                 <div style={{fontWeight:700,fontSize:14}}>Delivery</div>
                 <div style={{fontSize:12,color:"var(--t3)",marginTop:4}}>Te lo llevamos a tu dirección</div>
@@ -806,49 +792,87 @@ export default function Catalog() {
 
           {form.delivery === "envio" && (
             <div className="cks">
-              <div className="ckl">📍 Tu dirección</div>
+              <div className="ckl">📍 Dirección de entrega</div>
 
               {/* Direcciones guardadas del usuario */}
               {user && addresses.length > 0 && (
-                <div style={{marginBottom:10}}>
-                  <div style={{fontSize:12,fontWeight:600,color:"var(--t3)",marginBottom:6}}>Direcciones guardadas</div>
+                <div style={{marginBottom:12}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"var(--t3)",marginBottom:6}}>Seleccioná una dirección guardada</div>
                   <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                    {addresses.map(a => (
-                      <button key={a.id} onClick={() => {
-                        sf("address", a.address + (a.notes ? ` (${a.notes})` : ""));
-                        if (a.lat && a.lng) {
-                          const km = haversine(STORE_LAT, STORE_LNG, a.lat, a.lng);
-                          setDeliveryKm(Math.round(km * 10) / 10);
-                          setDeliveryCost(calcDeliveryCost(km));
-                        } else {
-                          estimateDelivery(a.address);
-                        }
-                      }} style={{
-                        width:"100%",padding:"10px 14px",background: form.address.includes(a.address) ? "var(--ac)" : "var(--b2)",
-                        color: form.address.includes(a.address) ? "#fff" : "var(--tx)",
-                        border:"none",borderRadius:12,textAlign:"left",cursor:"pointer",fontSize:13,lineHeight:1.4
-                      }}>
-                        <span style={{fontWeight:700}}>{a.label}:</span> {a.address}{a.notes ? ` · ${a.notes}` : ""}
-                      </button>
-                    ))}
+                    {addresses.map(a => {
+                      const isSelected = form.address === a.address;
+                      return (
+                        <button key={a.id} onClick={() => {
+                          sf("address", a.address);
+                          sf("address_piso", a.notes || "");
+                          if (a.lat && a.lng) {
+                            const km = haversine(STORE_LAT, STORE_LNG, a.lat, a.lng);
+                            setDeliveryKm(Math.round(km * 10) / 10);
+                            setDeliveryCost(calcDeliveryCost(km));
+                          } else {
+                            estimateDelivery(a.address);
+                          }
+                        }} style={{
+                          width:"100%",padding:"10px 14px",background: isSelected ? "var(--ac)" : "var(--b2)",
+                          color: isSelected ? "#fff" : "var(--tx)",
+                          border:"none",borderRadius:12,textAlign:"left",cursor:"pointer",fontSize:13,lineHeight:1.4
+                        }}>
+                          <span style={{fontWeight:700}}>{a.label}:</span> {a.address}
+                          {a.notes && <span style={{opacity:0.7,fontSize:12}}> · {a.notes}</span>}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {geoLoading && <div style={{padding:"10px 0",fontSize:13,color:"var(--ac)",fontWeight:600}}>📍 Obteniendo tu ubicación...</div>}
               <input className="cki" value={form.address} onChange={e => {
                 sf("address", e.target.value);
-                // Debounce: estimar envío 1.5s después de dejar de tipear
                 clearTimeout(window._deliveryTimer);
                 window._deliveryTimer = setTimeout(() => estimateDelivery(e.target.value), 1500);
-              }} placeholder="Calle y número" />
+              }} placeholder="Calle y número (Ej: Av. San Martín 1234)" />
               {form.address && form.address.length < 5 && <p style={{fontSize:11,color:"var(--rd)",margin:"4px 0 0 4px"}}>Ingresá una dirección más completa</p>}
+
+              {/* Botón GPS: Usar mi ubicación actual */}
+              <button
+                onClick={async () => {
+                  if (!navigator.geolocation) { alert("Tu navegador no soporta geolocalización"); return; }
+                  setGeoLoading(true);
+                  try {
+                    const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000 }));
+                    const { latitude, longitude } = pos.coords;
+                    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&zoom=18`);
+                    const d = await r.json();
+                    const a = d.address || {};
+                    const street = a.road || a.pedestrian || a.footway || "";
+                    const number = a.house_number || "S/N";
+                    const locality = a.city || a.town || a.village || a.suburb || "";
+                    const fullAddr = street ? `${street} ${number}, ${locality}`.trim() : d.display_name?.split(",").slice(0, 3).join(",") || "";
+                    sf("address", fullAddr);
+                    const km = haversine(STORE_LAT, STORE_LNG, latitude, longitude);
+                    setDeliveryKm(Math.round(km * 10) / 10);
+                    setDeliveryCost(calcDeliveryCost(km));
+                  } catch {
+                    alert("No pudimos obtener tu ubicación. Asegurate de permitir acceso a la ubicación en tu navegador.");
+                  }
+                  setGeoLoading(false);
+                }}
+                disabled={geoLoading}
+                style={{
+                  marginTop:8, width:"100%", padding:"10px 14px", background:"var(--bg)",
+                  border:"1.5px dashed var(--b2)", borderRadius:10, fontSize:13, fontWeight:600,
+                  color:"var(--ac)", cursor:"pointer", display:"flex", alignItems:"center",
+                  justifyContent:"center", gap:6, transition:"all .2s"
+                }}
+              >
+                {geoLoading ? "📍 Localizando..." : "📍 Usar mi ubicación actual"}
+              </button>
 
               {/* Piso / Depto */}
               <input className="cki" value={form.address_piso} onChange={e => sf("address_piso", e.target.value)} placeholder="Piso / Depto (opcional)" style={{marginTop:10}} />
 
-              {/* Notas de referencia */}
-              <input className="cki" value={form.address_notas} onChange={e => sf("address_notas", e.target.value)} placeholder="Notas de referencia (timbre, esquina, etc.)" style={{marginTop:10}} />
+              {/* Notas de referencia para el delivery */}
+              <input className="cki" value={form.address_notas} onChange={e => sf("address_notas", e.target.value)} placeholder="Referencia para el delivery (timbre, esquina...)" style={{marginTop:10}} />
 
               {/* Estimación de envío */}
               {calcingDelivery && <div style={{marginTop:8,fontSize:13,color:"var(--ac)",fontWeight:600}}>🔄 Calculando costo de envío...</div>}
@@ -865,9 +889,6 @@ export default function Catalog() {
               )}
             </div>
           )}
-
-          {form.delivery === "envio" && <div className="cks"><div className="ckl">💬 Notas adicionales</div><input className="cki" value={form.note} onChange={e => sf("note", e.target.value)} placeholder="Ej: Sin azúcar, no abierto..." /></div>}
-          {form.delivery === "retiro" && <div className="cks"><div className="ckl">💬 Notas</div><input className="cki" value={form.note} onChange={e => sf("note", e.target.value)} placeholder="Ej: Sin azúcar, sin cebolla..." /></div>}
 
           <button className="abtn ck-next" disabled={!canNext1} onClick={goNext}>Siguiente →</button>
         </>}

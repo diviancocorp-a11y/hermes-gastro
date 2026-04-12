@@ -360,14 +360,18 @@ export default function MyAccount() {
                     setGeoLoading(true);
                     try {
                       const position = await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject);
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 });
                       });
                       const { latitude, longitude } = position.coords;
-                      const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+                      const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&zoom=18`);
                       const geoData = await geoRes.json();
-                      setAddrText(geoData.address?.road ? `${geoData.address.road}${geoData.address.house_number ? ' ' + geoData.address.house_number : ''}, ${geoData.address.city || geoData.address.town || geoData.address.village || ''}` : geoData.display_name);
+                      const a = geoData.address || {};
+                      const street = a.road || a.pedestrian || a.footway || "";
+                      const number = a.house_number || "S/N";
+                      const locality = a.city || a.town || a.village || a.suburb || "";
+                      setAddrText(street ? `${street} ${number}, ${locality}`.trim() : geoData.display_name?.split(",").slice(0, 3).join(",") || "");
                     } catch (err) {
-                      alert("No pudimos obtener tu ubicación. Asegúrate de permitir acceso a la ubicación en tu navegador.");
+                      alert("No pudimos obtener tu ubicación. Asegurate de permitir acceso a la ubicación en tu navegador.");
                     }
                     setGeoLoading(false);
                   }}
