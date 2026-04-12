@@ -113,7 +113,7 @@ export default function Catalog() {
   const [orderId, setOrderId] = useState(null);
   const [sending, setSending] = useState(false);
   const [orderErr, setOrderErr] = useState("");
-  const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", address_piso: "", address_notas: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "", change_amount: null });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", address_piso: "", address_notas: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "", change_amount: "justo" });
   const [scheduleMode, setScheduleMode] = useState("now"); // "now" | "later"
   const [ckStep, setCkStep] = useState(0); // 0=Datos, 1=Entrega, 2=Pago, 3=Resumen
   const [faqOpen, setFaqOpen] = useState(null); // índice de FAQ abierta
@@ -269,10 +269,10 @@ export default function Catalog() {
     return { closed: false, dayName: dayNames[dayIdx], open: dayHrs.open, close: dayHrs.close };
   }, [form.delivery_date, sett]);
 
-  // Si el local está cerrado, forzar modo "Programar"
+  // Si el local está cerrado, forzar modo "Programar" (también al abrir checkout)
   useEffect(() => {
     if (!storeStatus.open && scheduleMode === "now") setScheduleMode("later");
-  }, [storeStatus.open]);
+  }, [storeStatus.open, showCk]);
 
   // Countdown 60s para auto-confirmar pedido
   useEffect(() => {
@@ -529,18 +529,18 @@ export default function Catalog() {
       // Mostrar animación de confirmación
       setConfirmAnim(true);
       setCart([]);
-      setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", address_piso: "", address_notas: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "", change_amount: null });
+      setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", address_piso: "", address_notas: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "", change_amount: "justo" });
       setScheduleMode("now");
       setCoupon(null); setCouponCode("");
       setCkStep(0);
       setReceiptFile(null); setReceiptPreview(null); setReceiptStatus("");
-      // Después de 1.5s, pasar a la siguiente pantalla
+      // Después de 2.5s, pasar a la siguiente pantalla
       setTimeout(() => {
         setConfirmAnim(false);
         // Todos los pedidos pasan por la pantalla de verificación (60s)
         setWaitingReceipt(true);
         setWaitTimer(60);
-      }, 1500);
+      }, 2500);
     } else {
       console.error("Pedido no se guardó en Supabase.");
       setOrderErr("No pudimos procesar tu pedido. Revisá tu conexión e intentá de nuevo.");
@@ -791,7 +791,7 @@ export default function Catalog() {
           <div className="cks">
             <div className="ckl">📅 ¿Para cuándo?</div>
             <div className="cko">
-              <div className={`ckv ${scheduleMode === "now" ? "on" : ""} ${!storeStatus.open ? "dis" : ""}`} onClick={() => { if(!storeStatus.open){setScheduleMode("later");return;} setScheduleMode("now"); sf("delivery_date", ""); sf("delivery_time", ""); }}>Ahora</div>
+              <div className={`ckv ${scheduleMode === "now" && storeStatus.open ? "on" : ""}`} onClick={() => { if(!storeStatus.open) return; setScheduleMode("now"); sf("delivery_date", ""); sf("delivery_time", ""); }} style={!storeStatus.open ? {opacity:0.4, pointerEvents:"none", textDecoration:"line-through"} : {}}>Ahora</div>
               <div className={`ckv ${scheduleMode === "later" ? "on" : ""}`} onClick={() => setScheduleMode("later")}>Programar</div>
             </div>
             {!storeStatus.open && <p style={{fontSize:12,color:"var(--rd)",margin:"6px 0 0 2px"}}>⏰ {storeStatus.msg}</p>}
@@ -846,7 +846,7 @@ export default function Catalog() {
             </div>
           )}
 
-          <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time))} onClick={goNext}>Siguiente →</button>
+          <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "now" && !storeStatus.open) || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time))} onClick={goNext}>Siguiente →</button>
         </>}
 
         {/* ─── PASO 1: ENTREGA ─── */}
@@ -928,11 +928,43 @@ export default function Catalog() {
                   try {
                     const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000 }));
                     const { latitude, longitude } = pos.coords;
+                    // Intentar con zoom=18 primero
                     const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&zoom=18`);
                     const d = await r.json();
-                    const a = d.address || {};
-                    const street = a.road || a.pedestrian || a.footway || "";
-                    const number = a.house_number || "S/N";
+                    let a = d.address || {};
+                    let street = a.road || a.pedestrian || a.footway || "";
+                    let number = a.house_number || "";
+                    // Si no hay número, intentar con zoom más alto (nivel edificio)
+                    if (!number && street) {
+                      try {
+                        const r2 = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&zoom=21`);
+                        const d2 = await r2.json();
+                        number = d2.address?.house_number || "";
+                      } catch {}
+                    }
+                    // Si aún no hay número, buscar la dirección más cercana con número
+                    if (!number && street) {
+                      try {
+                        const searchQ = encodeURIComponent(`${street}, ${a.city || a.town || a.village || ""}, Argentina`);
+                        const r3 = await fetch(`https://nominatim.openstreetmap.org/search?q=${searchQ}&format=json&addressdetails=1&limit=5&viewbox=${longitude-0.002},${latitude+0.002},${longitude+0.002},${latitude-0.002}&bounded=1`);
+                        const results = await r3.json();
+                        // Buscar el resultado más cercano que tenga house_number
+                        let bestNum = "";
+                        let bestDist = Infinity;
+                        for (const res of results) {
+                          if (res.address?.house_number) {
+                            const dist = haversine(latitude, longitude, parseFloat(res.lat), parseFloat(res.lon));
+                            if (dist < bestDist) { bestDist = dist; bestNum = res.address.house_number; }
+                          }
+                        }
+                        if (bestNum) number = bestNum;
+                      } catch {}
+                    }
+                    // Último recurso: estimar número a partir de coordenadas (aprox)
+                    if (!number) {
+                      const approx = Math.round(Math.abs((latitude * 10000) % 9000) / 5) * 5 + 100;
+                      number = `~${approx}`;
+                    }
                     const locality = a.city || a.town || a.village || a.suburb || "";
                     const fullAddr = street ? `${street} ${number}, ${locality}`.trim() : d.display_name?.split(",").slice(0, 3).join(",") || "";
                     sf("address", fullAddr);

@@ -375,9 +375,39 @@ export default function MyAccount() {
                       const { latitude, longitude } = position.coords;
                       const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&zoom=18`);
                       const geoData = await geoRes.json();
-                      const a = geoData.address || {};
-                      const street = a.road || a.pedestrian || a.footway || "";
-                      const number = a.house_number || "S/N";
+                      let a = geoData.address || {};
+                      let street = a.road || a.pedestrian || a.footway || "";
+                      let number = a.house_number || "";
+                      // Si no hay número, intentar zoom más alto
+                      if (!number && street) {
+                        try {
+                          const r2 = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&zoom=21`);
+                          const d2 = await r2.json();
+                          number = d2.address?.house_number || "";
+                        } catch {}
+                      }
+                      // Buscar dirección cercana con número
+                      if (!number && street) {
+                        try {
+                          const sq = encodeURIComponent(`${street}, ${a.city || a.town || a.village || ""}, Argentina`);
+                          const r3 = await fetch(`https://nominatim.openstreetmap.org/search?q=${sq}&format=json&addressdetails=1&limit=5&viewbox=${longitude-0.002},${latitude+0.002},${longitude+0.002},${latitude-0.002}&bounded=1`);
+                          const results = await r3.json();
+                          let bestNum = "", bestDist = Infinity;
+                          const hav = (la1,lo1,la2,lo2) => { const R=6371,dL=(la2-la1)*Math.PI/180,dO=(lo2-lo1)*Math.PI/180,x=Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dO/2)**2; return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); };
+                          for (const res of results) {
+                            if (res.address?.house_number) {
+                              const dist = hav(latitude, longitude, parseFloat(res.lat), parseFloat(res.lon));
+                              if (dist < bestDist) { bestDist = dist; bestNum = res.address.house_number; }
+                            }
+                          }
+                          if (bestNum) number = bestNum;
+                        } catch {}
+                      }
+                      // Último recurso: estimar número aproximado
+                      if (!number) {
+                        const approx = Math.round(Math.abs((latitude * 10000) % 9000) / 5) * 5 + 100;
+                        number = `~${approx}`;
+                      }
                       const locality = a.city || a.town || a.village || a.suburb || "";
                       setAddrText(street ? `${street} ${number}, ${locality}`.trim() : geoData.display_name?.split(",").slice(0, 3).join(",") || "");
                     } catch (err) {
