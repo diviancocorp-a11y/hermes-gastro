@@ -819,12 +819,6 @@ export default function Catalog() {
             </div>
           )}
 
-          {/* Notas del pedido */}
-          <div className="cks">
-            <div className="ckl">💬 Notas del pedido</div>
-            <input className="cki" value={form.note} onChange={e => sf("note", e.target.value)} placeholder="Ej: Sin azúcar, sin cebolla, para las 15hs..." />
-          </div>
-
           <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time))} onClick={goNext}>Siguiente →</button>
         </>}
 
@@ -1231,6 +1225,13 @@ export default function Catalog() {
           </div>
         ))}
         <div className="ct"><span>Total</span><span>${fi(ct)}</span></div>
+
+        {/* Notas del pedido */}
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--t2)",marginBottom:6}}>💬 Notas del pedido (opcional)</div>
+          <input className="cki" value={form.note} onChange={e => sf("note", e.target.value)} placeholder="Ej: Sin azúcar, sin cebolla, para las 15hs..." />
+        </div>
+
         <button className="abtn" style={{ width: "100%" }} disabled={cc === 0 || ct === 0} onClick={() => { setShowCart(false); setShowCk(true); }}>Continuar</button>
       </div>
     </div>
