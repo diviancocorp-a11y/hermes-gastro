@@ -547,6 +547,13 @@ export default function Catalog() {
     }
   };
 
+  // Sonido de pato al confirmar pedido
+  useEffect(() => {
+    if (confirmAnim) {
+      try { const a = new Audio('/quack.mp3'); a.play().catch(() => {}); } catch {}
+    }
+  }, [confirmAnim]);
+
   // --- VISTA: CARGANDO ---
   if (loading) return (
     <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
@@ -556,13 +563,6 @@ export default function Catalog() {
       </div>
     </div>
   );
-
-  // Sonido de pato al confirmar pedido
-  useEffect(() => {
-    if (confirmAnim) {
-      try { const a = new Audio('/quack.mp3'); a.play().catch(() => {}); } catch {}
-    }
-  }, [confirmAnim]);
 
   // --- VISTA: ANIMACIÓN DE CONFIRMACIÓN ---
   if (confirmAnim) return (
