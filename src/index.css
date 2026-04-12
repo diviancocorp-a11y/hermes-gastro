@@ -477,14 +477,20 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   .cat-card { min-width: 170px; height: 95px; border-radius: 18px; }
   .cat-card-label { font-size: 15px; }
 
-  /* Productos: grid de 2 columnas */
+  /* Productos: grid de 2 columnas con hover */
   .prod-list { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 12px 24px 100px; }
-  .prod-card { flex-direction: column; gap: 0; padding: 0; overflow: hidden; }
+  .prod-card { flex-direction: column; gap: 0; padding: 0; overflow: hidden; transition: transform .2s, box-shadow .2s; }
+  .prod-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(45,27,14,.12); }
   .prod-img { width: 100%; height: 160px; border-radius: 0; border-bottom: 1px solid var(--b2); }
   .prod-avatar { width: 100%; height: 160px; border-radius: 0; }
   .prod-info { padding: 14px 16px; }
   .prod-title { font-size: 15px; }
   .prod-desc { font-size: 12px; -webkit-line-clamp: 2; }
+
+  /* Botones más grandes en tablet para mejor tap target */
+  .btn-add { width: 38px; height: 38px; }
+  .qty-inline button { width: 36px; height: 36px; }
+  .qty-inline span { min-width: 28px; font-size: 15px; }
 
   /* Checkout y formularios: más espacio */
   .pb { padding: 24px 32px; }
@@ -493,7 +499,7 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   .abtn { padding: 18px; font-size: 17px; }
   .ck-stepper { padding: 20px 28px 16px; }
 
-  /* Carrito items: más anchos */
+  /* Carrito items en 2 columnas */
   .ci2 { padding: 18px; }
   .ci-img { width: 72px; height: 72px; }
 
@@ -504,12 +510,26 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   .tracker-card { max-width: 600px; padding: 32px 28px; }
   .tracker-header { padding: 24px 28px 28px; }
 
-  /* Upsell sheet */
+  /* Upsell: modal centrado en tablet */
   .ups-sheet { border-radius: 24px; margin: 20px auto; max-height: 80vh; }
   .ups-overlay { align-items: center; }
+  .ups-card:hover { background: var(--al); border-color: var(--ac); }
+
+  /* Hover en botones de acción */
+  .abtn:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(196,93,62,.4); transform: translateY(-1px); }
+  .btn-add:hover { background: var(--ac); color: #fff; }
+  .ckv-card:hover { border-color: var(--ac); }
+
+  /* Hover en categorías y event banner */
+  .cat-card:hover { transform: scale(1.04); box-shadow: 0 6px 20px rgba(45,27,14,.15); }
+  .event-banner:hover { transform: scale(1.01); box-shadow: 0 4px 16px rgba(196,93,62,.25); }
+
+  /* WhatsApp hover */
+  .wa-float:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(37,211,102,.5); }
 
   /* Admin: FAB más accesible */
   .fab { right: calc(50% - 340px); bottom: 90px; }
+  .fab:hover { transform: scale(1.1); }
 }
 
 /* ═══════════════════════════════════════════
@@ -612,4 +632,8 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 
   /* Summary 3 cols */
   .ck-summary { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* MyAccount: wider layout */
+  .success { max-width: 800px; margin: 0 auto; }
+  .tabs { max-width: 700px; }
 }

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { fi, saleCode, imgOpt } from "../lib/utils";
 import { supabase } from "../lib/supabase";
-import { validateCouponPublic } from "../lib/catalogService";
 
 const TABS = ["perfil", "direcciones", "historial", "favoritos", "cupones"];
 const TAB_ICONS = { perfil: "👤", direcciones: "📍", historial: "📦", favoritos: "❤️", cupones: "🎟️" };
@@ -46,11 +45,10 @@ export default function MyAccount() {
 
   // Favorites products
   const [favProducts, setFavProducts] = useState([]);
+  const [purchaseStats, setPurchaseStats] = useState({});
 
   // Cupones
-  const [couponCode, setCouponCode] = useState("");
-  const [couponCheckLoading, setCouponCheckLoading] = useState(false);
-  const [couponCheckResult, setCouponCheckResult] = useState(null);
+  const [couponSearch, setCouponSearch] = useState("");
 
   // Sync profile fields
   useEffect(() => {
@@ -520,19 +518,69 @@ export default function MyAccount() {
             {favorites.length > 0 && favProducts.length > 0 && (
               <div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12, marginBottom: 16 }}>
-                  {favProducts.map(p => (
-                    <div key={p.id} style={{ background: "var(--bg)", border: "1px solid var(--b2)", borderRadius: 12, overflow: "hidden", cursor: "pointer" }} onClick={() => navigate(`/product/${p.id}`)}>
-                      <div style={{ width: "100%", aspectRatio: "1", overflow: "hidden", background: "var(--b2)" }}>
-                        {p.image_url && <img src={imgOpt(p.image_url, 200, 200)} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                  {favProducts.map(p => {
+                    const purchaseCount = purchaseStats[p.id] || 0;
+                    const loyaltyProgress = Math.min((purchaseCount / 10) * 100, 100);
+                    return (
+                      <div key={p.id} style={{ background: "var(--bg)", border: "1px solid var(--b2)", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                        <div style={{ width: "100%", aspectRatio: "1", overflow: "hidden", background: "var(--b2)", cursor: "pointer" }} onClick={() => navigate(`/product/${p.id}`)}>
+                          {p.image_url && <img src={imgOpt(p.image_url, 200, 200)} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                        </div>
+                        <div style={{ padding: "12px", fontSize: 12, flex: 1, display: "flex", flexDirection: "column" }}>
+                          <div style={{ fontWeight: 600, color: "var(--tx)", marginBottom: 4, minHeight: "2.4em", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", cursor: "pointer" }} onClick={() => navigate(`/product/${p.id}`)}>{p.name}</div>
+                          {p.category && <div style={{ fontSize: 11, color: "var(--t3)", marginBottom: 6 }}>{p.category}</div>}
+                          {p.sale_price && <div style={{ fontWeight: 700, color: "var(--ac)", marginBottom: 8 }}>${fi(p.sale_price)}</div>}
+                          <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 8 }}>Compraste este producto {purchaseCount} veces</div>
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3 }}>Comprá 10 veces para ganar un cupón gratis</div>
+                            <div style={{ background: "var(--b2)", borderRadius: 6, height: 6, overflow: "hidden" }}>
+                              <div style={{ background: "var(--ac)", height: "100%", width: `${loyaltyProgress}%`, transition: "width 0.3s ease" }}></div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              try {
+                                const saved = sessionStorage.getItem("lnp_cart");
+                                const cart = saved ? JSON.parse(saved) : [];
+                                const existingItem = cart.find(item => item.id === p.id);
+                                if (existingItem) {
+                                  existingItem.qty += 1;
+                                } else {
+                                  cart.push({
+                                    id: p.id,
+                                    name: p.name,
+                                    price: p.sale_price,
+                                    qty: 1,
+                                    img: p.image_url
+                                  });
+                                }
+                                sessionStorage.setItem("lnp_cart", JSON.stringify(cart));
+                              } catch {}
+                            }}
+                            style={{ padding: "6px 8px", background: "#D97A4C", color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", width: "100%" }}
+                          >
+                            + Agregar
+                          </button>
+                        </div>
                       </div>
-                      <div style={{ padding: "12px", fontSize: 12 }}>
-                        <div style={{ fontWeight: 600, color: "var(--tx)", marginBottom: 4, minHeight: "2.4em", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{p.name}</div>
-                        {p.category && <div style={{ fontSize: 11, color: "var(--t3)", marginBottom: 6 }}>{p.category}</div>}
-                        {p.sale_price && <div style={{ fontWeight: 700, color: "var(--ac)" }}>${fi(p.sale_price)}</div>}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
+                {(() => {
+                  try {
+                    const saved = sessionStorage.getItem("lnp_cart");
+                    const cart = saved ? JSON.parse(saved) : [];
+                    const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
+                    if (cartCount > 0) {
+                      return (
+                        <button onClick={() => navigate("/")} className="abtn" style={{ width: "100%", fontSize: 14, marginBottom: 12 }}>
+                          Ver mi pedido ({cartCount} items)
+                        </button>
+                      );
+                    }
+                  } catch {}
+                  return null;
+                })()}
                 <button onClick={() => navigate("/")} className="abtn" style={{ width: "100%", fontSize: 14 }}>
                   Ir a la tienda
                 </button>
@@ -565,50 +613,29 @@ export default function MyAccount() {
               </div>
             </div>
 
-            <div style={{ background: "var(--b2)", borderRadius: 14, padding: "16px" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", marginBottom: 10 }}>Validar cupón</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  className="cki"
-                  type="text"
-                  value={couponCode}
-                  onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponCheckResult(null); }}
-                  placeholder="Ingresá tu código"
-                  style={{ flex: 1 }}
-                />
-                <button
-                  onClick={async () => {
-                    if (!couponCode.trim()) return;
-                    setCouponCheckLoading(true);
-                    try {
-                      const result = await validateCouponPublic(couponCode);
-                      setCouponCheckResult(result);
-                    } catch (err) {
-                      setCouponCheckResult({ valid: false, message: "Error al validar el cupón" });
-                    }
-                    setCouponCheckLoading(false);
-                  }}
-                  disabled={couponCheckLoading || !couponCode.trim()}
-                  className="abtn"
-                  style={{ fontSize: 13, padding: "10px 16px", whiteSpace: "nowrap" }}
-                >
-                  {couponCheckLoading ? "Validando..." : "Validar"}
-                </button>
-              </div>
+            <input
+              className="cki"
+              type="text"
+              value={couponSearch}
+              onChange={e => setCouponSearch(e.target.value)}
+              placeholder="Buscar cupón..."
+              style={{ width: "100%", marginBottom: 16 }}
+            />
 
-              {couponCheckResult && (
-                <div style={{
-                  marginTop: 12,
-                  padding: "12px",
-                  borderRadius: 10,
-                  background: couponCheckResult.valid ? "#E8F5E9" : "#FFEBEE",
-                  border: `1px solid ${couponCheckResult.valid ? "#81C784" : "#EF5350"}`,
-                  fontSize: 12,
-                  color: couponCheckResult.valid ? "#2E7D32" : "#C62828"
-                }}>
-                  {couponCheckResult.valid ? "✓" : "✕"} {couponCheckResult.message || (couponCheckResult.valid ? "Cupón válido" : "Cupón no válido")}
-                </div>
-              )}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", marginBottom: 10 }}>Cupones activos</div>
+              <div style={{ textAlign: "center", padding: "24px 16px", color: "var(--t3)", background: "var(--bg)", borderRadius: 12, border: "1px solid var(--b2)" }}>
+                <div style={{ fontSize: 24, marginBottom: 8 }}>🎫</div>
+                <p style={{ fontSize: 13, margin: 0 }}>No tenés cupones activos</p>
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", marginBottom: 10 }}>Cupones vencidos</div>
+              <div style={{ textAlign: "center", padding: "24px 16px", color: "var(--t3)", background: "var(--bg)", borderRadius: 12, border: "1px solid var(--b2)" }}>
+                <div style={{ fontSize: 24, marginBottom: 8 }}>🎫</div>
+                <p style={{ fontSize: 13, margin: 0 }}>No tenés cupones vencidos</p>
+              </div>
             </div>
           </div>
         )}

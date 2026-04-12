@@ -123,7 +123,6 @@ export default function Catalog() {
   const [receiptStatus, setReceiptStatus] = useState(""); // "" | "ok" | "error"
   const [guestMode, setGuestMode] = useState(true); // invitado por defecto
   const [waitingReceipt, setWaitingReceipt] = useState(false); // pantalla de espera post-envío
-  const [waitTimer, setWaitTimer] = useState(60); // countdown 60s
   const [geoLoading, setGeoLoading] = useState(false);
   const [deliveryCost, setDeliveryCost] = useState(0);
   const [deliveryKm, setDeliveryKm] = useState(null);
@@ -274,13 +273,13 @@ export default function Catalog() {
     if (!storeStatus.open && scheduleMode === "now") setScheduleMode("later");
   }, [storeStatus.open]);
 
-  // Countdown 60s para auto-confirmar comprobante
+  // Dots animation for waiting text
+  const [waitDots, setWaitDots] = useState(0);
   useEffect(() => {
     if (!waitingReceipt) return;
-    if (waitTimer <= 0) { setWaitingReceipt(false); setSent(true); return; }
-    const t = setTimeout(() => setWaitTimer(p => p - 1), 1000);
-    return () => clearTimeout(t);
-  }, [waitingReceipt, waitTimer]);
+    const t = setInterval(() => setWaitDots(d => (d + 1) % 4), 600);
+    return () => clearInterval(t);
+  }, [waitingReceipt]);
 
   // Polling: chequear si el admin verificó el comprobante
   useEffect(() => {
@@ -553,64 +552,85 @@ export default function Catalog() {
     </div>
   );
 
+  // Sonido de pato al confirmar pedido
+  useEffect(() => {
+    if (confirmAnim) {
+      try { const a = new Audio('/quack.mp3'); a.play().catch(() => {}); } catch {}
+    }
+  }, [confirmAnim]);
+
   // --- VISTA: ANIMACIÓN DE CONFIRMACIÓN ---
   if (confirmAnim) return (
-    <div className="po" style={{ zIndex: 250, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32 }}>
+    <div style={{ position:"fixed",inset:0,background:"#C45D3E",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",zIndex:250 }}>
       <style>{`
-        @keyframes confirmCheckmark {
-          0% { transform: scale(0) rotate(-45deg); opacity: 0; }
-          50% { transform: scale(1.1); }
-          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        @keyframes heartBounce {
+          0% { transform: scale(0) rotate(-15deg); opacity:0; }
+          60% { transform: scale(1.15) rotate(0deg); opacity:1; }
+          80% { transform: scale(0.95); }
+          100% { transform: scale(1); }
         }
-        @keyframes heartBeat {
-          0%, 100% { transform: scale(1); }
-          25% { transform: scale(1.2); }
-          50% { transform: scale(1.3); }
-        }
-        .confirm-circle { animation: confirmCheckmark 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards; }
-        .confirm-heart { animation: heartBeat 1.2s ease-in-out 0.6s forwards; opacity: 0; }
+        .confirm-heart-ck { animation: heartBounce 0.8s cubic-bezier(0.68,-0.55,0.265,1.55) forwards; }
       `}</style>
-      <div style={{ position: "relative", width: 120, height: 120, marginBottom: 32 }}>
-        <div className="confirm-circle" style={{
-          width: 120,
-          height: 120,
-          borderRadius: "50%",
-          background: "var(--gn, #3A7D44)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 60,
-          color: "#fff",
-          fontWeight: 700
-        }}>✓</div>
-        <div className="confirm-heart" style={{
-          position: "absolute",
-          top: 10,
-          right: 10,
-          fontSize: 40
-        }}>❤️</div>
+      <div className="confirm-heart-ck" style={{ marginBottom: 32 }}>
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <path d="M70,125 C30,95 5,72 5,48 C5,30 18,18 35,18 C48,18 58,25 70,38 C82,25 92,18 105,18 C122,18 135,30 135,48 C135,72 110,95 70,125Z" fill="#FFF8F0"/>
+          <path d="M45,62 L62,78 L95,48" stroke="#C45D3E" strokeWidth="10" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
       </div>
-      <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 24, margin: 0 }}>¡Pedido confirmado!</h2>
+      <h2 style={{ fontFamily:"'DM Serif Display',serif",fontSize:26,margin:0,color:"#FFF8F0" }}>¡Pedido confirmado!</h2>
+      <p style={{ fontSize:14,color:"rgba(255,248,240,0.8)",marginTop:8 }}>Gracias por elegir La Nona Pato</p>
     </div>
   );
 
   // --- VISTA: ESPERANDO VERIFICACIÓN DE COMPROBANTE ---
   if (waitingReceipt) return (
-    <div className="po" style={{ zIndex: 250, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32 }}>
-      <div style={{ fontSize: 48, marginBottom: 16, animation: "duckWalk 2s linear infinite" }}>🦆🦆🦆</div>
-      <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, marginBottom: 8 }}>Verificando tu comprobante...</h2>
-      <p style={{ fontSize: 14, color: "var(--t3)", lineHeight: 1.6, maxWidth: 300 }}>
-        La Nona está revisando tu pago. En unos segundos confirmamos tu pedido.
-      </p>
-      <div style={{ marginTop: 20, width: "100%", maxWidth: 280 }}>
-        <div style={{ background: "var(--b2)", borderRadius: 20, height: 8, overflow: "hidden" }}>
-          <div style={{ background: "var(--ac)", height: "100%", borderRadius: 20, transition: "width 1s linear", width: `${((60 - waitTimer) / 60) * 100}%` }} />
-        </div>
-        <p style={{ fontSize: 12, color: "var(--t3)", marginTop: 8 }}>Confirmación automática en {waitTimer}s</p>
+    <div className="po" style={{ zIndex: 250, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32, background: "white" }}>
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .duck-spinner {
+          position: relative;
+          width: 120px;
+          height: 120px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 24px;
+        }
+        .duck-spinner::before {
+          content: '';
+          position: absolute;
+          width: 120px;
+          height: 120px;
+          border: 4px solid var(--b2, #F3EDE4);
+          border-radius: 50%;
+          border-top: 4px solid #C45D3E;
+          border-right: 4px solid #C45D3E;
+          animation: spin 1.2s linear infinite;
+        }
+        .duck-emoji {
+          font-size: 56px;
+          z-index: 1;
+        }
+      `}</style>
+      <div className="duck-spinner">
+        <div className="duck-emoji">🦆</div>
       </div>
-      <button onClick={() => { setWaitingReceipt(false); setSent(true); }} style={{ marginTop: 24, fontSize: 12, color: "var(--t3)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
-        Saltar espera
-      </button>
+      <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 20, marginBottom: 8, margin: "0 0 8px 0" }}>Verificando tu pedido{".".repeat(waitDots)}</h2>
+      <p style={{ fontSize: 14, color: "var(--t3)", lineHeight: 1.6, maxWidth: 300, marginBottom: 20 }}>
+        La Nona está revisando tu pago. Por favor esperá la confirmación.
+      </p>
+      <div style={{ marginTop: 4, padding: "12px 20px", background: "var(--b2)", borderRadius: 14, maxWidth: 300 }}>
+        <p style={{ fontSize: 13, color: "var(--t2)", margin: 0, lineHeight: 1.5 }}>
+          🔒 Tu pedido se confirmará cuando verifiquemos el comprobante. No cierres esta pantalla.
+        </p>
+      </div>
+      <a href="https://wa.me/5491165706805?text=Hola!%20Estoy%20esperando%20la%20verificación%20de%20mi%20pedido" target="_blank" rel="noopener noreferrer"
+        style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 20, padding: "10px 20px", background: "#25D366", color: "#fff", borderRadius: 12, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+        💬 ¿Tardamos mucho? Escribinos
+      </a>
     </div>
   );
 
