@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
+import ErrorBoundary from './components/ErrorBoundary'
 import Catalog from './pages/Catalog'
 
 // Lazy-load admin, tracker & account: catalog visitors don't download these chunks
@@ -16,15 +17,17 @@ const Loading = () => (
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Suspense fallback={<Loading />}>
-        <Routes>
-          <Route path="/" element={<Catalog />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/order/:id" element={<OrderTracker />} />
-          <Route path="/mi-cuenta" element={<MyAccount />} />
-        </Routes>
-      </Suspense>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            <Route path="/" element={<Catalog />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/order/:id" element={<OrderTracker />} />
+            <Route path="/mi-cuenta" element={<MyAccount />} />
+          </Routes>
+        </Suspense>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }

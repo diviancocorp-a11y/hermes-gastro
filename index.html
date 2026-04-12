@@ -29,6 +29,44 @@
     <!-- Preload fuente principal para evitar FOUT -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Structured Data: Bakery -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Bakery",
+      "name": "La Nona Pato",
+      "description": "Panadería, rotisería y pastelería artesanal con delivery en Pilar, Buenos Aires.",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Andrés Chazarreta 1435",
+        "addressLocality": "Pilar",
+        "addressRegion": "Buenos Aires",
+        "addressCountry": "AR"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": -34.4295,
+        "longitude": -58.7267
+      },
+      "servesCuisine": ["Panadería", "Rotisería", "Pastelería"],
+      "priceRange": "$$",
+      "hasMenu": {
+        "@type": "Menu",
+        "hasMenuSection": [
+          { "@type": "MenuSection", "name": "Panadería" },
+          { "@type": "MenuSection", "name": "Rotisería" },
+          { "@type": "MenuSection", "name": "Tortas y Postres" },
+          { "@type": "MenuSection", "name": "Sandwiches" }
+        ]
+      },
+      "acceptsReservations": false,
+      "telephone": "+5491112345678",
+      "openingHoursSpecification": [
+        { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "09:00", "closes": "20:00" },
+        { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "09:00", "closes": "14:00" }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
