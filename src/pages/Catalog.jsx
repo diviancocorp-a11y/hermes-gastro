@@ -123,6 +123,7 @@ export default function Catalog() {
   const [receiptStatus, setReceiptStatus] = useState(""); // "" | "ok" | "error"
   const [guestMode, setGuestMode] = useState(true); // invitado por defecto
   const [waitingReceipt, setWaitingReceipt] = useState(false); // pantalla de espera post-envío
+  const [waitTimer, setWaitTimer] = useState(60); // countdown 60s
   const [geoLoading, setGeoLoading] = useState(false);
   const [deliveryCost, setDeliveryCost] = useState(0);
   const [deliveryKm, setDeliveryKm] = useState(null);
@@ -273,21 +274,25 @@ export default function Catalog() {
     if (!storeStatus.open && scheduleMode === "now") setScheduleMode("later");
   }, [storeStatus.open]);
 
-  // Dots animation for waiting text
-  const [waitDots, setWaitDots] = useState(0);
+  // Countdown 60s para auto-confirmar pedido
   useEffect(() => {
     if (!waitingReceipt) return;
-    const t = setInterval(() => setWaitDots(d => (d + 1) % 4), 600);
-    return () => clearInterval(t);
-  }, [waitingReceipt]);
+    if (waitTimer <= 0) { setWaitingReceipt(false); setSent(true); return; }
+    const t = setTimeout(() => setWaitTimer(p => p - 1), 1000);
+    return () => clearTimeout(t);
+  }, [waitingReceipt, waitTimer]);
 
-  // Polling: chequear si el admin verificó el comprobante
+  // Polling: chequear si el admin verificó el pedido (receipt_verified o status cambia de pendiente)
   useEffect(() => {
     if (!waitingReceipt || !orderId) return;
     const iv = setInterval(async () => {
       try {
-        const { data } = await supabase.from("orders").select("receipt_verified").eq("id", orderId).single();
-        if (data?.receipt_verified) { clearInterval(iv); setWaitingReceipt(false); setSent(true); }
+        const { data } = await supabase.from("orders").select("receipt_verified,status").eq("id", orderId).single();
+        if (data?.receipt_verified || (data?.status && data.status !== "pendiente" && data.status !== "pending")) {
+          clearInterval(iv);
+          setWaitingReceipt(false);
+          setSent(true);
+        }
       } catch {}
     }, 5000);
     return () => clearInterval(iv);
@@ -532,7 +537,7 @@ export default function Catalog() {
       // Después de 1.5s, pasar a la siguiente pantalla
       setTimeout(() => {
         setConfirmAnim(false);
-        // Todos los pedidos pasan por la pantalla de 60s
+        // Todos los pedidos pasan por la pantalla de verificación (60s)
         setWaitingReceipt(true);
         setWaitTimer(60);
       }, 1500);
@@ -582,8 +587,10 @@ export default function Catalog() {
     </div>
   );
 
-  // --- VISTA: ESPERANDO VERIFICACIÓN DE COMPROBANTE ---
-  if (waitingReceipt) return (
+  // --- VISTA: ESPERANDO VERIFICACIÓN ---
+  if (waitingReceipt) {
+    const isDigitalPayment = form.payment === "transferencia" || form.payment === "mercadopago";
+    return (
     <div className="po" style={{ zIndex: 250, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32, background: "white" }}>
       <style>{`
         @keyframes spin {
@@ -618,21 +625,21 @@ export default function Catalog() {
       <div className="duck-spinner">
         <div className="duck-emoji">🦆</div>
       </div>
-      <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 20, marginBottom: 8, margin: "0 0 8px 0" }}>Verificando tu pedido{".".repeat(waitDots)}</h2>
+      <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 20, marginBottom: 8, margin: "0 0 8px 0" }}>Verificando tu pedido...</h2>
       <p style={{ fontSize: 14, color: "var(--t3)", lineHeight: 1.6, maxWidth: 300, marginBottom: 20 }}>
-        La Nona está revisando tu pago. Por favor esperá la confirmación.
+        {isDigitalPayment
+          ? "La Nona está revisando tu comprobante de pago."
+          : "La Nona está confirmando tu pedido."}
       </p>
-      <div style={{ marginTop: 4, padding: "12px 20px", background: "var(--b2)", borderRadius: 14, maxWidth: 300 }}>
-        <p style={{ fontSize: 13, color: "var(--t2)", margin: 0, lineHeight: 1.5 }}>
-          🔒 Tu pedido se confirmará cuando verifiquemos el comprobante. No cierres esta pantalla.
-        </p>
+      <div style={{ marginTop: 0, width: "100%", maxWidth: 280 }}>
+        <div style={{ background: "var(--b2)", borderRadius: 20, height: 8, overflow: "hidden" }}>
+          <div style={{ background: "var(--ac)", height: "100%", borderRadius: 20, transition: "width 1s linear", width: `${((60 - waitTimer) / 60) * 100}%` }} />
+        </div>
+        <p style={{ fontSize: 12, color: "var(--t3)", marginTop: 8 }}>Confirmación automática en {waitTimer}s</p>
       </div>
-      <a href="https://wa.me/5491165706805?text=Hola!%20Estoy%20esperando%20la%20verificación%20de%20mi%20pedido" target="_blank" rel="noopener noreferrer"
-        style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 20, padding: "10px 20px", background: "#25D366", color: "#fff", borderRadius: 12, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
-        💬 ¿Tardamos mucho? Escribinos
-      </a>
     </div>
   );
+  }
 
   // --- VISTA: PEDIDO ENVIADO ---
   if (sent) {
