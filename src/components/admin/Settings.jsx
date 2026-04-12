@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { I } from "../../lib/utils";
-import { updateSettings, uploadCoverImage, uploadCatImage, uploadLogoImage, resetHistoricalData, downloadServerBackup } from "../../lib/adminService";
+import { updateSettings, uploadCoverImage, uploadCatImage, uploadLogoImage, resetHistoricalData } from "../../lib/adminService";
 
 const DEF={biz_name:"La Nona Pato",logo_letter:"N",logo_color:"#C45D3E",exp_cats:["Materia Prima","Servicios","Packaging","Transporte","Alquiler","Equipamiento","Otros"],ing_cats:["Secos","Frescos","Packaging","Otros"],cat_images:{}};
 const CAT_NAMES=["Todos","Primeros Mimos","La Mesa Principal","El Sanguche de la Nona","La Nona Amasó","La Última Mordida","Cocina Consciente"];
 const COLORS=[{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#2D1B0E",l:"Negro"}];
 
-const SECTIONS=["identity","cover","catImages","storeState","expCats","ingCats","hours","backup","reset"];
+const SECTIONS=["identity","cover","catImages","storeState","expCats","ingCats","hours","reset"];
 
 function Settings({sett,setSett,msg,onBack}){
   const [s,setS]=useState({...sett});
@@ -214,24 +214,6 @@ function Settings({sett,setSett,msg,onBack}){
             <button style={{background:"none",border:"none",fontSize:11,color:d.closed?"var(--gn)":"var(--rd)",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}} onClick={()=>upd("closed",!d.closed)}>{d.closed?"Abrir":"Cerrar"}</button>
           </div>);
         })}
-      </div>}
-      </div>
-
-      {/* ── Respaldo de clientes ── */}
-      <div className="c">
-        <div onClick={()=>tog("backup")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>📁 Respaldo de clientes</label>
-          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.backup?"rotate(180deg)":"rotate(0)"}}>▾</span>
-        </div>
-        {open.backup&&<div style={{marginTop:10}}>
-        <button
-          onClick={async()=>{
-            const r=await downloadServerBackup();
-            if(r.ok) msg("Backup descargado ✓");
-            else msg("No hay backup aún o error: "+r.msg);
-          }}
-          style={{width:"100%",padding:"12px",background:"var(--pr,#C45D3E)",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:600,cursor:"pointer"}}
-        >📥 Descargar backup de clientes</button>
       </div>}
       </div>
 
