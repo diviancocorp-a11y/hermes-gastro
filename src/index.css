@@ -533,107 +533,23 @@ select.fin{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 }
 
 /* ═══════════════════════════════════════════
-   RESPONSIVE: DESKTOP (1024px+)
+   DESKTOP CAP: centrar app con max-width tablet
+   La app está diseñada para mobile+tablet.
+   En desktop, se centra como una app móvil.
 ═══════════════════════════════════════════ */
 @media (min-width: 1024px) {
-  /* Layout principal → ancho escritorio */
-  .app { max-width: 960px; padding-bottom: 40px; }
-  .po, .modal { max-width: 960px; }
-  .nv { max-width: 960px; }
-  .pedix-cart-btn { max-width: 920px; }
-
-  /* Portada grande */
-  .store-cover { height: 280px; border-radius: 0 0 24px 24px; }
-  .store-logo { width: 110px; height: 110px; font-size: 48px; border-radius: 32px; margin-top: -55px; border-width: 5px; }
-  .store-name { font-size: 32px; }
-  .store-header { padding: 0 32px 20px; }
-
-  /* Categorías más grandes */
-  .cat-section { padding: 0 24px 12px; }
-  .cat-cards { gap: 16px; }
-  .cat-card { min-width: 190px; height: 110px; border-radius: 20px; }
-  .cat-card-label { font-size: 16px; }
-
-  /* Productos: grid de 3 columnas */
-  .prod-list { grid-template-columns: 1fr 1fr 1fr; gap: 20px; padding: 16px 32px 100px; }
-  .prod-img { height: 180px; }
-  .prod-avatar { height: 180px; }
-  .prod-info { padding: 16px 18px; }
-  .prod-title { font-size: 16px; }
-  .prod-desc { font-size: 13px; }
-
-  /* Checkout: centrado con ancho limitado */
-  .pb { max-width: 600px; margin: 0 auto; padding: 28px 40px; }
-  .cko { gap: 14px; }
-  .ckv { padding: 18px 28px; }
-
-  /* Summary section side by side */
-  .ck-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-
-  /* Carrito: 2 columnas de items */
-  .ct { max-width: 600px; margin: 20px auto; padding: 24px; }
-
-  /* Header del panel admin: más amplio */
-  .hd { padding: 24px 32px 20px; }
-  .hd-t { font-size: 26px; }
-
-  /* Admin grid más amplio */
-  .sg { grid-template-columns: 1fr 1fr 1fr; gap: 14px; padding: 0 24px 16px; }
-
-  /* Tabs y filtros: centrados */
-  .tabs { max-width: 600px; margin: 0 auto 16px; }
-  .sf { padding: 0 24px 4px; }
-
-  /* Tracker: centrado elegante */
-  .tracker-shell { max-width: 700px; }
-  .tracker-card { max-width: 560px; }
-  .tracker-header { border-radius: 0 0 20px 20px; }
-  .tracker-summary { max-width: 560px; margin: 0 auto 12px; }
-
-  /* Ups overlay: modal centrado */
+  .app { max-width: 768px; margin: 0 auto; }
+  .po, .modal { max-width: 768px; }
+  .nv { max-width: 768px; }
+  .pedix-cart-btn { max-width: 728px; }
+  .tracker-shell { max-width: 768px; }
   .ups-sheet { max-width: 520px; border-radius: 28px; }
-
-  /* Modal: más grande */
   .modal-c { max-width: 520px; padding: 28px; }
-
-  /* FAB */
-  .fab { right: calc(50% - 460px); }
-
-  /* Footer */
+  .fab { right: calc(50% - 360px); }
+  .wa-float { right: calc(50% - 400px); }
   .catalog-footer { max-width: 600px; margin: 32px auto 0; }
-
-  /* WhatsApp button */
-  .wa-float { right: calc(50% - 500px); }
-}
-
-/* ═══════════════════════════════════════════
-   RESPONSIVE: WIDE DESKTOP (1280px+)
-═══════════════════════════════════════════ */
-@media (min-width: 1280px) {
-  .app { max-width: 1100px; }
-  .po, .modal { max-width: 1100px; }
-  .nv { max-width: 1100px; }
-  .pedix-cart-btn { max-width: 1060px; }
-
-  /* Productos: grid de 4 columnas */
-  .prod-list { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; padding: 16px 40px 100px; }
-  .prod-img { height: 200px; }
-  .prod-avatar { height: 200px; }
-
-  /* Portada */
-  .store-cover { height: 320px; }
-
-  /* Admin stats grid 4 cols */
-  .sg { grid-template-columns: repeat(4, 1fr); }
-
-  /* Categories */
-  .cat-section { padding: 0 32px 12px; }
-  .cat-card { min-width: 200px; height: 120px; }
-
-  /* Summary 3 cols */
-  .ck-summary { grid-template-columns: 1fr 1fr 1fr; }
-
-  /* MyAccount: wider layout */
-  .success { max-width: 800px; margin: 0 auto; }
-  .tabs { max-width: 700px; }
+  .pb { max-width: 600px; margin: 0 auto; }
+  .ct { max-width: 600px; margin: 20px auto; padding: 24px; }
+  .tabs { max-width: 600px; margin: 0 auto 16px; }
+  .success { max-width: 700px; margin: 0 auto; }
 }

@@ -1,97 +1,22 @@
-import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { I, fi, saleCode, imgOpt } from "../lib/utils";
+import { I, fi, imgOpt } from "../lib/utils";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 
-// ── Memoized Product Card (evita re-render de todas las cards al cambiar carrito) ──
-const avatarColors = ["#C45D3E", "#3A7D44", "#8D6E00", "#5C6BC0", "#AB47BC", "#00897B", "#D84315", "#6D4C41", "#546E7A", "#7B1FA2"];
+// ── Extracted components ──
+import ProductCard from "../components/catalog/ProductCard";
+import ConfirmationAnimation from "../components/catalog/ConfirmationAnimation";
+import VerificationScreen from "../components/catalog/VerificationScreen";
+import OrderSentView from "../components/catalog/OrderSentView";
 
-const ProductCard = memo(function ProductCard({ p, qty, hasDeal, dealPrice, originalPrice, onAdd, onUpdate, isFav, onToggleFav, isLoggedIn }) {
-  return (
-    <div className="prod-card">
-      {isLoggedIn && (
-        <button onClick={(e) => { e.stopPropagation(); onToggleFav(p.id); }} style={{ position: "absolute", top: 8, right: 8, zIndex: 5, background: "rgba(255,255,255,0.9)", border: "none", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
-          {isFav ? "❤️" : "🤍"}
-        </button>
-      )}
-      <div className="prod-info">
-        <div className="prod-title">{p.name}</div>
-        <div className="prod-desc">{p.description}</div>
-        <div className="prod-bot">
-          <div className="prod-price">
-            {hasDeal ? (<>
-              <span className="price-old">${fi(originalPrice)}</span>
-              <span className="price-deal">${fi(dealPrice)}</span>
-            </>) : `$${fi(originalPrice)}`}
-          </div>
-          {hasDeal && <span className="prod-deal-tag">-{DEAL_PCT}%</span>}
-          {qty > 0 ? (
-            <div className="qty-inline" onClick={e => e.stopPropagation()}>
-              <button onClick={() => onUpdate(p.id, qty - 1)}>{qty <= 1 ? <span style={{fontSize:12}}>🗑</span> : I.minus({size:14})}</button>
-              <span>{qty}</span>
-              <button onClick={(e) => onAdd(p, e)}>{I.plus({size:14})}</button>
-            </div>
-          ) : (
-            <button className="btn-add" onClick={(e) => onAdd(p, e)}>{I.plus({size:16})}</button>
-          )}
-        </div>
-      </div>
-      {p.image_url ? (
-        <img className="prod-img" src={imgOpt(p.image_url, { width: 300, quality: 65 })} alt={p.name} loading="lazy" decoding="async" width={120} height={120}
-          onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }}
-        />
-      ) : null}
-      {(!p.image_url || true) && (
-        <div className="prod-img prod-avatar" style={{
-          display: p.image_url ? 'none' : 'flex',
-          background: avatarColors[p.name.charCodeAt(0) % avatarColors.length]
-        }}>
-          {p.name.charAt(0)}
-        </div>
-      )}
-    </div>
-  );
-});
-
-// --- CATEGORÍAS MADRE (agrupan subcategorías de Supabase) ---
-const CAT_GROUPS = [
-  { name: "Primeros Mimos",         icon: "🫕", subs: ["Brusquetas", "Escabeches", "Aperitivos"] },
-  { name: "La Mesa Principal",      icon: "🍕", subs: ["Rotisería", "Pizzas"] },
-  { name: "El Sanguche de la Nona", icon: "🥪", subs: ["Sandwiches"] },
-  { name: "La Nona Amasó",          icon: "🥖", subs: ["Panadería", "Panificados"] },
-  { name: "La Última Mordida",      icon: "🍰", subs: ["Tortas", "torta", "Budines", "Alfajores"] },
-  { name: "Cocina Consciente",      icon: "🥗", subs: ["Saludable"] },
-];
-// Mapa inverso: subcategoría → categoría madre
-const SUB_TO_PARENT = {};
-CAT_GROUPS.forEach(g => g.subs.forEach(s => { SUB_TO_PARENT[s] = g.name; }));
-
-// --- DESCUENTOS ROTATIVOS POR CATEGORÍA MADRE (Lunes a Jueves, 15% OFF) ---
-// dayIdx: 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves  (JS getDay: 1-4)
-const DAILY_DEALS = {
-  1: ["La Nona Amasó", "La Mesa Principal"],              // Lunes
-  2: ["La Última Mordida"],                                // Martes
-  3: ["El Sanguche de la Nona", "Primeros Mimos"],         // Miércoles
-  4: ["Cocina Consciente", "Primeros Mimos"],              // Jueves
-};
-const DEAL_PCT = 15; // porcentaje de descuento
-
-// --- DATOS DE RESPALDO (se usan si Supabase no responde) ---
-const fallbackSettings = {
-  biz_name: "La Nona Pato",
-  logo_letter: "N",
-  logo_color: "#C45D3E",
-  cover_url: "https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=800&q=80"
-};
-
-const fallbackProducts = [
-  { id: "r1", name: "Alfajores de Maicena", category: "Alfajores", sale_price: 6500, image_url: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=300&q=80", description: "Caja x12. Clásicos alfajores artesanales que se deshacen en la boca, con mucho dulce de leche." },
-  { id: "r2", name: "Torta de Chocolate", category: "Tortas", sale_price: 18000, image_url: "https://images.unsplash.com/photo-1578985545062-69928b1d9ba9?auto=format&fit=crop&w=300&q=80", description: "Torta súper húmeda de chocolate rellena y cubierta con ganache de chocolate semiamargo." },
-  { id: "r3", name: "Cheesecake Frutos Rojos", category: "Tortas", sale_price: 15000, image_url: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=300&q=80", description: "Cheesecake horneado súper cremoso con base crocante y abundante salsa de frutos rojos." },
-  { id: "r4", name: "Budín de Limón", category: "Budines", sale_price: 5500, image_url: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=300&q=80", description: "Budín esponjoso con glaseado cítrico." }
-];
+// ── Shared constants ──
+import {
+  avatarColors, CAT_GROUPS, SUB_TO_PARENT, DAILY_DEALS, DEAL_PCT,
+  fallbackSettings, fallbackProducts, STORE_LAT, STORE_LNG,
+  haversine, calcDeliveryCost, CHECKOUT_STEPS, DEFAULT_FORM
+} from "../constants/catalogConstants";
 
 export default function Catalog() {
   const navigate = useNavigate();
@@ -113,7 +38,7 @@ export default function Catalog() {
   const [orderId, setOrderId] = useState(null);
   const [sending, setSending] = useState(false);
   const [orderErr, setOrderErr] = useState("");
-  const [form, setForm] = useState({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", address_piso: "", address_notas: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "", change_amount: "justo" });
+  const [form, setForm] = useState({ ...DEFAULT_FORM });
   const [scheduleMode, setScheduleMode] = useState("now"); // "now" | "later"
   const [ckStep, setCkStep] = useState(0); // 0=Datos, 1=Entrega, 2=Pago, 3=Resumen
   const [faqOpen, setFaqOpen] = useState(null); // índice de FAQ abierta
@@ -130,28 +55,7 @@ export default function Catalog() {
   const [calcingDelivery, setCalcingDelivery] = useState(false);
   const [confirmAnim, setConfirmAnim] = useState(false); // animación de confirmación
 
-  // Coordenadas del local: Andrés Chazarreta 1435, Villa Rosa, Pilar
-  const STORE_LAT = -34.4295;
-  const STORE_LNG = -58.7267;
-
-  // Haversine: distancia en km entre 2 coordenadas
-  const haversine = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  };
-
-  // Tarifa de envío por distancia (ajustable)
-  const calcDeliveryCost = (km) => {
-    if (km <= 2) return 500;
-    if (km <= 5) return 1000;
-    if (km <= 10) return 1800;
-    if (km <= 15) return 2500;
-    if (km <= 25) return 3500;
-    return 5000; // +25km
-  };
+  // STORE_LAT, STORE_LNG, haversine, calcDeliveryCost importados de constants
 
   // Calcular envío cuando cambia la dirección
   const estimateDelivery = useCallback(async (address) => {
@@ -183,7 +87,6 @@ export default function Catalog() {
   const [coupon, setCoupon] = useState(null); // {id, discount_pct}
   const [couponErr, setCouponErr] = useState("");
   const [validatingCoupon, setValidatingCoupon] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
   const [showTrackerInput, setShowTrackerInput] = useState(false);
   const [trackerCode, setTrackerCode] = useState("");
   const [showMenu, setShowMenu] = useState(false);
@@ -529,7 +432,7 @@ export default function Catalog() {
       // Mostrar animación de confirmación
       setConfirmAnim(true);
       setCart([]);
-      setForm({ name: "", phone: "", email: "", delivery: "retiro", payment: "efectivo", address: "", address_piso: "", address_notas: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "", change_amount: "justo" });
+      setForm({ ...DEFAULT_FORM });
       setScheduleMode("now");
       setCoupon(null); setCouponCode("");
       setCkStep(0);
@@ -565,145 +468,17 @@ export default function Catalog() {
   );
 
   // --- VISTA: ANIMACIÓN DE CONFIRMACIÓN ---
-  if (confirmAnim) return (
-    <div style={{ position:"fixed",inset:0,background:"#C45D3E",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",zIndex:250 }}>
-      <style>{`
-        @keyframes heartBounce {
-          0% { transform: scale(0) rotate(-15deg); opacity:0; }
-          60% { transform: scale(1.15) rotate(0deg); opacity:1; }
-          80% { transform: scale(0.95); }
-          100% { transform: scale(1); }
-        }
-        .confirm-heart-ck { animation: heartBounce 0.8s cubic-bezier(0.68,-0.55,0.265,1.55) forwards; }
-      `}</style>
-      <div className="confirm-heart-ck" style={{ marginBottom: 32 }}>
-        <svg width="140" height="140" viewBox="0 0 140 140">
-          <path d="M70,125 C30,95 5,72 5,48 C5,30 18,18 35,18 C48,18 58,25 70,38 C82,25 92,18 105,18 C122,18 135,30 135,48 C135,72 110,95 70,125Z" fill="#FFF8F0"/>
-          <path d="M45,62 L62,78 L95,48" stroke="#C45D3E" strokeWidth="10" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </div>
-      <h2 style={{ fontFamily:"'DM Serif Display',serif",fontSize:26,margin:0,color:"#FFF8F0" }}>¡Pedido confirmado!</h2>
-      <p style={{ fontSize:14,color:"rgba(255,248,240,0.8)",marginTop:8 }}>Gracias por elegir La Nona Pato</p>
-    </div>
-  );
+  if (confirmAnim) return <ConfirmationAnimation />;
 
   // --- VISTA: ESPERANDO VERIFICACIÓN ---
-  if (waitingReceipt) {
-    const isDigitalPayment = form.payment === "transferencia" || form.payment === "mercadopago";
-    return (
-    <div className="po" style={{ zIndex: 250, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32, background: "white" }}>
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        .duck-spinner {
-          position: relative;
-          width: 120px;
-          height: 120px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 24px;
-        }
-        .duck-spinner::before {
-          content: '';
-          position: absolute;
-          width: 120px;
-          height: 120px;
-          border: 4px solid var(--b2, #F3EDE4);
-          border-radius: 50%;
-          border-top: 4px solid #C45D3E;
-          border-right: 4px solid #C45D3E;
-          animation: spin 1.2s linear infinite;
-        }
-        .duck-emoji {
-          font-size: 56px;
-          z-index: 1;
-        }
-      `}</style>
-      <div className="duck-spinner">
-        <div className="duck-emoji">🦆</div>
-      </div>
-      <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 20, marginBottom: 8, margin: "0 0 8px 0" }}>Verificando tu pedido...</h2>
-      <p style={{ fontSize: 14, color: "var(--t3)", lineHeight: 1.6, maxWidth: 300, marginBottom: 20 }}>
-        {isDigitalPayment
-          ? "La Nona está revisando tu comprobante de pago."
-          : "La Nona está confirmando tu pedido."}
-      </p>
-      <div style={{ marginTop: 0, width: "100%", maxWidth: 280 }}>
-        <div style={{ background: "var(--b2)", borderRadius: 20, height: 8, overflow: "hidden" }}>
-          <div style={{ background: "var(--ac)", height: "100%", borderRadius: 20, transition: "width 1s linear", width: `${((60 - waitTimer) / 60) * 100}%` }} />
-        </div>
-        <p style={{ fontSize: 12, color: "var(--t3)", marginTop: 8 }}>Confirmación automática en {waitTimer}s</p>
-      </div>
-    </div>
-  );
-  }
+  if (waitingReceipt) return <VerificationScreen paymentMethod={form.payment} waitTimer={waitTimer} />;
 
   // --- VISTA: PEDIDO ENVIADO ---
-  if (sent) {
-    const wasPaidDigital = form.payment === "transferencia" || form.payment === "mercadopago";
-    return (
-    <div className="po" style={{ zIndex: 250 }}>
-      <div className="success">
-        <div className="suc-ic">{I.check({ size: 40, color: "#fff" })}</div>
-        <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 28 }}>¡Pedido confirmado!</h2>
-        <p style={{ fontSize: 15, color: "var(--t3)", lineHeight: 1.6, marginTop: 12 }}>
-          {wasPaidDigital && receiptFile
-            ? "Tu comprobante fue recibido. Lo estamos verificando y tu pedido pasará a preparación en breve."
-            : wasPaidDigital
-            ? "Recordá subir el comprobante de pago para que procesemos tu pedido más rápido."
-            : "Estamos preparando todo con mucho amor 🦆"}
-        </p>
-        {orderId && (<>
-          <a href={`/order/${orderId}`} className="tracker-link-btn">
-            🔴 Seguir mi pedido en vivo
-          </a>
-          <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--b2)", borderRadius: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 12, color: "var(--t3)", marginBottom: 6 }}>📋 Código de tu pedido</div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              <code style={{ fontSize: 22, fontWeight: 700, color: "var(--tx)", letterSpacing: 2, fontFamily: "'DM Serif Display',monospace" }}>
-                {saleCode(orderId)}
-              </code>
-              <button
-                onClick={() => { navigator.clipboard.writeText(saleCode(orderId)); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); }}
-                style={{ flexShrink: 0, padding: "6px 12px", background: copiedCode ? "var(--gn, #3A7D44)" : "var(--pr, #C45D3E)", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, cursor: "pointer", transition: "background .2s" }}
-              >
-                {copiedCode ? "✓ Copiado" : "Copiar"}
-              </button>
-            </div>
-            <p style={{ fontSize: 11, color: "var(--t3)", marginTop: 8, marginBottom: 0 }}>Usá este código para reclamos, factura o seguimiento.</p>
-          </div>
-          {form.delivery === "retiro" && (
-            <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--b2)", borderRadius: 12 }}>
-              <div style={{ fontSize: 12, color: "var(--t3)", marginBottom: 8, fontWeight: 600 }}>📍 Retirá en:</div>
-              <div style={{ fontSize: 14, color: "var(--tx)", lineHeight: 1.5, marginBottom: 10 }}>
-                Andrés Chazarreta 1435<br/>Villa Rosa, Pilar<br/>Buenos Aires
-              </div>
-              <a href="https://maps.google.com/?q=Andrés+Chazarreta+1435+Villa+Rosa+Pilar+Buenos+Aires" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ac)", fontWeight: 600, textDecoration: "none" }}>
-                📌 Ver en Google Maps
-              </a>
-            </div>
-          )}
-        </>)}
-        {wasPaidDigital && (
-          <a href="https://wa.me/5491165706805?text=Hola!%20Acabo%20de%20hacer%20un%20pedido%20y%20tengo%20una%20consulta" target="_blank" rel="noopener noreferrer"
-            style={{display:"block",marginTop:14,padding:"10px 16px",background:"#25D366",color:"#fff",borderRadius:12,fontSize:13,fontWeight:600,textAlign:"center",textDecoration:"none"}}>
-            💬 ¿Dudas? Escribinos por WhatsApp
-          </a>
-        )}
-        <button onClick={() => { setSent(false); setOrderId(null); setShowCk(false); }} style={{ marginTop: 14, fontSize: 12, color: "var(--t3)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 4 }}>
-          ← Volver a la tienda
-        </button>
-      </div>
-    </div>
-  );
-  }
+  if (sent) return <OrderSentView orderId={orderId} form={form} receiptFile={receiptFile} onReset={() => { setSent(false); setOrderId(null); setShowCk(false); }} />;
 
   // --- VISTA: CHECKOUT STEPPER ---
   if (showCk) {
-    const STEPS = ["Datos", "Entrega", "Pago", "Resumen"];
+    const STEPS = CHECKOUT_STEPS;
     const canNext0 = form.name.trim().length >= 2 && form.phone.length >= 10 && (!form.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email));
     const canNext1 = form.delivery === "retiro" || (form.delivery === "envio" && form.address.trim().length > 3);
     const canNext2 = !!form.payment && (form.payment !== "efectivo" || true);
