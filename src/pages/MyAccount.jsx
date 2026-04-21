@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { fi, saleCode, imgOpt } from "../lib/utils";
+import { formatInt, formatOrderCode, optimizeImage } from "../lib/utils";
 import { supabase } from "../lib/supabase";
+import business from "../config/business";
+import ReferralCard from "../components/catalog/ReferralCard";
 
-const TABS = ["perfil", "direcciones", "historial", "favoritos", "cupones"];
-const TAB_ICONS = { perfil: "👤", direcciones: "📍", historial: "📦", favoritos: "❤️", cupones: "🎟️" };
+const TABS = ["perfil", "direcciones", "historial", "favoritos", "cupones", "referidos"];
+const TAB_ICONS = { perfil: "👤", direcciones: "📍", historial: "📦", favoritos: "❤️", cupones: "🎟️", referidos: "🎁" };
 
 export default function MyAccount() {
   const navigate = useNavigate();
@@ -221,7 +223,7 @@ export default function MyAccount() {
                     Este email no está registrado
                   </p>
                   <p style={{ fontSize: 12, color: "#BF360C", margin: "0 0 10px", lineHeight: 1.4 }}>
-                    No encontramos una cuenta con <strong>{loginEmail}</strong>. Registrate para crear tu cuenta en La Nona Pato.
+                    No encontramos una cuenta con <strong>{loginEmail}</strong>. Registrate para crear tu cuenta en {business.name}.
                   </p>
                   <button
                     className="abtn"
@@ -503,14 +505,14 @@ export default function MyAccount() {
                 <div key={o.id} style={{ background: "var(--bg)", border: "1px solid var(--b2)", borderRadius: 14, padding: "14px 16px", marginBottom: 8 }}>
                   <div onClick={() => navigate(`/order/${o.id}`)} style={{ cursor: "pointer" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                      <code style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", letterSpacing: 1 }}>{saleCode(o.id)}</code>
+                      <code style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", letterSpacing: 1 }}>{formatOrderCode(o.id)}</code>
                       <span style={{ fontSize: 11, fontWeight: 700, color: statusColors[o.status] || "var(--t3)", background: `${statusColors[o.status] || "#999"}15`, padding: "3px 10px", borderRadius: 20 }}>
                         {statusMap[o.status] || o.status}
                       </span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--t3)" }}>
                       <span>{o.date || o.created_at?.split("T")[0]}</span>
-                      <span style={{ fontWeight: 700, color: "var(--tx)" }}>${fi(o.total)}</span>
+                      <span style={{ fontWeight: 700, color: "var(--tx)" }}>${formatInt(o.total)}</span>
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--b2)" }}>
@@ -554,12 +556,12 @@ export default function MyAccount() {
                     return (
                       <div key={p.id} style={{ background: "var(--bg)", border: "1px solid var(--b2)", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
                         <div style={{ width: "100%", aspectRatio: "1", overflow: "hidden", background: "var(--b2)", cursor: "pointer" }} onClick={() => navigate(`/product/${p.id}`)}>
-                          {p.image_url && <img src={imgOpt(p.image_url, 200, 200)} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                          {p.image_url && <img src={optimizeImage(p.image_url, 200, 200)} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
                         </div>
                         <div style={{ padding: "12px", fontSize: 12, flex: 1, display: "flex", flexDirection: "column" }}>
                           <div style={{ fontWeight: 600, color: "var(--tx)", marginBottom: 4, minHeight: "2.4em", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", cursor: "pointer" }} onClick={() => navigate(`/product/${p.id}`)}>{p.name}</div>
                           {p.category && <div style={{ fontSize: 11, color: "var(--t3)", marginBottom: 6 }}>{p.category}</div>}
-                          {p.sale_price && <div style={{ fontWeight: 700, color: "var(--ac)", marginBottom: 8 }}>${fi(p.sale_price)}</div>}
+                          {p.sale_price && <div style={{ fontWeight: 700, color: "var(--ac)", marginBottom: 8 }}>${formatInt(p.sale_price)}</div>}
                           <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 8 }}>Compraste este producto {purchaseCount} veces</div>
                           <div style={{ marginBottom: 8 }}>
                             <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3 }}>Comprá 10 veces para ganar un cupón gratis</div>
@@ -666,6 +668,17 @@ export default function MyAccount() {
                 <div style={{ fontSize: 24, marginBottom: 8 }}>🎫</div>
                 <p style={{ fontSize: 13, margin: 0 }}>No tenés cupones vencidos</p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── REFERIDOS ─── */}
+        {tab === "referidos" && (
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 16 }}>Programa de referidos</div>
+            <ReferralCard phone={profile?.phone} name={profile?.full_name} />
+            <div style={{ fontSize: 12, color: "var(--t3)", lineHeight: 1.6, marginTop: 12, padding: "0 4px" }}>
+              Compartí tu código con amigos. Cuando hagan su primer pedido usando tu código, ambos reciben un descuento en su próxima compra.
             </div>
           </div>
         )}

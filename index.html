@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>La Nona Pato — Panadería & Rotisería Artesanal</title>
     <meta name="description" content="Pedí online en La Nona Pato. Panadería, rotisería y pastelería artesanal con delivery en Pilar y alrededores." />
-    <meta name="theme-color" content="#C45D3E" />
+    <meta name="theme-color" content="#C45D3E" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1A1210" media="(prefers-color-scheme: dark)" />
 
     <!-- Open Graph -->
     <meta property="og:title" content="La Nona Pato — Panadería & Rotisería Artesanal" />
@@ -66,6 +67,17 @@
         { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "09:00", "closes": "14:00" }
       ]
     }
+    </script>
+    <!-- Prevent FOUC: apply dark mode before paint -->
+    <script>
+      (function(){
+        var t=localStorage.getItem('lnp-theme');
+        if(t==='dark'||((!t)&&window.matchMedia('(prefers-color-scheme:dark)').matches)){
+          document.documentElement.setAttribute('data-theme','dark');
+        }else if(t==='light'){
+          document.documentElement.setAttribute('data-theme','light');
+        }
+      })();
     </script>
   </head>
   <body>

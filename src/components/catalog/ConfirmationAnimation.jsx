@@ -1,4 +1,6 @@
 // Animación de confirmación: corazón terracota + check
+import business from '../../config/business';
+
 export default function ConfirmationAnimation() {
   return (
     <div style={{ position:"fixed",inset:0,background:"#C45D3E",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",zIndex:250 }}>
@@ -18,7 +20,7 @@ export default function ConfirmationAnimation() {
         </svg>
       </div>
       <h2 style={{ fontFamily:"'DM Serif Display',serif",fontSize:26,margin:0,color:"#FFF8F0" }}>¡Pedido confirmado!</h2>
-      <p style={{ fontSize:14,color:"rgba(255,248,240,0.8)",marginTop:8 }}>Gracias por elegir La Nona Pato</p>
+      <p style={{ fontSize:14,color:"rgba(255,248,240,0.8)",marginTop:8 }}>Gracias por elegir {business.name}</p>
     </div>
   );
 }

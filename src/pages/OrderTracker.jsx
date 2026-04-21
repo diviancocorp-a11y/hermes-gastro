@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { saleCode } from "../lib/utils";
+import { formatOrderCode } from "../lib/utils";
 
 // ─── Mapa de estados ──────────────────────────────────
 const STEPS = [
@@ -157,7 +157,7 @@ export default function OrderTracker() {
       <div className="tracker-summary">
         <div className="tracker-summary-hd" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span>📦 Tu pedido</span>
-          <span style={{fontSize:13,fontWeight:700,color:"var(--pr,#C45D3E)",letterSpacing:1}}>{saleCode(resolvedId||id)}</span>
+          <span style={{fontSize:13,fontWeight:700,color:"var(--pr,#C45D3E)",letterSpacing:1}}>{formatOrderCode(resolvedId||id)}</span>
         </div>
         <div className="tracker-summary-info">
           <span>👤 {order.customer}</span>

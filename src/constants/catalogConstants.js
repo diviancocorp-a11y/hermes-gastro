@@ -1,6 +1,7 @@
 // ── Shared constants for the catalog ──
+import business from '../config/business';
 
-export const avatarColors = ["#C45D3E", "#3A7D44", "#8D6E00", "#5C6BC0", "#AB47BC", "#00897B", "#D84315", "#6D4C41", "#546E7A", "#7B1FA2"];
+export const avatarColors = business.branding.accentColors;
 
 export const CAT_GROUPS = [
   { name: "Primeros Mimos",         icon: "🫕", subs: ["Brusquetas", "Escabeches", "Aperitivos"] },
@@ -23,10 +24,10 @@ export const DAILY_DEALS = {
 export const DEAL_PCT = 15;
 
 export const fallbackSettings = {
-  biz_name: "La Nona Pato",
-  logo_letter: "N",
-  logo_color: "#C45D3E",
-  cover_url: "https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=800&q=80"
+  biz_name: business.name,
+  logo_letter: business.logoLetter,
+  logo_color: business.logoColor,
+  cover_url: business.defaultSettings.cover_url,
 };
 
 export const fallbackProducts = [
@@ -36,8 +37,8 @@ export const fallbackProducts = [
   { id: "r4", name: "Budín de Limón", category: "Budines", sale_price: 5500, image_url: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=300&q=80", description: "Budín esponjoso con glaseado cítrico." }
 ];
 
-export const STORE_LAT = -34.4295;
-export const STORE_LNG = -58.7267;
+export const STORE_LAT = business.geo.lat;
+export const STORE_LNG = business.geo.lng;
 
 export const haversine = (lat1, lon1, lat2, lon2) => {
   const R = 6371;

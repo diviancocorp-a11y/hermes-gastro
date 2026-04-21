@@ -1,52 +1,135 @@
-// Service Worker — La Nona Pato
-// Cache-first for static assets, network-first for API calls
+// Service Worker (Workbox-powered)
+// NOTE: Business name below must be updated manually or via onboarding script.
+// Uses Workbox from CDN — no build step required.
+importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.3.0/workbox-sw.js');
 
-const CACHE_NAME = 'lnp-v1';
-const STATIC_ASSETS = ['/', '/index.html', '/favicon.svg', '/quack.mp3'];
+const { precacheAndRoute } = workbox.precaching;
+const { registerRoute, NavigationRoute, Route } = workbox.routing;
+const { CacheFirst, NetworkFirst, StaleWhileRevalidate } = workbox.strategies;
+const { ExpirationPlugin } = workbox.expiration;
+const { CacheableResponsePlugin } = workbox.cacheableResponse;
+const { BackgroundSyncPlugin } = workbox.backgroundSync;
 
-// Install: pre-cache shell
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
-  self.skipWaiting();
+// ─── Skip waiting on install ────────────────────────────
+self.skipWaiting();
+workbox.core.clientsClaim();
+
+// ─── Pre-cache app shell ────────────────────────────────
+precacheAndRoute([
+  { url: '/', revision: null },
+  { url: '/index.html', revision: null },
+  { url: '/favicon.svg', revision: null },
+  { url: '/quack.mp3', revision: null },
+  { url: '/icons.svg', revision: null },
+]);
+
+// ─── CacheFirst: static assets (JS, CSS, fonts) ────────
+registerRoute(
+  ({ request }) =>
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    request.destination === 'font',
+  new CacheFirst({
+    cacheName: 'lnp-static-v2',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 }), // 30 days
+    ],
+  }),
+);
+
+// ─── StaleWhileRevalidate: images ───────────────────────
+registerRoute(
+  ({ request }) => request.destination === 'image',
+  new StaleWhileRevalidate({
+    cacheName: 'lnp-images-v2',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 }), // 7 days
+    ],
+  }),
+);
+
+// ─── NetworkFirst: API calls (Supabase) ─────────────────
+registerRoute(
+  ({ url }) => url.hostname.includes('supabase'),
+  new NetworkFirst({
+    cacheName: 'lnp-api-v2',
+    networkTimeoutSeconds: 5,
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 }), // 1 day
+    ],
+  }),
+);
+
+// ─── NetworkFirst: HTML navigation ──────────────────────
+registerRoute(
+  new NavigationRoute(
+    new NetworkFirst({
+      cacheName: 'lnp-pages-v2',
+      networkTimeoutSeconds: 3,
+    }),
+  ),
+);
+
+// ─── Background Sync: offline order submissions ─────────
+const orderSyncPlugin = new BackgroundSyncPlugin('lnp-order-queue', {
+  maxRetentionTime: 24 * 60, // retry for up to 24h
 });
 
-// Activate: clean old caches
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+registerRoute(
+  ({ url }) => url.hostname.includes('supabase') && url.pathname.includes('submit-order'),
+  new NetworkFirst({
+    cacheName: 'lnp-orders-sync',
+    plugins: [orderSyncPlugin],
+  }),
+  'POST',
+);
+
+// ─── Push notifications ─────────────────────────────────
+self.addEventListener('push', (event) => {
+  let data = { title: 'La Nona Pato', body: '¡Tenemos novedades!', url: '/', icon: '/icons/icon-192.png' };
+  try {
+    if (event.data) data = { ...data, ...event.data.json() };
+  } catch (_) { /* keep defaults */ }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || '/icons/icon-192.png',
+      badge: '/icons/icon-72.png',
+      data: { url: data.url || '/' },
+      vibrate: [200, 100, 200],
+    })
   );
-  self.clients.claim();
 });
 
-// Fetch: network-first for API, cache-first for assets
-self.addEventListener('fetch', (e) => {
-  const url = new URL(e.request.url);
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // Focus existing tab if open
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(url);
+          return client.focus();
+        }
+      }
+      // Otherwise open new tab
+      return clients.openWindow(url);
+    })
+  );
+});
 
-  // Skip non-GET and supabase API requests (always fresh)
-  if (e.request.method !== 'GET' || url.hostname.includes('supabase')) return;
-
-  // JS/CSS/images: cache-first
-  if (url.pathname.match(/\.(js|css|png|jpg|svg|ico|woff2?)$/)) {
-    e.respondWith(
-      caches.match(e.request).then((cached) => cached || fetch(e.request).then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
-        return res;
-      }))
+// ─── Offline fallback ───────────────────────────────────
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        caches.match('/offline.html').then((r) => r || caches.match('/'))
+      ),
     );
-    return;
   }
-
-  // HTML: network-first with cache fallback
-  e.respondWith(
-    fetch(e.request).then((res) => {
-      const clone = res.clone();
-      caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
-      return res;
-    }).catch(() => caches.match(e.request))
-  );
 });

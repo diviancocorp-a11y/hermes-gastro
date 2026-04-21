@@ -1,26 +1,40 @@
 import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { I, fi, imgOpt } from "../lib/utils";
+import { Icon, formatInt, optimizeImage, originalImageUrl, disableImageTransforms, probeImageTransforms } from "../lib/utils";
+import { preloadImages } from "../lib/preloadImages";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import business, { waLink } from "../config/business";
 
 // ── Extracted components ──
 import ProductCard from "../components/catalog/ProductCard";
+import ReviewsList from "../components/catalog/ReviewsList";
+import PushBanner from "../components/catalog/PushBanner";
 import ConfirmationAnimation from "../components/catalog/ConfirmationAnimation";
 import VerificationScreen from "../components/catalog/VerificationScreen";
 import OrderSentView from "../components/catalog/OrderSentView";
 
 // ── Shared constants ──
 import {
-  avatarColors, CAT_GROUPS, SUB_TO_PARENT, DAILY_DEALS, DEAL_PCT,
+  avatarColors, CAT_GROUPS as FALLBACK_CAT_GROUPS, SUB_TO_PARENT as FALLBACK_SUB_TO_PARENT,
+  DAILY_DEALS, DEAL_PCT,
   fallbackSettings, fallbackProducts, STORE_LAT, STORE_LNG,
   haversine, calcDeliveryCost, CHECKOUT_STEPS, DEFAULT_FORM
 } from "../constants/catalogConstants";
+import { fetchCategoryGroups, toClientFormat, buildSubToParent } from "../services/categories";
+import useFeature from "../hooks/useFeature";
 
 export default function Catalog() {
   const navigate = useNavigate();
   const { user, profile, addresses, isFavorite, toggleFavorite } = useAuth();
+
+  // --- Feature flags ---
+  const ffGift = useFeature('GIFT_MODE');
+  const ffReviews = useFeature('REVIEWS');
+  const ffPush = useFeature('PUSH_NOTIFICATIONS');
+  const ffDeals = useFeature('DAILY_DEALS');
+  const ffWhatsapp = useFeature('WHATSAPP');
 
   // --- Estado de datos ---
   const [sett, setSett] = useState(fallbackSettings);
@@ -28,6 +42,8 @@ export default function Catalog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [serverNow, setServerNow] = useState(null); // hora del servidor para validar horarios
+  const [catGroups, setCatGroups] = useState(FALLBACK_CAT_GROUPS);
+  const [subToParent, setSubToParent] = useState(FALLBACK_SUB_TO_PARENT);
 
   // --- Estado de UI ---
   const [selCat, setSelCat] = useState("Todos");
@@ -205,11 +221,28 @@ export default function Catalog() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
-      const data = await fetchCatalog();
+      // Fetch catalog data and categories in parallel
+      const [data, dbCategories] = await Promise.all([
+        fetchCatalog(),
+        fetchCategoryGroups(),
+      ]);
+      // Apply dynamic categories
+      const clientCats = toClientFormat(dbCategories);
+      setCatGroups(clientCats);
+      setSubToParent(buildSubToParent(clientCats));
+
       if (data) {
         setSett(data.settings);
         setProducts(data.products);
         if (data.serverNow) setServerNow(new Date(data.serverNow));
+        // Probe if Supabase image transforms are available (Pro plan feature)
+        probeImageTransforms(data.settings?.cover_url);
+        // Preload hero + first 4 product images for fast LCP
+        const criticalUrls = [
+          data.settings?.cover_url,
+          ...data.products.slice(0, 4).map(p => p.image_url),
+        ];
+        preloadImages(criticalUrls);
       } else {
         // Si Supabase falla, usamos datos de respaldo
         console.warn("No se pudo conectar a Supabase. Usando datos de respaldo.");
@@ -238,10 +271,11 @@ export default function Catalog() {
 
   // Categorías madre con descuento del día (usa hora del servidor)
   const dealCats = useMemo(() => {
+    if (!ffDeals) return new Set();
     const now = serverNow || new Date();
     const dow = now.getDay(); // 0=Dom, 1=Lun ... 4=Jue
     return new Set(DAILY_DEALS[dow] || []);
-  }, [serverNow]);
+  }, [serverNow, ffDeals]);
 
   // Categorías madre con imagen: prioridad settings > primer producto con foto
   const categories = useMemo(() => {
@@ -249,7 +283,7 @@ export default function Catalog() {
     const existingSubs = new Set(products.map(r => r.category));
     const hiddenCats = new Set(sett.hidden_cats || []);
     const catNames = sett.cat_names || {};
-    const catData = CAT_GROUPS
+    const catData = catGroups
       .filter(g => !hiddenCats.has(g.name) && g.subs.some(s => existingSubs.has(s)))
       .map(g => {
         const customImg = catImgs[g.name];
@@ -258,11 +292,11 @@ export default function Catalog() {
         return { name: g.name, displayName, icon: g.icon, subs: g.subs, img: customImg || rep?.image_url || null, deal: dealCats.has(g.name) };
       });
     return [{ name: "Todos", icon: "🏠", subs: [], img: catImgs["Todos"] || null, deal: false, displayName: "Todos" }, ...catData];
-  }, [products, dealCats, sett]);
+  }, [products, dealCats, sett, catGroups]);
 
   // Helper: ¿un producto pertenece a una categoría madre con descuento?
   const hasDeal = useCallback((p) => {
-    const parent = SUB_TO_PARENT[p.category];
+    const parent = subToParent[p.category];
     return parent ? dealCats.has(parent) : false;
   }, [dealCats]);
 
@@ -275,7 +309,7 @@ export default function Catalog() {
   // Filtrar productos por categoría madre seleccionada
   const filteredProds = useMemo(() => {
     if (selCat === "Todos") return products;
-    const group = CAT_GROUPS.find(g => g.name === selCat);
+    const group = catGroups.find(g => g.name === selCat);
     if (!group) return products;
     return products.filter(r => group.subs.includes(r.category));
   }, [selCat, products]);
@@ -414,7 +448,7 @@ export default function Catalog() {
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({
                   type: "receipt",
-                  store: "La Nona Pato",
+                  store: business.name,
                   customer: form.name,
                   phone: form.phone,
                   payment: form.payment,
@@ -453,7 +487,7 @@ export default function Catalog() {
   // Sonido de pato al confirmar pedido
   useEffect(() => {
     if (confirmAnim) {
-      try { const a = new Audio('/quack.mp3'); a.play().catch(() => {}); } catch {}
+      try { const a = new Audio(business.branding.sound); a.play().catch(() => {}); } catch {}
     }
   }, [confirmAnim]);
 
@@ -489,7 +523,7 @@ export default function Catalog() {
     return (
     <div className="po">
       <div className="ph">
-        <button onClick={goBack}>{I.back({ size: 20 })}</button>
+        <button onClick={goBack}>{Icon.back({ size: 20 })}</button>
         <h2>{STEPS[ckStep]}</h2>
         <span style={{fontSize:12,color:"var(--t3)",fontWeight:600}}>{ckStep+1}/{STEPS.length}</span>
       </div>
@@ -777,7 +811,7 @@ export default function Catalog() {
                       <div style={{fontSize:13,fontWeight:700,color:"var(--tx)"}}>🚚 Costo de envío</div>
                       <div style={{fontSize:11,color:"var(--t3)",marginTop:2}}>~{deliveryKm} km desde el local</div>
                     </div>
-                    <div style={{fontSize:18,fontWeight:800,color:"var(--ac)"}}>${fi(deliveryCost)}</div>
+                    <div style={{fontSize:18,fontWeight:800,color:"var(--ac)"}}>${formatInt(deliveryCost)}</div>
                   </div>
                 </div>
               )}
@@ -859,7 +893,7 @@ export default function Catalog() {
                 <div className="ck-bank-row"><span style={{color:"var(--t3)",fontSize:12}}>CBU</span><span style={{fontWeight:700,fontSize:14,letterSpacing:0.5}}>0000003100000535412820</span></div>
                 <button onClick={() => {navigator.clipboard.writeText("0000003100000535412820");}} className="ck-copy-btn">Copiar CBU</button>
               </div>
-              <div style={{fontSize:13,color:"var(--t2)",marginTop:12,fontWeight:700}}>Monto a transferir: <span style={{color:"var(--ac)"}}>${fi(ctWithDelivery)}</span></div>
+              <div style={{fontSize:13,color:"var(--t2)",marginTop:12,fontWeight:700}}>Monto a transferir: <span style={{color:"var(--ac)"}}>${formatInt(ctWithDelivery)}</span></div>
 
               {/* Upload comprobante */}
               <div style={{marginTop:16}}>
@@ -902,7 +936,7 @@ export default function Catalog() {
                 <div className="ck-bank-row"><span style={{color:"var(--t3)",fontSize:12}}>Alias</span><span style={{fontWeight:700,fontSize:16}}>pato.jhs</span></div>
                 <button onClick={() => {navigator.clipboard.writeText("pato.jhs");}} className="ck-copy-btn">Copiar alias</button>
               </div>
-              <div style={{fontSize:13,color:"var(--t2)",marginTop:12,fontWeight:700}}>Monto a pagar: <span style={{color:"var(--ac)"}}>${fi(ctWithDelivery)}</span></div>
+              <div style={{fontSize:13,color:"var(--t2)",marginTop:12,fontWeight:700}}>Monto a pagar: <span style={{color:"var(--ac)"}}>${formatInt(ctWithDelivery)}</span></div>
 
               {/* Upload comprobante */}
               <div style={{marginTop:16}}>
@@ -947,10 +981,10 @@ export default function Catalog() {
               }
             </div>
             {couponErr && <p className="coupon-err">{couponErr}</p>}
-            {coupon && <div className="coupon-applied">🎉 Descuento <strong>{coupon.discount_pct}%</strong> — ahorrás <strong>${fi(discount)}</strong></div>}
+            {coupon && <div className="coupon-applied">🎉 Descuento <strong>{coupon.discount_pct}%</strong> — ahorrás <strong>${formatInt(discount)}</strong></div>}
           </div>
 
-          <div className="gift-box" style={{marginTop:16}}>
+          {ffGift && <div className="gift-box" style={{marginTop:16}}>
             <div className="gift-hd" onClick={() => sf("is_gift", !form.is_gift)}>
               <div className="gift-info">
                 <span className="gift-icon">🎁</span>
@@ -967,7 +1001,7 @@ export default function Catalog() {
                 <div className="gift-chars">{form.gift_note.length}/200</div>
               </div>
             )}
-          </div>
+          </div>}
 
           <button className="abtn ck-next" disabled={!canNext2 || (needsReceipt && !receiptFile)} onClick={goNext}>
             {needsReceipt && !receiptFile ? "Subí el comprobante para continuar" : "Siguiente →"}
@@ -991,7 +1025,7 @@ export default function Catalog() {
 
             <div className="ck-sum-section">
               <div className="ck-sum-title">💳 Pago</div>
-              <div className="ck-sum-val" style={{textTransform:"capitalize"}}>{form.payment === "mercadopago" ? "MercadoPago" : form.payment}{form.payment === "efectivo" && form.change_amount ? ` — ${form.change_amount === "justo" ? "Pago justo" : `Paga con $${fi(Number(form.change_amount))}`}` : ""}</div>
+              <div className="ck-sum-val" style={{textTransform:"capitalize"}}>{form.payment === "mercadopago" ? "MercadoPago" : form.payment}{form.payment === "efectivo" && form.change_amount ? ` — ${form.change_amount === "justo" ? "Pago justo" : `Paga con $${formatInt(Number(form.change_amount))}`}` : ""}</div>
               {receiptFile && <div className="ck-sum-val" style={{fontSize:12,color:"var(--gn)"}}>📎 Comprobante adjunto</div>}
               {coupon && <div className="ck-sum-val" style={{fontSize:12,color:"var(--gn)"}}>🎟 Cupón -{coupon.discount_pct}%</div>}
               {form.is_gift && <div className="ck-sum-val" style={{fontSize:12,color:"var(--ac)"}}>🎁 Es un regalo{form.gift_note ? `: "${form.gift_note.slice(0,40)}${form.gift_note.length>40?"...":""}"` : ""}</div>}
@@ -1004,7 +1038,7 @@ export default function Catalog() {
               {cart.map(it => (
                 <div key={it.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--b2)"}}>
                   <div><span style={{fontWeight:600}}>{it.name}</span><span style={{color:"var(--t3)",fontSize:13}}> x{it.qty}</span></div>
-                  <span style={{fontWeight:700}}>${fi(it.price * it.qty)}</span>
+                  <span style={{fontWeight:700}}>${formatInt(it.price * it.qty)}</span>
                 </div>
               ))}
             </div>
@@ -1012,14 +1046,14 @@ export default function Catalog() {
             {form.delivery === "envio" && deliveryCost > 0 && (
               <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid var(--b2)",fontSize:14}}>
                 <span>🚚 Envío (~{deliveryKm} km)</span>
-                <span style={{fontWeight:700}}>${fi(deliveryCost)}</span>
+                <span style={{fontWeight:700}}>${formatInt(deliveryCost)}</span>
               </div>
             )}
 
             <div className="ct" style={{marginTop:12}}>
-              {(coupon || (form.delivery === "envio" && deliveryCost > 0)) && <><span style={{color:"var(--t3)",fontSize:13}}>Productos: ${fi(ct)}</span><span style={{flex:1}}/></>}
+              {(coupon || (form.delivery === "envio" && deliveryCost > 0)) && <><span style={{color:"var(--t3)",fontSize:13}}>Productos: ${formatInt(ct)}</span><span style={{flex:1}}/></>}
               <span style={{fontSize:16,fontWeight:700}}>Total</span>
-              <span style={{fontSize:18,fontWeight:800,color:coupon?"var(--gn)":"var(--tx)"}}>${fi(ctWithDelivery)}</span>
+              <span style={{fontSize:18,fontWeight:800,color:coupon?"var(--gn)":"var(--tx)"}}>${formatInt(ctWithDelivery)}</span>
             </div>
           </div>
 
@@ -1037,28 +1071,32 @@ export default function Catalog() {
   if (showCart) return (
     <div className="po">
       <div className="ph">
-        <button onClick={() => setShowCart(false)}>{I.back({ size: 20 })}</button>
+        <button onClick={() => setShowCart(false)}>{Icon.back({ size: 20 })}</button>
         <h2>Mi Pedido</h2>
       </div>
       <div className="pb">
         {cart.map(it => (
           <div key={it.id} className="ci2">
             {it.img ? (
-              <img className="ci-img" src={it.img} alt="" loading="lazy" onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }} />
+              <img className="ci-img" src={it.img} alt="" loading="lazy" onError={e => {
+                const orig = originalImageUrl(e.target.src);
+                if (orig && orig !== e.target.src) { disableImageTransforms(); e.target.src = orig; return; }
+                e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex';
+              }} />
             ) : null}
             <div className="ci-img prod-avatar" style={{ display: it.img ? 'none' : 'flex', background: avatarColors[it.name.charCodeAt(0) % avatarColors.length], width: 56, height: 56, fontSize: 22 }}>{it.name.charAt(0)}</div>
             <div className="ci-i">
               <div className="ci-n">{it.name}</div>
-              <div className="ci-p" style={{ marginBottom: 12 }}>${fi(it.price * it.qty)}</div>
+              <div className="ci-p" style={{ marginBottom: 12 }}>${formatInt(it.price * it.qty)}</div>
               <div className="qty">
-                <button onClick={() => updQ(it.id, it.qty - 1)}>{it.qty <= 1 ? <span style={{ fontSize: 12, color: "var(--rd)" }}>🗑</span> : I.minus({ size: 14 })}</button>
+                <button onClick={() => updQ(it.id, it.qty - 1)}>{it.qty <= 1 ? <span style={{ fontSize: 12, color: "var(--rd)" }}>🗑</span> : Icon.minus({ size: 14 })}</button>
                 <span>{it.qty}</span>
-                <button onClick={() => updQ(it.id, it.qty + 1)}>{I.plus({ size: 14 })}</button>
+                <button onClick={() => updQ(it.id, it.qty + 1)}>{Icon.plus({ size: 14 })}</button>
               </div>
             </div>
           </div>
         ))}
-        <div className="ct"><span>Total</span><span>${fi(ct)}</span></div>
+        <div className="ct"><span>Total</span><span>${formatInt(ct)}</span></div>
 
         {/* Notas del pedido */}
         <div style={{marginBottom:16}}>
@@ -1078,10 +1116,21 @@ export default function Catalog() {
   return (
     <div className="app">
       {/* Portada y Header */}
-      <div className="store-cover" style={{ backgroundImage: `url(${imgOpt(sett.cover_url, { width: 600, quality: 55 }) || fallbackSettings.cover_url})` }}></div>
+      <div className="store-cover" style={{ backgroundImage: `url(${optimizeImage(sett.cover_url, { width: 600, quality: 55 }) || fallbackSettings.cover_url})` }}>
+        {/* Hidden probe image: detects if render URL fails and falls back to original */}
+        {sett.cover_url && <img src={optimizeImage(sett.cover_url, { width: 600, quality: 55 })} alt="" style={{display:'none'}} onError={e => {
+          disableImageTransforms();
+          const orig = sett.cover_url || fallbackSettings.cover_url;
+          e.target.parentElement.style.backgroundImage = `url(${orig})`;
+        }} />}
+      </div>
       <div className="store-header">
         <div className="store-logo" style={{ background: sett.logo_url ? "transparent" : (sett.logo_color || fallbackSettings.logo_color), overflow: "hidden" }}>
-          {sett.logo_url ? <img src={imgOpt(sett.logo_url, { width: 150, height: 150, quality: 60 })} alt="" width={72} height={72} decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} onError={e => { e.target.style.display = "none"; e.target.parentElement.textContent = sett.logo_letter || fallbackSettings.logo_letter; e.target.parentElement.style.background = sett.logo_color || fallbackSettings.logo_color; }} /> : (sett.logo_letter || fallbackSettings.logo_letter)}
+          {sett.logo_url ? <img src={optimizeImage(sett.logo_url, { width: 150, height: 150, quality: 60 })} alt="" width={72} height={72} decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} onError={e => {
+            const orig = originalImageUrl(e.target.src) || sett.logo_url;
+            if (orig !== e.target.src) { disableImageTransforms(); e.target.src = orig; return; }
+            e.target.style.display = "none"; e.target.parentElement.textContent = sett.logo_letter || fallbackSettings.logo_letter; e.target.parentElement.style.background = sett.logo_color || fallbackSettings.logo_color;
+          }} /> : (sett.logo_letter || fallbackSettings.logo_letter)}
         </div>
         <div className="store-info">
           <h1 className="store-name">{sett.biz_name || fallbackSettings.biz_name}</h1>
@@ -1117,7 +1166,7 @@ export default function Catalog() {
               <button onClick={() => { setShowMenu(false); setShowTrackerInput(true); }} style={{ width: "100%", padding: "14px 16px", background: "var(--b3)", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, color: "var(--tx)", boxShadow: "var(--sh)", marginBottom: 8 }}>
                 🦆 Seguí tu pedido
               </button>
-              <a href="https://wa.me/5491165706805?text=Hola!%20Tengo%20una%20consulta" target="_blank" rel="noopener noreferrer" style={{ width: "100%", padding: "14px 16px", background: "#25D366", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, color: "#fff", boxShadow: "var(--sh)", marginBottom: 8, textDecoration: "none" }}>
+              <a href={waLink('Hola! Tengo una consulta')} target="_blank" rel="noopener noreferrer" style={{ width: "100%", padding: "14px 16px", background: "#25D366", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, color: "#fff", boxShadow: "var(--sh)", marginBottom: 8, textDecoration: "none" }}>
                 💬 WhatsApp
               </a>
             </div>
@@ -1147,7 +1196,7 @@ export default function Catalog() {
 
             {/* Banner Eventos / Catering */}
             <div style={{ padding: "0 16px 24px" }}>
-              <a href="https://wa.me/5491165706805?text=Hola!%20Tengo%20una%20consulta%20sobre%20los%20eventos" target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", background: "linear-gradient(135deg, #2D1B0E 0%, #5D4037 100%)", borderRadius: 16, padding: "20px 18px", color: "#fff", position: "relative", overflow: "hidden" }}>
+              <a href={waLink('Hola! Tengo una consulta sobre los eventos')} target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", background: "linear-gradient(135deg, #2D1B0E 0%, #5D4037 100%)", borderRadius: 16, padding: "20px 18px", color: "#fff", position: "relative", overflow: "hidden" }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>🍾🥂</div>
                 <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 18, lineHeight: 1.3, marginBottom: 6 }}>¿Necesitás catering o coctelería para tu evento?</div>
                 <div style={{ fontSize: 13, opacity: 0.85, lineHeight: 1.5, marginBottom: 14 }}>Personal, catering completo y coctelería para cumpleaños, reuniones, empresas y más.</div>
@@ -1220,7 +1269,11 @@ export default function Catalog() {
         <div className="cat-scroll">
           {categories.map(c => (
             <div key={c.name} className={`cat-card ${selCat === c.name ? "active" : ""} ${c.deal ? "has-deal" : ""}`} onClick={() => setSelCat(c.name)}>
-              {c.img && <img className="cat-card-bg" src={imgOpt(c.img, { width: 300, quality: 60 })} alt="" loading="lazy" fetchpriority="low" width={180} height={120} decoding="async" onError={e=>{e.target.style.display='none'}} />}
+              {c.img && <img className="cat-card-bg" src={optimizeImage(c.img, { width: 300, quality: 60 })} alt="" loading="lazy" fetchpriority="low" width={180} height={120} decoding="async" onError={e=>{
+                const orig = originalImageUrl(e.target.src) || c.img;
+                if (orig !== e.target.src) { disableImageTransforms(); e.target.src = orig; return; }
+                e.target.style.display='none';
+              }} />}
               <div className="cat-card-overlay" />
               <div className="cat-card-content">
                 <span className="cat-card-label">{c.displayName || c.name}</span>
@@ -1265,7 +1318,7 @@ export default function Catalog() {
         <div className="pedix-cart-btn" onClick={() => setShowCart(true)}>
           <div className="pcb-qty">{cc}</div>
           <div className="pcb-text">Ver pedido</div>
-          <div className="pcb-price">${fi(ct)}</div>
+          <div className="pcb-price">${formatInt(ct)}</div>
         </div>
       )}
 
@@ -1280,12 +1333,16 @@ export default function Catalog() {
               {upsell.suggestions.map(s => (
                 <div key={s.id} className="ups-card" onClick={() => addFromUpsell(s)}>
                   {s.image_url ? (
-                    <img className="ups-img" src={imgOpt(s.image_url, { width: 200 })} alt={s.name} loading="lazy" width={48} height={48} onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }} />
+                    <img className="ups-img" src={optimizeImage(s.image_url, { width: 200 })} alt={s.name} loading="lazy" width={48} height={48} onError={e => {
+                      const orig = originalImageUrl(e.target.src) || s.image_url;
+                      if (orig !== e.target.src) { disableImageTransforms(); e.target.src = orig; return; }
+                      e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex';
+                    }} />
                   ) : null}
                   <div className="ups-img prod-avatar" style={{ display: s.image_url ? 'none' : 'flex', background: avatarColors[s.name.charCodeAt(0) % avatarColors.length], width: 48, height: 48, fontSize: 20, borderRadius: 10 }}>{s.name.charAt(0)}</div>
                   <div className="ups-info">
                     <div className="ups-name">{s.name}</div>
-                    <div className="ups-price">${fi(s.sale_price)}</div>
+                    <div className="ups-price">${formatInt(s.sale_price)}</div>
                   </div>
                   <button className="ups-btn">+</button>
                 </div>
@@ -1298,7 +1355,7 @@ export default function Catalog() {
 
       {/* Banner Eventos / Catering inline */}
       <div style={{ padding: "8px 16px 0" }}>
-        <a href="https://wa.me/5491165706805?text=Hola!%20Tengo%20una%20consulta%20sobre%20los%20eventos" target="_blank" rel="noopener noreferrer" className="event-banner">
+        <a href={waLink('Hola! Tengo una consulta sobre los eventos')} target="_blank" rel="noopener noreferrer" className="event-banner">
           <div className="event-banner-content">
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 16, color: "#fff", lineHeight: 1.3 }}>¿Tenés un evento?</div>
@@ -1310,9 +1367,15 @@ export default function Catalog() {
       </div>
 
       {/* WhatsApp flotante para soporte */}
-      <a href="https://wa.me/5491165706805?text=Hola!%20Tengo%20una%20consulta%20sobre%20La%20Nona%20Pato" target="_blank" rel="noopener noreferrer" className="wa-float" aria-label="WhatsApp">
+      {ffWhatsapp && <a href={waLink(`Hola! Tengo una consulta sobre ${business.name}`)} target="_blank" rel="noopener noreferrer" className="wa-float" aria-label="WhatsApp">
         <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      </a>
+      </a>}
+
+      {/* Push notification prompt */}
+      {ffPush && <PushBanner />}
+
+      {/* Customer reviews */}
+      {ffReviews && <div style={{ padding: '0 16px' }}><ReviewsList /></div>}
 
       {/* Footer legal */}
       <footer className="catalog-footer">
@@ -1321,7 +1384,7 @@ export default function Catalog() {
           <span className="footer-dot">·</span>
           <a href="/privacidad" target="_blank" rel="noopener noreferrer">Política de Privacidad</a>
         </div>
-        <p className="footer-copy">Copyright © 2026 {sett.biz_name || "La Nona Pato"}. Todos los derechos reservados.</p>
+        <p className="footer-copy">Copyright © {business.legal.copyrightYear} {sett.biz_name || business.name}. Todos los derechos reservados.</p>
       </footer>
     </div>
   );

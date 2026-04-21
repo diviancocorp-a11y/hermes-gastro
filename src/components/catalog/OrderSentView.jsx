@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { I, fi, saleCode } from "../../lib/utils";
+import { Icon, formatInt, formatOrderCode } from "../../lib/utils";
+import { waLink } from "../../config/business";
+import ReviewForm from "./ReviewForm";
 
 export default function OrderSentView({ orderId, form, receiptFile, onReset }) {
   const [copiedCode, setCopiedCode] = useState(false);
@@ -8,7 +10,7 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset }) {
   return (
     <div className="po" style={{ zIndex: 250 }}>
       <div className="success">
-        <div className="suc-ic">{I.check({ size: 40, color: "#fff" })}</div>
+        <div className="suc-ic">{Icon.check({ size: 40, color: "#fff" })}</div>
         <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 28 }}>¡Pedido confirmado!</h2>
         <p style={{ fontSize: 15, color: "var(--t3)", lineHeight: 1.6, marginTop: 12 }}>
           {wasPaidDigital && receiptFile
@@ -25,10 +27,10 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset }) {
             <div style={{ fontSize: 12, color: "var(--t3)", marginBottom: 6 }}>📋 Código de tu pedido</div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <code style={{ fontSize: 22, fontWeight: 700, color: "var(--tx)", letterSpacing: 2, fontFamily: "'DM Serif Display',monospace" }}>
-                {saleCode(orderId)}
+                {formatOrderCode(orderId)}
               </code>
               <button
-                onClick={() => { navigator.clipboard.writeText(saleCode(orderId)); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); }}
+                onClick={() => { navigator.clipboard.writeText(formatOrderCode(orderId)); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); }}
                 style={{ flexShrink: 0, padding: "6px 12px", background: copiedCode ? "var(--gn, #3A7D44)" : "var(--pr, #C45D3E)", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, cursor: "pointer", transition: "background .2s" }}
               >
                 {copiedCode ? "✓ Copiado" : "Copiar"}
@@ -49,11 +51,14 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset }) {
           )}
         </>)}
         {wasPaidDigital && (
-          <a href="https://wa.me/5491165706805?text=Hola!%20Acabo%20de%20hacer%20un%20pedido%20y%20tengo%20una%20consulta" target="_blank" rel="noopener noreferrer"
+          <a href={waLink('Hola! Acabo de hacer un pedido y tengo una consulta')} target="_blank" rel="noopener noreferrer"
             style={{display:"block",marginTop:14,padding:"10px 16px",background:"#25D366",color:"#fff",borderRadius:12,fontSize:13,fontWeight:600,textAlign:"center",textDecoration:"none"}}>
             💬 ¿Dudas? Escribinos por WhatsApp
           </a>
         )}
+        {/* Review form */}
+        {orderId && <ReviewForm orderId={orderId} customerName={form.name} customerPhone={form.phone} />}
+
         <button onClick={onReset} style={{ marginTop: 14, fontSize: 12, color: "var(--t3)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 4 }}>
           ← Volver a la tienda
         </button>

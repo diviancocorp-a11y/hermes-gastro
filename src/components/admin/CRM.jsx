@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import { I, fi, td } from "../../lib/utils";
+import { Icon, formatInt, todayISO } from "../../lib/utils";
 import { fetchCustomerStats } from "../../lib/adminService";
 
-function CRM({orders,recs,ings,msg}){
+function CRM({orders,recipes,ingredients,showToast}){
   const [customers,setCustomers]=useState([]);const [loading,setLoading]=useState(true);const [search,setSearch]=useState("");
   const [crmPage,setCrmPage]=useState(1);const CRM_PER_PAGE=30;
   useEffect(()=>{fetchCustomerStats().then(c=>{setCustomers(c);setLoading(false);});},[]);
@@ -18,8 +18,8 @@ function CRM({orders,recs,ings,msg}){
     const header="Nombre,Teléfono,Email,Pedidos,Gasto Total,Última compra\n";
     const rows=filt.map(c=>`"${c.name||""}","${c.phone||""}","${c.email||""}",${c.orders},${c.total},"${c.last_order?new Date(c.last_order).toLocaleDateString("es-AR"):""}"`).join("\n");
     const blob=new Blob([header+rows],{type:"text/csv;charset=utf-8;"});
-    const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`clientes_${td()}.csv`;a.click();URL.revokeObjectURL(url);
-    msg("CSV descargado ✓");
+    const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`clientes_${todayISO()}.csv`;a.click();URL.revokeObjectURL(url);
+    showToast("CSV descargado ✓");
   };
 
   if(loading)return <div className="s" style={{textAlign:"center",padding:40,color:"var(--t3)"}}>Cargando clientes...</div>;
@@ -32,7 +32,7 @@ function CRM({orders,recs,ings,msg}){
     {/* Stats rápidas */}
     <div style={{display:"flex",gap:10,padding:"0 16px 12px"}}>
       <div className="c" style={{flex:1,padding:12,textAlign:"center"}}><div style={{fontSize:24,fontWeight:700}}>{customers.length}</div><div style={{fontSize:11,color:"var(--t3)"}}>Clientes</div></div>
-      <div className="c" style={{flex:1,padding:12,textAlign:"center"}}><div style={{fontSize:24,fontWeight:700}}>${fi(totalFacturado)}</div><div style={{fontSize:11,color:"var(--t3)"}}>Facturado total</div></div>
+      <div className="c" style={{flex:1,padding:12,textAlign:"center"}}><div style={{fontSize:24,fontWeight:700}}>${formatInt(totalFacturado)}</div><div style={{fontSize:11,color:"var(--t3)"}}>Facturado total</div></div>
     </div>
 
     {/* Método de pago más usado */}
@@ -65,7 +65,7 @@ function CRM({orders,recs,ings,msg}){
               </div>
             </div>
             <div style={{textAlign:"right"}}>
-              <div style={{fontWeight:700,color:"var(--gn)"}}>${fi(c.total)}</div>
+              <div style={{fontWeight:700,color:"var(--gn)"}}>${formatInt(c.total)}</div>
               <div style={{fontSize:11,color:"var(--t3)"}}>{c.orders} pedido{c.orders!==1?"s":""}</div>
             </div>
           </div>

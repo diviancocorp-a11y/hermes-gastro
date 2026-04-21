@@ -41,7 +41,7 @@ describe('catalogConstants', () => {
   });
 
   it('fallbackSettings has required fields', () => {
-    expect(fallbackSettings.biz_name).toBe('La Nona Pato');
+    expect(fallbackSettings.biz_name).toBeTruthy();
     expect(fallbackSettings.logo_color).toMatch(/^#/);
   });
 

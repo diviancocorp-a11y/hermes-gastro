@@ -1,4 +1,4 @@
-import { I } from "../../lib/utils";
+import { Icon } from "../../lib/utils";
 
 function CancelDlg({order,recs,ings,onClose,onConfirm}){
   const used=[];const items=order.order_items||order.items||[];
@@ -10,7 +10,7 @@ function CancelDlg({order,recs,ings,onClose,onConfirm}){
   });
   return(<div className="modal"><div className="modal-c">
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
-      <div style={{width:40,height:40,borderRadius:10,background:"var(--rl)",display:"flex",alignItems:"center",justifyContent:"center"}}>{I.alert({size:20,color:"var(--rd)"})}</div>
+      <div style={{width:40,height:40,borderRadius:10,background:"var(--rl)",display:"flex",alignItems:"center",justifyContent:"center"}}>{Icon.alert({size:20,color:"var(--rd)"})}</div>
       <div><div style={{fontWeight:700,fontSize:16}}>Cancelar pedido</div><div style={{fontSize:12,color:"var(--t3)"}}>de {order.customer}</div></div>
     </div>
     <div style={{fontSize:14,color:"var(--t2)",marginBottom:12}}>Los insumos ya fueron descontados. ¿Qué hacemos?</div>
@@ -18,8 +18,8 @@ function CancelDlg({order,recs,ings,onClose,onConfirm}){
       <div style={{fontSize:11,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",marginBottom:6}}>Insumos usados</div>
       {used.map(ig=>(<div key={ig.id} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",fontSize:13}}><span>{ig.name}</span><span style={{fontWeight:600}}>{ig.qty} {ig.unit}</span></div>))}
     </div>}
-    <button className="btn bgn" style={{marginBottom:8}} onClick={()=>onConfirm(true)}>{I.back({size:16,color:"#fff"})} Devolver al stock</button>
-    <button className="btn bd" style={{marginBottom:8}} onClick={()=>onConfirm(false)}>{I.trash({size:16})} Registrar desperdicio</button>
+    <button className="btn bgn" style={{marginBottom:8}} onClick={()=>onConfirm(true)}>{Icon.back({size:16,color:"#fff"})} Devolver al stock</button>
+    <button className="btn bd" style={{marginBottom:8}} onClick={()=>onConfirm(false)}>{Icon.trash({size:16})} Registrar desperdicio</button>
     <button className="btn bs" onClick={onClose}>Volver</button>
   </div></div>);
 }
@@ -27,7 +27,7 @@ function CancelDlg({order,recs,ings,onClose,onConfirm}){
 function StockWarningDlg({deficits,onForce,onClose}){
   return(<div className="modal"><div className="modal-c">
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
-      <div style={{width:40,height:40,borderRadius:10,background:"#FFF8E1",display:"flex",alignItems:"center",justifyContent:"center"}}>{I.alert({size:20,color:"var(--yw)"})}</div>
+      <div style={{width:40,height:40,borderRadius:10,background:"#FFF8E1",display:"flex",alignItems:"center",justifyContent:"center"}}>{Icon.alert({size:20,color:"var(--yw)"})}</div>
       <div><div style={{fontWeight:700,fontSize:16}}>Stock insuficiente</div><div style={{fontSize:12,color:"var(--t3)"}}>Algunos insumos quedarán en negativo</div></div>
     </div>
     <div className="c" style={{padding:"8px 12px",marginBottom:16,background:"var(--b2)"}}>

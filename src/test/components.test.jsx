@@ -68,7 +68,7 @@ describe('ConfirmationAnimation', () => {
   it('renders confirmation text', () => {
     render(<ConfirmationAnimation />);
     expect(screen.getByText('¡Pedido confirmado!')).toBeInTheDocument();
-    expect(screen.getByText('Gracias por elegir La Nona Pato')).toBeInTheDocument();
+    expect(screen.getByText(/Gracias por elegir/)).toBeInTheDocument();
   });
 
   it('renders SVG heart', () => {

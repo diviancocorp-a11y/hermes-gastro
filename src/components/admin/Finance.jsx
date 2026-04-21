@@ -1,30 +1,30 @@
 import { useState, useEffect } from "react";
-import { I, fi, fm, td, saleCode } from "../../lib/utils";
+import { Icon, formatInt, formatMoney, todayISO, formatOrderCode } from "../../lib/utils";
 import {
   createExpense, deleteExpense,
   createSale,
   upsertIngredient, updateIngredientStock
 } from "../../lib/adminService";
 
-const DEF = {
+const DEFAULT_SETTINGS = {
   exp_cats: ["Materia Prima", "Servicios", "Packaging", "Transporte", "Alquiler", "Equipamiento", "Otros"],
   ing_cats: ["Secos", "Frescos", "Packaging", "Otros"]
 };
 
 // ═══════ EXPENSES ═══════
-function Expenses({ exps, setExps, sett, msg, onClose }) {
-  const mo = td().slice(0, 7) + "-01";
-  const sorted = [...exps].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-  const tM = exps.filter(e => e.date >= mo).reduce((s, e) => s + (e.amount || 0), 0);
-  const byC = exps.filter(e => e.date >= mo).reduce((a, e) => { a[e.category || "Otros"] = (a[e.category || "Otros"] || 0) + (e.amount || 0); return a; }, {});
+function Expenses({ expenses, setExpenses, settings, showToast, onClose }) {
+  const monthStart = todayISO().slice(0, 7) + "-01";
+  const sorted = [...expenses].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const tM = expenses.filter(e => e.date >= monthStart).reduce((s, e) => s + (e.amount || 0), 0);
+  const byC = expenses.filter(e => e.date >= monthStart).reduce((a, e) => { a[e.category || "Otros"] = (a[e.category || "Otros"] || 0) + (e.amount || 0); return a; }, {});
   const [ae, setAe] = useState(false);
 
   return (
     <div className="po">
       <div className="ph">
-        <button onClick={onClose}>{I.back({})}</button>
+        <button onClick={onClose}>{Icon.back({})}</button>
         <h2>Gastos</h2>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--rd)" }}>Mes: ${fi(tM)}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--rd)" }}>Mes: ${formatInt(tM)}</div>
       </div>
       <div className="pb">
         {Object.keys(byC).length > 0 && (
@@ -32,13 +32,13 @@ function Expenses({ exps, setExps, sett, msg, onClose }) {
             {Object.entries(byC).sort((a, b) => b[1] - a[1]).map(([c, a]) => (
               <div key={c} style={{ background: "var(--b3)", borderRadius: 10, padding: "8px 12px", minWidth: 100, boxShadow: "var(--sh)", flexShrink: 0 }}>
                 <div style={{ fontSize: 10, color: "var(--t3)", fontWeight: 600, textTransform: "uppercase" }}>{c}</div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>${fi(a)}</div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>${formatInt(a)}</div>
               </div>
             ))}
           </div>
         )}
         <button className="btn bp" style={{ marginBottom: 12 }} onClick={() => setAe(true)}>
-          {I.plus({ size: 16, color: "#fff" })} Registrar gasto
+          {Icon.plus({ size: 16, color: "#fff" })} Registrar gasto
         </button>
         <div className="c" style={{ padding: 0, overflow: "hidden" }}>
           {sorted.length === 0 ? (
@@ -49,13 +49,13 @@ function Expenses({ exps, setExps, sett, msg, onClose }) {
           ) : (
             sorted.map(e => (
               <div key={e.id} className="li">
-                <div className="lic" style={{ background: "var(--rl)", color: "var(--rd)" }}>{I.dollar({ size: 16 })}</div>
+                <div className="lic" style={{ background: "var(--rl)", color: "var(--rd)" }}>{Icon.dollar({ size: 16 })}</div>
                 <div className="lii">
                   <div className="lin">{e.description}</div>
                   <div className="lid">{e.date && new Date(e.date + "T12:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}{e.supplier && ` · ${e.supplier}`}</div>
                 </div>
                 <div className="lir">
-                  <div className="lia" style={{ color: "var(--rd)" }}>-${fi(e.amount)}</div>
+                  <div className="lia" style={{ color: "var(--rd)" }}>-${formatInt(e.amount)}</div>
                 </div>
               </div>
             ))
@@ -64,17 +64,17 @@ function Expenses({ exps, setExps, sett, msg, onClose }) {
       </div>
       {ae && (
         <ExpForm
-          sett={sett}
+          settings={settings}
           onClose={() => setAe(false)}
           onSave={async (e) => {
             const saved = await createExpense(e);
             if (saved) {
-              setExps(p => [saved, ...p]);
+              setExpenses(p => [saved, ...p]);
               setAe(false);
-              msg("Registrado");
+              showToast("Registrado");
             } else {
               setAe(false);
-              msg("Error al registrar");
+              showToast("Error al registrar");
             }
           }}
         />
@@ -83,8 +83,8 @@ function Expenses({ exps, setExps, sett, msg, onClose }) {
   );
 }
 
-function ExpForm({ onClose, onSave, sett }) {
-  const [f, setF] = useState({ date: td(), description: "", amount: 0, category: "Materia Prima", supplier: "" });
+function ExpForm({ onClose, onSave, settings }) {
+  const [f, setF] = useState({ date: todayISO(), description: "", amount: 0, category: "Materia Prima", supplier: "" });
   const [err, setErr] = useState("");
   const s = (k, v) => { setErr(""); setF(p => ({ ...p, [k]: v })); };
   const descOk = f.description.trim().length >= 4;
@@ -98,7 +98,7 @@ function ExpForm({ onClose, onSave, sett }) {
   return (
     <div className="po">
       <div className="ph">
-        <button onClick={onClose}>{I.back({})}</button>
+        <button onClick={onClose}>{Icon.back({})}</button>
         <h2>Registrar Gasto</h2>
       </div>
       <div className="pb">
@@ -121,7 +121,7 @@ function ExpForm({ onClose, onSave, sett }) {
         <div className="fg">
           <label className="fl">Categoría</label>
           <select className="fin" value={f.category} onChange={e => s("category", e.target.value)}>
-            {(sett?.exp_cats || DEF.exp_cats).map(c => <option key={c}>{c}</option>)}
+            {(settings?.exp_cats || DEFAULT_SETTINGS.exp_cats).map(c => <option key={c}>{c}</option>)}
           </select>
         </div>
         <div className="fg">
@@ -129,16 +129,16 @@ function ExpForm({ onClose, onSave, sett }) {
           <input className="fin" value={f.supplier} onChange={e => s("supplier", e.target.value)} />
         </div>
         {err && <div style={{ background: "#FFEBEE", color: "var(--rd)", fontSize: 13, padding: "8px 12px", borderRadius: 8, marginBottom: 8 }}>⚠️ {err}</div>}
-        <button className="btn bp" disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={handleSave}>{I.check({ size: 18, color: "#fff" })} Registrar</button>
+        <button className="btn bp" disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={handleSave}>{Icon.check({ size: 18, color: "#fff" })} Registrar</button>
       </div>
     </div>
   );
 }
 
 // ═══════ PURCHASE ═══════
-function Purchase({ ings, setIngs, exps, setExps, sett, onClose, msg, loadAll }) {
+function Purchase({ ingredients, setIngredients, expenses, setExpenses, settings, onClose, showToast, loadAll }) {
   const [sup, setSup] = useState("");
-  const [date, setDate] = useState(td());
+  const [date, setDate] = useState(todayISO());
   const [items, setItems] = useState([]);
   const [sn, setSn] = useState(false);
   const [ni, setNi] = useState({ name: "", unit: "kg", category: "Secos", cost: 0, min_stock: 0 });
@@ -147,7 +147,7 @@ function Purchase({ ings, setIngs, exps, setExps, sett, onClose, msg, loadAll })
   const upd = (i, k, v) => setItems(p => p.map((x, j) => j === i ? { ...x, [k]: v } : x));
   const rm = i => setItems(p => p.filter((_, j) => j !== i));
   const sel = (i, id) => {
-    const ig = ings.find(x => x.id === id);
+    const ig = ingredients.find(x => x.id === id);
     upd(i, "ingredient_id", id);
     if (ig) upd(i, "unitCost", ig.cost || 0);
   };
@@ -156,10 +156,10 @@ function Purchase({ ings, setIngs, exps, setExps, sett, onClose, msg, loadAll })
     if (!ni.name) return;
     const saved = await upsertIngredient({ ...ni, stock: 0 });
     if (saved) {
-      setIngs(p => [...p, saved]);
+      setIngredients(p => [...p, saved]);
       setSn(false);
       setNi({ name: "", unit: "kg", category: "Secos", cost: 0, min_stock: 0 });
-      msg("Insumo: " + saved.name);
+      showToast("Insumo: " + saved.name);
     }
   };
 
@@ -177,21 +177,21 @@ function Purchase({ ings, setIngs, exps, setExps, sett, onClose, msg, loadAll })
     }
     // Register as expense if total > 0
     if (tot > 0) {
-      const d = v.map(it => { const ig = ings.find(x => x.id === it.ingredient_id); return ig ? `${ig.name} x${it.qty}` : ""; }).filter(Boolean).join(", ");
+      const d = v.map(it => { const ig = ingredients.find(x => x.id === it.ingredient_id); return ig ? `${ig.name} x${it.qty}` : ""; }).filter(Boolean).join(", ");
       const saved = await createExpense({ date, description: `Compra: ${d.slice(0, 50)}`, amount: tot, category: "Materia Prima", supplier: sup });
-      if (saved) setExps(p => [saved, ...p]);
+      if (saved) setExpenses(p => [saved, ...p]);
     }
     await loadAll();
-    msg("Compra registrada");
+    showToast("Compra registrada");
     onClose();
   };
 
-  const ic = sett?.ing_cats || DEF.ing_cats;
+  const ic = settings?.ing_cats || DEFAULT_SETTINGS.ing_cats;
 
   return (
     <div className="po">
       <div className="ph">
-        <button onClick={onClose}>{I.back({})}</button>
+        <button onClick={onClose}>{Icon.back({})}</button>
         <h2>Registrar Compra</h2>
       </div>
       <div className="pb">
@@ -208,8 +208,8 @@ function Purchase({ ings, setIngs, exps, setExps, sett, onClose, msg, loadAll })
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "4px 0 12px" }}>
           <label className="fl" style={{ margin: 0 }}>Items ({items.length})</label>
           <div style={{ display: "flex", gap: 6 }}>
-            <button className="btn bs bsm" onClick={() => setSn(true)}>{I.plus({ size: 14 })} Nuevo</button>
-            <button className="btn bp bsm" onClick={add}>{I.plus({ size: 14 })} Item</button>
+            <button className="btn bs bsm" onClick={() => setSn(true)}>{Icon.plus({ size: 14 })} Nuevo</button>
+            <button className="btn bp bsm" onClick={add}>{Icon.plus({ size: 14 })} Item</button>
           </div>
         </div>
         {sn && (
@@ -244,19 +244,19 @@ function Purchase({ ings, setIngs, exps, setExps, sett, onClose, msg, loadAll })
             </div>
             <div className="fr">
               <button className="btn bs" onClick={() => setSn(false)}>Cancelar</button>
-              <button className="btn bp" onClick={cr}>{I.check({ size: 16, color: "#fff" })} Crear</button>
+              <button className="btn bp" onClick={cr}>{Icon.check({ size: 16, color: "#fff" })} Crear</button>
             </div>
           </div>
         )}
         {items.map((it, i) => (
           <div key={i} className="c" style={{ padding: 12, marginBottom: 8, position: "relative" }}>
             <button onClick={() => rm(i)} style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", cursor: "pointer", color: "var(--rd)" }}>
-              {I.x({ size: 16 })}
+              {Icon.x({ size: 16 })}
             </button>
             <div className="fg" style={{ marginBottom: 8 }}>
               <select className="fin" value={it.ingredient_id} onChange={e => sel(i, e.target.value)}>
                 <option value="">Seleccionar...</option>
-                {ings.map(x => <option key={x.id} value={x.id}>{x.name} ({x.unit}) — {x.stock || 0}</option>)}
+                {ingredients.map(x => <option key={x.id} value={x.id}>{x.name} ({x.unit}) — {x.stock || 0}</option>)}
               </select>
             </div>
             <div className="fr">
@@ -270,7 +270,7 @@ function Purchase({ ings, setIngs, exps, setExps, sett, onClose, msg, loadAll })
               </div>
               <div className="fg" style={{ marginBottom: 0 }}>
                 <label className="fl">Sub</label>
-                <div style={{ padding: "12px 0", fontWeight: 700 }}>${fi((it.qty || 0) * (it.unitCost || 0))}</div>
+                <div style={{ padding: "12px 0", fontWeight: 700 }}>${formatInt((it.qty || 0) * (it.unitCost || 0))}</div>
               </div>
             </div>
           </div>
@@ -286,11 +286,11 @@ function Purchase({ ings, setIngs, exps, setExps, sett, onClose, msg, loadAll })
         {items.length > 0 && (
           <div className="c" style={{ background: "var(--al)", textAlign: "center", marginTop: 12 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ac)" }}>TOTAL</div>
-            <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "'DM Serif Display',serif", color: "var(--ac)" }}>${fi(tot)}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "'DM Serif Display',serif", color: "var(--ac)" }}>${formatInt(tot)}</div>
           </div>
         )}
         <button className="btn bp" style={{ marginTop: 16 }} onClick={sub}>
-          {I.check({ size: 18, color: "#fff" })} Confirmar
+          {Icon.check({ size: 18, color: "#fff" })} Confirmar
         </button>
       </div>
     </div>
@@ -298,8 +298,8 @@ function Purchase({ ings, setIngs, exps, setExps, sett, onClose, msg, loadAll })
 }
 
 // ═══════ SALES ═══════
-function SalesView({ sales, setSales, orders, recs, rc, ov, setOv, msg }) {
-  const mo = td().slice(0, 7) + "-01";
+function SalesView({ sales, setSales, orders, recipes, calculateRecipeCost, overlay, setOverlay, showToast }) {
+  const monthStart = todayISO().slice(0, 7) + "-01";
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(null);
 
@@ -310,10 +310,10 @@ function SalesView({ sales, setSales, orders, recs, rc, ov, setOv, msg }) {
   // Todas las ventas (orders completados + ventas manuales) ordenadas por fecha
   const allSales = [
     ...completedOrders.map(o => ({
-      id: o.id, type: "order", code: saleCode(o.id),
+      id: o.id, type: "order", code: formatOrderCode(o.id),
       customer: o.customer || "Sin nombre", date: o.date || (o.created_at || "").split("T")[0],
       items: (o.order_items || o.items || []).map(it => {
-        const r = recs.find(x => x.id === it.recipe_id);
+        const r = recipes.find(x => x.id === it.recipe_id);
         return { name: r?.name || "?", qty: it.quantity || it.qty || 1, price: it.unit_price || 0 };
       }),
       itemCount: (o.order_items || o.items || []).reduce((s, it) => s + (it.quantity || it.qty || 1), 0),
@@ -321,9 +321,9 @@ function SalesView({ sales, setSales, orders, recs, rc, ov, setOv, msg }) {
       completedAt: o.completedAt || o.created_at || ""
     })),
     ...sales.map(s => {
-      const r = recs.find(x => x.id === s.recipe_id);
+      const r = recipes.find(x => x.id === s.recipe_id);
       return {
-        id: s.id, type: "manual", code: saleCode(s.id),
+        id: s.id, type: "manual", code: formatOrderCode(s.id),
         customer: "Venta manual", date: s.date,
         items: [{ name: r?.name || "?", qty: s.qty || 1, price: s.unit_price || 0 }],
         itemCount: s.qty || 1,
@@ -343,8 +343,8 @@ function SalesView({ sales, setSales, orders, recs, rc, ov, setOv, msg }) {
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
   // Totales del mes
-  const tM = allSales.filter(s => s.date >= mo).reduce((a, x) => a + (x.total || 0), 0);
-  const countM = allSales.filter(s => s.date >= mo).length;
+  const tM = allSales.filter(s => s.date >= monthStart).reduce((a, x) => a + (x.total || 0), 0);
+  const countM = allSales.filter(s => s.date >= monthStart).length;
 
   return (
     <>
@@ -352,13 +352,13 @@ function SalesView({ sales, setSales, orders, recs, rc, ov, setOv, msg }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div className="st" style={{ margin: 0 }}>Ventas</div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gn)" }}>${fi(tM)}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gn)" }}>${formatInt(tM)}</div>
             <div style={{ fontSize: 11, color: "var(--t3)" }}>{countM} ventas este mes</div>
           </div>
         </div>
       </div>
       {/* Barra de búsqueda */}
-      <div className="sb">{I.search({ size: 16 })}<input className="fin" placeholder="Buscar por cliente, código o producto..." value={search} onChange={e => setSearch(e.target.value)} /></div>
+      <div className="sb">{Icon.search({ size: 16 })}<input className="fin" placeholder="Buscar por cliente, código o producto..." value={search} onChange={e => setSearch(e.target.value)} /></div>
       <div className="s">
         {sortedDates.length === 0 ? (
           <div className="c"><div className="empty"><div className="eic">🛒</div><div>{search ? "Sin resultados" : "Sin ventas"}</div></div></div>
@@ -369,7 +369,7 @@ function SalesView({ sales, setSales, orders, recs, rc, ov, setOv, msg }) {
             <div key={d}>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 4px 6px", fontSize: 12, fontWeight: 700, color: "var(--t3)" }}>
                 <span>{new Date(d + "T12:00:00").toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" })}</span>
-                <span>{daySales.length} ventas · ${fi(dayTotal)}</span>
+                <span>{daySales.length} ventas · ${formatInt(dayTotal)}</span>
               </div>
               {daySales.map(s => {
                 const isExp = expanded === s.id;
@@ -387,7 +387,7 @@ function SalesView({ sales, setSales, orders, recs, rc, ov, setOv, msg }) {
                         </div>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: 16, color: "var(--gn)" }}>${fi(s.total)}</div>
+                        <div style={{ fontWeight: 700, fontSize: 16, color: "var(--gn)" }}>${formatInt(s.total)}</div>
                         <div style={{ fontSize: 10, color: "var(--t3)" }}>{isExp ? "▲" : "▼"}</div>
                       </div>
                     </div>
@@ -397,19 +397,19 @@ function SalesView({ sales, setSales, orders, recs, rc, ov, setOv, msg }) {
                         {s.items.map((it, i) => (
                           <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13 }}>
                             <span>{it.name} × {it.qty}</span>
-                            <span style={{ fontWeight: 600 }}>${fi(it.qty * it.price)}</span>
+                            <span style={{ fontWeight: 600 }}>${formatInt(it.qty * it.price)}</span>
                           </div>
                         ))}
                         <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0 2px", borderTop: "1px solid var(--b2)", marginTop: 4, fontWeight: 700, fontSize: 14 }}>
-                          <span>Total</span><span>${fi(s.total)}</span>
+                          <span>Total</span><span>${formatInt(s.total)}</span>
                         </div>
                         {s.phone && <div style={{ fontSize: 11, color: "var(--t3)", marginTop: 4 }}>📞 {s.phone}</div>}
                         {/* Print placeholders */}
                         <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                          <button className="btn bs bsm" style={{ flex: 1 }} onClick={e => { e.stopPropagation(); msg("🖨️ Impresión de recibo próximamente"); }}>
+                          <button className="btn bs bsm" style={{ flex: 1 }} onClick={e => { e.stopPropagation(); showToast("🖨️ Impresión de recibo próximamente"); }}>
                             🖨️ Recibo
                           </button>
-                          <button className="btn bs bsm" style={{ flex: 1 }} onClick={e => { e.stopPropagation(); msg("🖨️ Impresión de factura próximamente"); }}>
+                          <button className="btn bs bsm" style={{ flex: 1 }} onClick={e => { e.stopPropagation(); showToast("🖨️ Impresión de factura próximamente"); }}>
                             🧾 Factura
                           </button>
                         </div>
@@ -422,19 +422,19 @@ function SalesView({ sales, setSales, orders, recs, rc, ov, setOv, msg }) {
           );
         })}
       </div>
-      <button className="fab" onClick={() => setOv({ type: "addSale" })}>
-        {I.plus({ size: 24, color: "#fff" })}
+      <button className="fab" onClick={() => setOverlay({ type: "addSale" })}>
+        {Icon.plus({ size: 24, color: "#fff" })}
       </button>
-      {ov?.type === "addSale" && (
+      {overlay?.type === "addSale" && (
         <SaleForm
-          recs={recs}
-          onClose={() => setOv(null)}
+          recipes={recipes}
+          onClose={() => setOverlay(null)}
           onSave={async (s) => {
             const saved = await createSale(s);
             if (saved) {
               setSales(p => [saved, ...p]);
-              setOv(null);
-              msg("Registrada");
+              setOverlay(null);
+              showToast("Registrada");
             }
           }}
         />
@@ -443,12 +443,12 @@ function SalesView({ sales, setSales, orders, recs, rc, ov, setOv, msg }) {
   );
 }
 
-function SaleForm({ recs, onClose, onSave }) {
+function SaleForm({ recipes, onClose, onSave }) {
   const [ri, setRi] = useState("");
   const [q, setQ] = useState(1);
   const [p, setP] = useState(0);
-  const [d, setD] = useState(td());
-  const r = recs.find(x => x.id === ri);
+  const [d, setD] = useState(todayISO());
+  const r = recipes.find(x => x.id === ri);
 
   useEffect(() => {
     if (r) setP(r.sale_price || 0);
@@ -457,7 +457,7 @@ function SaleForm({ recs, onClose, onSave }) {
   return (
     <div className="po">
       <div className="ph">
-        <button onClick={onClose}>{I.back({})}</button>
+        <button onClick={onClose}>{Icon.back({})}</button>
         <h2>Registrar Venta</h2>
       </div>
       <div className="pb">
@@ -465,7 +465,7 @@ function SaleForm({ recs, onClose, onSave }) {
           <label className="fl">Producto</label>
           <select className="fin" value={ri} onChange={e => setRi(e.target.value)}>
             <option value="">Seleccionar...</option>
-            {recs.map(r2 => <option key={r2.id} value={r2.id}>{r2.name} — ${fi(r2.sale_price)}</option>)}
+            {recipes.map(r2 => <option key={r2.id} value={r2.id}>{r2.name} — ${formatInt(r2.sale_price)}</option>)}
           </select>
         </div>
         <div className="fg">
@@ -485,11 +485,11 @@ function SaleForm({ recs, onClose, onSave }) {
         {ri && q > 0 && p > 0 && (
           <div className="c" style={{ background: "var(--gl)", textAlign: "center", marginTop: 8 }}>
             <div style={{ fontSize: 12, color: "var(--gn)", fontWeight: 600 }}>TOTAL</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: "var(--gn)", fontFamily: "'DM Serif Display',serif" }}>${fi(q * p)}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "var(--gn)", fontFamily: "'DM Serif Display',serif" }}>${formatInt(q * p)}</div>
           </div>
         )}
         <button className="btn bp" style={{ marginTop: 12 }} onClick={() => ri && q > 0 && p > 0 && onSave({ date: d, recipe_id: ri, qty: q, unit_price: p, total: q * p })}>
-          {I.check({ size: 18, color: "#fff" })} Registrar
+          {Icon.check({ size: 18, color: "#fff" })} Registrar
         </button>
       </div>
     </div>

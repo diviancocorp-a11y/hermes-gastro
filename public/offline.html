@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sin conexión — La Nona Pato</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: #FFF8F0; color: #2D1B0E;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px;
+      text-align: center;
+    }
+    .icon {
+      width: 80px; height: 80px; border-radius: 20px;
+      background: #C45D3E; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px; margin-bottom: 24px;
+    }
+    h1 { font-size: 22px; margin-bottom: 8px; }
+    p { color: #9C8B7A; font-size: 15px; max-width: 320px; line-height: 1.5; margin-bottom: 24px; }
+    button {
+      background: #C45D3E; color: #fff; border: none;
+      border-radius: 12px; padding: 12px 28px;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="icon">📡</div>
+  <h1>Sin conexión</h1>
+  <p>Parece que no tenés conexión a internet. Verificá tu conexión e intentá de nuevo.</p>
+  <button onclick="window.location.reload()">Reintentar</button>
+</body>
+</html>

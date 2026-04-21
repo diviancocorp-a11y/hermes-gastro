@@ -8,7 +8,7 @@ const Ic = ({ d, size = 20, color = "currentColor", d2 }) => (
   </svg>
 );
 
-export const I = {
+export const Icon = {
   home: p => <Ic {...p} d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />,
   box: p => <Ic {...p} d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />,
   recipe: p => <Ic {...p} d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />,
@@ -37,23 +37,82 @@ export const I = {
   user: p => <Ic {...p} d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 100 8 4 4 0 000-8z" />,
   map: p => <Ic {...p} d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0zM12 7a3 3 0 100 6 3 3 0 000-6z" />,
   globe: p => <Ic {...p} d="M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />,
+  chart: p => <Ic {...p} d="M18 20V10M12 20V4M6 20v-6" />,
+  download: p => <Ic {...p} d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />,
+  bell: p => <Ic {...p} d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />,
 };
 
 // ─── CONSTANTS & HELPERS ────────────────────────────────────────────
-export const fm = (n) => typeof n === "number" ? n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00";
-export const fi = (n) => typeof n === "number" ? n.toLocaleString("es-AR") : "0";
-export const td = () => new Date().toISOString().split("T")[0];
-export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+export const formatMoney = (n) => typeof n === "number" ? n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00";
+export const formatInt = (n) => typeof n === "number" ? n.toLocaleString("es-AR") : "0";
+export const todayISO = () => new Date().toISOString().split("T")[0];
+export const generateId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 // Código corto unificado para pedidos y recibos: #XXXXXX (últimos 6 chars del ID sin guiones)
-export const saleCode = (id) => { const s = String(id || "").replace(/-/g, ""); return "#" + s.slice(-6).toUpperCase(); };
+export const formatOrderCode = (id) => { const s = String(id || "").replace(/-/g, ""); return "#" + s.slice(-6).toUpperCase(); };
 
 // ─── Supabase Storage image transform ───────────────────────────────
 // Convierte una URL pública de Supabase Storage a la variante con resize.
 // Ej: .../object/public/bucket/path → .../render/image/public/bucket/path?width=300&quality=75
-export const imgOpt = (url, { width, height, quality = 75 } = {}) => {
+//
+// NOTE: Image Transformations require Supabase Pro plan. If not available,
+// the render endpoint returns errors. We detect this at runtime and fall back
+// to serving original URLs directly.
+
+// Default to false (disabled) — image transforms require Supabase Pro plan.
+// Call enableImageTransforms() if on Pro plan, or probeImageTransforms() to auto-detect.
+let _transformsAvailable = false;
+
+/** Test if Supabase image transforms are available (Pro plan feature). */
+export async function probeImageTransforms(sampleUrl) {
+  if (_transformsAvailable !== null) return _transformsAvailable;
+  if (!sampleUrl || !sampleUrl.includes('/storage/v1/object/public/')) {
+    _transformsAvailable = false;
+    return false;
+  }
+  try {
+    const testUrl = sampleUrl.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') + '?width=1&quality=1';
+    const res = await fetch(testUrl, { method: 'HEAD', mode: 'no-cors' }).catch(() => null);
+    // If we get any non-error response or an opaque response (no-cors), try it.
+    // But if it clearly 4xx/5xx, disable transforms.
+    if (res && res.status >= 400) {
+      _transformsAvailable = false;
+    } else {
+      // no-cors gives opaque response (status 0) — assume transforms MAY work;
+      // we'll still fall back per-image via onError handlers.
+      _transformsAvailable = true;
+    }
+  } catch {
+    _transformsAvailable = false;
+  }
+  return _transformsAvailable;
+}
+
+/** Force-disable image transforms (called when a render URL fails at runtime). */
+export function disableImageTransforms() {
+  _transformsAvailable = false;
+}
+
+/** Check if image transforms are currently enabled. */
+export function imageTransformsEnabled() {
+  return _transformsAvailable === true;
+}
+
+/** Enable image transforms (for Supabase Pro plan users). */
+export function enableImageTransforms() {
+  _transformsAvailable = true;
+}
+
+/** Reset transforms state to untested (for testing). */
+export function resetImageTransforms() {
+  _transformsAvailable = null;
+}
+
+export const optimizeImage = (url, { width, height, quality = 75 } = {}) => {
   if (!url || typeof url !== 'string') return url;
   // Solo transformar URLs de Supabase Storage
   if (!url.includes('/storage/v1/object/public/')) return url;
+  // If transforms are disabled, return original URL directly
+  if (_transformsAvailable !== true && _transformsAvailable !== null) return url;
   let out = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
   const params = [];
   if (width) params.push(`width=${width}`);
@@ -62,22 +121,29 @@ export const imgOpt = (url, { width, height, quality = 75 } = {}) => {
   return out + '?' + params.join('&');
 };
 
-export const ST = { new: "new", prep: "preparing", active: "active", done: "completed", cancel: "cancelled" };
-export const ST_L = { [ST.new]: "Nuevo", [ST.prep]: "En preparación", [ST.active]: "Activo", [ST.done]: "Completado", [ST.cancel]: "Cancelado" };
-export const ST_C = {
-  [ST.new]: { bg: "#E3F2FD", tx: "#1565C0" },
-  [ST.prep]: { bg: "#FFF8E1", tx: "#8D6E00" },
-  [ST.active]: { bg: "#E8F5E9", tx: "#3A7D44" },
-  [ST.done]: { bg: "#F3EDE4", tx: "#9C8B7A" },
-  [ST.cancel]: { bg: "#FFEBEE", tx: "#C62828" }
+/** Convert a render/image URL back to the original object/public URL. */
+export const originalImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  if (!url.includes('/storage/v1/render/image/public/')) return url;
+  return url.replace('/storage/v1/render/image/public/', '/storage/v1/object/public/').split('?')[0];
 };
-export const ST_B = { [ST.new]: "#1565C0", [ST.prep]: "#D4A017", [ST.active]: "#3A7D44", [ST.done]: "#9C8B7A", [ST.cancel]: "#C62828" };
+
+export const OrderStatus = { new: "new", prep: "preparing", active: "active", done: "completed", cancel: "cancelled" };
+export const OrderStatusLabels = { [OrderStatus.new]: "Nuevo", [OrderStatus.prep]: "En preparación", [OrderStatus.active]: "Activo", [OrderStatus.done]: "Completado", [OrderStatus.cancel]: "Cancelado" };
+export const OrderStatusColors = {
+  [OrderStatus.new]: { bg: "#E3F2FD", tx: "#1565C0" },
+  [OrderStatus.prep]: { bg: "#FFF8E1", tx: "#8D6E00" },
+  [OrderStatus.active]: { bg: "#E8F5E9", tx: "#3A7D44" },
+  [OrderStatus.done]: { bg: "#F3EDE4", tx: "#9C8B7A" },
+  [OrderStatus.cancel]: { bg: "#FFEBEE", tx: "#C62828" }
+};
+export const OrderStatusBorders = { [OrderStatus.new]: "#1565C0", [OrderStatus.prep]: "#D4A017", [OrderStatus.active]: "#3A7D44", [OrderStatus.done]: "#9C8B7A", [OrderStatus.cancel]: "#C62828" };
 
 export const CAT_E = { "Tortas": "🎂", "Alfajores": "🍪", "Budines": "🍞", "Tartas": "🥧", "Postres": "🍮" };
 export const CAT_CO = ["#D4785C", "#7A9E5D", "#5C7AD4", "#D4A85C", "#8B5CD4", "#5CBBD4"];
 export const COLORS = [{ h: "#C45D3E" }, { h: "#5D7A2E" }, { h: "#2E5D7A" }, { h: "#7A2E4A" }, { h: "#C49A3E" }, { h: "#2D1B0E" }, { h: "#6B3FA0" }, { h: "#2E7A6B" }];
 
-export function playNotif() {
+export function playNotificationSound() {
   try {
     const c = new (window.AudioContext || window.webkitAudioContext)();
     [880, 1108, 1318].forEach((f, i) => {
@@ -91,3 +157,28 @@ export function playNotif() {
     });
   } catch { }
 }
+
+/** @deprecated Use Icon */
+export const I = Icon;
+/** @deprecated Use formatInt */
+export const fi = formatInt;
+/** @deprecated Use formatMoney */
+export const fm = formatMoney;
+/** @deprecated Use todayISO */
+export const td = todayISO;
+/** @deprecated Use generateId */
+export const uid = generateId;
+/** @deprecated Use OrderStatus */
+export const ST = OrderStatus;
+/** @deprecated Use OrderStatusLabels */
+export const ST_L = OrderStatusLabels;
+/** @deprecated Use OrderStatusColors */
+export const ST_C = OrderStatusColors;
+/** @deprecated Use OrderStatusBorders */
+export const ST_B = OrderStatusBorders;
+/** @deprecated Use formatOrderCode */
+export const saleCode = formatOrderCode;
+/** @deprecated Use optimizeImage */
+export const imgOpt = optimizeImage;
+/** @deprecated Use playNotificationSound */
+export const playNotif = playNotificationSound;

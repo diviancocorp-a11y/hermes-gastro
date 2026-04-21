@@ -1,60 +1,60 @@
 import { useState } from "react";
-import { I, fi, fm } from "../../lib/utils";
+import { Icon, formatInt, formatMoney } from "../../lib/utils";
 import { upsertIngredient, deleteIngredient, registerWaste } from "../../lib/adminService";
 
-const DEF={ing_cats:["Secos","Frescos","Packaging","Otros"]};
+const DEFAULT_SETTINGS={ing_cats:["Secos","Frescos","Packaging","Otros"]};
 
-function Stock({ings,setIngs,recs,ov,setOv,msg,sett,loadAll}){
+function Stock({ingredients,setIngredients,recipes,overlay,setOverlay,showToast,settings,loadAll}){
   const [sr,setSr]=useState("");const [fil,setFil]=useState("all");
-  const cats=[...new Set(ings.map(i=>i.category).filter(Boolean))];
-  const filt=ings.filter(i=>{
+  const cats=[...new Set(ingredients.map(i=>i.category).filter(Boolean))];
+  const filt=ingredients.filter(i=>{
     const ms=i.name?.toLowerCase().includes(sr.toLowerCase());
-    const mf=fil==="all"||fil==="low"?true:i.category===fil;
-    const ml=fil==="low"?(i.stock||0)<=(i.min_stock||0):true;
+    const mf=fil==="all"||fil==="lowStockIngredients"?true:i.category===fil;
+    const ml=fil==="lowStockIngredients"?(i.stock||0)<=(i.min_stock||0):true;
     return ms&&mf&&ml;
   });
-  const tI=ings.reduce((s,i)=>s+(i.cost||0)*(i.stock||0),0);
+  const tI=ingredients.reduce((s,i)=>s+(i.cost||0)*(i.stock||0),0);
 
   return(<>
     <div className="s"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
       <div className="st" style={{margin:0}}>Inventario</div>
-      <div style={{fontSize:12,color:"var(--t3)"}}>Inv: <strong>${fi(tI)}</strong></div>
+      <div style={{fontSize:12,color:"var(--t3)"}}>Inv: <strong>${formatInt(tI)}</strong></div>
     </div></div>
-    <div className="sb">{I.search({size:16})}<input className="fin" placeholder="Buscar..." value={sr} onChange={e=>setSr(e.target.value)}/></div>
+    <div className="sb">{Icon.search({size:16})}<input className="fin" placeholder="Buscar..." value={sr} onChange={e=>setSr(e.target.value)}/></div>
     <div className="tabs">
       <button className={`tab ${fil==="all"?"on":""}`} onClick={()=>setFil("all")}>Todos</button>
-      <button className={`tab ${fil==="low"?"on":""}`} onClick={()=>setFil("low")}>Bajo</button>
+      <button className={`tab ${fil==="lowStockIngredients"?"on":""}`} onClick={()=>setFil("lowStockIngredients")}>Bajo</button>
       {cats.slice(0,2).map(c=><button key={c} className={`tab ${fil===c?"on":""}`} onClick={()=>setFil(c)}>{c}</button>)}
     </div>
     <div className="s"><div className="c" style={{padding:0,overflow:"hidden"}}>
       {filt.length===0?<div className="empty"><div className="eic">📦</div><div>Vacío</div></div>
-      :filt.map(it=>(<div key={it.id} className="li" onClick={()=>setOv({type:"editIng",data:it})}>
+      :filt.map(it=>(<div key={it.id} className="li" onClick={()=>setOverlay({type:"editIng",data:it})}>
         <div className="lic" style={{background:(it.stock||0)<=(it.min_stock||0)?((it.stock||0)<=0?"var(--rl)":"var(--yl)"):"var(--gl)",color:(it.stock||0)<=(it.min_stock||0)?((it.stock||0)<=0?"var(--rd)":"var(--yw)"):"var(--gn)"}}>
-          {(it.stock||0)<=(it.min_stock||0)?I.alert({size:16}):I.check({size:16})}
+          {(it.stock||0)<=(it.min_stock||0)?Icon.alert({size:16}):Icon.check({size:16})}
         </div>
-        <div className="lii"><div className="lin">{it.name}</div><div className="lid">{it.category||""} · ${fm(it.cost||0)}/{it.unit}</div></div>
+        <div className="lii"><div className="lin">{it.name}</div><div className="lid">{it.category||""} · ${formatMoney(it.cost||0)}/{it.unit}</div></div>
         <div className="lir"><div className="lia">{it.stock||0} {it.unit}</div><div className="lid">min: {it.min_stock||0}</div></div>
       </div>))}
     </div></div>
     <div style={{display:"flex",gap:8,padding:"0 16px 16px"}}>
-      <button className="btn bs" style={{flex:1,fontSize:13}} onClick={()=>setOv({type:"waste"})}>⚠️ Registrar Merma</button>
+      <button className="btn bs" style={{flex:1,fontSize:13}} onClick={()=>setOverlay({type:"waste"})}>⚠️ Registrar Merma</button>
     </div>
-    <button className="fab" onClick={()=>setOv({type:"editIng",data:null})}>{I.plus({size:24,color:"#fff"})}</button>
-    {ov?.type==="editIng"&&<IngForm data={ov.data} sett={sett} onClose={()=>setOv(null)} onSave={async(it)=>{
+    <button className="fab" onClick={()=>setOverlay({type:"editIng",data:null})}>{Icon.plus({size:24,color:"#fff"})}</button>
+    {overlay?.type==="editIng"&&<IngForm data={overlay.data} settings={settings} onClose={()=>setOverlay(null)} onSave={async(it)=>{
       const saved=await upsertIngredient(it);
-      if(saved?.__error){msg("Error: "+saved.__error);return;}
-      if(saved){if(it.id)setIngs(p=>p.map(i=>i.id===it.id?saved:i));else setIngs(p=>[...p,saved]);setOv(null);msg(it.id?"Actualizado":"Agregado");}
-      else{msg("Error al guardar insumo");}
+      if(saved?.__error){showToast("Error: "+saved.__error);return;}
+      if(saved){if(it.id)setIngredients(p=>p.map(i=>i.id===it.id?saved:i));else setIngredients(p=>[...p,saved]);setOverlay(null);showToast(it.id?"Actualizado":"Agregado");}
+      else{showToast("Error al guardar insumo");}
     }} onDel={async(id)=>{
-      const usedIn=(recs||[]).filter(r=>(r.ingredients||[]).some(ri=>ri.ingredient_id===id));
-      if(usedIn.length>0){msg(`No se puede eliminar: está en uso en "${usedIn.map(r=>r.name).join(", ")}"`);return;}
-      await deleteIngredient(id);setIngs(p=>p.filter(i=>i.id!==id));setOv(null);msg("Eliminado");
+      const usedIn=(recipes||[]).filter(r=>(r.ingredients||[]).some(ri=>ri.ingredient_id===id));
+      if(usedIn.length>0){showToast(`No se puede eliminar: está en uso en "${usedIn.map(r=>r.name).join(", ")}"`);return;}
+      await deleteIngredient(id);setIngredients(p=>p.filter(i=>i.id!==id));setOverlay(null);showToast("Eliminado");
     }}/>}
-    {ov?.type==="waste"&&<WasteForm ings={ings} setIngs={setIngs} msg={msg} onClose={()=>setOv(null)}/>}
+    {overlay?.type==="waste"&&<WasteForm ingredients={ingredients} setIngredients={setIngredients} showToast={showToast} onClose={()=>setOverlay(null)}/>}
   </>);
 }
 
-function WasteForm({ings,setIngs,msg,onClose}){
+function WasteForm({ingredients,setIngredients,showToast,onClose}){
   const [ingId,setIngId]=useState("");const [qty,setQty]=useState("");const [reason,setReason]=useState("vencimiento");const [note,setNote]=useState("");const [saving,setSaving]=useState(false);
   const reasons=["vencimiento","rotura","prueba","derrame","otro"];
   const save=async()=>{
@@ -63,18 +63,18 @@ function WasteForm({ings,setIngs,msg,onClose}){
     const ok=await registerWaste(ingId,Number(qty),reason,note);
     setSaving(false);
     if(ok){
-      setIngs(p=>p.map(i=>i.id===ingId?{...i,stock:Math.max(0,(i.stock||0)-Number(qty))}:i));
-      msg(`Merma registrada: ${Number(qty)} ${ings.find(x=>x.id===ingId)?.unit||""}`);
+      setIngredients(p=>p.map(i=>i.id===ingId?{...i,stock:Math.max(0,(i.stock||0)-Number(qty))}:i));
+      showToast(`Merma registrada: ${Number(qty)} ${ingredients.find(x=>x.id===ingId)?.unit||""}`);
       onClose();
     }
   };
-  const ing=ings.find(x=>x.id===ingId);
-  return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>Registrar Merma</h2></div><div className="pb">
+  const ing=ingredients.find(x=>x.id===ingId);
+  return(<div className="po"><div className="ph"><button onClick={onClose}>{Icon.back({})}</button><h2>Registrar Merma</h2></div><div className="pb">
     <div className="waste-banner">⚠️ Este ajuste descuenta stock sin generar una venta. Usá esto para vencimientos, roturas y pruebas.</div>
     <div className="fg"><label className="fl">Insumo</label>
       <select className="fin" value={ingId} onChange={e=>setIngId(e.target.value)}>
         <option value="">Seleccionar insumo...</option>
-        {ings.map(i=><option key={i.id} value={i.id}>{i.name} (Stock: {i.stock||0} {i.unit})</option>)}
+        {ingredients.map(i=><option key={i.id} value={i.id}>{i.name} (Stock: {i.stock||0} {i.unit})</option>)}
       </select>
     </div>
     <div className="fr">
@@ -99,7 +99,7 @@ function WasteForm({ings,setIngs,msg,onClose}){
   </div></div>);
 }
 
-function IngForm({data,onClose,onSave,onDel,sett}){
+function IngForm({data,onClose,onSave,onDel,settings}){
   const [f,setF]=useState(data||{name:"",unit:"kg",cost:0,stock:0,min_stock:0,category:"Secos"});
   const [err,setErr]=useState("");
   const s=(k,v)=>{setErr("");setF(p=>({...p,[k]:v}));};
@@ -110,12 +110,12 @@ function IngForm({data,onClose,onSave,onDel,sett}){
     if((f.stock||0)<0){setErr("El stock no puede ser negativo.");return;}
     onSave(f);
   };
-  return(<div className="po"><div className="ph"><button onClick={onClose}>{I.back({})}</button><h2>{data?"Editar":"Nuevo"} Insumo</h2>
-    {data&&<button onClick={()=>onDel(data.id)} style={{color:"var(--rd)"}}>{I.trash({})}</button>}
+  return(<div className="po"><div className="ph"><button onClick={onClose}>{Icon.back({})}</button><h2>{data?"Editar":"Nuevo"} Insumo</h2>
+    {data&&<button onClick={()=>onDel(data.id)} style={{color:"var(--rd)"}}>{Icon.trash({})}</button>}
   </div><div className="pb">
     <div className="fg"><label className="fl">Nombre</label><input className="fin" value={f.name} onChange={e=>s("name",e.target.value)}/></div>
     <div className="fr"><div className="fg"><label className="fl">Unidad</label><select className="fin" value={f.unit} onChange={e=>s("unit",e.target.value)}>{["kg","g","lt","ml","uni"].map(u=><option key={u}>{u}</option>)}</select></div>
-    <div className="fg"><label className="fl">Cat.</label><select className="fin" value={f.category||""} onChange={e=>s("category",e.target.value)}>{(sett?.ing_cats||DEF.ing_cats).map(c=><option key={c}>{c}</option>)}</select></div></div>
+    <div className="fg"><label className="fl">Cat.</label><select className="fin" value={f.category||""} onChange={e=>s("category",e.target.value)}>{(settings?.ing_cats||DEFAULT_SETTINGS.ing_cats).map(c=><option key={c}>{c}</option>)}</select></div></div>
     <div className="fg"><label className="fl">Costo/{f.unit}</label><input className="fin" type="number" min="0.01" step="0.01" value={f.cost||""} onChange={e=>s("cost",Math.max(0,Number(e.target.value)))}/></div>
     <div className="fr"><div className="fg"><label className="fl">Stock</label><input className="fin" type="number" min="0" step="0.001" value={f.stock||""} onChange={e=>s("stock",Math.max(0,Number(e.target.value)))}/></div>
     <div className="fg"><label className="fl">Mín</label><input className="fin" type="number" min="0" step="0.001" value={f.min_stock||""} onChange={e=>s("min_stock",Math.max(0,Number(e.target.value)))} /></div></div>

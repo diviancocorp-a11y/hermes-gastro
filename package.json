@@ -5,14 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "create-client": "node scripts/create-client.mjs"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.75.0",
     "@supabase/supabase-js": "^2.100.1",
+    "i18next": "^25.1.0",
+    "i18next-browser-languagedetector": "^8.0.0",
+    "react-i18next": "^15.5.0",
+    "use-sync-external-store": "^1.4.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.2"
@@ -29,6 +38,11 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "jsdom": "^29.0.2",
+    "tailwindcss": "^4.2.2",
+    "@tailwindcss/vite": "^4.2.2",
+    "typescript": "^6.0.3",
+    "@playwright/test": "^1.50.0",
+    "@vitest/coverage-v8": "^4.1.4",
     "vite": "^8.0.1",
     "vitest": "^4.1.4"
   }

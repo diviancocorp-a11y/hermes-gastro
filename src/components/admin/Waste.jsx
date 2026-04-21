@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { I, fi, fm, td } from "../../lib/utils";
+import { Icon, formatInt, formatMoney, todayISO } from "../../lib/utils";
 
 const REASON_LABELS = {
   vencimiento: "🗓️ Vencimiento",
@@ -18,11 +18,11 @@ const REASON_COLORS = {
   cancel: { bg: "#FCE4EC", tx: "#AD1457" }
 };
 
-function Waste({ waste, orders, recs, ings }) {
+function Waste({ waste, orders, recipes, ingredients }) {
   const [tab, setTab] = useState("all"); // all | stats
   const [filter, setFilter] = useState("all");
-  const t = td();
-  const mo = t.slice(0, 7) + "-01";
+  const t = todayISO();
+  const monthStart = t.slice(0, 7) + "-01";
 
   // Build unified waste list: manual entries + cancelled orders (as waste)
   const allWaste = useMemo(() => {
@@ -37,7 +37,7 @@ function Waste({ waste, orders, recs, ings }) {
       unit: w.ingredients?.unit || "",
       qty: w.qty || 0,
       cost: (() => {
-        const ig = ings.find(x => x.id === w.ingredient_id);
+        const ig = ingredients.find(x => x.id === w.ingredient_id);
         return (ig?.cost || 0) * (w.qty || 0);
       })(),
       created_at: w.created_at || ""
@@ -50,7 +50,7 @@ function Waste({ waste, orders, recs, ings }) {
       .map(o => {
         const items = o.order_items || o.items || [];
         const itemNames = items.map(it => {
-          const r = recs.find(x => x.id === it.recipe_id);
+          const r = recipes.find(x => x.id === it.recipe_id);
           return r ? `${r.name} ×${it.quantity || it.qty || 1}` : "";
         }).filter(Boolean).join(", ");
         return {
@@ -70,7 +70,7 @@ function Waste({ waste, orders, recs, ings }) {
     return [...manual, ...cancelled].sort((a, b) =>
       (b.created_at || b.date || "").localeCompare(a.created_at || a.date || "")
     );
-  }, [waste, orders, recs, ings]);
+  }, [waste, orders, recipes, ingredients]);
 
   // Filter
   const filtered = useMemo(() => {
@@ -81,7 +81,7 @@ function Waste({ waste, orders, recs, ings }) {
   }, [allWaste, filter]);
 
   // Stats
-  const monthWaste = useMemo(() => allWaste.filter(w => w.date >= mo), [allWaste, mo]);
+  const monthWaste = useMemo(() => allWaste.filter(w => w.date >= monthStart), [allWaste, monthStart]);
   const totalCostMonth = monthWaste.reduce((a, w) => a + w.cost, 0);
   const manualCount = monthWaste.filter(w => w.type === "manual").length;
   const cancelCount = monthWaste.filter(w => w.type === "cancel").length;
@@ -160,7 +160,7 @@ function Waste({ waste, orders, recs, ings }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
             <div className="c" style={{ textAlign: "center", padding: 14, background: "#FFF3E0" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#E65100", textTransform: "uppercase" }}>Pérdida del mes</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "#E65100", fontFamily: "'DM Serif Display',serif" }}>${fi(totalCostMonth)}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "#E65100", fontFamily: "'DM Serif Display',serif" }}>${formatInt(totalCostMonth)}</div>
             </div>
             <div className="c" style={{ textAlign: "center", padding: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase" }}>Total eventos</div>
@@ -178,7 +178,7 @@ function Waste({ waste, orders, recs, ings }) {
                   <div key={i} style={{ flex: 1, textAlign: "center" }}>
                     <div style={{ background: w.cost > 0 ? "#FF8A65" : "var(--b2)", height: Math.max(4, (w.cost / maxWeek) * 60), borderRadius: 6, marginBottom: 4, transition: "height .3s" }} />
                     <div style={{ fontSize: 10, fontWeight: 700, color: "var(--t3)" }}>{w.label}</div>
-                    {w.cost > 0 && <div style={{ fontSize: 9, color: "#E65100" }}>${fi(w.cost)}</div>}
+                    {w.cost > 0 && <div style={{ fontSize: 9, color: "#E65100" }}>${formatInt(w.cost)}</div>}
                   </div>
                 ))}
               </div>
@@ -190,17 +190,17 @@ function Waste({ waste, orders, recs, ings }) {
             <div className="c" style={{ padding: 14, marginBottom: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 10, textTransform: "uppercase" }}>Por motivo</div>
               {byReason.map(([reason, data]) => {
-                const rc = REASON_COLORS[reason] || REASON_COLORS.otro;
+                const calculateRecipeCost = REASON_COLORS[reason] || REASON_COLORS.otro;
                 const pct = totalCostMonth > 0 ? (data.cost / totalCostMonth * 100) : 0;
                 return (
                   <div key={reason} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: "1px solid var(--b2)" }}>
-                    <span style={{ fontSize: 12, background: rc.bg, color: rc.tx, padding: "2px 8px", borderRadius: 6, fontWeight: 600, whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: 12, background: calculateRecipeCost.bg, color: calculateRecipeCost.tx, padding: "2px 8px", borderRadius: 6, fontWeight: 600, whiteSpace: "nowrap" }}>
                       {REASON_LABELS[reason] || reason}
                     </span>
                     <div style={{ flex: 1, height: 6, background: "var(--b2)", borderRadius: 3, overflow: "hidden" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", background: rc.tx, borderRadius: 3 }} />
+                      <div style={{ width: `${pct}%`, height: "100%", background: calculateRecipeCost.tx, borderRadius: 3 }} />
                     </div>
-                    <span style={{ fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>${fi(data.cost)}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>${formatInt(data.cost)}</span>
                     <span style={{ fontSize: 10, color: "var(--t3)" }}>({data.count})</span>
                   </div>
                 );
@@ -216,9 +216,9 @@ function Waste({ waste, orders, recs, ings }) {
                 <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid var(--b2)" }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div>
-                    <div style={{ fontSize: 11, color: "var(--t3)" }}>{data.count} veces · {fm(data.qty)} {data.unit}</div>
+                    <div style={{ fontSize: 11, color: "var(--t3)" }}>{data.count} veces · {formatMoney(data.qty)} {data.unit}</div>
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#E65100" }}>${fi(data.cost)}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#E65100" }}>${formatInt(data.cost)}</div>
                 </div>
               ))}
             </div>
@@ -255,22 +255,22 @@ function Waste({ waste, orders, recs, ings }) {
               <div key={d}>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 4px 6px", fontSize: 12, fontWeight: 700, color: "var(--t3)" }}>
                   <span>{new Date(d + "T12:00:00").toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" })}</span>
-                  <span style={{ color: "#E65100" }}>-${fi(dayCost)}</span>
+                  <span style={{ color: "#E65100" }}>-${formatInt(dayCost)}</span>
                 </div>
                 {dayItems.map(w => {
-                  const rc = REASON_COLORS[w.reason] || REASON_COLORS.otro;
+                  const calculateRecipeCost = REASON_COLORS[w.reason] || REASON_COLORS.otro;
                   return (
                     <div key={w.id} className="c" style={{ padding: "10px 14px", marginBottom: 6 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                            <span style={{ fontSize: 11, background: rc.bg, color: rc.tx, padding: "1px 8px", borderRadius: 6, fontWeight: 600 }}>
+                            <span style={{ fontSize: 11, background: calculateRecipeCost.bg, color: calculateRecipeCost.tx, padding: "1px 8px", borderRadius: 6, fontWeight: 600 }}>
                               {REASON_LABELS[w.reason] || w.reason}
                             </span>
                           </div>
                           {w.type === "manual" ? (
                             <div style={{ fontSize: 13, fontWeight: 600 }}>
-                              {w.ingredient} — {fm(w.qty)} {w.unit}
+                              {w.ingredient} — {formatMoney(w.qty)} {w.unit}
                             </div>
                           ) : (
                             <div style={{ fontSize: 13, fontWeight: 600 }}>
@@ -282,7 +282,7 @@ function Waste({ waste, orders, recs, ings }) {
                           )}
                         </div>
                         <div style={{ fontWeight: 700, fontSize: 14, color: "#E65100", flexShrink: 0, marginLeft: 8 }}>
-                          -${fi(w.cost)}
+                          -${formatInt(w.cost)}
                         </div>
                       </div>
                     </div>

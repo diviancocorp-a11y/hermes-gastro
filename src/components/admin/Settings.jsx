@@ -1,15 +1,18 @@
 import { useState } from "react";
-import { I } from "../../lib/utils";
+import { Icon } from "../../lib/utils";
 import { updateSettings, uploadCoverImage, uploadCatImage, uploadLogoImage, resetHistoricalData } from "../../lib/adminService";
+import LanguageSelector from "../ui/LanguageSelector";
+import ThemeToggle from "../ui/ThemeToggle";
 
-const DEF={biz_name:"La Nona Pato",logo_letter:"N",logo_color:"#C45D3E",exp_cats:["Materia Prima","Servicios","Packaging","Transporte","Alquiler","Equipamiento","Otros"],ing_cats:["Secos","Frescos","Packaging","Otros"],cat_images:{}};
+import business from '../../config/business';
+const DEFAULT_SETTINGS = { ...business.defaultSettings };
 const CAT_NAMES=["Todos","Primeros Mimos","La Mesa Principal","El Sanguche de la Nona","La Nona Amasó","La Última Mordida","Cocina Consciente"];
 const COLORS=[{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#2D1B0E",l:"Negro"}];
 
 const SECTIONS=["identity","cover","catImages","storeState","expCats","ingCats","hours","reset"];
 
-function Settings({sett,setSett,msg,onBack}){
-  const [s,setS]=useState({...sett});
+function Settings({settings,setSettings,showToast,onBack}){
+  const [s,setS]=useState({...settings});
   const [nc,setNc]=useState("");const [ni,setNi2]=useState("");
   const [uploadingCover,setUploadingCover]=useState(false);
   const [uploadingCat,setUploadingCat]=useState(null);
@@ -30,24 +33,24 @@ function Settings({sett,setSett,msg,onBack}){
     setUploadingCover(true);
     const result=await uploadCoverImage(file);
     setUploadingCover(false);
-    if(result?.__error){msg(result.__error);return;}
-    if(result){set("cover_url",result);msg("Imagen cargada ✓");}else{msg("Error al subir imagen");}
+    if(result?.__error){showToast(result.__error);return;}
+    if(result){set("cover_url",result);showToast("Imagen cargada ✓");}else{showToast("Error al subir imagen");}
   };
   const handleCatFile=async(catName,e)=>{
     const file=e.target.files?.[0];if(!file)return;
     setUploadingCat(catName);
     const result=await uploadCatImage(file,catName);
     setUploadingCat(null);
-    if(result?.__error){msg(result.__error);return;}
-    if(result){setCatImg(catName,result);msg(`Imagen de "${catName}" cargada ✓`);}else{msg("Error al subir imagen");}
+    if(result?.__error){showToast(result.__error);return;}
+    if(result){setCatImg(catName,result);showToast(`Imagen de "${catName}" cargada ✓`);}else{showToast("Error al subir imagen");}
   };
   const handleLogoFile=async(e)=>{
     const file=e.target.files?.[0];if(!file)return;
     setUploadingLogo(true);
     const result=await uploadLogoImage(file);
     setUploadingLogo(false);
-    if(result?.__error){msg(result.__error);return;}
-    if(result){set("logo_url",result);msg("Logo cargado ✓");}else{msg("Error al subir logo");}
+    if(result?.__error){showToast(result.__error);return;}
+    if(result){set("logo_url",result);showToast("Logo cargado ✓");}else{showToast("Error al subir logo");}
   };
 
   return(<>
@@ -121,7 +124,7 @@ function Settings({sett,setSett,msg,onBack}){
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               {/* Eye toggle — no aplica a "Todos" */}
               {!isTodos&&<button onClick={()=>toggleCatHidden(name)} style={{background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0}} title={isHidden?"Mostrar categoría":"Ocultar categoría"}>
-                {isHidden?<span style={{color:"var(--t3)"}}>{I.eyeOff({size:16})}</span>:<span style={{color:"var(--gn)"}}>{I.eye({size:16})}</span>}
+                {isHidden?<span style={{color:"var(--t3)"}}>{Icon.eyeOff({size:16})}</span>:<span style={{color:"var(--gn)"}}>{Icon.eye({size:16})}</span>}
               </button>}
               <div style={{width:60,height:42,borderRadius:10,overflow:"hidden",background:"var(--b2)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
                 {img?<img src={img} alt={name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
@@ -262,11 +265,11 @@ function Settings({sett,setSett,msg,onBack}){
                       setResetting(false);
                       if(result.ok){
                         const bk=result.backup;
-                        msg(bk?.count?`✓ Respaldo de ${bk.count} clientes descargado → ${bk.fileName}. Datos eliminados.`:"Datos históricos eliminados ✓");
+                        showToast(bk?.count?`✓ Respaldo de ${bk.count} clientes descargado → ${bk.fileName}. Datos eliminados.`:"Datos históricos eliminados ✓");
                         setShowReset(false);setResetPin("");setResetConfirm(false);
                       }else{
                         const bk=result.backup;
-                        msg((bk?.count?`Respaldo OK (${bk.count} clientes). `:"")+"Errores: "+result.errors.join(", "));
+                        showToast((bk?.count?`Respaldo OK (${bk.count} clientes). `:"")+"Errores: "+result.errors.join(", "));
                       }
                     }}
                     style={{flex:1,padding:"10px",background:"#C62828",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}
@@ -284,7 +287,13 @@ function Settings({sett,setSett,msg,onBack}){
       </div>}
       </div>
 
-      <button className="btn bp" style={{marginTop:8}} onClick={async()=>{const saved=await updateSettings(s);if(saved){setSett(saved);msg("Guardado ✓");onBack();}else{msg("Error al guardar");}}}>{I.check({size:18,color:"#fff"})} Guardar cambios</button>
+      {/* ── Idioma y Tema ── */}
+      <div className="c" style={{marginTop:12,padding:"12px 14px",display:"flex",flexDirection:"column",gap:12}}>
+        <LanguageSelector />
+        <ThemeToggle />
+      </div>
+
+      <button className="btn bp" style={{marginTop:8}} onClick={async()=>{const saved=await updateSettings(s);if(saved){setSettings(saved);showToast("Guardado ✓");onBack();}else{showToast("Error al guardar");}}}>{Icon.check({size:18,color:"#fff"})} Guardar cambios</button>
     </div>
   </>);
 }
