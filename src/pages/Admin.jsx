@@ -85,20 +85,20 @@ export default function Admin() {
       </div>
 
       {/* Tab content */}
-      {tab === "home" && <Home {...{ low, tS, tE, tW, prof, mar, tCR, sales, recs, ings, rc, actOrd, sett, waste }} onStock={() => setTab("stock")} onPurchase={() => setOv({ type: "purchase" })} onOrders={() => setTab("orders")} onExp={() => setOv({ type: "expenses" })} />}
-      {tab === "stock" && <Stock {...{ ings, setIngs, recs, ov, setOv, msg, sett, loadAll }} />}
-      {tab === "recipes" && <Recipes {...{ recs, setRecs, ings, rc, ov, setOv, msg, loadAll }} />}
-      {tab === "orders" && <Orders {...{ orders, recs, moveOrd, addOrd, ov, setOv, msg, sett }} onUpdateOrder={(id, changes) => setOrders(p => p.map(o => o.id === id ? { ...o, ...changes } : o))} />}
-      {tab === "sales" && <SalesView {...{ sales, setSales, orders, recs, rc, ov, setOv, msg }} />}
-      {tab === "crm" && <CRM {...{ orders, recs, ings, msg }} />}
-      {tab === "waste" && <Waste {...{ waste, orders, recs, ings }} />}
+      {tab === "home" && <Home lowStockIngredients={low} monthSales={tS} monthExpenses={tE} monthWasteCost={tW} monthProfit={prof} profitMargin={mar} monthProductionCost={tCR} sales={sales} recipes={recs} ingredients={ings} calculateRecipeCost={rc} activeOrders={actOrd} settings={sett} waste={waste} onStock={() => setTab("stock")} onPurchase={() => setOv({ type: "purchase" })} onOrders={() => setTab("orders")} onExp={() => setOv({ type: "expenses" })} />}
+      {tab === "stock" && <Stock ingredients={ings} setIngredients={setIngs} recipes={recs} overlay={ov} setOverlay={setOv} showToast={msg} settings={sett} loadAll={loadAll} />}
+      {tab === "recipes" && <Recipes recipes={recs} setRecipes={setRecs} ingredients={ings} calculateRecipeCost={rc} overlay={ov} setOverlay={setOv} showToast={msg} loadAll={loadAll} />}
+      {tab === "orders" && <Orders orders={orders} recipes={recs} moveOrderStatus={moveOrd} addOrder={addOrd} overlay={ov} setOverlay={setOv} showToast={msg} settings={sett} onUpdateOrder={(id, changes) => setOrders(p => p.map(o => o.id === id ? { ...o, ...changes } : o))} />}
+      {tab === "sales" && <SalesView sales={sales} setSales={setSales} orders={orders} recipes={recs} calculateRecipeCost={rc} overlay={ov} setOverlay={setOv} showToast={msg} />}
+      {tab === "crm" && <CRM orders={orders} recipes={recs} ingredients={ings} showToast={msg} />}
+      {tab === "waste" && <Waste waste={waste} orders={orders} recipes={recs} ingredients={ings} />}
       {tab === "analytics" && <Analytics sales={sales} orders={orders} recipes={recs} calculateRecipeCost={rc} />}
       {tab === "reviews" && ffReviews && <Reviews msg={msg} />}
-      {tab === "settings" && <Settings sett={sett} setSett={setSett} msg={msg} onBack={() => setTab("home")} />}
+      {tab === "settings" && <Settings settings={sett} setSettings={setSett} showToast={msg} onBack={() => setTab("home")} />}
 
       {/* Overlays */}
-      {ov?.type === "purchase" && <Purchase {...{ ings, setIngs, exps, setExps, sett }} onClose={() => setOv(null)} msg={msg} loadAll={loadAll} />}
-      {ov?.type === "expenses" && <Expenses {...{ exps, setExps, sett, msg }} onClose={() => setOv(null)} />}
+      {ov?.type === "purchase" && <Purchase ingredients={ings} setIngredients={setIngs} expenses={exps} setExpenses={setExps} settings={sett} onClose={() => setOv(null)} showToast={msg} loadAll={loadAll} />}
+      {ov?.type === "expenses" && <Expenses expenses={exps} setExpenses={setExps} settings={sett} showToast={msg} onClose={() => setOv(null)} />}
       {ov?.type === "cancel" && <CancelDlg order={ov.order} recs={recs} ings={ings} onClose={() => setOv(null)} onConfirm={ret => confirmCancel(ov.orderId, ret)} />}
       {ov?.type === "stockWarning" && <StockWarningDlg deficits={ov.deficits} onClose={() => setOv(null)} onForce={async () => { setOv(null); await moveOrd(ov.orderId, OrderStatus.prep, true); }} />}
       {ov?.type === "exports" && <Exports sales={sales} expenses={exps} ingredients={ings} orders={orders} recipes={recs} sett={sett} msg={msg} onClose={() => setOv(null)} />}
