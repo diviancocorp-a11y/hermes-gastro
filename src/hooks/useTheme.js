@@ -18,5 +18,13 @@ export default function useTheme() {
     // Theme is fixed to light - no-op for compatibility
   }, []);
 
-  return { theme, setTheme, isDark };
+  const toggleTheme = useCallback(() => {
+    // No-op: dark mode removed in Fase 1D cleanup. ThemeToggle component
+    // queda visible pero inerte hasta su eliminación en próxima iter.
+  }, []);
+
+  // isDark always false - dark mode was removed (Fase 1D)
+  const isDark = false;
+
+  return { theme, setTheme, toggleTheme, isDark };
 }
