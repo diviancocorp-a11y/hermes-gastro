@@ -55,7 +55,9 @@ export default function Admin() {
     calculateRecipeCost: rc, lowStockIngredients: low, activeOrders: actOrd,
     monthSales: tS, monthExpenses: tE, monthProductionCost: tCR,
     monthWasteCost: tW, monthProfit: prof, profitMargin: mar,
-  } = useFinancials({ ings, recs, sales, exps, orders, waste });
+    wastePct, monthFixedExpenses, monthVariableExpenses,
+    monthGrossMargin, grossMarginPct,
+  } = useFinancials({ ings, recs, sales, exps, orders, waste, settings: sett });
 
   // Order workflow
   const { moveOrder: moveOrd, confirmCancel, addOrder: addOrd } = useOrderWorkflow({
@@ -89,7 +91,7 @@ export default function Admin() {
       </div>
 
       {/* Tab content */}
-      {tab === "home" && <Home lowStockIngredients={low} monthSales={tS} monthExpenses={tE} monthWasteCost={tW} monthProfit={prof} profitMargin={mar} monthProductionCost={tCR} sales={sales} orders={orders} recipes={recs} ingredients={ings} calculateRecipeCost={rc} activeOrders={actOrd} settings={sett} waste={waste} onStock={() => setTab("stock")} onPurchase={() => setOv({ type: "purchase" })} onOrders={() => setTab("orders")} onExp={() => setOv({ type: "expenses" })} />}
+      {tab === "home" && <Home lowStockIngredients={low} monthSales={tS} monthExpenses={tE} monthWasteCost={tW} monthProfit={prof} profitMargin={mar} monthProductionCost={tCR} wastePct={wastePct} monthFixedExpenses={monthFixedExpenses} monthVariableExpenses={monthVariableExpenses} monthGrossMargin={monthGrossMargin} grossMarginPct={grossMarginPct} sales={sales} orders={orders} recipes={recs} ingredients={ings} calculateRecipeCost={rc} activeOrders={actOrd} settings={sett} waste={waste} onStock={() => setTab("stock")} onPurchase={() => setOv({ type: "purchase" })} onOrders={() => setTab("orders")} onExp={() => setOv({ type: "expenses" })} />}
       {tab === "stock" && <Stock ingredients={ings} setIngredients={setIngs} recipes={recs} overlay={ov} setOverlay={setOv} showToast={msg} settings={sett} setSettings={setSett} loadAll={loadAll} />}
       {tab === "recipes" && <Recipes recipes={recs} setRecipes={setRecs} ingredients={ings} calculateRecipeCost={rc} overlay={ov} setOverlay={setOv} showToast={msg} loadAll={loadAll} />}
       {tab === "orders" && <Orders orders={orders} recipes={recs} moveOrderStatus={moveOrd} addOrder={addOrd} overlay={ov} setOverlay={setOv} showToast={msg} settings={sett} onUpdateOrder={(id, changes) => setOrders(p => p.map(o => o.id === id ? { ...o, ...changes } : o))} />}

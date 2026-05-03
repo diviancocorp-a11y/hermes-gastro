@@ -6,7 +6,7 @@ const DEFAULT_SETTINGS = { ...business.defaultSettings };
 const CAT_NAMES=["Todos","Primeros Mimos","La Mesa Principal","El Sanguche de la Nona","La Nona Amasó","La Última Mordida","Cocina Consciente"];
 const COLORS=[{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#2D1B0E",l:"Negro"}];
 
-const SECTIONS=["identity","cover","catImages","storeState","expCats","ingCats","hours","exports","reset"];
+const SECTIONS=["identity","cover","catImages","storeState","finance","hours","exports","reset"];
 
 function Settings({settings,setSettings,showToast,onBack,onExport,onCategories}){
   const [s,setS]=useState({...settings});
@@ -167,7 +167,36 @@ function Settings({settings,setSettings,showToast,onBack,onExport,onCategories})
       </div>}
       </div>
 
-      {/* Cat. gastos e insumos: ahora viven dentro de sus respectivas pantallas (Stock/Gastos) */}
+      {/* ── Configuración financiera ── */}
+      <div className="c">
+        <div onClick={()=>tog("finance")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>📈 Cálculo de rentabilidad</label>
+          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.finance?"rotate(180deg)":"rotate(0)"}}>▾</span>
+        </div>
+        {open.finance&&<div style={{marginTop:10}}>
+          <div style={{fontSize:12,color:"var(--t3)",marginBottom:12,lineHeight:1.5}}>
+            El <strong>% de merma</strong> se aplica al costo de cada producto. Sirve para que la rentabilidad mostrada sea realista (incluye lo que se pierde por desperdicio normal).
+          </div>
+          <div className="fg">
+            <label className="fl">% merma promedio del local</label>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <input
+                className="fin"
+                type="number"
+                min="0" max="100" step="0.5"
+                value={s.waste_pct ?? 5}
+                onChange={e=>set("waste_pct",Math.max(0,Math.min(100,Number(e.target.value))))}
+                style={{maxWidth:120,textAlign:"center",fontSize:16,fontWeight:700}}
+              />
+              <span style={{fontSize:14,color:"var(--t3)"}}>%</span>
+              <span style={{fontSize:11,color:"var(--t3)",marginLeft:"auto"}}>Típico panadería: 3-8%</span>
+            </div>
+          </div>
+          <div style={{fontSize:11,color:"var(--t3)",lineHeight:1.5,padding:"8px 10px",background:"var(--b2)",borderRadius:8}}>
+            <strong>Tip:</strong> Si la merma cargada en Stock supera consistentemente este %, subilo. Si es menor, podés bajarlo. La fórmula usada es: Costo Real = Costo Materia Prima × (1 + % merma).
+          </div>
+        </div>}
+      </div>
 
       {/* ── Horarios del local ── */}
       <div className="c">

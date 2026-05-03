@@ -1,9 +1,13 @@
-import { useMemo, lazy, Suspense } from "react";
+import { useMemo, useState, lazy, Suspense } from "react";
 import { Icon, formatInt, todayISO, OrderStatus } from "../../lib/utils";
 
 const Analytics = lazy(() => import("./Analytics"));
 
-function Home({lowStockIngredients,monthSales,monthExpenses,monthWasteCost,monthProfit,profitMargin,monthProductionCost,sales,orders,recipes,ingredients,calculateRecipeCost,activeOrders,settings,waste,onStock,onPurchase,onOrders,onExp}){
+function Home({lowStockIngredients,monthSales,monthExpenses,monthWasteCost,monthProfit,profitMargin,monthProductionCost,wastePct,monthFixedExpenses,monthVariableExpenses,monthGrossMargin,grossMarginPct,sales,orders,recipes,ingredients,calculateRecipeCost,activeOrders,settings,waste,onStock,onPurchase,onOrders,onExp}){
+  const [showDetail,setShowDetail]=useState(false);
+  // Indicador de calibración: si la merma cargada supera la proyectada, sugerir subir el %
+  const projectedWasteCost = (monthProductionCost && wastePct) ? (monthProductionCost - monthProductionCost/(1+wastePct/100)) : 0;
+  const wasteOverrun = monthWasteCost > projectedWasteCost * 1.5 && monthWasteCost > 1000;
   const nw=activeOrders.filter(o=>o.status===OrderStatus.new);
   const monthStart=todayISO().slice(0,7)+"-01";
   const top=useMemo(()=>{
@@ -17,13 +21,54 @@ function Home({lowStockIngredients,monthSales,monthExpenses,monthWasteCost,month
     </div>}
     {lowStockIngredients.length>0&&<div className="ab abw" onClick={onStock}>{Icon.alert({size:18})}<span>{lowStockIngredients.length} insumo{lowStockIngredients.length>1?"s":""} con stock bajo</span></div>}
 
+    {/* KPIs principales (vista híbrida: 3 cards grandes + detalle expandible) */}
     <div className="sg">
-      <div className="sc f1"><div className="sl">Ventas</div><div className="sv2">${formatInt(monthSales)}</div></div>
-      <div className="sc f2"><div className="sl">Ganancia</div><div className={`sv2 ${monthProfit>=0?"svg2":"svr"}`}>${formatInt(monthProfit)}</div><div className="sd">Margen: {profitMargin.toFixed(1)}%</div></div>
-      <div className="sc f3"><div className="sl">Costo Insumos</div><div className="sv2">${formatInt(monthProductionCost)}</div><div className="sd">Ref. producción</div></div>
-      <div className="sc f4"><div className="sl">Gastos</div><div className="sv2 svr">${formatInt(monthExpenses)}</div></div>
-      {monthWasteCost>0&&<div className="sc" style={{background:"#FFF3E0"}}><div className="sl">⚠️ Merma</div><div className="sv2 svr">${formatInt(monthWasteCost)}</div><div className="sd">Pérdida en insumos</div></div>}
+      <div className="sc f1"><div className="sl">Ventas del mes</div><div className="sv2">${formatInt(monthSales)}</div></div>
+      <div className="sc f2"><div className="sl">Resultado neto</div><div className={`sv2 ${monthProfit>=0?"svg2":"svr"}`}>${formatInt(monthProfit)}</div><div className="sd">Margen: {profitMargin.toFixed(1)}%</div></div>
+      <div className="sc f3"><div className="sl">Margen bruto</div><div className="sv2">${formatInt(monthGrossMargin||0)}</div><div className="sd">{(grossMarginPct||0).toFixed(1)}% s/ ventas</div></div>
     </div>
+
+    {/* Botón para expandir detalle financiero */}
+    <div style={{padding:"0 16px 12px"}}>
+      <button onClick={()=>setShowDetail(p=>!p)} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--b2)",background:"var(--b3)",borderRadius:"var(--r)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:13,fontWeight:600,color:"var(--t2)"}}>
+        <span>📈 Detalle financiero {wastePct!=null&&`· ${wastePct}% merma proyectada`}</span>
+        <span style={{transition:"transform .2s",transform:showDetail?"rotate(180deg)":"rotate(0)"}}>▾</span>
+      </button>
+    </div>
+
+    {showDetail&&<div style={{padding:"0 16px 16px"}}>
+      <div className="c" style={{padding:14}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,fontSize:13}}>
+          <div>
+            <div style={{color:"var(--t3)",fontSize:11,marginBottom:2}}>Costo materia prima (con merma)</div>
+            <div style={{fontWeight:700}}>${formatInt(monthProductionCost||0)}</div>
+          </div>
+          <div>
+            <div style={{color:"var(--t3)",fontSize:11,marginBottom:2}}>Margen bruto</div>
+            <div style={{fontWeight:700,color:"var(--gn)"}}>${formatInt(monthGrossMargin||0)}</div>
+          </div>
+          <div>
+            <div style={{color:"var(--t3)",fontSize:11,marginBottom:2}}>🏠 Gastos fijos</div>
+            <div style={{fontWeight:700,color:"var(--rd)"}}>-${formatInt(monthFixedExpenses||0)}</div>
+          </div>
+          <div>
+            <div style={{color:"var(--t3)",fontSize:11,marginBottom:2}}>📦 Gastos variables</div>
+            <div style={{fontWeight:700,color:"var(--rd)"}}>-${formatInt(monthVariableExpenses||0)}</div>
+          </div>
+          {monthWasteCost>0&&<div style={{gridColumn:"1 / -1"}}>
+            <div style={{color:"var(--t3)",fontSize:11,marginBottom:2}}>⚠️ Merma cargada (extra)</div>
+            <div style={{fontWeight:700,color:"var(--rd)"}}>-${formatInt(monthWasteCost)}</div>
+          </div>}
+          <div style={{gridColumn:"1 / -1",borderTop:"1px solid var(--b2)",paddingTop:10,marginTop:4}}>
+            <div style={{color:"var(--t3)",fontSize:11,marginBottom:2}}>Resultado neto = Margen bruto − Gastos − Merma</div>
+            <div style={{fontWeight:700,fontSize:18,color:monthProfit>=0?"var(--gn)":"var(--rd)"}}>${formatInt(monthProfit)} <span style={{fontSize:12,fontWeight:600}}>({profitMargin.toFixed(1)}%)</span></div>
+          </div>
+        </div>
+        {wasteOverrun&&<div style={{marginTop:12,padding:"8px 12px",background:"#FFF3E0",borderRadius:8,fontSize:12,color:"#8D6E00"}}>
+          💡 La merma real cargada supera la proyectada con {wastePct}%. Considerá subir el % en Configuración para que la rentabilidad por producto sea más realista.
+        </div>}
+      </div>
+    </div>}
 
     {/* Reporte de Mermas del mes */}
     {waste&&waste.length>0&&(()=>{
@@ -42,7 +87,7 @@ function Home({lowStockIngredients,monthSales,monthExpenses,monthWasteCost,month
             </div>
           ))}
         </div>
-        <div style={{fontSize:12,color:"var(--t3)",textAlign:"right",padding:"6px 0"}}>Rentabilidad = Ventas - Gastos - Merma</div>
+        <div style={{fontSize:12,color:"var(--t3)",textAlign:"right",padding:"6px 0"}}>Detalle de mermas registradas en stock (insumos descartados).</div>
       </div>);
     })()}
 

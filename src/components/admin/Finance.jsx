@@ -55,7 +55,10 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
               <div key={e.id} className="li">
                 <div className="lic" style={{ background: "var(--rl)", color: "var(--rd)" }}>{Icon.dollar({ size: 16 })}</div>
                 <div className="lii">
-                  <div className="lin">{e.description}</div>
+                  <div className="lin" style={{display:"flex",alignItems:"center",gap:6}}>
+                    {e.description}
+                    {e.expense_type === 'fixed' && <span style={{fontSize:10,fontWeight:700,color:"var(--ac)",background:"var(--al)",padding:"1px 6px",borderRadius:4}}>FIJO</span>}
+                  </div>
                   <div className="lid">{e.date && new Date(e.date + "T12:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}{e.supplier && ` · ${e.supplier}`}</div>
                 </div>
                 <div className="lir">
@@ -87,10 +90,23 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
   );
 }
 
+// Categorías que típicamente son gastos fijos
+const FIXED_CATS = ["Alquiler", "Servicios", "Sueldos", "Seguros", "Impuestos", "Equipamiento"];
+
 function ExpForm({ onClose, onSave, settings }) {
-  const [f, setF] = useState({ date: todayISO(), description: "", amount: 0, category: "Materia Prima", supplier: "" });
+  const [f, setF] = useState({ date: todayISO(), description: "", amount: 0, category: "Materia Prima", supplier: "", expense_type: "variable" });
   const [err, setErr] = useState("");
-  const s = (k, v) => { setErr(""); setF(p => ({ ...p, [k]: v })); };
+  const s = (k, v) => {
+    setErr("");
+    setF(p => {
+      const next = { ...p, [k]: v };
+      // Auto-clasificar expense_type según categoría (el user puede sobreescribir manualmente)
+      if (k === "category") {
+        next.expense_type = FIXED_CATS.includes(v) ? "fixed" : "variable";
+      }
+      return next;
+    });
+  };
   const descOk = f.description.trim().length >= 4;
   const amtOk = (f.amount || 0) > 0;
   const canSave = descOk && amtOk;
@@ -127,6 +143,18 @@ function ExpForm({ onClose, onSave, settings }) {
           <select className="fin" value={f.category} onChange={e => s("category", e.target.value)}>
             {(settings?.exp_cats || DEFAULT_SETTINGS.exp_cats).map(c => <option key={c}>{c}</option>)}
           </select>
+        </div>
+        <div className="fg">
+          <label className="fl">Tipo de gasto</label>
+          <div style={{display:"flex",gap:8}}>
+            <button type="button" onClick={()=>s("expense_type","variable")} style={{flex:1,padding:"10px 12px",borderRadius:10,border:f.expense_type==="variable"?"2px solid var(--pr)":"1px solid var(--b2)",background:f.expense_type==="variable"?"var(--al)":"var(--b3)",color:f.expense_type==="variable"?"var(--ac)":"var(--t2)",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+              📦 Variable
+            </button>
+            <button type="button" onClick={()=>s("expense_type","fixed")} style={{flex:1,padding:"10px 12px",borderRadius:10,border:f.expense_type==="fixed"?"2px solid var(--pr)":"1px solid var(--b2)",background:f.expense_type==="fixed"?"var(--al)":"var(--b3)",color:f.expense_type==="fixed"?"var(--ac)":"var(--t2)",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+              🏠 Fijo
+            </button>
+          </div>
+          <p style={{fontSize:11,color:"var(--t3)",margin:"4px 0 0 2px"}}>Fijo = alquiler, sueldos, servicios. Variable = materia prima, packaging, etc.</p>
         </div>
         <div className="fg">
           <label className="fl">Proveedor</label>
