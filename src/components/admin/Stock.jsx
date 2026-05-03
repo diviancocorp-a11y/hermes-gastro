@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Icon, formatInt, formatMoney } from "../../lib/utils";
 import { upsertIngredient, deleteIngredient, registerWaste } from "../../lib/adminService";
+import CatChipsEditor from "../ui/CatChipsEditor";
 
 const DEFAULT_SETTINGS={ing_cats:["Secos","Frescos","Packaging","Otros"]};
 
-function Stock({ingredients,setIngredients,recipes,overlay,setOverlay,showToast,settings,loadAll}){
+function Stock({ingredients,setIngredients,recipes,overlay,setOverlay,showToast,settings,setSettings,loadAll}){
   const [sr,setSr]=useState("");const [fil,setFil]=useState("all");
   const cats=[...new Set(ingredients.map(i=>i.category).filter(Boolean))];
   const filt=ingredients.filter(i=>{
@@ -21,6 +22,9 @@ function Stock({ingredients,setIngredients,recipes,overlay,setOverlay,showToast,
       <div style={{fontSize:12,color:"var(--t3)"}}>Inv: <strong>${formatInt(tI)}</strong></div>
     </div></div>
     <div className="sb">{Icon.search({size:16})}<input className="fin" placeholder="Buscar..." value={sr} onChange={e=>setSr(e.target.value)}/></div>
+    {settings&&setSettings&&<div style={{padding:"0 16px"}}>
+      <CatChipsEditor settings={settings} setSettings={setSettings} field="ing_cats" label="Categorías de insumos" icon="📦" showToast={showToast}/>
+    </div>}
     <div className="tabs">
       <button className={`tab ${fil==="all"?"on":""}`} onClick={()=>setFil("all")}>Todos</button>
       <button className={`tab ${fil==="lowStockIngredients"?"on":""}`} onClick={()=>setFil("lowStockIngredients")}>Bajo</button>

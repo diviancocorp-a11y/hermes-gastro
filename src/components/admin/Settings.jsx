@@ -8,7 +8,7 @@ const COLORS=[{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l
 
 const SECTIONS=["identity","cover","catImages","storeState","expCats","ingCats","hours","exports","reset"];
 
-function Settings({settings,setSettings,showToast,onBack,onExport}){
+function Settings({settings,setSettings,showToast,onBack,onExport,onCategories}){
   const [s,setS]=useState({...settings});
   const [nc,setNc]=useState("");const [ni,setNi2]=useState("");
   const [uploadingCover,setUploadingCover]=useState(false);
@@ -112,6 +112,7 @@ function Settings({settings,setSettings,showToast,onBack,onExport}){
         </div>
         {open.catImages&&<div style={{marginTop:10}}>
         <div style={{fontSize:12,color:"var(--t3)",marginBottom:12}}>Imagen, nombre y visibilidad de cada categoría. Usá el ojito para ocultar/mostrar y editá el nombre directamente.</div>
+        {onCategories&&<button className="btn bs bsm" style={{marginBottom:12,fontSize:12,width:"100%"}} onClick={onCategories}>⚙️ Crear, editar o eliminar categorías</button>}
         {CAT_NAMES.map(name=>{
           const img=(s.cat_images||{})[name];
           const isHidden=(s.hidden_cats||[]).includes(name);
@@ -166,31 +167,7 @@ function Settings({settings,setSettings,showToast,onBack,onExport}){
       </div>}
       </div>
 
-      {/* ── Categorías de gastos ── */}
-      <div className="c">
-        <div onClick={()=>tog("expCats")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>💰 Categorías de gastos</label>
-          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.expCats?"rotate(180deg)":"rotate(0)"}}>▾</span>
-        </div>
-        {open.expCats&&<div style={{marginTop:10}}>
-        <div className="clist">{(s.exp_cats||[]).map(c=><div key={c} className="ctag">{c}<button onClick={()=>set("exp_cats",(s.exp_cats||[]).filter(x=>x!==c))}>×</button></div>)}</div>
-        <div style={{display:"flex",gap:8,marginTop:8}}><input className="fin" placeholder="Nueva..." value={nc} onChange={e=>setNc(e.target.value)} onKeyDown={e=>e.key==="Enter"&&nc.trim()&&(set("exp_cats",[...(s.exp_cats||[]),nc.trim()]),setNc(""))} style={{fontSize:13}}/>
-        <button className="btn bs bsm" onClick={()=>nc.trim()&&(set("exp_cats",[...(s.exp_cats||[]),nc.trim()]),setNc(""))}>+</button></div>
-      </div>}
-      </div>
-
-      {/* ── Categorías de insumos ── */}
-      <div className="c">
-        <div onClick={()=>tog("ingCats")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>📦 Categorías de insumos</label>
-          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.ingCats?"rotate(180deg)":"rotate(0)"}}>▾</span>
-        </div>
-        {open.ingCats&&<div style={{marginTop:10}}>
-        <div className="clist">{(s.ing_cats||[]).map(c=><div key={c} className="ctag">{c}<button onClick={()=>set("ing_cats",(s.ing_cats||[]).filter(x=>x!==c))}>×</button></div>)}</div>
-        <div style={{display:"flex",gap:8,marginTop:8}}><input className="fin" placeholder="Nueva..." value={ni} onChange={e=>setNi2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ni.trim()&&(set("ing_cats",[...(s.ing_cats||[]),ni.trim()]),setNi2(""))} style={{fontSize:13}}/>
-        <button className="btn bs bsm" onClick={()=>ni.trim()&&(set("ing_cats",[...(s.ing_cats||[]),ni.trim()]),setNi2(""))}>+</button></div>
-      </div>}
-      </div>
+      {/* Cat. gastos e insumos: ahora viven dentro de sus respectivas pantallas (Stock/Gastos) */}
 
       {/* ── Horarios del local ── */}
       <div className="c">

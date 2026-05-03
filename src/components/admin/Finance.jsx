@@ -5,6 +5,7 @@ import {
   createSale,
   upsertIngredient, updateIngredientStock
 } from "../../lib/adminService";
+import CatChipsEditor from "../ui/CatChipsEditor";
 
 const DEFAULT_SETTINGS = {
   exp_cats: ["Materia Prima", "Servicios", "Packaging", "Transporte", "Alquiler", "Equipamiento", "Otros"],
@@ -12,7 +13,7 @@ const DEFAULT_SETTINGS = {
 };
 
 // ═══════ EXPENSES ═══════
-function Expenses({ expenses, setExpenses, settings, showToast, onClose }) {
+function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onClose }) {
   const monthStart = todayISO().slice(0, 7) + "-01";
   const sorted = [...expenses].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   const tM = expenses.filter(e => e.date >= monthStart).reduce((s, e) => s + (e.amount || 0), 0);
@@ -27,6 +28,9 @@ function Expenses({ expenses, setExpenses, settings, showToast, onClose }) {
         <div style={{ fontSize: 14, fontWeight: 700, color: "var(--rd)" }}>Mes: ${formatInt(tM)}</div>
       </div>
       <div className="pb">
+        {settings && setSettings && (
+          <CatChipsEditor settings={settings} setSettings={setSettings} field="exp_cats" label="Categorías de gastos" icon="💰" showToast={showToast}/>
+        )}
         {Object.keys(byC).length > 0 && (
           <div style={{ display: "flex", gap: 8, marginBottom: 12, overflowX: "auto" }}>
             {Object.entries(byC).sort((a, b) => b[1] - a[1]).map(([c, a]) => (
