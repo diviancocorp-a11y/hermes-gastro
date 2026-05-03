@@ -1,7 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, lazy, Suspense } from "react";
 import { Icon, formatInt, todayISO, OrderStatus } from "../../lib/utils";
 
-function Home({lowStockIngredients,monthSales,monthExpenses,monthWasteCost,monthProfit,profitMargin,monthProductionCost,sales,recipes,ingredients,calculateRecipeCost,activeOrders,settings,waste,onStock,onPurchase,onOrders,onExp}){
+const Analytics = lazy(() => import("./Analytics"));
+
+function Home({lowStockIngredients,monthSales,monthExpenses,monthWasteCost,monthProfit,profitMargin,monthProductionCost,sales,orders,recipes,ingredients,calculateRecipeCost,activeOrders,settings,waste,onStock,onPurchase,onOrders,onExp}){
   const nw=activeOrders.filter(o=>o.status===OrderStatus.new);
   const monthStart=todayISO().slice(0,7)+"-01";
   const top=useMemo(()=>{
@@ -43,6 +45,11 @@ function Home({lowStockIngredients,monthSales,monthExpenses,monthWasteCost,month
         <div style={{fontSize:12,color:"var(--t3)",textAlign:"right",padding:"6px 0"}}>Rentabilidad = Ventas - Gastos - Merma</div>
       </div>);
     })()}
+
+    {/* Analytics avanzado: gráficos antes en pantalla separada, ahora inline */}
+    <Suspense fallback={<div className="s"><div className="c" style={{textAlign:"center",padding:20,color:"var(--t3)"}}>Cargando analítica...</div></div>}>
+      <Analytics sales={sales} orders={orders} recipes={recipes} calculateRecipeCost={calculateRecipeCost} />
+    </Suspense>
 
     {top.length>0&&<div className="s"><div className="st">Más vendidos</div>
       <div className="c" style={{padding:0,overflow:"hidden"}}>{top.map((t,i)=>{

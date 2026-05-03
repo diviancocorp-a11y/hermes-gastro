@@ -89,16 +89,15 @@ export default function Admin() {
       </div>
 
       {/* Tab content */}
-      {tab === "home" && <Home lowStockIngredients={low} monthSales={tS} monthExpenses={tE} monthWasteCost={tW} monthProfit={prof} profitMargin={mar} monthProductionCost={tCR} sales={sales} recipes={recs} ingredients={ings} calculateRecipeCost={rc} activeOrders={actOrd} settings={sett} waste={waste} onStock={() => setTab("stock")} onPurchase={() => setOv({ type: "purchase" })} onOrders={() => setTab("orders")} onExp={() => setOv({ type: "expenses" })} />}
+      {tab === "home" && <Home lowStockIngredients={low} monthSales={tS} monthExpenses={tE} monthWasteCost={tW} monthProfit={prof} profitMargin={mar} monthProductionCost={tCR} sales={sales} orders={orders} recipes={recs} ingredients={ings} calculateRecipeCost={rc} activeOrders={actOrd} settings={sett} waste={waste} onStock={() => setTab("stock")} onPurchase={() => setOv({ type: "purchase" })} onOrders={() => setTab("orders")} onExp={() => setOv({ type: "expenses" })} />}
       {tab === "stock" && <Stock ingredients={ings} setIngredients={setIngs} recipes={recs} overlay={ov} setOverlay={setOv} showToast={msg} settings={sett} loadAll={loadAll} />}
       {tab === "recipes" && <Recipes recipes={recs} setRecipes={setRecs} ingredients={ings} calculateRecipeCost={rc} overlay={ov} setOverlay={setOv} showToast={msg} loadAll={loadAll} />}
       {tab === "orders" && <Orders orders={orders} recipes={recs} moveOrderStatus={moveOrd} addOrder={addOrd} overlay={ov} setOverlay={setOv} showToast={msg} settings={sett} onUpdateOrder={(id, changes) => setOrders(p => p.map(o => o.id === id ? { ...o, ...changes } : o))} />}
       {tab === "sales" && <SalesView sales={sales} setSales={setSales} orders={orders} recipes={recs} calculateRecipeCost={rc} overlay={ov} setOverlay={setOv} showToast={msg} />}
       {tab === "crm" && <CRM orders={orders} recipes={recs} ingredients={ings} showToast={msg} />}
       {tab === "waste" && <Waste waste={waste} orders={orders} recipes={recs} ingredients={ings} />}
-      {tab === "analytics" && <Analytics sales={sales} orders={orders} recipes={recs} calculateRecipeCost={rc} />}
       {tab === "reviews" && ffReviews && <Reviews msg={msg} />}
-      {tab === "settings" && <Settings settings={sett} setSettings={setSett} showToast={msg} onBack={() => setTab("home")} />}
+      {tab === "settings" && <Settings settings={sett} setSettings={setSett} showToast={msg} onBack={() => setTab("home")} onExport={() => setOv({ type: "exports" })} />}
 
       {/* Overlays */}
       {ov?.type === "purchase" && <Purchase ingredients={ings} setIngredients={setIngs} expenses={exps} setExpenses={setExps} settings={sett} onClose={() => setOv(null)} showToast={msg} loadAll={loadAll} />}
@@ -119,7 +118,7 @@ export default function Admin() {
       {menuOpen && <>
         <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 900 }} />
         <div style={{ position: "fixed", bottom: 64, right: 12, background: "#fff", borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", zIndex: 901, padding: "6px 0", minWidth: 180, animation: "fadeIn .15s ease" }}>
-          {[{ id: "stock", icon: Icon.box, l: "Stock" }, { id: "recipes", icon: Icon.recipe, l: "Recetas" }, { id: "sales", icon: Icon.cart, l: "Ventas" }, { id: "analytics", icon: Icon.chart || Icon.settings, l: "Analytics" }, { id: "exports", icon: Icon.download, l: "Exportar", action: () => setOv({ type: "exports" }) }, { id: "invoicing", icon: Icon.recipe, l: "Facturación", action: () => setOv({ type: "invoicing" }), show: ffInvoice }, { id: "waste", icon: Icon.alert, l: "Mermas" }, { id: "reviews", icon: Icon.fire, l: "Reseñas", show: ffReviews }, { id: "crm", icon: Icon.user, l: "CRM" }, { id: "push", icon: Icon.bell, l: "Push", action: () => setOv({ type: "push" }), show: ffPush }, { id: "categories", icon: Icon.box, l: "Categorías", action: () => setOv({ type: "categories" }) }].filter(t => t.show !== false).map(t => (
+          {[{ id: "stock", icon: Icon.box, l: "Stock" }, { id: "recipes", icon: Icon.recipe, l: "Recetas" }, { id: "sales", icon: Icon.cart, l: "Ventas" }, { id: "invoicing", icon: Icon.recipe, l: "Facturación", action: () => setOv({ type: "invoicing" }), show: ffInvoice }, { id: "waste", icon: Icon.alert, l: "Mermas" }, { id: "reviews", icon: Icon.fire, l: "Reseñas", show: ffReviews }, { id: "crm", icon: Icon.user, l: "CRM" }, { id: "push", icon: Icon.bell, l: "Push", action: () => setOv({ type: "push" }), show: ffPush }, { id: "categories", icon: Icon.box, l: "Categorías", action: () => setOv({ type: "categories" }) }].filter(t => t.show !== false).map(t => (
             <button key={t.id} onClick={() => { if (t.action) { t.action(); } else { setTab(t.id); } setMenuOpen(false); }} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 18px", border: "none", background: tab === t.id ? "var(--b1,#f5f0eb)" : "transparent", color: tab === t.id ? "var(--pr,#C45D3E)" : "var(--tx,#333)", fontSize: 14, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", textAlign: "left" }}>
               {t.icon({ size: 18 })}{t.l}
             </button>

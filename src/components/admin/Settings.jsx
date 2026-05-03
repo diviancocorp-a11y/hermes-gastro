@@ -6,9 +6,9 @@ const DEFAULT_SETTINGS = { ...business.defaultSettings };
 const CAT_NAMES=["Todos","Primeros Mimos","La Mesa Principal","El Sanguche de la Nona","La Nona Amasó","La Última Mordida","Cocina Consciente"];
 const COLORS=[{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#2D1B0E",l:"Negro"}];
 
-const SECTIONS=["identity","cover","catImages","storeState","expCats","ingCats","hours","reset"];
+const SECTIONS=["identity","cover","catImages","storeState","expCats","ingCats","hours","exports","reset"];
 
-function Settings({settings,setSettings,showToast,onBack}){
+function Settings({settings,setSettings,showToast,onBack,onExport}){
   const [s,setS]=useState({...settings});
   const [nc,setNc]=useState("");const [ni,setNi2]=useState("");
   const [uploadingCover,setUploadingCover]=useState(false);
@@ -201,21 +201,41 @@ function Settings({settings,setSettings,showToast,onBack}){
         {open.hours&&<div style={{marginTop:10}}>
         <div style={{fontSize:12,color:"var(--t3)",marginBottom:10}}>Define cuándo el local acepta pedidos. Se usa para validar "Pedir ahora".</div>
         {["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map((day,i)=>{
-          const hrs=s.store_hours||{};const d=hrs[i]||{open:"",close:"",closed:false};
+          const hrs=s.store_hours||{};const d=hrs[i]||{open:"",close:"",closed:false,h24:false};
           const upd=(k,v)=>{const nh={...hrs};nh[i]={...d,[k]:v};set("store_hours",nh);};
-          return(<div key={day} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<6?"1px solid var(--b2)":"none"}}>
-            <div style={{width:80,fontSize:13,fontWeight:600,color:d.closed?"var(--t3)":"var(--tx)"}}>{day}</div>
-            {d.closed?<div style={{flex:1,fontSize:12,color:"var(--t3)",fontStyle:"italic"}}>Cerrado</div>
-            :<>
-              <input type="time" value={d.open||""} onChange={e=>upd("open",e.target.value)} style={{flex:1,padding:"4px 6px",borderRadius:6,border:"1px solid var(--b2)",fontSize:13,colorScheme:"light"}}/>
-              <span style={{fontSize:12,color:"var(--t3)"}}>a</span>
-              <input type="time" value={d.close||""} onChange={e=>upd("close",e.target.value)} style={{flex:1,padding:"4px 6px",borderRadius:6,border:"1px solid var(--b2)",fontSize:13,colorScheme:"light"}}/>
-            </>}
-            <button style={{background:"none",border:"none",fontSize:11,color:d.closed?"var(--gn)":"var(--rd)",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}} onClick={()=>upd("closed",!d.closed)}>{d.closed?"Abrir":"Cerrar"}</button>
+          const set24h=(checked)=>{const nh={...hrs};nh[i]={...d,h24:checked,open:checked?"00:00":"",close:checked?"23:59":"",closed:false};set("store_hours",nh);};
+          return(<div key={day} style={{padding:"6px 0",borderBottom:i<6?"1px solid var(--b2)":"none"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:80,fontSize:13,fontWeight:600,color:d.closed?"var(--t3)":"var(--tx)"}}>{day}</div>
+              {d.closed?<div style={{flex:1,fontSize:12,color:"var(--t3)",fontStyle:"italic"}}>Cerrado</div>
+              :d.h24?<div style={{flex:1,fontSize:12,color:"var(--gn)",fontWeight:600}}>● Abierto 24 horas</div>
+              :<>
+                <input type="time" value={d.open||""} onChange={e=>upd("open",e.target.value)} style={{flex:1,padding:"4px 6px",borderRadius:6,border:"1px solid var(--b2)",fontSize:13,colorScheme:"light"}}/>
+                <span style={{fontSize:12,color:"var(--t3)"}}>a</span>
+                <input type="time" value={d.close||""} onChange={e=>upd("close",e.target.value)} style={{flex:1,padding:"4px 6px",borderRadius:6,border:"1px solid var(--b2)",fontSize:13,colorScheme:"light"}}/>
+              </>}
+              <button style={{background:"none",border:"none",fontSize:11,color:d.closed?"var(--gn)":"var(--rd)",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}} onClick={()=>upd("closed",!d.closed)}>{d.closed?"Abrir":"Cerrar"}</button>
+            </div>
+            {!d.closed&&<label style={{display:"flex",alignItems:"center",gap:6,marginTop:4,marginLeft:88,fontSize:11,color:"var(--t3)",cursor:"pointer"}}>
+              <input type="checkbox" checked={!!d.h24} onChange={e=>set24h(e.target.checked)} style={{margin:0,cursor:"pointer"}}/>
+              Abierto 24 horas
+            </label>}
           </div>);
         })}
       </div>}
       </div>
+
+      {/* ── Exportar datos ── */}
+      {onExport&&<div className="c">
+        <div onClick={()=>tog("exports")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>📤 Exportar datos</label>
+          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.exports?"rotate(180deg)":"rotate(0)"}}>▾</span>
+        </div>
+        {open.exports&&<div style={{marginTop:10}}>
+          <div style={{fontSize:12,color:"var(--t3)",marginBottom:10}}>Descargá CSV/Excel de ventas, gastos, inventario, pedidos y recetas para respaldo o análisis externo.</div>
+          <button className="btn bp" style={{width:"100%"}} onClick={onExport}>📊 Abrir exportador</button>
+        </div>}
+      </div>}
 
       {/* ── Reinicio administrativo ── */}
       <div className="c" style={{border:"1.5px solid #C62828",background:"#FFF5F5"}}>
