@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { Icon } from "../../lib/utils";
 import { updateSettings, uploadCoverImage, uploadCatImage, uploadLogoImage, resetHistoricalData } from "../../lib/adminService";
-import LanguageSelector from "../ui/LanguageSelector";
-import ThemeToggle from "../ui/ThemeToggle";
-
 import business from '../../config/business';
 const DEFAULT_SETTINGS = { ...business.defaultSettings };
 const CAT_NAMES=["Todos","Primeros Mimos","La Mesa Principal","El Sanguche de la Nona","La Nona Amasó","La Última Mordida","Cocina Consciente"];
@@ -151,16 +148,16 @@ function Settings({settings,setSettings,showToast,onBack}){
       {/* ── Estado de la tienda ── */}
       <div className="c">
         <div onClick={()=>tog("storeState")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>🚦 Estado de la tienda</label>
+          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>🚨 Cierre de emergencia</label>
           <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.storeState?"rotate(180deg)":"rotate(0)"}}>▾</span>
         </div>
         {open.storeState&&<div style={{marginTop:10}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0"}}>
           <div>
             <div style={{fontWeight:600,fontSize:14,color:s.store_open!==false?"#3A7D44":"#C62828"}}>
-              {s.store_open!==false?"● Abierta":"● Cerrada"}
+              {s.store_open!==false?"● Tienda operativa":"● Cierre de emergencia ACTIVO"}
             </div>
-            <div style={{fontSize:12,color:"var(--t3)",marginTop:2}}>{s.store_open!==false?"Los clientes pueden hacer pedidos":"El catálogo es visible pero sin compra"}</div>
+            <div style={{fontSize:12,color:"var(--t3)",marginTop:2}}>{s.store_open!==false?"Los clientes pueden hacer pedidos normalmente":"El catálogo es visible pero los pedidos están bloqueados"}</div>
           </div>
           <div className={`gift-toggle ${s.store_open!==false?"on":""}`} style={{flexShrink:0}} onClick={()=>set("store_open",s.store_open===false?true:false)}>
             <div className="gift-thumb"/>
@@ -285,12 +282,6 @@ function Settings({settings,setSettings,showToast,onBack}){
           </div>
         }
       </div>}
-      </div>
-
-      {/* ── Idioma y Tema ── */}
-      <div className="c" style={{marginTop:12,padding:"12px 14px",display:"flex",flexDirection:"column",gap:12}}>
-        <LanguageSelector />
-        <ThemeToggle />
       </div>
 
       <button className="btn bp" style={{marginTop:8}} onClick={async()=>{const saved=await updateSettings(s);if(saved){setSettings(saved);showToast("Guardado ✓");onBack();}else{showToast("Error al guardar");}}}>{Icon.check({size:18,color:"#fff"})} Guardar cambios</button>

@@ -74,7 +74,11 @@ export default function Admin() {
 
       {/* Header */}
       <div className="hd">
-        <div className="hd-l" style={{ background: sett.logo_color || DEF.logo_color }}>{sett.logo_letter || DEF.logo_letter}</div>
+        <div className="hd-l" style={{ background: sett.logo_url ? "transparent" : (sett.logo_color || DEF.logo_color), overflow: "hidden", padding: 0 }}>
+          {sett.logo_url
+            ? <img src={sett.logo_url} alt="logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = 'none' }} />
+            : (sett.logo_letter || DEF.logo_letter)}
+        </div>
         <div><div className="hd-t">{sett.biz_name || DEF.biz_name}</div><div className="hd-s">Gestión Operativa</div></div>
         <div className="hd-r">
           <button className="hb" onClick={() => setTab("settings")}>{Icon.settings({ size: 18 })}</button>
@@ -115,7 +119,7 @@ export default function Admin() {
       {menuOpen && <>
         <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 900 }} />
         <div style={{ position: "fixed", bottom: 64, right: 12, background: "#fff", borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", zIndex: 901, padding: "6px 0", minWidth: 180, animation: "fadeIn .15s ease" }}>
-          {[{ id: "stock", icon: Icon.box, l: "Stock" }, { id: "recipes", icon: Icon.recipe, l: "Recetas" }, { id: "sales", icon: Icon.cart, l: "Ventas" }, { id: "analytics", icon: Icon.chart || Icon.settings, l: "Analytics" }, { id: "exports", icon: Icon.download, l: "Exportar", action: () => setOv({ type: "exports" }) }, { id: "invoicing", icon: Icon.recipe, l: "Facturación", action: () => setOv({ type: "invoicing" }), show: ffInvoice }, { id: "waste", icon: Icon.alert, l: "Mermas" }, { id: "reviews", icon: Icon.fire, l: "Reseñas", show: ffReviews }, { id: "crm", icon: Icon.user, l: "CRM" }, { id: "push", icon: Icon.bell, l: "Push", action: () => setOv({ type: "push" }), show: ffPush }, { id: "categories", icon: Icon.box, l: "Categorías", action: () => setOv({ type: "categories" }) }, { id: "flags", icon: Icon.settings, l: "Flags", action: () => setOv({ type: "flags" }) }, { id: "theme", icon: Icon.fire, l: "Tema", action: () => setOv({ type: "theme" }) }].filter(t => t.show !== false).map(t => (
+          {[{ id: "stock", icon: Icon.box, l: "Stock" }, { id: "recipes", icon: Icon.recipe, l: "Recetas" }, { id: "sales", icon: Icon.cart, l: "Ventas" }, { id: "analytics", icon: Icon.chart || Icon.settings, l: "Analytics" }, { id: "exports", icon: Icon.download, l: "Exportar", action: () => setOv({ type: "exports" }) }, { id: "invoicing", icon: Icon.recipe, l: "Facturación", action: () => setOv({ type: "invoicing" }), show: ffInvoice }, { id: "waste", icon: Icon.alert, l: "Mermas" }, { id: "reviews", icon: Icon.fire, l: "Reseñas", show: ffReviews }, { id: "crm", icon: Icon.user, l: "CRM" }, { id: "push", icon: Icon.bell, l: "Push", action: () => setOv({ type: "push" }), show: ffPush }, { id: "categories", icon: Icon.box, l: "Categorías", action: () => setOv({ type: "categories" }) }].filter(t => t.show !== false).map(t => (
             <button key={t.id} onClick={() => { if (t.action) { t.action(); } else { setTab(t.id); } setMenuOpen(false); }} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 18px", border: "none", background: tab === t.id ? "var(--b1,#f5f0eb)" : "transparent", color: tab === t.id ? "var(--pr,#C45D3E)" : "var(--tx,#333)", fontSize: 14, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", textAlign: "left" }}>
               {t.icon({ size: 18 })}{t.l}
             </button>

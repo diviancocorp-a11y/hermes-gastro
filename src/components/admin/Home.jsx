@@ -15,15 +15,6 @@ function Home({lowStockIngredients,monthSales,monthExpenses,monthWasteCost,month
     </div>}
     {lowStockIngredients.length>0&&<div className="ab abw" onClick={onStock}>{Icon.alert({size:18})}<span>{lowStockIngredients.length} insumo{lowStockIngredients.length>1?"s":""} con stock bajo</span></div>}
 
-    <div style={{display:"flex",gap:10,padding:"0 16px 16px"}}>
-      <button onClick={onPurchase} style={{flex:1,padding:"12px 14px",borderRadius:"var(--r)",border:"none",background:"var(--b3)",boxShadow:"var(--sh)",display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontFamily:"'DM Sans'",fontSize:14,fontWeight:700,color:"var(--tx)"}}>
-        <div style={{width:36,height:36,borderRadius:10,background:"var(--bll)",display:"flex",alignItems:"center",justifyContent:"center"}}>{Icon.truck({size:18,color:"var(--bl)"})}</div>Compra
-      </button>
-      <button onClick={onExp} style={{flex:1,padding:"12px 14px",borderRadius:"var(--r)",border:"none",background:"var(--b3)",boxShadow:"var(--sh)",display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontFamily:"'DM Sans'",fontSize:14,fontWeight:700,color:"var(--tx)"}}>
-        <div style={{width:36,height:36,borderRadius:10,background:"var(--rl)",display:"flex",alignItems:"center",justifyContent:"center"}}>{Icon.dollar({size:18,color:"var(--rd)"})}</div>Gastos
-      </button>
-    </div>
-
     <div className="sg">
       <div className="sc f1"><div className="sl">Ventas</div><div className="sv2">${formatInt(monthSales)}</div></div>
       <div className="sc f2"><div className="sl">Ganancia</div><div className={`sv2 ${monthProfit>=0?"svg2":"svr"}`}>${formatInt(monthProfit)}</div><div className="sd">Margen: {profitMargin.toFixed(1)}%</div></div>
