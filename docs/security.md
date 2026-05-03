@@ -9,10 +9,9 @@ El cliente solo usa `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (públicos po
 
 **Edge Functions desplegadas:**
 - `submit-order` — calcula precios server-side, valida cupones, rate limit 10/min
-- `notify-whatsapp` — envía notificación WhatsApp via Twilio (secrets en servidor)
-- `notify-new-customer` — webhook interno para CRM
 - `validate-coupon` — validación server-side de cupones, rate limit 20/min
 - `admin-reset` — reset de datos con re-autenticación + audit log
+- `notify-new-customer` — webhook interno para CRM (obsoleto, en revisión)
 
 ### 1.2 — Prevención de manipulación de precios
 
@@ -33,7 +32,6 @@ El reset administrativo ahora requiere re-autenticación con contraseña
 Implementado con tabla Postgres `rate_limits` + función RPC `check_rate_limit`.
 Límites configurados:
 - `submit-order`: 10 requests/minuto por IP
-- `notify-whatsapp`: 30 requests/minuto por IP
 - `validate-coupon`: 20 requests/minuto por IP
 
 Limpieza automática via `cleanup_rate_limits` (borra registros > 5 min).
@@ -93,10 +91,6 @@ Integrados en `catalogService.js` y `adminService.js` via `validateInput()`.
 |----------|-----------|-------------|
 | `VITE_SUPABASE_URL` | `.env.local` | URL pública del proyecto Supabase |
 | `VITE_SUPABASE_ANON_KEY` | `.env.local` | Clave anon (pública, controlada por RLS) |
-| `TWILIO_SID` | Supabase Secrets | SID de cuenta Twilio |
-| `TWILIO_TOKEN` | Supabase Secrets | Token de autenticación Twilio |
-| `TWILIO_FROM` | Supabase Secrets | Número WhatsApp sender |
-| `CUSTOMER_WEBHOOK_URL` | Supabase Secrets | URL del webhook de notificación |
 
 ## Migraciones aplicadas
 

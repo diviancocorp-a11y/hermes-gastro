@@ -7,23 +7,6 @@
   --sh: 0 2px 12px rgba(45,27,14,.08); --r: 16px; --rs: 10px;
 }
 
-/* ─── Dark Mode ─────────────────────────────────────────── */
-[data-theme="dark"] {
-  --bg: #1A1210; --b2: #2A2018; --b3: #332820; --tx: #F5EDE6; --t2: #C4B5A4; --t3: #8D7E6F;
-  --ac: #E07A5C; --al: #3D241C; --gn: #5CAF6A; --gl: #1C2E1E; --yw: #E6B830; --yl: #2E2710;
-  --rd: #EF5350; --rl: #2E1515; --bl: #42A5F5; --bll: #15253A;
-  --sh: 0 2px 12px rgba(0,0,0,.3);
-}
-
-/* Auto dark mode when system prefers it and no explicit theme set */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #1A1210; --b2: #2A2018; --b3: #332820; --tx: #F5EDE6; --t2: #C4B5A4; --t3: #8D7E6F;
-    --ac: #E07A5C; --al: #3D241C; --gn: #5CAF6A; --gl: #1C2E1E; --yw: #E6B830; --yl: #2E2710;
-    --rd: #EF5350; --rl: #2E1515; --bl: #42A5F5; --bll: #15253A;
-    --sh: 0 2px 12px rgba(0,0,0,.3);
-  }
-}
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--tx); -webkit-font-smoothing: antialiased; overflow-x: hidden; }

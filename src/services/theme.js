@@ -4,14 +4,10 @@ import { supabase } from '../lib/supabase';
 
 /** Default theme (matches legacy.css :root values) */
 const DEFAULT_THEME = {
-  // Light palette
+  // Light palette (Nona Pato artesanal terracotta/crema)
   color_bg: '#FBF7F2', color_bg2: '#F3EDE4', color_bg3: '#FFFFFF',
   color_tx: '#2D1B0E', color_t2: '#6B5744', color_t3: '#9C8B7A',
   color_accent: '#C45D3E', color_accent_light: '#FFF0EB',
-  // Dark palette
-  dark_bg: '#1A1210', dark_bg2: '#2A2018', dark_bg3: '#332820',
-  dark_tx: '#F5EDE6', dark_t2: '#C4B5A4', dark_t3: '#8D7E6F',
-  dark_accent: '#E07A5C', dark_accent_light: '#3D241C',
   // Typography
   font_heading: 'DM Serif Display',
   font_body: 'DM Sans',
@@ -83,9 +79,6 @@ export function applyTheme(theme) {
 
   // Load Google Fonts if URL changed
   loadFontUrl(theme.font_url);
-
-  // Store dark palette for the dark-mode CSS override
-  storeDarkPalette(theme);
 }
 
 /** Inject a <link> for Google Fonts if not already present */
@@ -101,30 +94,6 @@ function loadFontUrl(url) {
   link.rel = 'stylesheet';
   link.href = url;
   document.head.appendChild(link);
-}
-
-/** Write dark-mode overrides into a <style> tag */
-function storeDarkPalette(theme) {
-  let el = document.getElementById('theme-dark-overrides');
-  if (!el) {
-    el = document.createElement('style');
-    el.id = 'theme-dark-overrides';
-    document.head.appendChild(el);
-  }
-  el.textContent = `
-    [data-theme="dark"] {
-      --bg: ${theme.dark_bg}; --b2: ${theme.dark_bg2}; --b3: ${theme.dark_bg3};
-      --tx: ${theme.dark_tx}; --t2: ${theme.dark_t2}; --t3: ${theme.dark_t3};
-      --ac: ${theme.dark_accent}; --al: ${theme.dark_accent_light};
-    }
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
-        --bg: ${theme.dark_bg}; --b2: ${theme.dark_bg2}; --b3: ${theme.dark_bg3};
-        --tx: ${theme.dark_tx}; --t2: ${theme.dark_t2}; --t3: ${theme.dark_t3};
-        --ac: ${theme.dark_accent}; --al: ${theme.dark_accent_light};
-      }
-    }
-  `;
 }
 
 /**

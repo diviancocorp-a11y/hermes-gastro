@@ -179,9 +179,7 @@ export default function ThemeBuilder({ msg, onClose }) {
         <Section title="Vista previa">
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
             <button onClick={() => { setPreviewMode('light'); document.documentElement.setAttribute('data-theme', 'light'); }}
-              style={{ padding: '4px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--br,#ddd)', background: previewMode === 'light' ? 'var(--ac)' : 'var(--b3)', color: previewMode === 'light' ? '#fff' : 'var(--tx)', cursor: 'pointer' }}>☀️ Claro</button>
-            <button onClick={() => { setPreviewMode('dark'); document.documentElement.setAttribute('data-theme', 'dark'); }}
-              style={{ padding: '4px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--br,#ddd)', background: previewMode === 'dark' ? 'var(--ac)' : 'var(--b3)', color: previewMode === 'dark' ? '#fff' : 'var(--tx)', cursor: 'pointer' }}>🌙 Oscuro</button>
+              style={{ padding: '4px 10px', fontSize: 12, borderRadius: 6, border: '1px solid var(--br,#ddd)', background: 'var(--ac)', color: '#fff', cursor: 'pointer' }}>☀️ Claro</button>
           </div>
           <PreviewCard theme={theme} />
         </Section>

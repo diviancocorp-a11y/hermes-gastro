@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import {
   updateOrderStatus, createSale, updateIngredientStock,
-  deductComboStock, createCouponForOrder, notifyWhatsApp,
+  deductComboStock, createCouponForOrder,
 } from "../lib/adminService";
 import { formatInt, todayISO, generateId, OrderStatus, playNotificationSound } from "../lib/utils";
 
@@ -76,7 +76,6 @@ export default function useOrderWorkflow({
       await updateOrderStatus(id, OrderStatus.cancel);
       setOrders(p => p.map(x => x.id === id ? { ...x, status: OrderStatus.cancel } : x));
       msg("Cancelado");
-      if (o.phone) notifyWhatsApp(o.phone, o.customer || "", OrderStatus.cancel, o.id).then(ok => { if (ok) msg(p => p + " · 📱 WhatsApp enviado"); }).catch(() => {});
       return;
     }
 
@@ -159,13 +158,6 @@ export default function useOrderWorkflow({
 
     await updateOrderStatus(id, nextStatus);
     setOrders(p => p.map(x => x.id === id ? { ...x, status: nextStatus, ...(nextStatus === OrderStatus.done ? { completedAt: new Date().toISOString() } : {}) } : x));
-
-    // WhatsApp notification
-    if (o.phone && [OrderStatus.prep, OrderStatus.active, OrderStatus.done, OrderStatus.cancel].includes(nextStatus)) {
-      notifyWhatsApp(o.phone, o.customer || "", nextStatus, o.id)
-        .then(ok => { if (ok) msg(prev => prev + (prev ? " · " : "") + "📱 WhatsApp enviado"); })
-        .catch(() => {});
-    }
   }, [orders, recs, ings, setOrders, setIngs, setSales, setOv, msg]);
 
   // ═══ Confirm cancellation (with optional stock return) ═══
@@ -200,7 +192,6 @@ export default function useOrderWorkflow({
     await updateOrderStatus(id, OrderStatus.cancel);
     setOrders(p => p.map(x => x.id === id ? { ...x, status: OrderStatus.cancel } : x));
     setOv(null);
-    if (o.phone) notifyWhatsApp(o.phone, o.customer || "", OrderStatus.cancel, o.id).catch(() => {});
   }, [orders, recs, setOrders, setIngs, setOv, msg]);
 
   // ═══ Add order (from manual order form) ═══
