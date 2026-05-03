@@ -9,7 +9,7 @@ vi.mock('../lib/supabase', () => ({
   supabase: { from: mockFrom, rpc: mockRpc },
 }));
 
-import { fetchSales, createSale, deleteSale, fetchExpenses, createExpense, deleteExpense } from '../services/finance';
+import { fetchSales, createSale, deleteSale, fetchExpenses, createExpense, deleteExpense } from '@hermes/core/services/finance';
 
 import { chain } from './_chain.js';
 

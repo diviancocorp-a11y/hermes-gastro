@@ -15,7 +15,7 @@ vi.mock('../lib/supabase', () => ({
 import {
   fetchOrders, fetchActiveOrders, fetchOrderHistory,
   updateOrderStatus, verifyReceipt, getReceiptUrl,
-} from '../services/orders';
+} from '@hermes/core/services/orders';
 
 import { chain } from './_chain.js';
 

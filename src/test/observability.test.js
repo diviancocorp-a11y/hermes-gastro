@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { captureException, captureMessage, trackPageView, trackEvent, initObservability } from '../lib/observability.js';
+import { captureException, captureMessage, trackPageView, trackEvent, initObservability } from '@hermes/core/lib/observability.js';
 
 describe('observability module', () => {
   it('exports all public functions', () => {

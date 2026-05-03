@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { queryClient, queryKeys, STALE_TIMES } from '../lib/queryClient';
+import { queryClient, queryKeys, STALE_TIMES } from '@hermes/core/lib/queryClient';
 
 describe('queryClient', () => {
   it('exports a QueryClient instance', () => {

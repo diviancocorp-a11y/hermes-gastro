@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import useCart from '../hooks/useCart';
-import useStoreStatus from '../hooks/useStoreStatus';
+import useCart from '@hermes/core/hooks/useCart';
+import useStoreStatus from '@hermes/core/hooks/useStoreStatus';
 
 // ── useCart ──
 
@@ -170,6 +170,4 @@ describe('useStoreStatus', () => {
 
   it('returns always-open when no store_hours configured', () => {
     const { result } = renderHook(() => useStoreStatus({}, new Date()));
-    expect(result.current.storeStatus.open).toBe(true);
-  });
-});
+    expect(result.current.storeStatus.open).to

@@ -6,7 +6,7 @@ import {
   prepareExpensesExport,
   prepareInventoryExport,
   prepareOrdersExport,
-} from '../lib/exports';
+} from '@hermes/core/lib/exports';
 
 describe('Export Utilities', () => {
   describe('generateCSV', () => {

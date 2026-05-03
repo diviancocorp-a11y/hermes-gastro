@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { formatMoney, formatInt, todayISO, generateId, formatOrderCode, optimizeImage, originalImageUrl, disableImageTransforms, imageTransformsEnabled, resetImageTransforms } from '../lib/utils.jsx';
+import { formatMoney, formatInt, todayISO, generateId, formatOrderCode, optimizeImage, originalImageUrl, disableImageTransforms, imageTransformsEnabled, resetImageTransforms } from '@hermes/core/lib/utils.jsx';
 
 describe('fm (format money)', () => {
   it('formats number with 2 decimals AR locale', () => {

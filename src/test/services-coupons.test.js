@@ -8,7 +8,7 @@ vi.mock('../lib/supabase', () => ({
   supabase: { from: mockFrom },
 }));
 
-import { createCouponForOrder, validateCoupon, redeemCoupon, fetchCoupons } from '../services/coupons';
+import { createCouponForOrder, validateCoupon, redeemCoupon, fetchCoupons } from '@hermes/core/services/coupons';
 
 import { chain } from './_chain.js';
 

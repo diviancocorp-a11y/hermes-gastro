@@ -16,7 +16,7 @@ vi.mock('../lib/supabase', () => ({
   },
 }));
 
-import { login, logout, getSession } from '../services/auth';
+import { login, logout, getSession } from '@hermes/core/services/auth';
 
 beforeEach(() => vi.clearAllMocks());
 

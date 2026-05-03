@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import useFinancials from '../hooks/useFinancials';
+import useFinancials from '@hermes/core/hooks/useFinancials';
 
 // Mock todayISO to return a fixed date
 vi.mock('../lib/utils', async () => {

@@ -16,6 +16,7 @@
     "create-client": "node scripts/create-client.mjs"
   },
   "dependencies": {
+    "@hermes/core": "file:../Hermes/packages/core",
     "@tanstack/react-query": "^5.75.0",
     "@supabase/supabase-js": "^2.100.1",
     "i18next": "^25.1.0",

@@ -13,7 +13,7 @@ import {
   fetchAllRecipes, upsertRecipe, toggleRecipeVisibility, deleteRecipe,
   archiveRecipe, unarchiveRecipe, fetchRecipeIngredients, saveRecipeIngredients,
   fetchComboItems, saveComboItems,
-} from '../services/recipes';
+} from '@hermes/core/services/recipes';
 
 import { chain } from './_chain.js';
 

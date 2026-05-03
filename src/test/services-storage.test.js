@@ -16,7 +16,7 @@ vi.mock('../lib/supabase', () => ({
 import {
   ALLOWED_IMG_TYPES, ALLOWED_IMG_EXTS, MAX_IMG_SIZE,
   uploadRecipeImage, uploadCoverImage, uploadLogoImage, uploadCatImage,
-} from '../services/storage';
+} from '@hermes/core/services/storage';
 
 beforeEach(() => {
   vi.clearAllMocks();
