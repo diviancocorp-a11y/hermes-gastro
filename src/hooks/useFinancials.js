@@ -89,7 +89,9 @@ export default function useFinancials({ ings, recs, sales, exps, orders, waste, 
   // Gastos del mes separados por tipo
   const monthExpensesByType = useMemo(() => {
     const fixed = exps.filter(e => e.date >= monthStart && e.expense_type === 'fixed').reduce((a, e) => a + (e.amount || 0), 0);
-    const variable = exps.filter(e => e.date >= monthStart && e.expense_type !== 'fixed').reduce((a, e) => a + (e.amount || 0), 0);
+    // Explícito: solo cuenta 'variable'. Si el gasto tiene null/undefined no se suma a ningún bucket
+    // (la migration auto-clasificó los existentes; los nuevos siempre tienen valor por el form).
+    const variable = exps.filter(e => e.date >= monthStart && e.expense_type === 'variable').reduce((a, e) => a + (e.amount || 0), 0);
     return { fixed, variable, total: fixed + variable };
   }, [exps, monthStart]);
 

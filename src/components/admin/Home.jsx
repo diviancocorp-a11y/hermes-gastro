@@ -5,6 +5,7 @@ const Analytics = lazy(() => import("./Analytics"));
 
 function Home({lowStockIngredients,monthSales,monthExpenses,monthWasteCost,monthProfit,profitMargin,monthProductionCost,wastePct,monthFixedExpenses,monthVariableExpenses,monthGrossMargin,grossMarginPct,sales,orders,recipes,ingredients,calculateRecipeCost,activeOrders,settings,waste,onStock,onPurchase,onOrders,onExp}){
   const [showDetail,setShowDetail]=useState(false);
+  const [showAnalytics,setShowAnalytics]=useState(false);
   // Indicador de calibración: si la merma cargada supera la proyectada, sugerir subir el %
   const projectedWasteCost = (monthProductionCost && wastePct) ? (monthProductionCost - monthProductionCost/(1+wastePct/100)) : 0;
   const wasteOverrun = monthWasteCost > projectedWasteCost * 1.5 && monthWasteCost > 1000;
@@ -91,10 +92,16 @@ function Home({lowStockIngredients,monthSales,monthExpenses,monthWasteCost,month
       </div>);
     })()}
 
-    {/* Analytics avanzado: gráficos antes en pantalla separada, ahora inline */}
-    <Suspense fallback={<div className="s"><div className="c" style={{textAlign:"center",padding:20,color:"var(--t3)"}}>Cargando analítica...</div></div>}>
+    {/* Analytics avanzado: colapsable. Default cerrado para mantener el Home como vista rápida. */}
+    <div style={{padding:"0 16px 12px"}}>
+      <button onClick={()=>setShowAnalytics(p=>!p)} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--b2)",background:"var(--b3)",borderRadius:"var(--r)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:13,fontWeight:600,color:"var(--t2)"}}>
+        <span>📊 Analítica avanzada (gráficos, embudos, heatmap)</span>
+        <span style={{transition:"transform .2s",transform:showAnalytics?"rotate(180deg)":"rotate(0)"}}>▾</span>
+      </button>
+    </div>
+    {showAnalytics&&<Suspense fallback={<div className="s"><div className="c" style={{textAlign:"center",padding:20,color:"var(--t3)"}}>Cargando analítica...</div></div>}>
       <Analytics sales={sales} orders={orders} recipes={recipes} calculateRecipeCost={calculateRecipeCost} />
-    </Suspense>
+    </Suspense>}
 
     {top.length>0&&<div className="s"><div className="st">Más vendidos</div>
       <div className="c" style={{padding:0,overflow:"hidden"}}>{top.map((t,i)=>{

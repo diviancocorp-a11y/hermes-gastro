@@ -23,8 +23,6 @@ import Invoicing from "../components/admin/Invoicing";
 import Reviews from "../components/admin/Reviews";
 import PushNotifications from "../components/admin/PushNotifications";
 import CategoryEditor from "../components/admin/CategoryEditor";
-import FeatureFlags from "../components/admin/FeatureFlags";
-import ThemeBuilder from "../components/admin/ThemeBuilder";
 import { CancelDlg, StockWarningDlg, NewOrderOverlay } from "../components/admin/Dialogs";
 
 export default function Admin() {
@@ -110,8 +108,6 @@ export default function Admin() {
       {ov?.type === "invoicing" && <Invoicing orders={orders} recipes={recs} sett={sett} msg={msg} onClose={() => setOv(null)} />}
       {ov?.type === "push" && <PushNotifications msg={msg} onClose={() => setOv(null)} />}
       {ov?.type === "categories" && <CategoryEditor msg={msg} onClose={() => setOv(null)} />}
-      {ov?.type === "flags" && <FeatureFlags msg={msg} onClose={() => setOv(null)} />}
-      {ov?.type === "theme" && <ThemeBuilder msg={msg} onClose={() => setOv(null)} />}
 
       {/* New order alert overlay */}
       {newAlertCount > 0 && <NewOrderOverlay count={newAlertCount} onAck={() => { ackOrders(); setTab('orders'); }} />}
