@@ -1,5 +1,5 @@
 // Animación de confirmación: corazón terracota + check
-import business from '../../config/business';
+import business from '@business';
 
 export default function ConfirmationAnimation() {
   return (

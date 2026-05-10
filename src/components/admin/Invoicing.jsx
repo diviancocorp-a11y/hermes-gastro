@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { formatMoney, formatOrderCode, Icon, todayISO } from '../../lib/utils';
 import { createInvoice, listInvoices, checkAfipStatus, INVOICE_TYPE_LABELS } from '../../services/invoices';
-import business from '../../config/business';
+import business from '@business';
 import { printAsPDF } from '../../lib/exports';
 
 export default function Invoicing({ orders, recipes, sett, msg, onClose }) {

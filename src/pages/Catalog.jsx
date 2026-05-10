@@ -5,7 +5,7 @@ import { preloadImages } from "../lib/preloadImages";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
-import business, { waLink } from "../config/business";
+import business, { waLink } from "@business";
 
 // ── Extracted components ──
 import ProductCard from "../components/catalog/ProductCard";

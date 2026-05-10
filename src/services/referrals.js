@@ -1,7 +1,7 @@
 // src/services/referrals.js
 // Referral program service.
 import { supabase } from '../lib/supabase';
-import business from '../config/business';
+import business from '@business';
 
 // Generate a unique referral code from a phone number
 export function generateReferralCode(phone) {

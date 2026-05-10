@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { login } from "../../lib/adminService";
-import business from "../../config/business";
+import business from "@business";
 
 function LoginScreen({onLogin}){
   const [email,setEmail]=useState("");const [pass,setPass]=useState("");

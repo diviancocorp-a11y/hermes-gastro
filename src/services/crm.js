@@ -1,6 +1,6 @@
 // src/services/crm.js
 import { supabase } from '../lib/supabase';
-import business from '../config/business';
+import business from '@business';
 
 export async function fetchCustomers() {
   const { data, error } = await supabase

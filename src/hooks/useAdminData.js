@@ -8,7 +8,7 @@ import {
   useActiveOrders, useSales, useExpenses, useSettings, useWasteLog,
 } from "./useQueryHooks";
 import { useRealtimeInvalidation } from "./useRealtimeInvalidation";
-import business from "../config/business";
+import business from "@business";
 
 const DEFAULT_SETTINGS = { ...business.defaultSettings };
 

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { formatInt, formatOrderCode, optimizeImage } from "../lib/utils";
 import { supabase } from "../lib/supabase";
-import business from "../config/business";
+import business from "@business";
 import ReferralCard from "../components/catalog/ReferralCard";
 
 const TABS = ["perfil", "direcciones", "historial", "favoritos", "cupones", "referidos"];

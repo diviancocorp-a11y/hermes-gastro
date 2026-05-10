@@ -2,7 +2,7 @@
 // Export center: download sales, expenses, inventory, orders as CSV/XLSX/PDF.
 import { useState } from 'react';
 import { todayISO, Icon } from '../../lib/utils';
-import business from '../../config/business';
+import business from '@business';
 import {
   downloadCSV, downloadXLSX, printAsPDF,
   prepareSalesExport, prepareExpensesExport,

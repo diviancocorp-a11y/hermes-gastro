@@ -2,7 +2,7 @@
 // Shows referral code, share buttons, and referral stats for logged-in customers.
 import { useState, useEffect } from 'react';
 import { getOrCreateReferralCode, getReferralStats, buildWhatsAppShareUrl, buildShareUrl } from '../../services/referrals';
-import business from '../../config/business';
+import business from '@business';
 
 export default function ReferralCard({ phone, name, bizName = business.name }) {
   const [code, setCode] = useState('');

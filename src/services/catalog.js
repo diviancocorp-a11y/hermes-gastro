@@ -1,7 +1,7 @@
 // src/services/catalog.js
 import { supabase } from '../lib/supabase';
 import { OrderInputSchema, CouponValidateSchema, validateInput } from '../lib/schemas/index.js';
-import business from '../config/business';
+import business from '@business';
 
 /**
  * Trae los datos que necesita el catálogo público:

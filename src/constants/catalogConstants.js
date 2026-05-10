@@ -1,5 +1,5 @@
 // ── Shared constants for the catalog ──
-import business from '../config/business';
+import business from '@business';
 
 export const avatarColors = business.branding.accentColors;
 

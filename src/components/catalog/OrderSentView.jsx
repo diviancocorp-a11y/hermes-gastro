@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Icon, formatInt, formatOrderCode } from "../../lib/utils";
-import { waLink } from "../../config/business";
+import { waLink } from "@business";
 import ReviewForm from "./ReviewForm";
 
 export default function OrderSentView({ orderId, form, receiptFile, onReset }) {

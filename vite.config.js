@@ -1,10 +1,23 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import path from 'path'
+
+// ── Multi-client: select config folder via CLIENT env var ────
+// Usage: CLIENT=cochi npm run build | CLIENT=la-nona-pato npm run dev
+const CLIENT = process.env.CLIENT || 'la-nona-pato'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [tailwindcss(), react()],
+  resolve: {
+    alias: {
+      '@business': path.resolve(__dirname, `clients/${CLIENT}/business.js`),
+    },
+  },
+  define: {
+    __CLIENT__: JSON.stringify(CLIENT),
+  },
   test: {
     environment: 'jsdom',
     globals: true,
