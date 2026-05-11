@@ -12,6 +12,9 @@ const business = {
   description: 'Restaurante de cerdo y parrilla artesanal. ¡Qué bien se cochina aquí!',
   logoLetter: 'C',
   logoColor: '#c91b14',
+  logoUrl: '/clients/cochi/logo-icon.jpg',
+  logoHorizontalUrl: '/clients/cochi/logo-horizontal.jpg',
+  logoWordmarkUrl: '/clients/cochi/logo-wordmark.jpg',
 
   // ── Location ───────────────────────────────────────────────
   address: {
