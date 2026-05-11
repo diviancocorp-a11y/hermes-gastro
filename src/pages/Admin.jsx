@@ -95,7 +95,7 @@ export default function Admin() {
       {tab === "orders" && <Orders orders={orders} recipes={recs} moveOrderStatus={moveOrd} addOrder={addOrd} overlay={ov} setOverlay={setOv} showToast={msg} settings={sett} onUpdateOrder={(id, changes) => setOrders(p => p.map(o => o.id === id ? { ...o, ...changes } : o))} />}
       {tab === "sales" && <SalesView sales={sales} setSales={setSales} orders={orders} recipes={recs} calculateRecipeCost={rc} overlay={ov} setOverlay={setOv} showToast={msg} />}
       {tab === "crm" && <CRM orders={orders} recipes={recs} ingredients={ings} showToast={msg} />}
-      {tab === "waste" && <Waste waste={waste} orders={orders} recipes={recs} ingredients={ings} />}
+      {tab === "waste" && <Waste waste={waste} orders={orders} recipes={recs} ingredients={ings} setIngredients={setIngs} showToast={msg} loadAll={loadAll} />}
       {tab === "reviews" && ffReviews && <Reviews msg={msg} />}
       {tab === "settings" && <Settings settings={sett} setSettings={setSett} showToast={msg} onBack={() => setTab("home")} onExport={() => setOv({ type: "exports" })} onCategories={() => setOv({ type: "categories" })} />}
 

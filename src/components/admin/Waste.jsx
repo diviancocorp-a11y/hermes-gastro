@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Icon, formatInt, formatMoney, todayISO } from "../../lib/utils";
+import { registerWaste } from "../../lib/adminService";
 
 const REASON_LABELS = {
   vencimiento: "🗓️ Vencimiento",
@@ -18,9 +19,10 @@ const REASON_COLORS = {
   cancel: { bg: "#FCE4EC", tx: "#AD1457" }
 };
 
-function Waste({ waste, orders, recipes, ingredients }) {
+function Waste({ waste, orders, recipes, ingredients, setIngredients, showToast, loadAll }) {
   const [tab, setTab] = useState("all"); // all | stats
   const [filter, setFilter] = useState("all");
+  const [showWasteForm, setShowWasteForm] = useState(false);
   const t = todayISO();
   const monthStart = t.slice(0, 7) + "-01";
 
@@ -232,8 +234,8 @@ function Waste({ waste, orders, recipes, ingredients }) {
 
       {/* ═══ LIST TAB ═══ */}
       {tab === "all" && (<>
-        {/* Filter chips */}
-        <div style={{ padding: "0 16px 8px", display: "flex", gap: 6, overflowX: "auto", flexWrap: "nowrap" }}>
+        {/* Filter chips + Register button */}
+        <div style={{ padding: "0 16px 8px", display: "flex", gap: 6, overflowX: "auto", flexWrap: "nowrap", alignItems: "center" }}>
           {[
             { id: "all", l: "Todos" },
             { id: "manual", l: "Insumos" },
@@ -243,6 +245,8 @@ function Waste({ waste, orders, recipes, ingredients }) {
               {f.l}
             </button>
           ))}
+          <div style={{ flex: 1 }} />
+          <button className="btn bp bsm" style={{ whiteSpace: "nowrap", fontSize: 12 }} onClick={() => setShowWasteForm(true)}>⚠️ Registrar</button>
         </div>
 
         <div className="s">
@@ -293,7 +297,83 @@ function Waste({ waste, orders, recipes, ingredients }) {
           })}
         </div>
       </>)}
+
+      {/* FAB to register waste */}
+      {setIngredients && <button className="fab" onClick={() => setShowWasteForm(true)} title="Registrar merma" style={{ background: "#E65100" }}>⚠️</button>}
+
+      {/* Waste form overlay */}
+      {showWasteForm && setIngredients && (
+        <WasteForm
+          ingredients={ingredients}
+          setIngredients={setIngredients}
+          showToast={showToast || (() => {})}
+          onClose={() => { setShowWasteForm(false); if (loadAll) loadAll(); }}
+        />
+      )}
     </>
+  );
+}
+
+function WasteForm({ ingredients, setIngredients, showToast, onClose }) {
+  const [ingId, setIngId] = useState("");
+  const [qty, setQty] = useState("");
+  const [reason, setReason] = useState("vencimiento");
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const reasons = ["vencimiento", "rotura", "prueba", "derrame", "otro"];
+  const save = async () => {
+    if (!ingId || !qty || Number(qty) <= 0) return;
+    setSaving(true);
+    const ok = await registerWaste(ingId, Number(qty), reason, note);
+    setSaving(false);
+    if (ok) {
+      setIngredients(p => p.map(i => i.id === ingId ? { ...i, stock: Math.max(0, (i.stock || 0) - Number(qty)) } : i));
+      showToast(`Merma registrada: ${Number(qty)} ${ingredients.find(x => x.id === ingId)?.unit || ""}`);
+      onClose();
+    }
+  };
+  const ing = ingredients.find(x => x.id === ingId);
+  return (
+    <div className="po">
+      <div className="ph">
+        <button onClick={onClose}>{Icon.back({})}</button>
+        <h2>Registrar Merma</h2>
+      </div>
+      <div className="pb">
+        <div className="waste-banner">⚠️ Este ajuste descuenta stock sin generar una venta. Usá esto para vencimientos, roturas y pruebas.</div>
+        <div className="fg">
+          <label className="fl">Insumo</label>
+          <select className="fin" value={ingId} onChange={e => setIngId(e.target.value)}>
+            <option value="">Seleccionar insumo...</option>
+            {ingredients.map(i => <option key={i.id} value={i.id}>{i.name} (Stock: {i.stock || 0} {i.unit})</option>)}
+          </select>
+        </div>
+        <div className="fr">
+          <div className="fg">
+            <label className="fl">Cantidad a descontar ({ing?.unit || "unidad"})</label>
+            <input className="fin" type="number" min="0.001" step="0.001" value={qty} onChange={e => setQty(e.target.value)} placeholder="Ej: 0.5" />
+          </div>
+        </div>
+        {ingId && qty && (
+          <div className="waste-preview">
+            Stock actual: <strong>{ing?.stock || 0} {ing?.unit}</strong> → Nuevo: <strong style={{ color: "var(--rd)" }}>{Math.max(0, (ing?.stock || 0) - Number(qty))} {ing?.unit}</strong>
+          </div>
+        )}
+        <div className="fg">
+          <label className="fl">Motivo</label>
+          <div className="cko" style={{ flexWrap: "wrap", gap: 6 }}>
+            {reasons.map(r => <div key={r} className={`ckv ${reason === r ? "on" : ""}`} onClick={() => setReason(r)} style={{ textTransform: "capitalize", flex: "none" }}>{r}</div>)}
+          </div>
+        </div>
+        <div className="fg">
+          <label className="fl">Nota (opcional)</label>
+          <input className="fin" value={note} onChange={e => setNote(e.target.value)} placeholder="Ej: Caja dañada al descargar" />
+        </div>
+        <button className="btn bp" style={{ width: "100%", marginTop: 8 }} onClick={save} disabled={saving || !ingId || !qty}>
+          {saving ? "Guardando..." : "⚠️ Confirmar Merma"}
+        </button>
+      </div>
+    </div>
   );
 }
 
