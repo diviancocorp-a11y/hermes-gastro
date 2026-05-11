@@ -19,11 +19,14 @@ initObservability()
     ? `${business.name} — ${business.tagline}`
     : business.name
 
-  // Favicon: if client has a custom favicon SVG, swap it
+  // Favicon: if client has a custom favicon, swap it (prefer PNG, fallback SVG)
   if (business.logoUrl) {
-    const clientFaviconSvg = `/clients/${__CLIENT__}/favicon.svg`
-    const link = document.querySelector('link[rel="icon"][type="image/svg+xml"]')
-    if (link) link.href = clientFaviconSvg
+    const clientFavicon = `/clients/${__CLIENT__}/favicon.png`
+    let link = document.querySelector('link[rel="icon"]')
+    if (link) {
+      link.type = 'image/png'
+      link.href = clientFavicon
+    }
   }
 
   // Theme color

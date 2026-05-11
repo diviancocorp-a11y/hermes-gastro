@@ -34,7 +34,7 @@ function businessHtmlPlugin() {
       const themeDark = biz.branding?.themeColorDark || '#1A1210'
       const locale = (biz.locale || 'es-AR').replace('-', '_')
       const ogImage = biz.branding?.ogImage || '/og-image.png'
-      const faviconSvg = biz.logoUrl ? `/clients/${CLIENT}/favicon.svg` : '/favicon.svg'
+      const faviconSvg = biz.logoUrl ? `/clients/${CLIENT}/favicon.png` : '/favicon.svg'
       const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
 
       // Build structured data from business config
