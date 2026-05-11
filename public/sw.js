@@ -15,12 +15,11 @@ self.skipWaiting();
 workbox.core.clientsClaim();
 
 // ─── Pre-cache app shell ────────────────────────────────
+// NOTE: Do NOT precache / or /index.html — the NavigationRoute
+// with NetworkFirst below handles HTML and always checks the network
+// first, so new deploys are picked up immediately.
 precacheAndRoute([
-  { url: '/', revision: null },
-  { url: '/index.html', revision: null },
-  { url: '/favicon.svg', revision: null },
-  { url: '/quack.mp3', revision: null },
-  { url: '/icons.svg', revision: null },
+  { url: '/icons.svg', revision: '1' },
 ]);
 
 // ─── CacheFirst: static assets (JS, CSS, fonts) ────────
@@ -123,13 +122,4 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// ─── Offline fallback ───────────────────────────────────
-self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() =>
-        caches.match('/offline.html').then((r) => r || caches.match('/'))
-      ),
-    );
-  }
-});
+// ─── Offline fallback is handled by the NavigationRoute above ──
