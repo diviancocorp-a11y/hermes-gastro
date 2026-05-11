@@ -1112,9 +1112,22 @@ export default function Catalog() {
   // isOpen = automático por horario + override manual (store_open=false fuerza cerrado)
   const isOpen = sett.store_open === false ? false : storeStatus.open;
 
+  // --- Per-client catalog theming ---
+  const catalogTheme = useMemo(() => {
+    const b = business.branding || {};
+    const style = {};
+    if (b.catalogBg) style['--catalog-bg'] = b.catalogBg;
+    if (b.catalogCardBg) style['--catalog-card-bg'] = b.catalogCardBg;
+    if (b.catalogHeaderBg) style['--catalog-header-bg'] = b.catalogHeaderBg;
+    if (b.catalogTextOnBg) style['--catalog-text-on-bg'] = b.catalogTextOnBg;
+    if (b.catalogStickyBg) style['--catalog-sticky-bg'] = b.catalogStickyBg;
+    if (b.catalogStickyText) style['--catalog-sticky-text'] = b.catalogStickyText;
+    return style;
+  }, []);
+
   // --- VISTA PRINCIPAL: CATÁLOGO ---
   return (
-    <div className="app">
+    <div className="app" style={{ ...catalogTheme, background: catalogTheme['--catalog-bg'] || undefined }}>
       {/* Portada y Header */}
       <div className="store-cover" style={{ backgroundImage: `url(${optimizeImage(sett.cover_url, { width: 600, quality: 55 }) || fallbackSettings.cover_url})` }}>
         {/* Hidden probe image: detects if render URL fails and falls back to original */}
@@ -1243,14 +1256,14 @@ export default function Catalog() {
 
       {/* Banner offline */}
       {error === "offline" && (
-        <div style={{ margin: "0 20px 8px", padding: "10px 16px", background: "#FFF8E1", borderRadius: 12, fontSize: 13, color: "#8D6E00", textAlign: "center" }}>
+        <div style={{ margin: "0 16px 8px", padding: "10px 16px", background: "rgba(255,248,225,0.95)", borderRadius: 12, fontSize: 13, color: "#8D6E00", textAlign: "center" }}>
           ⚠️ Modo offline — mostrando productos de ejemplo
         </div>
       )}
 
       {/* Banner tienda cerrada */}
       {!isOpen && (
-        <div style={{ margin: "0 16px 12px", padding: "18px 20px", background: "linear-gradient(135deg, #FFF8E1, #FFF3E0)", borderRadius: 16, textAlign: "center", border: "1px solid rgba(196,93,62,0.15)" }}>
+        <div style={{ margin: "0 16px 12px", padding: "18px 20px", background: "var(--catalog-card-bg, #FFFBF7)", borderRadius: 16, textAlign: "center", boxShadow: "0 2px 16px rgba(0,0,0,0.08)" }}>
           <div style={{ fontSize: 32, marginBottom: 6 }}>🌙</div>
           <div style={{ fontWeight: 700, fontSize: 15, color: "#5D4037", lineHeight: 1.5, maxWidth: 340, margin: "0 auto" }}>
             ¡Ay, llegaste un poquitito tarde! Ya cerramos la cocina por hoy. Pero dejame tu pedido programado y apenas abramos me pongo a preparar todo para vos.
@@ -1286,9 +1299,9 @@ export default function Catalog() {
 
       {/* Barra sticky de filtro activo */}
       {selCat !== "Todos" && (
-        <div style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--bg)", borderBottom: "1px solid rgba(0,0,0,0.05)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: "var(--tx)" }}>{(sett.cat_names || {})[selCat] || selCat}</span>
-          <button onClick={() => setSelCat("Todos")} style={{ background: "none", border: "none", fontSize: 12, color: "var(--ac)", cursor: "pointer", fontWeight: 600, padding: "4px 8px" }}>
+        <div style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--catalog-sticky-bg, var(--bg))", borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", transition: "background .3s ease" }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: "var(--catalog-sticky-text, var(--tx))" }}>{(sett.cat_names || {})[selCat] || selCat}</span>
+          <button onClick={() => setSelCat("Todos")} style={{ background: "rgba(255,255,255,0.2)", border: "none", fontSize: 12, color: "var(--catalog-sticky-text, var(--ac))", cursor: "pointer", fontWeight: 600, padding: "4px 10px", borderRadius: 8 }}>
             Ver todo ✕
           </button>
         </div>
@@ -1354,7 +1367,7 @@ export default function Catalog() {
       )}
 
       {/* Banner Eventos / Catering inline */}
-      <div style={{ padding: "8px 16px 0" }}>
+      <div style={{ padding: "8px 16px 0", background: "var(--catalog-bg, transparent)" }}>
         <a href={waLink('Hola! Tengo una consulta sobre los eventos')} target="_blank" rel="noopener noreferrer" className="event-banner">
           <div className="event-banner-content">
             <div style={{ flex: 1 }}>
@@ -1375,7 +1388,7 @@ export default function Catalog() {
       {ffPush && <PushBanner />}
 
       {/* Customer reviews */}
-      {ffReviews && <div style={{ padding: '0 16px' }}><ReviewsList /></div>}
+      {ffReviews && <div style={{ padding: '0 16px', background: 'var(--catalog-bg, transparent)' }}><ReviewsList /></div>}
 
       {/* Footer legal */}
       <footer className="catalog-footer">

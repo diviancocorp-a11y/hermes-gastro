@@ -51,6 +51,13 @@ const business = {
     themeColorDark: '#221c1a',
     ogImage: '/og-image.png',
     accentColors: ['#c91b14', '#e3debe', '#221c1a', '#D84315', '#BF360C', '#4E342E', '#3E2723', '#FF5722', '#FF8A65', '#A1887F'],
+    // Catalog page theming
+    catalogBg: '#c91b14',           // red background
+    catalogCardBg: '#FFFFFF',       // white cards
+    catalogHeaderBg: '#FFFFFF',     // white header area
+    catalogTextOnBg: '#FFFFFF',     // text color on colored bg
+    catalogStickyBg: 'rgba(201,27,20,0.95)', // sticky filter bar
+    catalogStickyText: '#FFFFFF',
   },
   // ── Locale ─────────────────────────────────────────────────
   locale: 'es-VE',

@@ -50,6 +50,13 @@ const business = {
     themeColorDark: '#1A1210',
     ogImage: '/og-image.png',
     accentColors: ['#C45D3E', '#3A7D44', '#8D6E00', '#5C6BC0', '#AB47BC', '#00897B', '#D84315', '#6D4C41', '#546E7A', '#7B1FA2'],
+    // Catalog page theming (neutral defaults — no colored bg)
+    catalogBg: '',                  // empty = use default --bg
+    catalogCardBg: '',              // empty = use default --b3
+    catalogHeaderBg: '',            // empty = use default --bg
+    catalogTextOnBg: '',            // empty = use default --tx
+    catalogStickyBg: '',
+    catalogStickyText: '',
   },
 
   // ─── Locale ─────────────────────────────────────────────────
