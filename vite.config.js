@@ -2,30 +2,28 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
-import { createRequire } from 'module'
+import fs from 'fs'
+import { pathToFileURL } from 'url'
 
 // ── Multi-client: select config folder via CLIENT env var ────
 // Usage: CLIENT=cochi npm run build | CLIENT=la-nona-pato npm run dev
 const CLIENT = process.env.CLIENT || 'la-nona-pato'
 
 // ── Load business config for HTML injection ─────────────────
-// We dynamically import the client's business.js to inject values into index.html
-const require = createRequire(import.meta.url)
-// Use a small inline loader since business.js uses ESM export default
-import(`./clients/${CLIENT}/business.js`).catch(() => ({}))
+function loadBusinessConfig() {
+  const configPath = path.resolve(__dirname, `clients/${CLIENT}/business.js`)
+  // Use file:// URL for dynamic import (works reliably on all platforms)
+  return import(pathToFileURL(configPath).href)
+    .then(mod => mod.default)
+    .catch(() => ({ name: CLIENT, description: '', branding: {} }))
+}
 
 function businessHtmlPlugin() {
   let biz
   return {
     name: 'business-html',
     async configResolved() {
-      // Dynamic import of the client business config
-      try {
-        const mod = await import(`./clients/${CLIENT}/business.js`)
-        biz = mod.default
-      } catch {
-        biz = { name: CLIENT, description: '', branding: {} }
-      }
+      biz = await loadBusinessConfig()
     },
     transformIndexHtml(html) {
       if (!biz) return html
