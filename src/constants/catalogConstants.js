@@ -3,24 +3,18 @@ import business from '@business';
 
 export const avatarColors = business.branding.accentColors;
 
-export const CAT_GROUPS = [
-  { name: "Primeros Mimos",         icon: "🫕", subs: ["Brusquetas", "Escabeches", "Aperitivos"] },
-  { name: "La Mesa Principal",      icon: "🍕", subs: ["Rotisería", "Pizzas"] },
-  { name: "El Sanguche de la Nona", icon: "🥪", subs: ["Sandwiches"] },
-  { name: "La Nona Amasó",          icon: "🥖", subs: ["Panadería", "Panificados"] },
-  { name: "La Última Mordida",      icon: "🍰", subs: ["Tortas", "torta", "Budines", "Alfajores"] },
-  { name: "Cocina Consciente",      icon: "🥗", subs: ["Saludable"] },
-];
+// Category groups from per-client business config (dynamic override from DB via categories.js)
+export const CAT_GROUPS = (business.fallbackCategoryGroups || []).map(g => ({
+  name: g.name,
+  icon: g.icon,
+  subs: g.subcategories || [],
+}));
 
 export const SUB_TO_PARENT = {};
 CAT_GROUPS.forEach(g => g.subs.forEach(s => { SUB_TO_PARENT[s] = g.name; }));
 
-export const DAILY_DEALS = {
-  1: ["La Nona Amasó", "La Mesa Principal"],
-  2: ["La Última Mordida"],
-  3: ["El Sanguche de la Nona", "Primeros Mimos"],
-  4: ["Cocina Consciente", "Primeros Mimos"],
-};
+// Daily deals: map day-of-week to category names (per-client, empty = no deals)
+export const DAILY_DEALS = business.dailyDeals || {};
 export const DEAL_PCT = 15;
 
 export const fallbackSettings = {
@@ -30,12 +24,7 @@ export const fallbackSettings = {
   cover_url: business.defaultSettings.cover_url,
 };
 
-export const fallbackProducts = [
-  { id: "r1", name: "Alfajores de Maicena", category: "Alfajores", sale_price: 6500, image_url: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=300&q=80", description: "Caja x12. Clásicos alfajores artesanales que se deshacen en la boca, con mucho dulce de leche." },
-  { id: "r2", name: "Torta de Chocolate", category: "Tortas", sale_price: 18000, image_url: "https://images.unsplash.com/photo-1578985545062-69928b1d9ba9?auto=format&fit=crop&w=300&q=80", description: "Torta súper húmeda de chocolate rellena y cubierta con ganache de chocolate semiamargo." },
-  { id: "r3", name: "Cheesecake Frutos Rojos", category: "Tortas", sale_price: 15000, image_url: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=300&q=80", description: "Cheesecake horneado súper cremoso con base crocante y abundante salsa de frutos rojos." },
-  { id: "r4", name: "Budín de Limón", category: "Budines", sale_price: 5500, image_url: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=300&q=80", description: "Budín esponjoso con glaseado cítrico." }
-];
+export const fallbackProducts = business.fallbackProducts || [];
 
 export const STORE_LAT = business.geo.lat;
 export const STORE_LNG = business.geo.lng;

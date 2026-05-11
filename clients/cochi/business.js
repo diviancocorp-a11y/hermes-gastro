@@ -80,6 +80,15 @@ const business = {
     ing_cats: ['Carnes', 'Verduras', 'Condimentos', 'Bebidas', 'Packaging', 'Otros'],
     cat_images: {},
   },
+  // ── Daily deals (empty = no deals)
+  dailyDeals: {},
+
+  // ── Fallback products (empty = no fallback products)
+  fallbackProducts: [],
+
+  // ── Catalog category fallbacks (empty = create from admin) ──
+  fallbackCategoryGroups: [],
+
   // ── Legal texts ────────────────────────────────────────────
   legal: {
     privacyUrl: '/privacidad',

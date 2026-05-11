@@ -1,16 +1,10 @@
 // src/services/categories.js
 // Dynamic category groups fetched from DB with local fallback.
 import { supabase } from '../lib/supabase';
+import business from '@business';
 
-// Fallback (same as seed data) so the app works without DB
-const FALLBACK_GROUPS = [
-  { name: 'Primeros Mimos',         icon: '🫕', subcategories: ['Brusquetas', 'Escabeches', 'Aperitivos'], sort_order: 0 },
-  { name: 'La Mesa Principal',      icon: '🍕', subcategories: ['Rotisería', 'Pizzas'],                   sort_order: 1 },
-  { name: 'El Sanguche de la Nona', icon: '🥪', subcategories: ['Sandwiches'],                           sort_order: 2 },
-  { name: 'La Nona Amasó',          icon: '🥖', subcategories: ['Panadería', 'Panificados'],             sort_order: 3 },
-  { name: 'La Última Mordida',      icon: '🍰', subcategories: ['Tortas', 'torta', 'Budines', 'Alfajores'], sort_order: 4 },
-  { name: 'Cocina Consciente',      icon: '🥗', subcategories: ['Saludable'],                            sort_order: 5 },
-];
+// Fallback from per-client business config (empty array for new clients)
+const FALLBACK_GROUPS = business.fallbackCategoryGroups || [];
 
 /**
  * Fetch category groups from the database.

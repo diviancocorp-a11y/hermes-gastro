@@ -81,6 +81,32 @@ const business = {
     cat_images: {},
   },
 
+  // ─── Daily deals: day-of-week → category names with discount ──
+  dailyDeals: {
+    1: ['La Nona Amasó', 'La Mesa Principal'],
+    2: ['La Última Mordida'],
+    3: ['El Sanguche de la Nona', 'Primeros Mimos'],
+    4: ['Cocina Consciente', 'Primeros Mimos'],
+  },
+
+  // ─── Fallback products (shown when DB is empty) ──
+  fallbackProducts: [
+    { id: 'r1', name: 'Alfajores de Maicena', category: 'Alfajores', sale_price: 6500, image_url: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=300&q=80', description: 'Caja x12. Clásicos alfajores artesanales.' },
+    { id: 'r2', name: 'Torta de Chocolate', category: 'Tortas', sale_price: 18000, image_url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9ba9?auto=format&fit=crop&w=300&q=80', description: 'Torta húmeda de chocolate con ganache.' },
+    { id: 'r3', name: 'Cheesecake Frutos Rojos', category: 'Tortas', sale_price: 15000, image_url: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=300&q=80', description: 'Cheesecake cremoso con salsa de frutos rojos.' },
+    { id: 'r4', name: 'Budín de Limón', category: 'Budines', sale_price: 5500, image_url: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=300&q=80', description: 'Budín esponjoso con glaseado cítrico.' },
+  ],
+
+  // ─── Catalog category fallbacks (used when DB table is empty) ──
+  fallbackCategoryGroups: [
+    { name: 'Primeros Mimos',         icon: '🫕', subcategories: ['Brusquetas', 'Escabeches', 'Aperitivos'], sort_order: 0 },
+    { name: 'La Mesa Principal',      icon: '🍕', subcategories: ['Rotisería', 'Pizzas'],                   sort_order: 1 },
+    { name: 'El Sanguche de la Nona', icon: '🥪', subcategories: ['Sandwiches'],                           sort_order: 2 },
+    { name: 'La Nona Amasó',          icon: '🥖', subcategories: ['Panadería', 'Panificados'],             sort_order: 3 },
+    { name: 'La Última Mordida',      icon: '🍰', subcategories: ['Tortas', 'torta', 'Budines', 'Alfajores'], sort_order: 4 },
+    { name: 'Cocina Consciente',      icon: '🥗', subcategories: ['Saludable'],                            sort_order: 5 },
+  ],
+
   // ─── Legal texts ────────────────────────────────────────────
   legal: {
     privacyUrl: '/privacidad',
