@@ -6,10 +6,34 @@ import './index.css'
 import { initObservability } from './lib/observability.js'
 import { loadFlags } from './services/featureFlags.js'
 import { fetchActiveTheme, applyTheme } from './services/theme.js'
+import business from '@business'
 import './lib/i18n.js' // Initialize i18next (must be before App render)
 
 // Initialize error tracking & analytics (no-op if env vars not set)
 initObservability()
+
+// ── Dynamic favicon & title per client ──────────────────────
+;(function setBranding() {
+  // Title
+  document.title = business.tagline
+    ? `${business.name} — ${business.tagline}`
+    : business.name
+
+  // Favicon: if client has a custom favicon SVG, swap it
+  if (business.logoUrl) {
+    const clientFaviconSvg = `/clients/${__CLIENT__}/favicon.svg`
+    const link = document.querySelector('link[rel="icon"][type="image/svg+xml"]')
+    if (link) link.href = clientFaviconSvg
+  }
+
+  // Theme color
+  if (business.branding?.themeColorLight) {
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+      if (m.media?.includes('light')) m.content = business.branding.themeColorLight
+      else if (m.media?.includes('dark')) m.content = business.branding.themeColorDark || business.branding.themeColorLight
+    })
+  }
+})()
 
 // Pre-load feature flags and theme config before first render
 loadFlags().catch(() => {})
