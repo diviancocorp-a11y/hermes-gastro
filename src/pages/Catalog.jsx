@@ -98,6 +98,20 @@ export default function Catalog() {
     const now = serverNow || new Date();
     return now.toISOString().split("T")[0];
   }, [serverNow]);
+
+  // --- Per-client catalog theming ---
+  const catalogTheme = useMemo(() => {
+    const b = business.branding || {};
+    const style = {};
+    if (b.catalogBg) style['--catalog-bg'] = b.catalogBg;
+    if (b.catalogCardBg) style['--catalog-card-bg'] = b.catalogCardBg;
+    if (b.catalogHeaderBg) style['--catalog-header-bg'] = b.catalogHeaderBg;
+    if (b.catalogTextOnBg) style['--catalog-text-on-bg'] = b.catalogTextOnBg;
+    if (b.catalogStickyBg) style['--catalog-sticky-bg'] = b.catalogStickyBg;
+    if (b.catalogStickyText) style['--catalog-sticky-text'] = b.catalogStickyText;
+    return style;
+  }, []);
+
   const [upsell, setUpsell] = useState(null); // {product, suggestions[]}
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState(null); // {id, discount_pct}
@@ -1111,19 +1125,6 @@ export default function Catalog() {
 
   // isOpen = automático por horario + override manual (store_open=false fuerza cerrado)
   const isOpen = sett.store_open === false ? false : storeStatus.open;
-
-  // --- Per-client catalog theming ---
-  const catalogTheme = useMemo(() => {
-    const b = business.branding || {};
-    const style = {};
-    if (b.catalogBg) style['--catalog-bg'] = b.catalogBg;
-    if (b.catalogCardBg) style['--catalog-card-bg'] = b.catalogCardBg;
-    if (b.catalogHeaderBg) style['--catalog-header-bg'] = b.catalogHeaderBg;
-    if (b.catalogTextOnBg) style['--catalog-text-on-bg'] = b.catalogTextOnBg;
-    if (b.catalogStickyBg) style['--catalog-sticky-bg'] = b.catalogStickyBg;
-    if (b.catalogStickyText) style['--catalog-sticky-text'] = b.catalogStickyText;
-    return style;
-  }, []);
 
   // --- VISTA PRINCIPAL: CATÁLOGO ---
   return (
