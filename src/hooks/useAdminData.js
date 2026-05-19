@@ -68,11 +68,15 @@ export default function useAdminData() {
   useRealtimeInvalidation();
 
   // ─── New order alarm ──────────────────────────────────────────────
+  // Anchored to "when the admin opened the page". Anything with
+  // created_at > adminEntryTime that we haven't seen yet is genuinely new.
+  // This is robust against page reloads, empty-then-populated cache, and
+  // pre-existing active orders (which used to fire a false alarm).
   const [newAlertCount, setNewAlertCount] = useState(0);
   const alarmRef = useRef(null);
   const alarmTimer = useRef(null);
   const prevOrderIds = useRef(new Set());
-  const initialOrdersLoaded = useRef(false); // flips true after the very first activeOrders read
+  const adminEntryTime = useRef(Date.now());
 
   useEffect(() => {
     const audio = new Audio(business.branding.sound);
@@ -94,20 +98,22 @@ export default function useAdminData() {
   }, []);
 
   // Detect new orders from the query cache.
-  // Gate: skip the alarm only on the very first read (whatever count it has),
-  // so any subsequent insert — including 0 → 1 — rings the bell.
+  // Triggers only for orders created AFTER the admin opened the page AND
+  // that we haven't already counted. Resilient to:
+  //   - empty initial cache → populated cache (no false alarm)
+  //   - page reload with existing active orders (no false alarm)
+  //   - 0 → 1 first real order (rings correctly)
   useEffect(() => {
-    if (!session) return; // nothing to do until admin is signed in
-    const currentIds = new Set(activeOrders.map(o => o.id));
-    const newOnes = activeOrders.filter(o => !prevOrderIds.current.has(o.id));
-    const wasInitialized = initialOrdersLoaded.current;
-    prevOrderIds.current = currentIds;
-    initialOrdersLoaded.current = true;
+    if (!session) return;
+    const trulyNew = activeOrders.filter(o => {
+      if (prevOrderIds.current.has(o.id)) return false;
+      const createdAtMs = o.created_at ? new Date(o.created_at).getTime() : 0;
+      return createdAtMs > adminEntryTime.current;
+    });
+    prevOrderIds.current = new Set(activeOrders.map(o => o.id));
+    if (trulyNew.length === 0) return;
 
-    if (!wasInitialized) return; // first read, never ring
-    if (newOnes.length === 0) return;
-
-    setNewAlertCount(c => c + newOnes.length);
+    setNewAlertCount(c => c + trulyNew.length);
     if (alarmRef.current) {
       if (alarmTimer.current) clearTimeout(alarmTimer.current);
       alarmRef.current.currentTime = 0;

@@ -96,7 +96,7 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
             <div style={{marginTop:6}}><span style={{fontSize:11,fontWeight:600,color:"var(--rd)",padding:"3px 8px",background:"#FFEBEE",borderRadius:6}}>⚠ Sin comprobante</span></div>
           )}
           <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0 0",borderTop:"1px solid var(--b2)",marginTop:8,fontWeight:700,fontSize:16}}><span>Total</span><span>${formatInt(o.total)}</span></div>
-          {act&&<div className="oa">{o.status!==OrderStatus.done&&o.status!==OrderStatus.cancel&&<button className="btn bd" onClick={()=>moveOrderStatus(o.id,OrderStatus.cancel)}>{Icon.x({size:14})} Cancelar</button>}<button className={`btn ${act.c}`} onClick={()=>moveOrderStatus(o.id,act.n)}>{act.i({size:14,color:"#fff"})} {act.l}</button></div>}
+          {act&&<div className="oa">{o.status!==OrderStatus.done&&o.status!==OrderStatus.cancel&&<button className="btn bd" onClick={()=>moveOrderStatus(o.id,OrderStatus.cancel)}>{Icon.x({size:14})} Cancelar</button>}<button className={`btn ${act.c}`} onClick={()=>{moveOrderStatus(o.id,act.n);setFil(act.n);}}>{act.i({size:14,color:"#fff"})} {act.l}</button></div>}
         </div>);
       })}
     </div>
