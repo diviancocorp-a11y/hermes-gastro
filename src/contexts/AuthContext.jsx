@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
     if (!userId) { setProfile(null); setAddresses([]); setFavorites([]); return; }
     try {
       const [profRes, addrRes, favRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", userId).single(),
+        supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
         supabase.from("addresses").select("*").eq("user_id", userId).order("created_at"),
         supabase.from("favorites").select("recipe_id").eq("user_id", userId),
       ]);
