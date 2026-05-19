@@ -137,8 +137,26 @@ export default function useAdminData() {
     queryClient.setQueryData(queryKeys.expenses.all, typeof val === 'function' ? val : () => val);
   }, [queryClient]);
 
+  // Optimistic-friendly setter: applies the caller's update locally so the UI
+  // reflects the change immediately (e.g. "Preparar" button moves the card to
+  // the next column without waiting for refetch / realtime). Also invalidates
+  // so the next refetch will reconcile against the server source of truth.
   const setOrders = useCallback((val) => {
-    // Invalidate both active and history
+    if (typeof val === 'function') {
+      queryClient.setQueryData(queryKeys.orders.active, (prev = []) => {
+        const next = val(prev);
+        // Keep only active statuses in the active cache; the rest moves to history.
+        return next.filter(o => ['new', 'prep', 'active'].includes(o.status));
+      });
+      // History entries (done/cancel) re-fetched on demand; also keep them updated.
+      setHistoryOrders(prev => {
+        const merged = val([...prev]);
+        return merged.filter(o => ['done', 'cancel'].includes(o.status));
+      });
+    } else if (Array.isArray(val)) {
+      queryClient.setQueryData(queryKeys.orders.active, val.filter(o => ['new', 'prep', 'active'].includes(o.status)));
+      setHistoryOrders(val.filter(o => ['done', 'cancel'].includes(o.status)));
+    }
     queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
   }, [queryClient]);
 

@@ -8,7 +8,7 @@ const { registerRoute, NavigationRoute, Route } = workbox.routing;
 const { CacheFirst, NetworkFirst, StaleWhileRevalidate } = workbox.strategies;
 const { ExpirationPlugin } = workbox.expiration;
 const { CacheableResponsePlugin } = workbox.cacheableResponse;
-const { BackgroundSyncPlugin } = workbox.backgroundSync;
+// Background Sync removed intentionally — see "submit-order" section below.
 
 // ─── Skip waiting on install ────────────────────────────
 self.skipWaiting();
@@ -29,7 +29,7 @@ registerRoute(
     request.destination === 'style' ||
     request.destination === 'font',
   new CacheFirst({
-    cacheName: 'lnp-static-v2',
+    cacheName: 'lnp-static-v3',
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
       new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 }), // 30 days
@@ -41,7 +41,7 @@ registerRoute(
 registerRoute(
   ({ request }) => request.destination === 'image',
   new StaleWhileRevalidate({
-    cacheName: 'lnp-images-v2',
+    cacheName: 'lnp-images-v3',
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
       new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 }), // 7 days
@@ -53,7 +53,7 @@ registerRoute(
 registerRoute(
   ({ url }) => url.hostname.includes('supabase'),
   new NetworkFirst({
-    cacheName: 'lnp-api-v2',
+    cacheName: 'lnp-api-v3',
     networkTimeoutSeconds: 5,
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
@@ -66,23 +66,23 @@ registerRoute(
 registerRoute(
   new NavigationRoute(
     new NetworkFirst({
-      cacheName: 'lnp-pages-v2',
+      cacheName: 'lnp-pages-v3',
       networkTimeoutSeconds: 3,
     }),
   ),
 );
 
-// ─── Background Sync: offline order submissions ─────────
-const orderSyncPlugin = new BackgroundSyncPlugin('lnp-order-queue', {
-  maxRetentionTime: 24 * 60, // retry for up to 24h
-});
-
+// ─── submit-order: NUNCA passar por el SW ────────────────────────
+// Antes existía un BackgroundSyncPlugin que reintentaba la request si
+// el primer intento "fallaba" (típicamente por CORS), produciendo
+// pedidos duplicados porque la orden ya se había creado en DB.
+// Ahora la request va directo a la red — si falla, falla, y el cliente
+// muestra el error correctamente. Si en el futuro se quiere offline
+// support para pedidos, debe implementarse con idempotency-key en la
+// edge function antes de re-habilitar el background sync.
 registerRoute(
   ({ url }) => url.hostname.includes('supabase') && url.pathname.includes('submit-order'),
-  new NetworkFirst({
-    cacheName: 'lnp-orders-sync',
-    plugins: [orderSyncPlugin],
-  }),
+  async ({ request }) => fetch(request),
   'POST',
 );
 
