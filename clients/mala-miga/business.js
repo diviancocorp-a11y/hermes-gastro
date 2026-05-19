@@ -1,17 +1,18 @@
 // clients/mala-miga/business.js
 // ═══════════════════════════════════════════════════════════════
-// Centralized business identity for MALA MIGA
-// Galletitas artesanales estilo americano — Argentina
+// MALA MIGA — Pastelería artesanal de inspiración Pop Art
+// Identidad oficial v1.0 (mayo 2026). Manual completo en
+// ./brand-manual.html — consultar antes de cambiar paleta/typo.
 // ═══════════════════════════════════════════════════════════════
 
 const business = {
   // ─── Core identity ──────────────────────────────────────────
   name: 'Mala Miga',
   shortName: 'Mala Miga',
-  tagline: 'Galletitas estilo americano',
-  description: 'Galletitas artesanales estilo americano. Cookies, brownies y dulces de autor.',
+  tagline: 'a sweet little obsession',
+  description: 'Pastelería artesanal de inspiración Pop Art. Cookies, brownies y dulces de autor horneados en lotes pequeños.',
   logoLetter: 'M',
-  logoColor: '#5C3A21',
+  logoColor: '#F3A39E', // Rosa Chicle Pop — color de énfasis del logo
 
   // ─── Location ───────────────────────────────────────────────
   address: {
@@ -42,19 +43,42 @@ const business = {
   cuit: '',
 
   // ─── Branding / UX ──────────────────────────────────────────
+  // Paleta oficial del manual de marca v1.0 — cinco colores, cero negociables.
+  //   #3D2314 Chocolate Profundo  — estructural, fondos, tipografía base
+  //   #F3A39E Rosa Chicle Pop     — énfasis, logotipo, detalles
+  //   #1EA896 Turquesa            — contraste complementario, acentos
+  //   #D4A744 Mostaza Cálido      — acento sutil (nunca protagonista)
+  //   #FFF8E7 Crema Suave         — fondo luminoso de soporte
   branding: {
     mascotEmoji: '🍪',
     sound: '/quack.mp3',
-    themeColorLight: '#5C3A21',
-    themeColorDark: '#1A0F08',
+    themeColorLight: '#F3A39E', // PWA theme: rosa chicle
+    themeColorDark: '#3D2314',  // PWA theme dark: chocolate profundo
     ogImage: '/og-image.png',
-    accentColors: ['#5C3A21', '#C49A6C', '#8B5E34', '#3E2723', '#6D4C41', '#A1887F', '#D7A86E', '#F5DEB3', '#B7651E', '#4E342E'],
-    catalogBg: '',
-    catalogCardBg: '',
-    catalogHeaderBg: '',
-    catalogTextOnBg: '',
-    catalogStickyBg: '',
-    catalogStickyText: '',
+    // Tipografías oficiales (cargar en index.html o vía CSS @import)
+    displayFont: "'Fraunces', Georgia, serif",
+    bodyFont: "'DM Sans', system-ui, sans-serif",
+    handwrittenFont: "'Caveat', cursive",
+    // Paleta para categorías y acentos visuales — orden por jerarquía del manual
+    accentColors: [
+      '#F3A39E', // Rosa Chicle Pop (signature)
+      '#3D2314', // Chocolate Profundo
+      '#1EA896', // Turquesa / Teal
+      '#D4A744', // Mostaza Cálido
+      '#e88a85', // pink-deep (hover/active)
+      '#178a7c', // teal-deep
+      '#b88a2a', // mustard-deep
+      '#5a3624', // chocolate-soft
+      '#fbf3dc', // paper (cards alt)
+      '#f5ecd2', // cream-warm
+    ],
+    // Catalog theming — fondo crema luminoso con header chocolate y acento rosa
+    catalogBg: '#FFF8E7',                    // Crema Suave
+    catalogCardBg: '#fbf3dc',                // Paper (cards con calidez)
+    catalogHeaderBg: '#3D2314',              // Header chocolate (hero band)
+    catalogTextOnBg: '#FFF8E7',              // Texto crema sobre el header
+    catalogStickyBg: 'rgba(61,35,20,0.95)',  // Sticky filter bar chocolate translúcido
+    catalogStickyText: '#F3A39E',            // Texto rosa chicle sobre sticky
   },
 
   // ─── Locale ─────────────────────────────────────────────────
@@ -66,7 +90,7 @@ const business = {
   // ─── Business type ──────────────────────────────────────────
   type: 'bakery',
   schemaOrgType: 'Bakery',
-  cuisines: ['Galletitas', 'Cookies', 'Brownies', 'Pastelería americana'],
+  cuisines: ['Pastelería', 'Cookies', 'Brownies', 'Pastelería americana'],
   priceRange: '$$',
 
   // ─── Operating hours ────────────────────────────────────────
@@ -79,20 +103,20 @@ const business = {
   defaultSettings: {
     biz_name: 'Mala Miga',
     logo_letter: 'M',
-    logo_color: '#5C3A21',
+    logo_color: '#F3A39E',
     cover_url: '',
     exp_cats: ['Materia Prima', 'Servicios', 'Packaging', 'Transporte', 'Alquiler', 'Equipamiento', 'Otros'],
     ing_cats: ['Secos', 'Frescos', 'Chips & Toppings', 'Packaging', 'Otros'],
     cat_images: {},
   },
 
-  // ─── Daily deals (empty = no deals)
+  // ─── Daily deals (vacío por ahora; se configura desde admin/SQL en settings.daily_deals)
   dailyDeals: {},
 
-  // ─── Fallback products (empty = se cargan desde admin)
+  // ─── Fallback products (se cargan desde admin)
   fallbackProducts: [],
 
-  // ─── Catalog category fallbacks ─────────────────────────────
+  // ─── Catalog category fallbacks (matchea con seed en DB) ────
   fallbackCategoryGroups: [
     { name: 'Cookies Clásicas',     icon: '🍪', subcategories: ['Chocolate Chip', 'Doble Choc', 'Avena'], sort_order: 0 },
     { name: 'Cookies de Autor',     icon: '✨', subcategories: ['Edición Limitada', 'Estacional'],       sort_order: 1 },
@@ -105,7 +129,7 @@ const business = {
   legal: {
     privacyUrl: '/privacidad',
     termsUrl: '/terminos',
-    copyrightHolder: 'Mala Miga',
+    copyrightHolder: 'Mala Miga · Divianco',
     copyrightYear: 2026,
   },
 };
