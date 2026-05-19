@@ -50,31 +50,53 @@ export function useRealtimeInvalidation() {
   useEffect(() => {
     if (!authReady) return; // do NOT open WS without a session — server will close it
 
-    const channel = supabase.channel('cache-invalidation');
+    let channel = null;
+    let retryTimer = null;
+    let cancelled = false;
+    let attempt = 0;
 
-    TABLES.forEach((table) => {
-      channel.on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table },
-        () => {
-          const keys = TABLE_KEYS[table] || [];
-          keys.forEach((key) => {
-            queryClient.invalidateQueries({ queryKey: key });
-          });
-        },
-      );
-    });
+    const tryConnect = () => {
+      if (cancelled) return;
+      attempt += 1;
+      const ch = supabase.channel(`cache-invalidation-${attempt}`);
 
-    channel.subscribe((status, err) => {
-      // Surfaced in the browser console so we can tell whether the WS
-      // actually established or got closed by the server.
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-        console.warn('[realtime] subscribe status:', status, err || '');
-      }
-    });
+      TABLES.forEach((table) => {
+        ch.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table },
+          () => {
+            const keys = TABLE_KEYS[table] || [];
+            keys.forEach((key) => {
+              queryClient.invalidateQueries({ queryKey: key });
+            });
+          },
+        );
+      });
+
+      ch.subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.info('[realtime] SUBSCRIBED (attempt', attempt + ')');
+          channel = ch;
+          return;
+        }
+        if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('[realtime]', status, '— retrying in 3s (attempt', attempt + ')', err || '');
+          supabase.removeChannel(ch);
+          if (!cancelled && attempt < 10) {
+            retryTimer = setTimeout(tryConnect, 3000);
+          } else if (attempt >= 10) {
+            console.warn('[realtime] giving up after 10 attempts — relying on polling (5s)');
+          }
+        }
+      });
+    };
+
+    tryConnect();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [authReady, queryClient]);
 }

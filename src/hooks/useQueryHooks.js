@@ -43,8 +43,9 @@ export function useActiveOrders() {
   return useQuery({
     queryKey: queryKeys.orders.active(),
     queryFn: fetchActiveOrders,
-    staleTime: STALE_TIMES.orders,
-    refetchInterval: 20_000, // poll every 20s as fallback for realtime
+    staleTime: 0,            // always allow background refetch
+    refetchInterval: 5_000,  // 5s fallback poll — guarantees UX works even if Realtime is down
+    refetchOnWindowFocus: true,
   });
 }
 
