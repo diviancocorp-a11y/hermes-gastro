@@ -50,8 +50,17 @@ registerRoute(
 );
 
 // ─── NetworkFirst: API calls (Supabase) ─────────────────
+// CRITICAL: never intercept /auth/* (login state) or /realtime/* (websocket
+// fallback). If we cache /auth/v1/user a 401 response sticks and every refresh
+// signs the user out. If we touch realtime we break the live subscription.
+// Edge functions (/functions/v1/*) also bypass the SW so submit-order is never
+// retried after the BackgroundSync removal.
 registerRoute(
-  ({ url }) => url.hostname.includes('supabase'),
+  ({ url }) =>
+    url.hostname.includes('supabase') &&
+    !url.pathname.startsWith('/auth/') &&
+    !url.pathname.startsWith('/realtime/') &&
+    !url.pathname.startsWith('/functions/'),
   new NetworkFirst({
     cacheName: 'lnp-api-v3',
     networkTimeoutSeconds: 5,

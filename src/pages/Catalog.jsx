@@ -485,12 +485,12 @@ export default function Catalog() {
       setCoupon(null); setCouponCode("");
       setCkStep(0);
       setReceiptFile(null); setReceiptPreview(null); setReceiptStatus("");
-      // Después de 2.5s, pasar a la siguiente pantalla
+      // Después de la animación del corazón (2.5s), entra directo a "Enviado".
+      // El timer de 60s de verificación se eliminó — la validación de pago
+      // se va a hacer vía pasarela de Mercado Pago en una etapa posterior.
       setTimeout(() => {
         setConfirmAnim(false);
-        // Todos los pedidos pasan por la pantalla de verificación (60s)
-        setWaitingReceipt(true);
-        setWaitTimer(60);
+        setSent(true);
       }, 2500);
     } else {
       console.error("Pedido no se guardó en Supabase.");
