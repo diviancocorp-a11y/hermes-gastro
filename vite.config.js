@@ -9,6 +9,24 @@ import { pathToFileURL } from 'url'
 // Usage: CLIENT=cochi npm run build | CLIENT=la-nona-pato npm run dev
 const CLIENT = process.env.CLIENT || 'la-nona-pato'
 
+// ── Load .env.<CLIENT> into process.env so each client points to its own Supabase ──
+// In Vercel each project sets its own env vars, so this only matters locally.
+function loadClientEnv() {
+  const envFile = path.resolve(__dirname, `.env.${CLIENT}`)
+  if (!fs.existsSync(envFile)) return
+  const content = fs.readFileSync(envFile, 'utf-8')
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eq = trimmed.indexOf('=')
+    if (eq === -1) continue
+    const key = trimmed.slice(0, eq).trim()
+    const val = trimmed.slice(eq + 1).trim().replace(/^['"]|['"]$/g, '')
+    if (!(key in process.env)) process.env[key] = val
+  }
+}
+loadClientEnv()
+
 // ── Load business config for HTML injection ─────────────────
 function loadBusinessConfig() {
   const configPath = path.resolve(__dirname, `clients/${CLIENT}/business.js`)
