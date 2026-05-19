@@ -146,9 +146,26 @@ CLIENT=mala-miga npm run build        # build OK
 
 **Si en algún momento se quiere endurecer todo esto**, el path correcto es refactor: mover los inserts de orders/order_items a un RPC `submit_order_rpc(json)` y revocar el INSERT directo de anon; lo mismo con rate_limits. No es urgente porque la validación real ya está en la edge function.
 
-## Tech debt detectado durante el onboarding
+## ✅ Tech debt resuelto: edge functions ahora son multi-tenant reales
 
-**Edge functions con config hardcodeada por cliente.** El `submit-order` de cochi tiene las `CAT_GROUPS` y `DAILY_DEALS` de La Nona Pato hardcodeadas en el código TypeScript (se copió-pegó al crearla y no se ajustó). El `notify-whatsapp` tiene el nombre del negocio hardcodeado en los mensajes. Para Mala Miga fixeé esto deployando las funciones con CAT_GROUPS vacíos y env vars `STORE_NAME` / `APP_URL` que se pueden setear en Supabase Dashboard. **Refactor recomendado:** que las edge functions lean estos valores de la tabla `settings` o de env vars, así nunca más hace falta tocar código TS por cliente.
+**Antes:** `submit-order`, `notify-whatsapp` y `notify-new-customer` tenían `CAT_GROUPS`, `DAILY_DEALS`, `STORE_NAME`, `APP_URL` y `DEAL_PCT` hardcodeados en TS. Cochi heredó los valores de LNP al copiarse.
+
+**Ahora:** todos esos valores se leen de la tabla `settings` al inicio de cada request. Se agregaron columnas:
+- `store_name text`
+- `app_url text`
+- `daily_deals jsonb`  (`{"1":["categoría",...], "2":[...], ...}` — día 1=Lun … 7=Dom)
+- `cat_groups jsonb`   (`[{"name":"Padre","subs":["sub1","sub2"]}, ...]`)
+- `deal_pct numeric`   (porcentaje del daily deal, default 15)
+
+Aplicado en LNP + Cochi + Mala Miga. Datos seedeados verificados:
+
+| Proyecto | store_name | app_url | cat_groups | daily_deals |
+|---|---|---|---|---|
+| LNP | La Nona Pato | https://la-nona-pato.vercel.app | 6 grupos | Lun/Mar/Mié/Jue |
+| Cochi | Cochi | https://cochi.vercel.app | — | — |
+| Mala Miga | Mala Miga | https://mala-miga.vercel.app | — | — |
+
+Las 3 edge functions están deployadas en versión 2/3 en los 3 proyectos. **Para configurar daily deals o categorías nuevas en cualquier cliente, ahora se hace un UPDATE en `settings`** (vía panel admin o SQL editor), no se toca código.
 
 ---
 
