@@ -134,7 +134,21 @@ CLIENT=mala-miga npm run dev          # debería abrir con branding 🍪 contra 
 CLIENT=mala-miga npm run build        # build OK
 ```
 
-**Advisors de seguridad:** mala-miga hereda los mismos warnings que cochi/LNP (`security_definer_view` en 2 views, `function_search_path_mutable` en 6 funciones, `rls_policy_always_true` en 3 policies, etc.). Son del diseño base del repo — no introdujimos nada nuevo. Conviene encararlos como cleanup global del repo en otra iteración.
+**Advisors de seguridad — hardening parcial aplicado a los 3 proyectos:**
+
+✅ `function_search_path_mutable` resuelto en LNP + Cochi + Mala Miga (6 funciones × 3 = 18 warnings eliminados). Migración `harden_function_search_paths` aplicada.
+
+⚠️ Quedan 19 advisors restantes (mismos en los 3 proyectos), todos son **decisiones de diseño intencional**, no bugs:
+- 2× `security_definer_view` (order_tracker_view, customer_masked_view): los views se usan vía `get_order_tracker` RPC para que anon pueda trackear su pedido sin login. Bajar a INVOKER rompería tracking público.
+- 3× `rls_policy_always_true` (orders/order_items INSERT, rate_limits ALL): los inserts se validan server-side en la edge function `submit-order`. rate_limits necesita ser accesible para que el rate-limiting funcione contra anon.
+- 2× `public_bucket_allows_listing` (recipe-images, receipts): buckets públicos a propósito para mostrar imágenes en el catálogo.
+- 12× `*_security_definer_function_executable` (6 funciones × 2 roles): RPCs intencionalmente expuestos.
+
+**Si en algún momento se quiere endurecer todo esto**, el path correcto es refactor: mover los inserts de orders/order_items a un RPC `submit_order_rpc(json)` y revocar el INSERT directo de anon; lo mismo con rate_limits. No es urgente porque la validación real ya está en la edge function.
+
+## Tech debt detectado durante el onboarding
+
+**Edge functions con config hardcodeada por cliente.** El `submit-order` de cochi tiene las `CAT_GROUPS` y `DAILY_DEALS` de La Nona Pato hardcodeadas en el código TypeScript (se copió-pegó al crearla y no se ajustó). El `notify-whatsapp` tiene el nombre del negocio hardcodeado en los mensajes. Para Mala Miga fixeé esto deployando las funciones con CAT_GROUPS vacíos y env vars `STORE_NAME` / `APP_URL` que se pueden setear en Supabase Dashboard. **Refactor recomendado:** que las edge functions lean estos valores de la tabla `settings` o de env vars, así nunca más hace falta tocar código TS por cliente.
 
 ---
 
@@ -146,4 +160,5 @@ CLIENT=mala-miga npm run build        # build OK
 | 1 | Separar .env por cliente | ✅ Hecho |
 | 2 | Aplicar performance_indexes | ✅ Hecho en LNP + Cochi |
 | 3 | Limpiar business.js muerto | ✅ Re-export de @business |
-| 4 | Crear cliente `mala-miga` | ✅ Supabase + archivos locales hechos; falta Vercel + edge functions (manual) |
+| 4 | Crear cliente `mala-miga` | ✅ Supabase + schema + edge functions + archivos locales hechos; falta Vercel (manual) |
+| 5 | Hardening global (search_path fix) | ✅ Aplicado a LNP + Cochi + Mala Miga |
