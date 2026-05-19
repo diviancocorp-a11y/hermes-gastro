@@ -13,6 +13,7 @@ const business = {
   description: 'Pastelería artesanal de inspiración Pop Art. Cookies, brownies y dulces de autor horneados en lotes pequeños.',
   logoLetter: 'M',
   logoColor: '#F3A39E', // Rosa Chicle Pop — color de énfasis del logo
+  faviconUrl: '/clients/mala-miga/favicon.svg',
 
   // ─── Location ───────────────────────────────────────────────
   address: {
