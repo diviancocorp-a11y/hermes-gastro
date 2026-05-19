@@ -27,34 +27,57 @@ export default function OrderTracker() {
   const [pulse, setPulse]   = useState(false); // feedback visual de actualización
   const channelRef          = useRef(null);
 
-  // ─── Carga inicial (soporta UUID completo o código corto #XXXXXX) ──
+  // ─── Carga inicial vía RPC `get_order_tracker` (SECURITY DEFINER) ──
+  // El select directo a `orders` falla para usuarios anon porque las RLS
+  // solo permiten leer el propio user_id. El RPC lo bypassa de forma segura.
+  // Para códigos cortos #XXXXXX seguimos haciendo el fallback contra la tabla,
+  // pero ahora resolvemos el UUID completo y delegamos al RPC.
   const [resolvedId, setResolvedId] = useState(null);
   useEffect(() => {
     async function load() {
       setLoading(true);
-      let query;
       const cleanId = (id || "").replace(/^#/, "").trim();
-      // Si parece UUID (contiene guiones o >20 chars), buscar directo
-      if (cleanId.includes("-") || cleanId.length > 20) {
-        query = supabase.from("orders")
-          .select("id, status, customer, date, total, is_gift, note, delivery, created_at, order_items(qty, unit_price, recipes(name))")
-          .eq("id", cleanId).single();
-      } else {
-        // Código corto: buscar todos los recientes y filtrar por últimos 6 chars
-        const { data: candidates, error: cErr } = await supabase.from("orders")
-          .select("id, status, customer, date, total, is_gift, note, delivery, created_at, order_items(qty, unit_price, recipes(name))")
-          .order("created_at", { ascending: false }).limit(200);
-        if (cErr || !candidates) { setNotFound(true); setLoading(false); return; }
-        const match = candidates.find(o => {
+      const looksLikeUuid = cleanId.includes("-") || cleanId.length > 20;
+
+      // Resolver UUID completo (si el usuario tipea el código corto)
+      let fullId = looksLikeUuid ? cleanId : null;
+      if (!fullId) {
+        // Código corto: lookup vía RPC dedicado o fallback a tabla pública (recipes ya es pública)
+        const { data: candidates } = await supabase
+          .from("orders")
+          .select("id")
+          .order("created_at", { ascending: false })
+          .limit(200);
+        const match = (candidates || []).find(o => {
           const s = String(o.id).replace(/-/g, "");
           return s.slice(-6).toUpperCase() === cleanId.toUpperCase();
         });
         if (!match) { setNotFound(true); setLoading(false); return; }
-        setOrder(match); setItems(match.order_items || []); setResolvedId(match.id); setLoading(false); return;
+        fullId = match.id;
       }
-      const { data, error } = await query;
-      if (error || !data) { setNotFound(true); setLoading(false); return; }
-      setOrder(data); setItems(data.order_items || []); setResolvedId(data.id); setLoading(false);
+
+      const { data, error } = await supabase.rpc("get_order_tracker", { p_order_id: fullId });
+      const row = Array.isArray(data) ? data[0] : data;
+      if (error || !row) { setNotFound(true); setLoading(false); return; }
+      // Adaptar la forma para mantener compatibilidad con el render existente
+      setOrder({
+        id: row.id,
+        status: row.status,
+        customer: row.customer,
+        date: row.date,
+        total: row.total,
+        is_gift: row.is_gift,
+        note: row.note,
+        delivery: row.delivery,
+        created_at: row.created_at,
+      });
+      setItems((row.items || []).map(it => ({
+        qty: it.qty,
+        unit_price: it.unit_price,
+        recipes: { name: it.name },
+      })));
+      setResolvedId(row.id);
+      setLoading(false);
     }
     load();
   }, [id]);

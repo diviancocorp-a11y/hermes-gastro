@@ -146,24 +146,24 @@ export default function useAdminData() {
   // reflects the change immediately (e.g. "Preparar" button moves the card to
   // the next column without waiting for refetch / realtime). Also invalidates
   // so the next refetch will reconcile against the server source of truth.
+  // IMPORTANT: status values in DB are "new", "preparing", "active", "completed",
+  // "cancelled" — see OrderStatus in src/lib/utils.jsx. Don't use the JS keys here.
+  const ACTIVE_STATUSES = ['new', 'preparing', 'active'];
+  const HISTORY_STATUSES = ['completed', 'cancelled'];
   const setOrders = useCallback((val) => {
     if (typeof val === 'function') {
-      queryClient.setQueryData(queryKeys.orders.active(), (prev = []) => {
-        const next = val(prev);
-        // Keep only active statuses in the active cache; the rest moves to history.
-        return next.filter(o => ['new', 'prep', 'active'].includes(o.status));
-      });
-      // History entries (done/cancel) re-fetched on demand; also keep them updated.
-      setHistoryOrders(prev => {
-        const merged = val([...prev]);
-        return merged.filter(o => ['done', 'cancel'].includes(o.status));
-      });
+      // Combine the current active + history view so the caller's `.map` sees
+      // the full order set the same way useOrderWorkflow expects.
+      const combined = [...(queryClient.getQueryData(queryKeys.orders.active()) || []), ...historyOrders];
+      const next = val(combined);
+      queryClient.setQueryData(queryKeys.orders.active(), next.filter(o => ACTIVE_STATUSES.includes(o.status)));
+      setHistoryOrders(next.filter(o => HISTORY_STATUSES.includes(o.status)));
     } else if (Array.isArray(val)) {
-      queryClient.setQueryData(queryKeys.orders.active(), val.filter(o => ['new', 'prep', 'active'].includes(o.status)));
-      setHistoryOrders(val.filter(o => ['done', 'cancel'].includes(o.status)));
+      queryClient.setQueryData(queryKeys.orders.active(), val.filter(o => ACTIVE_STATUSES.includes(o.status)));
+      setHistoryOrders(val.filter(o => HISTORY_STATUSES.includes(o.status)));
     }
     queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
-  }, [queryClient]);
+  }, [queryClient, historyOrders]);
 
   const setSett = useCallback((val) => {
     queryClient.setQueryData(queryKeys.settings.all, typeof val === 'function' ? val : () => val);
