@@ -58,7 +58,6 @@ function businessHtmlPlugin() {
       //   3. /favicon.svg generic fallback
       const faviconSvg = biz.faviconUrl
         || (biz.logoUrl ? `/clients/${CLIENT}/favicon.png` : '/favicon.svg')
-      const logoColor = biz.logoColor || '#C45D3E'
       const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
 
       // Build structured data from business config
@@ -100,7 +99,6 @@ function businessHtmlPlugin() {
         .replace('<!-- __BIZ_OG_IMAGE__ -->', ogImage)
         .replace('<!-- __BIZ_FAVICON_SVG__ -->', faviconSvg)
         .replaceAll('<!-- __BIZ_SUPABASE_URL__ -->', supabaseUrl)
-        .replaceAll('<!-- __BIZ_LOGO_COLOR__ -->', logoColor)
         .replace('<!-- __BIZ_STRUCTURED_DATA__ -->', structuredData)
     },
   }
