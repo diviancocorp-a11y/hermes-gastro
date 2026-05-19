@@ -1,7 +1,11 @@
 // src/services/orders.js
 import { supabase } from '../lib/supabase';
 
-const ACTIVE_STATUSES = ['new', 'prep', 'active'];
+// IMPORTANT: these are the *real* status values stored in DB
+// (see OrderStatus map in src/lib/utils.jsx — they map JS keys to
+// these long names). Do NOT use the JS keys ('prep', 'done', 'cancel')
+// here or the .in('status', ...) filter silently returns 0 rows.
+const ACTIVE_STATUSES = ['new', 'preparing', 'active'];
 const PAGE_SIZE = 50;
 
 /**

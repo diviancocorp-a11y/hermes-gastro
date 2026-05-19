@@ -107,8 +107,14 @@ export default function useAdminData() {
     if (!session) return;
     const trulyNew = activeOrders.filter(o => {
       if (prevOrderIds.current.has(o.id)) return false;
-      const createdAtMs = o.created_at ? new Date(o.created_at).getTime() : 0;
-      return createdAtMs > adminEntryTime.current;
+      // Postgres timestamps can come as "2026-05-19 10:27:15+00" (with a
+      // space instead of "T"), which `new Date()` parses as NaN on some
+      // browsers. Normalize before parsing.
+      const ts = o.created_at;
+      if (!ts) return false;
+      const normalized = typeof ts === 'string' && !ts.includes('T') ? ts.replace(' ', 'T') : ts;
+      const createdAtMs = new Date(normalized).getTime();
+      return !Number.isNaN(createdAtMs) && createdAtMs > adminEntryTime.current;
     });
     prevOrderIds.current = new Set(activeOrders.map(o => o.id));
     if (trulyNew.length === 0) return;
