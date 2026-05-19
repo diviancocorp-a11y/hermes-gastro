@@ -240,9 +240,10 @@ export const WasteInputSchema = z.object({
 
 export const NotifyWhatsAppSchema = z.object({
   orderId: uuid,
-  // Accept both the JS short keys (legacy) and the DB long values, so a
-  // mismatch between caller conventions never silently rejects.
-  status: z.enum(['prep', 'active', 'done', 'cancel', 'preparing', 'completed', 'cancelled', 'new']),
+  // Status values match exactly what the DB stores and what notify-whatsapp
+  // edge function expects. See OrderStatus in src/lib/utils.jsx — never use
+  // shortened aliases like 'prep' or 'done' here.
+  status: z.enum(['new', 'preparing', 'active', 'completed', 'cancelled']),
 });
 
 

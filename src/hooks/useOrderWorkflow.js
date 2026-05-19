@@ -21,7 +21,7 @@ export default function useOrderWorkflow({
     const storeOpen = sett.store_open !== false;
     if (!storeOpen) return;
     const toPromote = orders.filter(
-      o => o.delivery_date && o.delivery_date <= today && o.status === OrderStatus.new && !promotedRef.current.has(o.id)
+      o => o.delivery_date && o.delivery_date <= today && o.status === OrderStatus.NEW && !promotedRef.current.has(o.id)
     );
     if (toPromote.length === 0) return;
     toPromote.forEach(o => promotedRef.current.add(o.id));
@@ -43,7 +43,7 @@ export default function useOrderWorkflow({
     if (!loaded || !orders.length) return;
     const today = todayISO();
     const stale = orders.filter(o =>
-      [OrderStatus.new, OrderStatus.prep, OrderStatus.active].includes(o.status) &&
+      [OrderStatus.NEW, OrderStatus.PREPARING, OrderStatus.ACTIVE].includes(o.status) &&
       o.date < today &&
       (!o.delivery_date || o.delivery_date < today) &&
       !cleanedRef.current.has(o.id)
@@ -52,10 +52,10 @@ export default function useOrderWorkflow({
     stale.forEach(o => cleanedRef.current.add(o.id));
     (async () => {
       for (const o of stale) {
-        await supabase.from('orders').update({ status: OrderStatus.cancel }).eq('id', o.id);
+        await supabase.from('orders').update({ status: OrderStatus.CANCELLED }).eq('id', o.id);
       }
       setOrders(p => p.map(o => {
-        if (stale.find(s => s.id === o.id)) return { ...o, status: OrderStatus.cancel };
+        if (stale.find(s => s.id === o.id)) return { ...o, status: OrderStatus.CANCELLED };
         return o;
       }));
       msg(`🧹 ${stale.length} pedido${stale.length > 1 ? 's' : ''} vencido${stale.length > 1 ? 's' : ''} cancelado${stale.length > 1 ? 's' : ''} automáticamente`);
@@ -68,19 +68,19 @@ export default function useOrderWorkflow({
     if (!o) return;
 
     // Cancel flow
-    if (nextStatus === OrderStatus.cancel) {
-      if ([OrderStatus.prep, OrderStatus.active].includes(o.status)) {
+    if (nextStatus === OrderStatus.CANCELLED) {
+      if ([OrderStatus.PREPARING, OrderStatus.ACTIVE].includes(o.status)) {
         setOv({ type: "cancel", orderId: id, order: o });
         return;
       }
-      await updateOrderStatus(id, OrderStatus.cancel);
-      setOrders(p => p.map(x => x.id === id ? { ...x, status: OrderStatus.cancel } : x));
+      await updateOrderStatus(id, OrderStatus.CANCELLED);
+      setOrders(p => p.map(x => x.id === id ? { ...x, status: OrderStatus.CANCELLED } : x));
       msg("Cancelado");
       return;
     }
 
     // New → Preparing (deduct stock)
-    if (nextStatus === OrderStatus.prep && o.status === OrderStatus.new) {
+    if (nextStatus === OrderStatus.PREPARING && o.status === OrderStatus.NEW) {
       const items = o.order_items || o.items || [];
       if (!force) {
         const deficits = [];
@@ -133,7 +133,7 @@ export default function useOrderWorkflow({
     }
 
     // Done → Register sales
-    if (nextStatus === OrderStatus.done) {
+    if (nextStatus === OrderStatus.COMPLETED) {
       const items = o.order_items || o.items || [];
       for (const it of items) {
         await createSale({ date: todayISO(), recipe_id: it.recipe_id, qty: it.quantity || it.qty || 1, unit_price: it.unit_price || 0, unit_cost: it.unit_cost || 0, total: (it.quantity || it.qty || 1) * (it.unit_price || 0) });
@@ -154,10 +154,10 @@ export default function useOrderWorkflow({
       }
     }
 
-    if (nextStatus === OrderStatus.active) msg("Activo · Listo para entrega");
+    if (nextStatus === OrderStatus.ACTIVE) msg("Activo · Listo para entrega");
 
     await updateOrderStatus(id, nextStatus);
-    setOrders(p => p.map(x => x.id === id ? { ...x, status: nextStatus, ...(nextStatus === OrderStatus.done ? { completedAt: new Date().toISOString() } : {}) } : x));
+    setOrders(p => p.map(x => x.id === id ? { ...x, status: nextStatus, ...(nextStatus === OrderStatus.COMPLETED ? { completedAt: new Date().toISOString() } : {}) } : x));
   }, [orders, recs, ings, setOrders, setIngs, setSales, setOv, msg]);
 
   // ═══ Confirm cancellation (with optional stock return) ═══
@@ -189,8 +189,8 @@ export default function useOrderWorkflow({
     } else {
       msg("Cancelado · Desperdicio registrado");
     }
-    await updateOrderStatus(id, OrderStatus.cancel);
-    setOrders(p => p.map(x => x.id === id ? { ...x, status: OrderStatus.cancel } : x));
+    await updateOrderStatus(id, OrderStatus.CANCELLED);
+    setOrders(p => p.map(x => x.id === id ? { ...x, status: OrderStatus.CANCELLED } : x));
     setOv(null);
   }, [orders, recs, setOrders, setIngs, setOv, msg]);
 

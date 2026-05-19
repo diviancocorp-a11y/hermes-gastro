@@ -128,16 +128,42 @@ export const originalImageUrl = (url) => {
   return url.replace('/storage/v1/render/image/public/', '/storage/v1/object/public/').split('?')[0];
 };
 
-export const OrderStatus = { new: "new", prep: "preparing", active: "active", done: "completed", cancel: "cancelled" };
-export const OrderStatusLabels = { [OrderStatus.new]: "Nuevo", [OrderStatus.prep]: "En preparación", [OrderStatus.active]: "Activo", [OrderStatus.done]: "Completado", [OrderStatus.cancel]: "Cancelado" };
-export const OrderStatusColors = {
-  [OrderStatus.new]: { bg: "#E3F2FD", tx: "#1565C0" },
-  [OrderStatus.prep]: { bg: "#FFF8E1", tx: "#8D6E00" },
-  [OrderStatus.active]: { bg: "#E8F5E9", tx: "#3A7D44" },
-  [OrderStatus.done]: { bg: "#F3EDE4", tx: "#9C8B7A" },
-  [OrderStatus.cancel]: { bg: "#FFEBEE", tx: "#C62828" }
+// ─── Order status — single source of truth ─────────────────────────
+// Keys are SCREAMING_SNAKE; values are the literal strings stored in DB.
+// The values are also what the realtime payload, Zod schemas, and edge
+// functions speak. Never invent shortened aliases ('prep', 'done', ...).
+export const OrderStatus = Object.freeze({
+  NEW:       "new",
+  PREPARING: "preparing",
+  ACTIVE:    "active",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+});
+/** Lifecycle subsets — use these instead of inline string arrays. */
+export const ACTIVE_ORDER_STATUSES   = [OrderStatus.NEW, OrderStatus.PREPARING, OrderStatus.ACTIVE];
+export const FINISHED_ORDER_STATUSES = [OrderStatus.COMPLETED, OrderStatus.CANCELLED];
+
+export const OrderStatusLabels = {
+  [OrderStatus.NEW]:       "Nuevo",
+  [OrderStatus.PREPARING]: "En preparación",
+  [OrderStatus.ACTIVE]:    "Activo",
+  [OrderStatus.COMPLETED]: "Completado",
+  [OrderStatus.CANCELLED]: "Cancelado",
 };
-export const OrderStatusBorders = { [OrderStatus.new]: "#1565C0", [OrderStatus.prep]: "#D4A017", [OrderStatus.active]: "#3A7D44", [OrderStatus.done]: "#9C8B7A", [OrderStatus.cancel]: "#C62828" };
+export const OrderStatusColors = {
+  [OrderStatus.NEW]:       { bg: "#E3F2FD", tx: "#1565C0" },
+  [OrderStatus.PREPARING]: { bg: "#FFF8E1", tx: "#8D6E00" },
+  [OrderStatus.ACTIVE]:    { bg: "#E8F5E9", tx: "#3A7D44" },
+  [OrderStatus.COMPLETED]: { bg: "#F3EDE4", tx: "#9C8B7A" },
+  [OrderStatus.CANCELLED]: { bg: "#FFEBEE", tx: "#C62828" },
+};
+export const OrderStatusBorders = {
+  [OrderStatus.NEW]:       "#1565C0",
+  [OrderStatus.PREPARING]: "#D4A017",
+  [OrderStatus.ACTIVE]:    "#3A7D44",
+  [OrderStatus.COMPLETED]: "#9C8B7A",
+  [OrderStatus.CANCELLED]: "#C62828",
+};
 
 export const CAT_E = { "Tortas": "🎂", "Alfajores": "🍪", "Budines": "🍞", "Tartas": "🥧", "Postres": "🍮" };
 export const CAT_CO = ["#D4785C", "#7A9E5D", "#5C7AD4", "#D4A85C", "#8B5CD4", "#5CBBD4"];
@@ -158,27 +184,8 @@ export function playNotificationSound() {
   } catch { }
 }
 
-/** @deprecated Use Icon */
-export const I = Icon;
-/** @deprecated Use formatInt */
-export const fi = formatInt;
-/** @deprecated Use formatMoney */
-export const fm = formatMoney;
-/** @deprecated Use todayISO */
-export const td = todayISO;
-/** @deprecated Use generateId */
-export const uid = generateId;
-/** @deprecated Use OrderStatus */
-export const ST = OrderStatus;
-/** @deprecated Use OrderStatusLabels */
-export const ST_L = OrderStatusLabels;
-/** @deprecated Use OrderStatusColors */
-export const ST_C = OrderStatusColors;
-/** @deprecated Use OrderStatusBorders */
-export const ST_B = OrderStatusBorders;
-/** @deprecated Use formatOrderCode */
-export const saleCode = formatOrderCode;
-/** @deprecated Use optimizeImage */
-export const imgOpt = optimizeImage;
-/** @deprecated Use playNotificationSound */
-export const playNotif = playNotificationSound;
+// Deprecated short aliases (I, fi, fm, td, uid, ST, ST_L, ST_C, ST_B,
+// saleCode, imgOpt, playNotif) were removed in the FASE 1 cleanup. Use
+// the full names directly: Icon, formatInt, formatMoney, todayISO,
+// generateId, OrderStatus, OrderStatusLabels, OrderStatusColors,
+// OrderStatusBorders, formatOrderCode, optimizeImage, playNotificationSound.

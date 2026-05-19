@@ -103,7 +103,7 @@ export default function Admin() {
       {ov?.type === "purchase" && <Purchase ingredients={ings} setIngredients={setIngs} expenses={exps} setExpenses={setExps} settings={sett} onClose={() => setOv(null)} showToast={msg} loadAll={loadAll} />}
       {ov?.type === "expenses" && <Expenses expenses={exps} setExpenses={setExps} settings={sett} setSettings={setSett} showToast={msg} onClose={() => setOv(null)} />}
       {ov?.type === "cancel" && <CancelDlg order={ov.order} recs={recs} ings={ings} onClose={() => setOv(null)} onConfirm={ret => confirmCancel(ov.orderId, ret)} />}
-      {ov?.type === "stockWarning" && <StockWarningDlg deficits={ov.deficits} onClose={() => setOv(null)} onForce={async () => { setOv(null); await moveOrd(ov.orderId, OrderStatus.prep, true); }} />}
+      {ov?.type === "stockWarning" && <StockWarningDlg deficits={ov.deficits} onClose={() => setOv(null)} onForce={async () => { setOv(null); await moveOrd(ov.orderId, OrderStatus.PREPARING, true); }} />}
       {ov?.type === "exports" && <Exports sales={sales} expenses={exps} ingredients={ings} orders={orders} recipes={recs} sett={sett} msg={msg} onClose={() => setOv(null)} />}
       {ov?.type === "invoicing" && <Invoicing orders={orders} recipes={recs} sett={sett} msg={msg} onClose={() => setOv(null)} />}
       {ov?.type === "push" && <PushNotifications msg={msg} onClose={() => setOv(null)} />}
@@ -126,7 +126,7 @@ export default function Admin() {
 
       {/* Bottom navigation */}
       <nav className="nv">
-        {[{ id: "home", icon: Icon.home, l: "Inicio" }, { id: "orders", icon: Icon.orders, l: "Pedidos", badge: orders.filter(o => o.status === OrderStatus.new).length }, { id: "purchase", icon: Icon.truck, l: "Compras", action: () => setOv({ type: "purchase" }) }, { id: "expenses", icon: Icon.dollar, l: "Gastos", action: () => setOv({ type: "expenses" }) }].map(t => (
+        {[{ id: "home", icon: Icon.home, l: "Inicio" }, { id: "orders", icon: Icon.orders, l: "Pedidos", badge: orders.filter(o => o.status === OrderStatus.NEW).length }, { id: "purchase", icon: Icon.truck, l: "Compras", action: () => setOv({ type: "purchase" }) }, { id: "expenses", icon: Icon.dollar, l: "Gastos", action: () => setOv({ type: "expenses" }) }].map(t => (
           <button key={t.id} className={`ni ${tab === t.id || (tab === "settings" && t.id === "home") ? "on" : ""}`} onClick={() => { if (t.action) { t.action(); } else { setTab(t.id); } }}>
             {t.badge > 0 && <span className="nb">{t.badge}</span>}
             {t.icon({ size: 20 })}{t.l}

@@ -320,11 +320,11 @@ describe('WasteInputSchema', () => {
 // ═══════════════════════════════════════════════════════
 describe('NotifyWhatsAppSchema', () => {
   it('acepta notificación válida', () => {
-    valid(NotifyWhatsAppSchema, { orderId: UUID, status: 'prep' });
+    valid(NotifyWhatsAppSchema, { orderId: UUID, status: 'preparing' });
   });
 
   it('acepta todos los estados válidos', () => {
-    ['prep', 'active', 'done', 'cancel'].forEach(s => {
+    ['new', 'preparing', 'active', 'completed', 'cancelled'].forEach(s => {
       valid(NotifyWhatsAppSchema, { orderId: UUID, status: s });
     });
   });

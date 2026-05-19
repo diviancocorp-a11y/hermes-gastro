@@ -14,7 +14,7 @@ function DeliveryBadge({date}){
 }
 
 function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,showToast,settings,onUpdateOrder}){
-  const [fil,setFil]=useState(OrderStatus.new);const [showH,setShowH]=useState(false);const [showSched,setShowSched]=useState(false);const t=todayISO();
+  const [fil,setFil]=useState(OrderStatus.NEW);const [showH,setShowH]=useState(false);const [showSched,setShowSched]=useState(false);const t=todayISO();
   const [histPage,setHistPage]=useState(1);const HIST_PER_PAGE=20;
   const [viewReceipt,setViewReceipt]=useState(null); // order object to view receipt
 
@@ -33,28 +33,28 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
 
   // Pedidos programados: solo los de HOY (o vencidos) que no estén finalizados
   // Se muestran solo cuando el local está abierto
-  const scheduled=useMemo(()=>orders.filter(o=>o.delivery_date&&o.status!==OrderStatus.done&&o.status!==OrderStatus.cancel&&(o.delivery_date<=t)).sort((a,b)=>(a.delivery_date||"").localeCompare(b.delivery_date||"")),[orders,t]);
+  const scheduled=useMemo(()=>orders.filter(o=>o.delivery_date&&o.status!==OrderStatus.COMPLETED&&o.status!==OrderStatus.CANCELLED&&(o.delivery_date<=t)).sort((a,b)=>(a.delivery_date||"").localeCompare(b.delivery_date||"")),[orders,t]);
   // Programados futuros (para referencia)
-  const scheduledFuture=useMemo(()=>orders.filter(o=>o.delivery_date&&o.status!==OrderStatus.done&&o.status!==OrderStatus.cancel&&o.delivery_date>t).sort((a,b)=>(a.delivery_date||"").localeCompare(b.delivery_date||"")),[orders,t]);
+  const scheduledFuture=useMemo(()=>orders.filter(o=>o.delivery_date&&o.status!==OrderStatus.COMPLETED&&o.status!==OrderStatus.CANCELLED&&o.delivery_date>t).sort((a,b)=>(a.delivery_date||"").localeCompare(b.delivery_date||"")),[orders,t]);
 
   // Counts: para "new" solo contar pedidos de hoy sin delivery_date
   const cts=useMemo(()=>{const c={};Object.values(OrderStatus).forEach(s=>{
-    if(s===OrderStatus.new)c[s]=orders.filter(o=>o.status===s&&o.date===t&&!o.delivery_date).length;
-    else if(s===OrderStatus.done||s===OrderStatus.cancel)c[s]=orders.filter(o=>o.status===s&&o.date===t).length;
+    if(s===OrderStatus.NEW)c[s]=orders.filter(o=>o.status===s&&o.date===t&&!o.delivery_date).length;
+    else if(s===OrderStatus.COMPLETED||s===OrderStatus.CANCELLED)c[s]=orders.filter(o=>o.status===s&&o.date===t).length;
     else c[s]=orders.filter(o=>o.status===s).length;
   });return c;},[orders,t]);
 
-  // Filtrado: "new" = solo hoy sin delivery_date; "done"/"cancel" = solo hoy; resto = todos
+  // Filtrado: NEW = solo hoy sin delivery_date; COMPLETED/CANCELLED = solo hoy; resto = todos
   const filt=useMemo(()=>orders.filter(o=>{
-    if(fil===OrderStatus.new)return o.status===fil&&o.date===t&&!o.delivery_date;
-    if(fil===OrderStatus.done||fil===OrderStatus.cancel)return o.status===fil&&o.date===t;
+    if(fil===OrderStatus.NEW)return o.status===fil&&o.date===t&&!o.delivery_date;
+    if(fil===OrderStatus.COMPLETED||fil===OrderStatus.CANCELLED)return o.status===fil&&o.date===t;
     return o.status===fil;
   }).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||"")),[orders,fil,t]);
-  const hist=useMemo(()=>orders.filter(o=>(o.status===OrderStatus.done||o.status===OrderStatus.cancel)&&o.date<t).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||"")),[orders,t]);
+  const hist=useMemo(()=>orders.filter(o=>(o.status===OrderStatus.COMPLETED||o.status===OrderStatus.CANCELLED)&&o.date<t).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||"")),[orders,t]);
   const histPaged=useMemo(()=>hist.slice(0,histPage*HIST_PER_PAGE),[hist,histPage]);
   const histGrouped=useMemo(()=>Object.entries(histPaged.reduce((a,o)=>{const d=(o.created_at||o.date||"").split("T")[0];if(!a[d])a[d]=[];a[d].push(o);return a;},{})).sort((a,b)=>b[0].localeCompare(a[0])),[histPaged]);
-  const nxt=s=>({[OrderStatus.new]:{l:"Preparar",c:"byw",i:Icon.fire,n:OrderStatus.prep},[OrderStatus.prep]:{l:"Marcar activo",c:"bgn",i:Icon.zap,n:OrderStatus.active},[OrderStatus.active]:{l:"Completar",c:"bbl",i:Icon.check,n:OrderStatus.done}}[s]||null);
-  const sfs=[{id:OrderStatus.new,l:"Nuevos",i:Icon.orders,co:"var(--bl)"},{id:OrderStatus.prep,l:"Preparando",i:Icon.fire,co:"var(--yw)"},{id:OrderStatus.active,l:"Activos",i:Icon.zap,co:"var(--gn)"},{id:OrderStatus.done,l:"Listos",i:Icon.check,co:"var(--t3)"},{id:OrderStatus.cancel,l:"Cancel.",i:Icon.x,co:"var(--rd)"}];
+  const nxt=s=>({[OrderStatus.NEW]:{l:"Preparar",c:"byw",i:Icon.fire,n:OrderStatus.PREPARING},[OrderStatus.PREPARING]:{l:"Marcar activo",c:"bgn",i:Icon.zap,n:OrderStatus.ACTIVE},[OrderStatus.ACTIVE]:{l:"Completar",c:"bbl",i:Icon.check,n:OrderStatus.COMPLETED}}[s]||null);
+  const sfs=[{id:OrderStatus.NEW,l:"Nuevos",i:Icon.orders,co:"var(--bl)"},{id:OrderStatus.PREPARING,l:"Preparando",i:Icon.fire,co:"var(--yw)"},{id:OrderStatus.ACTIVE,l:"Activos",i:Icon.zap,co:"var(--gn)"},{id:OrderStatus.COMPLETED,l:"Listos",i:Icon.check,co:"var(--t3)"},{id:OrderStatus.CANCELLED,l:"Cancel.",i:Icon.x,co:"var(--rd)"}];
 
   return(<>
     <div className="s"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div className="st" style={{margin:0}}>Pedidos</div><div style={{display:"flex",gap:6}}>
@@ -65,7 +65,7 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
       {sf.i({size:14,color:fil===sf.id?sf.co:"var(--t3)"})}{sf.l}{cts[sf.id]>0&&<span className="sfc" style={{background:sf.co+"20",color:sf.co}}>{cts[sf.id]}</span>}
     </button>))}</div>
     <div className="s">
-      {filt.length===0?<div className="c"><div className="empty"><div className="eic">{fil===OrderStatus.new?"📋":fil===OrderStatus.prep?"👨‍🍳":fil===OrderStatus.active?"⚡":"✓"}</div><div>No hay pedidos {OrderStatusLabels[fil]?.toLowerCase()}</div></div></div>
+      {filt.length===0?<div className="c"><div className="empty"><div className="eic">{fil===OrderStatus.NEW?"📋":fil===OrderStatus.PREPARING?"👨‍🍳":fil===OrderStatus.ACTIVE?"⚡":"✓"}</div><div>No hay pedidos {OrderStatusLabels[fil]?.toLowerCase()}</div></div></div>
       :filt.map(o=>{const act=nxt(o.status);const sc=OrderStatusColors[o.status];const items=o.order_items||o.items||[];
         return(<div key={o.id} className="ocard" style={{borderLeftColor:OrderStatusBorders[o.status]}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
@@ -96,7 +96,7 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
             <div style={{marginTop:6}}><span style={{fontSize:11,fontWeight:600,color:"var(--rd)",padding:"3px 8px",background:"#FFEBEE",borderRadius:6}}>⚠ Sin comprobante</span></div>
           )}
           <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0 0",borderTop:"1px solid var(--b2)",marginTop:8,fontWeight:700,fontSize:16}}><span>Total</span><span>${formatInt(o.total)}</span></div>
-          {act&&<div className="oa">{o.status!==OrderStatus.done&&o.status!==OrderStatus.cancel&&<button className="btn bd" onClick={()=>moveOrderStatus(o.id,OrderStatus.cancel)}>{Icon.x({size:14})} Cancelar</button>}<button className={`btn ${act.c}`} onClick={()=>{moveOrderStatus(o.id,act.n);setFil(act.n);}}>{act.i({size:14,color:"#fff"})} {act.l}</button></div>}
+          {act&&<div className="oa">{o.status!==OrderStatus.COMPLETED&&o.status!==OrderStatus.CANCELLED&&<button className="btn bd" onClick={()=>moveOrderStatus(o.id,OrderStatus.CANCELLED)}>{Icon.x({size:14})} Cancelar</button>}<button className={`btn ${act.c}`} onClick={()=>{moveOrderStatus(o.id,act.n);setFil(act.n);}}>{act.i({size:14,color:"#fff"})} {act.l}</button></div>}
         </div>);
       })}
     </div>
@@ -231,7 +231,7 @@ function OrdForm({recipes,onClose,onSave}){
     {tot>0&&<div className="c" style={{background:"var(--al)",textAlign:"center",marginTop:8}}><div style={{fontSize:12,fontWeight:600,color:"var(--ac)"}}>TOTAL</div><div style={{fontSize:28,fontWeight:700,fontFamily:"'DM Serif Display',serif",color:"var(--ac)"}}>${formatInt(tot)}</div></div>}
     <button className="btn bp" style={{marginTop:16}} disabled={!ok} onClick={()=>{if(!ok)return;
       const f=items.filter(it=>it.recipe_id&&it.qty>0).map(it=>{const r=recipes.find(x=>x.id===it.recipe_id);return{recipe_id:it.recipe_id,quantity:it.qty,unit_price:r?.sale_price||0,subtotal:(r?.sale_price||0)*it.qty};});
-      onSave({id:generateId(),customer:cust,phone:ph,note,delivery_date:delivDate||null,order_items:f,items:f,total:f.reduce((s,it)=>s+it.subtotal,0),status:OrderStatus.new,date:todayISO(),created_at:new Date().toISOString()});
+      onSave({id:generateId(),customer:cust,phone:ph,note,delivery_date:delivDate||null,order_items:f,items:f,total:f.reduce((s,it)=>s+it.subtotal,0),status:OrderStatus.NEW,date:todayISO(),created_at:new Date().toISOString()});
     }}>{Icon.check({size:18,color:"#fff"})} Crear</button>
   </div></div>);
 }

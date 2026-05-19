@@ -48,7 +48,7 @@ export default function useFinancials({ ings, recs, sales, exps, orders, waste, 
 
   // Pedidos activos (no completados ni cancelados)
   const activeOrders = useMemo(
-    () => orders.filter(o => [OrderStatus.new, OrderStatus.prep, OrderStatus.active].includes(o.status)),
+    () => orders.filter(o => [OrderStatus.NEW, OrderStatus.PREPARING, OrderStatus.ACTIVE].includes(o.status)),
     [orders]
   );
 

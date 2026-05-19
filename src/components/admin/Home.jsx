@@ -9,7 +9,7 @@ function Home({lowStockIngredients,monthSales,monthExpenses,monthWasteCost,month
   // Indicador de calibración: si la merma cargada supera la proyectada, sugerir subir el %
   const projectedWasteCost = (monthProductionCost && wastePct) ? (monthProductionCost - monthProductionCost/(1+wastePct/100)) : 0;
   const wasteOverrun = monthWasteCost > projectedWasteCost * 1.5 && monthWasteCost > 1000;
-  const nw=activeOrders.filter(o=>o.status===OrderStatus.new);
+  const nw=activeOrders.filter(o=>o.status===OrderStatus.NEW);
   const monthStart=todayISO().slice(0,7)+"-01";
   const top=useMemo(()=>{
     const m={};sales.filter(s=>s.date>=monthStart).forEach(s=>{m[s.recipe_id]=(m[s.recipe_id]||0)+(s.qty||1);});
