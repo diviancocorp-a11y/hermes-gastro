@@ -72,6 +72,7 @@ export default function useAdminData() {
   const alarmRef = useRef(null);
   const alarmTimer = useRef(null);
   const prevOrderIds = useRef(new Set());
+  const initialOrdersLoaded = useRef(false); // flips true after the very first activeOrders read
 
   useEffect(() => {
     const audio = new Audio(business.branding.sound);
@@ -92,26 +93,30 @@ export default function useAdminData() {
     };
   }, []);
 
-  // Detect new orders from the query cache
+  // Detect new orders from the query cache.
+  // Gate: skip the alarm only on the very first read (whatever count it has),
+  // so any subsequent insert — including 0 → 1 — rings the bell.
   useEffect(() => {
-    if (!activeOrders.length) return;
+    if (!session) return; // nothing to do until admin is signed in
     const currentIds = new Set(activeOrders.map(o => o.id));
     const newOnes = activeOrders.filter(o => !prevOrderIds.current.has(o.id));
+    const wasInitialized = initialOrdersLoaded.current;
     prevOrderIds.current = currentIds;
+    initialOrdersLoaded.current = true;
 
-    if (newOnes.length > 0 && prevOrderIds.current.size > newOnes.length) {
-      // There were previous orders, so these are genuinely new
-      setNewAlertCount(c => c + newOnes.length);
-      if (alarmRef.current) {
-        if (alarmTimer.current) clearTimeout(alarmTimer.current);
-        alarmRef.current.currentTime = 0;
-        alarmRef.current.play().catch(() => {});
-        alarmTimer.current = setTimeout(() => {
-          if (alarmRef.current) { alarmRef.current.pause(); alarmRef.current.currentTime = 0; }
-        }, 10000);
-      }
+    if (!wasInitialized) return; // first read, never ring
+    if (newOnes.length === 0) return;
+
+    setNewAlertCount(c => c + newOnes.length);
+    if (alarmRef.current) {
+      if (alarmTimer.current) clearTimeout(alarmTimer.current);
+      alarmRef.current.currentTime = 0;
+      alarmRef.current.play().catch(() => {});
+      alarmTimer.current = setTimeout(() => {
+        if (alarmRef.current) { alarmRef.current.pause(); alarmRef.current.currentTime = 0; }
+      }, 10000);
     }
-  }, [activeOrders]);
+  }, [activeOrders, session]);
 
   const ackOrders = useCallback(() => {
     if (alarmRef.current) { alarmRef.current.pause(); alarmRef.current.currentTime = 0; }
@@ -143,7 +148,7 @@ export default function useAdminData() {
   // so the next refetch will reconcile against the server source of truth.
   const setOrders = useCallback((val) => {
     if (typeof val === 'function') {
-      queryClient.setQueryData(queryKeys.orders.active, (prev = []) => {
+      queryClient.setQueryData(queryKeys.orders.active(), (prev = []) => {
         const next = val(prev);
         // Keep only active statuses in the active cache; the rest moves to history.
         return next.filter(o => ['new', 'prep', 'active'].includes(o.status));
@@ -154,7 +159,7 @@ export default function useAdminData() {
         return merged.filter(o => ['done', 'cancel'].includes(o.status));
       });
     } else if (Array.isArray(val)) {
-      queryClient.setQueryData(queryKeys.orders.active, val.filter(o => ['new', 'prep', 'active'].includes(o.status)));
+      queryClient.setQueryData(queryKeys.orders.active(), val.filter(o => ['new', 'prep', 'active'].includes(o.status)));
       setHistoryOrders(val.filter(o => ['done', 'cancel'].includes(o.status)));
     }
     queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });

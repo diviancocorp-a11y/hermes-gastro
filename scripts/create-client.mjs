@@ -310,9 +310,21 @@ async function main() {
   1. cd ${ROOT}
   2. npm install
   3. Crear proyecto Supabase nuevo (sa-east-1 si es ARG) y sembrar schema
-  4. Crear proyecto Vercel nuevo apuntando al repo con env CLIENT=${slugForBusiness}
-  5. CLIENT=${slugForBusiness} npm run dev
-  6. Acceder al panel admin para ajustar productos y recetas
+  4. ⚠️  Habilitar Realtime en la publication (SI NO, el admin no recibe
+        notificaciones de pedido nuevo ni cambios de estado):
+
+        ALTER PUBLICATION supabase_realtime ADD TABLE
+          public.orders, public.order_items, public.recipes,
+          public.ingredients, public.recipe_ingredients, public.sales,
+          public.expenses, public.purchases, public.waste_log,
+          public.coupons, public.settings;
+
+  5. Crear proyecto Vercel nuevo apuntando al repo con env vars:
+        CLIENT=${slugForBusiness}
+        VITE_SUPABASE_URL=<url del nuevo proyecto Supabase>
+        VITE_SUPABASE_ANON_KEY=<publishable key del nuevo Supabase>
+  6. CLIENT=${slugForBusiness} npm run dev
+  7. Acceder al panel admin para ajustar productos y recetas
   `);
 }
 

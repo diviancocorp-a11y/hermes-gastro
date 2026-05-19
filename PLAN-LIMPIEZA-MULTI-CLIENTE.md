@@ -128,6 +128,32 @@ No se pudo borrar físicamente desde la sesión (permisos), así que se reemplaz
 3. **Asset del logo** (si corresponde):
    - `public/clients/mala-miga/favicon.png` o `logo-icon.jpg` (ver patrón de cochi).
 
+## ⚠️ Realtime publication — paso obligatorio en todo cliente nuevo
+
+**Bug encontrado el 19/05/2026:** Cochi y Mala Miga tenían la publication `supabase_realtime` **vacía**. El admin se subscribía pero nunca recibía eventos → no aparecían pedidos nuevos ni se reflejaban cambios de estado sin recargar.
+
+**Aplicado en los 3 clientes (LNP + Cochi + MM):**
+
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE
+  public.orders, public.order_items, public.recipes,
+  public.ingredients, public.recipe_ingredients, public.sales,
+  public.expenses, public.purchases, public.waste_log,
+  public.coupons, public.settings;
+```
+
+**Para el próximo cliente:** el script `create-client.mjs` ya imprime este bloque en "Próximos pasos". Hay que correrlo después de crear el schema y antes de probar el admin. Si no se hace, el admin parece funcionar pero **no se entera de nada en tiempo real**.
+
+## Bugs del flujo de pedidos resueltos el 19/05/2026
+
+| Bug | Causa | Fix |
+|---|---|---|
+| Pedido duplicado al primer click | Service Worker reintentaba la request fallida (background sync) cuando CORS bloqueaba la respuesta | Removido `BackgroundSyncPlugin` del SW; agregadas headers CORS en respuestas de `submit-order` |
+| "No pudimos procesar tu pedido" pese a estar en DB | Edge function devolvía respuesta sin `Access-Control-Allow-Origin` → cliente no podía leer el body | Helper `jsonRes()` con CORS en todas las respuestas (200/400/429/500) |
+| "Preparar" no movía la tarjeta sin recargar | `setOrders` en `useAdminData.js` usaba `queryKeys.orders.active` (referencia a la función) en vez de `queryKeys.orders.active()` (el array) → `setQueryData` no encontraba la cache | Agregados paréntesis + se aplica el update optimista |
+| Admin no veía pedidos nuevos | Publication de Realtime vacía en Cochi/MM | `ALTER PUBLICATION supabase_realtime ADD TABLE …` en los 3 |
+| Admin no sonaba la alarma si tenía 0 pedidos | Gate `currentIds.size > newOnes.length` daba `1 > 1 = false` en el caso `0 → 1` | Reemplazado por un flag `initialOrdersLoaded` que solo silencia la primera lectura |
+
 **Verificación local:**
 ```bash
 CLIENT=mala-miga npm run dev          # debería abrir con branding 🍪 contra DB nueva
