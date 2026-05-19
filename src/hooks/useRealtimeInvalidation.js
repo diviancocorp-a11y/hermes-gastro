@@ -48,55 +48,43 @@ export function useRealtimeInvalidation() {
   }, []);
 
   useEffect(() => {
-    if (!authReady) return; // do NOT open WS without a session — server will close it
+    if (!authReady) return; // do NOT open WS without a session
 
-    let channel = null;
-    let retryTimer = null;
-    let cancelled = false;
-    let attempt = 0;
+    // Single channel, single subscribe. The previous version retried on CLOSED
+    // and called removeChannel inside the subscribe callback — that triggers
+    // another CLOSED, which loops forever ("Maximum call stack size exceeded").
+    // Keep it simple: if the WS drops, the 5s polling fallback takes over.
+    // Supabase realtime auto-reconnects internally for transient drops.
+    const channel = supabase.channel('cache-invalidation');
 
-    const tryConnect = () => {
-      if (cancelled) return;
-      attempt += 1;
-      const ch = supabase.channel(`cache-invalidation-${attempt}`);
+    TABLES.forEach((table) => {
+      channel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table },
+        () => {
+          const keys = TABLE_KEYS[table] || [];
+          keys.forEach((key) => {
+            queryClient.invalidateQueries({ queryKey: key });
+          });
+        },
+      );
+    });
 
-      TABLES.forEach((table) => {
-        ch.on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table },
-          () => {
-            const keys = TABLE_KEYS[table] || [];
-            keys.forEach((key) => {
-              queryClient.invalidateQueries({ queryKey: key });
-            });
-          },
-        );
-      });
-
-      ch.subscribe((status, err) => {
-        if (status === 'SUBSCRIBED') {
-          console.info('[realtime] SUBSCRIBED (attempt', attempt + ')');
-          channel = ch;
-          return;
-        }
-        if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.warn('[realtime]', status, '— retrying in 3s (attempt', attempt + ')', err || '');
-          supabase.removeChannel(ch);
-          if (!cancelled && attempt < 10) {
-            retryTimer = setTimeout(tryConnect, 3000);
-          } else if (attempt >= 10) {
-            console.warn('[realtime] giving up after 10 attempts — relying on polling (5s)');
-          }
-        }
-      });
-    };
-
-    tryConnect();
+    let logged = false;
+    channel.subscribe((status, err) => {
+      // Log only the first transition for each channel — no recursion possible.
+      if (logged) return;
+      if (status === 'SUBSCRIBED') {
+        logged = true;
+        console.info('[realtime] SUBSCRIBED');
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        logged = true;
+        console.warn('[realtime]', status, '— falling back to 5s polling', err || '');
+      }
+    });
 
     return () => {
-      cancelled = true;
-      if (retryTimer) clearTimeout(retryTimer);
-      if (channel) supabase.removeChannel(channel);
+      supabase.removeChannel(channel);
     };
   }, [authReady, queryClient]);
 }
