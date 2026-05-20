@@ -1,0 +1,26 @@
+name: Morning Health Check
+
+# Lunes a sábado 10:00 UTC = 7:00 AM Argentina (UTC-3).
+# Notifica el estado de los 3 tenants a Telegram.
+on:
+  schedule:
+    - cron: '0 10 * * 1-6'
+  workflow_dispatch: # permite correrlo manualmente desde la UI
+
+jobs:
+  health:
+    name: Health check + notify Telegram
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run health check
+        run: node scripts/morning-health.mjs
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          LNP_ANON_KEY: ${{ secrets.LNP_ANON_KEY }}
+          COCHI_ANON_KEY: ${{ secrets.COCHI_ANON_KEY }}
+          MALA_MIGA_ANON_KEY: ${{ secrets.MALA_MIGA_ANON_KEY }}
