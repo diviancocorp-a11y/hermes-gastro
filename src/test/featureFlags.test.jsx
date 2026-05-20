@@ -10,7 +10,6 @@ vi.mock('../lib/supabase', () => ({
         data: [
           { key: 'GIFT_MODE', enabled: true },
           { key: 'LOYALTY', enabled: false },
-          { key: 'REVIEWS', enabled: true },
         ],
         error: null,
       })),

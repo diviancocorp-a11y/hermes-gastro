@@ -9,7 +9,6 @@ import business, { waLink } from "@business";
 
 // ── Extracted components ──
 import ProductCard from "../components/catalog/ProductCard";
-import ReviewsList from "../components/catalog/ReviewsList";
 import PushBanner from "../components/catalog/PushBanner";
 import ConfirmationAnimation from "../components/catalog/ConfirmationAnimation";
 import OrderSentView from "../components/catalog/OrderSentView";
@@ -30,7 +29,6 @@ export default function Catalog() {
 
   // --- Feature flags ---
   const ffGift = useFeature('GIFT_MODE');
-  const ffReviews = useFeature('REVIEWS');
   const ffPush = useFeature('PUSH_NOTIFICATIONS');
   const ffDeals = useFeature('DAILY_DEALS');
   const ffWhatsapp = useFeature('WHATSAPP');
@@ -1365,8 +1363,6 @@ export default function Catalog() {
       {/* Push notification prompt */}
       {ffPush && <PushBanner />}
 
-      {/* Customer reviews */}
-      {ffReviews && <div style={{ padding: '0 16px', background: 'var(--catalog-bg, transparent)' }}><ReviewsList /></div>}
 
       {/* Footer legal */}
       <footer className="catalog-footer">

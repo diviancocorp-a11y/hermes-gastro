@@ -12,27 +12,11 @@ import business from '@business';
  * Si hay error, retorna null
  */
 /**
- * Try the edge-cached get-catalog endpoint first.
- * Falls back to direct Supabase queries if the Edge Function isn't deployed.
+ * Fetch catalog data: settings + visible products + server time.
+ * Direct Supabase queries — la edge function get-catalog no se deployó,
+ * y las queries directas son suficientemente rápidas con los indexes.
  */
 export async function fetchCatalog() {
-  // 1. Try edge-cached endpoint (fast, CDN-backed)
-  try {
-    const { data, error } = await supabase.functions.invoke('get-catalog', { method: 'GET' });
-    if (!error && data?.products) return data;
-  } catch {
-    // Edge function not deployed yet — fall through to direct queries
-  }
-
-  // 2. Fallback: direct Supabase queries
-  return fetchCatalogDirect();
-}
-
-/**
- * Direct database fetch (original implementation). Used as fallback
- * when the get-catalog Edge Function is not yet deployed.
- */
-async function fetchCatalogDirect() {
   try {
     const { data: settingsRows, error: settErr } = await supabase
       .from('settings')

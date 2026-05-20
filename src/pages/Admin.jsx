@@ -20,7 +20,6 @@ import Settings from "../components/admin/Settings";
 import Analytics from "../components/admin/Analytics";
 import Exports from "../components/admin/Exports";
 import Invoicing from "../components/admin/Invoicing";
-import Reviews from "../components/admin/Reviews";
 import PushNotifications from "../components/admin/PushNotifications";
 import CategoryEditor from "../components/admin/CategoryEditor";
 import { CancelDlg, StockWarningDlg, NewOrderOverlay } from "../components/admin/Dialogs";
@@ -33,7 +32,6 @@ export default function Admin() {
 
   // Feature flags
   const ffInvoice = useFeature('E_INVOICE');
-  const ffReviews = useFeature('REVIEWS');
   const ffPush = useFeature('PUSH_NOTIFICATIONS');
   const ffReferral = useFeature('REFERRAL');
 
@@ -96,7 +94,6 @@ export default function Admin() {
       {tab === "sales" && <SalesView sales={sales} setSales={setSales} orders={orders} recipes={recs} calculateRecipeCost={rc} overlay={ov} setOverlay={setOv} showToast={msg} />}
       {tab === "crm" && <CRM orders={orders} recipes={recs} ingredients={ings} showToast={msg} />}
       {tab === "waste" && <Waste waste={waste} orders={orders} recipes={recs} ingredients={ings} setIngredients={setIngs} showToast={msg} loadAll={loadAll} />}
-      {tab === "reviews" && ffReviews && <Reviews msg={msg} />}
       {tab === "settings" && <Settings settings={sett} setSettings={setSett} showToast={msg} onBack={() => setTab("home")} onExport={() => setOv({ type: "exports" })} onCategories={() => setOv({ type: "categories" })} />}
 
       {/* Overlays */}
@@ -116,7 +113,7 @@ export default function Admin() {
       {menuOpen && <>
         <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 900 }} />
         <div style={{ position: "fixed", bottom: 64, right: 12, background: "#fff", borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", zIndex: 901, padding: "6px 0", minWidth: 180, animation: "fadeIn .15s ease" }}>
-          {[{ id: "stock", icon: Icon.box, l: "Stock" }, { id: "recipes", icon: Icon.recipe, l: "Recetas" }, { id: "sales", icon: Icon.cart, l: "Ventas" }, { id: "invoicing", icon: Icon.recipe, l: "Facturación", action: () => setOv({ type: "invoicing" }), show: ffInvoice }, { id: "waste", icon: Icon.alert, l: "Mermas" }, { id: "reviews", icon: Icon.fire, l: "Reseñas", show: ffReviews }, { id: "crm", icon: Icon.user, l: "CRM" }, { id: "push", icon: Icon.bell, l: "Push", action: () => setOv({ type: "push" }), show: ffPush }].filter(t => t.show !== false).map(t => (
+          {[{ id: "stock", icon: Icon.box, l: "Stock" }, { id: "recipes", icon: Icon.recipe, l: "Recetas" }, { id: "sales", icon: Icon.cart, l: "Ventas" }, { id: "invoicing", icon: Icon.recipe, l: "Facturación", action: () => setOv({ type: "invoicing" }), show: ffInvoice }, { id: "waste", icon: Icon.alert, l: "Mermas" }, { id: "crm", icon: Icon.user, l: "CRM" }, { id: "push", icon: Icon.bell, l: "Push", action: () => setOv({ type: "push" }), show: ffPush }].filter(t => t.show !== false).map(t => (
             <button key={t.id} onClick={() => { if (t.action) { t.action(); } else { setTab(t.id); } setMenuOpen(false); }} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 18px", border: "none", background: tab === t.id ? "var(--b1,#f5f0eb)" : "transparent", color: tab === t.id ? "var(--pr,#C45D3E)" : "var(--tx,#333)", fontSize: 14, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", textAlign: "left" }}>
               {t.icon({ size: 18 })}{t.l}
             </button>
@@ -132,7 +129,7 @@ export default function Admin() {
             {t.icon({ size: 20 })}{t.l}
           </button>
         ))}
-        <button className={`ni ${["stock", "recipes", "sales", "analytics", "waste", "crm", "reviews"].includes(tab) ? "on" : ""}`} onClick={() => setMenuOpen(p => !p)}>
+        <button className={`ni ${["stock", "recipes", "sales", "analytics", "waste", "crm"].includes(tab) ? "on" : ""}`} onClick={() => setMenuOpen(p => !p)}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
           Más
         </button>

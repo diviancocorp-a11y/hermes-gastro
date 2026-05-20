@@ -17,7 +17,6 @@ const DEFAULTS = {
   COUPONS: true,
   WHATSAPP: true,
   LOYALTY: false,
-  REVIEWS: true,
   REFERRAL: true,
   E_INVOICE: false,
   PUSH_NOTIFICATIONS: true,

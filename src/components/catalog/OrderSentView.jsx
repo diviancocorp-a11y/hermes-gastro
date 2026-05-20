@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Icon, formatOrderCode } from "../../lib/utils";
 import { waLink } from "@business";
-import ReviewForm from "./ReviewForm";
 
 export default function OrderSentView({ orderId, form, receiptFile, onReset }) {
   const [copiedCode, setCopiedCode] = useState(false);
@@ -56,8 +55,6 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset }) {
             💬 ¿Dudas? Escribinos por WhatsApp
           </a>
         )}
-        {/* Review form */}
-        {orderId && <ReviewForm orderId={orderId} customerName={form.name} customerPhone={form.phone} />}
 
         <button onClick={onReset} style={{ marginTop: 14, fontSize: 12, color: "var(--t3)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 4 }}>
           ← Volver a la tienda

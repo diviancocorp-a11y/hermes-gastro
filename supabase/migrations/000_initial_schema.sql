@@ -614,7 +614,6 @@ INSERT INTO public.feature_flags (key, enabled, description) VALUES
   ('COUPONS',                  true,  'Enable coupon/promo code system'),
   ('WHATSAPP',                 true,  'Show WhatsApp contact links'),
   ('LOYALTY',                  false, 'Loyalty/points program'),
-  ('REVIEWS',                  true,  'Customer reviews'),
   ('REFERRAL',                 true,  'Referral program'),
   ('E_INVOICE',                false, 'AFIP e-invoicing'),
   ('PUSH_NOTIFICATIONS',       true,  'Push notification system'),
