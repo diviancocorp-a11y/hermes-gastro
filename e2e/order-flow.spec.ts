@@ -21,11 +21,13 @@ test.describe('Order flow (customer)', () => {
     await expect(firstAdd).toBeVisible({ timeout: 15_000 })
     await firstAdd.click()
 
-    // 2. Open cart / go to checkout
-    // (catalog uses a sticky "Ver carrito" button — clicking it advances to checkout stepper)
-    const checkoutBtn = page.getByRole('button', { name: /Ver carrito|Realizar pedido|Checkout/i }).first()
-    await expect(checkoutBtn).toBeVisible({ timeout: 10_000 })
-    await checkoutBtn.click()
+    // 2. Open cart modal (FAB sticky "Ver pedido"), then advance to checkout
+    const fabBtn = page.getByText(/Ver pedido/i).first()
+    await expect(fabBtn).toBeVisible({ timeout: 10_000 })
+    await fabBtn.click()
+    const continuarBtn = page.getByRole('button', { name: /Continuar/i }).first()
+    await expect(continuarBtn).toBeVisible({ timeout: 5_000 })
+    await continuarBtn.click()
 
     // 3. Fill the form (datos step)
     await page.fill('input[placeholder*="ombre" i], input[name="name"]', customerName)
