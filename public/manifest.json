@@ -1,13 +1,13 @@
 {
-  "name": "La Nona Pato",
-  "short_name": "Nona Pato",
-  "description": "Panadería & Rotisería Artesanal — Pedí online con delivery en Pilar",
+  "name": "Hermes",
+  "short_name": "Hermes",
+  "description": "Hermes Gastro platform — replaced per-client at build time",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFF8F0",
   "theme_color": "#C45D3E",
   "icons": [
-    { "src": "/favicon-32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
     { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
   ]
 }

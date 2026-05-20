@@ -36,12 +36,52 @@ function loadBusinessConfig() {
     .catch(() => ({ name: CLIENT, description: '', branding: {} }))
 }
 
+// Renders the manifest.json template with the current client's branding.
+// Used both in dev (middleware below) and build (closeBundle hook).
+function renderManifest(biz) {
+  const name = biz.name || CLIENT
+  const shortName = biz.shortName || name
+  const description = biz.description || ''
+  const themeColor = biz.branding?.themeColorLight || '#C45D3E'
+  const bgColor = biz.branding?.catalogBg || '#FFF8F0'
+  const favicon = biz.faviconUrl
+    || (biz.logoUrl ? `/clients/${CLIENT}/favicon.png` : '/favicon.svg')
+  return JSON.stringify({
+    name,
+    short_name: shortName,
+    description,
+    start_url: '/',
+    display: 'standalone',
+    background_color: bgColor,
+    theme_color: themeColor,
+    icons: [
+      { src: favicon, sizes: 'any', type: favicon.endsWith('.svg') ? 'image/svg+xml' : 'image/png' },
+      { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  }, null, 2)
+}
+
 function businessHtmlPlugin() {
   let biz
   return {
     name: 'business-html',
     async configResolved() {
       biz = await loadBusinessConfig()
+    },
+    // Dev mode: serve /manifest.json dynamically with the current client's data.
+    configureServer(server) {
+      server.middlewares.use('/manifest.json', (req, res, next) => {
+        if (req.method !== 'GET' || !biz) return next()
+        res.setHeader('Content-Type', 'application/manifest+json')
+        res.end(renderManifest(biz))
+      })
+    },
+    // Build mode: overwrite the static public/manifest.json copy with the
+    // rendered per-client version after Vite has written the dist folder.
+    closeBundle() {
+      if (!biz) return
+      const out = path.resolve(__dirname, 'dist/manifest.json')
+      try { fs.writeFileSync(out, renderManifest(biz)) } catch (_) { /* ignore */ }
     },
     transformIndexHtml(html) {
       if (!biz) return html

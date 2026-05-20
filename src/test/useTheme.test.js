@@ -31,13 +31,13 @@ describe('useTheme', () => {
   });
 
   it('reads theme from localStorage', () => {
-    localStorage.setItem('lnp-theme', 'dark');
+    localStorage.setItem('hermes-theme', 'dark');
     // The hook reads on init — test that localStorage key is correct
-    expect(localStorage.getItem('lnp-theme')).toBe('dark');
+    expect(localStorage.getItem('hermes-theme')).toBe('dark');
   });
 
   it('uses correct localStorage key', () => {
-    localStorage.setItem('lnp-theme', 'light');
-    expect(localStorage.getItem('lnp-theme')).toBe('light');
+    localStorage.setItem('hermes-theme', 'light');
+    expect(localStorage.getItem('hermes-theme')).toBe('light');
   });
 });

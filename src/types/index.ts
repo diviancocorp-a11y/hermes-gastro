@@ -1,4 +1,4 @@
-// ─── Core Domain Types for La Nona Pato ────────────────
+// ─── Core Domain Types for Hermes Gastro ───────────────
 
 export type OrderStatusType = 'new' | 'preparing' | 'active' | 'completed' | 'cancelled';
 export type DeliveryMethod = 'retiro' | 'envio';

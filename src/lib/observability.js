@@ -1,5 +1,5 @@
 /**
- * Observability layer for La Nona Pato.
+ * Observability layer for the Hermes Gastro platform.
  *
  * Provides error tracking and analytics without requiring Sentry SDK in the bundle.
  * When VITE_SENTRY_DSN is set, errors are reported via the Sentry Envelope API.
@@ -43,7 +43,7 @@ function buildSentryEnvelope(error, context = {}) {
     platform: 'javascript',
     level: 'error',
     environment: ENV,
-    release: `la-nona-pato@${APP_VERSION}`,
+    release: `hermes-gastro@${APP_VERSION}`,
     exception: {
       values: [{
         type: error.name || 'Error',

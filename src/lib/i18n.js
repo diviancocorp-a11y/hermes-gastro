@@ -1,5 +1,5 @@
 // src/lib/i18n.js
-// i18next configuration for La Nona Pato.
+// i18next configuration for the Hermes Gastro platform.
 // Default language: es-AR. Prepared for es-MX, es-CL, pt-BR, en-US.
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
@@ -44,7 +44,7 @@ i18n
 
     detection: {
       order: ['localStorage', 'navigator'],
-      lookupLocalStorage: 'lnp-lang',
+      lookupLocalStorage: 'hermes-lang',
       caches: ['localStorage'],
     },
   });

@@ -227,7 +227,7 @@ describe('SettingsInputSchema', () => {
 
   it('acepta settings completos', () => {
     valid(SettingsInputSchema, {
-      id: 1, biz_name: 'La Nona Pato', logo_letter: 'N', logo_color: '#C45D3E',
+      id: 1, biz_name: 'Test Bakery', logo_letter: 'T', logo_color: '#C45D3E',
       store_open: true, hidden_cats: ['Combos'], cat_images: { Tortas: 'url' },
     });
   });
@@ -395,6 +395,4 @@ describe('validateInput', () => {
   it('retorna errores descriptivos con path', () => {
     const result = validateInput(OrderInputSchema, { customer: '', phone: '123', delivery: 'xxx', payment: 'xxx', items: [] }, 'test');
     expect(result.ok).toBe(false);
-    expect(result.errors.some(e => e.includes('customer'))).toBe(true);
-  });
-});
+    expect(result.errors.some(e => e.includes('customer'
