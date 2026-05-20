@@ -20,7 +20,7 @@ test.describe('Order flow (customer)', () => {
     await expect(addBtn).toBeVisible({ timeout: 15_000 })
     await addBtn.click()
 
-    // 2. Open cart FAB → click "Continuar" in modal → checkout stepper
+    // 2. Open cart FAB → "Continuar" → checkout stepper
     const fab = page.getByTestId('cart-fab')
     await expect(fab).toBeVisible({ timeout: 10_000 })
     await fab.click()
@@ -28,14 +28,33 @@ test.describe('Order flow (customer)', () => {
     await expect(cartContinue).toBeVisible({ timeout: 5_000 })
     await cartContinue.click()
 
-    // 3. Fill the datos step
+    // 3. Datos: nombre + teléfono
     await page.fill('input[placeholder*="ombre" i], input[name="name"]', customerName)
     await page.fill('input[placeholder*="el" i], input[type="tel"], input[name="phone"]', '1155001100')
 
-    // 4. Walk through stepper using data-testid="checkout-next" then "checkout-submit"
+    // 4. Schedule: SIEMPRE "Programar para después" — robusto a horario de tienda.
+    //    Algunos clientes tienen tienda cerrada en horario de CI, esto evita el bloqueo.
+    const scheduleLater = page.getByTestId('schedule-later')
+    await expect(scheduleLater).toBeVisible({ timeout: 5_000 })
+    await scheduleLater.click()
+
+    // Elegir fecha: 7 días en el futuro (asegura caer en algún día abierto)
+    const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    const dateInput = page.getByTestId('schedule-date')
+    await expect(dateInput).toBeVisible({ timeout: 3_000 })
+    await dateInput.fill(futureDate)
+
+    // Elegir primera hora disponible en el select
+    const timeSelect = page.getByTestId('schedule-time')
+    await expect(timeSelect).toBeEnabled({ timeout: 5_000 })
+    const opts = await timeSelect.locator('option').allTextContents()
+    const firstHour = opts.find(o => /^\d{2}:00$/.test(o.trim()))
+    if (firstHour) await timeSelect.selectOption({ label: firstHour })
+
+    // 5. Walk through stepper
     for (let step = 0; step < 4; step++) {
       const next = page.getByTestId('checkout-next').first()
-      if (await next.isVisible().catch(() => false)) {
+      if (await next.isVisible().catch(() => false) && await next.isEnabled().catch(() => false)) {
         await next.click()
         await page.waitForTimeout(400)
       } else {
@@ -47,7 +66,7 @@ test.describe('Order flow (customer)', () => {
       await submit.click()
     }
 
-    // 5. Confirmation screen (animation or sent view)
+    // 6. Confirmation screen
     await expect(page.getByTestId('order-confirmation')).toBeVisible({ timeout: 20_000 })
   })
 

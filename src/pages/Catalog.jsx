@@ -590,8 +590,8 @@ export default function Catalog() {
           <div className="cks">
             <div className="ckl">📅 ¿Para cuándo?</div>
             <div className="cko">
-              <div className={`ckv ${scheduleMode === "now" && storeStatus.open ? "on" : ""}`} onClick={() => { if(!storeStatus.open) return; setScheduleMode("now"); sf("delivery_date", ""); sf("delivery_time", ""); }} style={!storeStatus.open ? {opacity:0.4, pointerEvents:"none", textDecoration:"line-through"} : {}}>Ahora</div>
-              <div className={`ckv ${scheduleMode === "later" ? "on" : ""}`} onClick={() => setScheduleMode("later")}>Programar</div>
+              <div data-testid="schedule-now" className={`ckv ${scheduleMode === "now" && storeStatus.open ? "on" : ""}`} onClick={() => { if(!storeStatus.open) return; setScheduleMode("now"); sf("delivery_date", ""); sf("delivery_time", ""); }} style={!storeStatus.open ? {opacity:0.4, pointerEvents:"none", textDecoration:"line-through"} : {}}>Ahora</div>
+              <div data-testid="schedule-later" className={`ckv ${scheduleMode === "later" ? "on" : ""}`} onClick={() => setScheduleMode("later")}>Programar</div>
             </div>
             {!storeStatus.open && <p style={{fontSize:12,color:"var(--rd)",margin:"6px 0 0 2px"}}>⏰ {storeStatus.msg}</p>}
             {storeStatus.open && storeStatus.msg && scheduleMode === "now" && <p style={{fontSize:11,color:"var(--gn)",margin:"4px 0 0 2px"}}>✓ {storeStatus.msg}</p>}
@@ -601,7 +601,7 @@ export default function Catalog() {
               <div style={{display:"flex",gap:10}}>
                 <div style={{flex:1}}>
                   <label style={{fontSize:11,fontWeight:700,color:"var(--t3)",marginBottom:4,display:"block"}}>Fecha</label>
-                  <input className="cki" type="date" value={form.delivery_date} min={minDate} onChange={e => {
+                  <input data-testid="schedule-date" className="cki" type="date" value={form.delivery_date} min={minDate} onChange={e => {
                     sf("delivery_date", e.target.value);
                     sf("delivery_time", ""); // resetear hora al cambiar fecha
                   }} style={{colorScheme:"light"}} />
@@ -609,6 +609,7 @@ export default function Catalog() {
                 <div style={{flex:1}}>
                   <label style={{fontSize:11,fontWeight:700,color:"var(--t3)",marginBottom:4,display:"block"}}>Hora de entrega</label>
                   <select
+                    data-testid="schedule-time"
                     className="cki"
                     value={form.delivery_time}
                     onChange={e => sf("delivery_time", e.target.value)}
