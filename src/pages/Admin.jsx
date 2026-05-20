@@ -33,7 +33,6 @@ export default function Admin() {
   // Feature flags
   const ffInvoice = useFeature('E_INVOICE');
   const ffPush = useFeature('PUSH_NOTIFICATIONS');
-  const ffReferral = useFeature('REFERRAL');
 
   const msg = useCallback(m => { setToast(m); setTimeout(() => setToast(""), 2200); }, []);
 

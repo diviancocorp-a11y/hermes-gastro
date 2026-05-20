@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon, formatInt, optimizeImage, originalImageUrl, disableImageTransforms, probeImageTransforms } from "../lib/utils";
 import { preloadImages } from "../lib/preloadImages";
@@ -57,9 +57,7 @@ export default function Catalog() {
   const [faqOpen, setFaqOpen] = useState(null); // índice de FAQ abierta
   const [receiptFile, setReceiptFile] = useState(null); // comprobante subido
   const [receiptPreview, setReceiptPreview] = useState(null);
-  const [verifyingReceipt, setVerifyingReceipt] = useState(false);
   const [receiptStatus, setReceiptStatus] = useState(""); // "" | "ok" | "error"
-  const [guestMode, setGuestMode] = useState(true); // invitado por defecto
   // waitingReceipt / waitTimer removed in FASE 3 cleanup. The 60s verification
   // window was replaced by direct "Pedido enviado" — Mercado Pago will
   // eventually handle payment validation via pasarela instead of this poll.
@@ -315,13 +313,13 @@ export default function Catalog() {
   }, [cart]);
 
   // Totales del carrito (memoizado)
-  const { cc, ctBase, discount, ct, ctWithDelivery } = useMemo(() => {
+  const { cc, discount, ct, ctWithDelivery } = useMemo(() => {
     const cc = cart.reduce((s, i) => s + i.qty, 0);
     const ctBase = cart.reduce((s, i) => s + i.qty * i.price, 0);
     const discount = coupon ? Math.round(ctBase * coupon.discount_pct / 100) : 0;
     const ct = ctBase - discount;
     const ctWithDelivery = ct + (form.delivery === "envio" ? deliveryCost : 0);
-    return { cc, ctBase, discount, ct, ctWithDelivery };
+    return { cc, discount, ct, ctWithDelivery };
   }, [cart, coupon, deliveryCost, form.delivery]);
 
   const applyCoupon = async () => {
