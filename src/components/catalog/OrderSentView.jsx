@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Icon, formatInt, formatOrderCode } from "../../lib/utils";
+import { Icon, formatOrderCode } from "../../lib/utils";
 import { waLink } from "@business";
 import ReviewForm from "./ReviewForm";
 
@@ -8,7 +8,7 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset }) {
   const wasPaidDigital = form.payment === "transferencia" || form.payment === "mercadopago";
 
   return (
-    <div className="po" style={{ zIndex: 250 }}>
+    <div className="po" data-testid="order-confirmation" style={{ zIndex: 250 }}>
       <div className="success">
         <div className="suc-ic">{Icon.check({ size: 40, color: "#fff" })}</div>
         <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 28 }}>¡Pedido confirmado!</h2>

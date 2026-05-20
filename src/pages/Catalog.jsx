@@ -645,7 +645,7 @@ export default function Catalog() {
             </div>
           )}
 
-          <button className="abtn ck-next" disabled={!canNext0 || (scheduleMode === "now" && !storeStatus.open) || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time))} onClick={goNext}>Siguiente →</button>
+          <button className="abtn ck-next" data-testid="checkout-next" disabled={!canNext0 || (scheduleMode === "now" && !storeStatus.open) || (scheduleMode === "later" && (!form.delivery_date || !form.delivery_time))} onClick={goNext}>Siguiente →</button>
         </>}
 
         {/* ─── PASO 1: ENTREGA ─── */}
@@ -808,7 +808,7 @@ export default function Catalog() {
             </div>
           )}
 
-          <button className="abtn ck-next" disabled={!canNext1} onClick={goNext}>Siguiente →</button>
+          <button className="abtn ck-next" data-testid="checkout-next" disabled={!canNext1} onClick={goNext}>Siguiente →</button>
         </>}
 
         {/* ─── PASO 2: PAGO ─── */}
@@ -993,7 +993,7 @@ export default function Catalog() {
             )}
           </div>}
 
-          <button className="abtn ck-next" disabled={!canNext2 || (needsReceipt && !receiptFile)} onClick={goNext}>
+          <button className="abtn ck-next" data-testid="checkout-next" disabled={!canNext2 || (needsReceipt && !receiptFile)} onClick={goNext}>
             {needsReceipt && !receiptFile ? "Subí el comprobante para continuar" : "Siguiente →"}
           </button>
         </>}
@@ -1048,7 +1048,7 @@ export default function Catalog() {
           </div>
 
           {orderErr && <div style={{background:"#FFEBEE",color:"#C62828",fontSize:13,padding:"10px 14px",borderRadius:10,marginBottom:8,textAlign:"center"}}>{orderErr}</div>}
-          <button className="abtn ck-next" style={{background:"var(--gn, #3A7D44)"}} disabled={sending || ctWithDelivery === 0} onClick={send}>
+          <button className="abtn ck-next" data-testid="checkout-submit" style={{background:"var(--gn, #3A7D44)"}} disabled={sending || ctWithDelivery === 0} onClick={send}>
             {sending ? "Enviando..." : "✓ Confirmar Pedido"}
           </button>
         </>}
@@ -1094,7 +1094,7 @@ export default function Catalog() {
           <input className="cki" value={form.note} onChange={e => sf("note", e.target.value)} placeholder="Ej: Sin azúcar, sin cebolla, para las 15hs..." />
         </div>
 
-        <button className="abtn" style={{ width: "100%" }} disabled={cc === 0 || ct === 0} onClick={() => { setShowCart(false); setShowCk(true); }}>Continuar</button>
+        <button className="abtn" data-testid="cart-continue" style={{ width: "100%" }} disabled={cc === 0 || ct === 0} onClick={() => { setShowCart(false); setShowCk(true); }}>Continuar</button>
       </div>
     </div>
   );
@@ -1305,7 +1305,7 @@ export default function Catalog() {
 
       {/* Carrito Flotante "Pedix Style" */}
       {cc > 0 && (
-        <div className="pedix-cart-btn" onClick={() => setShowCart(true)}>
+        <div className="pedix-cart-btn" data-testid="cart-fab" onClick={() => setShowCart(true)}>
           <div className="pcb-qty">{cc}</div>
           <div className="pcb-text">Ver pedido</div>
           <div className="pcb-price">${formatInt(ct)}</div>

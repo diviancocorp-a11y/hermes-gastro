@@ -29,7 +29,7 @@ const ProductCard = memo(function ProductCard({ p, qty, hasDeal, dealPrice, orig
               <button aria-label="Agregar uno más" onClick={(e) => onAdd(p, e)}>{Icon.plus({size:14})}</button>
             </div>
           ) : (
-            <button className="btn-add" aria-label={`Agregar ${p.name} al carrito`} onClick={(e) => onAdd(p, e)}>{Icon.plus({size:16})}</button>
+            <button className="btn-add" data-testid="cart-add" aria-label={`Agregar ${p.name} al carrito`} onClick={(e) => onAdd(p, e)}>{Icon.plus({size:16})}</button>
           )}
         </div>
       </div>
@@ -44,14 +44,13 @@ const ProductCard = memo(function ProductCard({ p, qty, hasDeal, dealPrice, orig
           priority={priority}
         />
       ) : null}
-      {(!p.image_url || true) && (
-        <div className="prod-img prod-avatar" style={{
-          display: p.image_url ? 'none' : 'flex',
-          background: avatarColors[p.name.charCodeAt(0) % avatarColors.length]
-        }}>
-          {p.name.charAt(0)}
-        </div>
-      )}
+      {/* Avatar fallback: siempre renderiza, display lo controla con CSS según haya o no imagen */}
+      <div className="prod-img prod-avatar" style={{
+        display: p.image_url ? 'none' : 'flex',
+        background: avatarColors[p.name.charCodeAt(0) % avatarColors.length]
+      }}>
+        {p.name.charAt(0)}
+      </div>
     </div>
   );
 });

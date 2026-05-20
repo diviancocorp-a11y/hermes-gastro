@@ -3,7 +3,7 @@ import business from '@business';
 
 export default function ConfirmationAnimation() {
   return (
-    <div style={{ position:"fixed",inset:0,background:"#C45D3E",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",zIndex:250 }}>
+    <div data-testid="order-confirmation" style={{ position:"fixed",inset:0,background:"#C45D3E",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",zIndex:250 }}>
       <style>{`
         @keyframes heartBounce {
           0% { transform: scale(0) rotate(-15deg); opacity:0; }
