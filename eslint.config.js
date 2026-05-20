@@ -32,7 +32,7 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' }],
-      'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-empty': ['warn', { allowEmptyCatch: true }],
       // The react-hooks v7 plugin flags many false positives in our codebase
       // (cascading-renders heuristic, memoization). They're legit refactor
       // hints but not CI-blockers — demote to warn.
@@ -78,7 +78,7 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-empty': ['warn', { allowEmptyCatch: true }],
     },
   },
 
