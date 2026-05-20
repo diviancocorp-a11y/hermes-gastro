@@ -65,7 +65,28 @@ for (const file of files) {
 
   const ext = extname(file).toLowerCase();
 
-  // 3) JSON válido
+  // 3) JSX dentro de .js → Vite no lo procesa, build de Vercel rompe
+  // Detectamos tags JSX típicos. Heurística conservadora para evitar falsos positivos
+  // (comparaciones `a < b`, template strings con HTML).
+  if (ext === '.js') {
+    const src = buf.toString('utf-8');
+    // Excluir comments (// ... y /* ... */)
+    const stripped = src
+      .replace(/\/\/.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+    const jsxPatterns = [
+      /<[A-Z][A-Za-z0-9]*[\s/>]/,                                          // <Component
+      /<(div|span|button|input|img|a|p|h[1-6]|ul|li|form|section|article|nav|header|footer|main|aside|label|select|textarea|table|tr|td|th|tbody|thead|svg|path|g|rect|circle|line|polyline|polygon)[\s/>]/, // <tagHTML
+      /<\/[A-Za-z]/,                                                       // </Anything (cierre JSX)
+    ];
+    if (jsxPatterns.some((re) => re.test(stripped))) {
+      console.error(`✗ ${file}: contiene JSX en .js — renombrar a .jsx (Vite no compila JSX en .js, Vercel rompe)`);
+      errors++;
+      continue;
+    }
+  }
+
+  // 4) JSON válido
   if (ext === '.json') {
     try {
       JSON.parse(buf.toString('utf-8'));
@@ -82,7 +103,7 @@ for (const file of files) {
       execSync(`node --check "${file}"`, { stdio: 'pipe' });
     } catch (e) {
       const msg = (e.stderr?.toString() || e.message).split('\n').slice(0, 4).join('\n');
-      console.error(`✗ ${file}: error de sintaxis JS\n${msg}`);
+      console.error(`\u2717 ${file}: error de sintaxis JS\n${msg}`);
       errors++;
     }
     continue;
@@ -90,14 +111,13 @@ for (const file of files) {
 }
 
 if (errors > 0) {
-  console.error(`\n✖ Pre-commit: ${errors} archivo(s) con problemas de integridad.`);
-  console.error(`  ${fixMode ? 'No se pudieron auto-arreglar' : 'Corregilos antes de commitear'} (típicamente: cerrar líneas truncadas o quitar NULL bytes).`);
+  console.error(`\n\u2716 Pre-commit: ${errors} archivo(s) con problemas de integridad.`);
+  console.error(`  ${fixMode ? 'No se pudieron auto-arreglar' : 'Corregilos antes de commitear'} (t\u00edpicamente: cerrar l\u00edneas truncadas o quitar NULL bytes).`);
   process.exit(1);
 }
 
 if (fixed > 0) {
-  console.log(`\n↻ Pre-commit: ${fixed} archivo(s) auto-arreglado(s), ${files.length - fixed} ya estaban OK.`);
-  // Re-stagear los archivos que tocamos para que la fix entre en el commit
+  console.log(`\n\u21bb Pre-commit: ${fixed} archivo(s) auto-arreglado(s), ${files.length - fixed} ya estaban OK.`);
   if (fixMode) {
     const list = files.slice(0, fixed).join(' ');
     try {
@@ -105,6 +125,6 @@ if (fixed > 0) {
     } catch { /* ignorar si no estamos en repo o el add falla */ }
   }
 } else {
-  console.log(`✓ Pre-commit: ${files.length} archivo(s) sin problemas de integridad.`);
+  console.log(`\u2713 Pre-commit: ${files.length} archivo(s) sin problemas de integridad.`);
 }
 process.exit(0);
