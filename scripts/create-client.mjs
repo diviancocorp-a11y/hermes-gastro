@@ -309,22 +309,26 @@ async function main() {
   Próximos pasos:
   1. cd ${ROOT}
   2. npm install
-  3. Crear proyecto Supabase nuevo (sa-east-1 si es ARG) y sembrar schema
-  4. ⚠️  Habilitar Realtime en la publication (SI NO, el admin no recibe
-        notificaciones de pedido nuevo ni cambios de estado):
 
-        ALTER PUBLICATION supabase_realtime ADD TABLE
-          public.orders, public.order_items, public.recipes,
-          public.ingredients, public.recipe_ingredients, public.sales,
-          public.expenses, public.purchases, public.waste_log,
-          public.coupons, public.settings;
-
-  5. Crear proyecto Vercel nuevo apuntando al repo con env vars:
+  3. Crear proyecto Supabase nuevo (sa-east-1 si es ARG).
+  4. En el SQL Editor del proyecto nuevo, pegar y ejecutar el contenido de:
+        supabase/migrations/000_initial_schema.sql
+     (es idempotente — tablas, RLS, policies, funciones, views, triggers,
+      buckets, realtime publication y seed limpio en una sola pasada).
+  5. Deploy de las 5 edge functions:
+        supabase functions deploy submit-order validate-coupon admin-reset \\
+          notify-whatsapp notify-new-customer --project-ref <new-ref>
+  6. En settings agregar nombre y URL del cliente:
+        UPDATE settings SET store_name='${name}', app_url='https://${slugForBusiness}.vercel.app' WHERE id=1;
+  7. Crear proyecto Vercel nuevo apuntando al repo con env vars:
         CLIENT=${slugForBusiness}
         VITE_SUPABASE_URL=<url del nuevo proyecto Supabase>
         VITE_SUPABASE_ANON_KEY=<publishable key del nuevo Supabase>
-  6. CLIENT=${slugForBusiness} npm run dev
-  7. Acceder al panel admin para ajustar productos y recetas
+  8. CLIENT=${slugForBusiness} npm run dev
+  9. Acceder al panel admin para cargar el primer admin user (vía Supabase
+     dashboard → Authentication → Add user) y empezar a cargar el catálogo.
+
+  Documentación del schema: SCHEMA.md (organizado por dominio).
   `);
 }
 
