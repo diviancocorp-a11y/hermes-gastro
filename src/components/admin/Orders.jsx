@@ -178,7 +178,7 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
           {/* Imagen del comprobante */}
           <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",minHeight:200}}>
             {url ? (
-              isImg ? <img src={url} alt="Comprobante" style={{maxWidth:"100%",maxHeight:"60vh",borderRadius:12,boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}} />
+              isImg ? <img src={url} alt="Comprobante" loading="lazy" decoding="async" style={{maxWidth:"100%",maxHeight:"60vh",borderRadius:12,boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}} />
               : <a href={url} target="_blank" rel="noopener noreferrer" style={{padding:"20px 32px",background:"rgba(255,255,255,0.15)",borderRadius:14,color:"#fff",fontSize:15,fontWeight:600,textDecoration:"none"}}>📄 Abrir PDF del comprobante</a>
             ) : <div style={{color:"rgba(255,255,255,0.5)",fontSize:14}}>No se pudo cargar el comprobante</div>}
           </div>

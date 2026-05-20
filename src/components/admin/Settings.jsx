@@ -67,7 +67,7 @@ function Settings({settings,setSettings,showToast,onBack,onExport,onCategories})
           <label className="fl">Logo</label>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div style={{width:56,height:56,borderRadius:16,overflow:"hidden",background:s.logo_url?"transparent":(s.logo_color||"#C45D3E"),display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:24,fontWeight:700,fontFamily:"'DM Serif Display',serif",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,0.12)"}}>
-              {s.logo_url?<img src={s.logo_url} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display='none'}}/>:(s.logo_letter||"N")}
+              {s.logo_url?<img src={s.logo_url} alt="logo" loading="lazy" decoding="async" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display='none'}}/>:(s.logo_letter||"N")}
             </div>
             <div style={{flex:1}}>
               <label style={{display:"inline-block",padding:"7px 14px",background:"var(--pr,#C45D3E)",color:"#fff",borderRadius:10,fontSize:12,fontWeight:600,cursor:"pointer",textAlign:"center"}}>
@@ -125,7 +125,7 @@ function Settings({settings,setSettings,showToast,onBack,onExport,onCategories})
                 {isHidden?<span style={{color:"var(--t3)"}}>{Icon.eyeOff({size:16})}</span>:<span style={{color:"var(--gn)"}}>{Icon.eye({size:16})}</span>}
               </button>}
               <div style={{width:60,height:42,borderRadius:10,overflow:"hidden",background:"var(--b2)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                {img?<img src={img} alt={name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                {img?<img src={img} alt={name} loading="lazy" decoding="async" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                 :<span style={{fontSize:11,color:"var(--t3)"}}>Sin img</span>}
               </div>
               <div style={{flex:1,minWidth:0}}>

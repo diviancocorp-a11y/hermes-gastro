@@ -73,7 +73,7 @@ export default function Admin() {
       <div className="hd">
         <div className="hd-l" style={{ background: sett.logo_url ? "transparent" : (sett.logo_color || DEF.logo_color), overflow: "hidden", padding: 0 }}>
           {sett.logo_url
-            ? <img src={sett.logo_url} alt="logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = 'none' }} />
+            ? <img src={sett.logo_url} alt="logo" loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = 'none' }} />
             : (sett.logo_letter || DEF.logo_letter)}
         </div>
         <div><div className="hd-t">{sett.biz_name || DEF.biz_name}</div><div className="hd-s">Gestión Operativa</div></div>
