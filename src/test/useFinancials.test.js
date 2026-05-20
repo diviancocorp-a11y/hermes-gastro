@@ -40,9 +40,9 @@ const monthSales = [
 ];
 
 const monthExpenses = [
-  { id: 'e1', date: '2026-04-05', amount: 500, description: 'Gas' },
-  { id: 'e2', date: '2026-04-08', amount: 300, description: 'Luz' },
-  { id: 'e3', date: '2026-03-20', amount: 1000, description: 'Old' }, // prev month
+  { id: 'e1', date: '2026-04-05', amount: 500, description: 'Gas', expense_type: 'fixed' },
+  { id: 'e2', date: '2026-04-08', amount: 300, description: 'Luz', expense_type: 'fixed' },
+  { id: 'e3', date: '2026-03-20', amount: 1000, description: 'Old', expense_type: 'fixed' }, // prev month
 ];
 
 const baseOrders = [
@@ -67,6 +67,7 @@ function renderFinancials(overrides = {}) {
     exps: monthExpenses,
     orders: baseOrders,
     waste: baseWaste,
+    settings: { waste_pct: 0 }, // tests use raw costs (no waste factor)
     ...overrides,
   }));
 }
@@ -150,18 +151,18 @@ describe('useFinancials', () => {
   });
 
   describe('monthProfit', () => {
-    it('equals sales minus expenses', () => {
+    it('equals sales minus production cost, expenses and waste', () => {
       const { result } = renderFinancials();
-      // 3500 - 800 = 2700
-      expect(result.current.monthProfit).toBe(2700);
+      // sales 3500 − prodCost 860 (200+80+100*3) − exps 800 − waste 380 = 1460
+      expect(result.current.monthProfit).toBe(1460);
     });
   });
 
   describe('profitMargin', () => {
     it('calculates margin including waste', () => {
       const { result } = renderFinancials();
-      // (3500 - 800 - 380) / 3500 * 100 = 66.28...%
-      expect(result.current.profitMargin).toBeCloseTo(66.29, 0);
+      // 1460 / 3500 * 100 ≈ 41.71%
+      expect(result.current.profitMargin).toBeCloseTo(41.71, 0);
     });
 
     it('returns 0 when no sales', () => {

@@ -170,4 +170,6 @@ describe('useStoreStatus', () => {
 
   it('returns always-open when no store_hours configured', () => {
     const { result } = renderHook(() => useStoreStatus({}, new Date()));
-    expect(result.current.storeStatus.open).to
+    expect(result.current.storeStatus.open).toBe(true);
+  });
+});

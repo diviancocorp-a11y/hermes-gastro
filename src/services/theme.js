@@ -39,6 +39,8 @@ export async function fetchActiveTheme() {
   } catch {
     cachedTheme = { ...DEFAULT_THEME };
   }
+  // Always merge derived dark palette so callers get a complete theme
+  cachedTheme = { ...deriveDarkPalette(cachedTheme), ...cachedTheme };
   return cachedTheme;
 }
 

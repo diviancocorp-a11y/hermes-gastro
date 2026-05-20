@@ -3,9 +3,14 @@
 import { defineConfig, devices } from '@playwright/test'
 import fs from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+// __dirname does not exist in ESM scope — derive it from import.meta.url.
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // Auto-load .env.e2e (gitignored) so `npx playwright test` works without
-// needing to `source .env.e2e` first. CI sets the vars via repo secrets.
+// `source .env.e2e`. CI sets the vars via repo secrets.
 function loadDotenvE2E() {
   const p = path.resolve(__dirname, '.env.e2e')
   if (!fs.existsSync(p)) return

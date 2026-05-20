@@ -395,4 +395,6 @@ describe('validateInput', () => {
   it('retorna errores descriptivos con path', () => {
     const result = validateInput(OrderInputSchema, { customer: '', phone: '123', delivery: 'xxx', payment: 'xxx', items: [] }, 'test');
     expect(result.ok).toBe(false);
-    expect(result.errors.some(e => e.includes('customer'
+    expect(result.errors.some(e => e.includes('customer'))).toBe(true);
+  });
+});

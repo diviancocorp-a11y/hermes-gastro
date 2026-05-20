@@ -325,8 +325,8 @@ async function main() {
         VITE_SUPABASE_URL=<url del nuevo proyecto Supabase>
         VITE_SUPABASE_ANON_KEY=<publishable key del nuevo Supabase>
   8. CLIENT=${slugForBusiness} npm run dev
-  9. Acceder al panel admin para cargar el primer admin user (vía Supabase
-     dashboard → Authentication → Add user) y empezar a cargar el catálogo.
+  9. Cargar el primer admin user vía Supabase Dashboard → Authentication →
+     Add user, y empezar a cargar el catálogo.
 
   Documentación del schema: SCHEMA.md (organizado por dominio).
   `);
