@@ -53,10 +53,10 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "eslint --max-warnings 200"
+      "eslint --fix --max-warnings 200"
     ],
     "*.{js,jsx,ts,tsx,mjs,cjs,json}": [
-      "node scripts/check-file-integrity.mjs"
+      "node scripts/check-file-integrity.mjs --fix"
     ]
   }
 }
