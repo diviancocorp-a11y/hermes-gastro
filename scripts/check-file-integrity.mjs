@@ -13,7 +13,7 @@
 // Pensado para correr desde el pre-commit hook sobre los archivos staged.
 // ─────────────────────────────────────────────────────────
 import { readFileSync, existsSync } from 'node:fs';
-import { extname, basename } from 'node:path';
+import { extname } from 'node:path';
 import { execSync } from 'node:child_process';
 
 const files = process.argv.slice(2);
@@ -48,7 +48,6 @@ for (const file of files) {
   }
 
   const ext = extname(file).toLowerCase();
-  const name = basename(file);
 
   // 3) JSON válido
   if (ext === '.json') {

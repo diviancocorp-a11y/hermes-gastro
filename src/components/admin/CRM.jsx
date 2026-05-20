@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Icon, formatInt, todayISO } from "../../lib/utils";
 import { fetchCustomerStats } from "../../lib/adminService";
 
-function CRM({orders,recipes,ingredients,showToast}){
+function CRM({orders,showToast}){
   const [customers,setCustomers]=useState([]);const [loading,setLoading]=useState(true);const [search,setSearch]=useState("");
   const [crmPage,setCrmPage]=useState(1);const CRM_PER_PAGE=30;
   useEffect(()=>{fetchCustomerStats().then(c=>{setCustomers(c);setLoading(false);});},[]);

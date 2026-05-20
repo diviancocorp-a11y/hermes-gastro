@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Icon, formatInt, formatMoney, todayISO, formatOrderCode } from "../../lib/utils";
+import { Icon, formatInt, todayISO, formatOrderCode } from "../../lib/utils";
 import {
-  createExpense, deleteExpense,
+  createExpense,
   createSale,
   upsertIngredient, updateIngredientStock
 } from "../../lib/adminService";
@@ -168,7 +168,7 @@ function ExpForm({ onClose, onSave, settings }) {
 }
 
 // ═══════ PURCHASE ═══════
-function Purchase({ ingredients, setIngredients, expenses, setExpenses, settings, onClose, showToast, loadAll }) {
+function Purchase({ ingredients, setIngredients, setExpenses, settings, onClose, showToast, loadAll }) {
   const [sup, setSup] = useState("");
   const [date, setDate] = useState(todayISO());
   const [items, setItems] = useState([]);
@@ -330,7 +330,7 @@ function Purchase({ ingredients, setIngredients, expenses, setExpenses, settings
 }
 
 // ═══════ SALES ═══════
-function SalesView({ sales, setSales, orders, recipes, calculateRecipeCost, overlay, setOverlay, showToast }) {
+function SalesView({ sales, setSales, orders, recipes, overlay, setOverlay, showToast }) {
   const monthStart = todayISO().slice(0, 7) + "-01";
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(null);

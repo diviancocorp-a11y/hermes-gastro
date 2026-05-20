@@ -3,7 +3,7 @@ import { Icon, formatInt, todayISO, OrderStatus } from "../../lib/utils";
 
 const Analytics = lazy(() => import("./Analytics"));
 
-function Home({lowStockIngredients,monthSales,monthExpenses,monthWasteCost,monthProfit,profitMargin,monthProductionCost,wastePct,monthFixedExpenses,monthVariableExpenses,monthGrossMargin,grossMarginPct,sales,orders,recipes,ingredients,calculateRecipeCost,activeOrders,settings,waste,onStock,onPurchase,onOrders,onExp}){
+function Home({lowStockIngredients,monthSales,monthWasteCost,monthProfit,profitMargin,monthProductionCost,wastePct,monthFixedExpenses,monthVariableExpenses,monthGrossMargin,grossMarginPct,sales,orders,recipes,ingredients,calculateRecipeCost,activeOrders,settings,waste,onStock,onOrders,onExp}){
   const [showDetail,setShowDetail]=useState(false);
   const [showAnalytics,setShowAnalytics]=useState(false);
   // Indicador de calibración: si la merma cargada supera la proyectada, sugerir subir el %
