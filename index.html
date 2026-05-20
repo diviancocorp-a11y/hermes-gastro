@@ -25,13 +25,23 @@
     <link rel="preconnect" href="<!-- __BIZ_SUPABASE_URL__ -->" crossorigin />
     <link rel="dns-prefetch" href="<!-- __BIZ_SUPABASE_URL__ -->" />
 
-    <!-- Preload fuente principal para evitar FOUT -->
+    <!-- Google Fonts: preconnect + preload de la CSS para evitar FOUT -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload"
+          href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap"
+          as="style"
+          onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript>
+      <link rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap" />
+    </noscript>
+
     <!-- Structured Data -->
     <script type="application/ld+json">
     <!-- __BIZ_STRUCTURED_DATA__ -->
     </script>
+
     <!-- Prevent FOUC: apply dark mode before paint -->
     <script>
       (function(){

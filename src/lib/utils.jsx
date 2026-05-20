@@ -107,19 +107,37 @@ export function resetImageTransforms() {
   _transformsAvailable = null;
 }
 
-export const optimizeImage = (url, { width, height, quality = 75 } = {}) => {
+export const optimizeImage = (url, { width, height, quality = 75, format } = {}) => {
   if (!url || typeof url !== 'string') return url;
-  // Solo transformar URLs de Supabase Storage
   if (!url.includes('/storage/v1/object/public/')) return url;
-  // If transforms are disabled, return original URL directly
   if (_transformsAvailable !== true && _transformsAvailable !== null) return url;
   let out = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
   const params = [];
   if (width) params.push(`width=${width}`);
   if (height) params.push(`height=${height}`);
   params.push(`quality=${quality}`);
+  // Supabase Image Transformation soporta format=avif|webp|origin
+  // Por default Supabase autodetecta el mejor formato vía Accept header.
+  // Pasar explícitamente solo cuando el caller lo requiere.
+  if (format) params.push(`format=${format}`);
   return out + '?' + params.join('&');
 };
+
+/**
+ * Devuelve un srcSet con AVIF + WebP + JPEG para uso con <picture>.
+ * Uso:
+ *   const sources = optimizeImageSources(url, { width: 300 });
+ *   <picture>
+ *     <source type="image/avif" srcSet={sources.avif} />
+ *     <source type="image/webp" srcSet={sources.webp} />
+ *     <img src={sources.fallback} alt="..." />
+ *   </picture>
+ */
+export const optimizeImageSources = (url, opts = {}) => ({
+  avif: optimizeImage(url, { ...opts, format: 'avif' }),
+  webp: optimizeImage(url, { ...opts, format: 'webp' }),
+  fallback: optimizeImage(url, opts),
+});
 
 /** Convert a render/image URL back to the original object/public URL. */
 export const originalImageUrl = (url) => {

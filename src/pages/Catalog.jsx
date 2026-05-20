@@ -9,6 +9,10 @@ import business, { waLink } from "@business";
 
 // ── Extracted components ──
 import ProductCard from "../components/catalog/ProductCard";
+import CatalogSkeleton from "../components/catalog/CatalogSkeleton";
+import EmptyState from "../components/catalog/EmptyState";
+import CatalogSearch from "../components/catalog/CatalogSearch";
+import { useToast } from "../hooks/useToast";
 import PushBanner from "../components/catalog/PushBanner";
 import ConfirmationAnimation from "../components/catalog/ConfirmationAnimation";
 import OrderSentView from "../components/catalog/OrderSentView";
@@ -37,6 +41,8 @@ export default function Catalog() {
   const [sett, setSett] = useState(fallbackSettings);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { toast, ToastContainer } = useToast();
   const [error, setError] = useState(null);
   const [serverNow, setServerNow] = useState(null); // hora del servidor para validar horarios
   const [catGroups, setCatGroups] = useState(FALLBACK_CAT_GROUPS);
@@ -297,11 +303,20 @@ export default function Catalog() {
 
   // Filtrar productos por categoría madre seleccionada
   const filteredProds = useMemo(() => {
-    if (selCat === "Todos") return products;
-    const group = catGroups.find(g => g.name === selCat);
-    if (!group) return products;
-    return products.filter(r => group.subs.includes(r.category));
-  }, [selCat, products]);
+    let list = products;
+    if (selCat !== "Todos") {
+      const group = catGroups.find(g => g.name === selCat);
+      if (group) list = list.filter(r => group.subs.includes(r.category));
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(r =>
+        r.name?.toLowerCase().includes(q) ||
+        r.description?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [selCat, products, searchQuery, catGroups]);
 
   // avatarColors: definido fuera del componente como constante estática
 
@@ -340,6 +355,7 @@ export default function Catalog() {
   const addC = useCallback((p, e) => {
     e.stopPropagation();
     const finalPrice = getPrice(p);
+    toast(`✓ ${p.name} agregado`);
     setCart(prev => {
       const isNewProduct = !prev.find(i => i.id === p.id);
       const newCart = isNewProduct
@@ -352,7 +368,7 @@ export default function Catalog() {
       }
       return newCart;
     });
-  }, [products, getPrice]);
+  }, [products, getPrice, toast]);
 
   // Agregar desde upsell y cerrar popup (memoizado)
   const addFromUpsell = useCallback((p) => {
@@ -481,14 +497,7 @@ export default function Catalog() {
   }, [confirmAnim]);
 
   // --- VISTA: CARGANDO ---
-  if (loading) return (
-    <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ width: 60, height: 60, borderRadius: 18, background: "#C45D3E", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Serif Display',serif", fontSize: 28, margin: "0 auto 16px" }}>N</div>
-        <p style={{ color: "var(--t3)", fontSize: 15 }}>Cargando catálogo...</p>
-      </div>
-    </div>
-  );
+  if (loading) return <CatalogSkeleton />;
 
   // --- VISTA: ANIMACIÓN DE CONFIRMACIÓN ---
   if (confirmAnim) return <ConfirmationAnimation />;
@@ -1281,9 +1290,20 @@ export default function Catalog() {
         </div>
       )}
 
+      {/* Buscador (visible solo si hay >=15 productos) */}
+      <CatalogSearch value={searchQuery} onChange={setSearchQuery} totalProducts={products.length} />
+
       {/* Lista de Productos (memoized cards) */}
       <div className="prod-list">
-        {filteredProds.map(p => (
+        {filteredProds.length === 0 ? (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <EmptyState
+              icon={searchQuery ? "🔍" : "🍽️"}
+              title={searchQuery ? "Sin resultados" : "No hay productos en esta categoría"}
+              hint={searchQuery ? `No encontramos "${searchQuery}". Probá con otra palabra.` : "Pronto vamos a sumar más. Mientras tanto, mirá otras categorías."}
+            />
+          </div>
+        ) : filteredProds.map(p => (
           <ProductCard
             key={p.id}
             p={p}
@@ -1371,6 +1391,7 @@ export default function Catalog() {
         </div>
         <p className="footer-copy">Copyright © {business.legal.copyrightYear} {sett.biz_name || business.name}. Todos los derechos reservados.</p>
       </footer>
+      <ToastContainer />
     </div>
   );
 }
