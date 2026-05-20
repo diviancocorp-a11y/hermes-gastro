@@ -12,7 +12,6 @@ import ProductCard from "../components/catalog/ProductCard";
 import ReviewsList from "../components/catalog/ReviewsList";
 import PushBanner from "../components/catalog/PushBanner";
 import ConfirmationAnimation from "../components/catalog/ConfirmationAnimation";
-import VerificationScreen from "../components/catalog/VerificationScreen";
 import OrderSentView from "../components/catalog/OrderSentView";
 
 // ── Shared constants ──
@@ -63,8 +62,9 @@ export default function Catalog() {
   const [verifyingReceipt, setVerifyingReceipt] = useState(false);
   const [receiptStatus, setReceiptStatus] = useState(""); // "" | "ok" | "error"
   const [guestMode, setGuestMode] = useState(true); // invitado por defecto
-  const [waitingReceipt, setWaitingReceipt] = useState(false); // pantalla de espera post-envío
-  const [waitTimer, setWaitTimer] = useState(60); // countdown 60s
+  // waitingReceipt / waitTimer removed in FASE 3 cleanup. The 60s verification
+  // window was replaced by direct "Pedido enviado" — Mercado Pago will
+  // eventually handle payment validation via pasarela instead of this poll.
   const [geoLoading, setGeoLoading] = useState(false);
   const [deliveryCost, setDeliveryCost] = useState(0);
   const [deliveryKm, setDeliveryKm] = useState(null);
@@ -207,29 +207,8 @@ export default function Catalog() {
     if (!storeStatus.open && scheduleMode === "now") setScheduleMode("later");
   }, [storeStatus.open, showCk]);
 
-  // Countdown 60s para auto-confirmar pedido
-  useEffect(() => {
-    if (!waitingReceipt) return;
-    if (waitTimer <= 0) { setWaitingReceipt(false); setSent(true); return; }
-    const t = setTimeout(() => setWaitTimer(p => p - 1), 1000);
-    return () => clearTimeout(t);
-  }, [waitingReceipt, waitTimer]);
-
-  // Polling: chequear si el admin verificó el pedido (receipt_verified o status cambia de pendiente)
-  useEffect(() => {
-    if (!waitingReceipt || !orderId) return;
-    const iv = setInterval(async () => {
-      try {
-        const { data } = await supabase.from("orders").select("receipt_verified,status").eq("id", orderId).single();
-        if (data?.receipt_verified || (data?.status && data.status !== "pendiente" && data.status !== "pending")) {
-          clearInterval(iv);
-          setWaitingReceipt(false);
-          setSent(true);
-        }
-      } catch {}
-    }, 5000);
-    return () => clearInterval(iv);
-  }, [waitingReceipt, orderId]);
+  // FASE 3: the 60s countdown + receipt-verification poll were removed.
+  // Mercado Pago pasarela will replace this flow.
 
   // --- Cargar datos de Supabase al montar ---
   useEffect(() => {
@@ -517,9 +496,6 @@ export default function Catalog() {
 
   // --- VISTA: ANIMACIÓN DE CONFIRMACIÓN ---
   if (confirmAnim) return <ConfirmationAnimation />;
-
-  // --- VISTA: ESPERANDO VERIFICACIÓN ---
-  if (waitingReceipt) return <VerificationScreen paymentMethod={form.payment} waitTimer={waitTimer} />;
 
   // --- VISTA: PEDIDO ENVIADO ---
   if (sent) return <OrderSentView orderId={orderId} form={form} receiptFile={receiptFile} onReset={() => { setSent(false); setOrderId(null); setShowCk(false); }} />;

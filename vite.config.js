@@ -10,7 +10,6 @@ import { pathToFileURL } from 'url'
 const CLIENT = process.env.CLIENT || 'la-nona-pato'
 
 // ── Load .env.<CLIENT> into process.env so each client points to its own Supabase ──
-// In Vercel each project sets its own env vars, so this only matters locally.
 function loadClientEnv() {
   const envFile = path.resolve(__dirname, `.env.${CLIENT}`)
   if (!fs.existsSync(envFile)) return
@@ -30,14 +29,12 @@ loadClientEnv()
 // ── Load business config for HTML injection ─────────────────
 function loadBusinessConfig() {
   const configPath = path.resolve(__dirname, `clients/${CLIENT}/business.js`)
-  // Use file:// URL for dynamic import (works reliably on all platforms)
   return import(pathToFileURL(configPath).href)
     .then(mod => mod.default)
     .catch(() => ({ name: CLIENT, description: '', branding: {} }))
 }
 
 // Renders the manifest.json template with the current client's branding.
-// Used both in dev (middleware below) and build (closeBundle hook).
 function renderManifest(biz) {
   const name = biz.name || CLIENT
   const shortName = biz.shortName || name
@@ -68,7 +65,6 @@ function businessHtmlPlugin() {
     async configResolved() {
       biz = await loadBusinessConfig()
     },
-    // Dev mode: serve /manifest.json dynamically with the current client's data.
     configureServer(server) {
       server.middlewares.use('/manifest.json', (req, res, next) => {
         if (req.method !== 'GET' || !biz) return next()
@@ -76,31 +72,22 @@ function businessHtmlPlugin() {
         res.end(renderManifest(biz))
       })
     },
-    // Build mode: overwrite the static public/manifest.json copy with the
-    // rendered per-client version after Vite has written the dist folder.
     closeBundle() {
       if (!biz) return
       const out = path.resolve(__dirname, 'dist/manifest.json')
-      try { fs.writeFileSync(out, renderManifest(biz)) } catch (_) { /* ignore */ }
+      try { fs.writeFileSync(out, renderManifest(biz)) } catch (_) {}
     },
     transformIndexHtml(html) {
       if (!biz) return html
-
       const title = biz.tagline ? `${biz.name} — ${biz.tagline}` : biz.name
       const description = biz.description || ''
       const themeLight = biz.branding?.themeColorLight || '#C45D3E'
       const themeDark = biz.branding?.themeColorDark || '#1A1210'
       const locale = (biz.locale || 'es-AR').replace('-', '_')
       const ogImage = biz.branding?.ogImage || '/og-image.png'
-      // Favicon resolution priority:
-      //   1. business.faviconUrl (explicit per-client override, can be .svg or .png)
-      //   2. /clients/<CLIENT>/favicon.png if business.logoUrl is set (legacy convention)
-      //   3. /favicon.svg generic fallback
       const faviconSvg = biz.faviconUrl
         || (biz.logoUrl ? `/clients/${CLIENT}/favicon.png` : '/favicon.svg')
       const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
-
-      // Build structured data from business config
       const structuredData = JSON.stringify({
         '@context': 'https://schema.org',
         '@type': biz.schemaOrgType || 'Restaurant',
@@ -129,7 +116,6 @@ function businessHtmlPlugin() {
           closes: h.closes,
         })),
       }, null, 2)
-
       return html
         .replaceAll('<!-- __BIZ_TITLE__ -->', title)
         .replaceAll('<!-- __BIZ_DESCRIPTION__ -->', description)
@@ -164,13 +150,10 @@ export default defineConfig({
       reporter: ['text', 'text-summary'],
       include: ['src/lib/**', 'src/services/**', 'src/hooks/**', 'src/components/ui/**'],
       exclude: ['src/lib/supabase.js'],
-      thresholds: {
-        statements: 70,
-      },
+      thresholds: { statements: 70 },
     },
   },
   build: {
-    // Separar chunks para mejor caching (función requerida por Vite 8 / Rolldown)
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -179,11 +162,8 @@ export default defineConfig({
         },
       },
     },
-    // Subir límite de advertencia (evita ruido en CI)
     chunkSizeWarningLimit: 300,
-    // Target moderno para browsers actuales (más chico)
     target: 'es2020',
-    // Minificar CSS
     cssMinify: true,
   },
 })

@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ProductCard from '../components/catalog/ProductCard.jsx';
 import ConfirmationAnimation from '../components/catalog/ConfirmationAnimation.jsx';
-import VerificationScreen from '../components/catalog/VerificationScreen.jsx';
 import OrderSentView from '../components/catalog/OrderSentView.jsx';
+// VerificationScreen removed in FASE 3 (60s verification flow eliminated).
 
 describe('ProductCard', () => {
   const baseProps = {
@@ -77,27 +77,7 @@ describe('ConfirmationAnimation', () => {
   });
 });
 
-describe('VerificationScreen', () => {
-  it('shows digital payment message for transferencia', () => {
-    render(<VerificationScreen paymentMethod="transferencia" waitTimer={45} />);
-    expect(screen.getByText(/revisando tu comprobante/)).toBeInTheDocument();
-  });
-
-  it('shows cash payment message for efectivo', () => {
-    render(<VerificationScreen paymentMethod="efectivo" waitTimer={30} />);
-    expect(screen.getByText(/confirmando tu pedido/)).toBeInTheDocument();
-  });
-
-  it('displays countdown timer', () => {
-    render(<VerificationScreen paymentMethod="efectivo" waitTimer={42} />);
-    expect(screen.getByText(/42s/)).toBeInTheDocument();
-  });
-
-  it('shows duck emoji', () => {
-    render(<VerificationScreen paymentMethod="efectivo" waitTimer={60} />);
-    expect(screen.getByText('🦆')).toBeInTheDocument();
-  });
-});
+// VerificationScreen tests removed in FASE 3 — component deleted.
 
 describe('OrderSentView', () => {
   const baseProps = {

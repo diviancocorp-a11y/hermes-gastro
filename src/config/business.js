@@ -1,15 +1,4 @@
-// ⚠️  DEPRECATED — DO NOT USE THIS PATH
-// ═══════════════════════════════════════════════════════════════
-// Brand-specific config now lives in `clients/<CLIENT>/business.js`
-// and is resolved at build time via the Vite alias `@business`.
-//
-// Always import from '@business' instead of this path:
-//
-//   import business, { waLink, telLink, fullName } from '@business';
-//
-// This file is kept only as a defensive re-export to avoid breaking
-// older imports; it will be removed in a future cleanup. New code
-// MUST use `@business`.
-// ═══════════════════════════════════════════════════════════════
-
-export { default, waLink, telLink, fullName } from '@business';
+// DELETED in FASE 3 cleanup — the per-client business config lives in
+// `clients/<CLIENT>/business.js`, resolved at build time via the Vite alias
+// `@business`. This file no longer re-exports anything (no callers).
+// Run `git rm src/config/business.js` to remove from the repo.
