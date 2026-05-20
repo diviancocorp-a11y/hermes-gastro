@@ -110,7 +110,7 @@ jobs:
           name: dist
           path: dist/
       - name: Run E2E tests
-        run: npx playwright test --project=desktop
+        run: npx playwright test --project=chromium
         env:
           BASE_URL: http://localhost:4173
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
