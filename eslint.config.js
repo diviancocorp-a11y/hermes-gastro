@@ -39,6 +39,9 @@ export default defineConfig([
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',
       'react-hooks/refs': 'warn',
+      // Date.now() / Math.random() en useRef inicial son intencionales
+      // (capturar timestamp / id estable de montaje). El patrón es OK.
+      'react-hooks/purity': 'warn',
       'react-refresh/only-export-components': 'warn',
       'no-constant-binary-expression': 'warn',
     },
