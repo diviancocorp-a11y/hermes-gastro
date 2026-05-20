@@ -26,22 +26,33 @@ const TABLES = Object.keys(TABLE_KEYS);
  * Subscribe to Supabase Realtime for all admin-relevant tables.
  *
  * Why the auth gate: opening the WebSocket before the session is hydrated
- * causes the server to reject the connection ("WebSocket is closed before
- * the connection is established"). We wait until supabase-js reports a
- * session, then subscribe. Also reconnects on auth state changes (signIn /
- * token refresh) so the channel always uses a fresh access token.
+ * causes the server to reject the connection. We wait until supabase-js
+ * reports a session, then subscribe. We also call realtime.setAuth() with
+ * the user's access_token on every auth change, so RLS policies that depend
+ * on auth.uid() / auth.role() evaluate correctly in the Realtime context.
+ *
+ * Without setAuth(): the WS uses the anon key, RLS policies like
+ * `auth.uid() IS NOT NULL` fail, and INSERT events for anonymous orders
+ * (user_id=NULL) never reach the admin.
  */
 export function useRealtimeInvalidation() {
   const queryClient = useQueryClient();
   const [authReady, setAuthReady] = useState(false);
 
-  // Track auth readiness — gate the channel subscription on a valid session.
   useEffect(() => {
     let cancelled = false;
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!cancelled) setAuthReady(!!session);
+      if (cancelled) return;
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+      setAuthReady(!!session);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Re-autenticar Realtime en CADA cambio de auth (login, token refresh, signout)
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
       setAuthReady(!!session);
     });
     return () => { cancelled = true; subscription.unsubscribe(); };
@@ -50,11 +61,6 @@ export function useRealtimeInvalidation() {
   useEffect(() => {
     if (!authReady) return; // do NOT open WS without a session
 
-    // Single channel, single subscribe. The previous version retried on CLOSED
-    // and called removeChannel inside the subscribe callback — that triggers
-    // another CLOSED, which loops forever ("Maximum call stack size exceeded").
-    // Keep it simple: if the WS drops, the 5s polling fallback takes over.
-    // Supabase realtime auto-reconnects internally for transient drops.
     const channel = supabase.channel('cache-invalidation');
 
     TABLES.forEach((table) => {
@@ -72,7 +78,6 @@ export function useRealtimeInvalidation() {
 
     let logged = false;
     channel.subscribe((status, err) => {
-      // Log only the first transition for each channel — no recursion possible.
       if (logged) return;
       if (status === 'SUBSCRIBED') {
         logged = true;
