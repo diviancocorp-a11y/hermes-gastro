@@ -71,22 +71,21 @@ export default function LoginScreen({ onLogin }) {
         transition:"opacity 0.6s cubic-bezier(0.22,1,0.36,1)",
         overflow:"hidden",
       }}>
-        {/* Halo ámbar (radial gradient) */}
+        {/* Aro ámbar circular alrededor del logo */}
         <div style={{
           position:"absolute",
-          width:"min(120vw, 900px)",
-          height:"min(120vw, 900px)",
+          width:"min(90vw, 520px)",
+          height:"min(90vw, 520px)",
           borderRadius:"50%",
-          background:`radial-gradient(circle, ${AMBER}55 0%, ${AMBER}22 30%, ${AMBER}08 55%, transparent 75%)`,
-          filter:"blur(20px)",
+          border:`2px solid ${AMBER}`,
+          boxShadow:`0 0 24px ${AMBER}55, inset 0 0 24px ${AMBER}33`,
           animation:"hg-splash-halo 0.9s cubic-bezier(0.22,1,0.36,1) forwards",
           pointerEvents:"none",
         }} />
         <div style={{
           position:"relative",
-          maxWidth:"min(86vw, 460px)",
+          maxWidth:"min(78vw, 420px)",
           animation:"hg-splash-in 0.9s cubic-bezier(0.22,1,0.36,1) forwards",
-          filter:`drop-shadow(0 18px 56px ${AMBER}55)`,
         }}>
           <HermesMark as="logo" size={420} fallback="H" color={AMBER} style={{ maxWidth:"100%", height:"auto" }} />
         </div>
