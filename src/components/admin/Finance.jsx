@@ -142,10 +142,7 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
   const [voidReason, setVoidReason] = useState("");
   const [voiding, setVoiding] = useState(false);
   const [voidFilter, setVoidFilter] = useState("all"); // 'all' | 'voided' | 'active'
-  const [showAllMonths, setShowAllMonths] = useState(false);
 
-  // Base de la lista: mes actual o todos los meses, según el toggle
-  const listBase = showAllMonths ? expenses : monthExpenses;
 
   // Código corto compartido entre original anulado y su reversión
   const voidCode = (e) => {
@@ -169,7 +166,6 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
     if (!id) { showToast("No se encontró el movimiento vinculado"); return; }
     const target = expenses.find(x => x.id === id);
     if (!target) { showToast("Vinculado no disponible"); return; }
-    if ((target.date || "") < todayISO().slice(0, 7) + "-01") setShowAllMonths(true);
     setVoidFilter("all");
     setExpanded(id);
     setTimeout(() => {
@@ -219,16 +215,17 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
   };
 
   // Base: gastos del mes ordenados desc por fecha
-  const monthSorted = [...listBase].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const monthSorted = [...monthExpenses].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
   // Filtros aplicados (categoría + búsqueda + estado anulado)
   const filteredSorted = monthSorted.filter(e => {
     if (filterCat && (e.category || "Otros") !== filterCat) return false;
     if (!matchesSearch(e)) return false;
-    const isV = !!e.voided_at;
-    const isR = !!e.voids_expense_id;
-    if (voidFilter === "voided" && !isV && !isR) return false;
-    if (voidFilter === "active" && (isV || isR)) return false;
+    if (voidFilter === "voided") {
+      const isV = !!e.voided_at;
+      const isR = !!e.voids_expense_id;
+      if (!isV && !isR) return false;
+    }
     return true;
   });
 
@@ -324,6 +321,35 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
             overflowX: "auto", scrollbarWidth: "none",
             padding: "0 2px 4px",
           }}>
+            {/* Card "Anulados" al inicio del scroller — solo aparece si hay anulados/reversiones en el mes */}
+            {(() => {
+              const voidedCount = monthExpenses.filter(e => e.voided_at || e.voids_expense_id).length;
+              if (voidedCount === 0) return null;
+              const on = voidFilter === "voided";
+              return (
+                <button
+                  key="__voided__"
+                  type="button"
+                  onClick={() => setVoidFilter(on ? "all" : "voided")}
+                  className="ag-card"
+                  style={{
+                    padding: "8px 12px 8px 16px", minWidth: 110, flexShrink: 0,
+                    boxShadow: `inset 5px 0 0 var(--ag-c-orders), ${on ? "var(--ag-sh-md)" : "var(--ag-sh-sm)"}`,
+                    border: on ? "2px solid var(--ag-c-orders)" : undefined,
+                    background: on ? "var(--ag-c-orders-soft)" : "var(--ag-bg-card)",
+                    cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+                  }}
+                  title="Filtrar por movimientos de anulación (originales + reversiones)"
+                >
+                  <div style={{ fontSize: 10, color: "var(--ag-c-orders)", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    Anulados{on && " ✓"}
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ag-c-orders)" }}>
+                    {voidedCount}
+                  </div>
+                </button>
+              );
+            })()}
             {Object.entries(byC).sort((a, b) => b[1] - a[1]).map(([c, a]) => {
               const cc = colorForCategory(c);
               const active = filterCat === c;
@@ -356,44 +382,6 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
             })}
           </div>
         )}
-
-        {/* Filtro: Todos / Anulados / Activos + toggle de mes */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 0 10px", flexWrap: "wrap" }}>
-          {[
-            { id: "all",    label: "Todos" },
-            { id: "voided", label: "Anulados" },
-            { id: "active", label: "Activos" },
-          ].map(opt => {
-            const on = voidFilter === opt.id;
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => setVoidFilter(opt.id)}
-                style={{
-                  padding: "5px 12px", borderRadius: 999,
-                  border: on ? "1.5px solid var(--ag-c-terra)" : "1px solid var(--ag-line)",
-                  background: on ? "rgba(245,158,11,0.10)" : "transparent",
-                  color: on ? "var(--ag-c-terra)" : "var(--ag-ink-2)",
-                  fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                }}
-              >{opt.label}</button>
-            );
-          })}
-          <div style={{ flex: 1 }} />
-          <button
-            type="button"
-            onClick={() => setShowAllMonths(v => !v)}
-            style={{
-              padding: "5px 10px", borderRadius: 999,
-              border: showAllMonths ? "1.5px solid var(--ag-c-terra)" : "1px solid var(--ag-line)",
-              background: showAllMonths ? "rgba(245,158,11,0.10)" : "transparent",
-              color: showAllMonths ? "var(--ag-c-terra)" : "var(--ag-ink-3)",
-              fontSize: 10.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-            }}
-            title="Por defecto solo mes actual. Activá para ver todos los meses (útil para reversiones de meses anteriores)."
-          >{showAllMonths ? "Todos los meses" : "Solo mes actual"}</button>
-        </div>
 
         {/* CTA registrar gasto */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
