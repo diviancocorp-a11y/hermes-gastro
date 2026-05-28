@@ -50,7 +50,7 @@ function BottomNav({ active = 'home', onChange, badges = {} }) {
               </svg>
             )}
             <Icon />
-            {label}
+            <span className="ag-nav-label">{label}</span>
           </button>
         )
       })}
