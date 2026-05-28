@@ -19,7 +19,8 @@
  */
 import { useState, useMemo } from "react";
 import { formatInt, formatMoney } from "../../lib/utils";
-import { upsertIngredient, deleteIngredient, registerWaste } from "../../lib/adminService";
+import { upsertIngredient, archiveIngredient, registerWaste } from "../../lib/adminService";
+import { useConfirm } from "../ConfirmSlideProvider";
 
 const DEFAULT_SETTINGS = { ing_cats: ["Secos", "Frescos", "Packaging", "Otros"] };
 
@@ -43,6 +44,7 @@ function stockState(it) {
 }
 
 function Stock({ ingredients, setIngredients, recipes, overlay, setOverlay, showToast, settings }) {
+  const confirmSlide = useConfirm();
   const [search, setSearch] = useState("");
   const [fil, setFil] = useState("all");  // 'all' | 'low' | <categoría>
 
@@ -66,6 +68,7 @@ function Stock({ ingredients, setIngredients, recipes, overlay, setOverlay, show
   const filt = useMemo(() => {
     const q = search.trim().toLowerCase();
     return ingredients.filter(i => {
+      if (i.is_archived) return false;
       if (q && !(i.name || "").toLowerCase().includes(q)) return false;
       if (fil === "low") return (i.stock || 0) <= (i.min_stock || 0);
       if (fil !== "all" && i.food_category !== fil) return false;
@@ -308,15 +311,23 @@ function Stock({ ingredients, setIngredients, recipes, overlay, setOverlay, show
             }
           }}
           onDel={async (id) => {
+            const ing = (ingredients || []).find(i => i.id === id);
             const usedIn = (recipes || []).filter(r => (r.ingredients || []).some(ri => ri.ingredient_id === id));
-            if (usedIn.length > 0) {
-              showToast(`En uso en: ${usedIn.map(r => r.name).join(", ")}`);
-              return;
-            }
-            await deleteIngredient(id);
-            setIngredients(p => p.filter(i => i.id !== id));
+            const body = usedIn.length > 0
+              ? `Sigue usándose en: ${usedIn.map(r => r.name).join(", ")}. Las recetas seguirán funcionando, pero el ingrediente deja de aparecer en stock activo. La historia (compras, mermas) se preserva.`
+              : "Deja de aparecer en stock activo. Toda la historia (compras, mermas, recetas) se preserva. Podés restaurarlo después.";
+            const ok = await confirmSlide({
+              title: `Archivar "${ing?.name || "ingrediente"}"`,
+              body,
+              label: "Deslizá para archivar",
+              loadingLabel: "Archivando…",
+              successLabel: "Archivado ✓",
+            });
+            if (!ok) return;
+            await archiveIngredient(id);
+            setIngredients(p => p.map(i => i.id === id ? { ...i, is_archived: true } : i));
             setOverlay(null);
-            showToast("Eliminado");
+            showToast("Ingrediente archivado · historia conservada");
           }}
         />
       )}

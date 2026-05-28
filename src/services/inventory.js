@@ -23,6 +23,20 @@ export async function upsertIngredient(ingredient) {
   return data;
 }
 
+/**
+ * Soft delete: marca como archivado (is_archived = true).
+ * Preserva historia: recetas, compras y mermas siguen apuntando al ingrediente.
+ */
+export async function archiveIngredient(id) {
+  const { error } = await supabase.from('ingredients').update({ is_archived: true }).eq('id', id);
+  return !error;
+}
+
+export async function unarchiveIngredient(id) {
+  const { error } = await supabase.from('ingredients').update({ is_archived: false }).eq('id', id);
+  return !error;
+}
+
 export async function deleteIngredient(id) {
   const { error } = await supabase.from('ingredients').delete().eq('id', id);
   return !error;

@@ -1,6 +1,14 @@
+import { useState } from "react";
 import { Icon } from "../../lib/utils";
+import { useConfirm } from "../ConfirmSlideProvider";
+import SlideToConfirm from "../SlideToConfirm";
 
 function CancelDlg({ order = {}, recs = [], ings = [], onClose, onConfirm }) {
+  // ¿El pedido ya consumió insumos? Solo PREP/READY/ACTIVE descontaron stock.
+  // Si está en NEW, no se descontó nada → solo slide directo para cancelar.
+  const consumed = !!order.status && order.status !== "new" && order.status !== "cancelled";
+  const [pickedStock, setPickedStock] = useState(null); // true = devolver stock, false = merma. Solo aplica si consumed.
+
   // Calcula los insumos usados (puede estar vacío si no hay datos enriquecidos)
   const used = [];
   const items = order.order_items || order.items || [];
@@ -16,6 +24,21 @@ function CancelDlg({ order = {}, recs = [], ings = [], onClose, onConfirm }) {
       else used.push({ id: ig.id, name: ig.name, unit: ig.unit, qty });
     });
   });
+
+  // Decidir qué mostrar:
+  //   - NEW (sin consumir): slide directo.
+  //   - PREP+ y pickedStock == null: mostrar elección stock/merma.
+  //   - PREP+ y pickedStock != null: mostrar slide específico.
+  const showSlide = !consumed || pickedStock !== null;
+  const slideLabel = !consumed ? "Deslizá para cancelar"
+    : pickedStock === true ? "Deslizá para cancelar y devolver al stock"
+    : "Deslizá para cancelar y registrar merma";
+  const slideSuccessLabel = "Pedido cancelado ✓";
+
+  const handleConfirmSlide = async () => {
+    // En NEW, returnToStock no aplica → pasamos false (sin devolución).
+    onConfirm(consumed ? !!pickedStock : false);
+  };
 
   return (
     <>
@@ -50,11 +73,14 @@ function CancelDlg({ order = {}, recs = [], ings = [], onClose, onConfirm }) {
         </header>
 
         <div className="ag-modal-body">
+          {/* Intro distinta según consumido o no */}
           <p style={{ fontSize: 13.5, color: 'var(--ag-ink-2)', margin: '0 0 14px' }}>
-            Los insumos ya fueron descontados. ¿Qué hacemos con ellos?
+            {consumed
+              ? 'Los insumos ya fueron descontados. ¿Qué hacemos con ellos?'
+              : 'El pedido todavía no consumió insumos. Vas a cancelar sin afectar el stock.'}
           </p>
 
-          {used.length > 0 && (
+          {consumed && used.length > 0 && (
             <div style={{
               padding: '10px 12px',
               background: 'var(--ag-bg-soft)',
@@ -73,28 +99,57 @@ function CancelDlg({ order = {}, recs = [], ings = [], onClose, onConfirm }) {
             </div>
           )}
 
-          <button
-            type="button"
-            className="ag-btn-primary"
-            style={{ width: '100%', marginBottom: 8, background: 'var(--ag-c-sales)' }}
-            onClick={() => onConfirm(true)}
-          >
-            ↺ Devolver al stock
-          </button>
-          <button
-            type="button"
-            className="ag-btn-primary"
-            style={{ width: '100%', marginBottom: 8, background: 'var(--ag-c-orders)' }}
-            onClick={() => onConfirm(false)}
-          >
-            🗑 Registrar como merma
-          </button>
-          <button
-            type="button"
-            className="ag-btn-ghost"
-            style={{ width: '100%' }}
-            onClick={onClose}
-          >Volver</button>
+          {/* Paso 1 (solo PREP+): elegir destino de los insumos */}
+          {consumed && pickedStock === null && (
+            <>
+              <button
+                type="button"
+                className="ag-btn-primary"
+                style={{ width: '100%', marginBottom: 8, background: 'var(--ag-c-sales)' }}
+                onClick={() => setPickedStock(true)}
+              >
+                ↺ Devolver al stock
+              </button>
+              <button
+                type="button"
+                className="ag-btn-primary"
+                style={{ width: '100%', marginBottom: 8, background: 'var(--ag-c-orders)' }}
+                onClick={() => setPickedStock(false)}
+              >
+                🗑 Registrar como merma
+              </button>
+              <button
+                type="button"
+                className="ag-btn-ghost"
+                style={{ width: '100%' }}
+                onClick={onClose}
+              >Volver</button>
+            </>
+          )}
+
+          {/* Paso 2 (NEW directo o PREP+ ya eligió): slide para confirmar */}
+          {showSlide && (
+            <>
+              {consumed && pickedStock !== null && (
+                <div style={{ marginBottom: 10, padding: "8px 12px", background: "var(--ag-bg-soft)", borderRadius: 8, fontSize: 12, color: "var(--ag-ink-2)" }}>
+                  Vas a cancelar y <strong>{pickedStock ? "devolver los insumos al stock" : "registrar como merma"}</strong>.
+                </div>
+              )}
+              <SlideToConfirm
+                danger
+                label={slideLabel}
+                loadingLabel="Cancelando…"
+                successLabel={slideSuccessLabel}
+                onConfirm={handleConfirmSlide}
+              />
+              <button
+                type="button"
+                className="ag-btn-ghost"
+                style={{ marginTop: 10, width: '100%', padding: 10, fontSize: 12.5, color: 'var(--ag-ink-3)' }}
+                onClick={consumed && pickedStock !== null ? () => setPickedStock(null) : onClose}
+              >{consumed && pickedStock !== null ? "← Volver atrás" : "Cancelar"}</button>
+            </>
+          )}
         </div>
       </div>
     </>

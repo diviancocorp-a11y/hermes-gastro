@@ -16,6 +16,7 @@
  *   - RecForm: crear/editar con upload de imagen, combos y sugerencias upselling
  */
 import { useState, useRef, useMemo } from "react";
+import { useConfirm } from "../ConfirmSlideProvider";
 import { formatInt, formatMoney } from "../../lib/utils";
 import {
   fetchRecipeIngredients,
@@ -37,6 +38,7 @@ function marginColor(m) {
 }
 
 function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overlay, setOverlay, showToast, loadAll, settings }) {
+  const confirmSlide = useConfirm();
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
 
@@ -268,12 +270,30 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
             setOverlay({ type: "editR", data: d });
           }}
           onArchive={async (id) => {
+            const rec = (recipes || []).find(x => x.id === id);
+            const ok = await confirmSlide({
+              title: `Archivar "${rec?.name || "receta"}"`,
+              body: "Deja de aparecer en el catálogo público y en pedidos nuevos. Las ventas históricas se preservan. Podés restaurarla después.",
+              label: "Deslizá para archivar",
+              loadingLabel: "Archivando…",
+              successLabel: "Archivada ✓",
+            });
+            if (!ok) return;
             await archiveRecipe(id);
             setRecipes(p => p.map(x => x.id === id ? { ...x, is_archived: true } : x));
             setOverlay(null);
             showToast("Receta archivada · historial conservado");
           }}
           onUnarchive={async (id) => {
+            const rec = (recipes || []).find(x => x.id === id);
+            const ok = await confirmSlide({
+              title: `Restaurar "${rec?.name || "receta"}"`,
+              body: "Volverá a aparecer en el catálogo público y los clientes podrán pedirla otra vez.",
+              label: "Deslizá para restaurar",
+              loadingLabel: "Restaurando…",
+              successLabel: "Restaurada ✓",
+            });
+            if (!ok) return;
             await unarchiveRecipe(id);
             setRecipes(p => p.map(x => x.id === id ? { ...x, is_archived: false } : x));
             setOverlay(null);
