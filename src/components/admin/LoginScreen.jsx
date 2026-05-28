@@ -1,11 +1,15 @@
 // src/components/admin/LoginScreen.jsx
-// Login del admin con flow field background.
+// Login del admin. Layout:
 //   - Esquina sup. izq.: chip Hermes (firma del sistema)
-//   - Centro: identidad del negocio (logo + nombre)
+//   - Centro: identidad del negocio (logo real desde settings + nombre)
 //   - Form: caja muy traslúcida, botón ámbar del sistema
+//
+// El logo + nombre vienen de la tabla `settings` (publicly readable, igual que el catálogo).
+// Cae a `business` (config compilada) si la DB aún no respondió.
 
 import { useState, useEffect } from "react";
 import { login } from "../../lib/adminService";
+import { supabase } from "../../lib/supabase";
 import business from "@business";
 import FlowFieldBackground from "./FlowFieldBackground";
 import HermesMark from "../HermesMark";
@@ -20,10 +24,19 @@ export default function LoginScreen({ onLogin }) {
   const [remember, setRemember] = useState(true);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const [dbSet, setDbSet] = useState(null);
+  const [logoLoaded, setLogoLoaded] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setStage("form"), INTRO_MS);
-    return () => clearTimeout(t);
+    let mounted = true;
+    supabase
+      .from("settings")
+      .select("biz_name, logo_letter, logo_color, logo_url")
+      .limit(1)
+      .then(({ data }) => { if (mounted && data?.[0]) setDbSet(data[0]); })
+      .catch(() => {});
+    return () => { clearTimeout(t); mounted = false; };
   }, []);
 
   const handle = async (e) => {
@@ -37,15 +50,18 @@ export default function LoginScreen({ onLogin }) {
     else setErr(res.msg);
   };
 
-  const bizLetter = (business.logoLetter || business.name?.charAt(0) || "A").toUpperCase();
-  const bizColor = business.branding?.primary || AMBER;
+  // Identidad efectiva (DB > business compilado > fallback)
+  const bizName   = dbSet?.biz_name   || business.name || "Panel de gestión";
+  const bizLetter = (dbSet?.logo_letter || business.logoLetter || bizName.charAt(0) || "A").toUpperCase();
+  const bizColor  = dbSet?.logo_color  || business.branding?.primary || AMBER;
+  const logoUrl   = dbSet?.logo_url    || business.branding?.logoUrl || null;
 
   return (
     <div style={{ position:"fixed", inset:0, fontFamily:"system-ui,-apple-system,sans-serif", color:"#fff", overflow:"hidden" }}>
       <FlowFieldBackground color="#f59e0b" trailOpacity={0.08} particleCount={500} speed={0.7} bgColor="10,10,10" />
       <div style={{ position:"absolute", inset:0, background:"radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.45) 100%)", pointerEvents:"none" }} />
 
-      {/* ───── Chip Hermes · esquina sup. izq. ───── */}
+      {/* Chip Hermes · esquina sup. izq. */}
       <div style={{
         position:"absolute", top:14, left:14, zIndex:3,
         display:"inline-flex", alignItems:"center", justifyContent:"center",
@@ -62,7 +78,7 @@ export default function LoginScreen({ onLogin }) {
         <HermesMark as="logo" size={48} fallback="H" color={AMBER} />
       </div>
 
-      {/* ───── Centro: identidad del negocio + form ───── */}
+      {/* Centro: identidad del negocio + form */}
       <div style={{ position:"relative", zIndex:2, width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center" }}>
         <div style={{ width:"100%", maxWidth:380, padding:"0 24px", textAlign:"center" }}>
 
@@ -79,28 +95,61 @@ export default function LoginScreen({ onLogin }) {
             Sistema administrativo
           </div>
 
-          {/* Logo del negocio (avatar inicial o imagen) */}
+          {/* Logo del negocio con halo + respiración */}
           <div style={{
-            width:84, height:84, margin:"0 auto", borderRadius:22,
-            background: bizColor, color:"#fff",
+            position:"relative",
+            width:108, height:108, margin:"0 auto",
             display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:42, fontWeight:800,
-            boxShadow:`0 12px 32px ${bizColor}55`,
-            overflow:"hidden",
-            opacity:0, transform:"scale(0.85)",
-            animation:"hg-login-logo-in 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s forwards",
           }}>
-            {business.branding?.logoUrl
-              ? <img src={business.branding.logoUrl} alt={business.name} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-              : bizLetter}
+            {/* Halo ámbar pulsante */}
+            <div style={{
+              position:"absolute", inset:-18,
+              borderRadius:"50%",
+              background:`radial-gradient(circle, ${bizColor}55 0%, ${bizColor}22 40%, transparent 70%)`,
+              animation:"hg-halo-pulse 3.2s ease-in-out infinite",
+              pointerEvents:"none",
+            }} />
+            {/* Avatar */}
+            <div style={{
+              position:"relative",
+              width:96, height:96, borderRadius:28,
+              background: logoUrl ? "rgba(255,255,255,0.06)" : bizColor,
+              color:"#fff",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:46, fontWeight:800,
+              boxShadow:`0 14px 38px ${bizColor}66, 0 0 0 1px rgba(255,255,255,0.08)`,
+              overflow:"hidden",
+              opacity:0, transform:"scale(0.85)",
+              animation:"hg-login-logo-in 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s forwards, hg-breath 4.5s ease-in-out 1s infinite",
+            }}>
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={bizName}
+                  onLoad={() => setLogoLoaded(true)}
+                  onError={() => setLogoLoaded(false)}
+                  style={{
+                    width:"100%", height:"100%", objectFit:"cover",
+                    opacity: logoLoaded ? 1 : 0,
+                    transition:"opacity 0.4s ease",
+                  }}
+                />
+              ) : (
+                bizLetter
+              )}
+              {/* Fallback inicial mientras carga la imagen */}
+              {logoUrl && !logoLoaded && (
+                <span style={{ position:"absolute", color:"#fff", opacity:0.55 }}>{bizLetter}</span>
+              )}
+            </div>
           </div>
 
           <h1 style={{
-            margin:"18px 0 4px",
+            margin:"20px 0 4px",
             fontSize:22, fontWeight:700, letterSpacing:"-0.02em", color:"#fff",
             opacity:0, transform:"translateY(8px)",
             animation:"hg-login-title-in 0.7s cubic-bezier(0.22,1,0.36,1) 0.35s forwards",
-          }}>{business.name || "Panel de gestión"}</h1>
+          }}>{bizName}</h1>
 
           <p style={{
             margin:0, fontSize:11.5, color:"rgba(255,255,255,0.55)",
@@ -172,7 +221,17 @@ export default function LoginScreen({ onLogin }) {
         @keyframes hg-login-logo-in { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
         @keyframes hg-login-title-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         @keyframes hg-login-sub-in { from { opacity:0; } to { opacity:1; } }
-        @media (prefers-reduced-motion: reduce) { [style*="animation"] { animation: none !important; opacity: 1 !important; } }
+        @keyframes hg-halo-pulse {
+          0%, 100% { opacity:0.5; transform:scale(0.92); }
+          50%      { opacity:1;   transform:scale(1.08); }
+        }
+        @keyframes hg-breath {
+          0%, 100% { transform:scale(1); }
+          50%      { transform:scale(1.035); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          [style*="animation"] { animation: none !important; opacity: 1 !important; }
+        }
       `}</style>
     </div>
   );
