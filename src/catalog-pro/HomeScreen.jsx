@@ -20,6 +20,7 @@ import {
   ProductPhoto, PriceTag, Rating, StickyCart, SectionHeader, AddRound,
 } from "./atoms";
 import { mapProduct, buildStories, buildRecos } from "./homeHelpers";
+import HermesMark from "../components/HermesMark";
 
 const SEARCH_PHRASES = ["empanadas…", "tortilla de papa…", "algo dulce…", "pasta de hoy…"];
 
@@ -326,6 +327,18 @@ export default function HomeScreen({
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ===== FOOTER MARCA ===== */}
+      <div style={{
+        padding: "44px 22px 32px",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+        opacity: 0.6,
+      }}>
+        <HermesMark as="wordmark" size={56} fallback="H" />
+        <div style={{ fontSize: 10, color: "var(--t3)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          Hermes Gastro
+        </div>
       </div>
 
       {/* ===== STICKY CART ===== */}

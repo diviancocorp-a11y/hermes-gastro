@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { login } from "../../lib/adminService";
 import business from "@business";
 import FlowFieldBackground from "./FlowFieldBackground";
+import HermesMark from "../HermesMark";
 
 const INTRO_MS = 1400;
 
@@ -57,14 +58,14 @@ export default function LoginScreen({ onLogin }) {
         </div>
 
         <div style={{
-          width:72, height:72, margin:"0 auto", borderRadius:20,
-          background: logoColor, color:"#fff",
-          display:"flex", alignItems:"center", justifyContent:"center",
-          fontSize:36, fontWeight:800,
-          boxShadow:`0 12px 32px ${logoColor}66`,
+          margin:"0 auto",
           opacity:0, transform:"scale(0.85)",
           animation:"hg-login-logo-in 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s forwards",
-        }}>{logoLetter}</div>
+          display:"flex", justifyContent:"center",
+          filter:`drop-shadow(0 12px 32px ${logoColor}55)`,
+        }}>
+          <HermesMark as="logo" size={140} fallback={logoLetter} color={logoColor} />
+        </div>
 
         <h1 style={{
           margin: stage === "intro" ? "20px 0 6px" : "16px 0 4px",
