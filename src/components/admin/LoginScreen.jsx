@@ -61,22 +61,21 @@ export default function LoginScreen({ onLogin }) {
       <FlowFieldBackground color="#f59e0b" trailOpacity={0.08} particleCount={500} speed={0.7} bgColor="10,10,10" />
       <div style={{ position:"absolute", inset:0, background:"radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.45) 100%)", pointerEvents:"none" }} />
 
-      {/* Splash de marca · visible durante stage="intro", fade-out al pasar a "form" */}
+      {/* Splash de marca · fondo sólido, fade-out al pasar a "form" */}
       <div style={{
         position:"absolute", inset:0, zIndex:50,
         display:"flex", alignItems:"center", justifyContent:"center",
-        background:"rgba(10,10,10,0.85)",
-        backdropFilter:"blur(2px)",
-        WebkitBackdropFilter:"blur(2px)",
+        background:"#0a0a0a",
         opacity: stage === "intro" ? 1 : 0,
         pointerEvents: stage === "intro" ? "auto" : "none",
         transition:"opacity 0.6s cubic-bezier(0.22,1,0.36,1)",
       }}>
         <div style={{
+          maxWidth:"min(86vw, 460px)",
           animation:"hg-splash-in 0.9s cubic-bezier(0.22,1,0.36,1) forwards",
-          filter:`drop-shadow(0 16px 48px ${AMBER}44)`,
+          filter:`drop-shadow(0 18px 56px ${AMBER}55)`,
         }}>
-          <HermesMark as="logo" size={260} fallback="H" color={AMBER} />
+          <HermesMark as="logo" size={420} fallback="H" color={AMBER} style={{ maxWidth:"100%", height:"auto" }} />
         </div>
       </div>
 
