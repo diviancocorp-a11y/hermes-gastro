@@ -452,7 +452,10 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
           />
         ) : (
           dateKeys.map(d => {
-            const items = groupedByDate[d];
+            // Dentro de cada día: ordenar por created_at descendente (más recientes primero)
+            const items = [...groupedByDate[d]].sort((a, b) =>
+              (b.created_at || "").localeCompare(a.created_at || "")
+            );
             const dayLabel = d === "sin-fecha"
               ? "Sin fecha"
               : new Date(d + "T12:00:00").toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
