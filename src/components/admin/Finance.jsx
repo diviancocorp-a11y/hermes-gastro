@@ -129,6 +129,8 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
   const monthStart = todayISO().slice(0, 7) + "-01";
   const sorted = [...expenses].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   const monthExpenses = expenses.filter(e => e.date >= monthStart);
+  // Base de la lista: mes actual o todos los meses, según el toggle
+  const listBase = showAllMonths ? expenses : monthExpenses;
   const byC = monthExpenses.reduce((a, e) => {
     const cat = e.category || "Otros";
     a[cat] = (a[cat] || 0) + (e.amount || 0);
@@ -141,6 +143,43 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
   const [voidTarget, setVoidTarget] = useState(null);
   const [voidReason, setVoidReason] = useState("");
   const [voiding, setVoiding] = useState(false);
+  const [voidFilter, setVoidFilter] = useState("all"); // 'all' | 'voided' | 'active'
+  const [showAllMonths, setShowAllMonths] = useState(false);
+
+  // Código corto compartido entre original anulado y su reversión
+  const voidCode = (e) => {
+    const refId = e.voids_expense_id || e.id;
+    return "ANL-" + String(refId || "").slice(0, 6).toUpperCase();
+  };
+
+  // ID del movimiento vinculado (la otra mitad del asiento)
+  const linkedId = (e) => {
+    if (e.voids_expense_id) return e.voids_expense_id;
+    if (e.voided_at) {
+      const rev = expenses.find(x => x.voids_expense_id === e.id);
+      return rev?.id || null;
+    }
+    return null;
+  };
+
+  // Saltar a la fila vinculada con scroll + flash
+  const jumpToLinked = (e) => {
+    const id = linkedId(e);
+    if (!id) { showToast("No se encontró el movimiento vinculado"); return; }
+    const target = expenses.find(x => x.id === id);
+    if (!target) { showToast("Vinculado no disponible"); return; }
+    if ((target.date || "") < todayISO().slice(0, 7) + "-01") setShowAllMonths(true);
+    setVoidFilter("all");
+    setExpanded(id);
+    setTimeout(() => {
+      const el = document.getElementById(`expense-row-${id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("ag-flash");
+        setTimeout(() => el.classList.remove("ag-flash"), 2200);
+      }
+    }, 120);
+  };
 
   const canVoid = (e) =>
     !e.voided_at && !e.voids_expense_id && (e.date || "").startsWith(todayISO().slice(0, 7));
@@ -179,12 +218,16 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
   };
 
   // Base: gastos del mes ordenados desc por fecha
-  const monthSorted = [...monthExpenses].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const monthSorted = [...listBase].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
-  // Filtros aplicados (categoría + búsqueda)
+  // Filtros aplicados (categoría + búsqueda + estado anulado)
   const filteredSorted = monthSorted.filter(e => {
     if (filterCat && (e.category || "Otros") !== filterCat) return false;
     if (!matchesSearch(e)) return false;
+    const isV = !!e.voided_at;
+    const isR = !!e.voids_expense_id;
+    if (voidFilter === "voided" && !isV && !isR) return false;
+    if (voidFilter === "active" && (isV || isR)) return false;
     return true;
   });
 
@@ -313,6 +356,44 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
           </div>
         )}
 
+        {/* Filtro: Todos / Anulados / Activos + toggle de mes */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 0 10px", flexWrap: "wrap" }}>
+          {[
+            { id: "all",    label: "Todos" },
+            { id: "voided", label: "Anulados" },
+            { id: "active", label: "Activos" },
+          ].map(opt => {
+            const on = voidFilter === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setVoidFilter(opt.id)}
+                style={{
+                  padding: "5px 12px", borderRadius: 999,
+                  border: on ? "1.5px solid var(--ag-c-terra)" : "1px solid var(--ag-line)",
+                  background: on ? "rgba(245,158,11,0.10)" : "transparent",
+                  color: on ? "var(--ag-c-terra)" : "var(--ag-ink-2)",
+                  fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                }}
+              >{opt.label}</button>
+            );
+          })}
+          <div style={{ flex: 1 }} />
+          <button
+            type="button"
+            onClick={() => setShowAllMonths(v => !v)}
+            style={{
+              padding: "5px 10px", borderRadius: 999,
+              border: showAllMonths ? "1.5px solid var(--ag-c-terra)" : "1px solid var(--ag-line)",
+              background: showAllMonths ? "rgba(245,158,11,0.10)" : "transparent",
+              color: showAllMonths ? "var(--ag-c-terra)" : "var(--ag-ink-3)",
+              fontSize: 10.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+            }}
+            title="Por defecto solo mes actual. Activá para ver todos los meses (útil para reversiones de meses anteriores)."
+          >{showAllMonths ? "Todos los meses" : "Solo mes actual"}</button>
+        </div>
+
         {/* CTA registrar gasto */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
           <button type="button" className="ag-cta" onClick={() => setShowForm(true)}>
@@ -405,7 +486,7 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
                     const isReversal = !!e.voids_expense_id;
                     const amtNum = Number(e.amount) || 0;
                     return (
-                      <div key={e.id} style={{ borderLeft: `4px solid ${isReversal ? 'var(--ag-c-sales)' : cc.fg}`, opacity: isVoided ? 0.55 : 1 }}>
+                      <div key={e.id} id={`expense-row-${e.id}`} className="ag-flash-target" style={{ borderLeft: `4px solid ${isReversal ? 'var(--ag-c-sales)' : cc.fg}`, opacity: isVoided ? 0.55 : 1, transition: "background-color 0.4s ease" }}>
                         <button
                           type="button"
                           onClick={() => setExpanded(isExp ? null : e.id)}
@@ -419,8 +500,9 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ag-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: isVoided ? "line-through" : "none" }}>
-                              {isReversal && <span style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", background: "var(--ag-c-sales)", padding: "1px 6px", borderRadius: 6, letterSpacing: "0.04em", marginRight: 6 }}>ANULACION</span>}
+                              {isReversal && <span style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", background: "var(--ag-c-sales)", padding: "1px 6px", borderRadius: 6, letterSpacing: "0.04em", marginRight: 6 }}>ANULACIÓN</span>}
                               {isVoided && <span style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", background: "var(--ag-c-orders)", padding: "1px 6px", borderRadius: 6, letterSpacing: "0.04em", marginRight: 6 }}>ANULADO</span>}
+                              {(isVoided || isReversal) && <span title="Código del asiento de anulación" style={{ fontSize: 9.5, fontWeight: 800, color: "var(--ag-ink-2)", background: "var(--ag-bg-soft)", padding: "1px 6px", borderRadius: 6, letterSpacing: "0.06em", marginRight: 6, fontFamily: "ui-monospace, monospace" }}>{voidCode(e)}</span>}
                               {displayDesc(e)}
                             </div>
                             <div style={{ fontSize: 11, color: "var(--ag-ink-3)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
@@ -553,7 +635,15 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
 
                             {isVoided && (
                               <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(232,90,74,0.08)", border: "1px solid var(--ag-c-orders)", borderRadius: 10, fontSize: 11.5 }}>
-                                <div style={{ fontWeight: 700, color: "var(--ag-c-orders)", marginBottom: 4 }}>Gasto anulado</div>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                                  <div style={{ fontWeight: 700, color: "var(--ag-c-orders)" }}>Gasto anulado · {voidCode(e)}</div>
+                                  {linkedId(e) && (
+                                    <button type="button" onClick={(ev) => { ev.stopPropagation(); jumpToLinked(e); }}
+                                      style={{ padding: "4px 10px", borderRadius: 999, border: "1px solid var(--ag-c-orders)", background: "transparent", color: "var(--ag-c-orders)", fontSize: 10.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                                      Ver reversión ↗
+                                    </button>
+                                  )}
+                                </div>
                                 <div style={{ color: "var(--ag-ink-2)" }}>
                                   Por <strong>{e.voided_by || "—"}</strong> · {new Date(e.voided_at).toLocaleString("es-AR")}
                                 </div>
@@ -566,7 +656,15 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
                             )}
                             {isReversal && (
                               <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(42,157,110,0.08)", border: "1px solid var(--ag-c-sales)", borderRadius: 10, fontSize: 11.5 }}>
-                                <div style={{ fontWeight: 700, color: "var(--ag-c-sales)", marginBottom: 4 }}>Reversion de un gasto previo</div>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                                  <div style={{ fontWeight: 700, color: "var(--ag-c-sales)" }}>Reversión · {voidCode(e)}</div>
+                                  {linkedId(e) && (
+                                    <button type="button" onClick={(ev) => { ev.stopPropagation(); jumpToLinked(e); }}
+                                      style={{ padding: "4px 10px", borderRadius: 999, border: "1px solid var(--ag-c-sales)", background: "transparent", color: "var(--ag-c-sales)", fontSize: 10.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                                      Ver original ↗
+                                    </button>
+                                  )}
+                                </div>
                                 <div style={{ color: "var(--ag-ink-2)" }}>
                                   Por <strong>{e.voided_by || "—"}</strong>
                                   {e.voided_reason && <> · Motivo: "{e.voided_reason}"</>}

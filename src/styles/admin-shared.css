@@ -776,3 +776,13 @@ body:has(.ag-page-over) .ag-bottom-nav {
   background: var(--ag-c-terra);
   color: #fff;
 }
+
+/* Flash temporal sobre la fila vinculada al saltar (Ver vinculado ↗) */
+.ag-flash {
+  animation: ag-flash-amber 2.2s ease-out;
+}
+@keyframes ag-flash-amber {
+  0%   { background-color: rgba(245, 158, 11, 0.0); box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+  10%  { background-color: rgba(245, 158, 11, 0.28); box-shadow: 0 0 0 3px rgba(245,158,11,0.25); }
+  100% { background-color: rgba(245, 158, 11, 0.0); box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+}
