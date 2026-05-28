@@ -61,21 +61,23 @@ export default function LoginScreen({ onLogin }) {
       <FlowFieldBackground color="#f59e0b" trailOpacity={0.08} particleCount={500} speed={0.7} bgColor="10,10,10" />
       <div style={{ position:"absolute", inset:0, background:"radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.45) 100%)", pointerEvents:"none" }} />
 
-      {/* Chip Hermes · esquina sup. izq. */}
+      {/* Splash de marca · visible durante stage="intro", fade-out al pasar a "form" */}
       <div style={{
-        position:"absolute", top:14, left:14, zIndex:3,
-        display:"inline-flex", alignItems:"center", justifyContent:"center",
-        width:60, height:60, padding:6,
-        borderRadius:14,
-        background:"rgba(255,255,255,0.06)",
-        border:"1px solid rgba(255,255,255,0.08)",
-        backdropFilter:"blur(6px)",
-        WebkitBackdropFilter:"blur(6px)",
-        opacity: stage === "intro" ? 0 : 1,
-        transform: stage === "intro" ? "translateY(-6px)" : "translateY(0)",
-        transition:"opacity 0.6s ease 0.1s, transform 0.6s ease 0.1s",
+        position:"absolute", inset:0, zIndex:50,
+        display:"flex", alignItems:"center", justifyContent:"center",
+        background:"rgba(10,10,10,0.85)",
+        backdropFilter:"blur(2px)",
+        WebkitBackdropFilter:"blur(2px)",
+        opacity: stage === "intro" ? 1 : 0,
+        pointerEvents: stage === "intro" ? "auto" : "none",
+        transition:"opacity 0.6s cubic-bezier(0.22,1,0.36,1)",
       }}>
-        <HermesMark as="logo" size={48} fallback="H" color={AMBER} />
+        <div style={{
+          animation:"hg-splash-in 0.9s cubic-bezier(0.22,1,0.36,1) forwards",
+          filter:`drop-shadow(0 16px 48px ${AMBER}44)`,
+        }}>
+          <HermesMark as="logo" size={260} fallback="H" color={AMBER} />
+        </div>
       </div>
 
       {/* Centro: identidad del negocio + form */}
@@ -120,7 +122,7 @@ export default function LoginScreen({ onLogin }) {
               boxShadow:`0 14px 38px ${bizColor}66, 0 0 0 1px rgba(255,255,255,0.08)`,
               overflow:"hidden",
               opacity:0, transform:"scale(0.85)",
-              animation:"hg-login-logo-in 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s forwards, hg-breath 4.5s ease-in-out 1s infinite",
+              animation:"hg-login-logo-in 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s forwards",
             }}>
               {logoUrl ? (
                 <img
@@ -225,9 +227,9 @@ export default function LoginScreen({ onLogin }) {
           0%, 100% { opacity:0.5; transform:scale(0.92); }
           50%      { opacity:1;   transform:scale(1.08); }
         }
-        @keyframes hg-breath {
-          0%, 100% { transform:scale(1); }
-          50%      { transform:scale(1.035); }
+        @keyframes hg-splash-in {
+          from { opacity:0; transform:scale(0.88); }
+          to   { opacity:1; transform:scale(1); }
         }
         @media (prefers-reduced-motion: reduce) {
           [style*="animation"] { animation: none !important; opacity: 1 !important; }
