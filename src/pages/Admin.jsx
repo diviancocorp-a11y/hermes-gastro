@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { OrderStatus } from "../lib/utils";
 import useFeature from "../hooks/useFeature";
 
@@ -51,6 +51,33 @@ export default function Admin() {
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem('ag-theme') || 'light' } catch { return 'light' }
   });
+
+  // ── PWA: ícono Hermes cuando estás en /admin (manifest + apple-touch + theme-color) ──
+  useEffect(() => {
+    const q = (sel) => document.querySelector(sel);
+    const manifestEl = q('link[rel="manifest"]');
+    const appleEl = q('link[rel="apple-touch-icon"]');
+    const themeLightEl = q('meta[name="theme-color"][media*="light"]');
+    const themeDarkEl = q('meta[name="theme-color"][media*="dark"]');
+
+    const prev = {
+      manifest: manifestEl?.href,
+      apple: appleEl?.href,
+      themeLight: themeLightEl?.content,
+      themeDark: themeDarkEl?.content,
+    };
+    if (manifestEl) manifestEl.href = "/admin-manifest.json";
+    if (appleEl) appleEl.href = "/brand/hermes-apple-touch.png";
+    if (themeLightEl) themeLightEl.content = "#F59E0B";
+    if (themeDarkEl) themeDarkEl.content = "#0a0a0a";
+
+    return () => {
+      if (manifestEl && prev.manifest) manifestEl.href = prev.manifest;
+      if (appleEl && prev.apple) appleEl.href = prev.apple;
+      if (themeLightEl && prev.themeLight) themeLightEl.content = prev.themeLight;
+      if (themeDarkEl && prev.themeDark) themeDarkEl.content = prev.themeDark;
+    };
+  }, []);
 
   // Feature flags
   const ffInvoice = useFeature('E_INVOICE');
@@ -190,13 +217,7 @@ export default function Admin() {
         />
       </AdminDrawer>
 
-      <BrandModal
-        open={brandOpen}
-        onClose={() => setBrandOpen(false)}
-        settings={sett}
-        setSettings={setSett}
-        showToast={msg}
-      />
+      {brandOpen && <BrandModal settings={sett} setSettings={setSett} onClose={() => setBrandOpen(false)} showToast={msg} />}
     </div>
   );
 }

@@ -1,0 +1,16 @@
+{
+  "name": "Hermes Admin",
+  "short_name": "Hermes",
+  "description": "Panel de gestión Hermes Gastro",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#F59E0B",
+  "icons": [
+    { "src": "/brand/hermes-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/brand/hermes-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/brand/hermes-apple-touch.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}
