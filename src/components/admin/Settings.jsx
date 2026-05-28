@@ -191,7 +191,24 @@ function Settings({ settings, setSettings, showToast, theme = 'light', onThemeCh
               right={
                 <ToggleSwitch
                   checked={!storeOpen}
-                  onChange={v => set("store_open", !v)}
+                  onChange={async (v) => {
+                    const willClose = v; // v=true → cerrar; v=false → reabrir
+                    const ok = await confirmSlide(willClose ? {
+                      title: "Cerrar tienda de emergencia",
+                      body: "Los clientes verán el catálogo pero NO podrán hacer pedidos hasta que reabras.",
+                      label: "Deslizá para bloquear",
+                      loadingLabel: "Bloqueando…",
+                      successLabel: "Tienda cerrada ✓",
+                    } : {
+                      title: "Reabrir tienda",
+                      body: "Los clientes podrán volver a hacer pedidos desde el catálogo.",
+                      label: "Deslizá para desbloquear",
+                      loadingLabel: "Reabriendo…",
+                      successLabel: "Tienda abierta ✓",
+                    });
+                    if (!ok) return;
+                    set("store_open", !v);
+                  }}
                   label="Cierre de emergencia"
                 />
               }
@@ -605,8 +622,8 @@ function ExportsPage({ open, data, showToast, onBack }) {
 }
 
 function ResetPage({ open, showToast, onBack }) {
+  const confirmSlide = useConfirm();
   const [resetPin, setResetPin] = useState("");
-  const [resetConfirm, setResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
 
   return (
@@ -633,7 +650,28 @@ function ResetPage({ open, showToast, onBack }) {
         <button
           type="button"
           disabled={resetPin !== "4477" || resetting}
-          onClick={() => setResetConfirm(true)}
+          onClick={async () => {
+            const ok = await confirmSlide({
+              title: "⚠ Reinicio administrativo",
+              body: "Se descargará un respaldo CSV de clientes y se borrarán pedidos, ventas, gastos, compras, mermas, cupones y datos CRM. Acción irreversible.",
+              label: "Deslizá para borrar todo",
+              loadingLabel: "Borrando…",
+              successLabel: "Datos eliminados ✓",
+            });
+            if (!ok) return;
+            setResetting(true);
+            const result = await resetHistoricalData();
+            setResetting(false);
+            if (result.ok) {
+              const bk = result.backup;
+              showToast(bk?.count ? `✓ Respaldo de ${bk.count} clientes. Datos eliminados.` : "Datos eliminados ✓");
+              setResetPin("");
+              onBack();
+            } else {
+              const bk = result.backup;
+              showToast((bk?.count ? `Respaldo OK (${bk.count}). ` : "") + "Errores: " + result.errors.join(", "));
+            }
+          }}
           style={{
             padding: "0 18px",
             background: resetPin === "4477" ? "var(--ag-c-orders)" : "var(--ag-bg-soft)",
@@ -649,39 +687,6 @@ function ResetPage({ open, showToast, onBack }) {
         <div style={{ fontSize: 11.5, color: "var(--ag-c-orders)", marginTop: 6 }}>Clave incorrecta</div>
       )}
 
-      {resetConfirm && resetPin === "4477" && !resetting && (
-        <div style={{ marginTop: 16, padding: 14, background: "var(--ag-c-orders-soft)", borderRadius: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ag-c-orders)", marginBottom: 8 }}>⚠ Acción irreversible</div>
-          <div style={{ fontSize: 12, color: "var(--ag-ink-2)", marginBottom: 12, lineHeight: 1.4 }}>
-            Se descargará un respaldo CSV de clientes y se borrarán todos los datos históricos.
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              type="button"
-              onClick={async () => {
-                setResetting(true);
-                const result = await resetHistoricalData();
-                setResetting(false);
-                if (result.ok) {
-                  const bk = result.backup;
-                  showToast(bk?.count ? `✓ Respaldo de ${bk.count} clientes. Datos eliminados.` : "Datos eliminados ✓");
-                  setResetPin(""); setResetConfirm(false);
-                  onBack();
-                } else {
-                  const bk = result.backup;
-                  showToast((bk?.count ? `Respaldo OK (${bk.count}). ` : "") + "Errores: " + result.errors.join(", "));
-                }
-              }}
-              style={{ flex: 1, padding: "10px", background: "var(--ag-c-orders)", color: "#fff", border: 0, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-            >Sí, borrar todo</button>
-            <button
-              type="button"
-              onClick={() => setResetConfirm(false)}
-              style={{ flex: 1, padding: "10px", background: "transparent", color: "var(--ag-c-orders)", border: "1.5px solid var(--ag-c-orders)", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
-            >Cancelar</button>
-          </div>
-        </div>
-      )}
     </SubPage>
   );
 }
