@@ -348,7 +348,6 @@ function RecDet({ r, ingredients, calculateRecipeCost, settings, onClose, onEdit
   const c = calculateRecipeCost(r);
   const m = r.sale_price > 0 ? ((r.sale_price - c) / r.sale_price * 100) : 0;
   const mc = marginColor(m);
-  const [confirmArch, setConfirmArch] = useState(false);
   const visible = r.visible !== false;
 
   return (
@@ -489,30 +488,14 @@ function RecDet({ r, ingredients, calculateRecipeCost, settings, onClose, onEdit
 
         {r.is_archived ? (
           <button type="button" onClick={() => onUnarchive(r.id)} className="ag-btn-primary" style={{ width: "100%", padding: "12px", fontSize: 13 }}>↩ Restaurar receta</button>
-        ) : !confirmArch ? (
-          <button type="button" onClick={() => setConfirmArch(true)}
+        ) : (
+          <button type="button" onClick={() => onArchive(r.id)}
             style={{ width: "100%", padding: "12px", background: "transparent", border: "1px solid var(--ag-c-orders)", color: "var(--ag-c-orders)", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
             </svg>
             Archivar receta
           </button>
-        ) : (
-          <div style={{ padding: 12, background: "var(--ag-c-orders-soft)", border: "1px solid var(--ag-c-orders)", borderRadius: 12 }}>
-            <div style={{ fontSize: 12.5, color: "var(--ag-c-orders)", fontWeight: 700, marginBottom: 6 }}>
-              ¿Archivar "{r.name}"?
-            </div>
-            <div style={{ fontSize: 11.5, color: "var(--ag-ink-2)", marginBottom: 10 }}>
-              No aparecerá en el catálogo, pero el historial de ventas se conserva.
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button type="button" onClick={() => setConfirmArch(false)} className="ag-btn-ghost" style={{ flex: 1, padding: "10px", fontSize: 12 }}>Cancelar</button>
-              <button type="button" onClick={() => onArchive(r.id)}
-                style={{ flex: 1, padding: "10px", background: "var(--ag-c-orders)", color: "#fff", border: 0, borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                Sí, archivar
-              </button>
-            </div>
-          </div>
         )}
 
         <button type="button" className="ag-btn-ghost" onClick={onClose}
