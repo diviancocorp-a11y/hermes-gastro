@@ -187,30 +187,32 @@ function Settings({ settings, setSettings, showToast, theme = 'light', onThemeCh
               state={storeOpen ? "sales" : "orders"}
               icon={<Icon d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01" />}
               label={storeOpen ? "Cierre de emergencia" : "Tienda cerrada"}
-              hint={storeOpen ? "Pedidos habilitados · apagá para bloquear" : "Pedidos bloqueados · prendé para reabrir"}
+              hint={storeOpen ? "Tocá para bloquear pedidos" : "Tocá para reabrir pedidos"}
+              onClick={async () => {
+                const willClose = storeOpen; // si está abierta, vamos a cerrar
+                const ok = await confirmSlide(willClose ? {
+                  title: "Cerrar tienda de emergencia",
+                  body: "Los clientes verán el catálogo pero NO podrán hacer pedidos hasta que reabras.",
+                  label: "Deslizá para bloquear",
+                  loadingLabel: "Bloqueando…",
+                  successLabel: "Tienda cerrada ✓",
+                } : {
+                  title: "Reabrir tienda",
+                  body: "Los clientes podrán volver a hacer pedidos desde el catálogo.",
+                  label: "Deslizá para desbloquear",
+                  loadingLabel: "Reabriendo…",
+                  successLabel: "Tienda abierta ✓",
+                });
+                if (!ok) return;
+                set("store_open", !willClose);
+              }}
               right={
-                <ToggleSwitch
-                  checked={!storeOpen}
-                  onChange={async (v) => {
-                    const willClose = v; // v=true → cerrar; v=false → reabrir
-                    const ok = await confirmSlide(willClose ? {
-                      title: "Cerrar tienda de emergencia",
-                      body: "Los clientes verán el catálogo pero NO podrán hacer pedidos hasta que reabras.",
-                      label: "Deslizá para bloquear",
-                      loadingLabel: "Bloqueando…",
-                      successLabel: "Tienda cerrada ✓",
-                    } : {
-                      title: "Reabrir tienda",
-                      body: "Los clientes podrán volver a hacer pedidos desde el catálogo.",
-                      label: "Deslizá para desbloquear",
-                      loadingLabel: "Reabriendo…",
-                      successLabel: "Tienda abierta ✓",
-                    });
-                    if (!ok) return;
-                    set("store_open", !v);
-                  }}
-                  label="Cierre de emergencia"
-                />
+                // Indicador visual de estado (no clickeable)
+                <div aria-hidden="true" style={{
+                  width: 10, height: 10, borderRadius: 999,
+                  background: storeOpen ? "var(--ag-c-sales)" : "var(--ag-c-orders)",
+                  boxShadow: `0 0 8px ${storeOpen ? "var(--ag-c-sales)" : "var(--ag-c-orders)"}88`,
+                }} />
               }
             />
             <SettingsRow

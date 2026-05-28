@@ -65,7 +65,7 @@ export default function ConfirmSlideProvider({ children }) {
         <div
           onClick={() => close(false)}
           style={{
-            position: "fixed", inset: 0, zIndex: 400,
+            position: "fixed", inset: 0, zIndex: 1100,
             background: "rgba(0,0,0,0.55)",
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: 16,
