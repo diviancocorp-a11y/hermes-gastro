@@ -347,8 +347,6 @@ function Stock({ ingredients, setIngredients, recipes, overlay, setOverlay, show
 function IngForm({ data, onClose, onSave, onDel, settings }) {
   const [f, setF] = useState(data || { name: "", unit: "kg", cost: 0, stock: 0, min_stock: 0, food_category: "dry" });
   const [err, setErr] = useState("");
-  const [confirmDel, setConfirmDel] = useState(false);
-
   const s = (k, v) => { setErr(""); setF(p => ({ ...p, [k]: v })); };
   const canSave = f.name && (f.cost || 0) > 0 && (f.stock || 0) >= 0;
 
@@ -450,63 +448,27 @@ function IngForm({ data, onClose, onSave, onDel, settings }) {
           {data ? "✓ Guardar cambios" : "✓ Agregar insumo"}
         </button>
 
-        {/* Eliminar (solo al editar) */}
+        {/* Archivar (solo al editar) — botón directo al slide */}
         {data && (
-          <>
-            {!confirmDel ? (
-              <button
-                type="button"
-                onClick={() => setConfirmDel(true)}
-                style={{
-                  width: "100%", marginTop: 10, padding: "12px",
-                  background: "transparent",
-                  border: "1px solid var(--ag-c-orders)",
-                  color: "var(--ag-c-orders)",
-                  borderRadius: 12, fontSize: 13, fontWeight: 700,
-                  cursor: "pointer", fontFamily: "inherit",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                </svg>
-                Eliminar insumo
-              </button>
-            ) : (
-              <div style={{
-                marginTop: 10, padding: 12,
-                background: "var(--ag-c-orders-soft)",
-                border: "1px solid var(--ag-c-orders)",
-                borderRadius: 12,
-              }}>
-                <div style={{ fontSize: 12.5, color: "var(--ag-c-orders)", fontWeight: 700, marginBottom: 8 }}>
-                  ⚠ ¿Eliminar "{f.name}"?
-                </div>
-                <div style={{ fontSize: 11.5, color: "var(--ag-ink-2)", marginBottom: 10 }}>
-                  Esta acción no se puede deshacer. Si el insumo está en uso en alguna receta no se podrá eliminar.
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDel(false)}
-                    className="ag-btn-ghost"
-                    style={{ flex: 1, padding: "10px", fontSize: 12 }}
-                  >Cancelar</button>
-                  <button
-                    type="button"
-                    onClick={() => onDel(data.id)}
-                    style={{
-                      flex: 1, padding: "10px",
-                      background: "var(--ag-c-orders)", color: "#fff",
-                      border: 0, borderRadius: 10,
-                      fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                    }}
-                  >Sí, eliminar</button>
-                </div>
-              </div>
-            )}
-          </>
+          <button
+            type="button"
+            onClick={() => onDel(data.id)}
+            style={{
+              width: "100%", marginTop: 10, padding: "12px",
+              background: "transparent",
+              border: "1px solid var(--ag-c-orders)",
+              color: "var(--ag-c-orders)",
+              borderRadius: 12, fontSize: 13, fontWeight: 700,
+              cursor: "pointer", fontFamily: "inherit",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            </svg>
+            Archivar insumo
+          </button>
         )}
 
         {/* Volver al pie */}
