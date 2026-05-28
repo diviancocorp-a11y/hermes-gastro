@@ -1,0 +1,273 @@
+/* ────────────────────────────────────────────────────────
+ * Hermes Gastro — Sistema visual (tokens + tipografía + componentes base)
+ * Extiende los CSS variables existentes de la app sin pisarlos.
+ * Las clases nuevas conviven con las viejas — uso opt-in vía className.
+ * ──────────────────────────────────────────────────────── */
+
+:root {
+  /* Tokens editoriales — el viejo --ac, --bg, etc. los inyecta theme.js por tenant */
+  --hg-font-heading: 'Instrument Serif', 'DM Serif Display', Georgia, serif;
+  --hg-font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --hg-font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+
+  /* Escala de espaciado (sumo al stack existente) */
+  --hg-s1: 4px;
+  --hg-s2: 8px;
+  --hg-s3: 12px;
+  --hg-s4: 16px;
+  --hg-s5: 24px;
+  --hg-s6: 32px;
+  --hg-s7: 48px;
+  --hg-s8: 64px;
+
+  /* Radios editoriales */
+  --hg-rs: 8px;
+  --hg-r: 14px;
+  --hg-rl: 22px;
+
+  /* Sombras */
+  --hg-sh-sm: 0 1px 2px rgba(31, 24, 20, 0.04), 0 0 0 1px rgba(31, 24, 20, 0.04);
+  --hg-sh-md: 0 2px 4px rgba(31, 24, 20, 0.04), 0 8px 24px rgba(31, 24, 20, 0.06);
+  --hg-sh-lg: 0 4px 8px rgba(31, 24, 20, 0.04), 0 24px 48px rgba(31, 24, 20, 0.1);
+
+  /* Motion */
+  --hg-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --hg-t-fast: 120ms;
+  --hg-t-med: 220ms;
+  --hg-t-slow: 420ms;
+
+  /* Estados semánticos (no cambian por tenant) */
+  --hg-ok: #4a6b3a;
+  --hg-warn: #a87a2a;
+  --hg-err: #9b3030;
+}
+
+/* ────────── Escala tipográfica ────────── */
+.hg-display {
+  font-family: var(--hg-font-heading);
+  font-weight: 400;
+  font-size: 56px;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+}
+.hg-h1 {
+  font-family: var(--hg-font-heading);
+  font-weight: 400;
+  font-size: 36px;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+.hg-h2 {
+  font-family: var(--hg-font-heading);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.005em;
+}
+.hg-h3 {
+  font-family: var(--hg-font-heading);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.2;
+}
+.hg-h4 {
+  font-family: var(--hg-font-body);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+}
+.hg-body-l {
+  font-family: var(--hg-font-body);
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.5;
+}
+.hg-body-m {
+  font-family: var(--hg-font-body);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.hg-body-s {
+  font-family: var(--hg-font-body);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--t2, #5c4a3f);
+}
+.hg-caption {
+  font-family: var(--hg-font-body);
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--t3, #a89684);
+}
+.hg-mono {
+  font-family: var(--hg-font-mono);
+  font-size: 12px;
+}
+
+/* ────────── Hairline divider ────────── */
+.hg-hr {
+  height: 1px;
+  background: var(--line, var(--b2));
+  border: 0;
+  margin: 0;
+}
+
+/* ────────── Status pill ────────── */
+.hg-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  background: transparent;
+}
+.hg-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+/* ────────── Botones editoriales ────────── */
+.hg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--hg-font-body);
+  font-weight: 500;
+  border-radius: var(--hg-rs);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--hg-t-fast) var(--hg-ease);
+  text-decoration: none;
+  user-select: none;
+  white-space: nowrap;
+}
+.hg-btn:focus-visible {
+  outline: 2px solid var(--ac);
+  outline-offset: 2px;
+}
+.hg-btn-sm {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+.hg-btn-md {
+  height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+}
+.hg-btn-lg {
+  height: 52px;
+  padding: 0 22px;
+  font-size: 15px;
+}
+.hg-btn-primary {
+  background: var(--ac);
+  color: #fff;
+}
+.hg-btn-primary:hover {
+  filter: brightness(0.92);
+}
+.hg-btn-primary[disabled] {
+  background: var(--b3, var(--b2));
+  color: var(--t3);
+  cursor: not-allowed;
+}
+.hg-btn-secondary {
+  background: transparent;
+  color: var(--tx);
+  border-color: var(--line, var(--b2));
+}
+.hg-btn-secondary:hover {
+  background: var(--b2);
+}
+.hg-btn-ghost {
+  background: transparent;
+  color: var(--t2);
+}
+.hg-btn-ghost:hover {
+  background: var(--b2);
+  color: var(--tx);
+}
+
+/* ────────── Inputs editoriales ────────── */
+.hg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hg-field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t2);
+  letter-spacing: 0.02em;
+}
+.hg-input {
+  height: 48px;
+  background: transparent;
+  border: 1px solid var(--line, var(--b2));
+  border-radius: var(--hg-rs);
+  padding: 0 14px;
+  font-family: var(--hg-font-body);
+  font-size: 15px;
+  color: var(--tx);
+  transition: border-color var(--hg-t-fast) var(--hg-ease);
+  width: 100%;
+}
+.hg-input::placeholder {
+  color: var(--t3);
+}
+.hg-input:focus {
+  outline: none;
+  border-color: var(--ac);
+  box-shadow: 0 0 0 3px var(--al, rgba(176, 82, 54, 0.08));
+}
+
+/* ────────── ProductCard editorial (fondo de color cuando no hay foto) ────────── */
+.hg-prod-card {
+  border-radius: var(--hg-r);
+  overflow: hidden;
+  background: var(--b3, var(--b2));
+  position: relative;
+  transition: transform var(--hg-t-fast) var(--hg-ease);
+}
+.hg-prod-card:active {
+  transform: scale(0.985);
+}
+.hg-prod-card-name {
+  font-family: var(--hg-font-heading);
+  font-weight: 400;
+  font-size: 18px;
+  letter-spacing: -0.005em;
+  color: var(--tx);
+}
+
+/* Fondo decorativo cuando no hay imagen — patrón sutil tipográfico-friendly */
+.hg-prod-fallback {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.hg-prod-fallback::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(135deg, currentColor 0 1px, transparent 1px 14px);
+  opacity: 0.08;
+  pointer-events: none;
+}

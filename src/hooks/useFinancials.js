@@ -17,16 +17,26 @@ import { todayISO, OrderStatus } from "../lib/utils";
  * (sugerir ajustarlo en settings).
  */
 export default function useFinancials({ ings, recs, sales, exps, orders, waste, settings }) {
-  // % merma global (default 5%, validado entre 0-100)
+  // % merma proyectada (default 5%, validado entre 0-100)
   const wastePct = useMemo(() => {
     const pct = Number(settings?.waste_pct);
     if (!Number.isFinite(pct) || pct < 0) return 5;
     return Math.min(100, pct);
   }, [settings?.waste_pct]);
 
-  const wasteFactor = 1 + wastePct / 100;
+  // % gastos operativos asignado a cada producto (default 0%)
+  // Cubre costos indirectos: servicios, alquiler, sueldos, etc.
+  const expensePct = useMemo(() => {
+    const pct = Number(settings?.expense_pct);
+    if (!Number.isFinite(pct) || pct < 0) return 0;
+    return Math.min(100, pct);
+  }, [settings?.expense_pct]);
 
-  // Costo materia prima del producto SIN merma (interno, para referencia)
+  // Multiplicador único — sumar ambos porcentajes al costo base.
+  // Ej: merma 5% + gastos 12% → factor 1.17 (costo real = base × 1.17)
+  const costFactor = 1 + (wastePct + expensePct) / 100;
+
+  // Costo materia prima del producto SIN ajustes (interno, para referencia)
   const calculateRecipeRawCost = useCallback(rec => {
     if (!rec?.ingredients) return 0;
     return rec.ingredients.reduce((sum, ri) => {
@@ -35,10 +45,11 @@ export default function useFinancials({ ings, recs, sales, exps, orders, waste, 
     }, 0);
   }, [ings]);
 
-  // Costo real CON merma — lo que usan los componentes para mostrar costo/margen
+  // Costo real CON merma + gastos — lo que usan los componentes para
+  // mostrar costo/margen real al usuario.
   const calculateRecipeCost = useCallback(rec => {
-    return calculateRecipeRawCost(rec) * wasteFactor;
-  }, [calculateRecipeRawCost, wasteFactor]);
+    return calculateRecipeRawCost(rec) * costFactor;
+  }, [calculateRecipeRawCost, costFactor]);
 
   // Insumos con stock bajo
   const lowStockIngredients = useMemo(
@@ -71,10 +82,10 @@ export default function useFinancials({ ings, recs, sales, exps, orders, waste, 
     [sales, recs, calculateRecipeRawCost, monthStart]
   );
 
-  // Costo de producción REAL del mes (con merma proyectada)
+  // Costo de producción REAL del mes (con merma + gastos proyectados)
   const monthProductionCost = useMemo(
-    () => monthProductionCostRaw * wasteFactor,
-    [monthProductionCostRaw, wasteFactor]
+    () => monthProductionCostRaw * costFactor,
+    [monthProductionCostRaw, costFactor]
   );
 
   // Costo de la merma cargada manualmente en stock (vencimientos, roturas, derrames)

@@ -1,29 +1,29 @@
 // src/components/admin/analytics/CheckoutFunnel.jsx
-// Checkout funnel: estimated views → cart → checkout → completed.
-// Note: without real page-view tracking, we estimate views from order count × typical ratios.
-// If you integrate analytics (e.g. Plausible/PostHog), replace estimates with real data.
+// Checkout funnel: estimated views → cart → checkout → completed. Visual v2.
 import { useMemo } from 'react';
 import { formatInt } from '../../../lib/utils';
 
 const FUNNEL_STAGES = [
-  { key: 'views', label: 'Visitas catálogo', icon: '👁', color: '#1565C0' },
-  { key: 'cart', label: 'Agregaron al carrito', icon: '🛒', color: '#D4A017' },
-  { key: 'checkout', label: 'Iniciaron checkout', icon: '📋', color: '#E07A5C' },
-  { key: 'completed', label: 'Pedido completado', icon: '✅', color: '#3A7D44' },
+  { key: 'views',     label: 'Visitas catálogo',    icon: '👁',  color: 'var(--ag-c-prep)' },
+  { key: 'cart',      label: 'Agregaron al carrito', icon: '🛒', color: 'var(--ag-c-stock)' },
+  { key: 'checkout',  label: 'Iniciaron checkout',   icon: '📋', color: 'var(--ag-c-recipes)' },
+  { key: 'completed', label: 'Pedido completado',    icon: '✅', color: 'var(--ag-c-sales)' },
 ];
 
-export default function CheckoutFunnel({ orders }) {
+// Card por defecto a nivel módulo (evita recrear componente en cada render)
+function DefaultCard({ children }) {
+  return <div className="ag-card">{children}</div>;
+}
+
+export default function CheckoutFunnel({ orders, Wrapper }) {
   const funnel = useMemo(() => {
     const completed = orders.filter(o => o.status === 'completed').length;
-    const cancelled = orders.filter(o => o.status === 'cancelled').length;
     const allOrders = orders.length;
 
-    // Estimated conversion ratios (industry average for food delivery):
-    // ~15% of visitors add to cart, ~50% of cart proceed to checkout, ~70% of checkout complete
-    // We work backwards from completed orders to estimate earlier stages
-    const checkout = allOrders; // everyone who submitted = checkout
-    const cart = Math.round(checkout / 0.65);    // ~65% of cart → submit
-    const views = Math.round(cart / 0.20);        // ~20% of views → cart
+    // Estimated conversion ratios
+    const checkout = allOrders;
+    const cart = Math.round(checkout / 0.65);
+    const views = Math.round(cart / 0.20);
 
     return [
       { ...FUNNEL_STAGES[0], value: views },
@@ -34,14 +34,14 @@ export default function CheckoutFunnel({ orders }) {
   }, [orders]);
 
   const maxVal = funnel[0]?.value || 1;
+  const Card = Wrapper || DefaultCard;
 
   return (
-    <div className="c" style={{ padding: 16 }}>
-      <div className="fl" style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>🔽 Embudo de checkout</div>
-      <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 12 }}>
-        * Visitas y carrito son estimaciones. Conectá analytics para datos reales.
+    <Card title="Embudo de checkout" state="prep" meta="estimado">
+      <div style={{ fontSize: 11, color: 'var(--ag-ink-3)', margin: '4px 0 12px' }}>
+        Visitas y carrito son estimaciones. Conectá analytics para datos reales.
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {funnel.map((stage, i) => {
           const pct = maxVal ? ((stage.value / maxVal) * 100) : 0;
           const convFromPrev = i > 0 && funnel[i - 1].value
@@ -50,16 +50,16 @@ export default function CheckoutFunnel({ orders }) {
 
           return (
             <div key={stage.key}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--tx)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ag-ink)' }}>
                   {stage.icon} {stage.label}
                 </span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: stage.color }}>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: stage.color }}>
                   {formatInt(stage.value)}
-                  {convFromPrev && <span style={{ color: 'var(--t3)', fontWeight: 500, marginLeft: 4 }}>({convFromPrev}%)</span>}
+                  {convFromPrev && <span style={{ color: 'var(--ag-ink-3)', fontWeight: 500, marginLeft: 4 }}>({convFromPrev}%)</span>}
                 </span>
               </div>
-              <div style={{ height: 10, background: 'var(--b2)', borderRadius: 5, overflow: 'hidden' }}>
+              <div style={{ height: 10, background: 'var(--ag-bg-soft)', borderRadius: 5, overflow: 'hidden' }}>
                 <div style={{
                   height: '100%',
                   width: `${pct}%`,
@@ -72,6 +72,6 @@ export default function CheckoutFunnel({ orders }) {
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }

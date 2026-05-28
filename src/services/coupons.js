@@ -1,12 +1,22 @@
 // src/services/coupons.js
 import { supabase } from '../lib/supabase';
 import { CouponCreateSchema, validateInput } from '../lib/schemas/index.js';
+import business from '@business';
 
 const PAGE_SIZE = 50;
 
-function generateCouponCode() {
+// Prefix dinámico del business — primeras 4 letras del slug en mayúsculas.
+// Fallback: 'CRM'. Útil para multi-tenant (LNP / COCHI / MM / ...).
+function couponPrefix() {
+  const slug = (business?.slug || business?.name || 'crm')
+    .toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+  return slug || 'CRM';
+}
+
+function generateCouponCode(prefix) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  return 'NONA-' + Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const p = prefix || couponPrefix();
+  return `${p}-` + Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
 export async function createCouponForOrder(orderId, email, discountPct = 10) {
@@ -20,6 +30,59 @@ export async function createCouponForOrder(orderId, email, discountPct = 10) {
   }).select().single();
   if (error) { console.error('createCouponForOrder:', error.message); return null; }
   return data;
+}
+
+// Crea un cupón targeted a un cliente específico (no atado a un pedido).
+// kind: 'percent' (usa discountPct), 'twoxone' (label describe), 'other' (label libre).
+// expiresDays default 30. codeOverride opcional.
+export async function createCustomerCoupon({ email, kind = 'percent', discountPct, label = null, expiresDays = 30, codeOverride = null }) {
+  if (!email) return null;
+  // Validaciones por tipo
+  if (kind === 'percent' && (!discountPct || discountPct < 1 || discountPct > 100)) return null;
+  if ((kind === 'twoxone' || kind === 'other') && !label?.trim()) return null;
+
+  const code = (codeOverride || generateCouponCode()).toUpperCase();
+  const expires = new Date();
+  expires.setDate(expires.getDate() + (Number(expiresDays) || 30));
+  const { data, error } = await supabase.from('coupons').insert({
+    code,
+    kind,
+    label: label?.trim() || null,
+    discount_pct: kind === 'percent' ? Math.round(discountPct) : 0,
+    email,
+    expires_at: expires.toISOString()
+  }).select().single();
+  if (error) { console.error('createCustomerCoupon:', error.message); return null; }
+  return data;
+}
+
+// Crea un cupón "plantilla" (sin email asignado) que cualquiera puede usar.
+// Para los cupones pre-hechos tipo "20%OFF general" o "2x1 hamburguesas".
+export async function createTemplateCoupon({ code, kind = 'percent', discountPct, label = null, expiresDays = 90 }) {
+  if (!code) return null;
+  if (kind === 'percent' && !discountPct) return null;
+  if ((kind === 'twoxone' || kind === 'other') && !label?.trim()) return null;
+
+  const expires = new Date();
+  expires.setDate(expires.getDate() + (Number(expiresDays) || 90));
+  const { data, error } = await supabase.from('coupons').insert({
+    code: code.toUpperCase(),
+    kind,
+    label: label?.trim() || null,
+    discount_pct: kind === 'percent' ? Math.round(discountPct) : 0,
+    email: null,                  // global, sin restricción de email
+    expires_at: expires.toISOString()
+  }).select().single();
+  if (error) { console.error('createTemplateCoupon:', error.message); return null; }
+  return data;
+}
+
+// Devuelve una descripción humana del cupón (para mostrar en el dropdown).
+export function describeCoupon(coupon) {
+  if (!coupon) return '';
+  if (coupon.kind === 'twoxone') return coupon.label || '2x1';
+  if (coupon.kind === 'other')   return coupon.label || 'Promo';
+  return `${coupon.discount_pct}% OFF`; // default: percent
 }
 
 export async function validateCoupon(code, email) {

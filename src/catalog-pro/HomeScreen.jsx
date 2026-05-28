@@ -1,0 +1,348 @@
+// src/catalog-pro/HomeScreen.jsx
+// Home del Catálogo Pro — conectada a datos reales del Catalog.
+// Stories y AI recos usan heurísticas estables (homeHelpers) donde no hay data.
+//
+// Props:
+//   store: { name, isOpen, pickupTime, logoLetter, logoColor }
+//   userName?: string
+//   products: producto[] (shape DB)
+//   categories: [{ name, displayName, subs, deal }]
+//   cartCount, cartTotal
+//   hasDeal(p), dealPrice(p)  — helpers del Catalog
+//   prepDefault?: number
+//   onAddToCart(p), onOpenCart(), onSearch(), onSelectCategory(name),
+//   onSelectProduct(p), onOpenAccount()
+
+import { useState, useEffect, useMemo } from "react";
+import Icon from "./Icon";
+import { fmtAR } from "./format";
+import {
+  ProductPhoto, PriceTag, Rating, StickyCart, SectionHeader, AddRound,
+} from "./atoms";
+import { mapProduct, buildStories, buildRecos } from "./homeHelpers";
+
+const SEARCH_PHRASES = ["empanadas…", "tortilla de papa…", "algo dulce…", "pasta de hoy…"];
+
+function SearchTyping() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setI(v => (v + 1) % SEARCH_PHRASES.length), 2200);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <span key={i} style={{ color: "var(--t2)", animation: "cp-fade-in 280ms var(--ease)", display: "inline-block" }}>
+      {SEARCH_PHRASES[i]}
+    </span>
+  );
+}
+
+export default function HomeScreen({
+  store = {}, userName, products = [], categories = [],
+  cartCount = 0, cartTotal = 0,
+  hasDeal, dealPrice, prepDefault,
+  onAddToCart, onOpenCart, onSearch, onSelectCategory, onSelectProduct, onOpenAccount,
+}) {
+  const [activeCat, setActiveCat] = useState("all");
+  const [activeFilter, setActiveFilter] = useState(null);
+  const [storyIdx, setStoryIdx] = useState(0);
+
+  const stories = useMemo(() => buildStories(products, hasDeal), [products, hasDeal]);
+  const recos = useMemo(() => buildRecos(products, hasDeal), [products, hasDeal]);
+  const combos = useMemo(
+    () => products
+      .filter(p => /combo|pack|promo|caja|docena|mesa/i.test(p.category || ""))
+      .slice(0, 8)
+      .map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault })),
+    [products, hasDeal, dealPrice, prepDefault]
+  );
+  const popular = useMemo(
+    () => products.slice(0, 6).map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault })),
+    [products, hasDeal, dealPrice, prepDefault]
+  );
+
+  useEffect(() => {
+    if (stories.length === 0) return;
+    const t = setInterval(() => setStoryIdx(i => (i + 1) % stories.length), 4500);
+    return () => clearInterval(t);
+  }, [stories.length]);
+
+  const quickFilters = [
+    { id: "deal", name: "En oferta" },
+    { id: "veg", name: "Vegetariano" },
+    { id: "new", name: "Nuevos" },
+    { id: "top", name: "Más pedidos" },
+  ];
+
+  const totalCount = products.length;
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Buenos días";
+    if (h < 20) return "Buenas tardes";
+    return "Buenas noches";
+  })();
+
+  const logoLetter = (store.logoLetter || store.name?.charAt(0) || "H").toUpperCase();
+
+  return (
+    <div className="cp-root cp-surface cp-no-scrollbar" style={{ paddingBottom: 200, minHeight: "100vh", width: "100%" }}>
+      {/* ===== HEADER ===== */}
+      <div style={{
+        padding: "16px 16px 8px 22px", background: "var(--bg)",
+        position: "sticky", top: 0, zIndex: 20,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 999,
+              background: store.logoColor || "linear-gradient(135deg, var(--ac), var(--ac2))",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#fff", fontFamily: "var(--font-heading)", fontSize: 18,
+            }}>{logoLetter}</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, color: "var(--tx)", lineHeight: 1 }}>
+                {store.name || "Tienda"}
+              </div>
+              <div className="body-s" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2, fontSize: 12 }}>
+                <span style={{ width: 6, height: 6, borderRadius: 999, background: store.isOpen ? "var(--ok)" : "var(--err)" }} />
+                {store.isOpen ? `Abierto${store.pickupTime ? ` · retiro ${store.pickupTime}` : ""}` : "Cerrado · pedidos programados"}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={onOpenAccount} style={iconBtn} aria-label="Mi cuenta">
+              <Icon name="user" size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== GREETING EDITORIAL ===== */}
+      <div style={{ padding: "14px 22px 18px" }}>
+        <div className="caption" style={{ color: "var(--ac)", marginBottom: 8 }}>
+          {greeting}{userName ? `, ${userName}` : ""}
+        </div>
+        <h1 className="h-1" style={{ margin: 0, fontSize: 32 }}>
+          ¿Qué te <em style={{ fontStyle: "italic", color: "var(--t2)" }}>tienta</em> hoy?
+        </h1>
+      </div>
+
+      {/* ===== SMART SEARCH ===== */}
+      <div style={{ padding: "0 22px 18px" }}>
+        <button onClick={onSearch} style={{
+          width: "100%", height: 50, background: "var(--b2)", borderRadius: 14,
+          display: "flex", alignItems: "center", padding: "0 16px", gap: 12,
+          border: "1px solid transparent", cursor: "pointer", fontFamily: "var(--font-body)",
+        }}>
+          <Icon name="search" size={18} style={{ color: "var(--t2)" }} />
+          <div className="body-m" style={{ flex: 1, color: "var(--t3)", display: "flex", alignItems: "baseline", gap: 4, textAlign: "left" }}>
+            <span>Buscar </span>
+            <SearchTyping />
+          </div>
+          <div style={{
+            width: 32, height: 32, borderRadius: 8, background: "var(--bg)",
+            display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--line)",
+          }}>
+            <Icon name="filter" size={14} style={{ color: "var(--t2)" }} />
+          </div>
+        </button>
+      </div>
+
+      {/* ===== STORIES ===== */}
+      {stories.length > 0 && (
+        <div style={{ paddingBottom: 6 }}>
+          <div className="cp-no-scrollbar" style={{ display: "flex", gap: 10, padding: "0 22px", overflowX: "auto" }}>
+            {stories.map((s, i) => (
+              <div key={s.id} onClick={() => onSelectProduct?.(s._raw)} style={{
+                flex: "0 0 100px", height: 140, borderRadius: 16,
+                position: "relative", overflow: "hidden", cursor: "pointer",
+                border: i === storyIdx ? "2px solid var(--ac)" : "1px solid var(--line)",
+                transition: "border 200ms ease",
+              }}>
+                <ProductPhoto src={s.img} ratio="100/140" radius={0} tone="#5C4A3F" />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.65) 100%)" }} />
+                <div style={{ position: "absolute", top: 8, left: 8 }}>
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "#fff",
+                    background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)",
+                    padding: "3px 7px", borderRadius: 4, textTransform: "uppercase",
+                  }}>{s.tag}</span>
+                </div>
+                <div style={{ position: "absolute", bottom: 10, left: 10, right: 10, color: "#fff", fontSize: 12, fontWeight: 500, lineHeight: 1.2 }}>
+                  {s.label}
+                </div>
+                {i === storyIdx && (
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.25)" }}>
+                    <div style={{ height: "100%", background: "#fff", animation: "cp-story-progress 4500ms linear" }} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ===== CATEGORÍAS CHIPS ===== */}
+      <div style={{ paddingTop: 28 }}>
+        <div style={{ padding: "0 22px 12px" }}>
+          <div className="caption">Carta · {totalCount} productos</div>
+        </div>
+        <div className="cp-no-scrollbar" style={{ display: "flex", gap: 6, padding: "0 22px", overflowX: "auto" }}>
+          {[{ name: "all", displayName: "Todos" }, ...categories.filter(c => c.name !== "Todos")].map(c => {
+            const isActive = activeCat === c.name;
+            const count = c.name === "all" ? totalCount : products.filter(p => (c.subs || []).includes(p.category)).length;
+            return (
+              <button key={c.name} onClick={() => { setActiveCat(c.name); if (c.name !== "all") onSelectCategory?.(c.name); }} style={{
+                flex: "0 0 auto", height: 36, padding: "0 14px", borderRadius: 999,
+                background: isActive ? "var(--tx)" : "transparent",
+                color: isActive ? "var(--bg)" : "var(--t2)",
+                border: isActive ? "1px solid var(--tx)" : "1px solid var(--line)",
+                fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 500,
+                cursor: "pointer", whiteSpace: "nowrap", transition: "all 120ms var(--ease)",
+                display: "inline-flex", alignItems: "center", gap: 6,
+              }}>
+                {c.displayName || c.name}
+                <span style={{ fontSize: 10, color: isActive ? "rgba(255,255,255,0.5)" : "var(--t3)", fontWeight: 400 }}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+        {/* Quick filters */}
+        <div className="cp-no-scrollbar" style={{ display: "flex", gap: 6, padding: "12px 22px 0", overflowX: "auto" }}>
+          {quickFilters.map(f => (
+            <button key={f.id} onClick={() => setActiveFilter(activeFilter === f.id ? null : f.id)} style={{
+              flex: "0 0 auto", height: 28, padding: "0 11px", borderRadius: 6,
+              background: activeFilter === f.id ? "color-mix(in oklab, var(--ac) 14%, transparent)" : "transparent",
+              color: activeFilter === f.id ? "var(--ac)" : "var(--t2)",
+              border: "1px solid " + (activeFilter === f.id ? "var(--ac)" : "var(--line)"),
+              fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 500,
+              cursor: "pointer", whiteSpace: "nowrap", transition: "all 120ms var(--ease)",
+            }}>{f.name}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* ===== AI RECOS "PARA VOS" ===== */}
+      {recos.length > 0 && (
+        <div style={{
+          margin: "28px 22px 0", padding: "20px 18px",
+          background: "linear-gradient(135deg, color-mix(in oklab, var(--ac) 9%, var(--bg)) 0%, var(--bg) 100%)",
+          border: "1px solid color-mix(in oklab, var(--ac) 22%, var(--line))", borderRadius: 18,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 26, height: 26, borderRadius: 999, background: "var(--ac)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon name="sparkle" size={14} stroke={2} />
+              </div>
+              <div className="caption" style={{ color: "var(--ac)", margin: 0 }}>Para vos</div>
+            </div>
+          </div>
+          <h3 className="h-3" style={{ margin: "4px 0 14px", fontSize: 20 }}>
+            Pensamos en estos <em style={{ fontStyle: "italic", color: "var(--t2)" }}>para vos</em>
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {recos.map(p => (
+              <div key={p.id} onClick={() => onSelectProduct?.(p._raw)} style={{ display: "grid", gridTemplateColumns: "64px 1fr auto", gap: 12, alignItems: "center", cursor: "pointer" }}>
+                <ProductPhoto src={p.img} height={64} radius={10} tone={p.tone} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "var(--tx)", marginBottom: 2 }}>{p.name}</div>
+                  <div className="body-s" style={{ fontSize: 11, color: "var(--ac)" }}>
+                    <Icon name="sparkle" size={10} style={{ verticalAlign: "-1px", marginRight: 3, display: "inline-block" }} />
+                    {p.reason}
+                  </div>
+                  <div style={{ marginTop: 4 }}><PriceTag price={p.price} oldPrice={p.oldPrice} size="sm" /></div>
+                </div>
+                <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ===== COMBOS ===== */}
+      {combos.length > 0 && (
+        <>
+          <SectionHeader kicker="Combos" title="Para una mesa" em="completa" />
+          <div className="cp-no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 22px", overflowX: "auto" }}>
+            {combos.map(b => (
+              <div key={b.id} onClick={() => onSelectProduct?.(b._raw)} style={{
+                flex: "0 0 260px", borderRadius: 16, overflow: "hidden",
+                position: "relative", cursor: "pointer", border: "1px solid var(--line)",
+              }}>
+                <div style={{ position: "relative", height: 140 }}>
+                  <ProductPhoto src={b.img} height={140} radius={0} tone={b.tone} />
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.55) 100%)" }} />
+                  {b.oldPrice && (
+                    <div style={{
+                      position: "absolute", top: 10, right: 10, background: "var(--ac)", color: "#fff",
+                      fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", padding: "4px 8px", borderRadius: 4,
+                    }}>AHORRÁ {fmtAR(b.oldPrice - b.price)}</div>
+                  )}
+                  <div style={{ position: "absolute", bottom: 12, left: 14, color: "#fff" }}>
+                    <div style={{ fontFamily: "var(--font-heading)", fontSize: 22, lineHeight: 1.25 }}>{b.name}</div>
+                  </div>
+                </div>
+                <div style={{ background: "var(--bg)", padding: "12px 14px" }}>
+                  {b.desc && (
+                    <div className="body-s" style={{ fontSize: 12, marginBottom: 10, color: "var(--t2)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 30 }}>{b.desc}</div>
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <PriceTag price={b.price} oldPrice={b.oldPrice} size="md" />
+                    <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(b._raw); }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* ===== POPULARES (grid 2) ===== */}
+      <SectionHeader title="Lo más" em="pedido" />
+      <div style={{ padding: "0 22px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 14 }}>
+        {popular.map(p => (
+          <div key={p.id} onClick={() => onSelectProduct?.(p._raw)} style={{ position: "relative", cursor: "pointer", display: "flex", flexDirection: "column" }}>
+            <div style={{ position: "relative" }}>
+              <ProductPhoto src={p.img} height={140} radius={12} tone={p.tone} />
+              {p.badge && (
+                <div style={{ position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", color: "#fff", fontSize: 10, fontWeight: 600, letterSpacing: "0.04em", padding: "3px 7px", borderRadius: 4 }}>
+                  {p.badge}
+                </div>
+              )}
+              <div style={{ position: "absolute", bottom: -10, right: 8 }}>
+                <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
+              </div>
+            </div>
+            <div style={{ paddingTop: 14, paddingRight: 4 }}>
+              <div style={{
+                fontFamily: "var(--font-heading)", fontSize: 17, color: "var(--tx)", lineHeight: 1.3,
+                letterSpacing: "-0.005em", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                overflow: "hidden", minHeight: 44,
+              }}>{p.name}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                <Rating value={p.rating} />
+                <span className="body-s" style={{ fontSize: 11, color: "var(--t3)" }}>· {p.prepMin} min</span>
+              </div>
+              <div style={{ marginTop: 6 }}><PriceTag price={p.price} oldPrice={p.oldPrice} size="sm" /></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ===== STICKY CART ===== */}
+      {cartCount > 0 && (
+        <StickyCart count={cartCount} total={cartTotal} label="Ver pedido" onClick={onOpenCart} />
+      )}
+
+      <style>{`
+        @keyframes cp-fade-in { from { opacity: 0; transform: translateY(-2px) } to { opacity: 1; transform: none } }
+        @keyframes cp-story-progress { from { width: 0% } to { width: 100% } }
+      `}</style>
+    </div>
+  );
+}
+
+const iconBtn = {
+  width: 38, height: 38, borderRadius: 999, background: "transparent",
+  border: "1px solid var(--line)", display: "flex", alignItems: "center",
+  justifyContent: "center", color: "var(--tx)", cursor: "pointer",
+};

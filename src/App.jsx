@@ -13,6 +13,8 @@ import Catalog from './pages/Catalog'
 const Admin = lazy(() => import('./pages/Admin'))
 const OrderTracker = lazy(() => import('./pages/OrderTracker'))
 const MyAccount = lazy(() => import('./pages/MyAccount'))
+const MpCallback = lazy(() => import('./pages/MpCallback'))
+const MpStatus = lazy(() => import('./pages/MpStatus'))
 
 const Loading = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
@@ -36,6 +38,10 @@ export default function App() {
               <Route path="/admin" element={<Admin />} />
               <Route path="/order/:id" element={<OrderTracker />} />
               <Route path="/mi-cuenta" element={<MyAccount />} />
+              <Route path="/mp-callback" element={<MpCallback />} />
+              <Route path="/pago/exitoso" element={<MpStatus status="exitoso" />} />
+              <Route path="/pago/fallido" element={<MpStatus status="fallido" />} />
+              <Route path="/pago/pendiente" element={<MpStatus status="pendiente" />} />
             </Routes>
             </main>
           </Suspense>

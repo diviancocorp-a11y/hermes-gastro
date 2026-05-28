@@ -101,6 +101,7 @@ export async function submitOrder(orderData) {
         gift_note: validated.gift_note || '',
         delivery_date: validated.delivery_date || null,
         user_id: validated.user_id || null,
+        tip_pct: orderData.tip_pct || 0,
       },
     });
 
@@ -206,5 +207,8 @@ export async function validateCouponPublic(code, email) {
     if (data.email && cleanEmail && data.email.toLowerCase() !== cleanEmail.toLowerCase()) return null;
     if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
     return { id: data.id, discount_pct: data.discount_pct };
-  } catch { return null; }
+  } catch (e) {
+    console.warn('validateCouponPublic:', e?.message || e);
+    return null;
+  }
 }

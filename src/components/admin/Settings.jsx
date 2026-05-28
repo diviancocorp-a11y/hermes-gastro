@@ -1,318 +1,1050 @@
-import { useState } from "react";
-import { Icon } from "../../lib/utils";
-import { updateSettings, uploadCoverImage, uploadCatImage, uploadLogoImage, resetHistoricalData } from "../../lib/adminService";
-import business from '@business';
-const DEFAULT_SETTINGS = { ...business.defaultSettings };
-const CAT_NAMES=["Todos","Primeros Mimos","La Mesa Principal","El Sanguche de la Nona","La Nona Amasó","La Última Mordida","Cocina Consciente"];
-const COLORS=[{h:"#C45D3E",l:"Terracota"},{h:"#3A7D44",l:"Verde"},{h:"#1565C0",l:"Azul"},{h:"#7A2E4A",l:"Borgoña"},{h:"#8D6E00",l:"Dorado"},{h:"#2D1B0E",l:"Negro"}];
+/**
+ * Settings — panel de configuración dentro del drawer hamburguesa.
+ *
+ * Patrón estilo iOS Settings:
+ *  · Página raíz con grupos (Operación · Datos · Zona de riesgo)
+ *  · Items complejos abren sub-páginas con flecha atrás (no expand inline)
+ *  · Autosave debounced (sin botón "Guardar")
+ *
+ * Props:
+ *   settings, setSettings · estado en Admin.jsx (sincroniza con DB)
+ *   showToast             · feedback
+ *   theme, onThemeChange  · controla el toggle de modo oscuro (vive en Operación)
+ *   onExport              · handler de export embed (provee sales/expenses/etc.)
+ *   exportData            · { sales, expenses, ingredients, orders, recipes, sett }
+ *                           para la sub-página de exportar
+ */
+import { useEffect, useRef, useState } from "react";
+import { updateSettings, resetHistoricalData } from "../../lib/adminService";
+import {
+  downloadCSV, downloadXLSX, printAsPDF,
+  prepareSalesExport, prepareExpensesExport,
+  prepareInventoryExport, prepareOrdersExport,
+} from "../../lib/exports";
+import { todayISO } from "../../lib/utils";
+import business from "@business";
+import SettingsRow from "./shared/forms/SettingsRow";
+import ToggleSwitch from "./shared/forms/ToggleSwitch";
+import CatChipsEditor from "../ui/CatChipsEditor";
+import PaymentMethodsEditor from "../ui/PaymentMethodsEditor";
 
-const SECTIONS=["identity","cover","catImages","storeState","finance","hours","exports","reset"];
+function Icon({ d, viewBox = "0 0 24 24" }) {
+  return (
+    <svg width="16" height="16" viewBox={viewBox} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={d} />
+    </svg>
+  );
+}
 
-function Settings({settings,setSettings,showToast,onBack,onExport,onCategories}){
-  const [s,setS]=useState({...settings});
-  const [nc,setNc]=useState("");const [ni,setNi2]=useState("");
-  const [uploadingCover,setUploadingCover]=useState(false);
-  const [uploadingCat,setUploadingCat]=useState(null);
-  const [uploadingLogo,setUploadingLogo]=useState(false);
-  const [resetPin,setResetPin]=useState("");
-  const [showReset,setShowReset]=useState(false);
-  const [resetting,setResetting]=useState(false);
-  const [resetConfirm,setResetConfirm]=useState(false);
-  const [open,setOpen]=useState({});
-  const tog=(k)=>setOpen(p=>({...p,[k]:!p[k]}));
-  const set=(k,v)=>setS(p=>({...p,[k]:v}));
-  const setCatImg=(name,url)=>setS(p=>({...p,cat_images:{...(p.cat_images||{}),[name]:url}}));
-  const toggleCatHidden=(name)=>setS(p=>{const cur=p.hidden_cats||[];return{...p,hidden_cats:cur.includes(name)?cur.filter(x=>x!==name):[...cur,name]};});
-  const setCatName=(origName,val)=>setS(p=>({...p,cat_names:{...(p.cat_names||{}),[origName]:val}}));
+function BackChevron() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
 
-  const handleCoverFile=async(e)=>{
-    const file=e.target.files?.[0];if(!file)return;
-    setUploadingCover(true);
-    const result=await uploadCoverImage(file);
-    setUploadingCover(false);
-    if(result?.__error){showToast(result.__error);return;}
-    if(result){set("cover_url",result);showToast("Imagen cargada ✓");}else{showToast("Error al subir imagen");}
-  };
-  const handleCatFile=async(catName,e)=>{
-    const file=e.target.files?.[0];if(!file)return;
-    setUploadingCat(catName);
-    const result=await uploadCatImage(file,catName);
-    setUploadingCat(null);
-    if(result?.__error){showToast(result.__error);return;}
-    if(result){setCatImg(catName,result);showToast(`Imagen de "${catName}" cargada ✓`);}else{showToast("Error al subir imagen");}
-  };
-  const handleLogoFile=async(e)=>{
-    const file=e.target.files?.[0];if(!file)return;
-    setUploadingLogo(true);
-    const result=await uploadLogoImage(file);
-    setUploadingLogo(false);
-    if(result?.__error){showToast(result.__error);return;}
-    if(result){set("logo_url",result);showToast("Logo cargado ✓");}else{showToast("Error al subir logo");}
-  };
+function Settings({ settings, setSettings, showToast, theme = 'light', onThemeChange, exportData }) {
+  const [s, setS] = useState({ ...settings });
+  const [page, setPage] = useState('root'); // 'root' | 'hours' | 'expCats' | 'ingCats' | 'payments' | 'exports' | 'reset'
 
-  return(<>
-    <div className="s" style={{paddingTop:4}}><div className="st">Ajustes</div></div>
-    <div className="s">
+  // ─── Autosave debounced ───
+  const skipFirst = useRef(true);
+  const saveTimer = useRef(null);
+  const saveSeq = useRef(0);
 
-      {/* ── Identidad ── */}
-      <div className="c">
-        <div onClick={()=>tog("identity")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>🏪 Identidad</label>
-          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.identity?"rotate(180deg)":"rotate(0)"}}>▾</span>
-        </div>
-        {open.identity&&<div style={{marginTop:10}}>
-        <div className="fg"><label className="fl">Nombre del negocio</label><input className="fin" value={s.biz_name||""} onChange={e=>set("biz_name",e.target.value)}/></div>
-        {/* Logo: imagen o letra+color */}
-        <div className="fg">
-          <label className="fl">Logo</label>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{width:56,height:56,borderRadius:16,overflow:"hidden",background:s.logo_url?"transparent":(s.logo_color||"#C45D3E"),display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:24,fontWeight:700,fontFamily:"'DM Serif Display',serif",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,0.12)"}}>
-              {s.logo_url?<img src={s.logo_url} alt="logo" loading="lazy" decoding="async" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display='none'}}/>:(s.logo_letter||"N")}
-            </div>
-            <div style={{flex:1}}>
-              <label style={{display:"inline-block",padding:"7px 14px",background:"var(--pr,#C45D3E)",color:"#fff",borderRadius:10,fontSize:12,fontWeight:600,cursor:"pointer",textAlign:"center"}}>
-                {uploadingLogo?"Subiendo...":"📷 Subir logo"}
-                <input type="file" accept="image/*" style={{display:"none"}} onChange={handleLogoFile} disabled={uploadingLogo}/>
-              </label>
-              {s.logo_url&&<button className="btn bs bsm" style={{marginLeft:6,fontSize:11}} onClick={()=>set("logo_url","")}>Quitar</button>}
-            </div>
+  useEffect(() => {
+    if (skipFirst.current) { skipFirst.current = false; return; }
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      const mySeq = ++saveSeq.current;
+      const saved = await updateSettings(s);
+      if (mySeq !== saveSeq.current) return;
+      if (saved) setSettings(saved);
+      else showToast("Error al guardar");
+    }, 600);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s]);
+
+  const set = (k, v) => setS(p => ({ ...p, [k]: v }));
+
+  const storeOpen = s.store_open !== false;
+  const isDark = theme === 'dark';
+
+  const goTo = (p) => setPage(p);
+  const goBack = () => setPage('root');
+
+  return (
+    <div className="ag-subpage-stack">
+
+      {/* ── ROOT ── */}
+      <div className={`ag-subpage is-root ${page !== 'root' ? 'has-child' : ''}`}>
+        <div className="ag-subpage-body" style={{ paddingTop: 6 }}>
+          <div style={{ padding: "0 4px 14px" }}>
+            <h2 style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 800,
+              fontSize: 20,
+              margin: 0,
+              color: "var(--ag-ink)",
+              letterSpacing: "-0.01em",
+            }}>Configuración</h2>
+            <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--ag-ink-3)" }}>Cambios se guardan automáticamente</p>
           </div>
-        </div>
-        {!s.logo_url&&<>
-          <div className="fg"><label className="fl">Inicial (si no hay imagen)</label><input className="fin" value={s.logo_letter||""} onChange={e=>set("logo_letter",e.target.value.slice(0,2).toUpperCase())} maxLength={2} style={{width:80,textAlign:"center",fontSize:20,fontWeight:700}}/></div>
-          <div className="fg"><label className="fl">Color del logo</label><div className="cgrid">{COLORS.map(c=>(<div key={c.h} className={`copt ${s.logo_color===c.h?"on":""}`} style={{background:c.h}} onClick={()=>set("logo_color",c.h)}>{s.logo_letter||"N"}</div>))}</div></div>
-        </>}
-      </div>}
-      </div>
 
-      {/* ── Portada ── */}
-      <div className="c">
-        <div onClick={()=>tog("cover")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>🖼️ Foto de portada</label>
-          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.cover?"rotate(180deg)":"rotate(0)"}}>▾</span>
-        </div>
-        {open.cover&&<div style={{marginTop:10}}>
-        {s.cover_url&&<img src={s.cover_url} alt="portada" loading="lazy" style={{width:"100%",height:140,objectFit:"cover",borderRadius:10,marginBottom:10}}/>}
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          <label style={{flex:1,padding:"9px 14px",background:"var(--pr,#C45D3E)",color:"#fff",borderRadius:10,fontSize:13,fontWeight:600,cursor:"pointer",textAlign:"center"}}>
-            {uploadingCover?"Subiendo...":"📷 Subir foto"}
-            <input type="file" accept="image/*" style={{display:"none"}} onChange={handleCoverFile} disabled={uploadingCover}/>
-          </label>
-          {s.cover_url&&<button className="btn bs" style={{fontSize:13}} onClick={()=>set("cover_url","")}>Quitar</button>}
-        </div>
-        <div className="fg" style={{marginTop:10}}><label className="fl">O pegá una URL de imagen</label><input className="fin" value={s.cover_url||""} onChange={e=>set("cover_url",e.target.value)} placeholder="https://..."/></div>
-      </div>}
-      </div>
+          {/* ─── OPERACIÓN ─── */}
+          <div className="ag-settings-group-title">Operación</div>
+          <div className="ag-settings-group">
+            <SettingsRow
+              state="prep"
+              icon={isDark
+                ? <Icon d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.11-1.36A6 6 0 0 1 12 3z" />
+                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              }
+              label="Modo oscuro"
+              hint={isDark ? "Activado" : "Desactivado"}
+              right={
+                <ToggleSwitch
+                  checked={isDark}
+                  onChange={v => onThemeChange?.(v ? 'dark' : 'light')}
+                  label="Modo oscuro"
+                />
+              }
+            />
+            <SettingsRow
+              state="stock"
+              icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>}
+              label="Horarios del local"
+              hint="Días y franjas de apertura"
+              onClick={() => goTo('hours')}
+            />
+          </div>
 
-      {/* ── Carátulas de categorías ── */}
-      <div className="c">
-        <div onClick={()=>tog("catImages")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>🏷️ Carátulas de categorías</label>
-          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.catImages?"rotate(180deg)":"rotate(0)"}}>▾</span>
-        </div>
-        {open.catImages&&<div style={{marginTop:10}}>
-        <div style={{fontSize:12,color:"var(--t3)",marginBottom:12}}>Imagen, nombre y visibilidad de cada categoría. Usá el ojito para ocultar/mostrar y editá el nombre directamente.</div>
-        {onCategories&&<button className="btn bs bsm" style={{marginBottom:12,fontSize:12,width:"100%"}} onClick={onCategories}>⚙️ Crear, editar o eliminar categorías</button>}
-        {CAT_NAMES.map(name=>{
-          const img=(s.cat_images||{})[name];
-          const isHidden=(s.hidden_cats||[]).includes(name);
-          const customName=(s.cat_names||{})[name]||"";
-          const isTodos=name==="Todos";
-          return(<div key={name} style={{padding:"10px 0",borderBottom:"1px solid var(--b2)",opacity:isHidden?0.45:1,transition:"opacity .2s"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              {/* Eye toggle — no aplica a "Todos" */}
-              {!isTodos&&<button onClick={()=>toggleCatHidden(name)} style={{background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0}} title={isHidden?"Mostrar categoría":"Ocultar categoría"}>
-                {isHidden?<span style={{color:"var(--t3)"}}>{Icon.eyeOff({size:16})}</span>:<span style={{color:"var(--gn)"}}>{Icon.eye({size:16})}</span>}
-              </button>}
-              <div style={{width:60,height:42,borderRadius:10,overflow:"hidden",background:"var(--b2)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                {img?<img src={img} alt={name} loading="lazy" decoding="async" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                :<span style={{fontSize:11,color:"var(--t3)"}}>Sin img</span>}
+          {/* ─── FINANZAS ─── */}
+          <div className="ag-settings-group-title">Finanzas</div>
+          <div className="ag-settings-group">
+            <SettingsRow
+              state="prep"
+              icon={<Icon d="M3 6h18 M3 12h18 M3 18h18" />}
+              label="Canales de venta"
+              hint="Rappi, PedidosYa, WhatsApp… con comisión por canal"
+              onClick={() => goTo('channels')}
+            />
+            <SettingsRow
+              state="sales"
+              icon={<Icon d="M3 3v18h18 M7 14l4-4 4 4 5-5" />}
+              label="Targets USAR"
+              hint="Objetivos % Food/Labor/EBITDA"
+              onClick={() => goTo('usarTargets')}
+            />
+            <SettingsRow
+              state="prep"
+              icon={<Icon d="M2 7h20v10H2z M2 11h20" />}
+              label="Medios de pago"
+              hint="Efectivo, Transferencia, MercadoPago…"
+              onClick={() => goTo('payments')}
+            />
+            <SettingsRow
+              state="orders"
+              icon={<Icon d="M3 3v18h18 M7 14l4-4 4 4 5-5" />}
+              label="Costos proyectados"
+              hint="Porcentajes aplicables al costo"
+              onClick={() => goTo('costs')}
+            />
+            <SettingsRow
+              state="sales"
+              icon={<Icon d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z M1 10h22" />}
+              label="Pasarelas de pago"
+              hint="Conectar MercadoPago para cobrar online"
+              onClick={() => goTo('gateways')}
+            />
+          </div>
+
+          {/* ─── DATOS ─── */}
+          {exportData && (
+            <>
+              <div className="ag-settings-group-title">Datos</div>
+              <div className="ag-settings-group">
+                <SettingsRow
+                  state="crm"
+                  icon={<Icon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3" />}
+                  label="Exportar datos"
+                  hint="Ventas, gastos, stock, pedidos"
+                  onClick={() => goTo('exports')}
+                />
               </div>
-              <div style={{flex:1,minWidth:0}}>
-                {isTodos
-                  ?<div style={{fontSize:13,fontWeight:600,color:"var(--tx)"}}>{name}</div>
-                  :<input className="fin" value={customName||name} onChange={e=>setCatName(name,e.target.value)} placeholder={name} style={{fontSize:13,fontWeight:600,padding:"4px 8px",marginBottom:0,border:"1px solid var(--b2)",borderRadius:8}}/>
-                }
-              </div>
-              <label style={{padding:"5px 10px",background:"var(--b2)",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",color:"var(--t2)",whiteSpace:"nowrap"}}>
-                {uploadingCat===name?"...":"📷"}
-                <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleCatFile(name,e)} disabled={uploadingCat===name}/>
-              </label>
-              {img&&<button onClick={()=>setCatImg(name,"")} style={{background:"none",border:"none",fontSize:14,color:"var(--rd)",cursor:"pointer",padding:4}}>✕</button>}
-            </div>
-            {isHidden&&<div style={{fontSize:11,color:"var(--rd)",marginTop:4,marginLeft:30}}>Oculta del catálogo</div>}
-          </div>);
-        })}
-      </div>}
+            </>
+          )}
+
+          {/* ─── ZONA DE RIESGO ─── */}
+          <div className="ag-settings-group-title" style={{ color: "var(--ag-c-orders)" }}>Zona de riesgo</div>
+          <div className="ag-settings-group">
+            {/* Cierre de emergencia: bloquea los pedidos del catálogo */}
+            <SettingsRow
+              state={storeOpen ? "sales" : "orders"}
+              icon={<Icon d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01" />}
+              label={storeOpen ? "Cierre de emergencia" : "Tienda cerrada"}
+              hint={storeOpen ? "Pedidos habilitados · apagá para bloquear" : "Pedidos bloqueados · prendé para reabrir"}
+              right={
+                <ToggleSwitch
+                  checked={!storeOpen}
+                  onChange={v => set("store_open", !v)}
+                  label="Cierre de emergencia"
+                />
+              }
+            />
+            <SettingsRow
+              danger
+              icon={<Icon d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01" />}
+              label="Reinicio administrativo"
+              hint="Borra pedidos, ventas, gastos, mermas"
+              onClick={() => goTo('reset')}
+            />
+          </div>
+
+          <p style={{ textAlign: "center", color: "var(--ag-ink-3)", fontSize: 11, margin: "18px 0 0" }}>
+            Hermes Gastro
+          </p>
+        </div>
       </div>
 
-      {/* ── Estado de la tienda ── */}
-      <div className="c">
-        <div onClick={()=>tog("storeState")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>🚨 Cierre de emergencia</label>
-          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.storeState?"rotate(180deg)":"rotate(0)"}}>▾</span>
-        </div>
-        {open.storeState&&<div style={{marginTop:10}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0"}}>
-          <div>
-            <div style={{fontWeight:600,fontSize:14,color:s.store_open!==false?"#3A7D44":"#C62828"}}>
-              {s.store_open!==false?"● Tienda operativa":"● Cierre de emergencia ACTIVO"}
+      {/* ── SUB-PÁGINAS ── */}
+      <HoursPage
+        open={page === 'hours'}
+        hours={s.store_hours || {}}
+        onChange={v => set("store_hours", v)}
+        onBack={goBack}
+      />
+      <CatsSubPage
+        open={page === 'expCats'}
+        title="Categorías de gastos"
+        intro="Estas categorías se usan al registrar gastos. Cambios afectan al selector en todos los módulos."
+        field="exp_cats"
+        label="Categorías de gastos"
+        icon="💰"
+        settings={settings}
+        setSettings={setSettings}
+        showToast={showToast}
+        onBack={goBack}
+      />
+      <CatsSubPage
+        open={page === 'ingCats'}
+        title="Categorías de stock"
+        intro="Se usan para agrupar ingredientes en el módulo Stock."
+        field="ing_cats"
+        label="Categorías de stock"
+        icon="📦"
+        settings={settings}
+        setSettings={setSettings}
+        showToast={showToast}
+        onBack={goBack}
+      />
+      <PaymentsSubPage
+        open={page === 'payments'}
+        settings={settings}
+        setSettings={setSettings}
+        showToast={showToast}
+        onBack={goBack}
+      />
+      <CostsSubPage
+        open={page === 'costs'}
+        settings={s}
+        setS={setS}
+        onBack={goBack}
+      />
+      <GatewaysSubPage
+        open={page === 'gateways'}
+        showToast={showToast}
+        onBack={goBack}
+      />
+      <ChannelsSubPage
+        open={page === 'channels'}
+        showToast={showToast}
+        onBack={goBack}
+      />
+      <UsarTargetsSubPage
+        open={page === 'usarTargets'}
+        settings={s}
+        setS={setS}
+        showToast={showToast}
+        onBack={goBack}
+      />
+      {exportData && (
+        <ExportsPage
+          open={page === 'exports'}
+          data={exportData}
+          showToast={showToast}
+          onBack={goBack}
+        />
+      )}
+      <ResetPage
+        open={page === 'reset'}
+        showToast={showToast}
+        onBack={goBack}
+      />
+    </div>
+  );
+}
+
+function CatsSubPage({ open, title, intro, field, label, icon, settings, setSettings, showToast, onBack }) {
+  return (
+    <SubPage open={open} title={title} onBack={onBack}>
+      <p className="ag-subpage-intro">{intro}</p>
+      <CatChipsEditor
+        settings={settings}
+        setSettings={setSettings}
+        field={field}
+        label={label}
+        icon={icon}
+        showToast={showToast}
+      />
+    </SubPage>
+  );
+}
+
+function PaymentsSubPage({ open, settings, setSettings, showToast, onBack }) {
+  return (
+    <SubPage open={open} title="Medios de pago" onBack={onBack}>
+      <p className="ag-subpage-intro">Los medios habilitados aparecen en Gastos, Compras y Pedidos.</p>
+      <PaymentMethodsEditor
+        settings={settings}
+        setSettings={setSettings}
+        showToast={showToast}
+      />
+    </SubPage>
+  );
+}
+
+/* ─── CostsSubPage: % merma + % gastos proyectados ─────────
+ * Ambos se SUMAN al costo del producto al calcular rentabilidad.
+ * Ej: costo base $100 + merma 5% + gastos 12% → costo real $117.
+ * Esto hace que el margen mostrado sea más realista.
+ *
+ * Usa autosave debounced del padre — solo escribimos en `s` y el
+ * Settings principal persiste a los 600ms. */
+function CostsSubPage({ open, settings, setS, onBack }) {
+  const wastePct = settings?.waste_pct ?? 5;
+  const expensePct = settings?.expense_pct ?? 0;
+  const totalPct = Number(wastePct) + Number(expensePct);
+  const exampleBase = 1000;
+  const exampleReal = Math.round(exampleBase * (1 + totalPct / 100));
+
+  return (
+    <SubPage open={open} title="Costos proyectados" onBack={onBack}>
+      <p className="ag-subpage-intro">
+        Estos porcentajes se <strong>suman al costo base</strong> de cada producto para que la rentabilidad mostrada sea más exacta y refleje los costos reales del negocio.
+      </p>
+
+      {/* % MERMA */}
+      <div className="ag-card" style={{ padding: "14px 16px", marginBottom: 12, borderTop: "3px solid var(--ag-c-stock)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ag-ink)", marginBottom: 2 }}>⚠ % Merma proyectada</div>
+            <div style={{ fontSize: 11.5, color: "var(--ag-ink-3)", lineHeight: 1.45 }}>
+              Pérdida normal por vencimientos, roturas y mal manejo. Sugerido: 3-8%.
             </div>
-            <div style={{fontSize:12,color:"var(--t3)",marginTop:2}}>{s.store_open!==false?"Los clientes pueden hacer pedidos normalmente":"El catálogo es visible pero los pedidos están bloqueados"}</div>
           </div>
-          <div className={`gift-toggle ${s.store_open!==false?"on":""}`} style={{flexShrink:0}} onClick={()=>set("store_open",s.store_open===false?true:false)}>
-            <div className="gift-thumb"/>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <input
+              type="number" min="0" max="100" step="0.5"
+              value={wastePct}
+              onChange={e => setS(p => ({ ...p, waste_pct: Math.max(0, Math.min(100, Number(e.target.value))) }))}
+              style={{
+                width: 80, padding: "8px 10px", textAlign: "center",
+                fontSize: 16, fontWeight: 700,
+                border: "1px solid var(--ag-line)", borderRadius: 10,
+                background: "var(--ag-bg)", color: "var(--ag-ink)",
+                outline: "none", fontFamily: "inherit",
+              }}
+            />
+            <span style={{ fontSize: 14, color: "var(--ag-c-stock)", fontWeight: 700 }}>%</span>
           </div>
         </div>
-      </div>}
       </div>
 
-      {/* ── Configuración financiera ── */}
-      <div className="c">
-        <div onClick={()=>tog("finance")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>📈 Cálculo de rentabilidad</label>
-          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.finance?"rotate(180deg)":"rotate(0)"}}>▾</span>
-        </div>
-        {open.finance&&<div style={{marginTop:10}}>
-          <div style={{fontSize:12,color:"var(--t3)",marginBottom:12,lineHeight:1.5}}>
-            El <strong>% de merma</strong> se aplica al costo de cada producto. Sirve para que la rentabilidad mostrada sea realista (incluye lo que se pierde por desperdicio normal).
-          </div>
-          <div className="fg">
-            <label className="fl">% merma promedio del local</label>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <input
-                className="fin"
-                type="number"
-                min="0" max="100" step="0.5"
-                value={s.waste_pct ?? 5}
-                onChange={e=>set("waste_pct",Math.max(0,Math.min(100,Number(e.target.value))))}
-                style={{maxWidth:120,textAlign:"center",fontSize:16,fontWeight:700}}
-              />
-              <span style={{fontSize:14,color:"var(--t3)"}}>%</span>
-              <span style={{fontSize:11,color:"var(--t3)",marginLeft:"auto"}}>Típico panadería: 3-8%</span>
+      {/* % GASTOS */}
+      <div className="ag-card" style={{ padding: "14px 16px", marginBottom: 14, borderTop: "3px solid var(--ag-c-orders)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ag-ink)", marginBottom: 2 }}>💸 % Gastos operativos</div>
+            <div style={{ fontSize: 11.5, color: "var(--ag-ink-3)", lineHeight: 1.45 }}>
+              Costos indirectos prorrateados: alquiler, servicios, sueldos, packaging. Sugerido: 10-20%.
             </div>
           </div>
-          <div style={{fontSize:11,color:"var(--t3)",lineHeight:1.5,padding:"8px 10px",background:"var(--b2)",borderRadius:8}}>
-            <strong>Tip:</strong> Si la merma cargada en Stock supera consistentemente este %, subilo. Si es menor, podés bajarlo. La fórmula usada es: Costo Real = Costo Materia Prima × (1 + % merma).
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <input
+              type="number" min="0" max="100" step="0.5"
+              value={expensePct}
+              onChange={e => setS(p => ({ ...p, expense_pct: Math.max(0, Math.min(100, Number(e.target.value))) }))}
+              style={{
+                width: 80, padding: "8px 10px", textAlign: "center",
+                fontSize: 16, fontWeight: 700,
+                border: "1px solid var(--ag-line)", borderRadius: 10,
+                background: "var(--ag-bg)", color: "var(--ag-ink)",
+                outline: "none", fontFamily: "inherit",
+              }}
+            />
+            <span style={{ fontSize: 14, color: "var(--ag-c-orders)", fontWeight: 700 }}>%</span>
           </div>
-        </div>}
+        </div>
       </div>
 
-      {/* ── Horarios del local ── */}
-      <div className="c">
-        <div onClick={()=>tog("hours")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>🕐 Horarios del local</label>
-          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.hours?"rotate(180deg)":"rotate(0)"}}>▾</span>
+      {/* Preview del impacto */}
+      <div className="ag-card" style={{
+        padding: "14px 16px", background: "var(--ag-bg-card)",
+        borderTop: "3px solid var(--ag-c-terra)",
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "var(--ag-c-terra)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+          Cómo se aplica
         </div>
-        {open.hours&&<div style={{marginTop:10}}>
-        <div style={{fontSize:12,color:"var(--t3)",marginBottom:10}}>Define cuándo el local acepta pedidos. Se usa para validar "Pedir ahora".</div>
-        {["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map((day,i)=>{
-          const hrs=s.store_hours||{};const d=hrs[i]||{open:"",close:"",closed:false,h24:false};
-          const upd=(k,v)=>{const nh={...hrs};nh[i]={...d,[k]:v};set("store_hours",nh);};
-          const set24h=(checked)=>{const nh={...hrs};nh[i]={...d,h24:checked,open:checked?"00:00":"",close:checked?"23:59":"",closed:false};set("store_hours",nh);};
-          return(<div key={day} style={{padding:"6px 0",borderBottom:i<6?"1px solid var(--b2)":"none"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{width:80,fontSize:13,fontWeight:600,color:d.closed?"var(--t3)":"var(--tx)"}}>{day}</div>
-              {d.closed?<div style={{flex:1,fontSize:12,color:"var(--t3)",fontStyle:"italic"}}>Cerrado</div>
-              :d.h24?<div style={{flex:1,fontSize:12,color:"var(--gn)",fontWeight:600}}>● Abierto 24 horas</div>
-              :<>
-                <input type="time" value={d.open||""} onChange={e=>upd("open",e.target.value)} style={{flex:1,padding:"4px 6px",borderRadius:6,border:"1px solid var(--b2)",fontSize:13,colorScheme:"light"}}/>
-                <span style={{fontSize:12,color:"var(--t3)"}}>a</span>
-                <input type="time" value={d.close||""} onChange={e=>upd("close",e.target.value)} style={{flex:1,padding:"4px 6px",borderRadius:6,border:"1px solid var(--b2)",fontSize:13,colorScheme:"light"}}/>
-              </>}
-              <button style={{background:"none",border:"none",fontSize:11,color:d.closed?"var(--gn)":"var(--rd)",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}} onClick={()=>upd("closed",!d.closed)}>{d.closed?"Abrir":"Cerrar"}</button>
-            </div>
-            {!d.closed&&<label style={{display:"flex",alignItems:"center",gap:6,marginTop:4,marginLeft:88,fontSize:11,color:"var(--t3)",cursor:"pointer"}}>
-              <input type="checkbox" checked={!!d.h24} onChange={e=>set24h(e.target.checked)} style={{margin:0,cursor:"pointer"}}/>
-              Abierto 24 horas
-            </label>}
-          </div>);
-        })}
-      </div>}
+        <div style={{ fontSize: 13, color: "var(--ag-ink-2)", lineHeight: 1.5 }}>
+          Si un producto tiene costo base <strong>$1.000</strong>,<br />
+          con <strong>{wastePct}% + {expensePct}% = {totalPct}%</strong> ajuste,<br />
+          el costo real proyectado es <strong style={{ color: "var(--ag-c-terra)", fontSize: 15 }}>${exampleReal}</strong>.
+        </div>
+        <div style={{ fontSize: 11, color: "var(--ag-ink-3)", marginTop: 8, lineHeight: 1.5 }}>
+          La rentabilidad mostrada en Recetas se calcula con este costo ajustado.
+        </div>
       </div>
+    </SubPage>
+  );
+}
 
-      {/* ── Exportar datos ── */}
-      {onExport&&<div className="c">
-        <div onClick={()=>tog("exports")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",cursor:"pointer"}}>📤 Exportar datos</label>
-          <span style={{fontSize:18,color:"var(--t3)",transition:"transform .2s",transform:open.exports?"rotate(180deg)":"rotate(0)"}}>▾</span>
-        </div>
-        {open.exports&&<div style={{marginTop:10}}>
-          <div style={{fontSize:12,color:"var(--t3)",marginBottom:10}}>Descargá CSV/Excel de ventas, gastos, inventario, pedidos y recetas para respaldo o análisis externo.</div>
-          <button className="btn bp" style={{width:"100%"}} onClick={onExport}>📊 Abrir exportador</button>
-        </div>}
-      </div>}
+/* ───────────────────────────────────────────────────── */
+/*                  SUB-PÁGINAS                          */
+/* ───────────────────────────────────────────────────── */
 
-      {/* ── Reinicio administrativo ── */}
-      <div className="c" style={{border:"1.5px solid #C62828",background:"#FFF5F5"}}>
-        <div onClick={()=>tog("reset")} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
-          <label className="fl" style={{fontSize:13,fontWeight:700,marginBottom:0,display:"block",color:"#C62828",cursor:"pointer"}}>⚠️ Reinicio administrativo</label>
-          <span style={{fontSize:18,color:"#C62828",transition:"transform .2s",transform:open.reset?"rotate(180deg)":"rotate(0)"}}>▾</span>
-        </div>
-        {open.reset&&<div style={{marginTop:10}}>
-        <div style={{fontSize:12,color:"#5D4037",marginBottom:12,lineHeight:1.5}}>Reiniciar datos históricos elimina <strong>pedidos, ventas, gastos, compras, mermas, cupones y datos CRM</strong>. No afecta recetas, ingredientes ni configuración.</div>
-        {!showReset
-          ?<button onClick={()=>setShowReset(true)} style={{width:"100%",padding:"12px",background:"#C62828",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer"}}>🗑️ Reiniciar datos históricos</button>
-          :<div style={{background:"#FFEBEE",borderRadius:10,padding:14}}>
-            <div style={{fontSize:13,fontWeight:600,color:"#C62828",marginBottom:10}}>Ingresá la clave de seguridad para confirmar:</div>
-            <div style={{display:"flex",gap:8}}>
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={4}
-                value={resetPin}
-                onChange={e=>setResetPin(e.target.value.replace(/\D/g,"").slice(0,4))}
-                placeholder="****"
-                style={{flex:1,padding:"10px 14px",border:"1.5px solid #C62828",borderRadius:8,fontSize:18,textAlign:"center",letterSpacing:8,fontWeight:700,background:"#fff"}}
-                autoFocus
-              />
-              <button
-                disabled={resetPin!=="4477"||resetting}
-                onClick={()=>setResetConfirm(true)}
-                style={{padding:"10px 20px",background:resetPin==="4477"?"#C62828":"#ccc",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:resetPin==="4477"?"pointer":"not-allowed",opacity:resetPin==="4477"?1:0.5}}
-              >
-                {resetting?"...":"Confirmar"}
+function SubPage({ open, title, onBack, children }) {
+  return (
+    <div className={`ag-subpage is-child ${open ? 'is-open' : ''}`}>
+      <div className="ag-subpage-head">
+        <button type="button" className="ag-subpage-back" onClick={onBack} aria-label="Atrás">
+          <BackChevron /> <span>Atrás</span>
+        </button>
+        <h2 className="ag-subpage-title">{title}</h2>
+      </div>
+      <div className="ag-subpage-body">{children}</div>
+    </div>
+  );
+}
+
+function HoursPage({ open, hours, onChange, onBack }) {
+  const set = (i, k, v) => { const nh = { ...hours }; nh[i] = { ...(hours[i] || {}), [k]: v }; onChange(nh); };
+  const set24h = (i, checked) => {
+    const nh = { ...hours };
+    nh[i] = { ...(hours[i] || {}), h24: checked, open: checked ? "00:00" : "", close: checked ? "23:59" : "", closed: false };
+    onChange(nh);
+  };
+  return (
+    <SubPage open={open} title="Horarios" onBack={onBack}>
+      <p className="ag-subpage-intro">Definí los días y franjas en que el local acepta pedidos.</p>
+      {["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map((day, i) => {
+        const d = hours[i] || { open: "", close: "", closed: false, h24: false };
+        return (
+          <div key={day} style={{ padding: "10px 0", borderBottom: i < 6 ? "1px solid var(--ag-line)" : "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 84, fontSize: 13, fontWeight: 600, color: d.closed ? "var(--ag-ink-3)" : "var(--ag-ink)" }}>{day}</div>
+              {d.closed
+                ? <div style={{ flex: 1, fontSize: 12, color: "var(--ag-ink-3)", fontStyle: "italic" }}>Cerrado</div>
+                : d.h24
+                  ? <div style={{ flex: 1, fontSize: 12, color: "var(--ag-c-sales)", fontWeight: 600 }}>● 24 horas</div>
+                  : <>
+                      <input type="time" value={d.open || ""} onChange={e => set(i, "open", e.target.value)}
+                        style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: "1px solid var(--ag-line)", fontSize: 13, background: "var(--ag-bg)", color: "var(--ag-ink)" }} />
+                      <span style={{ fontSize: 11, color: "var(--ag-ink-3)" }}>a</span>
+                      <input type="time" value={d.close || ""} onChange={e => set(i, "close", e.target.value)}
+                        style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: "1px solid var(--ag-line)", fontSize: 13, background: "var(--ag-bg)", color: "var(--ag-ink)" }} />
+                    </>
+              }
+              <button type="button" onClick={() => set(i, "closed", !d.closed)}
+                style={{ background: "none", border: 0, fontSize: 11.5, color: d.closed ? "var(--ag-c-sales)" : "var(--ag-c-orders)", cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap", fontFamily: "inherit" }}>
+                {d.closed ? "Abrir" : "Cerrar"}
               </button>
-              <button onClick={()=>{setShowReset(false);setResetPin("");setResetConfirm(false);}} style={{padding:"10px 14px",background:"transparent",border:"1.5px solid #C62828",borderRadius:8,fontSize:13,color:"#C62828",cursor:"pointer",fontWeight:600}}>✕</button>
             </div>
-            {resetPin.length===4&&resetPin!=="4477"&&<div style={{fontSize:12,color:"#C62828",marginTop:6}}>Clave incorrecta</div>}
-            {resetConfirm&&resetPin==="4477"&&!resetting&&(
-              <div style={{marginTop:12,padding:12,background:"#fff",borderRadius:8,border:"1.5px solid #C62828"}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#C62828",marginBottom:8}}>⚠️ ESTA ACCIÓN ES IRREVERSIBLE</div>
-                <div style={{fontSize:12,color:"#5D4037",marginBottom:12}}>Se descargará un <strong>respaldo automático de clientes</strong> (CSV) y luego se borrarán todos los pedidos, ventas, gastos, compras, mermas, cupones y datos de clientes. ¿Estás seguro?</div>
-                <div style={{display:"flex",gap:8}}>
-                  <button
-                    onClick={async()=>{
-                      setResetting(true);
-                      const result=await resetHistoricalData();
-                      setResetting(false);
-                      if(result.ok){
-                        const bk=result.backup;
-                        showToast(bk?.count?`✓ Respaldo de ${bk.count} clientes descargado → ${bk.fileName}. Datos eliminados.`:"Datos históricos eliminados ✓");
-                        setShowReset(false);setResetPin("");setResetConfirm(false);
-                      }else{
-                        const bk=result.backup;
-                        showToast((bk?.count?`Respaldo OK (${bk.count} clientes). `:"")+"Errores: "+result.errors.join(", "));
-                      }
-                    }}
-                    style={{flex:1,padding:"10px",background:"#C62828",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer"}}
-                  >
-                    Sí, borrar todo
-                  </button>
-                  <button onClick={()=>setResetConfirm(false)} style={{flex:1,padding:"10px",background:"#fff",color:"#C62828",border:"1.5px solid #C62828",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}>
-                    Cancelar
-                  </button>
-                </div>
-              </div>
+            {!d.closed && (
+              <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, marginLeft: 92, fontSize: 11, color: "var(--ag-ink-3)", cursor: "pointer" }}>
+                <input type="checkbox" checked={!!d.h24} onChange={e => set24h(i, e.target.checked)} style={{ margin: 0, cursor: "pointer" }} />
+                Abierto 24 horas
+              </label>
             )}
           </div>
-        }
-      </div>}
+        );
+      })}
+    </SubPage>
+  );
+}
+
+const EXPORT_TYPES = [
+  { key: 'sales',     label: 'Ventas',     icon: '💰', desc: 'Ventas registradas',  state: 'sales' },
+  { key: 'expenses',  label: 'Gastos',     icon: '📋', desc: 'Gastos y compras',    state: 'orders' },
+  { key: 'inventory', label: 'Inventario', icon: '📦', desc: 'Stock ingredientes',  state: 'stock' },
+  { key: 'orders',    label: 'Pedidos',    icon: '🛒', desc: 'Historial pedidos',   state: 'prep' },
+];
+const FORMAT_OPTIONS = [
+  { key: 'xlsx', label: 'Excel' },
+  { key: 'csv',  label: 'CSV' },
+  { key: 'pdf',  label: 'PDF' },
+];
+
+function ExportsPage({ open, data, showToast, onBack }) {
+  const [selected, setSelected] = useState('sales');
+  const [format, setFormat] = useState('xlsx');
+  const [loading, setLoading] = useState(false);
+
+  const { sales = [], expenses = [], ingredients = [], orders = [], recipes = [], sett = {} } = data || {};
+
+  const counts = {
+    sales: sales.length,
+    expenses: expenses.length,
+    inventory: ingredients.length,
+    orders: orders.length,
+  };
+
+  const doExport = () => {
+    setLoading(true);
+    try {
+      let headers, rows;
+      const date = todayISO();
+      const bizName = sett?.biz_name || business.name;
+
+      switch (selected) {
+        case 'sales':     ({ headers, rows } = prepareSalesExport(sales, recipes));     break;
+        case 'expenses':  ({ headers, rows } = prepareExpensesExport(expenses));        break;
+        case 'inventory': ({ headers, rows } = prepareInventoryExport(ingredients));    break;
+        case 'orders':    ({ headers, rows } = prepareOrdersExport(orders, recipes));   break;
+        default: setLoading(false); return;
+      }
+
+      const label = EXPORT_TYPES.find(t => t.key === selected)?.label || selected;
+      const filename = `${label.toLowerCase()}_${date}`;
+      switch (format) {
+        case 'csv':  downloadCSV(`${filename}.csv`, headers, rows); break;
+        case 'xlsx': downloadXLSX(`${filename}.xlsx`, headers, rows, label); break;
+        case 'pdf':  printAsPDF(`Reporte de ${label}`, headers, rows, { bizName, subtitle: `Exportado el ${date}` }); break;
+      }
+      showToast(`${label} exportado ✓`);
+    } catch (err) {
+      console.error('Export error:', err);
+      showToast('Error al exportar');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SubPage open={open} title="Exportar" onBack={onBack}>
+      <label className="ag-field-lbl">¿Qué datos exportar?</label>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+        {EXPORT_TYPES.map(t => {
+          const isActive = selected === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setSelected(t.key)}
+              className={`ag-card ag-st-${t.state}`}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                padding: "14px 8px",
+                border: isActive ? "2px solid var(--c-state)" : "0",
+                cursor: "pointer", fontFamily: "inherit",
+                background: "var(--ag-bg-card)",
+              }}
+            >
+              <span style={{ fontSize: 22 }}>{t.icon}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: isActive ? "var(--c-state)" : "var(--ag-ink)" }}>{t.label}</span>
+              <span style={{ fontSize: 10.5, color: "var(--ag-ink-3)", textAlign: "center" }}>{t.desc}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <button className="btn bp" style={{marginTop:8}} onClick={async()=>{const saved=await updateSettings(s);if(saved){setSettings(saved);showToast("Guardado ✓");onBack();}else{showToast("Error al guardar");}}}>{Icon.check({size:18,color:"#fff"})} Guardar cambios</button>
-    </div>
-  </>);
+      <label className="ag-field-lbl">Formato</label>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {FORMAT_OPTIONS.map(f => {
+          const isActive = format === f.key;
+          return (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => setFormat(f.key)}
+              style={{
+                flex: 1, padding: "10px 8px",
+                borderRadius: 10,
+                border: isActive ? "2px solid var(--ag-c-terra)" : "1px solid var(--ag-line)",
+                background: isActive ? "rgba(245,158,11,0.08)" : "transparent",
+                color: isActive ? "var(--ag-c-terra)" : "var(--ag-ink-2)",
+                cursor: "pointer", fontSize: 13, fontWeight: 600,
+                fontFamily: "inherit",
+              }}
+            >{f.label}</button>
+          );
+        })}
+      </div>
+
+      <div style={{
+        padding: "10px 12px", background: "var(--ag-bg-soft)",
+        borderRadius: 10, marginBottom: 14,
+        fontSize: 12, color: "var(--ag-ink-2)",
+      }}>
+        {counts[selected] || 0} {selected === 'inventory' ? 'ingredientes' : selected === 'sales' ? 'ventas' : selected === 'expenses' ? 'gastos' : 'pedidos'} a exportar
+      </div>
+
+      <button
+        type="button"
+        className="ag-btn-primary"
+        onClick={doExport}
+        disabled={loading}
+        style={{ width: "100%", padding: "12px 14px", fontSize: 14 }}
+      >{loading ? "Exportando..." : `Exportar ${EXPORT_TYPES.find(t => t.key === selected)?.label || ''}`}</button>
+    </SubPage>
+  );
+}
+
+function ResetPage({ open, showToast, onBack }) {
+  const [resetPin, setResetPin] = useState("");
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  return (
+    <SubPage open={open} title="Reinicio administrativo" onBack={onBack}>
+      <p className="ag-subpage-intro">
+        Elimina <strong>pedidos, ventas, gastos, compras, mermas, cupones y datos CRM</strong>. <strong>No</strong> afecta recetas, ingredientes ni configuración. Antes de borrar, se descarga un respaldo CSV de clientes.
+      </p>
+      <label className="ag-field-lbl">PIN de seguridad</label>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          type="password" inputMode="numeric" maxLength={4}
+          value={resetPin}
+          onChange={e => setResetPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          placeholder="****"
+          style={{
+            flex: 1, padding: "12px 14px",
+            border: "1.5px solid var(--ag-c-orders)", borderRadius: 10,
+            fontSize: 18, textAlign: "center", letterSpacing: 8, fontWeight: 700,
+            background: "var(--ag-bg)", color: "var(--ag-ink)", outline: "none",
+            fontFamily: "inherit",
+          }}
+          autoFocus={open}
+        />
+        <button
+          type="button"
+          disabled={resetPin !== "4477" || resetting}
+          onClick={() => setResetConfirm(true)}
+          style={{
+            padding: "0 18px",
+            background: resetPin === "4477" ? "var(--ag-c-orders)" : "var(--ag-bg-soft)",
+            color: resetPin === "4477" ? "#fff" : "var(--ag-ink-3)",
+            border: 0, borderRadius: 10,
+            fontSize: 13, fontWeight: 700,
+            cursor: resetPin === "4477" ? "pointer" : "not-allowed",
+            fontFamily: "inherit",
+          }}
+        >{resetting ? "..." : "Continuar"}</button>
+      </div>
+      {resetPin.length === 4 && resetPin !== "4477" && (
+        <div style={{ fontSize: 11.5, color: "var(--ag-c-orders)", marginTop: 6 }}>Clave incorrecta</div>
+      )}
+
+      {resetConfirm && resetPin === "4477" && !resetting && (
+        <div style={{ marginTop: 16, padding: 14, background: "var(--ag-c-orders-soft)", borderRadius: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ag-c-orders)", marginBottom: 8 }}>⚠ Acción irreversible</div>
+          <div style={{ fontSize: 12, color: "var(--ag-ink-2)", marginBottom: 12, lineHeight: 1.4 }}>
+            Se descargará un respaldo CSV de clientes y se borrarán todos los datos históricos.
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              onClick={async () => {
+                setResetting(true);
+                const result = await resetHistoricalData();
+                setResetting(false);
+                if (result.ok) {
+                  const bk = result.backup;
+                  showToast(bk?.count ? `✓ Respaldo de ${bk.count} clientes. Datos eliminados.` : "Datos eliminados ✓");
+                  setResetPin(""); setResetConfirm(false);
+                  onBack();
+                } else {
+                  const bk = result.backup;
+                  showToast((bk?.count ? `Respaldo OK (${bk.count}). ` : "") + "Errores: " + result.errors.join(", "));
+                }
+              }}
+              style={{ flex: 1, padding: "10px", background: "var(--ag-c-orders)", color: "#fff", border: 0, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+            >Sí, borrar todo</button>
+            <button
+              type="button"
+              onClick={() => setResetConfirm(false)}
+              style={{ flex: 1, padding: "10px", background: "transparent", color: "var(--ag-c-orders)", border: "1.5px solid var(--ag-c-orders)", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+            >Cancelar</button>
+          </div>
+        </div>
+      )}
+    </SubPage>
+  );
+}
+
+/* ─── GatewaysSubPage: integraciones OAuth con pasarelas ───
+ * Por ahora solo MercadoPago. Flow:
+ *   1. Click "Conectar" → redirect a auth.mercadopago.com.ar
+ *   2. Cliente autoriza → MP redirige a /mp-callback?code=XXX
+ *   3. Componente MpCallback llama a la edge function mp-oauth-callback
+ *   4. Token persistido en payment_integrations → vuelta a Settings con badge ✓
+ *
+ * En el futuro se agregan: Modo, Stripe Connect, etc.
+ */
+function GatewaysSubPage({ open, showToast, onBack }) {
+  const [mpIntegration, setMpIntegration] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [disconnecting, setDisconnecting] = useState(false);
+  // Formulario de conexión manual
+  const [showForm, setShowForm] = useState(false);
+  const [accessToken, setAccessToken] = useState("");
+  const [publicKey, setPublicKey] = useState("");
+  const [connecting, setConnecting] = useState(false);
+  const [connectError, setConnectError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    let mounted = true;
+    (async () => {
+      const { fetchActiveIntegration } = await import("../../services/paymentIntegrations");
+      const it = await fetchActiveIntegration("mercadopago");
+      if (mounted) {
+        setMpIntegration(it);
+        setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [open]);
+
+  const handleConnectManual = async () => {
+    if (!accessToken.trim()) {
+      setConnectError("Pegá tu Access Token de MercadoPago");
+      return;
+    }
+    setConnecting(true);
+    setConnectError("");
+    const { connectMercadoPagoManual, fetchActiveIntegration } = await import("../../services/paymentIntegrations");
+    const res = await connectMercadoPagoManual({ accessToken, publicKey });
+    setConnecting(false);
+    if (res?.ok) {
+      // Recargar la integración (que ahora trae el nuevo registro)
+      const updated = await fetchActiveIntegration("mercadopago");
+      setMpIntegration(updated);
+      setShowForm(false);
+      setAccessToken("");
+      setPublicKey("");
+      showToast?.(`✓ MercadoPago conectado (${res.mp_account?.nickname || res.mp_account?.email || "OK"})`);
+    } else {
+      setConnectError(res?.error || "Error desconocido");
+    }
+  };
+
+  const handleDisconnectMp = async () => {
+    if (!confirm("¿Desconectar MercadoPago? Los pedidos pagados anteriormente se conservan. Los nuevos no podrán cobrarse por MP hasta reconectar.")) return;
+    setDisconnecting(true);
+    const { disconnectIntegration } = await import("../../services/paymentIntegrations");
+    const ok = await disconnectIntegration("mercadopago");
+    setDisconnecting(false);
+    if (ok) {
+      setMpIntegration(null);
+      showToast?.("MercadoPago desconectado");
+    } else {
+      showToast?.("Error al desconectar");
+    }
+  };
+
+  return (
+    <SubPage open={open} title="Pasarelas de pago" onBack={onBack}>
+      <p className="ag-subpage-intro">
+        Conectá una pasarela para que tus clientes paguen online directo desde el catálogo. El dinero entra a <strong>tu cuenta</strong>, no a la nuestra.
+      </p>
+
+      {loading ? (
+        <div style={{ padding: 24, textAlign: "center", color: "var(--ag-ink-3)", fontSize: 12 }}>Cargando…</div>
+      ) : (
+        <>
+          {/* MercadoPago card */}
+          <div className="ag-card" style={{ padding: "16px 18px", marginBottom: 14, borderTop: `3px solid ${mpIntegration ? "var(--ag-c-sales)" : "var(--ag-line)"}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: "#009EE3", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
+                💳
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ag-ink)" }}>MercadoPago</div>
+                <div style={{ fontSize: 11, color: "var(--ag-ink-3)" }}>Tarjeta, MP wallet, QR, efectivo en Rapipago</div>
+              </div>
+              {mpIntegration && (
+                <span style={{ padding: "3px 10px", borderRadius: 999, background: "var(--ag-c-sales-soft)", color: "var(--ag-c-sales)", fontSize: 10.5, fontWeight: 800, letterSpacing: "0.04em", flexShrink: 0 }}>
+                  ✓ CONECTADA
+                </span>
+              )}
+            </div>
+
+            {mpIntegration ? (
+              <>
+                <div style={{ fontSize: 11.5, color: "var(--ag-ink-3)", marginBottom: 10, lineHeight: 1.5 }}>
+                  Cuenta MP: <strong style={{ color: "var(--ag-ink-2)" }}>
+                    {mpIntegration.metadata?.mp_nickname || `#${mpIntegration.external_user_id || "?"}`}
+                  </strong>
+                  {mpIntegration.metadata?.live_mode === false && (
+                    <span style={{ marginLeft: 6, padding: "1px 6px", borderRadius: 4, background: "var(--ag-c-stock-soft)", color: "var(--ag-c-stock)", fontSize: 9.5, fontWeight: 800 }}>SANDBOX</span>
+                  )}
+                  <br />
+                  Conectada el {new Date(mpIntegration.connected_at).toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDisconnectMp}
+                  disabled={disconnecting}
+                  style={{ width: "100%", padding: "10px", background: "transparent", border: "1px solid var(--ag-c-orders)", color: "var(--ag-c-orders)", borderRadius: 10, fontSize: 12, fontWeight: 700, fontFamily: "inherit", cursor: disconnecting ? "wait" : "pointer", opacity: disconnecting ? 0.5 : 1 }}
+                >
+                  {disconnecting ? "Desconectando…" : "Desconectar"}
+                </button>
+              </>
+            ) : showForm ? (
+              <>
+                <div style={{ fontSize: 11, color: "var(--ag-ink-3)", marginBottom: 10, lineHeight: 1.5 }}>
+                  Pegá el <strong>Access Token productivo</strong> de tu cuenta MercadoPago.
+                  <br />
+                  Lo encontrás en <a href="https://www.mercadopago.com.ar/developers/panel/app" target="_blank" rel="noopener noreferrer" style={{ color: "#009EE3", fontWeight: 700 }}>panel MP → tu app → Credenciales productivas</a>.
+                </div>
+                <input
+                  type="password"
+                  value={accessToken}
+                  onChange={(e) => { setAccessToken(e.target.value); setConnectError(""); }}
+                  placeholder="APP_USR-..."
+                  autoComplete="off"
+                  spellCheck={false}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--ag-line)", background: "var(--ag-bg-soft)", color: "var(--ag-ink)", fontSize: 12, fontFamily: "monospace", marginBottom: 8 }}
+                />
+                <input
+                  type="text"
+                  value={publicKey}
+                  onChange={(e) => setPublicKey(e.target.value)}
+                  placeholder="Public Key (opcional, APP_USR-... pública)"
+                  autoComplete="off"
+                  spellCheck={false}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--ag-line)", background: "var(--ag-bg-soft)", color: "var(--ag-ink)", fontSize: 12, fontFamily: "monospace", marginBottom: 10 }}
+                />
+                {connectError && (
+                  <div style={{ padding: "8px 10px", marginBottom: 10, background: "var(--ag-c-orders-soft)", color: "var(--ag-c-orders)", borderRadius: 8, fontSize: 11, lineHeight: 1.4 }}>
+                    {connectError}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setShowForm(false); setAccessToken(""); setPublicKey(""); setConnectError(""); }}
+                    style={{ flex: 1, padding: "10px", background: "transparent", border: "1px solid var(--ag-line)", color: "var(--ag-ink-2)", borderRadius: 10, fontSize: 12, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConnectManual}
+                    disabled={connecting || !accessToken.trim()}
+                    style={{ flex: 2, padding: "10px", background: "#009EE3", color: "#fff", border: 0, borderRadius: 10, fontSize: 12, fontWeight: 800, fontFamily: "inherit", cursor: connecting ? "wait" : "pointer", opacity: (connecting || !accessToken.trim()) ? 0.6 : 1 }}
+                  >
+                    {connecting ? "Validando…" : "Conectar"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowForm(true)}
+                style={{ width: "100%", padding: "12px", background: "#009EE3", color: "#fff", border: 0, borderRadius: 10, fontSize: 13, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+              >
+                🔗 Conectar MercadoPago
+              </button>
+            )}
+          </div>
+
+          <div style={{ fontSize: 11, color: "var(--ag-ink-3)", lineHeight: 1.6, padding: "0 4px" }}>
+            <strong>¿Cómo conseguir tu Access Token?</strong>
+            <br />
+            1. Entrá a <a href="https://www.mercadopago.com.ar/developers/panel/app" target="_blank" rel="noopener noreferrer" style={{ color: "#009EE3" }}>Mercado Pago Developers</a> con tu cuenta del negocio.
+            <br />
+            2. Creá una aplicación (si no tenés) — tipo Checkout Pro.
+            <br />
+            3. Andá a "Credenciales productivas" en el menú lateral.
+            <br />
+            4. Copiá el Access Token (empieza con <code>APP_USR-</code>).
+            <br />
+            5. Pegalo arriba y clickeá Conectar.
+          </div>
+
+          <div style={{ marginTop: 16, padding: "10px 12px", background: "var(--ag-bg-soft)", borderRadius: 10, fontSize: 11, color: "var(--ag-ink-3)", lineHeight: 1.5 }}>
+            <strong>Próximamente:</strong> Modo, Stripe (tarjetas internacionales).
+          </div>
+        </>
+      )}
+    </SubPage>
+  );
+}
+
+
+/* ─── ChannelsSubPage: CRUD de canales de venta ─────────
+   Lista los canales (Rappi/PYa/UberEats/WA/Mostrador/Web propia)
+   y permite editar el % de comisión y activar/desactivar.       ── */
+function ChannelsSubPage({ open, showToast, onBack }) {
+  const [channels, setChannels] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(null); // {id, slug, label, commission_pct, is_active}
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    let mounted = true;
+    (async () => {
+      const { fetchDeliveryChannels } = await import("../../services/deliveryChannels");
+      const list = await fetchDeliveryChannels({ activeOnly: false });
+      if (mounted) { setChannels(list); setLoading(false); }
+    })();
+    return () => { mounted = false; };
+  }, [open]);
+
+  const save = async () => {
+    if (!editing) return;
+    setSaving(true);
+    const { upsertDeliveryChannel, fetchDeliveryChannels } = await import("../../services/deliveryChannels");
+    const ok = await upsertDeliveryChannel({
+      id: editing.id,
+      slug: editing.slug,
+      label: editing.label,
+      commission_pct: Number(editing.commission_pct) || 0,
+      is_active: editing.is_active,
+    });
+    if (ok) {
+      const list = await fetchDeliveryChannels({ activeOnly: false });
+      setChannels(list);
+      setEditing(null);
+      showToast?.("Canal actualizado");
+    } else {
+      showToast?.("Error al guardar");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <SubPage open={open} title="Canales de venta" onBack={onBack}>
+      <p className="ag-subpage-intro">
+        Canales por los que recibís pedidos. Cada uno con su % de comisión. Los pedidos del canal "Mostrador" / "WhatsApp" no cobran comisión.
+      </p>
+
+      {loading ? (
+        <div style={{ padding: 24, textAlign: "center", color: "var(--ag-ink-3)", fontSize: 12 }}>Cargando…</div>
+      ) : channels.length === 0 ? (
+        <div style={{ padding: 16, color: "var(--ag-ink-3)", fontSize: 13 }}>No hay canales configurados.</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {channels.map(c => (
+            <div key={c.id} className="ag-card" style={{ padding: "12px 14px", opacity: c.is_active ? 1 : 0.55 }}>
+              {editing?.id === c.id ? (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8, marginBottom: 8 }}>
+                    <div>
+                      <label className="ag-field-lbl">Nombre</label>
+                      <input
+                        className="ag-field-input"
+                        value={editing.label}
+                        onChange={e => setEditing(p => ({ ...p, label: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="ag-field-lbl">Comisión %</label>
+                      <input
+                        className="ag-field-input"
+                        type="number" min="0" max="100" step="0.5"
+                        value={editing.commission_pct}
+                        onChange={e => setEditing(p => ({ ...p, commission_pct: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", fontSize: 12, color: "var(--ag-ink-2)" }}>
+                    <input
+                      type="checkbox"
+                      checked={editing.is_active}
+                      onChange={e => setEditing(p => ({ ...p, is_active: e.target.checked }))}
+                    />
+                    Activo (visible al crear pedidos)
+                  </label>
+                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditing(null)}
+                      disabled={saving}
+                      style={{ flex: 1, padding: "10px", borderRadius: 10, border: "1px solid var(--ag-line)", background: "transparent", color: "var(--ag-ink-2)", fontSize: 12, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}
+                    >Cancelar</button>
+                    <button
+                      type="button"
+                      onClick={save}
+                      disabled={saving}
+                      style={{ flex: 2, padding: "10px", borderRadius: 10, border: 0, background: "var(--ag-c-sales)", color: "#fff", fontSize: 12, fontWeight: 700, fontFamily: "inherit", cursor: saving ? "wait" : "pointer", opacity: saving ? 0.6 : 1 }}
+                    >{saving ? "Guardando…" : "Guardar"}</button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ag-ink)" }}>{c.label}</div>
+                    <div style={{ fontSize: 11, color: "var(--ag-ink-3)", marginTop: 2 }}>
+                      {c.commission_pct > 0 ? `Comisión ${c.commission_pct}%` : "Sin comisión"} · {c.is_active ? "Activo" : "Inactivo"}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditing({ ...c })}
+                    style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid var(--ag-line)", background: "transparent", color: "var(--ag-ink-2)", fontSize: 11.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}
+                  >Editar</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </SubPage>
+  );
+}
+
+/* ─── UsarTargetsSubPage: editar % objetivo USAR ─────── */
+function UsarTargetsSubPage({ open, settings, setS, showToast, onBack }) {
+  const t = settings?.usar_targets || {};
+  const set = (k, v) => setS({ ...settings, usar_targets: { ...t, [k]: Math.max(0, Math.min(100, Number(v) || 0)) } });
+  const rows = [
+    { key: "food_cost_pct",    label: "Food Cost (objetivo ≤)", hint: "Standard dark kitchen: 30%" },
+    { key: "packaging_pct",    label: "Packaging (objetivo ≤)", hint: "Standard: 5%" },
+    { key: "labor_pct",        label: "Labor BOH (objetivo ≤)", hint: "Standard: 20%" },
+    { key: "marketing_pct",    label: "Marketing (objetivo ≤)", hint: "Standard: 3-7%" },
+    { key: "target_ebitda_pct",label: "EBITDA (objetivo ≥)",   hint: "Standard sano: 10-20%" },
+  ];
+
+  return (
+    <SubPage open={open} title="Targets USAR" onBack={onBack}>
+      <p className="ag-subpage-intro">
+        Porcentajes objetivo sobre <strong>ingreso bruto</strong>. Se usan para colorear (verde/rojo) las métricas del reporte P&L.
+      </p>
+
+      {rows.map(r => (
+        <div key={r.key} style={{ marginBottom: 14 }}>
+          <label className="ag-field-lbl">{r.label}</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <input
+              className="ag-field-input"
+              type="number" min="0" max="100" step="0.5"
+              value={t[r.key] ?? ""}
+              onChange={e => set(r.key, e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--ag-ink-2)" }}>%</span>
+          </div>
+          <p style={{ fontSize: 11, color: "var(--ag-ink-3)", margin: "4px 0 0 2px" }}>{r.hint}</p>
+        </div>
+      ))}
+    </SubPage>
+  );
 }
 
 export default Settings;

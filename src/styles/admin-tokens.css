@@ -1,0 +1,115 @@
+/* ────────────────────────────────────────────────────────
+ * Hermes Admin — Design tokens v1 (validado en mockups v9-v12)
+ * Sistema independiente del catálogo público (hermes-tokens.css).
+ * Soporta tema dark / light vía clase en el contenedor raíz.
+ * ──────────────────────────────────────────────────────── */
+
+:root {
+  /* Tipografía admin */
+  --ag-font: 'DM Sans', system-ui, -apple-system, sans-serif;
+
+  /* Tinta — palette neutro (foreground / muted-foreground / border) */
+  --ag-ink: #262626;
+  --ag-ink-2: #6B7280;
+  --ag-ink-3: #9CA3AF;
+  --ag-line: #E5E7EB;
+
+  /* Paleta por sección — sólido + soft */
+  --ag-c-sales:   #2A9D6E;  --ag-c-sales-soft:   #DFF1E8;
+  --ag-c-orders:  #E85A4A;  --ag-c-orders-soft:  #FBE0DC;
+  --ag-c-stock:   #E8A53A;  --ag-c-stock-soft:   #FAEBC9;
+  --ag-c-crm:     #6B5BD6;  --ag-c-crm-soft:     #E4DFFA;
+  --ag-c-prep:    #3A8B9F;  --ag-c-prep-soft:    #D7EBF1;
+  --ag-c-recipes: #D4894A;  --ag-c-recipes-soft: #F8E2CE;
+  --ag-c-done:    #9B958F;  --ag-c-done-soft:    rgba(155, 149, 143, 0.18);
+
+  /* Color de marca admin — ámbar (primary #F59E0B) */
+  --ag-c-terra:   #F59E0B;
+  --ag-c-yellow:  #E8C547;
+  --ag-c-green:   #6CA77F;
+
+  /* Backgrounds light — page = muted (#F9FAFB), card = #FFFFFF */
+  --ag-bg:       #F9FAFB;
+  --ag-bg-card:  #FFFFFF;
+  --ag-bg-soft:  rgba(38, 38, 38, 0.04);
+
+  /* Sombras */
+  --ag-sh-sm: 0 1px 2px rgba(26, 24, 23, 0.04);
+  --ag-sh-md: 0 1px 2px rgba(26, 24, 23, 0.04), 0 4px 14px rgba(26, 24, 23, 0.06);
+  --ag-sh-lg: 0 8px 24px rgba(26, 24, 23, 0.12);
+
+  /* Radios */
+  --ag-r-sm: 10px;
+  --ag-r-md: 14px;
+  --ag-r-lg: 16px;
+  --ag-r-xl: 18px;
+  --ag-r-2xl: 22px;
+  --ag-r-pill: 999px;
+
+  /* Motion */
+  --ag-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ag-t-fast: 150ms;
+  --ag-t-med: 220ms;
+  --ag-t-slow: 400ms;
+
+  /* Z-index */
+  --ag-z-bg: 0;
+  --ag-z-content: 2;
+  --ag-z-topbar: 5;
+  --ag-z-status: 6;
+  --ag-z-nav: 5;
+  --ag-z-overlay: 100;
+}
+
+/* ── Dark theme override ─────────────────────────────── */
+.ag-theme-dark {
+  --ag-bg:      #171717;
+  --ag-bg-card: #262626;
+  --ag-bg-soft: rgba(255, 255, 255, 0.04);
+  --ag-ink:    #E5E5E5;
+  --ag-ink-2:  #A3A3A3;
+  --ag-ink-3:  #737373;
+  --ag-line:   #404040;
+
+  /* Soft variants en dark: tintes oscuros del color de estado
+     para que el texto claro tenga contraste. Reemplazan los soft
+     claros del light theme (incompatibles con texto blanco). */
+  --ag-c-sales-soft:   rgba(42, 157, 110, 0.18);
+  --ag-c-orders-soft:  rgba(232, 90, 74, 0.18);
+  --ag-c-stock-soft:   rgba(232, 165, 58, 0.18);
+  --ag-c-crm-soft:     rgba(107, 91, 214, 0.22);
+  --ag-c-prep-soft:    rgba(58, 139, 159, 0.20);
+  --ag-c-recipes-soft: rgba(212, 137, 74, 0.20);
+}
+
+/* ── Tipografía base — solo aplica dentro de admin ──── */
+.ag-root {
+  font-family: var(--ag-font);
+  color: var(--ag-ink);
+  background: var(--ag-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Clases tipográficas reutilizables */
+.ag-h1 { font-weight: 800; font-size: 26px; letter-spacing: -0.02em; line-height: 1.15; margin: 0; }
+.ag-h2 { font-weight: 800; font-size: 22px; letter-spacing: -0.02em; line-height: 1.2;  margin: 0; }
+.ag-h3 { font-weight: 700; font-size: 18px; letter-spacing: -0.01em; line-height: 1.3;  margin: 0; }
+.ag-h4 { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; line-height: 1.35; margin: 0; }
+
+.ag-label-cap {
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--ag-ink-3);
+}
+.ag-meta { font-size: 11px; font-weight: 500; color: var(--ag-ink-3); }
+.ag-body-s { font-size: 11.5px; line-height: 1.45; }
+.ag-body { font-size: 13px; line-height: 1.5; }
+
+/* Helpers de color de estado · usables en cualquier card */
+.ag-st-sales   { --c-state: var(--ag-c-sales);   --c-state-soft: var(--ag-c-sales-soft); }
+.ag-st-orders  { --c-state: var(--ag-c-orders);  --c-state-soft: var(--ag-c-orders-soft); }
+.ag-st-stock   { --c-state: var(--ag-c-stock);   --c-state-soft: var(--ag-c-stock-soft); }
+.ag-st-crm     { --c-state: var(--ag-c-crm);     --c-state-soft: var(--ag-c-crm-soft); }
+.ag-st-prep    { --c-state: var(--ag-c-prep);    --c-state-soft: var(--ag-c-prep-soft); }
+.ag-st-recipes { --c-state: var(--ag-c-recipes); --c-state-soft: var(--ag-c-recipes-soft); }
+.ag-st-done    { --c-state: var(--ag-c-done);    --c-state-soft: var(--ag-c-done-soft); }

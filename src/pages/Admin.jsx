@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Icon, OrderStatus } from "../lib/utils";
+import { OrderStatus } from "../lib/utils";
 import useFeature from "../hooks/useFeature";
 
 // Hooks
@@ -7,7 +7,15 @@ import useAdminData from "../hooks/useAdminData";
 import useOrderWorkflow from "../hooks/useOrderWorkflow";
 import useFinancials from "../hooks/useFinancials";
 
-// Components
+// Componentes nuevos · chrome del Admin (sistema visual v2)
+import AdminBackdrop from "../components/admin/shared/AdminBackdrop";
+import AdminTopbar from "../components/admin/shared/AdminTopbar";
+import BottomNav from "../components/admin/shared/BottomNav";
+import AdminDrawer from "../components/admin/shared/AdminDrawer";
+import AdminMore from "../components/admin/shared/AdminMore";
+import BrandModal from "../components/admin/shared/BrandModal";
+
+// Pantallas (todavía visuales viejos — se adaptan en próximos pasos)
 import LoginScreen from "../components/admin/LoginScreen";
 import Home from "../components/admin/Home";
 import Stock from "../components/admin/Stock";
@@ -17,24 +25,42 @@ import { Expenses, Purchase, SalesView } from "../components/admin/Finance";
 import CRM from "../components/admin/CRM";
 import Waste from "../components/admin/Waste";
 import Settings from "../components/admin/Settings";
-import Analytics from "../components/admin/Analytics";
 import Exports from "../components/admin/Exports";
 import Invoicing from "../components/admin/Invoicing";
 import PushNotifications from "../components/admin/PushNotifications";
 import CategoryEditor from "../components/admin/CategoryEditor";
+import MonthSummary from "../components/admin/MonthSummary";
+import Suppliers from "../components/admin/Suppliers";
 import { CancelDlg, StockWarningDlg, NewOrderOverlay } from "../components/admin/Dialogs";
+
+// Estilos del sistema visual v2
+import "../styles/admin-tokens.css";
+import "../styles/admin-bg.css";
+import "../styles/admin-topbar.css";
+import "../styles/admin-bottomnav.css";
+import "../styles/admin-cards.css";
+import "../styles/admin-orders.css";
+import "../styles/admin-shared.css";
 
 export default function Admin() {
   const [tab, setTab] = useState("home");
   const [ov, setOv] = useState(null);
   const [toast, setToast] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [brandOpen, setBrandOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('ag-theme') || 'light' } catch { return 'light' }
+  });
 
   // Feature flags
   const ffInvoice = useFeature('E_INVOICE');
-  const ffPush = useFeature('PUSH_NOTIFICATIONS');
 
   const msg = useCallback(m => { setToast(m); setTimeout(() => setToast(""), 2200); }, []);
+
+  const handleThemeChange = useCallback((next) => {
+    setTheme(next);
+    try { localStorage.setItem('ag-theme', next) } catch { /* noop */ }
+  }, []);
 
   // Data layer
   const {
@@ -60,79 +86,117 @@ export default function Admin() {
   });
 
   // Loading / Login gates
-  if (checking) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "var(--t3)" }}>Cargando...</div>;
+  if (checking) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "var(--ag-ink-3)" }}>Cargando...</div>;
   if (!session) return <LoginScreen onLogin={doLogin} />;
 
   const DEF = DEFAULT_SETTINGS;
+  const themeClass = theme === 'dark' ? 'ag-theme-dark' : 'ag-theme-light';
+  const newOrdersCount = orders.filter(o => o.status === OrderStatus.NEW).length;
+
+  /* ─── Bottom nav: 5 secciones (Inicio · Pedidos · Compras · Gastos · Más) ─── */
+  const handleNavChange = (nextTab) => {
+    // home, orders, purchase, expenses, more son TODOS tabs reales
+    // (purchase y expenses ya no son overlays, así no tapan la bottom nav)
+    setTab(nextTab);
+  };
+
+  /* ─── Hub "Más": abre sub-pantallas ─── */
+  const handleOpenMore = (key) => {
+    switch (key) {
+      case 'stock':     setTab('stock'); break;
+      case 'recipes':   setTab('recipes'); break;
+      case 'sales':     setTab('sales'); break;
+      case 'crm':       setTab('crm'); break;
+      case 'waste':     setTab('waste'); break;
+      case 'suppliers': setTab('suppliers'); break;
+      case 'settings':  setTab('settings'); break;
+      case 'invoicing': setOv({ type: 'invoicing' }); break;
+      case 'exports':   setOv({ type: 'exports' }); break;
+      default: break;
+    }
+  };
+
+  /* Mapeo del tab activo al item resaltado en el bottom nav.
+     Si estamos en una sub-pantalla del hub Más (stock, recipes, sales, crm, waste,
+     suppliers, settings, summary), el item "Más" queda activo. */
+  const activeNav =
+    tab === 'home' || tab === 'orders' || tab === 'purchase' || tab === 'expenses' ? tab :
+    'more';
+
+  const businessName = sett.biz_name || DEF.biz_name;
+  const avatarLetter = (sett.logo_letter || DEF.logo_letter || businessName.charAt(0) || 'A').toUpperCase();
 
   return (
-    <div className="app">
-      {toast && <div className="toast">{toast}</div>}
+    <div className={`ag-root ${themeClass}`} style={{ position: 'relative', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <AdminBackdrop />
 
-      {/* Header */}
-      <div className="hd">
-        <div className="hd-l" style={{ background: sett.logo_url ? "transparent" : (sett.logo_color || DEF.logo_color), overflow: "hidden", padding: 0 }}>
-          {sett.logo_url
-            ? <img src={sett.logo_url} alt="logo" loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = 'none' }} />
-            : (sett.logo_letter || DEF.logo_letter)}
-        </div>
-        <div><div className="hd-t">{sett.biz_name || DEF.biz_name}</div><div className="hd-s">Gestión Operativa</div></div>
-        <div className="hd-r">
-          <button className="hb" onClick={() => setTab("settings")}>{Icon.settings({ size: 18 })}</button>
-          <button className="hb" onClick={doLogout} title="Cerrar sesión">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-          </button>
-        </div>
-      </div>
+      {toast && <div className="toast" style={{ zIndex: 1000 }}>{toast}</div>}
 
-      {/* Tab content */}
-      {tab === "home" && <Home lowStockIngredients={low} monthSales={tS} monthExpenses={tE} monthWasteCost={tW} monthProfit={prof} profitMargin={mar} monthProductionCost={tCR} wastePct={wastePct} monthFixedExpenses={monthFixedExpenses} monthVariableExpenses={monthVariableExpenses} monthGrossMargin={monthGrossMargin} grossMarginPct={grossMarginPct} sales={sales} orders={orders} recipes={recs} ingredients={ings} calculateRecipeCost={rc} activeOrders={actOrd} settings={sett} waste={waste} onStock={() => setTab("stock")} onPurchase={() => setOv({ type: "purchase" })} onOrders={() => setTab("orders")} onExp={() => setOv({ type: "expenses" })} />}
-      {tab === "stock" && <Stock ingredients={ings} setIngredients={setIngs} recipes={recs} overlay={ov} setOverlay={setOv} showToast={msg} settings={sett} setSettings={setSett} loadAll={loadAll} />}
-      {tab === "recipes" && <Recipes recipes={recs} setRecipes={setRecs} ingredients={ings} calculateRecipeCost={rc} overlay={ov} setOverlay={setOv} showToast={msg} loadAll={loadAll} />}
-      {tab === "orders" && <Orders orders={orders} recipes={recs} moveOrderStatus={moveOrd} addOrder={addOrd} overlay={ov} setOverlay={setOv} showToast={msg} settings={sett} onUpdateOrder={(id, changes) => setOrders(p => p.map(o => o.id === id ? { ...o, ...changes } : o))} />}
-      {tab === "sales" && <SalesView sales={sales} setSales={setSales} orders={orders} recipes={recs} calculateRecipeCost={rc} overlay={ov} setOverlay={setOv} showToast={msg} />}
-      {tab === "crm" && <CRM orders={orders} recipes={recs} ingredients={ings} showToast={msg} />}
-      {tab === "waste" && <Waste waste={waste} orders={orders} recipes={recs} ingredients={ings} setIngredients={setIngs} showToast={msg} loadAll={loadAll} />}
-      {tab === "settings" && <Settings settings={sett} setSettings={setSett} showToast={msg} onBack={() => setTab("home")} onExport={() => setOv({ type: "exports" })} onCategories={() => setOv({ type: "categories" })} />}
+      <AdminTopbar
+        title={businessName}
+        avatarText={avatarLetter}
+        avatarImage={sett.logo_url || null}
+        onMenu={() => setDrawerOpen(true)}
+        onAvatar={() => setBrandOpen(true)}
+      />
 
-      {/* Overlays */}
-      {ov?.type === "purchase" && <Purchase ingredients={ings} setIngredients={setIngs} expenses={exps} setExpenses={setExps} settings={sett} onClose={() => setOv(null)} showToast={msg} loadAll={loadAll} />}
-      {ov?.type === "expenses" && <Expenses expenses={exps} setExpenses={setExps} settings={sett} setSettings={setSett} showToast={msg} onClose={() => setOv(null)} />}
-      {ov?.type === "cancel" && <CancelDlg order={ov.order} recs={recs} ings={ings} onClose={() => setOv(null)} onConfirm={ret => confirmCancel(ov.orderId, ret)} />}
+      <main style={{ position: 'relative', zIndex: 2, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, paddingBottom: 'var(--ag-bottom-nav-h, 76px)' }}>
+        {tab === "home"     && <Home user={session?.user} lowStockIngredients={low} monthSales={tS} monthExpenses={tE} monthProfit={prof} profitMargin={mar} sales={sales} orders={orders} recipes={recs} ingredients={ings} calculateRecipeCost={rc} activeOrders={actOrd} settings={sett} waste={waste} onStock={() => setTab("stock")} onOrders={() => setTab("orders")} onShowToast={msg} onMonthSummary={() => setTab("summary")} />}
+        {tab === "summary"  && <MonthSummary sales={sales} expenses={exps} orders={orders} recipes={recs} ingredients={ings} waste={waste} settings={sett} calculateRecipeCost={rc} onBack={() => setTab("home")} />}
+        {tab === "orders"   && <Orders orders={orders} recipes={recs} moveOrderStatus={moveOrd} addOrder={addOrd} overlay={ov} setOverlay={setOv} showToast={msg} settings={sett} onUpdateOrder={(id, changes) => setOrders(p => p.map(o => o.id === id ? { ...o, ...changes } : o))} />}
+        {tab === "stock"    && <Stock ingredients={ings} setIngredients={setIngs} recipes={recs} overlay={ov} setOverlay={setOv} showToast={msg} settings={sett} setSettings={setSett} loadAll={loadAll} />}
+        {tab === "recipes"  && <Recipes recipes={recs} setRecipes={setRecs} ingredients={ings} calculateRecipeCost={rc} overlay={ov} setOverlay={setOv} showToast={msg} loadAll={loadAll} settings={sett} />}
+        {tab === "sales"    && <SalesView sales={sales} setSales={setSales} orders={orders} recipes={recs} calculateRecipeCost={rc} overlay={ov} setOverlay={setOv} showToast={msg} />}
+        {tab === "crm"      && <CRM orders={orders} recipes={recs} ingredients={ings} showToast={msg} />}
+        {tab === "waste"    && <Waste waste={waste} orders={orders} recipes={recs} ingredients={ings} setIngredients={setIngs} showToast={msg} loadAll={loadAll} />}
+        {tab === "suppliers" && <Suppliers onBack={() => setTab("home")} showToast={msg} />}
+        {tab === "purchase"  && <Purchase ingredients={ings} setIngredients={setIngs} expenses={exps} setExpenses={setExps} settings={sett} onClose={() => setTab("home")} showToast={msg} loadAll={loadAll} user={session?.user} />}
+        {tab === "expenses"  && <Expenses expenses={exps} setExpenses={setExps} settings={sett} setSettings={setSett} showToast={msg} onClose={() => setTab("home")} user={session?.user} />}
+        {tab === "settings" && <Settings settings={sett} setSettings={setSett} showToast={msg} theme={theme} onThemeChange={handleThemeChange} exportData={{ sales, expenses: exps, ingredients: ings, orders, recipes: recs, sett }} />}
+        {tab === "more"     && <AdminMore onOpen={handleOpenMore} ffInvoice={ffInvoice} />}
+      </main>
+
+      {/* Overlays (sin cambios) */}
+      {ov?.type === "cancel"       && <CancelDlg order={ov.order} recs={recs} ings={ings} onClose={() => setOv(null)} onConfirm={ret => confirmCancel(ov.orderId, ret)} />}
       {ov?.type === "stockWarning" && <StockWarningDlg deficits={ov.deficits} onClose={() => setOv(null)} onForce={async () => { setOv(null); await moveOrd(ov.orderId, OrderStatus.PREPARING, true); }} />}
-      {ov?.type === "exports" && <Exports sales={sales} expenses={exps} ingredients={ings} orders={orders} recipes={recs} sett={sett} msg={msg} onClose={() => setOv(null)} />}
-      {ov?.type === "invoicing" && <Invoicing orders={orders} recipes={recs} sett={sett} msg={msg} onClose={() => setOv(null)} />}
-      {ov?.type === "push" && <PushNotifications msg={msg} onClose={() => setOv(null)} />}
-      {ov?.type === "categories" && <CategoryEditor msg={msg} onClose={() => setOv(null)} />}
+      {ov?.type === "exports"      && <Exports sales={sales} expenses={exps} ingredients={ings} orders={orders} recipes={recs} sett={sett} msg={msg} onClose={() => setOv(null)} />}
+      {ov?.type === "invoicing"    && <Invoicing orders={orders} recipes={recs} sett={sett} msg={msg} onClose={() => setOv(null)} />}
+      {ov?.type === "push"         && <PushNotifications msg={msg} onClose={() => setOv(null)} />}
+      {ov?.type === "categories"   && <CategoryEditor msg={msg} onClose={() => setOv(null)} />}
 
       {/* New order alert overlay */}
       {newAlertCount > 0 && <NewOrderOverlay count={newAlertCount} onAck={() => { ackOrders(); setTab('orders'); }} />}
 
-      {/* Hamburger menu */}
-      {menuOpen && <>
-        <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 900 }} />
-        <div style={{ position: "fixed", bottom: 64, right: 12, background: "#fff", borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", zIndex: 901, padding: "6px 0", minWidth: 180, animation: "fadeIn .15s ease" }}>
-          {[{ id: "stock", icon: Icon.box, l: "Stock" }, { id: "recipes", icon: Icon.recipe, l: "Recetas" }, { id: "sales", icon: Icon.cart, l: "Ventas" }, { id: "invoicing", icon: Icon.recipe, l: "Facturación", action: () => setOv({ type: "invoicing" }), show: ffInvoice }, { id: "waste", icon: Icon.alert, l: "Mermas" }, { id: "crm", icon: Icon.user, l: "CRM" }, { id: "push", icon: Icon.bell, l: "Push", action: () => setOv({ type: "push" }), show: ffPush }].filter(t => t.show !== false).map(t => (
-            <button key={t.id} onClick={() => { if (t.action) { t.action(); } else { setTab(t.id); } setMenuOpen(false); }} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 18px", border: "none", background: tab === t.id ? "var(--b1,#f5f0eb)" : "transparent", color: tab === t.id ? "var(--pr,#C45D3E)" : "var(--tx,#333)", fontSize: 14, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", textAlign: "left" }}>
-              {t.icon({ size: 18 })}{t.l}
-            </button>
-          ))}
-        </div>
-      </>}
+      <BottomNav
+        active={activeNav}
+        onChange={handleNavChange}
+        badges={{ orders: newOrdersCount }}
+      />
 
-      {/* Bottom navigation */}
-      <nav className="nv">
-        {[{ id: "home", icon: Icon.home, l: "Inicio" }, { id: "orders", icon: Icon.orders, l: "Pedidos", badge: orders.filter(o => o.status === OrderStatus.NEW).length }, { id: "purchase", icon: Icon.truck, l: "Compras", action: () => setOv({ type: "purchase" }) }, { id: "expenses", icon: Icon.dollar, l: "Gastos", action: () => setOv({ type: "expenses" }) }].map(t => (
-          <button key={t.id} className={`ni ${tab === t.id || (tab === "settings" && t.id === "home") ? "on" : ""}`} onClick={() => { if (t.action) { t.action(); } else { setTab(t.id); } }}>
-            {t.badge > 0 && <span className="nb">{t.badge}</span>}
-            {t.icon({ size: 20 })}{t.l}
-          </button>
-        ))}
-        <button className={`ni ${["stock", "recipes", "sales", "analytics", "waste", "crm"].includes(tab) ? "on" : ""}`} onClick={() => setMenuOpen(p => !p)}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
-          Más
-        </button>
-      </nav>
+      <AdminDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        businessName={businessName}
+        userEmail={session?.user?.email || ''}
+        onLogout={() => { setDrawerOpen(false); doLogout(); }}
+      >
+        <Settings
+          settings={sett}
+          setSettings={setSett}
+          showToast={msg}
+          theme={theme}
+          onThemeChange={handleThemeChange}
+          exportData={{ sales, expenses: exps, ingredients: ings, orders, recipes: recs, sett }}
+        />
+      </AdminDrawer>
+
+      <BrandModal
+        open={brandOpen}
+        onClose={() => setBrandOpen(false)}
+        settings={sett}
+        setSettings={setSett}
+        showToast={msg}
+      />
     </div>
   );
 }

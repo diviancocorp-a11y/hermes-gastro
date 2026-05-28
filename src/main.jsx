@@ -45,6 +45,38 @@ initWebVitals()
 loadFlags().catch(() => {})
 fetchActiveTheme().then(t => applyTheme(t)).catch(() => {})
 
+// ── Dev mode: phone frame preview en desktop ────────────────
+// Wrap visual del #root con un iPhone frame cuando estás viendo
+// la app en desktop durante dev. En mobile real no se nota.
+//
+// Toggle por TECLADO (no hay botón en UI para no tapar contenido):
+//   Ctrl/Cmd + Shift + P  → alterna el frame on/off (se guarda en localStorage)
+//
+// Toggle desde consola:
+//   localStorage.setItem('hermes-dev-phone-preview', '1'); location.reload()
+//   localStorage.setItem('hermes-dev-phone-preview', '0'); location.reload()
+if (import.meta.env.DEV) {
+  import('./styles/dev-phone-preview.css')
+  const ENABLED_KEY = 'hermes-dev-phone-preview'
+  const enabled = localStorage.getItem(ENABLED_KEY) === '1'  // off por default — opt-in
+  if (enabled) document.body.setAttribute('data-dev-preview', 'phone')
+
+  // Atajo de teclado para alternar
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
+      e.preventDefault()
+      const isOn = document.body.getAttribute('data-dev-preview') === 'phone'
+      if (isOn) {
+        document.body.removeAttribute('data-dev-preview')
+        localStorage.setItem(ENABLED_KEY, '0')
+      } else {
+        document.body.setAttribute('data-dev-preview', 'phone')
+        localStorage.setItem(ENABLED_KEY, '1')
+      }
+    }
+  })
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>

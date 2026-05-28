@@ -1,0 +1,91 @@
+/* ────────────────────────────────────────────────────────
+ * AdminTopbar — header sticky con franja terracota inferior
+ * ──────────────────────────────────────────────────────── */
+
+.ag-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 14px;
+  border-bottom: 2px solid var(--ag-c-terra);
+  position: sticky;
+  top: 0;
+  z-index: var(--ag-z-topbar);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  flex-shrink: 0;
+}
+.ag-topbar::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; left: 18px;
+  width: 36px; height: 2px;
+}
+
+.ag-topbar-menu {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 12px;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+.ag-topbar-menu span {
+  display: block; width: 16px; height: 2px;
+  position: relative;
+}
+.ag-topbar-menu span::before,
+.ag-topbar-menu span::after {
+  content: ''; position: absolute; left: 0;
+  width: 16px; height: 2px;
+}
+.ag-topbar-menu span::before { top: -5px; }
+.ag-topbar-menu span::after  { top: 5px; }
+
+.ag-topbar-title {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  flex: 1;
+  text-align: center;
+  padding: 0 12px;
+}
+
+.ag-topbar-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--ag-c-terra);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
+  cursor: pointer;
+  border: 0;
+  overflow: hidden;
+}
+.ag-topbar-avatar img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+
+/* ── Theming ── */
+.ag-theme-light .ag-topbar {
+  background: rgba(194, 96, 63, 0.78);
+  border-bottom: none;
+}
+.ag-theme-light .ag-topbar::after { display: none; }
+.ag-theme-light .ag-topbar-menu { background: rgba(255, 255, 255, 0.18); }
+.ag-theme-light .ag-topbar-menu span,
+.ag-theme-light .ag-topbar-menu span::before,
+.ag-theme-light .ag-topbar-menu span::after { background: #fff; }
+.ag-theme-light .ag-topbar-title  { color: #fff; }
+.ag-theme-light .ag-topbar-avatar { background: #fff; color: var(--ag-c-terra); }
+
+.ag-theme-dark .ag-topbar {
+  background: rgba(20, 17, 15, 0.78);
+  border-bottom-color: var(--ag-c-terra);
+}
+.ag-theme-dark .ag-topbar::after { background: var(--ag-ink); }
+.ag-theme-dark .ag-topbar-menu { background: rgba(255, 255, 255, 0.08); }
+.ag-theme-dark .ag-topbar-menu span,
+.ag-theme-dark .ag-topbar-menu span::before,
+.ag-theme-dark .ag-topbar-menu span::after { background: var(--ag-ink); }
+.ag-theme-dark .ag-topbar-title { color: var(--ag-ink); }

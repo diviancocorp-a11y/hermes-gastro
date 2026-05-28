@@ -1,0 +1,178 @@
+/* ────────────────────────────────────────────────────────
+ * BottomNav — 5 items con micro-animaciones por icono activo
+ * ──────────────────────────────────────────────────────── */
+
+.ag-bottom-nav {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  max-width: 580px;
+  margin-left: auto;
+  margin-right: auto;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: var(--ag-r-2xl);
+  display: flex;
+  justify-content: space-around;
+  padding: 9px 8px;
+  box-shadow: var(--ag-sh-lg);
+  z-index: var(--ag-z-nav);
+  border-top: 2px solid var(--ag-c-terra);
+}
+
+.ag-nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--ag-t-med) var(--ag-ease);
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+}
+.ag-nav-item .ag-nav-icon {
+  width: 22px; height: 22px; display: block;
+}
+
+/* Badge numérico (notificaciones / nuevos) */
+.ag-nav-badge {
+  position: absolute;
+  top: 4px; right: 6px;
+  min-width: 16px; height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--ag-c-orders);
+  color: #fff;
+  font-size: 9px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+  z-index: 1;
+}
+
+/* ─── Theming ─── */
+.ag-theme-light .ag-bottom-nav {
+  background: rgba(241, 238, 230, 0.94);
+  border-top-color: var(--ag-c-terra);
+}
+.ag-theme-light .ag-nav-item { color: var(--ag-ink-3); }
+.ag-theme-light .ag-nav-item.active {
+  background: var(--c-state-soft);
+  color: var(--c-state);
+}
+
+.ag-theme-dark .ag-bottom-nav {
+  background: rgba(20, 17, 15, 0.92);
+  border-top-color: var(--ag-c-terra);
+}
+.ag-theme-dark .ag-nav-item { color: rgba(244, 239, 231, 0.55); }
+.ag-theme-dark .ag-nav-item.active {
+  background: var(--c-state);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Color por sección (vía data-section) ─── */
+.ag-nav-item.active[data-section="home"]     { --c-state: var(--ag-c-crm);     --c-state-soft: var(--ag-c-crm-soft); }
+.ag-nav-item.active[data-section="orders"]   { --c-state: var(--ag-c-orders);  --c-state-soft: var(--ag-c-orders-soft); }
+.ag-nav-item.active[data-section="purchase"] { --c-state: var(--ag-c-prep);    --c-state-soft: var(--ag-c-prep-soft); }
+.ag-nav-item.active[data-section="expenses"] { --c-state: var(--ag-c-sales);   --c-state-soft: var(--ag-c-sales-soft); }
+.ag-nav-item.active[data-section="stock"]    { --c-state: var(--ag-c-stock);   --c-state-soft: var(--ag-c-stock-soft); }
+.ag-nav-item.active[data-section="recipes"]  { --c-state: var(--ag-c-recipes); --c-state-soft: var(--ag-c-recipes-soft); }
+.ag-nav-item.active[data-section="more"]     { --c-state: var(--ag-c-terra);   --c-state-soft: rgba(194,96,63,0.18); }
+
+/* ═══════════════════════════════════════════════════════
+   MICRO-ANIMACIONES POR ICONO (solo cuando .active)
+   ═══════════════════════════════════════════════════════ */
+
+/* Orders · vapor saliendo de la olla */
+.ag-nav-steam {
+  position: absolute;
+  top: 4px; left: 50%;
+  transform: translateX(-50%);
+  width: 16px; height: 12px;
+  pointer-events: none;
+  opacity: 0;
+}
+.ag-nav-item.active[data-section="orders"] .ag-nav-steam { opacity: 1; }
+.ag-nav-steam path {
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  fill: none;
+  opacity: 0;
+  animation: ag-steam-rise 2.4s ease-out infinite;
+}
+.ag-nav-steam path:nth-child(1) { animation-delay: 0s; }
+.ag-nav-steam path:nth-child(2) { animation-delay: 0.4s; }
+.ag-nav-steam path:nth-child(3) { animation-delay: 0.8s; }
+@keyframes ag-steam-rise {
+  0%   { transform: translateY(6px); opacity: 0; }
+  35%  { opacity: 0.7; }
+  100% { transform: translateY(-6px); opacity: 0; }
+}
+
+/* Purchase · ruedas del camión rotan + estela de humo del escape */
+.ag-nav-item.active[data-section="purchase"] .ag-nav-wheel {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ag-purchase-roll 1.6s linear infinite;
+}
+@keyframes ag-purchase-roll {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+/* Estela del escape: 3 líneas que aparecen y se desvanecen en cascada */
+.ag-nav-item[data-section="purchase"] .ag-nav-smoke { opacity: 0; }
+.ag-nav-item.active[data-section="purchase"] .ag-nav-smoke {
+  animation: ag-purchase-smoke 1.4s ease-out infinite;
+}
+.ag-nav-item.active[data-section="purchase"] .ag-nav-smoke.s1 { animation-delay: 0s;    }
+.ag-nav-item.active[data-section="purchase"] .ag-nav-smoke.s2 { animation-delay: 0.35s; }
+.ag-nav-item.active[data-section="purchase"] .ag-nav-smoke.s3 { animation-delay: 0.7s;  }
+@keyframes ag-purchase-smoke {
+  0%   { opacity: 0; transform: translateX(4px); }
+  25%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translateX(-3px); }
+}
+
+/* Expenses · moneda con $ que gira sobre su eje vertical (flip de moneda) */
+.ag-nav-item[data-section="expenses"] .ag-nav-coin {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.ag-nav-item.active[data-section="expenses"] .ag-nav-coin {
+  animation: ag-expenses-coin-spin 2.4s ease-in-out infinite;
+}
+@keyframes ag-expenses-coin-spin {
+  0%   { transform: scaleX(1); }
+  50%  { transform: scaleX(-1); } /* mitad del giro: moneda de canto/reverso */
+  100% { transform: scaleX(1); }
+}
+
+/* More · 3 puntos pulsando en secuencia */
+.ag-nav-item.active[data-section="more"] .ag-nav-ddot {
+  animation: ag-more-pulse 1.6s ease-in-out infinite;
+  transform-origin: center;
+}
+.ag-nav-item.active[data-section="more"] .ag-nav-ddot:nth-child(1) { animation-delay: 0s; }
+.ag-nav-item.active[data-section="more"] .ag-nav-ddot:nth-child(2) { animation-delay: 0.2s; }
+.ag-nav-item.active[data-section="more"] .ag-nav-ddot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ag-more-pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.7; }
+  50%      { transform: scale(1.4); opacity: 1; }
+}
+
+/* Respeto a prefers-reduced-motion: anima sólo color del activo */
+@media (prefers-reduced-motion: reduce) {
+  .ag-nav-steam path,
+  .ag-nav-item.active[data-section="purchase"] .ag-nav-wheel,
+  .ag-nav-item.active[data-section="purchase"] .ag-nav-smoke,
+  .ag-nav-item.active[data-section="expenses"] .ag-nav-coin,
+  .ag-nav-item.active[data-section="more"] .ag-nav-ddot {
+    animation: none;
+  }
+  .ag-nav-item[data-section="purchase"] .ag-nav-smoke { opacity: 0.6; }
+}

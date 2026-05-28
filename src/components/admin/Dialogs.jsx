@@ -1,55 +1,190 @@
 import { Icon } from "../../lib/utils";
 
-function CancelDlg({order,recs,ings,onClose,onConfirm}){
-  const used=[];const items=order.order_items||order.items||[];
-  items.forEach(it=>{const r=recs.find(x=>x.id===it.recipe_id);if(!r)return;
-    (r.ingredients||[]).forEach(ri=>{const ig=ings.find(x=>x.id===ri.ingredient_id);if(!ig)return;
-      const ex=used.find(u=>u.id===ig.id);if(ex)ex.qty+=ri.quantity*(it.quantity||it.qty||1);
-      else used.push({id:ig.id,name:ig.name,unit:ig.unit,qty:ri.quantity*(it.quantity||it.qty||1)});
+function CancelDlg({ order = {}, recs = [], ings = [], onClose, onConfirm }) {
+  // Calcula los insumos usados (puede estar vacío si no hay datos enriquecidos)
+  const used = [];
+  const items = order.order_items || order.items || [];
+  items.forEach(it => {
+    const r = recs.find(x => x.id === it.recipe_id);
+    if (!r) return;
+    (r.ingredients || r.recipe_ingredients || []).forEach(ri => {
+      const ig = ings.find(x => x.id === ri.ingredient_id);
+      if (!ig) return;
+      const qty = (ri.quantity || ri.qty || 0) * (it.quantity || it.qty || 1);
+      const ex = used.find(u => u.id === ig.id);
+      if (ex) ex.qty += qty;
+      else used.push({ id: ig.id, name: ig.name, unit: ig.unit, qty });
     });
   });
-  return(<div className="modal"><div className="modal-c">
-    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
-      <div style={{width:40,height:40,borderRadius:10,background:"var(--rl)",display:"flex",alignItems:"center",justifyContent:"center"}}>{Icon.alert({size:20,color:"var(--rd)"})}</div>
-      <div><div style={{fontWeight:700,fontSize:16}}>Cancelar pedido</div><div style={{fontSize:12,color:"var(--t3)"}}>de {order.customer}</div></div>
-    </div>
-    <div style={{fontSize:14,color:"var(--t2)",marginBottom:12}}>Los insumos ya fueron descontados. ¿Qué hacemos?</div>
-    {used.length>0&&<div className="c" style={{padding:"8px 12px",marginBottom:16,background:"var(--b2)"}}>
-      <div style={{fontSize:11,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",marginBottom:6}}>Insumos usados</div>
-      {used.map(ig=>(<div key={ig.id} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",fontSize:13}}><span>{ig.name}</span><span style={{fontWeight:600}}>{ig.qty} {ig.unit}</span></div>))}
-    </div>}
-    <button className="btn bgn" style={{marginBottom:8}} onClick={()=>onConfirm(true)}>{Icon.back({size:16,color:"#fff"})} Devolver al stock</button>
-    <button className="btn bd" style={{marginBottom:8}} onClick={()=>onConfirm(false)}>{Icon.trash({size:16})} Registrar desperdicio</button>
-    <button className="btn bs" onClick={onClose}>Volver</button>
-  </div></div>);
+
+  return (
+    <>
+      <div className="ag-modal-backdrop open" onClick={onClose} />
+      <div className="ag-modal-sheet open" role="dialog" aria-label="Cancelar pedido">
+        <header className="ag-modal-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 12,
+              background: 'var(--ag-c-orders-soft)',
+              color: 'var(--ag-c-orders)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <div>
+              <h3>Cancelar pedido</h3>
+              <p>de {order.customer || 'cliente'}</p>
+            </div>
+          </div>
+          <button type="button" className="ag-modal-close" onClick={onClose} aria-label="Cerrar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="18" y1="6"  x2="6"  y2="18"/>
+              <line x1="6"  y1="6"  x2="18" y2="18"/>
+            </svg>
+          </button>
+        </header>
+
+        <div className="ag-modal-body">
+          <p style={{ fontSize: 13.5, color: 'var(--ag-ink-2)', margin: '0 0 14px' }}>
+            Los insumos ya fueron descontados. ¿Qué hacemos con ellos?
+          </p>
+
+          {used.length > 0 && (
+            <div style={{
+              padding: '10px 12px',
+              background: 'var(--ag-bg-soft)',
+              borderRadius: 10,
+              marginBottom: 16,
+            }}>
+              <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--ag-ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                Insumos usados
+              </div>
+              {used.map(ig => (
+                <div key={ig.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 12.5 }}>
+                  <span style={{ color: 'var(--ag-ink)' }}>{ig.name}</span>
+                  <span style={{ fontWeight: 700, color: 'var(--ag-ink)' }}>{ig.qty} {ig.unit}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="ag-btn-primary"
+            style={{ width: '100%', marginBottom: 8, background: 'var(--ag-c-sales)' }}
+            onClick={() => onConfirm(true)}
+          >
+            ↺ Devolver al stock
+          </button>
+          <button
+            type="button"
+            className="ag-btn-primary"
+            style={{ width: '100%', marginBottom: 8, background: 'var(--ag-c-orders)' }}
+            onClick={() => onConfirm(false)}
+          >
+            🗑 Registrar como merma
+          </button>
+          <button
+            type="button"
+            className="ag-btn-ghost"
+            style={{ width: '100%' }}
+            onClick={onClose}
+          >Volver</button>
+        </div>
+      </div>
+    </>
+  );
 }
 
-function StockWarningDlg({deficits,onForce,onClose}){
-  return(<div className="modal"><div className="modal-c">
-    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
-      <div style={{width:40,height:40,borderRadius:10,background:"#FFF8E1",display:"flex",alignItems:"center",justifyContent:"center"}}>{Icon.alert({size:20,color:"var(--yw)"})}</div>
-      <div><div style={{fontWeight:700,fontSize:16}}>Stock insuficiente</div><div style={{fontSize:12,color:"var(--t3)"}}>Algunos insumos quedarán en negativo</div></div>
-    </div>
-    <div className="c" style={{padding:"8px 12px",marginBottom:16,background:"var(--b2)"}}>
-      <div style={{fontSize:11,fontWeight:700,color:"var(--t3)",textTransform:"uppercase",marginBottom:6}}>Insumos con déficit</div>
-      {deficits.map((d,i)=>(
-        <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",fontSize:13,borderBottom:"1px solid var(--b2)"}}>
-          <span style={{fontWeight:600}}>{d.name}</span>
-          <span style={{color:"var(--rd)",fontWeight:700}}>Stock: {d.current} → <strong>{d.after}</strong> {d.unit}</span>
+function StockWarningDlg({ deficits = [], onForce, onClose }) {
+  return (
+    <>
+      <div className="ag-modal-backdrop open" onClick={onClose} />
+      <div className="ag-modal-sheet open" role="dialog" aria-label="Stock insuficiente">
+        <header className="ag-modal-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 12,
+              background: 'var(--ag-c-stock-soft)',
+              color: 'var(--ag-c-stock)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <div>
+              <h3>Stock insuficiente</h3>
+              <p>Algunos insumos quedarán en negativo</p>
+            </div>
+          </div>
+          <button type="button" className="ag-modal-close" onClick={onClose} aria-label="Cerrar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="18" y1="6"  x2="6"  y2="18"/>
+              <line x1="6"  y1="6"  x2="18" y2="18"/>
+            </svg>
+          </button>
+        </header>
+
+        <div className="ag-modal-body">
+          <div style={{
+            padding: '10px 12px',
+            background: 'var(--ag-bg-soft)',
+            borderRadius: 10,
+            marginBottom: 14,
+          }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--ag-ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              Insumos con déficit ({deficits.length})
+            </div>
+            {deficits.map((d, i) => (
+              <div key={i} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '6px 0', fontSize: 12.5,
+                borderTop: i === 0 ? 'none' : '1px solid var(--ag-line)',
+              }}>
+                <span style={{ fontWeight: 600, color: 'var(--ag-ink)' }}>{d.name}</span>
+                <span style={{ color: 'var(--ag-c-orders)', fontWeight: 700 }}>
+                  {d.current} → <strong>{d.after}</strong> {d.unit}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <p style={{ fontSize: 12.5, color: 'var(--ag-ink-3)', margin: '0 0 14px', lineHeight: 1.4 }}>
+            Podés forzar la preparación igualmente. El stock quedará en negativo hasta que registres una compra.
+          </p>
+
+          <button
+            type="button"
+            className="ag-btn-primary"
+            style={{ width: '100%', marginBottom: 8, background: 'var(--ag-c-stock)' }}
+            onClick={onForce}
+          >⚠ Forzar preparación</button>
+          <button
+            type="button"
+            className="ag-btn-ghost"
+            style={{ width: '100%' }}
+            onClick={onClose}
+          >Cancelar</button>
         </div>
-      ))}
-    </div>
-    <div style={{fontSize:13,color:"var(--t3)",marginBottom:16}}>Podés forzar la preparación igualmente. El stock quedará en negativo hasta que registres una compra.</div>
-    <button className="btn byw" style={{marginBottom:8}} onClick={onForce}>⚠️ Forzar preparación de todas formas</button>
-    <button className="btn bs" onClick={onClose}>Cancelar</button>
-  </div></div>);
+      </div>
+    </>
+  );
 }
 
 function NewOrderOverlay({count,onAck}){
   return(
     <div onClick={onAck} style={{
       position:"fixed",inset:0,zIndex:9999,
-      background:"var(--ac,#C45D3E)",
+      background:"var(--ac,#F59E0B)",
       display:"flex",flexDirection:"column",
       alignItems:"center",justifyContent:"center",
       cursor:"pointer",userSelect:"none",

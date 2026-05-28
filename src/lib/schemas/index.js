@@ -173,6 +173,33 @@ export const SettingsInputSchema = z.object({
   store_hours: z.json().nullable().optional(),
   exp_cats: z.array(z.string()).nullable().optional(),
   ing_cats: z.array(z.string()).nullable().optional(),
+  // Costos proyectados (Configuración → Finanzas → Costos proyectados)
+  waste_pct: z.number().min(0).max(100).nullable().optional(),
+  expense_pct: z.number().min(0).max(100).nullable().optional(),
+  // Medios de pago admin + subset visible en catálogo
+  payment_methods: z.array(z.string()).nullable().optional(),
+  catalog_payment_methods: z.array(z.string()).nullable().optional(),
+  // Theming público
+  catalog_font: optionalText(50),
+  // Identidad social / SEO
+  slogan: optionalText(300),
+  description: optionalText(2000),
+  whatsapp: optionalText(50),
+  instagram: optionalText(100),
+  og_image_url: optionalText(2000),
+  favicon_url: optionalText(2000),
+  // Catálogo público
+  min_order_amount: z.number().min(0).nullable().optional(),
+  prep_time_min: z.number().int().min(0).nullable().optional(),
+  delivery_time_min: z.number().int().min(0).nullable().optional(),
+  show_hours_on_catalog: z.boolean().nullable().optional(),
+  // Grupos de cat / daily deals
+  cat_groups: z.json().nullable().optional(),
+  daily_deals: z.json().nullable().optional(),
+  deal_pct: z.number().min(0).max(100).nullable().optional(),
+  // Multi-tenant edge functions
+  store_name: optionalText(200),
+  app_url: optionalText(2000),
 });
 
 

@@ -1,3 +1,6 @@
+/* Hermes Sistema Visual (tokens editoriales + tipografia + clases base) */
+@import "./styles/hermes-tokens.css";
+
 @import "tailwindcss";
 @import "./legacy.css";
 
@@ -6,6 +9,22 @@
   outline: 2px solid var(--ac, #C45D3E);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* ─── Hide scrollbars (look like a native mobile app) ─
+ * En mobile real ya están ocultas (touch-only). En desktop
+ * las ocultamos para que el frame del iPhone se vea limpio y
+ * para que la app no parezca página web. El scroll sigue
+ * funcionando, solo se oculta el track visual.
+ * ──────────────────────────────────────────────────── */
+* {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE/Edge legacy */
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;                /* Chrome / Safari / Edge / Opera */
 }
 
 /* ─── Skeleton shimmer animation ─────────────────── */

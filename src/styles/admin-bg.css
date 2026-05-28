@@ -1,0 +1,65 @@
+/* ────────────────────────────────────────────────────────
+ * Hermes Admin — Background layer (blobs + topo)
+ * Uso: <div class="ag-bg-layer"><AdminBackdrop /></div>
+ * ──────────────────────────────────────────────────────── */
+
+.ag-bg-layer {
+  position: absolute;
+  inset: 0;
+  z-index: var(--ag-z-bg);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* — Blobs flotantes — */
+.ag-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(65px);
+  animation: ag-drift 22s ease-in-out infinite;
+  will-change: transform;
+}
+.ag-blob.b1 { top: -80px;   left: -60px;  width: 260px; height: 260px; animation-delay: 0s; }
+.ag-blob.b2 { top: 220px;   right: -80px; width: 220px; height: 220px; animation-delay: 5s; }
+.ag-blob.b3 { bottom: 80px; left: -60px;  width: 200px; height: 200px; animation-delay: 10s; }
+.ag-blob.b4 { bottom: -40px; right: -40px; width: 180px; height: 180px; animation-delay: 15s; }
+@keyframes ag-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(18px, -12px) scale(1.07); }
+  66%      { transform: translate(-14px, 16px) scale(0.96); }
+}
+
+/* — Topo (curvas continuas) — */
+.ag-topo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: ag-topo-drift 30s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.ag-topo path { fill: none; stroke-width: 0.6; }
+@keyframes ag-topo-drift {
+  0%   { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-12px) scale(1.04); }
+}
+
+/* — Theming por tema — */
+/* Light · terracota fuerte upper-left, resto suave */
+.ag-theme-light .ag-blob.b1 { background: radial-gradient(circle, rgba(194, 96, 63, 0.55), transparent 65%); }
+.ag-theme-light .ag-blob.b2 { background: radial-gradient(circle, rgba(108, 167, 127, 0.28), transparent 70%); }
+.ag-theme-light .ag-blob.b3 { background: radial-gradient(circle, rgba(232, 197, 71, 0.30), transparent 70%); }
+.ag-theme-light .ag-blob.b4 { background: radial-gradient(circle, rgba(107, 91, 214, 0.22), transparent 70%); }
+.ag-theme-light .ag-topo path { stroke: rgba(26, 24, 23, 0.32); stroke-width: 0.7; }
+
+/* Dark · todos los blobs más intensos */
+.ag-theme-dark .ag-blob.b1 { background: radial-gradient(circle, rgba(194, 96, 63, 0.55), transparent 70%); }
+.ag-theme-dark .ag-blob.b2 { background: radial-gradient(circle, rgba(108, 167, 127, 0.50), transparent 70%); }
+.ag-theme-dark .ag-blob.b3 { background: radial-gradient(circle, rgba(232, 197, 71, 0.38), transparent 70%); }
+.ag-theme-dark .ag-blob.b4 { background: radial-gradient(circle, rgba(107, 91, 214, 0.42), transparent 70%); }
+.ag-theme-dark .ag-topo path { stroke: rgba(244, 239, 231, 0.22); }
+
+/* — Reduce motion respect — */
+@media (prefers-reduced-motion: reduce) {
+  .ag-blob, .ag-topo { animation: none; }
+}

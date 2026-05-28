@@ -1,0 +1,11 @@
+# Normaliza saltos de línea: evita corrupción CRLF/NUL en ediciones
+* text=auto eol=lf
+
+# Binarios: no tocar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary

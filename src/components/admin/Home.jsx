@@ -1,119 +1,220 @@
 import { useMemo, useState, lazy, Suspense } from "react";
-import { Icon, formatInt, todayISO, OrderStatus } from "../../lib/utils";
+import { formatInt, todayISO, OrderStatus } from "../../lib/utils";
+
+import KpiCard from "./shared/cards/KpiCard";
+import AnaCard from "./shared/cards/AnaCard";
+import AlertRow from "./shared/cards/AlertRow";
 
 const Analytics = lazy(() => import("./Analytics"));
 
-function Home({lowStockIngredients,monthSales,monthWasteCost,monthProfit,profitMargin,monthProductionCost,wastePct,monthFixedExpenses,monthVariableExpenses,monthGrossMargin,grossMarginPct,sales,orders,recipes,ingredients,calculateRecipeCost,activeOrders,settings,waste,onStock,onOrders,onExp}){
-  const [showDetail,setShowDetail]=useState(false);
-  const [showAnalytics,setShowAnalytics]=useState(false);
-  // Indicador de calibración: si la merma cargada supera la proyectada, sugerir subir el %
-  const projectedWasteCost = (monthProductionCost && wastePct) ? (monthProductionCost - monthProductionCost/(1+wastePct/100)) : 0;
-  const wasteOverrun = monthWasteCost > projectedWasteCost * 1.5 && monthWasteCost > 1000;
-  const nw=activeOrders.filter(o=>o.status===OrderStatus.NEW);
-  const monthStart=todayISO().slice(0,7)+"-01";
-  const top=useMemo(()=>{
-    const m={};sales.filter(s=>s.date>=monthStart).forEach(s=>{m[s.recipe_id]=(m[s.recipe_id]||0)+(s.qty||1);});
-    return Object.entries(m).map(([id,q])=>({r:recipes.find(x=>x.id===id),q})).filter(x=>x.r).sort((a,b)=>b.q-a.q).slice(0,3);
-  },[sales,recipes,monthStart]);
+const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-  return(<>
-    {nw.length>0&&<div className="ab" style={{background:(settings.logo_color||"#C45D3E")+"18",color:settings.logo_color||"#C45D3E",margin:"0 16px 12px"}} onClick={onOrders}>
-      {Icon.orders({size:18})}<span style={{flex:1}}>{nw.length} pedido{nw.length>1?"s":""} nuevo{nw.length>1?"s":""}</span><span style={{fontWeight:700}}>Ver →</span>
-    </div>}
-    {lowStockIngredients.length>0&&<div className="ab abw" onClick={onStock}>{Icon.alert({size:18})}<span>{lowStockIngredients.length} insumo{lowStockIngredients.length>1?"s":""} con stock bajo</span></div>}
+function getUserSubtitle(user) {
+  if (!user) return '';
+  const meta = user.user_metadata || {};
+  return meta.full_name || meta.name || meta.display_name || user.email || '';
+}
 
-    {/* KPIs principales (vista híbrida: 3 cards grandes + detalle expandible) */}
-    <div className="sg">
-      <div className="sc f1"><div className="sl">Ventas del mes</div><div className="sv2">${formatInt(monthSales)}</div></div>
-      <div className="sc f2"><div className="sl">Resultado neto</div><div className={`sv2 ${monthProfit>=0?"svg2":"svr"}`}>${formatInt(monthProfit)}</div><div className="sd">Margen: {profitMargin.toFixed(1)}%</div></div>
-      <div className="sc f3"><div className="sl">Margen bruto</div><div className="sv2">${formatInt(monthGrossMargin||0)}</div><div className="sd">{(grossMarginPct||0).toFixed(1)}% s/ ventas</div></div>
-    </div>
+function Home({
+  user, lowStockIngredients, monthSales, monthExpenses, monthProfit, profitMargin,
+  sales, orders, recipes, ingredients,
+  calculateRecipeCost, activeOrders, settings, waste,
+  onStock, onOrders, onShowToast, onMonthSummary,
+}) {
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
-    {/* Botón para expandir detalle financiero */}
-    <div style={{padding:"0 16px 12px"}}>
-      <button onClick={()=>setShowDetail(p=>!p)} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--b2)",background:"var(--b3)",borderRadius:"var(--r)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:13,fontWeight:600,color:"var(--t2)"}}>
-        <span>📈 Detalle financiero {wastePct!=null&&`· ${wastePct}% merma proyectada`}</span>
-        <span style={{transition:"transform .2s",transform:showDetail?"rotate(180deg)":"rotate(0)"}}>▾</span>
-      </button>
-    </div>
+  const nw = activeOrders.filter(o => o.status === OrderStatus.NEW);
+  const monthStart = todayISO().slice(0, 7) + "-01";
+  const currentMonth = MONTH_NAMES[new Date().getMonth()];
+  const userSubtitle = getUserSubtitle(user);
 
-    {showDetail&&<div style={{padding:"0 16px 16px"}}>
-      <div className="c" style={{padding:14}}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,fontSize:13}}>
-          <div>
-            <div style={{color:"var(--t3)",fontSize:11,marginBottom:2}}>Costo materia prima (con merma)</div>
-            <div style={{fontWeight:700}}>${formatInt(monthProductionCost||0)}</div>
-          </div>
-          <div>
-            <div style={{color:"var(--t3)",fontSize:11,marginBottom:2}}>Margen bruto</div>
-            <div style={{fontWeight:700,color:"var(--gn)"}}>${formatInt(monthGrossMargin||0)}</div>
-          </div>
-          <div>
-            <div style={{color:"var(--t3)",fontSize:11,marginBottom:2}}>🏠 Gastos fijos</div>
-            <div style={{fontWeight:700,color:"var(--rd)"}}>-${formatInt(monthFixedExpenses||0)}</div>
-          </div>
-          <div>
-            <div style={{color:"var(--t3)",fontSize:11,marginBottom:2}}>📦 Gastos variables</div>
-            <div style={{fontWeight:700,color:"var(--rd)"}}>-${formatInt(monthVariableExpenses||0)}</div>
-          </div>
-          {monthWasteCost>0&&<div style={{gridColumn:"1 / -1"}}>
-            <div style={{color:"var(--t3)",fontSize:11,marginBottom:2}}>⚠️ Merma cargada (extra)</div>
-            <div style={{fontWeight:700,color:"var(--rd)"}}>-${formatInt(monthWasteCost)}</div>
-          </div>}
-          <div style={{gridColumn:"1 / -1",borderTop:"1px solid var(--b2)",paddingTop:10,marginTop:4}}>
-            <div style={{color:"var(--t3)",fontSize:11,marginBottom:2}}>Resultado neto = Margen bruto − Gastos − Merma</div>
-            <div style={{fontWeight:700,fontSize:18,color:monthProfit>=0?"var(--gn)":"var(--rd)"}}>${formatInt(monthProfit)} <span style={{fontSize:12,fontWeight:600}}>({profitMargin.toFixed(1)}%)</span></div>
-          </div>
+  // Pedidos creados en el mes actual (no solo activos)
+  const monthOrdersCount = useMemo(
+    () => orders.filter(o => (o.created_at || o.date || '').slice(0, 10) >= monthStart).length,
+    [orders, monthStart]
+  );
+
+  const top = useMemo(() => {
+    const m = {};
+    sales.filter(s => s.date >= monthStart).forEach(s => { m[s.recipe_id] = (m[s.recipe_id] || 0) + (s.qty || 1); });
+    return Object.entries(m).map(([id, q]) => ({ r: recipes.find(x => x.id === id), q })).filter(x => x.r).sort((a, b) => b.q - a.q).slice(0, 3);
+  }, [sales, recipes, monthStart]);
+
+  return (
+    <div style={{ padding: "12px 16px 24px", position: 'relative', zIndex: 2 }}>
+
+      {/* ─── Page head: "Resumen de <mes>" + email chico + botón mes ─── */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, padding: '4px 0 14px' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h1 style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 800,
+            fontSize: 22,
+            margin: 0,
+            color: 'var(--ag-ink)',
+            letterSpacing: '-0.01em',
+            lineHeight: 1.15,
+          }}>Resumen de {currentMonth}</h1>
+          {userSubtitle && (
+            <p style={{
+              margin: '4px 0 0',
+              fontSize: 11.5,
+              color: 'var(--ag-ink-3)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>{userSubtitle}</p>
+          )}
         </div>
-        {wasteOverrun&&<div style={{marginTop:12,padding:"8px 12px",background:"#FFF3E0",borderRadius:8,fontSize:12,color:"#8D6E00"}}>
-          💡 La merma real cargada supera la proyectada con {wastePct}%. Considerá subir el % en Configuración para que la rentabilidad por producto sea más realista.
-        </div>}
+        <button
+          type="button"
+          className="ag-cta"
+          onClick={() => onMonthSummary?.()}
+          aria-label={`Ver resumen del mes (${currentMonth})`}
+          style={{ padding: '8px 14px', fontSize: 12, gap: 6, flexShrink: 0 }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8"  y1="2" x2="8"  y2="6" />
+            <line x1="3"  y1="10" x2="21" y2="10" />
+          </svg>
+          <span>{currentMonth}</span>
+        </button>
       </div>
-    </div>}
 
-    {/* Reporte de Mermas del mes */}
-    {waste&&waste.length>0&&(()=>{
-      const mo2=todayISO().slice(0,7)+"-01";
-      const mw=waste.filter(w=>w.date>=mo2);
-      if(mw.length===0)return null;
-      // Agrupar por motivo
-      const byReason={};mw.forEach(w=>{const r=w.reason||"otro";if(!byReason[r])byReason[r]={count:0,cost:0};byReason[r].count+=w.qty||0;const ig=ingredients.find(i=>i.id===w.ingredient_id);byReason[r].cost+=(ig?.cost||0)*(w.qty||0);});
-      return(<div className="s"><div className="st">Mermas del mes</div>
-        <div className="c" style={{padding:0,overflow:"hidden"}}>
-          {Object.entries(byReason).sort((a,b)=>b[1].cost-a[1].cost).map(([reason,data])=>(
-            <div key={reason} className="li">
-              <div className="lic" style={{background:"var(--rl)",color:"var(--rd)"}}>{reason==="vencimiento"?"📅":reason==="rotura"?"💔":reason==="derrame"?"💧":"⚠️"}</div>
-              <div className="lii"><div className="lin" style={{textTransform:"capitalize"}}>{reason}</div><div className="lid">{data.count} unidades</div></div>
-              <div className="lir"><div className="lia" style={{color:"var(--rd)"}}>-${formatInt(data.cost)}</div></div>
+      {/* ─── Alertas (siempre 2 cards lado a lado: pedidos + stock) ─── */}
+      <div className="ag-alerts" style={{ marginBottom: 14 }}>
+        <AlertRow
+          tone={nw.length > 0 ? "urgent" : "ok"}
+          title={nw.length > 0
+            ? `${nw.length} pedido${nw.length > 1 ? 's' : ''} nuevo${nw.length > 1 ? 's' : ''}`
+            : 'Sin pedidos nuevos'}
+          hint={nw.length > 0 ? 'esperando' : 'al día'}
+          onClick={onOrders}
+        />
+        <AlertRow
+          tone={lowStockIngredients.length > 0 ? "warn" : "ok"}
+          title={lowStockIngredients.length > 0
+            ? `${lowStockIngredients.length} insumo${lowStockIngredients.length > 1 ? 's' : ''} bajo${lowStockIngredients.length > 1 ? 's' : ''}`
+            : 'Stock ok'}
+          hint={lowStockIngredients.length > 0 ? 'stock crítico' : 'todo cubierto'}
+          onClick={onStock}
+        />
+      </div>
+
+      {/* ─── KPIs principales ─── */}
+      <div className="ag-kpi-grid" style={{ marginBottom: 14 }}>
+        <KpiCard
+          state="sales"
+          label="Ventas del mes"
+          value={`$${formatInt(monthSales)}`}
+        />
+        <KpiCard
+          state="orders"
+          label="Gastos del mes"
+          value={`$${formatInt(monthExpenses || 0)}`}
+        />
+        <KpiCard
+          state={monthProfit >= 0 ? "crm" : "orders"}
+          label="Ganancia del mes"
+          value={`$${formatInt(monthProfit)}`}
+          delta={`${profitMargin.toFixed(1)}% margen`}
+          trend={monthProfit >= 0 ? 'up' : 'down'}
+        />
+        <KpiCard
+          state="prep"
+          label="Pedidos del mes"
+          value={String(monthOrdersCount)}
+          delta={nw.length > 0 ? `${nw.length} nuevo${nw.length > 1 ? 's' : ''}` : null}
+          onClick={onOrders}
+        />
+      </div>
+
+      {/* ─── Mermas del mes ─── */}
+      {waste && waste.length > 0 && (() => {
+        const mo2 = todayISO().slice(0, 7) + "-01";
+        const mw = waste.filter(w => w.date >= mo2);
+        if (mw.length === 0) return null;
+        const byReason = {};
+        mw.forEach(w => {
+          const r = w.reason || "otro";
+          if (!byReason[r]) byReason[r] = { count: 0, cost: 0 };
+          byReason[r].count += w.qty || 0;
+          const ig = ingredients.find(i => i.id === w.ingredient_id);
+          byReason[r].cost += (ig?.cost || 0) * (w.qty || 0);
+        });
+        const reasonIcon = { vencimiento: '📅', rotura: '💔', derrame: '💧' };
+        return (
+          <div style={{ marginBottom: 14 }}>
+            <AnaCard title="Mermas del mes" state="orders" meta="por motivo">
+              <div style={{ marginTop: 8 }}>
+                {Object.entries(byReason).sort((a, b) => b[1].cost - a[1].cost).map(([reason, data]) => (
+                  <div key={reason} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: '1px solid var(--ag-line)' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--ag-c-orders-soft)', color: 'var(--ag-c-orders)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>{reasonIcon[reason] || '⚠️'}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--ag-ink)', textTransform: 'capitalize' }}>{reason}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ag-ink-3)' }}>{data.count} unidades</div>
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ag-c-orders)' }}>-${formatInt(data.cost)}</div>
+                  </div>
+                ))}
+              </div>
+            </AnaCard>
+          </div>
+        );
+      })()}
+
+      {/* ─── Top más vendidos ─── */}
+      {top.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <AnaCard title="Más vendidos" state="recipes" meta="del mes">
+            <div style={{ marginTop: 8 }}>
+              {top.map((t, i) => {
+                const c = calculateRecipeCost(t.r);
+                const rt = t.r.sale_price > 0 ? ((t.r.sale_price - c) / t.r.sale_price * 100) : 0;
+                const podiumColor = ['var(--ag-c-sales)', 'var(--ag-c-stock)', 'var(--ag-c-crm)'][i];
+                const podiumBg    = ['var(--ag-c-sales-soft)', 'var(--ag-c-stock-soft)', 'var(--ag-c-crm-soft)'][i];
+                return (
+                  <div key={t.r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: i === 0 ? 'none' : '1px solid var(--ag-line)' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: podiumBg, color: podiumColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>#{i + 1}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--ag-ink)' }}>{t.r.name}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ag-ink-3)' }}>{t.q} uni · Rent. {rt.toFixed(0)}%</div>
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--ag-ink)' }}>${formatInt(t.q * t.r.sale_price)}</div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          </AnaCard>
         </div>
-        <div style={{fontSize:12,color:"var(--t3)",textAlign:"right",padding:"6px 0"}}>Detalle de mermas registradas en stock (insumos descartados).</div>
-      </div>);
-    })()}
+      )}
 
-    {/* Analytics avanzado: colapsable. Default cerrado para mantener el Home como vista rápida. */}
-    <div style={{padding:"0 16px 12px"}}>
-      <button onClick={()=>setShowAnalytics(p=>!p)} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--b2)",background:"var(--b3)",borderRadius:"var(--r)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:13,fontWeight:600,color:"var(--t2)"}}>
-        <span>📊 Analítica avanzada (gráficos, embudos, heatmap)</span>
-        <span style={{transition:"transform .2s",transform:showAnalytics?"rotate(180deg)":"rotate(0)"}}>▾</span>
-      </button>
+      {/* ─── Analytics avanzado (CTA centrado, colapsable) ─── */}
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '18px 0 14px' }}>
+        <button
+          type="button"
+          onClick={() => setShowAnalytics(p => !p)}
+          className="ag-cta"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="12" y1="20" x2="12" y2="10" />
+            <line x1="18" y1="20" x2="18" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="16" />
+          </svg>
+          <span>{showAnalytics ? 'Ocultar analítica avanzada' : 'Ver analítica avanzada'}</span>
+          <span className="ag-cta-caret" data-open={showAnalytics ? 'true' : 'false'}>▾</span>
+        </button>
+      </div>
+
+      {showAnalytics && (
+        <Suspense fallback={<div className="ag-card" style={{ textAlign: 'center', padding: 20, color: 'var(--ag-ink-3)' }}>Cargando analítica...</div>}>
+          <Analytics sales={sales} orders={orders} recipes={recipes} calculateRecipeCost={calculateRecipeCost} />
+        </Suspense>
+      )}
     </div>
-    {showAnalytics&&<Suspense fallback={<div className="s"><div className="c" style={{textAlign:"center",padding:20,color:"var(--t3)"}}>Cargando analítica...</div></div>}>
-      <Analytics sales={sales} orders={orders} recipes={recipes} calculateRecipeCost={calculateRecipeCost} />
-    </Suspense>}
-
-    {top.length>0&&<div className="s"><div className="st">Más vendidos</div>
-      <div className="c" style={{padding:0,overflow:"hidden"}}>{top.map((t,i)=>{
-        const c=calculateRecipeCost(t.r);const rt=t.r.sale_price>0?((t.r.sale_price-c)/t.r.sale_price*100):0;
-        return(<div key={t.r.id} className="li">
-          <div className="lic" style={{background:["var(--al)","var(--yl)","var(--gl)"][i],color:["var(--ac)","var(--yw)","var(--gn)"][i]}}>#{i+1}</div>
-          <div className="lii"><div className="lin">{t.r.name}</div><div className="lid">{t.q} uni · Rent. {rt.toFixed(0)}%</div></div>
-          <div className="lir"><div className="lia">${formatInt(t.q*t.r.sale_price)}</div></div>
-        </div>);
-      })}</div>
-    </div>}
-  </>);
+  );
 }
 
 export default Home;
