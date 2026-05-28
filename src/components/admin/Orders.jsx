@@ -69,19 +69,6 @@ function toCardProps(o, recipes = []) {
   };
 }
 
-// ─── Pedidos demo (no se guardan en DB) ───
-const DEMO_ORDERS = [
-  { id: 'demo-1', customer: 'Camila Méndez', avatarBg: '#E85A4A', mode: 'Delivery', total: '$8.450',
-    items: [{qty:2, name:'Empanada de carne'}, {qty:1, name:'Coca 500ml'}],
-    status: 'new', minutes: 3, phone: '5491155555555' },
-  { id: 'demo-2', customer: 'Lucas Pérez', avatarBg: '#6B5BD6', mode: 'Retiro', total: '$12.300',
-    items: [{qty:1, name:'Pizza Napolitana'}, {qty:1, name:'Agua sin gas'}],
-    status: 'new', minutes: 14, phone: '5491166666666' },
-  { id: 'demo-3', customer: 'Mara Suárez', avatarBg: '#3A8B9F', mode: 'Delivery', total: '$6.200',
-    items: [{qty:1, name:'Lomito completo'}],
-    status: 'new', minutes: 26, phone: '5491177777777' },
-];
-
 function DeliveryBadge({date}){
   if(!date)return null;
   const today=todayISO();
@@ -97,36 +84,6 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
   const [fil,setFil]=useState(OrderStatus.NEW);const [showH,setShowH]=useState(false);const [showSched,setShowSched]=useState(false);const t=todayISO();
   const [histPage,setHistPage]=useState(1);const HIST_PER_PAGE=20;
   const [viewReceipt,setViewReceipt]=useState(null); // order object to view receipt
-
-  // ─── Demo mode: 3 pedidos de ejemplo que pasan por todas las etapas ───
-  // Útil para probar el flujo de swipe sin tener que crear pedidos reales.
-  const [demoActive, setDemoActive] = useState(false);
-  const [demoOrders, setDemoOrders] = useState(DEMO_ORDERS);
-
-  // Mapeo de status del OrderCard → tab del filtro
-  const DEMO_STATUS_TO_TAB = {
-    new:       OrderStatus.NEW,
-    prep:      OrderStatus.PREPARING,
-    ready:     OrderStatus.ACTIVE,
-    done:      OrderStatus.COMPLETED,
-    cancelled: OrderStatus.CANCELLED,
-  };
-  const DEMO_FLOW_NEXT = { new: 'prep', prep: 'ready', ready: 'done' };
-  const DEMO_NEXT_LABEL = { new: 'En preparación', prep: 'Listo', ready: 'Entregado' };
-
-  const advanceDemo = (id) => setDemoOrders(prev => prev.map(d => {
-    if (d.id !== id) return d;
-    const nxt = DEMO_FLOW_NEXT[d.status];
-    if (!nxt) return d;
-    showToast(`(Demo) ${d.customer} → ${DEMO_NEXT_LABEL[d.status]}`);
-    return { ...d, status: nxt, minutes: 0 }; // reset minutos al avanzar
-  }));
-  const cancelDemo = (id) => setDemoOrders(prev => prev.map(d => {
-    if (d.id !== id) return d;
-    showToast(`(Demo) ${d.customer} cancelado`);
-    return { ...d, status: 'cancelled' };
-  }));
-  const resetDemos = () => { setDemoOrders(DEMO_ORDERS); };
 
   // Calcular si el local está abierto ahora (misma lógica que Catalog)
   const storeIsOpen=useMemo(()=>{
@@ -301,71 +258,15 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
         );
       })}
 
-      {/* Demos visibles · se filtran por tab activo según su status */}
-      {demoActive && demoOrders
-        .filter(d => DEMO_STATUS_TO_TAB[d.status] === fil)
-        .map(d => (
-          <OrderCard
-            key={d.id}
-            order={d}
-            onPrimary={d.status !== 'done' && d.status !== 'cancelled' ? () => advanceDemo(d.id) : undefined}
-            onCancel={d.status !== 'done' && d.status !== 'cancelled' ? () => cancelDemo(d.id) : undefined}
-          />
-        ))
-      }
-
-      {/* Empty state cuando no hay reales ni demos visibles */}
-      {filt.length === 0 && (!demoActive || demoOrders.filter(d => DEMO_STATUS_TO_TAB[d.status] === fil).length === 0) && (
+      {/* Empty state */}
+      {filt.length === 0 && (
         <div className="ag-card" style={{ padding: '32px 16px', textAlign: 'center' }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>
             {fil === OrderStatus.NEW ? '📋' : fil === OrderStatus.PREPARING ? '👨‍🍳' : fil === OrderStatus.ACTIVE ? '⚡' : '✓'}
           </div>
-          <div style={{ color: 'var(--ag-ink-3)', fontSize: 13, marginBottom: 14 }}>
+          <div style={{ color: 'var(--ag-ink-3)', fontSize: 13 }}>
             No hay pedidos {OrderStatusLabels[fil]?.toLowerCase()}
           </div>
-          {fil === OrderStatus.NEW && !demoActive && (
-            <button
-              type="button"
-              onClick={() => { setDemoActive(true); setDemoOrders(DEMO_ORDERS); }}
-              style={{
-                padding: '8px 16px',
-                background: 'var(--ag-c-terra, #F59E0B)',
-                color: '#fff', border: 0, borderRadius: 999,
-                fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
-            >Ver 3 pedidos demo (swipe para probar)</button>
-          )}
-          {demoActive && (
-            <button
-              type="button"
-              onClick={resetDemos}
-              style={{
-                padding: '6px 14px',
-                background: 'transparent', color: 'var(--ag-c-terra, #F59E0B)',
-                border: '1px solid var(--ag-c-terra, #F59E0B)', borderRadius: 999,
-                fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                fontFamily: 'inherit', marginTop: 6,
-              }}
-            >↺ Reiniciar demos</button>
-          )}
-        </div>
-      )}
-
-      {/* Botón flotante para reiniciar demos cuando hay alguno avanzado */}
-      {demoActive && demoOrders.some(d => d.status !== 'new') && filt !== OrderStatus.NEW && (
-        <div style={{ textAlign: 'center', marginTop: 10 }}>
-          <button
-            type="button"
-            onClick={resetDemos}
-            style={{
-              padding: '6px 14px',
-              background: 'transparent', color: 'var(--ag-c-terra, #F59E0B)',
-              border: '1px solid var(--ag-c-terra, #F59E0B)', borderRadius: 999,
-              fontSize: 11, fontWeight: 700, cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
-          >↺ Reiniciar demos</button>
         </div>
       )}
     </div>
@@ -581,13 +482,13 @@ function OrdForm({ recipes, settings, onClose, onSave }) {
     fetchDeliveryChannels().then(list => { if (mounted) setChannels(list); });
     return () => { mounted = false; };
   }, []);
-  const activeChannel = channels.find(c => c.slug === channel);
-  const commissionAmt = calcCommission(tot, activeChannel?.commission_pct || 0);
-  const netAmt = tot - commissionAmt;
   const add = () => setItems(p => [...p, { recipe_id: "", qty: 1 }]);
   const upd = (i, k, v) => setItems(p => p.map((x, j) => j === i ? { ...x, [k]: v } : x));
   const rm  = i => setItems(p => p.filter((_, j) => j !== i));
   const tot = items.reduce((s, it) => { const r = recipes.find(x => x.id === it.recipe_id); return s + (r ? (r.sale_price || 0) * it.qty : 0); }, 0);
+  const activeChannel = channels.find(c => c.slug === channel);
+  const commissionAmt = calcCommission(tot, activeChannel?.commission_pct || 0);
+  const netAmt = tot - commissionAmt;
   const ok = cust && items.some(it => it.recipe_id && it.qty > 0);
   const todayStr = todayISO();
   const enabledPMs = enabledPaymentMethods(settings);

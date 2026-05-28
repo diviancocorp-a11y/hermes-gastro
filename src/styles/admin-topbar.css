@@ -1,5 +1,5 @@
 /* ────────────────────────────────────────────────────────
- * AdminTopbar — header sticky con franja terracota inferior
+ * AdminTopbar — header sticky en ámbar (light) / oscuro (dark)
  * ──────────────────────────────────────────────────────── */
 
 .ag-topbar {
@@ -68,11 +68,11 @@
 
 /* ── Theming ── */
 .ag-theme-light .ag-topbar {
-  background: rgba(194, 96, 63, 0.78);
+  background: var(--ag-c-terra);
   border-bottom: none;
 }
 .ag-theme-light .ag-topbar::after { display: none; }
-.ag-theme-light .ag-topbar-menu { background: rgba(255, 255, 255, 0.18); }
+.ag-theme-light .ag-topbar-menu { background: rgba(255, 255, 255, 0.22); }
 .ag-theme-light .ag-topbar-menu span,
 .ag-theme-light .ag-topbar-menu span::before,
 .ag-theme-light .ag-topbar-menu span::after { background: #fff; }
