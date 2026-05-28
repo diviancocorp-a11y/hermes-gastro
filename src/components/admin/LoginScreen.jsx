@@ -61,7 +61,7 @@ export default function LoginScreen({ onLogin }) {
       <FlowFieldBackground color="#f59e0b" trailOpacity={0.08} particleCount={500} speed={0.7} bgColor="10,10,10" />
       <div style={{ position:"absolute", inset:0, background:"radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.45) 100%)", pointerEvents:"none" }} />
 
-      {/* Splash de marca · fondo sólido, fade-out al pasar a "form" */}
+      {/* Splash de marca · fondo sólido con halo ámbar detrás del logo */}
       <div style={{
         position:"absolute", inset:0, zIndex:50,
         display:"flex", alignItems:"center", justifyContent:"center",
@@ -69,8 +69,21 @@ export default function LoginScreen({ onLogin }) {
         opacity: stage === "intro" ? 1 : 0,
         pointerEvents: stage === "intro" ? "auto" : "none",
         transition:"opacity 0.6s cubic-bezier(0.22,1,0.36,1)",
+        overflow:"hidden",
       }}>
+        {/* Halo ámbar (radial gradient) */}
         <div style={{
+          position:"absolute",
+          width:"min(120vw, 900px)",
+          height:"min(120vw, 900px)",
+          borderRadius:"50%",
+          background:`radial-gradient(circle, ${AMBER}55 0%, ${AMBER}22 30%, ${AMBER}08 55%, transparent 75%)`,
+          filter:"blur(20px)",
+          animation:"hg-splash-halo 0.9s cubic-bezier(0.22,1,0.36,1) forwards",
+          pointerEvents:"none",
+        }} />
+        <div style={{
+          position:"relative",
           maxWidth:"min(86vw, 460px)",
           animation:"hg-splash-in 0.9s cubic-bezier(0.22,1,0.36,1) forwards",
           filter:`drop-shadow(0 18px 56px ${AMBER}55)`,
@@ -228,6 +241,10 @@ export default function LoginScreen({ onLogin }) {
         }
         @keyframes hg-splash-in {
           from { opacity:0; transform:scale(0.88); }
+          to   { opacity:1; transform:scale(1); }
+        }
+        @keyframes hg-splash-halo {
+          from { opacity:0; transform:scale(0.7); }
           to   { opacity:1; transform:scale(1); }
         }
         @media (prefers-reduced-motion: reduce) {
