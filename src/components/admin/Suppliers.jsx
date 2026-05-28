@@ -4,6 +4,7 @@
  * Accesible desde el hub "Más" → Proveedores.
  * Migración asociada: supabase/migrations/20260525_suppliers_and_receipts.sql
  */
+import { useConfirm } from "../ConfirmSlideProvider";
 import { useState, useEffect, useCallback } from "react";
 import { fetchSuppliers, upsertSupplier, deleteSupplier } from "../../services/suppliers";
 
@@ -14,6 +15,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export default function Suppliers({ onBack, showToast }) {
+  const confirmSlide = useConfirm();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
@@ -150,7 +152,8 @@ export default function Suppliers({ onBack, showToast }) {
             await load();
           }}
           onDelete={async () => {
-            if (!confirm(`¿Eliminar a ${editing.name}? Sus gastos históricos se preservan.`)) return;
+            const ok = await confirmSlide({ title: `Eliminar a ${editing.name}`, body: "Sus gastos históricos se preservan. El proveedor deja de aparecer en el selector.", label: "Deslizá para eliminar" });
+            if (!ok) return;
             const r = await deleteSupplier(editing.id);
             if (r?.__error) { showToast?.("Error: " + r.__error); return; }
             showToast?.("Proveedor eliminado");

@@ -22,6 +22,7 @@ import {
 } from "../../lib/adminService";
 import { fetchSuppliers } from "../../services/suppliers";
 import { voidExpense } from "../../services/finance";
+import SlideToConfirm from "../SlideToConfirm";
 import { paymentLabel, paymentIcon, enabledPaymentMethods } from "../../lib/payments";
 import { USAR_EXPENSE_CATEGORIES, getUsarExpense } from "../../constants/usar";
 
@@ -717,13 +718,18 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
               maxLength={500}
               style={{ resize: "none", marginBottom: 14, fontFamily: "inherit" }}
             />
-            <div style={{ display: "flex", gap: 8 }}>
-              <button type="button" className="ag-btn-ghost" onClick={closeVoid} disabled={voiding} style={{ flex: 1, padding: "12px" }}>Cancelar</button>
-              <button type="button" onClick={submitVoid} disabled={voiding}
-                style={{ flex: 1, padding: "12px", borderRadius: 12, border: 0, background: "var(--ag-c-orders)", color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: voiding ? "wait" : "pointer", opacity: voiding ? 0.7 : 1 }}>
-                {voiding ? "Anulando..." : "Anular gasto"}
-              </button>
-            </div>
+            <SlideToConfirm
+              danger
+              disabled={voiding}
+              label="Deslizá para anular"
+              loadingLabel="Anulando…"
+              successLabel="Anulado ✓"
+              onConfirm={submitVoid}
+            />
+            <button type="button" className="ag-btn-ghost" onClick={closeVoid} disabled={voiding}
+              style={{ marginTop: 10, width: "100%", padding: "10px", fontSize: 12.5, color: "var(--ag-ink-3)" }}>
+              Cancelar
+            </button>
           </div>
         </div>
       )}

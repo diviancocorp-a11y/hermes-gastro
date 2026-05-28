@@ -1,10 +1,12 @@
 // src/components/ui/CatChipsEditor.jsx
 // Editor de categorías (lista + agregar + eliminar) con look del sistema visual v2.
 // Usado en Stock (ing_cats) y Expenses (exp_cats). Persiste en settings.
+import { useConfirm } from "../ConfirmSlideProvider";
 import { useState } from "react";
 import { updateSettings } from "../../services/settings";
 
 export default function CatChipsEditor({ settings, setSettings, field, label, icon, showToast }) {
+  const confirmSlide = useConfirm();
   const [val, setVal] = useState("");
   const [saving, setSaving] = useState(false);
   const cats = settings?.[field] || [];
@@ -29,8 +31,9 @@ export default function CatChipsEditor({ settings, setSettings, field, label, ic
     setVal("");
   };
 
-  const remove = (c) => {
-    if (!confirm(`¿Eliminar "${c}"? Los gastos viejos en esta categoría no se borran, solo dejan de aparecer en el selector.`)) return;
+  const remove = async (c) => {
+    const ok = await confirmSlide({ title: `Eliminar "${c}"`, body: "Los gastos viejos en esta categoría no se borran, solo dejan de aparecer en el selector.", label: "Deslizá para eliminar" });
+    if (!ok) return;
     persist(cats.filter((x) => x !== c));
   };
 

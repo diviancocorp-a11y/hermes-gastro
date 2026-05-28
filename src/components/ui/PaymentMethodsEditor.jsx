@@ -2,6 +2,7 @@
 // CRUD de medios de pago habilitados (settings.payment_methods).
 // Toggle de presets (efectivo, transferencia, MP, tarjeta) + agregar/eliminar custom.
 // Afecta TODO el sistema (Compras, Gastos, Catálogo público).
+import { useConfirm } from "../ConfirmSlideProvider";
 import { useState } from "react";
 import { updateSettings } from "../../services/settings";
 
@@ -14,6 +15,7 @@ const PRESETS = [
 const PRESET_KEYS = PRESETS.map(p => p.key);
 
 export default function PaymentMethodsEditor({ settings, setSettings, showToast }) {
+  const confirmSlide = useConfirm();
   const [val, setVal] = useState("");
   const [saving, setSaving] = useState(false);
   const list = settings?.payment_methods || ["efectivo", "transferencia", "mercadopago"];
@@ -41,8 +43,9 @@ export default function PaymentMethodsEditor({ settings, setSettings, showToast 
     persist([...list, cleaned]);
     setVal("");
   };
-  const removeCustom = (k) => {
-    if (!confirm(`¿Eliminar "${k}"? Los gastos viejos con este medio se preservan.`)) return;
+  const removeCustom = async (k) => {
+    const ok = await confirmSlide({ title: `Eliminar "${k}"`, body: "Los gastos viejos con este medio de pago se preservan. Deja de aparecer en el selector.", label: "Deslizá para eliminar" });
+    if (!ok) return;
     persist(list.filter(x => x !== k));
   };
 

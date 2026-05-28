@@ -14,6 +14,7 @@ import BottomNav from "../components/admin/shared/BottomNav";
 import AdminDrawer from "../components/admin/shared/AdminDrawer";
 import AdminMore from "../components/admin/shared/AdminMore";
 import BrandModal from "../components/admin/shared/BrandModal";
+import ConfirmSlideProvider from "../components/ConfirmSlideProvider";
 
 // Pantallas (todavía visuales viejos — se adaptan en próximos pasos)
 import LoginScreen from "../components/admin/LoginScreen";
@@ -154,6 +155,7 @@ export default function Admin() {
   const avatarLetter = (sett.logo_letter || DEF.logo_letter || businessName.charAt(0) || 'A').toUpperCase();
 
   return (
+    <ConfirmSlideProvider>
     <div className={`ag-root ${themeClass}`} style={{ position: 'relative', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AdminBackdrop />
 
@@ -219,5 +221,6 @@ export default function Admin() {
 
       {brandOpen && <BrandModal settings={sett} setSettings={setSett} onClose={() => setBrandOpen(false)} showToast={msg} />}
     </div>
+    </ConfirmSlideProvider>
   );
 }

@@ -1,6 +1,7 @@
 // src/components/admin/CategoryEditor.jsx
 // Admin panel para gestionar grupos de categorías (crear, editar, reordenar, eliminar).
 // Visual v2 — clases del sistema (.ag-*).
+import { useConfirm } from "../ConfirmSlideProvider";
 import { useState, useEffect, useCallback } from 'react';
 import {
   fetchAllCategoryGroups, upsertCategoryGroup,
@@ -9,6 +10,7 @@ import {
 import { uploadCatImage } from '../../lib/adminService';
 
 export default function CategoryEditor({ msg, onClose, embedded = false }) {
+  const confirmSlide = useConfirm();
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
@@ -75,7 +77,8 @@ export default function CategoryEditor({ msg, onClose, embedded = false }) {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('¿Eliminar esta categoría?')) return;
+    const ok = await confirmSlide({ title: "Eliminar categoría", body: "Los productos en esta categoría no se borran, solo dejan de aparecer agrupados.", label: "Deslizá para eliminar" });
+    if (!ok) return;
     try {
       await deleteCategoryGroup(id);
       msg?.('Categoría eliminada');

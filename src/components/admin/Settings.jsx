@@ -14,6 +14,7 @@
  *   exportData            · { sales, expenses, ingredients, orders, recipes, sett }
  *                           para la sub-página de exportar
  */
+import { useConfirm } from "../ConfirmSlideProvider";
 import { useEffect, useRef, useState } from "react";
 import { updateSettings, resetHistoricalData } from "../../lib/adminService";
 import {
@@ -45,6 +46,7 @@ function BackChevron() {
 }
 
 function Settings({ settings, setSettings, showToast, theme = 'light', onThemeChange, exportData }) {
+  const confirmSlide = useConfirm();
   const [s, setS] = useState({ ...settings });
   const [page, setPage] = useState('root'); // 'root' | 'hours' | 'expCats' | 'ingCats' | 'payments' | 'exports' | 'reset'
 
@@ -694,6 +696,7 @@ function ResetPage({ open, showToast, onBack }) {
  * En el futuro se agregan: Modo, Stripe Connect, etc.
  */
 function GatewaysSubPage({ open, showToast, onBack }) {
+  const confirmSlide = useConfirm();
   const [mpIntegration, setMpIntegration] = useState(null);
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -742,7 +745,8 @@ function GatewaysSubPage({ open, showToast, onBack }) {
   };
 
   const handleDisconnectMp = async () => {
-    if (!confirm("¿Desconectar MercadoPago? Los pedidos pagados anteriormente se conservan. Los nuevos no podrán cobrarse por MP hasta reconectar.")) return;
+    const okConfirm = await confirmSlide({ title: "Desconectar MercadoPago", body: "Los pedidos pagados anteriormente se conservan. Los nuevos no podrán cobrarse por MP hasta reconectar.", label: "Deslizá para desconectar" });
+    if (!okConfirm) return;
     setDisconnecting(true);
     const { disconnectIntegration } = await import("../../services/paymentIntegrations");
     const ok = await disconnectIntegration("mercadopago");
