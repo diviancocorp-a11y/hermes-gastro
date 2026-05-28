@@ -49,55 +49,61 @@ export default function LoginScreen({ onLogin }) {
           background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)",
           borderRadius:999, color:"rgba(255,255,255,0.65)",
           fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase",
-          marginBottom:28, backdropFilter:"blur(4px)",
+          marginBottom:24, backdropFilter:"blur(4px)",
           opacity: stage === "intro" ? 0 : 1,
           transform: stage === "intro" ? "translateY(-8px)" : "translateY(0)",
           transition:"opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s",
         }}>
-          {business.name || "Negocio"}
+          Sistema administrativo
         </div>
 
+        {/* Logo con chip oscuro traslúcido para destacarlo del fondo */}
         <div style={{
           margin:"0 auto",
           opacity:0, transform:"scale(0.85)",
           animation:"hg-login-logo-in 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s forwards",
-          display:"flex", justifyContent:"center",
-          filter:`drop-shadow(0 12px 32px ${logoColor}55)`,
+          display:"inline-flex", justifyContent:"center", alignItems:"center",
+          padding:"18px 26px",
+          borderRadius:24,
+          background:"rgba(0,0,0,0.45)",
+          border:"1px solid rgba(255,255,255,0.06)",
+          backdropFilter:"blur(8px)",
+          WebkitBackdropFilter:"blur(8px)",
+          boxShadow:`0 16px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(${parseInt(logoColor.slice(1,3),16)},${parseInt(logoColor.slice(3,5),16)},${parseInt(logoColor.slice(5,7),16)},0.08)`,
         }}>
-          <HermesMark as="logo" size={140} fallback={logoLetter} color={logoColor} />
+          <HermesMark as="logo" size={180} fallback={logoLetter} color={logoColor} />
         </div>
 
-        <h1 style={{
-          margin: stage === "intro" ? "20px 0 6px" : "16px 0 4px",
-          fontSize: stage === "intro" ? 26 : 19,
-          fontWeight:700, letterSpacing:"-0.02em", color:"#fff",
-          opacity:0, transform:"translateY(8px)",
-          animation:"hg-login-title-in 0.7s cubic-bezier(0.22,1,0.36,1) 0.35s forwards",
-          transition:"font-size 0.5s ease, margin 0.5s ease",
-        }}>{business.name || "Panel de Gestión"}</h1>
-
         <p style={{
-          margin:0, fontSize:12, color:"rgba(255,255,255,0.55)",
-          letterSpacing:"0.08em", textTransform:"uppercase",
+          margin:"18px 0 0", fontSize:12, color:"rgba(255,255,255,0.6)",
+          letterSpacing:"0.1em", textTransform:"uppercase",
           opacity:0, animation:"hg-login-sub-in 0.7s ease 0.55s forwards",
         }}>Panel de gestión</p>
 
+        {/* Caja sólida del form — para que no se pierda en el fondo */}
         <form onSubmit={handle} style={{
-          marginTop:32, display:"flex", flexDirection:"column", gap:10,
+          marginTop:24, display:"flex", flexDirection:"column", gap:10,
+          padding:"20px 18px",
+          background:"rgba(15, 14, 13, 0.92)",
+          border:"1px solid rgba(255,255,255,0.08)",
+          borderRadius:16,
+          boxShadow:"0 20px 50px rgba(0,0,0,0.55)",
+          backdropFilter:"blur(12px)",
+          WebkitBackdropFilter:"blur(12px)",
           opacity: stage === "intro" ? 0 : 1,
           transform: stage === "intro" ? "translateY(12px)" : "translateY(0)",
           transition:"opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1)",
           pointerEvents: stage === "intro" ? "none" : "auto",
         }}>
           <input type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="email"
-            style={{ padding:"13px 16px", borderRadius:12, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.04)", color:"#fff", fontSize:14, fontFamily:"inherit", outline:"none", transition:"border-color 0.2s, background 0.2s" }}
-            onFocus={e=>{ e.target.style.borderColor=logoColor; e.target.style.background="rgba(255,255,255,0.06)"; }}
-            onBlur={e=>{ e.target.style.borderColor="rgba(255,255,255,0.1)"; e.target.style.background="rgba(255,255,255,0.04)"; }} />
+            style={{ padding:"13px 16px", borderRadius:12, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(255,255,255,0.06)", color:"#fff", fontSize:14, fontFamily:"inherit", outline:"none", transition:"border-color 0.2s, background 0.2s" }}
+            onFocus={e=>{ e.target.style.borderColor=logoColor; e.target.style.background="rgba(255,255,255,0.09)"; }}
+            onBlur={e=>{ e.target.style.borderColor="rgba(255,255,255,0.12)"; e.target.style.background="rgba(255,255,255,0.06)"; }} />
 
           <input type="password" placeholder="Contraseña" value={pass} onChange={e=>setPass(e.target.value)} required autoComplete="current-password"
-            style={{ padding:"13px 16px", borderRadius:12, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.04)", color:"#fff", fontSize:14, fontFamily:"inherit", outline:"none", transition:"border-color 0.2s, background 0.2s" }}
-            onFocus={e=>{ e.target.style.borderColor=logoColor; e.target.style.background="rgba(255,255,255,0.06)"; }}
-            onBlur={e=>{ e.target.style.borderColor="rgba(255,255,255,0.1)"; e.target.style.background="rgba(255,255,255,0.04)"; }} />
+            style={{ padding:"13px 16px", borderRadius:12, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(255,255,255,0.06)", color:"#fff", fontSize:14, fontFamily:"inherit", outline:"none", transition:"border-color 0.2s, background 0.2s" }}
+            onFocus={e=>{ e.target.style.borderColor=logoColor; e.target.style.background="rgba(255,255,255,0.09)"; }}
+            onBlur={e=>{ e.target.style.borderColor="rgba(255,255,255,0.12)"; e.target.style.background="rgba(255,255,255,0.06)"; }} />
 
           <label style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 4px", fontSize:12, color:"rgba(255,255,255,0.65)", cursor:"pointer", userSelect:"none", textAlign:"left" }}>
             <input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}
