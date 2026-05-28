@@ -222,3 +222,62 @@ export async function fetchDashboardStats() {
     return null;
   }
 }
+
+
+/**
+ * Anula un gasto creando una fila de reversion (reverse entry) en vez de borrarlo.
+ * El amount de la reversion es el negativo del original. El original se marca
+ * con voided_at/voided_by. Audit trail completo.
+ */
+export async function voidExpense({ id, reason, user }) {
+  if (!id || !user?.email) return { ok: false, errors: ['missing id or user'] };
+
+  const { data: orig, error: rErr } = await supabase
+    .from('expenses').select('*').eq('id', id).single();
+  if (rErr || !orig) return { ok: false, errors: ['original_not_found'] };
+  if (orig.voided_at) return { ok: false, errors: ['already_voided'] };
+  if (orig.voids_expense_id) return { ok: false, errors: ['is_a_reversal'] };
+
+  const today = new Date();
+  const ym = today.toISOString().slice(0, 7);
+  if (!String(orig.date || '').startsWith(ym)) {
+    return { ok: false, errors: ['outside_current_month'] };
+  }
+
+  const nowIso = new Date().toISOString();
+  const todayDate = today.toISOString().split('T')[0];
+  const cleanReason = String(reason || '').trim().slice(0, 500) || null;
+
+  const reversalRow = {
+    date: todayDate,
+    description: `Anulacion de: ${orig.description || '(sin descripcion)'}`,
+    amount: -Math.abs(Number(orig.amount) || 0),
+    category: orig.category,
+    supplier: orig.supplier || null,
+    expense_type: orig.expense_type || 'variable',
+    payment_method: orig.payment_method || null,
+    voids_expense_id: orig.id,
+    voided_by: user.email,
+    voided_reason: cleanReason,
+    created_by: user.id || null,
+  };
+  const { data: reversal, error: iErr } = await supabase
+    .from('expenses').insert(reversalRow).select().single();
+  if (iErr) {
+    console.error('voidExpense insert:', iErr.message);
+    return { ok: false, errors: [iErr.message] };
+  }
+
+  const { data: updatedOrig, error: uErr } = await supabase
+    .from('expenses')
+    .update({ voided_at: nowIso, voided_by: user.email, voided_reason: cleanReason })
+    .eq('id', orig.id)
+    .select().single();
+  if (uErr) {
+    await supabase.from('expenses').delete().eq('id', reversal.id);
+    console.error('voidExpense update:', uErr.message);
+    return { ok: false, errors: [uErr.message] };
+  }
+
+  return { ok: true, original: updatedOrig, reversal };
+}

@@ -21,6 +21,7 @@ import {
   uploadLogoImage, // reusado como uploader genérico de assets
 } from "../../lib/adminService";
 import { fetchSuppliers } from "../../services/suppliers";
+import { voidExpense } from "../../services/finance";
 import { paymentLabel, paymentIcon, enabledPaymentMethods } from "../../lib/payments";
 import { USAR_EXPENSE_CATEGORIES, getUsarExpense } from "../../constants/usar";
 
@@ -137,6 +138,35 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
   const [showExport, setShowExport] = useState(false);
   const [filterCat, setFilterCat] = useState(null);   // categoría activa para filtrar la lista
   const [expanded, setExpanded] = useState(null);     // id del gasto expandido
+  const [voidTarget, setVoidTarget] = useState(null);
+  const [voidReason, setVoidReason] = useState("");
+  const [voiding, setVoiding] = useState(false);
+
+  const canVoid = (e) =>
+    !e.voided_at && !e.voids_expense_id && (e.date || "").startsWith(todayISO().slice(0, 7));
+
+  const openVoid = (e) => { setVoidTarget(e); setVoidReason(""); };
+  const closeVoid = () => { if (!voiding) { setVoidTarget(null); setVoidReason(""); } };
+  const submitVoid = async () => {
+    if (!voidTarget || voiding) return;
+    setVoiding(true);
+    const res = await voidExpense({ id: voidTarget.id, reason: voidReason, user });
+    setVoiding(false);
+    if (!res.ok) {
+      const msg = res.errors?.[0] === 'outside_current_month'
+        ? "Solo se pueden anular gastos del mes actual"
+        : res.errors?.[0] === 'already_voided' ? "Este gasto ya fue anulado"
+        : res.errors?.[0] === 'is_a_reversal' ? "No se puede anular una anulacion"
+        : "Error al anular";
+      showToast(msg);
+      return;
+    }
+    setExpanded(null);
+    setExpenses(p => [res.reversal, ...p.map(x => x.id === res.original.id ? res.original : x)]);
+    setVoidTarget(null);
+    setVoidReason("");
+    showToast("Gasto anulado, queda huella en el sistema");
+  };
 
   // Búsqueda por nombre/descripción/proveedor
   const [search, setSearch] = useState("");
@@ -371,8 +401,11 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
                     const typeColor = e.expense_type === "fixed"        ? "var(--ag-c-terra)"
                                     : e.expense_type === "installment"  ? "var(--ag-c-prep)"
                                     :                                     null;
+                    const isVoided = !!e.voided_at;
+                    const isReversal = !!e.voids_expense_id;
+                    const amtNum = Number(e.amount) || 0;
                     return (
-                      <div key={e.id} style={{ borderLeft: `4px solid ${cc.fg}` }}>
+                      <div key={e.id} style={{ borderLeft: `4px solid ${isReversal ? 'var(--ag-c-sales)' : cc.fg}`, opacity: isVoided ? 0.55 : 1 }}>
                         <button
                           type="button"
                           onClick={() => setExpanded(isExp ? null : e.id)}
@@ -385,7 +418,9 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
                           }}
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ag-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ag-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: isVoided ? "line-through" : "none" }}>
+                              {isReversal && <span style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", background: "var(--ag-c-sales)", padding: "1px 6px", borderRadius: 6, letterSpacing: "0.04em", marginRight: 6 }}>ANULACION</span>}
+                              {isVoided && <span style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", background: "var(--ag-c-orders)", padding: "1px 6px", borderRadius: 6, letterSpacing: "0.04em", marginRight: 6 }}>ANULADO</span>}
                               {displayDesc(e)}
                             </div>
                             <div style={{ fontSize: 11, color: "var(--ag-ink-3)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
@@ -404,8 +439,8 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
                               {e.no_receipt && <span title="Sin recibo" style={{ color: "var(--ag-c-stock)", fontWeight: 700 }}>SIN REC.</span>}
                             </div>
                           </div>
-                          <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--ag-c-orders)", flexShrink: 0 }}>
-                            −${formatInt(e.amount)}
+                          <div style={{ fontWeight: 700, fontSize: 13.5, color: amtNum < 0 ? "var(--ag-c-sales)" : "var(--ag-c-orders)", flexShrink: 0 }}>
+                            {amtNum < 0 ? `+$${formatInt(Math.abs(amtNum))}` : `−$${formatInt(amtNum)}`}
                           </div>
                         </button>
 
@@ -515,6 +550,46 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
                                 </span>
                               )}
                             </div>
+
+                            {isVoided && (
+                              <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(232,90,74,0.08)", border: "1px solid var(--ag-c-orders)", borderRadius: 10, fontSize: 11.5 }}>
+                                <div style={{ fontWeight: 700, color: "var(--ag-c-orders)", marginBottom: 4 }}>Gasto anulado</div>
+                                <div style={{ color: "var(--ag-ink-2)" }}>
+                                  Por <strong>{e.voided_by || "—"}</strong> · {new Date(e.voided_at).toLocaleString("es-AR")}
+                                </div>
+                                {e.voided_reason && (
+                                  <div style={{ color: "var(--ag-ink-2)", marginTop: 4, fontStyle: "italic" }}>
+                                    Motivo: "{e.voided_reason}"
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {isReversal && (
+                              <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(42,157,110,0.08)", border: "1px solid var(--ag-c-sales)", borderRadius: 10, fontSize: 11.5 }}>
+                                <div style={{ fontWeight: 700, color: "var(--ag-c-sales)", marginBottom: 4 }}>Reversion de un gasto previo</div>
+                                <div style={{ color: "var(--ag-ink-2)" }}>
+                                  Por <strong>{e.voided_by || "—"}</strong>
+                                  {e.voided_reason && <> · Motivo: "{e.voided_reason}"</>}
+                                </div>
+                              </div>
+                            )}
+                            {canVoid(e) && (
+                              <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--ag-line)" }}>
+                                <button
+                                  type="button"
+                                  onClick={() => openVoid(e)}
+                                  style={{
+                                    padding: "8px 14px", borderRadius: 999,
+                                    background: "transparent", color: "var(--ag-c-orders)",
+                                    border: "1px solid var(--ag-c-orders)",
+                                    fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                                  }}
+                                >↺ Anular este gasto</button>
+                                <div style={{ fontSize: 10.5, color: "var(--ag-ink-3)", marginTop: 6 }}>
+                                  Crea un movimiento de reversion. El original queda con marca de anulacion.
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -527,6 +602,41 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
         )}
 
       </div>
+
+      {/* Modal: confirmar anulacion de gasto */}
+      {voidTarget && (
+        <div onClick={closeVoid} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={ev => ev.stopPropagation()} style={{ width: "100%", maxWidth: 420, background: "var(--ag-bg-card)", borderRadius: 16, padding: "20px 18px", boxShadow: "var(--ag-sh-lg)" }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--ag-ink)", marginBottom: 4 }}>Anular gasto</div>
+            <div style={{ fontSize: 12.5, color: "var(--ag-ink-2)", marginBottom: 14, lineHeight: 1.4 }}>
+              Se va a crear un movimiento de reversion por <strong style={{ color: "var(--ag-c-sales)" }}>+${formatInt(Math.abs(Number(voidTarget.amount) || 0))}</strong> que cancela este gasto. El original no se borra: queda marcado como ANULADO con tu email y la fecha.
+            </div>
+            <div style={{ padding: "10px 12px", background: "var(--ag-bg-soft)", borderRadius: 10, marginBottom: 14, fontSize: 12 }}>
+              <div style={{ fontWeight: 700, color: "var(--ag-ink)" }}>{voidTarget.description || "(sin descripcion)"}</div>
+              <div style={{ color: "var(--ag-ink-3)", marginTop: 2 }}>
+                {voidTarget.date} · {voidTarget.category || "Otros"} · −${formatInt(Number(voidTarget.amount) || 0)}
+              </div>
+            </div>
+            <label className="ag-field-lbl">Motivo (opcional)</label>
+            <textarea
+              className="ag-field-input"
+              value={voidReason}
+              onChange={ev => setVoidReason(ev.target.value.slice(0, 500))}
+              placeholder="ej: monto incorrecto, gasto duplicado, factura erronea..."
+              rows={3}
+              maxLength={500}
+              style={{ resize: "none", marginBottom: 14, fontFamily: "inherit" }}
+            />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" className="ag-btn-ghost" onClick={closeVoid} disabled={voiding} style={{ flex: 1, padding: "12px" }}>Cancelar</button>
+              <button type="button" onClick={submitVoid} disabled={voiding}
+                style={{ flex: 1, padding: "12px", borderRadius: 12, border: 0, background: "var(--ag-c-orders)", color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: voiding ? "wait" : "pointer", opacity: voiding ? 0.7 : 1 }}>
+                {voiding ? "Anulando..." : "Anular gasto"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal: exportar gastos con filtros (fechas + categorías) */}
       {showExport && (
