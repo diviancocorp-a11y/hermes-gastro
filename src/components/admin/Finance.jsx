@@ -129,8 +129,6 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
   const monthStart = todayISO().slice(0, 7) + "-01";
   const sorted = [...expenses].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   const monthExpenses = expenses.filter(e => e.date >= monthStart);
-  // Base de la lista: mes actual o todos los meses, según el toggle
-  const listBase = showAllMonths ? expenses : monthExpenses;
   const byC = monthExpenses.reduce((a, e) => {
     const cat = e.category || "Otros";
     a[cat] = (a[cat] || 0) + (e.amount || 0);
@@ -145,6 +143,9 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
   const [voiding, setVoiding] = useState(false);
   const [voidFilter, setVoidFilter] = useState("all"); // 'all' | 'voided' | 'active'
   const [showAllMonths, setShowAllMonths] = useState(false);
+
+  // Base de la lista: mes actual o todos los meses, según el toggle
+  const listBase = showAllMonths ? expenses : monthExpenses;
 
   // Código corto compartido entre original anulado y su reversión
   const voidCode = (e) => {
