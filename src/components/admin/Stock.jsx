@@ -354,7 +354,13 @@ function IngForm({ data, onClose, onSave, onDel, settings }) {
     if (!f.name)                  { setErr("El nombre es obligatorio."); return; }
     if ((f.cost || 0) <= 0)       { setErr("El costo debe ser mayor a 0."); return; }
     if ((f.stock || 0) < 0)       { setErr("El stock no puede ser negativo."); return; }
-    onSave(f);
+    // Derivar `category` (campo NOT NULL del schema) desde food_category USAR
+    const CATEGORY_FROM_FOOD = {
+      protein: "Frescos", dairy: "Frescos", vegetable: "Frescos",
+      dry: "Secos", beverage: "Bebidas", packaging: "Packaging",
+    };
+    const derivedCategory = CATEGORY_FROM_FOOD[f.food_category] || f.category || "Otros";
+    onSave({ ...f, category: derivedCategory });
   };
 
   return (
