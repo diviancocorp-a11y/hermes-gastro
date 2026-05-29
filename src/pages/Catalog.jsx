@@ -1213,7 +1213,7 @@ export default function Catalog() {
 
   return (
     <>
-      <HomeScreenPro
+      <HomeScreenPro settings={sett}
         store={storeForHome}
         userName={profile?.name || (form.name ? form.name.split(" ")[0] : null)}
         products={products}

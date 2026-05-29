@@ -14,11 +14,22 @@ const { CacheableResponsePlugin } = workbox.cacheableResponse;
 // History:
 //   v3 → lnp-* (legacy, LNP-specific naming)
 //   v4 → hermes-* (renamed in FASE 2 cleanup)
-const CACHE_PREFIX = 'hermes-v4';
+const CACHE_PREFIX = 'hermes-v5';
+// v5: rewrite vercel arreglado (no más HTML como JS) + scripts StaleWhileRevalidate.
 
 // ─── Skip waiting on install ────────────────────────────
 self.skipWaiting();
 workbox.core.clientsClaim();
+
+// Limpia caches de versiones anteriores
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then(keys => Promise.all(
+      keys.filter(k => k.startsWith('hermes-') && !k.startsWith(CACHE_PREFIX) || k.startsWith('lnp-'))
+          .map(k => caches.delete(k))
+    ))
+  );
+});
 
 // ─── Pre-cache app shell ────────────────────────────────
 // Do NOT precache / or /index.html — the NavigationRoute with NetworkFirst
@@ -28,17 +39,21 @@ precacheAndRoute([
   { url: '/icons.svg', revision: '1' },
 ]);
 
-// ─── CacheFirst: static assets (JS, CSS, fonts) ────────
+// ─── StaleWhileRevalidate: scripts y estilos (con hash, immutable) ────
+// Servimos el cache de inmediato pero pedimos red en paralelo: si el hash
+// del bundle cambió (deploy nuevo), el SW lo trae y actualiza el cache.
+// Solo aceptamos 200 — NUNCA cacheamos respuestas con MIME text/html
+// (caso clásico de Vercel devolviendo index.html ante un asset que no existe).
 registerRoute(
   ({ request }) =>
     request.destination === 'script' ||
     request.destination === 'style' ||
     request.destination === 'font',
-  new CacheFirst({
+  new StaleWhileRevalidate({
     cacheName: `${CACHE_PREFIX}-static`,
     plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 }), // 30 days
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 }),
     ],
   }),
 );

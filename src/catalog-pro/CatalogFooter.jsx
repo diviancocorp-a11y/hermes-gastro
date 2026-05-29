@@ -1,54 +1,61 @@
 // src/catalog-pro/CatalogFooter.jsx
 // Footer corporativo del catálogo público.
-//   - Logo Hermes destacado
-//   - CTA "Hermes para tu negocio"
-//   - Legales, FAQ, libro de quejas, trabaja con nosotros, cookies
-//   - Contactos (WhatsApp, IG, email)
-//   - Copyright al pie
+//
+// Estructura:
+//   1. Bloque del NEGOCIO (cliente de Hermes): FAQ, T&C, cookies,
+//      libro de quejas, contacto, trabajá con nosotros.
+//   2. Banda Hermes (logo + CTA "para tu negocio") — pequeño y claro
+//      de que es la plataforma, no el negocio.
 
 import { useState } from "react";
 import HermesMark from "../components/HermesMark";
 
-const HERMES_INFO = {
-  whatsapp: "5491100000000",        // TODO: número real
-  email: "hola@hermesgastro.com",   // TODO: dominio real
-  instagram: "hermesgastro",        // TODO: handle real
-  defensaConsumidorAR: "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario",
+const HERMES = {
+  whatsapp: "5491100000000",          // TODO: número real Hermes
+  email: "hola@hermesgastro.com",     // TODO: dominio real Hermes
+  instagram: "hermesgastro",          // TODO: handle real Hermes
 };
 
-const COPY = {
-  terms: `Hermes Gastro es una plataforma SaaS que provee infraestructura de catálogo, pedidos y gestión a comercios gastronómicos. Cada negocio adherido es el responsable legal del producto/servicio que ofrece a través de su catálogo público. Hermes Gastro no es vendedor ni intermediario en las transacciones entre el consumidor y el negocio.
+const DEFENSA_CONSUMIDOR_AR = "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario";
 
-Al utilizar esta plataforma aceptás que los datos provistos (nombre, teléfono, dirección, email) se usen únicamente para procesar tu pedido y mantener contacto comercial con el negocio. No se ceden a terceros con fines publicitarios.
+function bizCopy(biz) {
+  const bizName = biz?.biz_name || "el negocio";
+  return {
+    terms: `Estos términos rigen el uso del catálogo público de ${bizName}.
 
-Para reclamos sobre un pedido contactá directamente al negocio. Para reclamos sobre la plataforma escribinos a ${HERMES_INFO.email}.
+Al hacer un pedido aceptás que tus datos (nombre, teléfono, dirección, email) se usen para procesar tu compra y mantener contacto comercial con ${bizName}. No se ceden a terceros con fines publicitarios.
+
+${bizName} es responsable por la calidad, entrega y condiciones del producto/servicio ofrecido. Para reclamos contactanos por WhatsApp o email.
+
+La plataforma técnica del catálogo está provista por Hermes Gastro, que actúa como proveedor de infraestructura y no es parte de la relación comercial entre vos y ${bizName}.
 
 Última actualización: 2026`,
 
-  cookies: `Usamos cookies y almacenamiento local del navegador para:
+    cookies: `${bizName} usa cookies y almacenamiento local del navegador para:
 · Recordar tu carrito y datos de contacto entre visitas.
 · Mantener tu sesión activa cuando volvés a la página.
 · Estadísticas anónimas de uso para mejorar el servicio.
 
 No usamos cookies de terceros para publicidad dirigida. No vendemos tu información.
 
-Podés borrar las cookies desde la configuración de tu navegador en cualquier momento. Si las borrás, vamos a pedirte tus datos de nuevo en el próximo pedido.`,
+Podés borrar las cookies desde la configuración de tu navegador en cualquier momento.`,
 
-  faq: [
-    { q: "¿Cómo hago un pedido?", a: "Elegí los productos del catálogo, sumalos al carrito y completá tus datos en el checkout. Te llega un resumen por WhatsApp o email." },
-    { q: "¿Cómo pago?", a: "Los métodos disponibles los define cada negocio (efectivo, transferencia, MercadoPago, tarjeta). Vas a verlos en el checkout." },
-    { q: "¿Cuánto tarda mi pedido?", a: "El tiempo estimado lo define el negocio según el tipo de pedido. Te avisan cuando entra a preparación y cuando sale." },
-    { q: "¿Puedo cancelar un pedido?", a: "Sí, hasta que entre a preparación. Después contactá directamente al negocio por WhatsApp." },
-    { q: "¿Mis datos están seguros?", a: "Sí. Los datos personales no se ceden a terceros y se usan solo para procesar tu pedido y comunicarnos con vos." },
-    { q: "¿Tengo que registrarme?", a: "No. La primera vez completás tus datos en el checkout y la próxima la página te reconoce automáticamente. Sin contraseñas." },
-  ],
+    faq: [
+      { q: "¿Cómo hago un pedido?", a: "Elegí los productos del catálogo, sumalos al carrito y completá tus datos en el checkout. Te llega un resumen por WhatsApp." },
+      { q: "¿Cómo pago?", a: `Los métodos disponibles en ${bizName} aparecen en el checkout (efectivo, transferencia, MercadoPago, tarjeta — según corresponda).` },
+      { q: "¿Cuánto tarda mi pedido?", a: "El tiempo estimado depende del tipo de pedido. Te avisamos cuando entra a preparación y cuando sale." },
+      { q: "¿Puedo cancelar un pedido?", a: "Sí, hasta que entre a preparación. Después contactanos por WhatsApp para coordinar." },
+      { q: "¿Mis datos están seguros?", a: "Sí. Los datos personales no se ceden a terceros y se usan solo para procesar tu pedido." },
+      { q: "¿Tengo que registrarme?", a: "No. Completás tus datos en el primer pedido y la próxima vez te reconocemos automáticamente." },
+    ],
 
-  worksWithUs: `Estamos creciendo y buscamos talento en desarrollo, diseño UX y atención a comercios. Si te apasiona la gastronomía y la tecnología, escribinos contando tu experiencia a ${HERMES_INFO.email} con asunto "Trabajo Hermes".`,
+    worksWithUs: `${bizName} busca sumar gente al equipo. Si te interesa trabajar con nosotros, contactanos por WhatsApp o email y contanos tu experiencia.`,
+  };
+}
 
-  forBusiness: `Hermes Gastro es la plataforma todo-en-uno para tu local. Catálogo público, gestión de pedidos, stock, gastos, recetas, USAR P&L, USAR Menu Engineering, integración con MercadoPago y mucho más. Sin instalaciones, sin servidores, sin dolor de cabeza.
+const HERMES_BUSINESS_COPY = `Hermes Gastro es la plataforma todo-en-uno para tu local gastronómico. Catálogo público, gestión de pedidos, stock, gastos, recetas, reportes USAR P&L y mucho más. Sin instalaciones, sin servidores, sin dolor de cabeza.
 
-Escribinos a ${HERMES_INFO.email} o por WhatsApp y agendamos una demo gratuita para tu negocio.`,
-};
+Escribinos por WhatsApp o email y agendamos una demo gratuita para tu negocio.`;
 
 function Modal({ title, children, onClose }) {
   return (
@@ -74,13 +81,10 @@ function Modal({ title, children, onClose }) {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <h3 style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400 }}>{title}</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Cerrar"
+          <button type="button" onClick={onClose} aria-label="Cerrar"
             style={{
               width: 32, height: 32, borderRadius: 999,
-              background: "var(--bg, transparent)", border: "1px solid var(--line)",
+              background: "transparent", border: "1px solid var(--line)",
               color: "var(--t2)", cursor: "pointer", fontFamily: "inherit",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}
@@ -94,17 +98,15 @@ function Modal({ title, children, onClose }) {
   );
 }
 
-function FaqList() {
+function FaqList({ items }) {
   const [open, setOpen] = useState(null);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {COPY.faq.map((item, i) => {
+      {items.map((item, i) => {
         const isOpen = open === i;
         return (
           <div key={i} style={{ border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden" }}>
-            <button
-              type="button"
-              onClick={() => setOpen(isOpen ? null : i)}
+            <button type="button" onClick={() => setOpen(isOpen ? null : i)}
               style={{
                 width: "100%", padding: "12px 14px",
                 background: "transparent", border: 0, color: "var(--tx)",
@@ -127,68 +129,29 @@ function FaqList() {
   );
 }
 
-export default function CatalogFooter() {
+export default function CatalogFooter({ settings = {} }) {
   const [modal, setModal] = useState(null);
   const year = new Date().getFullYear();
-  const open = (key) => setModal(key);
+  const open = (k) => setModal(k);
   const close = () => setModal(null);
+  const copy = bizCopy(settings);
+
+  const bizName = settings.biz_name || "Negocio";
+  const bizWhatsapp = (settings.whatsapp || "").replace(/\D/g, "");
+  const bizInstagram = settings.instagram || "";
 
   return (
     <>
       <footer
         style={{
           marginTop: 32,
-          padding: "44px 22px 24px",
-          background: "var(--b2, #1A1A1A)",
-          color: "var(--tx, #F4EAD0)",
-          borderTop: "1px solid var(--line, rgba(255,255,255,0.08))",
+          padding: "32px 22px 24px",
+          background: "var(--bg, #fafaf7)",
+          color: "var(--tx, #2D1B0E)",
+          borderTop: "1px solid var(--line, rgba(0,0,0,0.06))",
         }}
       >
-        {/* ── Logo Hermes destacado ── */}
-        <div style={{
-          display: "flex", flexDirection: "column", alignItems: "center",
-          paddingBottom: 28, borderBottom: "1px solid var(--line)",
-          marginBottom: 24,
-        }}>
-          <div style={{
-            padding: "18px 24px", borderRadius: 18,
-            border: "1px solid rgba(245,158,11,0.18)",
-            background: "rgba(245,158,11,0.04)",
-          }}>
-            <HermesMark as="logo" size={120} fallback="H" color="#F59E0B" />
-          </div>
-          <div style={{
-            marginTop: 14, fontSize: 11.5, color: "var(--t3, #6E6755)",
-            letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700,
-          }}>
-            Catálogo gestionado con Hermes Gastro
-          </div>
-        </div>
-
-        {/* ── CTA: ¿Te interesa este sistema? ── */}
-        <button
-          type="button"
-          onClick={() => open("forBusiness")}
-          style={{
-            display: "block", width: "100%", textAlign: "left",
-            padding: "16px 18px", marginBottom: 28,
-            background: "linear-gradient(135deg, rgba(245,158,11,0.14) 0%, rgba(245,158,11,0.06) 100%)",
-            border: "1px solid rgba(245,158,11,0.32)", borderRadius: 14,
-            cursor: "pointer", fontFamily: "inherit", color: "var(--tx)",
-          }}
-        >
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#F59E0B", marginBottom: 4 }}>
-            ¿Tenés un local gastronómico?
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>
-            Hermes Gastro para tu negocio
-          </div>
-          <div style={{ fontSize: 12.5, color: "var(--t2)", lineHeight: 1.4 }}>
-            Catálogo, pedidos, stock, recetas y reportes. Todo en una plataforma. Tocá acá para conocer más.
-          </div>
-        </button>
-
-        {/* ── Grilla de enlaces ── */}
+        {/* ─── BLOQUE DEL NEGOCIO ─── */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
@@ -197,64 +160,72 @@ export default function CatalogFooter() {
           <FooterCol title="Legal" items={[
             { label: "Términos y condiciones", onClick: () => open("terms") },
             { label: "Política de cookies", onClick: () => open("cookies") },
-            { label: "Libro de quejas", href: HERMES_INFO.defensaConsumidorAR, external: true },
+            { label: "Libro de quejas", href: DEFENSA_CONSUMIDOR_AR, external: true },
           ]} />
 
           <FooterCol title="Ayuda" items={[
             { label: "Preguntas frecuentes", onClick: () => open("faq") },
-            { label: "Contactar al negocio", href: "#whatsapp-float" },
           ]} />
 
-          <FooterCol title="Hermes" items={[
-            { label: "Para tu negocio", onClick: () => open("forBusiness") },
+          <FooterCol title={bizName} items={[
             { label: "Trabajá con nosotros", onClick: () => open("worksWithUs") },
           ]} />
 
           <FooterCol title="Contacto" items={[
-            { label: "WhatsApp", href: `https://wa.me/${HERMES_INFO.whatsapp}`, external: true },
-            { label: "Instagram", href: `https://instagram.com/${HERMES_INFO.instagram}`, external: true },
-            { label: HERMES_INFO.email, href: `mailto:${HERMES_INFO.email}`, external: true },
+            ...(bizWhatsapp ? [{ label: "WhatsApp", href: `https://wa.me/${bizWhatsapp}`, external: true }] : []),
+            ...(bizInstagram ? [{ label: "Instagram", href: `https://instagram.com/${bizInstagram}`, external: true }] : []),
           ]} />
         </div>
 
-        {/* ── Bottom band ── */}
+        {/* Copyright del negocio */}
         <div style={{
-          paddingTop: 18, borderTop: "1px solid var(--line)",
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+          paddingTop: 14, paddingBottom: 22,
+          borderTop: "1px solid var(--line)",
           fontSize: 10.5, color: "var(--t3)", letterSpacing: "0.04em",
+          textAlign: "center",
         }}>
-          <div>© {year} Hermes Gastro. Todos los derechos reservados.</div>
-          <div style={{ fontStyle: "italic", opacity: 0.8 }}>Hecho en Argentina</div>
+          © {year} {bizName}. Todos los derechos reservados.
+        </div>
+
+        {/* ─── BANDA HERMES (plataforma) ─── */}
+        <div
+          onClick={() => open("forBusiness")}
+          style={{
+            display: "flex", alignItems: "center", gap: 14,
+            padding: "14px 16px",
+            background: "rgba(245,158,11,0.06)",
+            border: "1px solid rgba(245,158,11,0.20)",
+            borderRadius: 14,
+            cursor: "pointer",
+          }}
+        >
+          {/* Logo Hermes a la izquierda, fondo claro */}
+          <div style={{ flexShrink: 0 }}>
+            <HermesMark as="logo" size={56} fallback="H" theme="light" color="#000" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx, #2D1B0E)", lineHeight: 1.3 }}>
+              ¿Tenés un negocio? Hermes Gastro para tu local
+            </div>
+            <div style={{ fontSize: 11, color: "var(--t2, #5B5552)", marginTop: 2, lineHeight: 1.35 }}>
+              Catálogo, pedidos, stock, recetas y reportes. Tocá para conocer más.
+            </div>
+          </div>
+          <div style={{ color: "#F59E0B", fontWeight: 800, fontSize: 18, flexShrink: 0 }}>→</div>
         </div>
       </footer>
 
-      {/* ── Modales ── */}
-      {modal === "terms" && (
-        <Modal title="Términos y condiciones" onClose={close}>
-          {COPY.terms}
-        </Modal>
-      )}
-      {modal === "cookies" && (
-        <Modal title="Política de cookies" onClose={close}>
-          {COPY.cookies}
-        </Modal>
-      )}
-      {modal === "faq" && (
-        <Modal title="Preguntas frecuentes" onClose={close}>
-          <FaqList />
-        </Modal>
-      )}
-      {modal === "worksWithUs" && (
-        <Modal title="Trabajá con nosotros" onClose={close}>
-          {COPY.worksWithUs}
-        </Modal>
-      )}
+      {/* ─── MODALES ─── */}
+      {modal === "terms" && <Modal title="Términos y condiciones" onClose={close}>{copy.terms}</Modal>}
+      {modal === "cookies" && <Modal title="Política de cookies" onClose={close}>{copy.cookies}</Modal>}
+      {modal === "faq" && <Modal title="Preguntas frecuentes" onClose={close}><FaqList items={copy.faq} /></Modal>}
+      {modal === "worksWithUs" && <Modal title="Trabajá con nosotros" onClose={close}>{copy.worksWithUs}</Modal>}
       {modal === "forBusiness" && (
         <Modal title="Hermes para tu negocio" onClose={close}>
-          <div style={{ whiteSpace: "pre-line", marginBottom: 18 }}>{COPY.forBusiness}</div>
+          <div style={{ whiteSpace: "pre-line", marginBottom: 18 }}>{HERMES_BUSINESS_COPY}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <a
-              href={`https://wa.me/${HERMES_INFO.whatsapp}?text=${encodeURIComponent("Hola! Tengo un local gastronómico y me interesa Hermes Gastro.")}`}
+              href={`https://wa.me/${HERMES.whatsapp}?text=${encodeURIComponent("Hola! Tengo un local gastronómico y me interesa Hermes Gastro.")}`}
               target="_blank" rel="noopener noreferrer"
               style={{
                 padding: "12px 16px", background: "#25D366", color: "#fff",
@@ -263,7 +234,7 @@ export default function CatalogFooter() {
               }}
             >📱 Hablar por WhatsApp</a>
             <a
-              href={`mailto:${HERMES_INFO.email}?subject=${encodeURIComponent("Hermes para mi negocio")}`}
+              href={`mailto:${HERMES.email}?subject=${encodeURIComponent("Hermes para mi negocio")}`}
               style={{
                 padding: "12px 16px", background: "#F59E0B", color: "#000",
                 borderRadius: 12, textDecoration: "none", fontWeight: 700, fontSize: 14,
@@ -278,11 +249,12 @@ export default function CatalogFooter() {
 }
 
 function FooterCol({ title, items }) {
+  if (!items?.length) return null;
   return (
     <div>
       <div style={{
         fontSize: 10.5, fontWeight: 800, letterSpacing: "0.12em",
-        textTransform: "uppercase", color: "var(--ac, #F59E0B)", marginBottom: 10,
+        textTransform: "uppercase", color: "#F59E0B", marginBottom: 10,
       }}>
         {title}
       </div>
@@ -294,10 +266,7 @@ function FooterCol({ title, items }) {
                 href={it.href}
                 target={it.external ? "_blank" : undefined}
                 rel={it.external ? "noopener noreferrer" : undefined}
-                style={{
-                  color: "var(--t2)", textDecoration: "none", fontSize: 12.5,
-                  display: "inline-block", lineHeight: 1.4,
-                }}
+                style={{ color: "var(--t2)", textDecoration: "none", fontSize: 12.5, display: "inline-block", lineHeight: 1.4 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = "var(--tx)"}
                 onMouseLeave={(e) => e.currentTarget.style.color = "var(--t2)"}
               >

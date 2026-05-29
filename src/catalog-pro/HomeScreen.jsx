@@ -43,6 +43,7 @@ export default function HomeScreen({
   cartCount = 0, cartTotal = 0,
   hasDeal, dealPrice, prepDefault,
   onAddToCart, onOpenCart, onSearch, onSelectCategory, onSelectProduct, onOpenAccount,
+  settings = {},
 }) {
   const [activeCat, setActiveCat] = useState("all");
   const [activeFilter, setActiveFilter] = useState(null);
@@ -343,7 +344,7 @@ export default function HomeScreen({
           }
         }}
       >
-        <CatalogFooter />
+        <CatalogFooter settings={settings} />
       </div>
 
       {/* ===== STICKY CART ===== */}

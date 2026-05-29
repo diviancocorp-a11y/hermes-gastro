@@ -10,9 +10,13 @@
 
 import { useState } from "react";
 
-const SRC = {
-  logo: "/brand/hermes-logo.png",
+const SRC_DARK_BG = {
+  logo: "/brand/hermes-logo.png",        // contraste para fondos oscuros (página 5 ámbar)
   wordmark: "/brand/hermes-wordmark.png",
+};
+const SRC_LIGHT_BG = {
+  logo: "/brand/hermes-logo-on-light.png", // contraste para fondos claros (página 4 negro)
+  wordmark: "/brand/hermes-wordmark.png",  // mismo (runner ámbar funciona en ambos)
 };
 
 export default function HermesMark({
@@ -22,10 +26,12 @@ export default function HermesMark({
   color = "#F59E0B",
   alt = "Hermes Gastro",
   style = {},
+  theme = "dark", // "dark" = fondo oscuro (default); "light" = fondo claro
 }) {
   const [broken, setBroken] = useState(false);
   const h = size ?? (as === "wordmark" ? 22 : 64);
-  const src = SRC[as] || SRC.logo;
+  const srcSet = theme === "light" ? SRC_LIGHT_BG : SRC_DARK_BG;
+  const src = srcSet[as] || srcSet.logo;
 
   if (broken) {
     // Fallback discreto: cuadrado redondeado con inicial
