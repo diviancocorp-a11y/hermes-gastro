@@ -15,9 +15,20 @@ export async function fetchIngredients() {
 export async function upsertIngredient(ingredient) {
   const validation = validateInput(IngredientInputSchema, ingredient, 'upsertIngredient');
   if (!validation.ok) return { __error: validation.errors.join(', ') };
-  const validated = validation.data;
-  const clean = { name: validated.name, unit: validated.unit, cost: validated.cost, stock: validated.stock, min_stock: validated.min_stock, category: validated.category };
-  if (validated.id) clean.id = validated.id;
+  const v = validation.data;
+  // Construir el row del upsert incluyendo TODAS las columnas declaradas
+  // en el schema (no perder food_category, is_archived, etc.).
+  const clean = {
+    name: v.name,
+    unit: v.unit,
+    cost: v.cost,
+    stock: v.stock,
+    min_stock: v.min_stock,
+    category: v.category,
+  };
+  if (v.id) clean.id = v.id;
+  if (v.food_category !== undefined) clean.food_category = v.food_category;
+  if (v.is_archived !== undefined) clean.is_archived = v.is_archived;
   const { data, error } = await supabase.from('ingredients').upsert(clean).select().single();
   if (error) { console.error('upsertIngredient:', error.message); return { __error: error.message }; }
   return data;
