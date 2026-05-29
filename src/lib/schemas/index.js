@@ -110,6 +110,9 @@ export const IngredientInputSchema = z.object({
   stock: nonNegativeNumber.optional().default(0),
   min_stock: nonNegativeNumber.optional().default(0),
   category: requiredText(100),
+  // USAR Dark Kitchen — categoría contable (protein|dairy|vegetable|dry|beverage|packaging)
+  food_category: z.enum(['protein', 'dairy', 'vegetable', 'dry', 'beverage', 'packaging']).optional(),
+  is_archived: z.boolean().optional(),
 });
 
 
