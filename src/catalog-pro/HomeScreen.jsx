@@ -21,6 +21,7 @@ import {
 } from "./atoms";
 import { mapProduct, buildStories, buildRecos } from "./homeHelpers";
 import HermesMark from "../components/HermesMark";
+import CatalogFooter from "./CatalogFooter";
 
 const SEARCH_PHRASES = ["empanadas…", "tortilla de papa…", "algo dulce…", "pasta de hoy…"];
 
@@ -329,36 +330,20 @@ export default function HomeScreen({
         ))}
       </div>
 
-      {/* ===== FOOTER MARCA · triple-click en el runner abre /admin ===== */}
-      <div style={{
-        padding: "44px 22px 32px",
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-        opacity: 0.6,
-      }}>
-        <button
-          type="button"
-          aria-label="Hermes Gastro"
-          onClick={() => {
-            const now = Date.now();
-            if (now - (window.__hgFooterClick?.t || 0) > 700) window.__hgFooterClick = { t: now, n: 1 };
-            else window.__hgFooterClick = { t: now, n: (window.__hgFooterClick?.n || 0) + 1 };
-            if (window.__hgFooterClick.n >= 3) {
-              window.__hgFooterClick = null;
-              window.location.assign("/admin");
-            }
-          }}
-          style={{
-            background: "transparent", border: 0, padding: 0,
-            cursor: "default",
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-            WebkitTapHighlightColor: "transparent",
-          }}
-        >
-          <HermesMark as="wordmark" size={56} fallback="H" />
-        </button>
-        <div style={{ fontSize: 10, color: "var(--t3)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-          Hermes Gastro
-        </div>
+      {/* ===== FOOTER CORPORATIVO HERMES =====
+           El triple-click oculto al /admin sigue funcionando via el logo grande del footer. */}
+      <div
+        onClick={() => {
+          const now = Date.now();
+          if (now - (window.__hgFooterClick?.t || 0) > 700) window.__hgFooterClick = { t: now, n: 1 };
+          else window.__hgFooterClick = { t: now, n: (window.__hgFooterClick?.n || 0) + 1 };
+          if (window.__hgFooterClick.n >= 3) {
+            window.__hgFooterClick = null;
+            window.location.assign("/admin");
+          }
+        }}
+      >
+        <CatalogFooter />
       </div>
 
       {/* ===== STICKY CART ===== */}
