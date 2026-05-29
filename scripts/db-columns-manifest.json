@@ -1,0 +1,114 @@
+{
+  "$comment": "Mapeo de tabla DB → columnas que el schema Zod DEBE conocer. Si agregás una columna a la DB que se va a poder guardar desde el cliente, agregala acá Y al schema Zod correspondiente. Las columnas autogeneradas (id, created_at, updated_at) o calculadas server-side se ponen en 'serverOnly' para que el script no las exija al schema.",
+  "tables": {
+    "ingredients": {
+      "schema": "IngredientInputSchema",
+      "columns": [
+        "name",
+        "unit",
+        "cost",
+        "stock",
+        "min_stock",
+        "category",
+        "food_category",
+        "is_archived"
+      ],
+      "serverOnly": [
+        "id",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "expenses": {
+      "schema": "ExpenseInputSchema",
+      "columns": [
+        "date",
+        "description",
+        "amount",
+        "category",
+        "supplier"
+      ],
+      "serverOnly": [
+        "id",
+        "created_at",
+        "created_by",
+        "expense_type",
+        "supplier_id",
+        "receipt_url",
+        "no_receipt",
+        "payment_method",
+        "installment_current",
+        "installment_total",
+        "items",
+        "notes",
+        "voided_at",
+        "voided_by",
+        "voids_expense_id",
+        "voided_reason",
+        "delivery_channel",
+        "platform_commission_amt",
+        "usar_category"
+      ]
+    },
+    "sales": {
+      "schema": "SaleInputSchema",
+      "columns": [
+        "date",
+        "recipe_id",
+        "qty",
+        "unit_price",
+        "unit_cost"
+      ],
+      "serverOnly": [
+        "id",
+        "created_at",
+        "total"
+      ]
+    },
+    "orders": {
+      "schema": "OrderInputSchema",
+      "columns": [
+        "customer",
+        "phone",
+        "items"
+      ],
+      "serverOnly": [
+        "id",
+        "created_at",
+        "date",
+        "status",
+        "total",
+        "email",
+        "delivery",
+        "payment",
+        "note",
+        "address",
+        "coupon_code",
+        "is_gift",
+        "gift_note",
+        "delivery_date",
+        "user_id",
+        "tip_pct",
+        "tip_amount",
+        "delivery_channel",
+        "platform_commission_amt"
+      ]
+    },
+    "purchases": {
+      "schema": "PurchaseInputSchema",
+      "columns": [
+        "date",
+        "supplier",
+        "total"
+      ],
+      "serverOnly": [
+        "id",
+        "created_at",
+        "supplier_id",
+        "receipt_url",
+        "no_receipt",
+        "payment_method"
+      ]
+    }
+  }
+}

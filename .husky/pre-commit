@@ -19,6 +19,9 @@ if [ -n "$STAGED_FILES" ]; then
   npx lint-staged
 fi
 
+echo "→ Schema ↔ DB sync..."
+node scripts/check-schema-sync.mjs
+
 echo "→ Typecheck..."
 npm run typecheck
 
