@@ -13,7 +13,7 @@ import './lib/i18n.js' // Initialize i18next (must be before App render)
 // Initialize error tracking & analytics (no-op if env vars not set)
 initObservability()
 // Tenant context: cada error reportado a Sentry incluye qué cliente lo disparó
-setTenantContext({ code: business.code || '__CLIENT__', name: business.name })
+setTenantContext({ code: __CLIENT__, name: business.name })
 // Core Web Vitals (LCP, CLS, INP, FCP, TTFB) → console + analytics endpoint
 initWebVitals()
 

@@ -103,12 +103,17 @@ async function verifySentrySignature(
 // ────────────────────────────────────────────────────────
 // Formatea el payload de Sentry en un mensaje legible para Telegram
 function formatSentryEvent(payload: any): string | null {
-  // Sentry manda distintas acciones — sólo nos interesan "issue.created" y similares
-  const action = payload.action;
-  const data = payload.data?.issue || payload.data?.event;
-  if (!data && !payload.event) return null;
+  // Sentry dispara 2 webhooks por el mismo error: `issue.created` (poco
+  // contexto, sin tags) y `event.alert` (con event completo + tags + user).
+  // Para evitar duplicados, sólo aceptamos el que trae event con tags reales.
+  const evt = payload.event || payload.data?.event;
+  if (!evt) return null;
 
-  const evt = payload.event || payload.data?.event || data;
+  // Si el evento no tiene tags (=> no pasó por nuestro frontend con
+  // setTenantContext + setUserContext), es el webhook "vacío" — silenciar.
+  const hasTags = Array.isArray(evt.tags) ? evt.tags.length > 0 : (evt.tags && Object.keys(evt.tags).length > 0);
+  if (!hasTags) return null;
+
   const issue = payload.data?.issue;
 
   const title = evt?.title || issue?.title || "Error sin título";
