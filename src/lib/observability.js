@@ -14,6 +14,23 @@ const ANALYTICS_ID = import.meta.env.VITE_ANALYTICS_ID || '';
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || '0.0.0';
 const ENV = import.meta.env.MODE || 'production';
 
+// ─── Persistent context (tenant + user) ──────────────────
+// Se setea una vez en boot (tenant) y al login (user). Se inyecta automáticamente
+// en cada captureException sin que el caller tenga que pasarlo.
+let _user = null;
+let _tenant = null;
+
+export function setUserContext(user) {
+  // user: { id, email } o null al logout. NO mandar passwords ni tokens.
+  _user = user ? { id: user.id, email: user.email } : null;
+}
+
+export function setTenantContext(tenant) {
+  // tenant: { code: "lnp" | "cochi" | "malamiga", name: "La Nona Pato" }
+  _tenant = tenant || null;
+}
+
+
 // ─── Sentry Lightweight Reporter ────────────────────────
 
 let sentryEndpoint = '';
@@ -51,9 +68,9 @@ function buildSentryEnvelope(error, context = {}) {
         stacktrace: error.stack ? { frames: parseStack(error.stack) } : undefined,
       }],
     },
-    tags: context.tags || {},
+    tags: { ..._tenant ? { tenant: _tenant.code, tenant_name: _tenant.name } : {}, ...(context.tags || {}) },
     extra: context.extra || {},
-    user: context.user || undefined,
+    user: context.user || _user || undefined,
   });
 
   return `${header}\n${itemHeader}\n${payload}`;

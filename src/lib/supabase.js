@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { setUserContext } from './observability.js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -30,6 +31,8 @@ supabase.auth.onAuthStateChange((event, session) => {
     console.warn('[auth] Invalid refresh token detected — clearing local session')
     supabase.auth.signOut({ scope: 'local' }).catch(() => {})
   }
+  // Sincroniza el user context de Sentry con cada cambio de sesión.
+  setUserContext(session?.user ? { id: session.user.id, email: session.user.email } : null)
 })
 
 // Catch the AuthApiError thrown synchronously by getSession() when the

@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './index.css'
-import { initObservability } from './lib/observability.js'
+import { initObservability, setTenantContext } from './lib/observability.js'
 import { initWebVitals } from './lib/webVitals.js'
 import { loadFlags } from './services/featureFlags.js'
 import { fetchActiveTheme, applyTheme } from './services/theme.js'
@@ -12,6 +12,8 @@ import './lib/i18n.js' // Initialize i18next (must be before App render)
 
 // Initialize error tracking & analytics (no-op if env vars not set)
 initObservability()
+// Tenant context: cada error reportado a Sentry incluye qué cliente lo disparó
+setTenantContext({ code: business.code || '__CLIENT__', name: business.name })
 // Core Web Vitals (LCP, CLS, INP, FCP, TTFB) → console + analytics endpoint
 initWebVitals()
 
