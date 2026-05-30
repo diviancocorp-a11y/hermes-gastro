@@ -403,18 +403,31 @@ export default function Catalog() {
   }, [cartQtyMap]);
 
   // Agregar al carrito (memoizado) — usa precio con descuento del día.
-  // `e` es opcional: el viewer catalog-pro NO pasa el event al callback
-  // (solo p._raw), así que usamos optional chaining para no reventar.
-  const addC = useCallback((p, e) => {
+  // `e` es opcional: el viewer catalog-pro NO pasa el event al callback.
+  // `size` (opcional): { size_label, size_qty, size_price } — viene del
+  // ProductDetailScreen cuando la receta tiene presentaciones.
+  const addC = useCallback((p, e, size = null) => {
+    // Permitir signatura (p, size) — si e es un objeto sin stopPropagation, lo tratamos como size.
+    if (e && typeof e === "object" && !("stopPropagation" in e) && !size) {
+      size = e; e = null;
+    }
     e?.stopPropagation?.();
-    const finalPrice = getPrice(p);
-    toast(`✓ ${p.name} agregado`);
+    const finalPrice = size ? size.size_price : getPrice(p);
+    // Cart key: items con tamaños distintos son entradas distintas.
+    const itemKey = size ? `${p.id}__${size.size_label}` : p.id;
+    const displayName = size ? `${p.name} · ${size.size_label}` : p.name;
+    toast(`✓ ${displayName} agregado`);
     setCart(prev => {
-      const isNewProduct = !prev.find(i => i.id === p.id);
+      const isNewProduct = !prev.find(i => i.id === itemKey);
       const newCart = isNewProduct
-        ? [...prev, { id: p.id, name: p.name, price: finalPrice, qty: 1, img: p.image_url }]
-        : prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i);
-      // Upselling: mostrar sugerencias SOLO si el producto es nuevo en el carrito
+        ? [...prev, {
+            id: itemKey, name: displayName, price: finalPrice, qty: 1, img: p.image_url,
+            // metadata para el resumen de pedido y el stock
+            product_id: p.id,
+            size_label: size?.size_label || null,
+            size_qty:   size?.size_qty || 1,
+          }]
+        : prev.map(i => i.id === itemKey ? { ...i, qty: i.qty + 1 } : i);
       if (isNewProduct && p.related_ids && p.related_ids.length > 0) {
         const suggestions = products.filter(x => p.related_ids.includes(x.id));
         if (suggestions.length > 0) setUpsell({ product: p, suggestions: suggestions.slice(0, 3) });
@@ -777,8 +790,8 @@ export default function Catalog() {
           onToggleFav={toggleFavorite}
           onBack={() => setCpDetail(null)}
           onSelectRelated={(p) => { setCpDetail(p); window.scrollTo({ top: 0 }); }}
-          onAddToCart={(p, qty = 1) => {
-            for (let i = 0; i < qty; i++) addC(p);
+          onAddToCart={(p, qty = 1, size = null) => {
+            for (let i = 0; i < qty; i++) addC(p, null, size);
             setCpDetail(null);
             setShowCart(true);
           }}

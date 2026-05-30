@@ -30,6 +30,8 @@ import {
   unarchiveRecipe,
   uploadRecipeImage,
 } from "../../lib/adminService";
+import BatchCalculator from "./recipes/BatchCalculator";
+import SizesEditor from "./recipes/SizesEditor";
 
 // Color de rentabilidad según margen
 function marginColor(m) {
@@ -510,6 +512,7 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
   const [f, setF] = useState(data || {
     name: "", category: "", sale_price: 0, visible: true,
     image_url: "", description: "", ingredients: [], related_ids: [], is_combo: false,
+    sizes: null,
   });
   const [ad, setAd] = useState(false);
   const [si, setSi] = useState("");
@@ -701,6 +704,22 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
             })
           )}
         </div>
+
+        {/* Calculadora de tanda (UI-only): el admin piensa "para 24 galletas necesito X",
+            internamente se guarda por unidad. No persiste el yield. */}
+        <BatchCalculator
+          ingredients={ingredients}
+          recipeIngredients={f.ingredients || []}
+          onChange={(items) => s("ingredients", items)}
+        />
+
+        {/* Tamaños/presentaciones de venta — persiste en recipes.sizes (jsonb) */}
+        <SizesEditor
+          sizes={f.sizes}
+          onChange={(arr) => s("sizes", arr)}
+          costPerUnit={totalCost}
+          basePrice={f.sale_price || 0}
+        />
 
         <div style={{ marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>

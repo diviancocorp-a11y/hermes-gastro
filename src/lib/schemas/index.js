@@ -90,6 +90,15 @@ export const RecipeInputSchema = z.object({
   related_ids: z.array(uuid).optional().default([]),
   is_combo: z.boolean().optional().default(false),
   is_archived: z.boolean().optional().default(false),
+  // Tamaños/presentaciones de venta (migration recipes_add_sizes).
+  // NULL = vende solo por unidad (sale_price). Si tiene items: el cliente
+  // elige uno en el detail del catalogo y el precio sale del tamaño.
+  sizes: z.array(z.object({
+    label: z.string().trim().min(1).max(50),
+    qty:   z.number().int().positive(),
+    price: z.number().nonnegative(),
+    hint:  z.string().trim().max(100).optional().nullable(),
+  })).nullable().optional(),
 });
 
 export const RecipeIngredientSchema = z.object({
