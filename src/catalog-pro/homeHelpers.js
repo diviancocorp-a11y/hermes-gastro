@@ -92,24 +92,3 @@ export function buildStories(products, hasDeal) {
     _raw: p,
   }));
 }
-
-/**
- * AI recos heurísticas: 3 productos con razón explicada.
- * Usa productos con más relacionados o random estable.
- */
-export function buildRecos(products, hasDeal) {
-  const reasons = [
-    "Pedido seguido por clientes como vos",
-    "Combina con lo que sueles pedir",
-    "Nuevo esta semana",
-    "Bien valorado últimamente",
-  ];
-  const pool = products.filter(p => p.image_url);
-  const picked = [...pool]
-    .sort((a, b) => hashStr(b.id) - hashStr(a.id))   // orden estable pseudo-random
-    .slice(0, 3);
-  return picked.map((p, i) => ({
-    ...mapProduct(p, { hasDeal }),
-    reason: reasons[i % reasons.length],
-  }));
-}

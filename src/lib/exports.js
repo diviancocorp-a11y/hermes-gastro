@@ -1,3 +1,4 @@
+// @no-jsx-check (genera XML para XLSX, no JSX)
 // src/lib/exports.js
 // Export utilities: CSV, XLSX (XML-based), and PDF (via print).
 // No external dependencies — uses browser APIs only.

@@ -1,13 +1,17 @@
 # ── Hermes pre-commit ────────────────────────────────────
-# 1. Auto-arregla trailing newline en archivos staged (--fix)
-# 2. Valida integridad (rechaza NULL bytes, JSON/JS rotos)
-# 3. Corre eslint sobre archivos staged (lint-staged)
-# 4. Typecheck global
-# 5. Smoke unit tests
+# 1. git diff --check (conflict markers + trailing whitespace)
+# 2. Auto-arregla trailing newline en archivos staged (--fix)
+# 3. Valida integridad (rechaza NULL bytes, JSON/JS rotos)
+# 4. Corre eslint sobre archivos staged (lint-staged)
+# 5. Typecheck global
+# 6. Smoke unit tests
 #
 # Tiempo total esperado: ~10-15s.
 
 set -e
+
+echo "→ git diff --check (markers + whitespace)..."
+git diff --check --cached
 
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(js|jsx|ts|tsx|mjs|cjs|json)$' || true)
 

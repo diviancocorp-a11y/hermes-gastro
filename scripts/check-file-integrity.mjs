@@ -15,6 +15,9 @@
 // El fix sólo cubre el newline — null bytes / JSON / JS rotos siguen requiriendo
 // intervención manual porque auto-arreglarlos puede borrar contenido válido.
 //
+// Escape hatch JSX-en-.js: agregar `// @no-jsx-check` en la primera línea
+// para archivos que generan XML/HTML como strings (XLSX, SVG, etc).
+//
 // Salida: 0 si OK, 1 si quedan problemas. Imprime errores en stderr.
 // ─────────────────────────────────────────────────────────
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -67,13 +70,15 @@ for (const file of files) {
 
   // 3) JSX dentro de .js → Vite no lo procesa, build de Vercel rompe
   // Detectamos tags JSX típicos. Heurística conservadora para evitar falsos positivos
-  // (comparaciones `a < b`, template strings con HTML).
+  // (comparaciones `a < b`, template strings con HTML/XML).
   if (ext === '.js') {
     const src = buf.toString('utf-8');
-    // Excluir comments (// ... y /* ... */)
+    if (/^\s*\/\/\s*@no-jsx-check/m.test(src.slice(0, 200))) continue;
+    // Excluir comments (// ... y /* ... */) y template strings (backticks)
     const stripped = src
       .replace(/\/\/.*$/gm, '')
-      .replace(/\/\*[\s\S]*?\*\//g, '');
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/`[\s\S]*?`/g, '');
     const jsxPatterns = [
       /<[A-Z][A-Za-z0-9]*[\s/>]/,                                          // <Component
       /<(div|span|button|input|img|a|p|h[1-6]|ul|li|form|section|article|nav|header|footer|main|aside|label|select|textarea|table|tr|td|th|tbody|thead|svg|path|g|rect|circle|line|polyline|polygon)[\s/>]/, // <tagHTML
@@ -97,13 +102,13 @@ for (const file of files) {
     continue;
   }
 
-  // 4) Sintaxis JS válida (solo módulos puros, no JSX/TS)
+  // 5) Sintaxis JS válida (solo módulos puros, no JSX/TS)
   if (ext === '.mjs' || ext === '.cjs') {
     try {
       execSync(`node --check "${file}"`, { stdio: 'pipe' });
     } catch (e) {
       const msg = (e.stderr?.toString() || e.message).split('\n').slice(0, 4).join('\n');
-      console.error(`\u2717 ${file}: error de sintaxis JS\n${msg}`);
+      console.error(`✗ ${file}: error de sintaxis JS\n${msg}`);
       errors++;
     }
     continue;
@@ -111,13 +116,13 @@ for (const file of files) {
 }
 
 if (errors > 0) {
-  console.error(`\n\u2716 Pre-commit: ${errors} archivo(s) con problemas de integridad.`);
-  console.error(`  ${fixMode ? 'No se pudieron auto-arreglar' : 'Corregilos antes de commitear'} (t\u00edpicamente: cerrar l\u00edneas truncadas o quitar NULL bytes).`);
+  console.error(`\n✖ Pre-commit: ${errors} archivo(s) con problemas de integridad.`);
+  console.error(`  ${fixMode ? 'No se pudieron auto-arreglar' : 'Corregilos antes de commitear'} (típicamente: cerrar líneas truncadas o quitar NULL bytes).`);
   process.exit(1);
 }
 
 if (fixed > 0) {
-  console.log(`\n\u21bb Pre-commit: ${fixed} archivo(s) auto-arreglado(s), ${files.length - fixed} ya estaban OK.`);
+  console.log(`\n↻ Pre-commit: ${fixed} archivo(s) auto-arreglado(s), ${files.length - fixed} ya estaban OK.`);
   if (fixMode) {
     const list = files.slice(0, fixed).join(' ');
     try {
@@ -125,6 +130,6 @@ if (fixed > 0) {
     } catch { /* ignorar si no estamos en repo o el add falla */ }
   }
 } else {
-  console.log(`\u2713 Pre-commit: ${files.length} archivo(s) sin problemas de integridad.`);
+  console.log(`✓ Pre-commit: ${files.length} archivo(s) sin problemas de integridad.`);
 }
 process.exit(0);
