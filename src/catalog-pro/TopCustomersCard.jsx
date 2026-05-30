@@ -62,7 +62,7 @@ export default function TopCustomersCard() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {top.map(row => (
-              <RankRow key={row.position} row={row} />
+              <RankRow key={row.rank_position ?? row.position} row={row} />
             ))}
           </div>
         )}
@@ -109,8 +109,10 @@ export default function TopCustomersCard() {
 }
 
 function RankRow({ row }) {
-  const isPodium = row.position <= 3;
-  const medal = isPodium ? MEDALS[row.position - 1] : `${row.position}.`;
+  // RPC devuelve `rank_position` (no `position` que es keyword reservado en Postgres)
+  const pos = row.rank_position ?? row.position;
+  const isPodium = pos <= 3;
+  const medal = isPodium ? MEDALS[pos - 1] : `${pos}.`;
   return (
     <div
       style={{

@@ -62,8 +62,10 @@ CREATE OR REPLACE VIEW public._weekly_customer_aggregate AS
 -- ─── RPC 1: Top 5 de la semana ────────────────────────────────
 -- Retorna: position (1-5), display_name (anonimizado), points (int)
 
+-- NOTA: usamos `rank_position` (no `position`) porque `position` es keyword
+-- reservado en Postgres y rompe el CREATE FUNCTION.
 CREATE OR REPLACE FUNCTION public.get_weekly_top()
-RETURNS TABLE(position int, display_name text, points int)
+RETURNS TABLE(rank_position int, display_name text, points int)
 LANGUAGE sql
 SECURITY DEFINER
 SET search_path = public
@@ -80,7 +82,7 @@ AS $$
     FROM public._weekly_customer_aggregate
   )
   SELECT
-    pos AS position,
+    pos AS rank_position,
     public._display_name(customer_name) AS display_name,
     pts AS points
   FROM ranked

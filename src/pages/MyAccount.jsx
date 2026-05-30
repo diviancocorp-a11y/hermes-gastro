@@ -5,6 +5,7 @@ import { formatInt, formatOrderCode, optimizeImage } from "../lib/utils";
 import { supabase } from "../lib/supabase";
 import business from "@business";
 import ReferralCard from "../components/catalog/ReferralCard";
+import GuestWelcomeCard from "../catalog-pro/GuestWelcomeCard";
 
 const TABS = ["perfil", "direcciones", "historial", "favoritos", "cupones", "referidos"];
 const TAB_ICONS = { perfil: "👤", direcciones: "📍", historial: "📦", favoritos: "❤️", cupones: "🎟️", referidos: "🎁" };
@@ -146,6 +147,10 @@ export default function MyAccount() {
       </div>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center" }}>
+        {/* Guest landing: si el visitante ya pidió antes, lo saludamos y mostramos sus puntos
+            antes del form de login. Si NO hay guest, el componente devuelve null y se ve el form normal. */}
+        {!linkSent && <GuestWelcomeCard onLoginClick={() => setAuthMode("login")} />}
+
         <div style={{ fontSize: 56, marginBottom: 16 }}>🦆</div>
         <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 24, marginBottom: 8, color: "var(--tx)" }}>
           {linkSent ? "¡Revisá tu email!" : authMode === "register" ? "Crear cuenta" : "Iniciá sesión"}

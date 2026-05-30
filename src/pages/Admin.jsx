@@ -220,7 +220,8 @@ export default function Admin() {
         />
       </AdminDrawer>
 
-      {brandOpen && <BrandModal settings={sett} setSettings={setSett} onClose={() => setBrandOpen(false)} showToast={msg} />}
+      {/* BrandModal SIEMPRE montado: el CSS .ag-modal-sheet usa transform según `open` para animar abrir/cerrar. */}
+      <BrandModal open={brandOpen} settings={sett} setSettings={setSett} onClose={() => setBrandOpen(false)} showToast={msg} />
     </div>
     </ConfirmSlideProvider>
   );

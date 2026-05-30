@@ -52,17 +52,29 @@ for (const file of files) {
     continue;
   }
 
-  // 2) Termina con newline — se auto-arregla si --fix
-  if (buf.length > 0 && buf[buf.length - 1] !== 0x0a) {
-    if (fixMode) {
-      writeFileSync(file, Buffer.concat([buf, Buffer.from('\n')]));
-      console.log(`↻ ${file}: fixed (newline final agregado)`);
-      fixed++;
-      buf = readFileSync(file);
-    } else {
-      console.error(`✗ ${file}: no termina con newline (¿truncado?)`);
-      errors++;
-      continue;
+  // 2) EOF correcto: termina con UN SOLO \n (sin blank lines extras).
+  // git diff --check rechaza blank lines al final → tenemos que normalizar.
+  if (buf.length > 0) {
+    const endsWithSingleNewline =
+      buf[buf.length - 1] === 0x0a &&
+      (buf.length === 1 || buf[buf.length - 2] !== 0x0a);
+    if (!endsWithSingleNewline) {
+      if (fixMode) {
+        // Quitar TODO whitespace final y agregar UN solo \n
+        let end = buf.length;
+        while (end > 0 && (buf[end - 1] === 0x0a || buf[end - 1] === 0x0d || buf[end - 1] === 0x20 || buf[end - 1] === 0x09)) {
+          end--;
+        }
+        const cleaned = Buffer.concat([buf.subarray(0, end), Buffer.from('\n')]);
+        writeFileSync(file, cleaned);
+        console.log(`↻ ${file}: fixed EOF (normalizado a 1 \\n)`);
+        fixed++;
+        buf = readFileSync(file);
+      } else {
+        console.error(`✗ ${file}: EOF mal (sin newline o con blank line extra)`);
+        errors++;
+        continue;
+      }
     }
   }
 
