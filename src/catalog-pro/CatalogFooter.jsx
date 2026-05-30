@@ -18,6 +18,18 @@ const HERMES = {
 
 const DEFENSA_CONSUMIDOR_AR = "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario";
 
+// Convierte un hex (#RGB o #RRGGBB) a rgba con alpha dado. Si falla, devuelve fallback.
+function hexToRgba(hex, alpha, fallback = "rgba(245,158,11,0.06)") {
+  if (!hex || typeof hex !== "string") return fallback;
+  let h = hex.trim().replace("#", "");
+  if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return fallback;
+  const r = parseInt(h.slice(0,2), 16);
+  const g = parseInt(h.slice(2,4), 16);
+  const b = parseInt(h.slice(4,6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function bizCopy(biz) {
   const bizName = biz?.biz_name || "el negocio";
   return {
@@ -139,6 +151,8 @@ export default function CatalogFooter({ settings = {} }) {
   const bizName = settings.biz_name || "Negocio";
   const bizWhatsapp = (settings.whatsapp || "").replace(/\D/g, "");
   const bizInstagram = settings.instagram || "";
+  // Color de marca del tenant — si no está, cae al ámbar Hermes
+  const accentColor = settings.logo_color || "#F59E0B";
 
   return (
     <>
@@ -146,9 +160,9 @@ export default function CatalogFooter({ settings = {} }) {
         style={{
           marginTop: 32,
           padding: "32px 22px 24px",
-          background: "var(--bg, #fafaf7)",
+          background: hexToRgba(accentColor, 0.08, "rgba(245,158,11,0.05)"),
           color: "var(--tx, #2D1B0E)",
-          borderTop: "1px solid var(--line, rgba(0,0,0,0.06))",
+          borderTop: `2px solid ${hexToRgba(accentColor, 0.35, "rgba(245,158,11,0.25)")}`,
         }}
       >
         {/* ─── BLOQUE DEL NEGOCIO ─── */}
@@ -248,13 +262,13 @@ export default function CatalogFooter({ settings = {} }) {
   );
 }
 
-function FooterCol({ title, items }) {
+function FooterCol({ title, items, accent = "#F59E0B" }) {
   if (!items?.length) return null;
   return (
     <div>
       <div style={{
         fontSize: 10.5, fontWeight: 800, letterSpacing: "0.12em",
-        textTransform: "uppercase", color: "#F59E0B", marginBottom: 10,
+        textTransform: "uppercase", color: accent, marginBottom: 10,
       }}>
         {title}
       </div>
