@@ -1,4 +1,16 @@
 // src/services/settings.js
+//
+// Fuente unica de verdad para que campos van al upsert: SettingsInputSchema (Zod).
+// safeParse con z.object() hace strip por default -> campos no declarados se
+// descartan. Sin allowlist manual paralela (antes habia SETTINGS_COLS hardcoded
+// que causo 3 bugs por divergencia con el schema: food_category #54/#56,
+// catalog_theme #96).
+//
+// Para agregar una columna nueva al settings:
+//   1. ALTER TABLE en supabase/migrations/
+//   2. Agregar el campo a SettingsInputSchema en src/lib/schemas/index.js
+//   Listo. No hay un tercer lugar que actualizar.
+
 import { supabase } from '../lib/supabase';
 import { SettingsInputSchema, validateInput } from '../lib/schemas/index.js';
 
@@ -8,40 +20,10 @@ export async function fetchSettings() {
   return data?.[0] || null;
 }
 
-// Columnas válidas de la tabla settings (evita enviar campos desconocidos).
-// IMPORTANTE: agregar acá cualquier columna nueva del schema, sino el upsert
-// la descarta silenciosamente y el cambio nunca persiste.
-export const SETTINGS_COLS = [
-  // Base
-  'id', 'biz_name', 'logo_letter', 'logo_color', 'logo_url',
-  'cover_url', 'cat_images', 'hidden_cats', 'cat_names',
-  'banner_text', 'banner_color', 'store_open', 'store_hours',
-  'exp_cats', 'ing_cats',
-  // Finanzas — costos proyectados (Configuración → Finanzas)
-  'waste_pct', 'expense_pct',
-  // Medios de pago — admin (master) + subset visible en catálogo
-  'payment_methods', 'catalog_payment_methods',
-  // Identidad social / SEO (migration 20260524_brand_catalog_settings)
-  'slogan', 'description', 'whatsapp', 'instagram',
-  'og_image_url', 'favicon_url',
-  // Catálogo público (migration 20260524_brand_catalog_settings)
-  'min_order_amount', 'prep_time_min', 'delivery_time_min',
-  'show_hours_on_catalog', 'catalog_font',
-  // Grupos de categorías + daily deals (migration 20260524_category_groups_image)
-  'cat_groups', 'daily_deals', 'deal_pct',
-  // Tema visual del catálogo (migration 20260530_settings_catalog_theme)
-  'catalog_theme',
-  // Multi-tenant per-client (edge functions)
-  'store_name', 'app_url',
-];
-
 export async function updateSettings(settings) {
-  // Filtrar solo columnas conocidas para evitar errores de Supabase
-  const clean = {};
-  for (const k of SETTINGS_COLS) {
-    if (k in settings) clean[k] = settings[k];
-  }
-  const validation = validateInput(SettingsInputSchema, clean, 'updateSettings');
+  // Zod strip-mode descarta campos no declarados en el schema. Si un campo
+  // no aparece en el upsert despues de validar, agregalo a SettingsInputSchema.
+  const validation = validateInput(SettingsInputSchema, settings, 'updateSettings');
   if (!validation.ok) { console.error('updateSettings validation:', validation.errors); return null; }
   const { data, error } = await supabase.from('settings').upsert(validation.data).select().single();
   if (error) { console.error('updateSettings:', error.message); return null; }
