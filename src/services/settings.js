@@ -29,6 +29,8 @@ export const SETTINGS_COLS = [
   'show_hours_on_catalog', 'catalog_font',
   // Grupos de categorías + daily deals (migration 20260524_category_groups_image)
   'cat_groups', 'daily_deals', 'deal_pct',
+  // Tema visual del catálogo (migration 20260530_settings_catalog_theme)
+  'catalog_theme',
   // Multi-tenant per-client (edge functions)
   'store_name', 'app_url',
 ];
