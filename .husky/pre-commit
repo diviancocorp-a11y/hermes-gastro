@@ -3,10 +3,13 @@
 # 2. Auto-arregla trailing newline en archivos staged (--fix)
 # 3. Valida integridad (rechaza NULL bytes, JSON/JS rotos)
 # 4. Corre eslint sobre archivos staged (lint-staged)
-# 5. Typecheck global
-# 6. Smoke unit tests
+# 5. Schema ↔ DB sync
+# 6. Typecheck global
+# 7. Smoke unit tests
+# 8. Vite build (si hay cambios en src/) — atrapa missing exports / imports rotos
 #
-# Tiempo total esperado: ~10-15s.
+# Tiempo total esperado: ~25-35s (vite build agrega ~15s).
+# Skip explícito: SKIP_VITE_BUILD=1 git commit ...
 
 set -e
 
@@ -14,6 +17,7 @@ echo "→ git diff --check (markers + whitespace)..."
 git diff --check --cached
 
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(js|jsx|ts|tsx|mjs|cjs|json)$' || true)
+STAGED_SRC=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^src/.*\.(js|jsx|ts|tsx)$' || true)
 
 if [ -n "$STAGED_FILES" ]; then
   echo "→ Verificando + auto-fix integridad de $(echo "$STAGED_FILES" | wc -l) archivo(s)..."
@@ -31,3 +35,11 @@ npm run typecheck
 
 echo "→ Smoke unit tests..."
 npx vitest run src/test/utils.test.js src/test/schemas.test.js --no-coverage --silent
+
+# Vite build sólo si tocaste archivos de src/ — atrapa imports rotos / missing exports
+# (lo que rompió 9 deploys seguidos por buildRecos faltante en homeHelpers.js)
+if [ -n "$STAGED_SRC" ] && [ "$SKIP_VITE_BUILD" != "1" ]; then
+  echo "→ Vite build (verifica imports/exports — sobreescribible con SKIP_VITE_BUILD=1)..."
+  CLIENT=la-nona-pato npx vite build --logLevel error > /dev/null
+  echo "  ✓ build OK"
+fi
