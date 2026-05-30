@@ -11,7 +11,7 @@
  */
 import { memo } from 'react'
 
-function KpiCard({ label, value, delta, trend = 'up', state = 'sales', onClick }) {
+function KpiCard({ label, value, delta, deltaNode, trend = 'up', state = 'sales', onClick }) {
   const Component = onClick ? 'button' : 'div'
   const stateClass = `ag-st-${state}`
 
@@ -24,7 +24,12 @@ function KpiCard({ label, value, delta, trend = 'up', state = 'sales', onClick }
     >
       <div className="ag-kpi-lbl">{label}</div>
       <div className="ag-kpi-val">{value}</div>
-      {delta && (
+      {deltaNode ? (
+        <div className="ag-kpi-delta" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {deltaNode}
+          {delta && <span style={{ color: 'var(--ag-ink-3)', fontSize: 11 }}>{delta}</span>}
+        </div>
+      ) : delta && (
         <div className={`ag-kpi-delta ${trend}`}>{delta}</div>
       )}
     </Component>

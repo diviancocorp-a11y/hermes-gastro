@@ -1,4 +1,5 @@
 import { useMemo, useState, lazy, Suspense } from "react";
+import DeltaBadge, { computeDelta } from "../DeltaBadge";
 import { formatInt, todayISO, OrderStatus } from "../../lib/utils";
 
 import KpiCard from "./shared/cards/KpiCard";
@@ -17,6 +18,7 @@ function getUserSubtitle(user) {
 
 function Home({
   user, lowStockIngredients, monthSales, monthExpenses, monthProfit, profitMargin,
+  prevMonthSales = 0, prevMonthExpenses = 0, prevMonthProfit = 0, prevMonthOrdersCount = 0,
   sales, orders, recipes, ingredients,
   calculateRecipeCost, activeOrders, settings, waste,
   onStock, onOrders, onShowToast, onMonthSummary,
@@ -109,16 +111,32 @@ function Home({
           state="sales"
           label="Ventas del mes"
           value={`$${formatInt(monthSales)}`}
+          deltaNode={prevMonthSales > 0 ? (() => {
+            const d = computeDelta(monthSales, prevMonthSales);
+            return <DeltaBadge value={d.value} deltaType={d.type} variant="solid" iconStyle="filled" size="sm" />;
+          })() : null}
+          delta={prevMonthSales > 0 ? "vs mes anterior" : "primer mes"}
         />
         <KpiCard
           state="orders"
           label="Gastos del mes"
           value={`$${formatInt(monthExpenses || 0)}`}
+          deltaNode={prevMonthExpenses > 0 ? (() => {
+            const d = computeDelta(monthExpenses, prevMonthExpenses);
+            // En gastos, subir es malo: invertimos el sentido visual
+            const type = d.type === "increase" ? "decrease" : d.type === "decrease" ? "increase" : "neutral";
+            return <DeltaBadge value={d.value} deltaType={type} variant="solid" iconStyle="filled" size="sm" />;
+          })() : null}
+          delta={prevMonthExpenses > 0 ? "vs mes anterior" : "primer mes"}
         />
         <KpiCard
           state={monthProfit >= 0 ? "crm" : "orders"}
           label="Ganancia del mes"
           value={`$${formatInt(monthProfit)}`}
+          deltaNode={prevMonthProfit !== 0 ? (() => {
+            const d = computeDelta(monthProfit, prevMonthProfit);
+            return <DeltaBadge value={d.value} deltaType={d.type} variant="solid" iconStyle="filled" size="sm" />;
+          })() : null}
           delta={`${profitMargin.toFixed(1)}% margen`}
           trend={monthProfit >= 0 ? 'up' : 'down'}
         />
@@ -126,7 +144,11 @@ function Home({
           state="prep"
           label="Pedidos del mes"
           value={String(monthOrdersCount)}
-          delta={nw.length > 0 ? `${nw.length} nuevo${nw.length > 1 ? 's' : ''}` : null}
+          deltaNode={prevMonthOrdersCount > 0 ? (() => {
+            const d = computeDelta(monthOrdersCount, prevMonthOrdersCount);
+            return <DeltaBadge value={d.value} deltaType={d.type} variant="solid" iconStyle="filled" size="sm" />;
+          })() : null}
+          delta={nw.length > 0 ? `${nw.length} nuevo${nw.length > 1 ? 's' : ''}` : "vs mes anterior"}
           onClick={onOrders}
         />
       </div>

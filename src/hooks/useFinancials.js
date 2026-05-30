@@ -66,6 +66,19 @@ export default function useFinancials({ ings, recs, sales, exps, orders, waste, 
   // Mes en curso
   const monthStart = todayISO().slice(0, 7) + "-01";
 
+  // Rango del mes anterior (para comparativas en KPIs)
+  const { prevMonthStart, prevMonthEnd } = useMemo(() => {
+    const ym = todayISO().slice(0, 7); // YYYY-MM
+    const [yy, mm] = ym.split("-").map(Number);
+    const prev = new Date(yy, mm - 2, 1);
+    const start = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}-01`;
+    // End = día anterior al monthStart actual
+    const cur = new Date(yy, mm - 1, 1);
+    const endDate = new Date(cur.getTime() - 86400000);
+    const end = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
+    return { prevMonthStart: start, prevMonthEnd: end };
+  }, []);
+
   // Ventas del mes
   const monthSales = useMemo(
     () => sales.filter(s => s.date >= monthStart).reduce((a, x) => a + (x.total || 0), 0),
@@ -124,6 +137,45 @@ export default function useFinancials({ ings, recs, sales, exps, orders, waste, 
   const monthProfit = monthOperatingResult;
   const profitMargin = operatingMarginPct;
 
+  // ─── Mes anterior (para comparativas) ────────────────
+  const inPrevMonth = (d) => d >= prevMonthStart && d <= prevMonthEnd;
+
+  const prevMonthSales = useMemo(
+    () => sales.filter(s => inPrevMonth(s.date)).reduce((a, x) => a + (x.total || 0), 0),
+    [sales, prevMonthStart, prevMonthEnd]
+  );
+
+  const prevMonthExpenses = useMemo(
+    () => exps.filter(e => inPrevMonth(e.date)).reduce((a, e) => a + (Number(e.amount) || 0), 0),
+    [exps, prevMonthStart, prevMonthEnd]
+  );
+
+  const prevMonthProductionCostRaw = useMemo(
+    () => sales.filter(s => inPrevMonth(s.date)).reduce((a, x) => {
+      if (x.unit_cost != null && x.unit_cost > 0) return a + (x.unit_cost * (x.qty || 1));
+      const r = recs.find(r2 => r2.id === x.recipe_id);
+      return a + (r ? calculateRecipeRawCost(r) * (x.qty || 1) : 0);
+    }, 0),
+    [sales, recs, calculateRecipeRawCost, prevMonthStart, prevMonthEnd]
+  );
+
+  const prevMonthProductionCost = prevMonthProductionCostRaw * costFactor;
+  const prevMonthWasteCost = useMemo(
+    () => waste.filter(w => inPrevMonth(w.date)).reduce((a, w) => {
+      const ig = ings.find(i => i.id === w.ingredient_id);
+      return a + ((ig?.cost || 0) * (w.qty || 0));
+    }, 0),
+    [waste, ings, prevMonthStart, prevMonthEnd]
+  );
+
+  const prevMonthGrossMargin = prevMonthSales - prevMonthProductionCost;
+  const prevMonthProfit = prevMonthGrossMargin - prevMonthExpenses - prevMonthWasteCost;
+
+  const prevMonthOrdersCount = useMemo(
+    () => orders.filter(o => o.status !== OrderStatus.CANCELLED && inPrevMonth(o.date)).length,
+    [orders, prevMonthStart, prevMonthEnd]
+  );
+
   return {
     // Configuración
     wastePct,
@@ -147,6 +199,12 @@ export default function useFinancials({ ings, recs, sales, exps, orders, waste, 
     grossMarginPct,
     monthOperatingResult,
     operatingMarginPct,
+
+    // Mes anterior (para deltas en KPIs)
+    prevMonthSales,
+    prevMonthExpenses,
+    prevMonthProfit,
+    prevMonthOrdersCount,
 
     // Aliases back-compat
     monthExpenses,               // total fixed + variable
