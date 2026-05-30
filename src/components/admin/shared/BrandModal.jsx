@@ -394,9 +394,9 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                   {[
-                    { id: 'ambar',  label: 'Ambar',  swatch: { bg: '#FFFFFF', ac: '#F59E0B', tx: '#262626' } },
-                    { id: 'noche',  label: 'Noche',  swatch: { bg: '#161412', ac: '#E8B947', tx: '#F4EAD0' } },
-                    { id: 'carbon', label: 'Carbon', swatch: { bg: '#1A1A1A', ac: '#F59E0B', tx: '#ECECEC' } },
+                    { id: 'ambar',  label: 'Ambar',  bg: '#FFFFFF', tx: '#262626', ac: '#F59E0B' },
+                    { id: 'noche',  label: 'Noche',  bg: '#161412', tx: '#F4EAD0', ac: '#E8B947' },
+                    { id: 'carbon', label: 'Carbon', bg: '#1A1A1A', tx: '#ECECEC', ac: '#F59E0B' },
                   ].map(t => {
                     const active = (s.catalog_theme || 'ambar') === t.id;
                     return (
@@ -405,23 +405,18 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                         key={t.id}
                         onClick={() => set('catalog_theme', t.id)}
                         style={{
-                          padding: '12px 8px',
-                          background: t.swatch.bg,
-                          color: t.swatch.tx,
-                          border: active ? `2px solid ${t.swatch.ac}` : '1px solid var(--ag-ink-4, rgba(0,0,0,0.12))',
+                          padding: '16px 8px',
+                          background: t.bg,
+                          color: t.tx,
+                          border: active ? `2px solid ${t.ac}` : '1px solid var(--ag-ink-4, rgba(0,0,0,0.12))',
                           borderRadius: 12,
                           cursor: 'pointer',
                           fontFamily: 'inherit',
-                          fontSize: 13,
+                          fontSize: 14,
                           fontWeight: 600,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: 6,
                           transition: 'all 150ms ease',
                         }}
                       >
-                        <span style={{ width: 24, height: 24, borderRadius: 999, background: t.swatch.ac, display: 'block' }} />
                         {t.label}
                       </button>
                     );

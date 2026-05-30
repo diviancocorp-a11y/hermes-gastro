@@ -184,6 +184,8 @@ export const SettingsInputSchema = z.object({
   catalog_payment_methods: z.array(z.string()).nullable().optional(),
   // Theming público
   catalog_font: optionalText(50),
+  // Tema visual: ambar (default) | noche | carbon
+  catalog_theme: z.enum(['ambar', 'noche', 'carbon']).nullable().optional(),
   // Identidad social / SEO
   slogan: optionalText(300),
   description: optionalText(2000),
