@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run check:integrity && npm run check:schema && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -15,7 +15,8 @@
     "test:e2e:ui": "playwright test --ui",
     "create-client": "node scripts/create-client.mjs",
     "check:integrity": "node scripts/check-integrity-all.mjs",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check:schema": "node scripts/check-schema-sync.mjs"
   },
   "dependencies": {
     "@hermes/core": "file:../Hermes/packages/core",
