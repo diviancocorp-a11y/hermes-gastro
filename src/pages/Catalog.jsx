@@ -389,9 +389,11 @@ export default function Catalog() {
     return cartQtyMap[id] || 0;
   }, [cartQtyMap]);
 
-  // Agregar al carrito (memoizado) — usa precio con descuento del día
+  // Agregar al carrito (memoizado) — usa precio con descuento del día.
+  // `e` es opcional: el viewer catalog-pro NO pasa el event al callback
+  // (solo p._raw), así que usamos optional chaining para no reventar.
   const addC = useCallback((p, e) => {
-    e.stopPropagation();
+    e?.stopPropagation?.();
     const finalPrice = getPrice(p);
     toast(`✓ ${p.name} agregado`);
     setCart(prev => {
