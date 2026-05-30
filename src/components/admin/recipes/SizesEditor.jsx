@@ -127,10 +127,11 @@ export default function SizesEditor({ sizes, onChange, costPerUnit = 0, basePric
                         onChange={(n) => updRow(i, "price", n)}
                         placeholder="0"
                       />
-                      {costPerUnit > 0 && (
-                        <span style={{ fontSize: 10.5, color: "var(--ag-ink-3)", minWidth: 90, textAlign: "right" }}>
-                          costo ${formatInt(Math.round(costForSize))}
-                          {margin !== null && <span style={{ color: marginColor, fontWeight: 700 }}> · {margin}%</span>}
+                      {basePrice > 0 && (
+                        <span style={{ fontSize: 10.5, color: "var(--ag-ink-3)", minWidth: 110, textAlign: "right", lineHeight: 1.3 }}>
+                          venta sueltas<br/>
+                          <strong style={{ color: "var(--ag-ink-2)" }}>${formatInt(Math.round(fullPrice))}</strong>
+                          <span style={{ color: "var(--ag-ink-3)" }}> ({row.qty}×${formatInt(basePrice)})</span>
                         </span>
                       )}
                     </div>
