@@ -24,6 +24,7 @@ import HermesMark from "../components/HermesMark";
 import CatalogFooter from "./CatalogFooter";
 import BadgeTag from "../components/BadgeTag";
 import TopCustomersCard from "./TopCustomersCard";
+import { useGuestUser } from "../lib/guestUser.js";
 
 const SEARCH_PHRASES = ["empanadas…", "tortilla de papa…", "algo dulce…", "pasta de hoy…"];
 
@@ -52,6 +53,8 @@ export default function HomeScreen({
   const [storyIdx, setStoryIdx] = useState(0);
 
   const stories = useMemo(() => buildStories(products, hasDeal), [products, hasDeal]);
+  const guest = useGuestUser();
+  const firstName = guest?.name ? guest.name.trim().split(/\s+/)[0] : null;
   const recos = useMemo(() => buildRecos(products, hasDeal), [products, hasDeal]);
   const combos = useMemo(
     () => products
@@ -105,11 +108,13 @@ export default function HomeScreen({
             }}>{logoLetter}</div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, color: "var(--tx)", lineHeight: 1 }}>
-                {store.name || "Tienda"}
+                {firstName ? `Hola ${firstName} 👋` : (store.name || "Tienda")}
               </div>
               <div className="body-s" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2, fontSize: 12 }}>
                 <span style={{ width: 6, height: 6, borderRadius: 999, background: store.isOpen ? "var(--ok)" : "var(--err)" }} />
-                {store.isOpen ? `Abierto${store.pickupTime ? ` · retiro ${store.pickupTime}` : ""}` : "Cerrado · pedidos programados"}
+                {firstName
+                  ? `${store.name || "Tienda"} · ${store.isOpen ? "Abierto" : "Cerrado"}`
+                  : (store.isOpen ? `Abierto${store.pickupTime ? ` · retiro ${store.pickupTime}` : ""}` : "Cerrado · pedidos programados")}
               </div>
             </div>
           </div>

@@ -6,6 +6,7 @@ import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogS
 import { fetchMpStatusPublic, createMpPreference } from "../services/paymentIntegrations";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { getGuestUser } from "../lib/guestUser.js";
 import business, { waLink } from "@business";
 import { catalogPaymentMethods, paymentLabel, paymentIcon } from "../lib/payments";
 
@@ -138,15 +139,28 @@ export default function Catalog() {
 
   const sf = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
-  // Auto-fill checkout form from profile when opening checkout
+  // Auto-fill checkout form from profile or guest identity when opening checkout
   useEffect(() => {
-    if (showCk && user && profile) {
+    if (!showCk) return;
+    if (user && profile) {
+      // Logueado: prefill desde profile (datos más confiables)
       setForm(p => ({
         ...p,
         name: p.name || profile.name || "",
         phone: p.phone || profile.phone || "",
         email: p.email || user.email || "",
       }));
+    } else {
+      // Guest: prefill desde localStorage (último pedido)
+      const g = getGuestUser();
+      if (g) {
+        setForm(p => ({
+          ...p,
+          name: p.name || g.name || "",
+          phone: p.phone || g.phone || "",
+          email: p.email || g.email || "",
+        }));
+      }
     }
   }, [showCk, user, profile]);
 
