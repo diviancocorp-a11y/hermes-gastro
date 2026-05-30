@@ -23,6 +23,7 @@ import {
 import { fetchSuppliers } from "../../services/suppliers";
 import { voidExpense } from "../../services/finance";
 import SlideToConfirm from "../SlideToConfirm";
+import DecimalInput from "../ui/DecimalInput";
 import { paymentLabel, paymentIcon, enabledPaymentMethods } from "../../lib/payments";
 import { USAR_EXPENSE_CATEGORIES, getUsarExpense } from "../../constants/usar";
 
@@ -1061,11 +1062,11 @@ function ExpForm({ onClose, onSave, settings, user }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
           <div>
             <label className="ag-field-lbl">Monto *</label>
-            <input
+            <DecimalInput
               className="ag-field-input"
-              type="number" min="0.01" step="0.01"
-              value={f.amount || ""}
-              onChange={e => s("amount", Math.max(0, Number(e.target.value)))}
+              step="0.01"
+              value={f.amount}
+              onChange={(n) => s("amount", n)}
               placeholder="0"
             />
             {f.amount !== 0 && !amtOk && (
@@ -1536,11 +1537,11 @@ function Purchase({ ingredients, setIngredients, setExpenses, settings, onClose,
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
               <div>
                 <label className="ag-field-lbl">$ por unidad</label>
-                <input className="ag-field-input" type="number" value={ni.cost || ""} onChange={e => setNi(p => ({ ...p, cost: Number(e.target.value) }))} />
+                <DecimalInput className="ag-field-input" value={ni.cost} onChange={(n) => setNi(p => ({ ...p, cost: n }))} />
               </div>
               <div>
                 <label className="ag-field-lbl">Stock mínimo</label>
-                <input className="ag-field-input" type="number" value={ni.min_stock || ""} onChange={e => setNi(p => ({ ...p, min_stock: Number(e.target.value) }))} />
+                <DecimalInput className="ag-field-input" value={ni.min_stock} onChange={(n) => setNi(p => ({ ...p, min_stock: n }))} />
               </div>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -1594,11 +1595,11 @@ function Purchase({ ingredients, setIngredients, setExpenses, settings, onClose,
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                 <div>
                   <label className="ag-field-lbl">Cantidad ({unit})</label>
-                  <input className="ag-field-input" type="number" value={it.qty || ""} onChange={e => upd(i, "qty", Number(e.target.value))} />
+                  <DecimalInput className="ag-field-input" value={it.qty} onChange={(n) => upd(i, "qty", n)} />
                 </div>
                 <div>
                   <label className="ag-field-lbl">Precio por {unit}</label>
-                  <input className="ag-field-input" type="number" value={it.unitCost || ""} onChange={e => upd(i, "unitCost", Number(e.target.value))} />
+                  <DecimalInput className="ag-field-input" value={it.unitCost} onChange={(n) => upd(i, "unitCost", n)} />
                 </div>
                 <div>
                   <label className="ag-field-lbl">Subtotal</label>
@@ -1885,11 +1886,11 @@ function SaleForm({ recipes, onClose, onSave }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
           <div>
             <label className="ag-field-lbl">Cantidad</label>
-            <input className="ag-field-input" type="number" min="1" value={q} onChange={e => setQ(Number(e.target.value))} />
+            <DecimalInput className="ag-field-input" min={1} step="1" value={q} onChange={(n) => setQ(n)} />
           </div>
           <div>
             <label className="ag-field-lbl">$ por unidad</label>
-            <input className="ag-field-input" type="number" value={p || ""} onChange={e => setP(Number(e.target.value))} />
+            <DecimalInput className="ag-field-input" value={p} onChange={(n) => setP(n)} />
           </div>
         </div>
 

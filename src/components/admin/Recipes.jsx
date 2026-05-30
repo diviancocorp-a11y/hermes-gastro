@@ -17,6 +17,7 @@
  */
 import { useState, useRef, useMemo } from "react";
 import { useConfirm } from "../ConfirmSlideProvider";
+import DecimalInput from "../ui/DecimalInput";
 import { formatInt, formatMoney } from "../../lib/utils";
 import {
   fetchRecipeIngredients,
@@ -580,7 +581,7 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
           </div>
           <div>
             <label className="ag-field-lbl">Precio venta *</label>
-            <input className="ag-field-input" type="number" min="0" value={f.sale_price || ""} onChange={e => s("sale_price", Number(e.target.value))} placeholder="0" />
+            <DecimalInput className="ag-field-input" value={f.sale_price} onChange={(n) => s("sale_price", n)} placeholder="0" />
           </div>
         </div>
 

@@ -27,6 +27,7 @@ import business from "@business";
 import SettingsRow from "./shared/forms/SettingsRow";
 import ToggleSwitch from "./shared/forms/ToggleSwitch";
 import CatChipsEditor from "../ui/CatChipsEditor";
+import DecimalInput from "../ui/DecimalInput";
 import PaymentMethodsEditor from "../ui/PaymentMethodsEditor";
 
 function Icon({ d, viewBox = "0 0 24 24" }) {
@@ -367,10 +368,10 @@ function CostsSubPage({ open, settings, setS, onBack }) {
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <input
-              type="number" min="0" max="100" step="0.5"
+            <DecimalInput
+              min={0} max={100} step="0.5"
               value={wastePct}
-              onChange={e => setS(p => ({ ...p, waste_pct: Math.max(0, Math.min(100, Number(e.target.value))) }))}
+              onChange={(n) => setS(p => ({ ...p, waste_pct: n }))}
               style={{
                 width: 80, padding: "8px 10px", textAlign: "center",
                 fontSize: 16, fontWeight: 700,
@@ -394,10 +395,10 @@ function CostsSubPage({ open, settings, setS, onBack }) {
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <input
-              type="number" min="0" max="100" step="0.5"
+            <DecimalInput
+              min={0} max={100} step="0.5"
               value={expensePct}
-              onChange={e => setS(p => ({ ...p, expense_pct: Math.max(0, Math.min(100, Number(e.target.value))) }))}
+              onChange={(n) => setS(p => ({ ...p, expense_pct: n }))}
               style={{
                 width: 80, padding: "8px 10px", textAlign: "center",
                 fontSize: 16, fontWeight: 700,
