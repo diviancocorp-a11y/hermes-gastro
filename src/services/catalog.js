@@ -1,6 +1,7 @@
 // src/services/catalog.js
 import { supabase } from '../lib/supabase';
 import { OrderInputSchema, CouponValidateSchema, validateInput } from '../lib/schemas/index.js';
+import { setGuestUser } from '../lib/guestUser.js';
 import business from '@business';
 
 /**
@@ -114,6 +115,14 @@ export async function submitOrder(orderData) {
       console.error('submitOrder server error:', data?.error);
       return { ok: false, orderId: null };
     }
+
+    // Persistir identidad guest: el usuario ya tiene al menos 1 pedido,
+    // queda "registrado" para ver ranking/preferencias sin volver a loguearse.
+    setGuestUser({
+      name: validated.customer,
+      phone: validated.phone,
+      email: validated.email,
+    });
 
     // Sync backup de clientes — diferido 5s para no bloquear UI post-pedido
     setTimeout(() => syncCustomerBackup(), 5000);

@@ -7,6 +7,7 @@
 // Props: opcional `user = { email, phone }` para mostrar ranking personal.
 
 import { useAuth } from "../contexts/AuthContext";
+import { useGuestUser } from "../lib/guestUser.js";
 import { useWeeklyTop, useMyRanking } from "./useTopCustomers";
 import { SectionHeader } from "./atoms";
 
@@ -14,11 +15,16 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 
 export default function TopCustomersCard() {
   const { user, profile } = useAuth();
+  const guest = useGuestUser();
   const { top, loading: topLoading } = useWeeklyTop();
-  const { ranking } = useMyRanking({
-    email: user?.email,
-    phone: profile?.phone,
-  });
+
+  // Identidad: priorizamos auth user (más fresh) y caemos a guest del primer pedido.
+  // El usuario NO necesita estar logueado en Supabase para participar en el ranking.
+  const myEmail = user?.email || guest?.email || "";
+  const myPhone = profile?.phone || guest?.phone || "";
+  const isIdentified = !!(myEmail || myPhone);
+
+  const { ranking } = useMyRanking({ email: myEmail, phone: myPhone });
 
   // Si no hay data y terminó de cargar, no renderizamos (fallback vacío)
   if (!topLoading && top.length === 0) return null;
@@ -61,11 +67,11 @@ export default function TopCustomersCard() {
           </div>
         )}
 
-        {/* Footer: tu posición (solo si logueado y tiene actividad) */}
-        {user && ranking && <MyRankingFooter ranking={ranking} />}
+        {/* Footer: tu posición (si tiene ranking esta semana) */}
+        {isIdentified && ranking && <MyRankingFooter ranking={ranking} />}
 
-        {/* Footer: CTA para no logueados */}
-        {!user && !topLoading && top.length > 0 && (
+        {/* Footer: identificado pero sin actividad esta semana */}
+        {isIdentified && !ranking && !topLoading && (
           <div
             style={{
               marginTop: 14,
@@ -74,9 +80,27 @@ export default function TopCustomersCard() {
               fontSize: 12,
               color: "var(--t3, #9C8B7A)",
               textAlign: "center",
+              lineHeight: 1.4,
             }}
           >
-            ¿Querés aparecer acá? Pedí con tu cuenta para sumar puntos
+            Aún no sumaste puntos esta semana. Tu próximo pedido te pone en el ranking.
+          </div>
+        )}
+
+        {/* Footer: CTA para visitantes nuevos (sin identidad guest ni auth) */}
+        {!isIdentified && !topLoading && top.length > 0 && (
+          <div
+            style={{
+              marginTop: 14,
+              paddingTop: 12,
+              borderTop: "1px solid var(--line, rgba(0,0,0,0.08))",
+              fontSize: 12,
+              color: "var(--t3, #9C8B7A)",
+              textAlign: "center",
+              lineHeight: 1.4,
+            }}
+          >
+            ¿Querés aparecer acá? Hacé tu primer pedido y empezás a sumar puntos.
           </div>
         )}
       </div>
