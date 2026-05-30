@@ -90,6 +90,11 @@ export const RecipeInputSchema = z.object({
   related_ids: z.array(uuid).optional().default([]),
   is_combo: z.boolean().optional().default(false),
   is_archived: z.boolean().optional().default(false),
+  // Rendimiento por tanda (migration recipes_add_batch_yield).
+  // NULL = receta normal por unidad. Si tiene valor, indica que los
+  // ingredientes se ingresaron pensando en la tanda y se dividieron por
+  // este número antes de persistir.
+  batch_yield: z.number().int().positive().nullable().optional(),
   // Tamaños/presentaciones de venta (migration recipes_add_sizes).
   // NULL = vende solo por unidad (sale_price). Si tiene items: el cliente
   // elige uno en el detail del catalogo y el precio sale del tamaño.

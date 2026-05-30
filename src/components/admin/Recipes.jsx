@@ -513,6 +513,7 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
     name: "", category: "", sale_price: 0, visible: true,
     image_url: "", description: "", ingredients: [], related_ids: [], is_combo: false,
     sizes: null,
+    batch_yield: null,
   });
   const [ad, setAd] = useState(false);
   const [si, setSi] = useState("");
@@ -661,56 +662,62 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-ink-2)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Ingredientes ({(f.ingredients || []).length})
-          </div>
-          <button type="button" onClick={() => setAd(true)} className="ag-btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }}>+ Ingrediente</button>
-        </div>
-
-        {ad && (
-          <div className="ag-card" style={{ padding: 12, marginBottom: 10, background: "var(--ag-bg-card)", border: "1.5px solid var(--ag-c-prep)" }}>
-            <label className="ag-field-lbl">Insumo</label>
-            <select className="ag-field-input" value={si} onChange={e => setSi(e.target.value)} style={{ marginBottom: 8 }}>
-              <option value="">Seleccionar insumo...</option>
-              {ingredients.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
-            </select>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input className="ag-field-input" type="number" placeholder="Cantidad" value={sq} onChange={e => setSq(e.target.value)} style={{ flex: 1 }} />
-              <button type="button" onClick={addI} className="ag-btn-primary" style={{ padding: "10px 16px", fontSize: 13 }} disabled={!si || !sq}>✓</button>
-              <button type="button" onClick={() => { setAd(false); setSi(""); setSq(""); }} className="ag-btn-ghost" style={{ padding: "10px 14px", fontSize: 13 }}>×</button>
-            </div>
-          </div>
+{!f.batch_yield && (
+          <>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-ink-2)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        Ingredientes ({(f.ingredients || []).length})
+                      </div>
+                      <button type="button" onClick={() => setAd(true)} className="ag-btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }}>+ Ingrediente</button>
+                    </div>
+            
+                    {ad && (
+                      <div className="ag-card" style={{ padding: 12, marginBottom: 10, background: "var(--ag-bg-card)", border: "1.5px solid var(--ag-c-prep)" }}>
+                        <label className="ag-field-lbl">Insumo</label>
+                        <select className="ag-field-input" value={si} onChange={e => setSi(e.target.value)} style={{ marginBottom: 8 }}>
+                          <option value="">Seleccionar insumo...</option>
+                          {ingredients.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
+                        </select>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input className="ag-field-input" type="number" placeholder="Cantidad" value={sq} onChange={e => setSq(e.target.value)} style={{ flex: 1 }} />
+                          <button type="button" onClick={addI} className="ag-btn-primary" style={{ padding: "10px 16px", fontSize: 13 }} disabled={!si || !sq}>✓</button>
+                          <button type="button" onClick={() => { setAd(false); setSi(""); setSq(""); }} className="ag-btn-ghost" style={{ padding: "10px 14px", fontSize: 13 }}>×</button>
+                        </div>
+                      </div>
+                    )}
+            
+                    <div className="ag-card" style={{ padding: 0, overflow: "hidden", marginBottom: 14 }}>
+                      {(f.ingredients || []).length === 0 ? (
+                        <div style={{ padding: 16, textAlign: "center", color: "var(--ag-ink-3)", fontSize: 12 }}>Sin ingredientes</div>
+                      ) : (
+                        (f.ingredients || []).map((ri, i) => {
+                          const ig = ingredients.find(x => x.id === ri.ingredient_id);
+                          return (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderTop: i === 0 ? "none" : "1px solid var(--ag-line)" }}>
+                              <div style={{ flex: 1, fontSize: 13, color: "var(--ag-ink)", fontWeight: 600 }}>{ig?.name || "?"}</div>
+                              <div style={{ fontSize: 12, color: "var(--ag-ink-2)" }}>{ri.quantity} {ig?.unit || ""}</div>
+                              <button type="button" onClick={() => s("ingredients", f.ingredients.filter((_, j) => j !== i))} aria-label="Quitar"
+                                style={{ width: 28, height: 28, borderRadius: 8, background: "var(--ag-c-orders-soft)", color: "var(--ag-c-orders)", border: 0, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+          </>
         )}
 
-        <div className="ag-card" style={{ padding: 0, overflow: "hidden", marginBottom: 14 }}>
-          {(f.ingredients || []).length === 0 ? (
-            <div style={{ padding: 16, textAlign: "center", color: "var(--ag-ink-3)", fontSize: 12 }}>Sin ingredientes</div>
-          ) : (
-            (f.ingredients || []).map((ri, i) => {
-              const ig = ingredients.find(x => x.id === ri.ingredient_id);
-              return (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderTop: i === 0 ? "none" : "1px solid var(--ag-line)" }}>
-                  <div style={{ flex: 1, fontSize: 13, color: "var(--ag-ink)", fontWeight: 600 }}>{ig?.name || "?"}</div>
-                  <div style={{ fontSize: 12, color: "var(--ag-ink-2)" }}>{ri.quantity} {ig?.unit || ""}</div>
-                  <button type="button" onClick={() => s("ingredients", f.ingredients.filter((_, j) => j !== i))} aria-label="Quitar"
-                    style={{ width: 28, height: 28, borderRadius: 8, background: "var(--ag-c-orders-soft)", color: "var(--ag-c-orders)", border: 0, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Calculadora de tanda (UI-only): el admin piensa "para 24 galletas necesito X",
-            internamente se guarda por unidad. No persiste el yield. */}
+        {/* Calculadora de tanda: persiste recipes.batch_yield. Cuando está activa,
+            OCULTA el bloque natural de ingredientes — toda la edición pasa por acá. */}
         <BatchCalculator
           ingredients={ingredients}
           recipeIngredients={f.ingredients || []}
           onChange={(items) => s("ingredients", items)}
+          batchYield={f.batch_yield}
+          setBatchYield={(n) => s("batch_yield", n)}
         />
 
         {/* Tamaños/presentaciones de venta — persiste en recipes.sizes (jsonb) */}
