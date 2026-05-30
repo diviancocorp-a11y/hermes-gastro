@@ -409,7 +409,7 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                   {[
                     { id: 'ambar',  label: 'Ambar',  bg: '#FFFFFF', tx: '#262626', t2: '#6E6755', ac: '#F59E0B', line: 'rgba(0,0,0,0.08)' },
                     { id: 'noche',  label: 'Noche',  bg: '#161412', tx: '#F4EAD0', t2: '#B5A98E', ac: '#E8B947', line: '#2E2A24' },
-                    { id: 'carbon', label: 'Carbon', bg: '#1A1A1A', tx: '#ECECEC', t2: '#A0A0A0', ac: '#F59E0B', line: '#2A2A2A' },
+                    { id: 'carbon', label: 'Carbon', bg: '#FAF5EE', tx: '#1A1612', t2: '#6B5D4F', ac: '#2D1B0E', line: '#E8DFD0' },
                   ].map(t => {
                     const active = (s.catalog_theme || 'ambar') === t.id;
                     const handleChange = async () => {

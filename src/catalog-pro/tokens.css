@@ -52,7 +52,7 @@
 /* ─── BG del DOCUMENTO según tema (afecta body completo, no solo .cp-root) ─── */
 body[data-cp-theme="ambar"]  { background: #FFFFFF !important; color: #262626; }
 body[data-cp-theme="noche"]  { background: #161412 !important; color: #F4EAD0; }
-body[data-cp-theme="carbon"] { background: #1A1A1A !important; color: #ECECEC; }
+body[data-cp-theme="carbon"] { background: #FAF5EE !important; color: #1A1612; }
 
 /* ─── TEMA AMBAR (alias del default — colores naturales de Hermes) ─── */
 body[data-cp-theme="ambar"] .cp-root {
@@ -86,20 +86,20 @@ body[data-cp-theme="noche"] .cp-root {
   --ac-soft-fg: #E8B947;
 }
 
-/* ─── TEMA CARBON (oscuro neutro, gris grafito con acento ámbar Hermes) ─── */
+/* ─── TEMA CARBON (light boutique: cremoso cálido + acento chocolate/grafito) ─── */
 body[data-cp-theme="carbon"] .cp-root {
-  --bg:  #1A1A1A;
-  --b2:  #232323;
-  --b3:  #2D2D2D;
-  --tx:  #ECECEC;
-  --t2:  #A0A0A0;
-  --t3:  #6F6F6F;
-  --line:#2A2A2A;
-  --ac:  #F59E0B;
-  --ac2: #D97706;
-  --al:  rgba(245,158,11,0.14);
-  --ac-soft:    #2A2520;
-  --ac-soft-fg: #F59E0B;
+  --bg:  #FAF5EE;
+  --b2:  #F1EBE0;
+  --b3:  #FFFFFF;
+  --tx:  #1A1612;
+  --t2:  #6B5D4F;
+  --t3:  #A39685;
+  --line:#E8DFD0;
+  --ac:  #2D1B0E;
+  --ac2: #3D2914;
+  --al:  rgba(45,27,14,0.08);
+  --ac-soft:    #F0E5D6;
+  --ac-soft-fg: #2D1B0E;
 }
 
 .cp-surface {
