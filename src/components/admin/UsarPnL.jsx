@@ -20,6 +20,7 @@
 import { useMemo } from "react";
 import { formatInt } from "../../lib/utils";
 import { FOOD_CATEGORIES, DEFAULT_USAR_TARGETS } from "../../constants/usar";
+import DeltaBadge from "../DeltaBadge";
 
 const CHANNEL_LABELS = {
   rappi: "Rappi", pedidosya: "PedidosYa", ubereats: "Uber Eats",
@@ -75,13 +76,14 @@ function Row({ label, value, kind = "line", indent = 0, percent, semaState = "ne
         {label}
       </span>
       {percent != null && (
-        <span style={{
-          fontSize: 10.5, fontWeight: 700,
-          padding: "1px 7px", borderRadius: 999,
-          background: c.bg, color: c.fg,
-          marginRight: 10, fontVariantNumeric: "tabular-nums",
-        }}>
-          {formatPct(percent)}
+        <span style={{ marginRight: 10 }}>
+          <DeltaBadge
+            value={formatPct(percent)}
+            deltaType={semaState === "good" ? "increase" : semaState === "bad" ? "decrease" : "neutral"}
+            variant={semaState === "neutral" ? "outline" : "solid"}
+            iconStyle="filled"
+            size="sm"
+          />
         </span>
       )}
       <span style={{
