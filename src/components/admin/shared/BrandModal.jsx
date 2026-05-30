@@ -86,6 +86,17 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s]);
 
+  // Sincroniza catalog_theme cuando settings cambia desde afuera (post-save).
+  // Sin esto, después del save inicial el chip quedaba "pegado".
+  useEffect(() => {
+    if (!open) return;
+    if (saveTimer.current) return; // hay save pendiente, no pisar
+    if (settings?.catalog_theme && settings.catalog_theme !== s.catalog_theme) {
+      setS(p => ({ ...p, catalog_theme: settings.catalog_theme }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings?.catalog_theme]);
+
   const set = (k, v) => setS(p => ({ ...p, [k]: v }));
   const setCatImg = (name, url) => setS(p => ({ ...p, cat_images: { ...(p.cat_images || {}), [name]: url } }));
   const toggleCatHidden = (name) => setS(p => {
@@ -394,39 +405,65 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                 <div style={{ fontSize: 12, color: 'var(--ag-ink-3)', marginBottom: 10 }}>
                   Define el look general del catálogo público para tus clientes.
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                   {[
-                    { id: 'ambar',  label: 'Ambar',  bg: '#FFFFFF', tx: '#262626', ac: '#F59E0B' },
-                    { id: 'noche',  label: 'Noche',  bg: '#161412', tx: '#F4EAD0', ac: '#E8B947' },
-                    { id: 'carbon', label: 'Carbon', bg: '#1A1A1A', tx: '#ECECEC', ac: '#F59E0B' },
+                    { id: 'ambar',  label: 'Ambar',  bg: '#FFFFFF', tx: '#262626', t2: '#6E6755', ac: '#F59E0B', line: 'rgba(0,0,0,0.08)' },
+                    { id: 'noche',  label: 'Noche',  bg: '#161412', tx: '#F4EAD0', t2: '#B5A98E', ac: '#E8B947', line: '#2E2A24' },
+                    { id: 'carbon', label: 'Carbon', bg: '#1A1A1A', tx: '#ECECEC', t2: '#A0A0A0', ac: '#F59E0B', line: '#2A2A2A' },
                   ].map(t => {
                     const active = (s.catalog_theme || 'ambar') === t.id;
-                    const handleChange = () => {
+                    const handleChange = async () => {
                       if (active) return;
-                      // El autosave debounced de BrandModal envía el cambio a DB.
-                      // Mostramos toast de confirmación.
-                      set('catalog_theme', t.id);
-                      showToast(`Tema cambiado a ${t.label} ✓`);
+                      // Cambio importante → requiere confirmación deslizable.
+                      const ok = await confirmSlide({
+                        title: `Cambiar tema a "${t.label}"`,
+                        body: 'Esto cambia los colores del catálogo público que ven tus clientes.',
+                        label: `Deslizá para aplicar "${t.label}"`,
+                      });
+                      if (!ok) return;
+                      // Save explícito (no esperamos debounce).
+                      setS(p => ({ ...p, catalog_theme: t.id }));
+                      const saved = await updateSettings({ ...s, catalog_theme: t.id });
+                      if (saved) {
+                        setSettings(saved);
+                        try { showToast(`Tema aplicado: ${t.label} ✓`); } catch { /* opcional */ }
+                      } else {
+                        try { showToast('Error al guardar tema'); } catch { /* opcional */ }
+                      }
                     };
                     return (
                       <button
                         type="button"
                         key={t.id}
                         onClick={handleChange}
+                        title={active ? 'Tema actual' : `Aplicar tema ${t.label}`}
                         style={{
-                          padding: '16px 8px',
-                          background: t.bg,
-                          color: t.tx,
+                          padding: 0,
+                          background: 'transparent',
                           border: active ? `2px solid ${t.ac}` : '1px solid var(--ag-ink-4, rgba(0,0,0,0.12))',
                           borderRadius: 12,
-                          cursor: 'pointer',
+                          cursor: active ? 'default' : 'pointer',
                           fontFamily: 'inherit',
-                          fontSize: 14,
-                          fontWeight: 600,
+                          overflow: 'hidden',
                           transition: 'all 150ms ease',
+                          opacity: active ? 1 : 0.95,
                         }}
                       >
-                        {t.label}
+                        {/* Mini preview real del tema */}
+                        <div style={{ background: t.bg, color: t.tx, padding: '10px 8px 8px', textAlign: 'left' }}>
+                          <div style={{ fontFamily: 'Georgia, serif', fontSize: 13, lineHeight: 1, marginBottom: 4 }}>
+                            Hermes
+                          </div>
+                          <div style={{ fontSize: 9, color: t.t2, marginBottom: 6 }}>
+                            Cocina italiana
+                          </div>
+                          <div style={{ background: t.ac, color: t.bg, fontSize: 9, fontWeight: 700, padding: '3px 6px', borderRadius: 4, display: 'inline-block', marginBottom: 4 }}>
+                            $ 3.500
+                          </div>
+                          <div style={{ borderTop: `1px solid ${t.line}`, marginTop: 4, paddingTop: 4, fontSize: 9, color: t.t2 }}>
+                            {t.label} {active ? '·  actual' : ''}
+                          </div>
+                        </div>
                       </button>
                     );
                   })}
