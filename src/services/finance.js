@@ -5,6 +5,7 @@ import {
   validateInput,
 } from '../lib/schemas/index.js';
 import { updateIngredientStock } from './inventory.js';
+import { captureException } from '../lib/observability.js';
 
 const PAGE_SIZE = 50;
 
@@ -167,7 +168,8 @@ export async function fetchDashboardStats() {
         let recipeCost = 0;
         ris.forEach(ri => {
           const ing = ingMap[ri.ingredient_id];
-          if (ing) recipeCost += Number(ri.quantity) * Number(ing.cost);
+          // Guards: si quantity o cost vienen null/string vacío, no propagamos NaN
+          if (ing) recipeCost += (Number(ri.quantity) || 0) * (Number(ing.cost) || 0);
         });
         costOfGoods += recipeCost * qty;
       });
@@ -195,7 +197,7 @@ export async function fetchDashboardStats() {
         let unitCost = 0;
         ris.forEach(ri => {
           const ing = ingMap[ri.ingredient_id];
-          if (ing) unitCost += Number(ri.quantity) * Number(ing.cost);
+          if (ing) unitCost += (Number(ri.quantity) || 0) * (Number(ing.cost) || 0);
         });
         const prodMargin = d.revenue > 0 ? ((d.revenue - unitCost * d.qty) / d.revenue * 100) : 0;
         return { name, qty: d.qty, revenue: d.revenue, margin: Math.round(prodMargin) };
@@ -219,6 +221,7 @@ export async function fetchDashboardStats() {
     };
   } catch (err) {
     console.error('fetchDashboardStats:', err);
+    captureException(err, { tags: { source: 'fetchDashboardStats' } });
     return null;
   }
 }

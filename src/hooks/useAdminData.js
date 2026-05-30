@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { queryKeys } from "../lib/queryClient";
 import { getSession, logout } from "../services/auth";
+import { captureException } from "../lib/observability.js";
 import {
   useRecipes, useRecipeIngredients, useIngredients,
   useActiveOrders, useSales, useExpenses, useSettings, useWasteLog,
@@ -25,7 +26,15 @@ export default function useAdminData() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    getSession().then(s => { setSession(s); setChecking(false); });
+    getSession()
+      .then(s => { setSession(s); setChecking(false); })
+      .catch(err => {
+        // Si Supabase falla en boot, NO dejamos la app colgada en "checking".
+        // Reportamos a Sentry y dejamos al user en la pantalla de login.
+        captureException(err, { tags: { source: 'useAdminData.getSession' } });
+        setSession(null);
+        setChecking(false);
+      });
   }, []);
 
   // ─── Queries (only fetch when authenticated) ──────────────────────
@@ -58,8 +67,10 @@ export default function useAdminData() {
   useEffect(() => {
     if (!session) return;
     import('../services/orders').then(({ fetchOrderHistory }) => {
-      fetchOrderHistory().then(result => setHistoryOrders(result.data || []));
-    });
+      fetchOrderHistory()
+        .then(result => setHistoryOrders(result.data || []))
+        .catch(err => captureException(err, { tags: { source: 'useAdminData.fetchOrderHistory' } }));
+    }).catch(err => captureException(err, { tags: { source: 'useAdminData.importOrders' } }));
   }, [session]);
 
   const loaded = enabled && rawRecs.length >= 0; // always true once first query settles

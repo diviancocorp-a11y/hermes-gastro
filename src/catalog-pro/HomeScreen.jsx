@@ -23,6 +23,7 @@ import { mapProduct, buildStories, buildRecos } from "./homeHelpers";
 import HermesMark from "../components/HermesMark";
 import CatalogFooter from "./CatalogFooter";
 import BadgeTag from "../components/BadgeTag";
+import TopCustomersCard from "./TopCustomersCard";
 
 const SEARCH_PHRASES = ["empanadas…", "tortilla de papa…", "algo dulce…", "pasta de hoy…"];
 
@@ -261,6 +262,9 @@ export default function HomeScreen({
           </div>
         </div>
       )}
+
+      {/* ===== TOP CUSTOMERS ===== */}
+      <TopCustomersCard />
 
       {/* ===== COMBOS ===== */}
       {combos.length > 0 && (

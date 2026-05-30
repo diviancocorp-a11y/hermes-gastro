@@ -6,6 +6,7 @@
 // para acceder sin RLS al token (lo que mantiene el secret oculto del frontend).
 
 import { supabase } from "../lib/supabase";
+import { captureException } from "../lib/observability.js";
 
 /**
  * Devuelve la integración activa de un provider, o null si no hay.
@@ -56,6 +57,8 @@ export async function fetchMpStatusPublic() {
     return data || { active: false };
   } catch (e) {
     console.warn("fetchMpStatusPublic exception:", e);
+    // Reporte a Sentry: si MP API falla, queremos saber cuántas veces y por qué
+    captureException(e, { tags: { source: 'fetchMpStatusPublic' } });
     return { active: false };
   }
 }

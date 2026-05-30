@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
+import { captureException } from "../lib/observability.js";
 
 /**
  * useCart — manages cart state, quantities, totals, and session persistence.
@@ -24,7 +25,11 @@ export default function useCart(getPrice, products, coupon, deliveryCost, delive
         sessionStorage.removeItem("lnp_cart");
         return; // signal caller to reopen checkout
       }
-    } catch {}
+    } catch (err) {
+      // sessionStorage corrupto o JSON.parse falló — limpiamos y reportamos
+      try { sessionStorage.removeItem("lnp_cart"); } catch {}
+      captureException(err, { tags: { source: 'useCart.restore' } });
+    }
   }, []);
 
   // Quick O(1) quantity lookup map
