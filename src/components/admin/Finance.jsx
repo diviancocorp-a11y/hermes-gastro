@@ -1145,19 +1145,19 @@ function ExpForm({ onClose, onSave, settings, user }) {
           }}>
             <label className="ag-field-lbl" style={{ color: "var(--ag-c-prep)" }}>Cuota / plan de pago</label>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input
+              <DecimalInput
                 className="ag-field-input"
-                type="number" min="1" step="1"
+                min={1} step="1"
                 value={f.installment_current}
-                onChange={e => s("installment_current", Math.max(1, Number(e.target.value) || 1))}
+                onChange={(n) => s("installment_current", n || 1)}
                 style={{ width: 80, textAlign: "center" }}
               />
               <span style={{ fontSize: 13, color: "var(--ag-ink-2)", fontWeight: 700 }}>de</span>
-              <input
+              <DecimalInput
                 className="ag-field-input"
-                type="number" min="1" step="1"
+                min={1} step="1"
                 value={f.installment_total}
-                onChange={e => s("installment_total", Math.max(1, Number(e.target.value) || 1))}
+                onChange={(n) => s("installment_total", n || 1)}
                 style={{ width: 80, textAlign: "center" }}
               />
               <span style={{ fontSize: 11.5, color: "var(--ag-ink-3)", flex: 1 }}>

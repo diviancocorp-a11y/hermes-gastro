@@ -91,6 +91,23 @@ for (const file of files) {
     }
   }
 
+  // 4) Patrón roto `type="number"` + `Number(e.target.value)` en .jsx/.tsx
+  // Causa: value={x || ""} hace "0" falsy y desaparece; Number("0.") = 0
+  // pierde el punto. Solución: usar <DecimalInput /> de components/ui.
+  // Escape hatch: `// @allow-bad-number-input` en la primera línea.
+  if (ext === '.jsx' || ext === '.tsx') {
+    const src = buf.toString('utf-8');
+    if (!/^\s*\/\/\s*@allow-bad-number-input/m.test(src.slice(0, 200))) {
+      const hasNumType = /type=["']number["']/.test(src);
+      const hasNumberParse = /Number\(e\.target\.value\)/.test(src);
+      if (hasNumType && hasNumberParse) {
+        console.error(`✗ ${file}: combina type="number" con Number(e.target.value) — bug "0.x" perdido.\n    Usá <DecimalInput /> de src/components/ui/DecimalInput.jsx (o agregá // @allow-bad-number-input en la línea 1).`);
+        errors++;
+        continue;
+      }
+    }
+  }
+
   // 4) JSON válido
   if (ext === '.json') {
     try {

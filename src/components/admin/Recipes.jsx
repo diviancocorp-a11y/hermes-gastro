@@ -644,7 +644,7 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
                       <option value="">Seleccionar...</option>
                       {(recipes || []).filter(r => r.id !== f.id).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                     </select>
-                    <input className="ag-field-input" style={{ flex: 1 }} type="number" min="1" value={ci.qty} onChange={e => updCombo(i, "qty", Number(e.target.value))} placeholder="Cant" />
+                    <DecimalInput className="ag-field-input" style={{ flex: 1 }} min={1} step="1" value={ci.qty} onChange={(n) => updCombo(i, "qty", n)} placeholder="Cant" />
                     <button type="button" onClick={() => delCombo(i)} aria-label="Quitar"
                       style={{ width: 30, height: 30, borderRadius: 8, background: "var(--ag-c-orders-soft)", color: "var(--ag-c-orders)", border: 0, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

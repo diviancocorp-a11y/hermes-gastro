@@ -1,3 +1,4 @@
+// @allow-bad-number-input (este componente ES el fix; documenta el bug en JSDoc)
 // src/components/ui/DecimalInput.jsx
 // Input decimal robusto para móvil + desktop.
 //

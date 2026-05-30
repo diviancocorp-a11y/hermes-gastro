@@ -732,7 +732,7 @@ function PromoFidelidadModal({ selected, onClose, showToast, onSent }) {
             )}
 
             <label className="ag-field-lbl">Días de validez</label>
-            <input className="ag-field-input" type="number" min="1" max="365" value={newDays} onChange={e => setNewDays(Math.max(1, Number(e.target.value) || 30))} style={{ marginBottom: 10 }} />
+            <DecimalInput className="ag-field-input" min={1} max={365} step="1" value={newDays} onChange={(n) => setNewDays(n || 30)} style={{ marginBottom: 10 }} />
 
             {newKind === "percent" && Number(newPct) >= DANGEROUS_PCT && (
               <div style={{ padding: "8px 10px", marginBottom: 10, background: "var(--ag-c-orders-soft)", color: "var(--ag-c-orders)", border: "1px solid var(--ag-c-orders)", borderRadius: 8, fontSize: 11.5, fontWeight: 600 }}>
