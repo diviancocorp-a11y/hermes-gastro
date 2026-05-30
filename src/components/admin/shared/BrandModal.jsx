@@ -401,15 +401,12 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                     { id: 'carbon', label: 'Carbon', bg: '#1A1A1A', tx: '#ECECEC', ac: '#F59E0B' },
                   ].map(t => {
                     const active = (s.catalog_theme || 'ambar') === t.id;
-                    const handleChange = async () => {
+                    const handleChange = () => {
                       if (active) return;
-                      const ok = await confirmSlide({
-                        title: `Cambiar tema a ${t.label}`,
-                        body: 'Esto cambia los colores del catálogo público para todos tus clientes.',
-                        label: `Deslizá para aplicar ${t.label}`,
-                      });
-                      if (!ok) return;
+                      // El autosave debounced de BrandModal envía el cambio a DB.
+                      // Mostramos toast de confirmación.
                       set('catalog_theme', t.id);
+                      showToast(`Tema cambiado a ${t.label} ✓`);
                     };
                     return (
                       <button
