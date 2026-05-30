@@ -311,11 +311,16 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
           recipes={recipes}
           onClose={() => setOverlay(null)}
           onSave={async (r) => {
+            // Pasamos el objeto completo: Zod strip-mode (RecipeInputSchema)
+            // descarta los campos no declarados. Evitamos allowlist hardcoded
+            // que causo bugs historicos (food_category, catalog_theme).
             const saved = await upsertRecipe({
               id: r.id, name: r.name, category: r.category,
               sale_price: r.sale_price, visible: r.visible,
               image_url: r.image_url, description: r.description,
               related_ids: r.related_ids || [], is_combo: r.is_combo || false,
+              sizes: r.sizes ?? null,
+              batch_yield: r.batch_yield ?? null,
             });
             if (saved?.__error === "duplicate") {
               showToast("⚠ Ya existe una receta activa con ese nombre");
@@ -488,6 +493,39 @@ function RecDet({ r, ingredients, calculateRecipeCost, settings, onClose, onEdit
             </>
           )}
         </div>
+
+        {/* Tamaños / presentaciones de venta */}
+        {Array.isArray(r.sizes) && r.sizes.length > 0 && (
+          <>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-ink-2)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+              Tamaños de venta ({r.sizes.length})
+            </div>
+            <div className="ag-card" style={{ padding: 0, overflow: "hidden", marginBottom: 14 }}>
+              {r.sizes.map((sz, i) => {
+                const price = Number(sz.price) || 0;
+                const qty = Number(sz.qty) || 1;
+                const fullPrice = qty * (Number(r.sale_price) || 0);
+                const saving = fullPrice > 0 && price > 0 ? fullPrice - price : 0;
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderTop: i === 0 ? "none" : "1px solid var(--ag-line)" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, color: "var(--ag-ink)", fontWeight: 700 }}>
+                        {sz.label} <span style={{ color: "var(--ag-ink-3)", fontWeight: 400, fontSize: 12 }}>· {qty} u</span>
+                      </div>
+                      {sz.hint && <div style={{ fontSize: 11, color: "var(--ag-ink-3)", marginTop: 2 }}>{sz.hint}</div>}
+                    </div>
+                    {saving > 0 && (
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-c-sales)" }}>−${formatInt(Math.round(saving))}</div>
+                    )}
+                    <div style={{ fontSize: 13, color: "var(--ag-ink)", fontWeight: 700, minWidth: 70, textAlign: "right" }}>
+                      ${formatInt(price)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {r.is_archived ? (
           <button type="button" onClick={() => onUnarchive(r.id)} className="ag-btn-primary" style={{ width: "100%", padding: "12px", fontSize: 13 }}>↩ Restaurar receta</button>
