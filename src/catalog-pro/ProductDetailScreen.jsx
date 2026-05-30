@@ -11,6 +11,8 @@
 //   onBack(), onAddToCart(product, qty), onSelectRelated(p), onToggleFav(id), isFav
 
 import { useState, useRef, useEffect } from "react";
+import BadgeTag from "../components/BadgeTag";
+import { DEAL_PCT } from "../constants/catalogConstants";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
 import { ProductPhoto, Rating, Stepper, AddRound, SectionHeader } from "./atoms";
@@ -89,6 +91,13 @@ export default function ProductDetailScreen({
             fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
             padding: "4px 9px", borderRadius: 4,
           }}>{p.badge}</span>
+        )}
+        {p.oldPrice && (
+          <div style={{ marginBottom: 10 }}>
+            <BadgeTag label={`-${DEAL_PCT}%`} tone="promo" icon="🔥">
+              Oferta del día · ahorrá ${(p.oldPrice - p.price).toLocaleString("es-AR")}
+            </BadgeTag>
+          </div>
         )}
         <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 34, lineHeight: 1.25, letterSpacing: "-0.01em", margin: "0 0 10px", paddingBottom: "0.06em", color: "var(--tx)" }}>
           {p.name}

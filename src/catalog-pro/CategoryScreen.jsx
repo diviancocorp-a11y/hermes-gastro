@@ -6,6 +6,8 @@
 //   onBack(), onSelectProduct(p), onAddToCart(p), onOpenSearch()
 
 import { useState, useMemo } from "react";
+import BadgeTag from "../components/BadgeTag";
+import { DEAL_PCT } from "../constants/catalogConstants";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
 import { ProductPhoto, Rating, AddRound, PriceTag } from "./atoms";
@@ -131,6 +133,11 @@ export default function CategoryScreen({
             <div key={p.id} onClick={() => onSelectProduct?.(p._raw)} style={{ position: "relative", cursor: "pointer" }}>
               <div style={{ position: "relative" }}>
                 <ProductPhoto src={p.img} height={140} radius={12} tone={p.tone} />
+                {p.oldPrice && (
+                  <div style={{ position: "absolute", top: 8, right: 8 }}>
+                    <BadgeTag compact label={`-${DEAL_PCT}%`} tone="promo">Oferta</BadgeTag>
+                  </div>
+                )}
                 <div style={{ position: "absolute", bottom: -10, right: 8 }}>
                   <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
                 </div>
