@@ -25,6 +25,7 @@ import {
 } from "../../../lib/adminService";
 import CategoryEditor from "../CategoryEditor";
 import ToggleSwitch from "./forms/ToggleSwitch";
+import DecimalInput from "../../ui/DecimalInput";
 
 const CAT_NAMES = ["Todos", "Primeros Mimos", "La Mesa Principal", "El Sanguche de la Nona", "La Nona Amasó", "La Última Mordida", "Cocina Consciente"];
 const COLORS = [
@@ -420,10 +421,10 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                     </div>
                     <div className="ag-cat-row-input">
                       <span className="ag-cat-row-prefix">$</span>
-                      <input
-                        type="number" min="0" step="100"
+                      <DecimalInput
+                        step="100"
                         value={s.min_order_amount ?? 0}
-                        onChange={e => set("min_order_amount", Math.max(0, Number(e.target.value) || 0))}
+                        onChange={(n) => set("min_order_amount", n)}
                         placeholder="0"
                       />
                     </div>
@@ -435,10 +436,10 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                       <div className="ag-cat-row-hint">Minutos desde que se acepta el pedido</div>
                     </div>
                     <div className="ag-cat-row-input">
-                      <input
-                        type="number" min="0" max="240"
+                      <DecimalInput
+                        min={0} max={240} step="1"
                         value={s.prep_time_min ?? 0}
-                        onChange={e => set("prep_time_min", Math.max(0, Math.min(240, Number(e.target.value) || 0)))}
+                        onChange={(n) => set("prep_time_min", n)}
                         placeholder="25"
                       />
                       <span className="ag-cat-row-suffix">min</span>
@@ -451,10 +452,10 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                       <div className="ag-cat-row-hint">Minutos adicionales si lleva delivery</div>
                     </div>
                     <div className="ag-cat-row-input">
-                      <input
-                        type="number" min="0" max="180"
+                      <DecimalInput
+                        min={0} max={180} step="1"
                         value={s.delivery_time_min ?? 0}
-                        onChange={e => set("delivery_time_min", Math.max(0, Math.min(180, Number(e.target.value) || 0)))}
+                        onChange={(n) => set("delivery_time_min", n)}
                         placeholder="45"
                       />
                       <span className="ag-cat-row-suffix">min</span>

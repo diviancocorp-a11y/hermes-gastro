@@ -3,6 +3,7 @@ import { Icon, formatInt, todayISO, generateId, OrderStatus, OrderStatusLabels, 
 import { verifyReceipt, getReceiptUrl } from "../../lib/adminService";
 import { paymentLabel, paymentIcon, enabledPaymentMethods } from "../../lib/payments";
 import OrderCard from "./shared/orders/OrderCard";
+import DecimalInput from "../ui/DecimalInput";
 import { fetchDeliveryChannels, calcCommission } from "../../services/deliveryChannels";
 
 // Mapeo status DB → status visual de OrderCard
@@ -598,11 +599,11 @@ function OrdForm({ recipes, settings, onClose, onSave }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, alignItems: 'center' }}>
                 <div>
                   <label className="ag-field-lbl">Cantidad</label>
-                  <input
+                  <DecimalInput
                     className="ag-field-input"
-                    type="number" min="1"
+                    min={1} step="1"
                     value={it.qty}
-                    onChange={e => upd(i, "qty", Number(e.target.value))}
+                    onChange={(n) => upd(i, "qty", n)}
                   />
                 </div>
                 {r && (

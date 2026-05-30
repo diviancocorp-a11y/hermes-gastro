@@ -10,6 +10,7 @@ import { formatInt, todayISO } from "../../lib/utils";
 import { fetchCustomerStats } from "../../lib/adminService";
 import { paymentLabel, paymentIcon } from "../../lib/payments";
 import { fetchCoupons, createCustomerCoupon, describeCoupon } from "../../services/coupons";
+import DecimalInput from "../ui/DecimalInput";
 
 const CRM_PER_PAGE = 30;
 const DANGEROUS_PCT = 50;
@@ -718,7 +719,7 @@ function PromoFidelidadModal({ selected, onClose, showToast, onSent }) {
             {newKind === "percent" && (
               <>
                 <label className="ag-field-lbl">Descuento %</label>
-                <input className="ag-field-input" type="number" min="1" max="100" value={newPct} onChange={e => setNewPct(Math.max(1, Math.min(100, Number(e.target.value) || 1)))} style={{ marginBottom: 10 }} />
+                <DecimalInput className="ag-field-input" min={1} max={100} step="1" value={newPct} onChange={(n) => setNewPct(n || 1)} style={{ marginBottom: 10 }} />
               </>
             )}
             {(newKind === "twoxone" || newKind === "other") && (
