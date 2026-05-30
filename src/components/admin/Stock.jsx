@@ -21,6 +21,7 @@ import { useState, useMemo } from "react";
 import { formatInt, formatMoney } from "../../lib/utils";
 import { upsertIngredient, archiveIngredient, registerWaste } from "../../lib/adminService";
 import { useConfirm } from "../ConfirmSlideProvider";
+import DecimalInput from "../ui/DecimalInput";
 
 const DEFAULT_SETTINGS = { ing_cats: ["Secos", "Frescos", "Packaging", "Otros"] };
 
@@ -401,11 +402,11 @@ function IngForm({ data, onClose, onSave, onDel, settings }) {
         </div>
 
         <label className="ag-field-lbl">Costo por {f.unit} *</label>
-        <input
+        <DecimalInput
           className="ag-field-input"
-          type="number" min="0.01" step="0.01"
-          value={f.cost || ""}
-          onChange={e => s("cost", Math.max(0, Number(e.target.value)))}
+          step="0.01"
+          value={f.cost}
+          onChange={(n) => s("cost", n)}
           placeholder="0"
           style={{ marginBottom: 12 }}
         />
@@ -413,21 +414,21 @@ function IngForm({ data, onClose, onSave, onDel, settings }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           <div>
             <label className="ag-field-lbl">Stock actual</label>
-            <input
+            <DecimalInput
               className="ag-field-input"
-              type="number" min="0" step="0.001"
-              value={f.stock || ""}
-              onChange={e => s("stock", Math.max(0, Number(e.target.value)))}
+              step="0.001"
+              value={f.stock}
+              onChange={(n) => s("stock", n)}
               placeholder="0"
             />
           </div>
           <div>
             <label className="ag-field-lbl">Stock mínimo</label>
-            <input
+            <DecimalInput
               className="ag-field-input"
-              type="number" min="0" step="0.001"
-              value={f.min_stock || ""}
-              onChange={e => s("min_stock", Math.max(0, Number(e.target.value)))}
+              step="0.001"
+              value={f.min_stock}
+              onChange={(n) => s("min_stock", n)}
               placeholder="0"
             />
           </div>
