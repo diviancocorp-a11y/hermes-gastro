@@ -23,7 +23,6 @@ import { mapProduct, buildStories, buildRecos } from "./homeHelpers";
 import HermesMark from "../components/HermesMark";
 import CatalogFooter from "./CatalogFooter";
 import BadgeTag from "../components/BadgeTag";
-import { DEAL_PCT } from "../constants/catalogConstants";
 
 const SEARCH_PHRASES = ["empanadas…", "tortilla de papa…", "algo dulce…", "pasta de hoy…"];
 
@@ -313,9 +312,9 @@ export default function HomeScreen({
                   {p.badge}
                 </div>
               )}
-              {p.oldPrice && (
+              {p.deal && (
                 <div style={{ position: "absolute", top: 8, right: 8 }}>
-                  <BadgeTag compact label={`-${DEAL_PCT}%`} tone="promo">Oferta</BadgeTag>
+                  <BadgeTag compact label={p.dealLabel} tone={p.dealTone}>{p.dealShort}</BadgeTag>
                 </div>
               )}
               <div style={{ position: "absolute", bottom: -10, right: 8 }}>

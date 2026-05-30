@@ -12,7 +12,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import BadgeTag from "../components/BadgeTag";
-import { DEAL_PCT } from "../constants/catalogConstants";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
 import { ProductPhoto, Rating, Stepper, AddRound, SectionHeader } from "./atoms";
@@ -92,10 +91,10 @@ export default function ProductDetailScreen({
             padding: "4px 9px", borderRadius: 4,
           }}>{p.badge}</span>
         )}
-        {p.oldPrice && (
+        {p.deal && (
           <div style={{ marginBottom: 10 }}>
-            <BadgeTag label={`-${DEAL_PCT}%`} tone="promo" icon="🔥">
-              Oferta del día · ahorrá ${(p.oldPrice - p.price).toLocaleString("es-AR")}
+            <BadgeTag label={p.dealLabel} tone={p.dealTone} icon={p.dealIcon}>
+              {p.dealLong}
             </BadgeTag>
           </div>
         )}

@@ -2,6 +2,8 @@
 // Los campos que no existen en la DB (rating, prepMin, tone, badge) se generan
 // con heurísticas ESTABLES por id (mismo producto → mismo valor siempre).
 
+import { DEAL_PCT } from "../constants/catalogConstants";
+
 function hashStr(s) {
   let h = 0;
   for (let i = 0; i < (s || "").length; i++) {
@@ -43,6 +45,11 @@ export function mapProduct(p, opts = {}) {
   const deal = hasDeal ? hasDeal(p) : false;
   const price = deal && dealPrice ? dealPrice(p) : p.sale_price;
   const oldPrice = deal ? p.sale_price : null;
+
+  // Deal metadata centralizada: cuando existan tipos de oferta por producto
+  // (2x1, combo, exclusivo, etc) se lee de p.deal_* y se ramifica acá — las
+  // pantallas no cambian.
+  const savings = oldPrice ? oldPrice - price : 0;
   return {
     id: p.id,
     name: p.name,
@@ -56,6 +63,14 @@ export function mapProduct(p, opts = {}) {
     reviews: reviewsFor(p.id),
     prepMin: prepFor(p.id, prepDefault),
     badge: deal ? "Oferta" : null,
+    // Deal chip (centralizado)
+    deal,
+    dealLabel:   deal ? `-${DEAL_PCT}%` : null,
+    dealTone:    deal ? "promo" : null,
+    dealIcon:    deal ? "🔥" : null,
+    dealShort:   deal ? "Oferta" : null,
+    dealLong:    deal ? `Oferta del día · ahorrá $${savings.toLocaleString("es-AR")}` : null,
+    dealSavings: deal ? savings : 0,
     _raw: p,
   };
 }
