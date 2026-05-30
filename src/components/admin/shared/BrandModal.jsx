@@ -386,6 +386,49 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
           {/* ── CATÁLOGO ── */}
           {section === 'catalog' && (
             <div>
+              {/* Tema del catálogo (reemplaza el color de fondo del banner) */}
+              <div className="ag-catalog-group">
+                <div className="ag-catalog-group-title">Tema del catálogo</div>
+                <div style={{ fontSize: 12, color: 'var(--ag-ink-3)', marginBottom: 10 }}>
+                  Define el look general del catálogo público para tus clientes.
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {[
+                    { id: 'ambar',  label: 'Ambar',  swatch: { bg: '#FFFFFF', ac: '#F59E0B', tx: '#262626' } },
+                    { id: 'noche',  label: 'Noche',  swatch: { bg: '#161412', ac: '#E8B947', tx: '#F4EAD0' } },
+                    { id: 'carbon', label: 'Carbon', swatch: { bg: '#1A1A1A', ac: '#F59E0B', tx: '#ECECEC' } },
+                  ].map(t => {
+                    const active = (s.catalog_theme || 'ambar') === t.id;
+                    return (
+                      <button
+                        type="button"
+                        key={t.id}
+                        onClick={() => set('catalog_theme', t.id)}
+                        style={{
+                          padding: '12px 8px',
+                          background: t.swatch.bg,
+                          color: t.swatch.tx,
+                          border: active ? `2px solid ${t.swatch.ac}` : '1px solid var(--ag-ink-4, rgba(0,0,0,0.12))',
+                          borderRadius: 12,
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 6,
+                          transition: 'all 150ms ease',
+                        }}
+                      >
+                        <span style={{ width: 24, height: 24, borderRadius: 999, background: t.swatch.ac, display: 'block' }} />
+                        {t.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Banner de bienvenida */}
               <div className="ag-catalog-group">
                 <div className="ag-catalog-group-title">Banner de bienvenida</div>
@@ -397,16 +440,6 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                   placeholder="Ej: ¡Promo del jueves: 2x1 en empanadas!"
                   maxLength={120}
                 />
-                <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <label className="ag-field-lbl" style={{ margin: 0 }}>Color de fondo</label>
-                  <input
-                    type="color"
-                    value={s.banner_color || '#1A1210'}
-                    onChange={e => set("banner_color", e.target.value)}
-                    style={{ width: 40, height: 32, border: 'none', borderRadius: 8, cursor: 'pointer', background: 'transparent' }}
-                  />
-                  <span style={{ fontSize: 11, color: 'var(--ag-ink-3)' }}>{s.banner_color || '#1A1210'}</span>
-                </div>
               </div>
 
               {/* Operación */}

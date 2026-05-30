@@ -238,6 +238,18 @@ export default function Catalog() {
   // FASE 3: the 60s countdown + receipt-verification poll were removed.
   // Mercado Pago pasarela will replace this flow.
 
+  // Aplicar tema del catálogo al body. Se lee del setting `catalog_theme`
+  // (ambar | noche | carbon). Default = ambar si no está definido.
+  useEffect(() => {
+    const theme = sett?.catalog_theme || 'ambar';
+    const prev = document.body.getAttribute('data-cp-theme');
+    document.body.setAttribute('data-cp-theme', theme);
+    return () => {
+      if (prev) document.body.setAttribute('data-cp-theme', prev);
+      else document.body.removeAttribute('data-cp-theme');
+    };
+  }, [sett?.catalog_theme]);
+
   // Detectar si hay integración MP activa → redirigir al Checkout Pro en vez de
   // pedir comprobante manual. Si falla, mantenemos flujo manual.
   useEffect(() => {

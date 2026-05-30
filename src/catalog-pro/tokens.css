@@ -8,7 +8,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
 .cp-root {
-  /* Colores — tema terracota / amber (default) */
+  /* Colores — tema ambar (default, colores naturales de Hermes) */
   --bg:  #FFFFFF;
   --b2:  #F9FAFB;
   --b3:  #F3F4F6;
@@ -49,12 +49,52 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Tema noche (dark) — opcional, se activa con data-theme="noche" en .cp-root */
-.cp-root[data-theme="noche"] {
-  --bg:  #161412; --b2: #211E1A; --b3: #2D2924;
-  --tx:  #F4EAD0; --t2: #B5A98E; --t3: #6E6755;
-  --line:#2E2A24; --ac: #E8B947; --ac2: #D1A132;
+/* ─── TEMA AMBAR (alias del default — colores naturales de Hermes) ─── */
+body[data-cp-theme="ambar"] .cp-root {
+  --bg:  #FFFFFF;
+  --b2:  #F9FAFB;
+  --b3:  #F3F4F6;
+  --tx:  #262626;
+  --t2:  #6B7280;
+  --t3:  #9CA3AF;
+  --line:#E5E7EB;
+  --ac:  #F59E0B;
+  --ac2: #D97706;
+  --al:  rgba(245,158,11,0.10);
+  --ac-soft:    #FFFBEB;
+  --ac-soft-fg: #92400E;
+}
+
+/* ─── TEMA NOCHE (oscuro, base marrón-cálido con acento dorado) ─── */
+body[data-cp-theme="noche"] .cp-root {
+  --bg:  #161412;
+  --b2:  #211E1A;
+  --b3:  #2D2924;
+  --tx:  #F4EAD0;
+  --t2:  #B5A98E;
+  --t3:  #6E6755;
+  --line:#2E2A24;
+  --ac:  #E8B947;
+  --ac2: #D1A132;
   --al:  rgba(232,185,71,0.12);
+  --ac-soft:    #2D2924;
+  --ac-soft-fg: #E8B947;
+}
+
+/* ─── TEMA CARBON (oscuro neutro, gris grafito con acento ámbar Hermes) ─── */
+body[data-cp-theme="carbon"] .cp-root {
+  --bg:  #1A1A1A;
+  --b2:  #232323;
+  --b3:  #2D2D2D;
+  --tx:  #ECECEC;
+  --t2:  #A0A0A0;
+  --t3:  #6F6F6F;
+  --line:#2A2A2A;
+  --ac:  #F59E0B;
+  --ac2: #D97706;
+  --al:  rgba(245,158,11,0.14);
+  --ac-soft:    #2A2520;
+  --ac-soft-fg: #F59E0B;
 }
 
 .cp-surface {
