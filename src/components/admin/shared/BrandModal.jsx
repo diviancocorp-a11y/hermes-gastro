@@ -24,6 +24,7 @@ import {
   uploadLogoImage,
 } from "../../../lib/adminService";
 import CategoryEditor from "../CategoryEditor";
+import { useConfirm } from "../../ConfirmSlideProvider";
 import ToggleSwitch from "./forms/ToggleSwitch";
 import DecimalInput from "../../ui/DecimalInput";
 
@@ -53,6 +54,7 @@ function EyeIcon({ off = false }) {
 
 function BrandModal({ open, onClose, settings, setSettings, showToast }) {
   const [s, setS] = useState({ ...settings });
+  const confirmSlide = useConfirm();
   const [section, setSection] = useState('identity'); // 'identity' | 'cover' | 'cats'
   const [editorOpen, setEditorOpen] = useState(false); // sub-página: CategoryEditor
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -399,11 +401,21 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                     { id: 'carbon', label: 'Carbon', bg: '#1A1A1A', tx: '#ECECEC', ac: '#F59E0B' },
                   ].map(t => {
                     const active = (s.catalog_theme || 'ambar') === t.id;
+                    const handleChange = async () => {
+                      if (active) return;
+                      const ok = await confirmSlide({
+                        title: `Cambiar tema a ${t.label}`,
+                        body: 'Esto cambia los colores del catálogo público para todos tus clientes.',
+                        label: `Deslizá para aplicar ${t.label}`,
+                      });
+                      if (!ok) return;
+                      set('catalog_theme', t.id);
+                    };
                     return (
                       <button
                         type="button"
                         key={t.id}
-                        onClick={() => set('catalog_theme', t.id)}
+                        onClick={handleChange}
                         style={{
                           padding: '16px 8px',
                           background: t.bg,

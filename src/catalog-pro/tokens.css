@@ -49,6 +49,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ─── BG del DOCUMENTO según tema (afecta body completo, no solo .cp-root) ─── */
+body[data-cp-theme="ambar"]  { background: #FFFFFF !important; color: #262626; }
+body[data-cp-theme="noche"]  { background: #161412 !important; color: #F4EAD0; }
+body[data-cp-theme="carbon"] { background: #1A1A1A !important; color: #ECECEC; }
+
 /* ─── TEMA AMBAR (alias del default — colores naturales de Hermes) ─── */
 body[data-cp-theme="ambar"] .cp-root {
   --bg:  #FFFFFF;
