@@ -124,35 +124,26 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
             {form.phone && form.phone.length < 10 && (
               <p style={hint("err")}>Minimo 10 digitos · ({form.phone.length}/10)</p>
             )}
-            <input
-              style={{ ...input, marginTop: 10 }}
-              type="date"
-              value={form.birth_date || ""}
-              onChange={e => sf("birth_date", e.target.value)}
-              max={new Date().toISOString().split("T")[0]}
-              title="Fecha de nacimiento (opcional)"
-            />
-            <p style={hint()}>Fecha de nacimiento (opcional) · para saludo de cumpleaños</p>
           </div>
 
-          {/* Banner registrate */}
+          {/* Banner registrate (sin marca hardcoded) */}
           <div style={section}>
             <div style={{ padding: 18, background: "var(--ac-soft, var(--b2))", borderRadius: 14, border: "1px solid var(--line)" }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ac-soft-fg, var(--tx))", marginBottom: 10 }}>
-                Registrate y aprovecha en esta compra
+                Crea tu cuenta y aprovecha
               </div>
-              <div style={{ fontSize: 13, color: "var(--t2)", lineHeight: 1.7, marginBottom: 12 }}>
+              <div style={{ fontSize: 13, color: "var(--t2)", lineHeight: 1.7, marginBottom: 14 }}>
                 <div>· Guarda tus direcciones y pedi mas rapido</div>
                 <div>· Segui tus pedidos en vivo</div>
                 <div>· Cupones y descuentos exclusivos</div>
               </div>
               <button
                 onClick={() => {
-                  try { sessionStorage.setItem("lnp_cart", JSON.stringify(cart)); } catch { /* ignore */ }
+                  try { sessionStorage.setItem("hg_cart", JSON.stringify(cart)); } catch { /* ignore */ }
                   navigate("/mi-cuenta");
                 }}
                 style={btnPrimary}
-              >Registrarme gratis</button>
+              >Crear cuenta gratis</button>
             </div>
           </div>
         </>
@@ -350,7 +341,7 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
 }
 
 // ─── PASO 2: Pago ──────────────────────────────────────────────────
-function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, ctWithDelivery, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, canNext, needsReceipt, onNext }) {
+function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, ctWithDelivery, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, canNext, needsReceipt, onNext }) {
   return (
     <>
       <div style={section}>
@@ -435,7 +426,30 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
         />
       )}
 
-      {/* Cupón */}
+      {/* Propina (movida desde el carrito: el cliente la decide aca, cuando ya sabe envio + total) */}
+      <div style={section}>
+        <label style={labelStyle}>Propina para la cocina</label>
+        <p style={{ fontSize: 11.5, color: "var(--t3)", margin: "0 0 10px" }}>Opcional. 100% va para el equipo.</p>
+        <div style={{ display: "flex", gap: 6 }}>
+          {[0, 5, 10, 15, 20].map(v => {
+            const active = tip === v;
+            return (
+              <button
+                key={v} type="button" onClick={() => setTip(v)}
+                style={{
+                  flex: 1, height: 44, borderRadius: 10,
+                  background: active ? "var(--tx)" : "transparent",
+                  color: active ? "var(--bg)" : "var(--t2)",
+                  border: `1px solid ${active ? "var(--tx)" : "var(--line)"}`,
+                  fontFamily: "inherit", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+                }}
+              >{v === 0 ? "No" : `${v}%`}</button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Cupon */}
       <div style={section}>
         <label style={labelStyle}>¿Tenés un cupón?</label>
         <div style={{ display: "flex", gap: 8, alignItems: "center", border: "1px solid var(--line)", borderRadius: 12, padding: 4, background: "var(--bg)" }}>
@@ -496,7 +510,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
 }
 
 // ─── PASO 3: Resumen ───────────────────────────────────────────────
-function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, ctWithDelivery, discount, coupon, receiptFile, sending, orderErr, onSubmit }) {
+function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, ctWithDelivery, discount, coupon, tip, tipAmount, receiptFile, sending, orderErr, onSubmit }) {
   return (
     <>
       <div style={section}>
@@ -523,6 +537,7 @@ function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, 
         </div>
         {receiptFile && <div style={{ ...summaryVal, fontSize: 12, color: "var(--ok, #2A9D6E)" }}>Comprobante adjunto</div>}
         {coupon && <div style={{ ...summaryVal, fontSize: 12, color: "var(--ok, #2A9D6E)" }}>Cupón -{coupon.discount_pct}%</div>}
+        {tip > 0 && <div style={{ ...summaryVal, fontSize: 12, color: "var(--t2)" }}>Propina · {tip}%</div>}
         {form.is_gift && <div style={{ ...summaryVal, fontSize: 12, color: "var(--ac)" }}>Es un regalo{form.gift_note ? `: "${form.gift_note.slice(0, 40)}${form.gift_note.length > 40 ? "..." : ""}"` : ""}</div>}
       </div>
 
@@ -554,6 +569,12 @@ function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, 
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "var(--ok, #2A9D6E)" }}>
             <span>Cupón -{coupon.discount_pct}%</span>
             <span>−{fmtAR(discount)}</span>
+          </div>
+        )}
+        {tip > 0 && tipAmount > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: "var(--t2)" }}>
+            <span>Propina ({tip}%)</span>
+            <span style={{ color: "var(--tx)" }}>{fmtAR(tipAmount)}</span>
           </div>
         )}
         <hr style={{ margin: "10px 0", border: 0, borderTop: "1px solid var(--line)" }} />

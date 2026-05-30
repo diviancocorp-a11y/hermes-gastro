@@ -301,14 +301,14 @@ export default function Catalog() {
   // Restaurar carrito si vuelve del registro
   useEffect(() => {
     try {
-      const saved = sessionStorage.getItem("lnp_cart");
+      const saved = sessionStorage.getItem("hg_cart");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setCart(parsed);
           setShowCk(true); // reabrir checkout
         }
-        sessionStorage.removeItem("lnp_cart");
+        sessionStorage.removeItem("hg_cart");
       }
     } catch {}
   }, []);
@@ -376,8 +376,8 @@ export default function Catalog() {
     return m;
   }, [cart]);
 
-  // Totales del carrito (memoizado). Incluye propina (catalog-pro) calculada
-  // sobre el subtotal, igual que el CartScreen.
+  // Totales del carrito (memoizado). Propina se decide en step 3 (Pago),
+  // se calcula sobre subtotal sin descuentos.
   const { cc, discount, ct, tipAmount, ctWithDelivery } = useMemo(() => {
     const cc = cart.reduce((s, i) => s + i.qty, 0);
     const ctBase = cart.reduce((s, i) => s + i.qty * i.price, 0);
@@ -652,6 +652,9 @@ export default function Catalog() {
         couponErr={couponErr}
         setCouponErr={setCouponErr}
         ffGift={ffGift}
+        tip={cpTip}
+        setTip={setCpTip}
+        tipAmount={tipAmount}
         orderErr={orderErr}
         sending={sending}
         onSubmit={send}
@@ -664,17 +667,6 @@ export default function Catalog() {
     <CartScreenPro
       items={cart}
       subtotal={cart.reduce((s, i) => s + i.qty * i.price, 0)}
-      discount={discount}
-      shipping={form.delivery === "envio" ? deliveryCost : 0}
-      deliveryLabel={form.delivery === "envio" ? "envío a domicilio" : "retiro en local"}
-      coupon={coupon ? { ...coupon, code: couponCode } : null}
-      couponCode={couponCode}
-      onCouponCodeChange={(v) => { setCouponCode(v); setCoupon(null); setCouponErr(""); }}
-      onApplyCoupon={applyCoupon}
-      onRemoveCoupon={() => { setCoupon(null); setCouponCode(""); }}
-      couponErr={couponErr}
-      tip={cpTip}
-      onTipChange={setCpTip}
       onBack={() => setShowCart(false)}
       onUpdateQty={(id, qty) => updQ(id, qty)}
       onSeguirAgregando={() => setShowCart(false)}
