@@ -223,6 +223,21 @@ export const SettingsInputSchema = z.object({
 
 
 // ═══════════════════════════════════════════════════════
+// SCHEMAS — QRs dinámicos (short URLs editables)
+// ═══════════════════════════════════════════════════════
+
+export const DynamicQrInputSchema = z.object({
+  id: optionalUuid,
+  // slug: 3-50 chars alfanumericos/guiones/underscore. Es lo que va impreso.
+  slug: z.string().trim().min(3).max(50).regex(/^[a-zA-Z0-9_-]+$/, 'Solo letras, numeros, guion y underscore'),
+  name: requiredText(120),
+  target_url: z.string().trim().min(4).max(2000).url('URL invalida'),
+  description: optionalText(500),
+  is_active: z.boolean().optional().default(true),
+});
+
+
+// ═══════════════════════════════════════════════════════
 // SCHEMAS — Direcciones
 // ═══════════════════════════════════════════════════════
 
