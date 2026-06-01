@@ -24,6 +24,7 @@ import {
   uploadLogoImage,
 } from "../../../lib/adminService";
 import CategoryEditor from "../CategoryEditor";
+import DynamicQrs from "../DynamicQrs";
 import { useConfirm } from "../../ConfirmSlideProvider";
 import ToggleSwitch from "./forms/ToggleSwitch";
 import DecimalInput from "../../ui/DecimalInput";
@@ -57,6 +58,7 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
   const confirmSlide = useConfirm();
   const [section, setSection] = useState('identity'); // 'identity' | 'cover' | 'cats'
   const [editorOpen, setEditorOpen] = useState(false); // sub-página: CategoryEditor
+  const [qrsOpen, setQrsOpen] = useState(false); // sub-página: DynamicQrs
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingCat, setUploadingCat] = useState(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -239,6 +241,9 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
         <div className="ag-modal-body">
           {editorOpen && (
             <CategoryEditor embedded msg={showToast} onClose={() => setEditorOpen(false)} />
+          )}
+          {qrsOpen && (
+            <DynamicQrs onClose={() => setQrsOpen(false)} showToast={showToast} />
           )}
           {!editorOpen && (<>
 
@@ -468,6 +473,18 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* QRs dinamicos — short URLs editables para imprimir */}
+              <div className="ag-catalog-group">
+                <div className="ag-catalog-group-title">QRs dinámicos</div>
+                <div style={{ fontSize: 12, color: 'var(--ag-ink-3, #9C8B7A)', marginBottom: 10, lineHeight: 1.5 }}>
+                  Crea un QR con un slug fijo para imprimir. Cambia a donde redirige sin reimprimir nada.
+                </div>
+                <button type="button" onClick={() => setQrsOpen(true)}
+                  style={{ width: '100%', padding: '12px', background: 'var(--ag-bg-card)', border: '1.5px solid var(--ag-c-terra)', color: 'var(--ag-c-terra)', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Gestionar QRs dinamicos →
+                </button>
               </div>
 
               {/* Banner de bienvenida */}
