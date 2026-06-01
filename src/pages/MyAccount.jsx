@@ -65,7 +65,7 @@ export default function MyAccount() {
   useEffect(() => {
     if (user && !loading) {
       try {
-        const saved = sessionStorage.getItem("lnp_cart");
+        const saved = sessionStorage.getItem("hg_cart");
         if (saved && JSON.parse(saved).length > 0) {
           navigate("/");
         }
@@ -140,147 +140,157 @@ export default function MyAccount() {
     };
 
     return (
-    <div className="app" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid var(--b2)" }}>
-        <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--tx)", padding: 4 }}>←</button>
-        <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 20, margin: 0 }}>Mi Cuenta</h2>
+    <div className="cp-root cp-surface" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* Header */}
+      <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid var(--line)", background: "var(--bg)" }}>
+        <button onClick={() => navigate("/")} aria-label="Atras"
+          style={{ width: 38, height: 38, borderRadius: 999, background: "transparent", border: "1px solid var(--line)", color: "var(--tx)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 18 }}>←</button>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, margin: 0, color: "var(--tx)" }}>Mi Cuenta</h2>
       </div>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center" }}>
-        {/* Guest landing: si el visitante ya pidió antes, lo saludamos y mostramos sus puntos
-            antes del form de login. Si NO hay guest, el componente devuelve null y se ve el form normal. */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 24px", textAlign: "center" }}>
         {!linkSent && <GuestWelcomeCard onLoginClick={() => setAuthMode("login")} />}
 
-        <div style={{ fontSize: 56, marginBottom: 16 }}>🦆</div>
-        <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 24, marginBottom: 8, color: "var(--tx)" }}>
+        {/* Icono editorial — sin marca hardcoded */}
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--ac-soft, var(--b2))", color: "var(--ac)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18, fontSize: 28 }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: "0 0 8px", color: "var(--tx)", letterSpacing: "-0.01em" }}>
           {linkSent ? "¡Revisá tu email!" : authMode === "register" ? "Crear cuenta" : "Iniciá sesión"}
         </h2>
 
         {linkSent ? (
-          <div style={{ maxWidth: 340 }}>
-            <p style={{ fontSize: 14, color: "var(--t2)", lineHeight: 1.6, marginBottom: 20 }}>
-              Te enviamos un link mágico a <strong>{loginEmail}</strong>. Tocá el link en tu email para entrar. Si no lo ves, revisá la carpeta de spam.
+          <div style={{ maxWidth: 360 }}>
+            <p style={{ fontSize: 14, color: "var(--t2)", lineHeight: 1.6, margin: "8px 0 22px" }}>
+              Te enviamos un link mágico a <strong style={{ color: "var(--tx)" }}>{loginEmail}</strong>. Tocá el link en tu email para entrar. Revisá la carpeta de spam si no lo ves.
             </p>
-            <button onClick={() => { setLinkSent(false); setLoginEmail(""); setShowNotRegistered(false); }} style={{ fontSize: 13, color: "var(--ac)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+            <button onClick={() => { setLinkSent(false); setLoginEmail(""); setShowNotRegistered(false); }}
+              style={{ fontSize: 13, color: "var(--ac)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", fontFamily: "inherit" }}>
               Usar otro email
             </button>
           </div>
         ) : (
-          <div style={{ width: "100%", maxWidth: 340 }}>
-            <p style={{ fontSize: 14, color: "var(--t2)", lineHeight: 1.6, marginBottom: 20 }}>
+          <div style={{ width: "100%", maxWidth: 360 }}>
+            <p style={{ fontSize: 14, color: "var(--t2)", lineHeight: 1.6, margin: "0 0 22px" }}>
               {authMode === "register"
                 ? "Registrate con tu email. Te mandamos un link mágico para activar tu cuenta, sin contraseña."
                 : "Ingresá tu email y te mandamos un link para entrar. Sin contraseña, simple y seguro."}
             </p>
 
             {/* Toggle Login / Registro */}
-            <div style={{ display: "flex", gap: 4, marginBottom: 16, background: "var(--b2)", borderRadius: 12, padding: 4 }}>
-              <button onClick={() => { setAuthMode("login"); setLoginError(""); setShowNotRegistered(false); }} style={{
-                flex: 1, padding: "10px 0", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                background: authMode === "login" ? "var(--ac)" : "transparent", color: authMode === "login" ? "#fff" : "var(--t2)",
-                transition: "all .2s",
-              }}>Iniciar sesión</button>
-              <button onClick={() => { setAuthMode("register"); setLoginError(""); setShowNotRegistered(false); }} style={{
-                flex: 1, padding: "10px 0", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                background: authMode === "register" ? "var(--ac)" : "transparent", color: authMode === "register" ? "#fff" : "var(--t2)",
-                transition: "all .2s",
-              }}>Registrarse</button>
+            <div style={{ display: "flex", gap: 4, marginBottom: 16, background: "var(--b2)", borderRadius: 12, padding: 4, border: "1px solid var(--line)" }}>
+              <button onClick={() => { setAuthMode("login"); setLoginError(""); setShowNotRegistered(false); }}
+                style={{
+                  flex: 1, padding: "10px 0", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                  background: authMode === "login" ? "var(--ac)" : "transparent",
+                  color: authMode === "login" ? "#fff" : "var(--t2)",
+                  transition: "all .2s",
+                }}>Iniciar sesión</button>
+              <button onClick={() => { setAuthMode("register"); setLoginError(""); setShowNotRegistered(false); }}
+                style={{
+                  flex: 1, padding: "10px 0", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                  background: authMode === "register" ? "var(--ac)" : "transparent",
+                  color: authMode === "register" ? "#fff" : "var(--t2)",
+                  transition: "all .2s",
+                }}>Registrarse</button>
             </div>
 
-            <div style={{ background: "var(--b2)", borderRadius: 16, padding: "20px", textAlign: "left" }}>
-              {/* Campos de registro: nombre, apellido, teléfono */}
+            <div style={{ background: "var(--b2)", borderRadius: 16, padding: "22px", textAlign: "left", border: "1px solid var(--line)" }}>
               {authMode === "register" && (
                 <>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                     <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Nombre</label>
-                      <input className="cki" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Juan" />
+                      <label style={lblStyle}>Nombre</label>
+                      <input style={inputStyle} value={regName} onChange={e => setRegName(e.target.value)} placeholder="Juan" />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Apellido</label>
-                      <input className="cki" value={regLastName} onChange={e => setRegLastName(e.target.value)} placeholder="Pérez" />
+                      <label style={lblStyle}>Apellido</label>
+                      <input style={inputStyle} value={regLastName} onChange={e => setRegLastName(e.target.value)} placeholder="Pérez" />
                     </div>
                   </div>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Teléfono</label>
-                  <input className="cki" type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value.replace(/\D/g, ""))} placeholder="Ej: 1155443322" style={{ marginBottom: 8 }} />
+                  <label style={lblStyle}>Teléfono</label>
+                  <input style={{ ...inputStyle, marginBottom: 10 }} type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value.replace(/\D/g, ""))} placeholder="Ej: 1155443322" />
                 </>
               )}
 
-              <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 6, display: "block" }}>Email</label>
+              <label style={lblStyle}>Email</label>
               <input
-                type="email"
-                className="cki"
+                type="email" style={{ ...inputStyle, marginBottom: 14 }}
                 value={loginEmail}
                 onChange={e => { setLoginEmail(e.target.value); setLoginError(""); setShowNotRegistered(false); }}
-                placeholder="tu@email.com"
-                autoFocus
+                placeholder="tu@email.com" autoFocus
                 onKeyDown={e => e.key === "Enter" && validEmail && handleAuth()}
-                style={{ marginBottom: 12 }}
               />
 
-              {/* Error genérico */}
-              {loginError && <p style={{ fontSize: 12, color: "#C62828", margin: "0 0 8px", lineHeight: 1.4 }}>{loginError}</p>}
+              {loginError && <p style={{ fontSize: 12, color: "var(--err, #C62828)", margin: "0 0 10px", lineHeight: 1.4 }}>{loginError}</p>}
 
-              {/* Error: usuario no registrado → ofrecer registrarse */}
               {showNotRegistered && (
-                <div style={{ background: "#FFF3E0", border: "1px solid #FFB74D", borderRadius: 12, padding: "12px 14px", marginBottom: 12 }}>
-                  <p style={{ fontSize: 13, color: "#E65100", fontWeight: 700, margin: "0 0 6px" }}>
+                <div style={{ background: "var(--ac-soft, var(--b2))", border: "1px solid var(--ac)", borderRadius: 12, padding: "12px 14px", marginBottom: 12 }}>
+                  <p style={{ fontSize: 13, color: "var(--ac-soft-fg, var(--tx))", fontWeight: 700, margin: "0 0 6px" }}>
                     Este email no está registrado
                   </p>
-                  <p style={{ fontSize: 12, color: "#BF360C", margin: "0 0 10px", lineHeight: 1.4 }}>
-                    No encontramos una cuenta con <strong>{loginEmail}</strong>. Registrate para crear tu cuenta en {business.name}.
+                  <p style={{ fontSize: 12, color: "var(--t2)", margin: "0 0 10px", lineHeight: 1.4 }}>
+                    No encontramos una cuenta con <strong style={{ color: "var(--tx)" }}>{loginEmail}</strong>. Registrate para crear tu cuenta en {business.name}.
                   </p>
                   <button
-                    className="abtn"
-                    style={{ width: "100%", fontSize: 13, background: "#E65100" }}
                     onClick={() => { setAuthMode("register"); setShowNotRegistered(false); }}
-                  >
-                    Registrarme con este email
-                  </button>
+                    style={btnPrimaryStyle}
+                  >Registrarme con este email</button>
                 </div>
               )}
 
               {!showNotRegistered && (
                 <button
-                  className="abtn"
-                  style={{ width: "100%", fontSize: 15 }}
                   disabled={sendingLink || !validEmail || (authMode === "register" && !validRegister)}
                   onClick={handleAuth}
+                  style={{
+                    ...btnPrimaryStyle,
+                    fontSize: 15,
+                    opacity: (sendingLink || !validEmail || (authMode === "register" && !validRegister)) ? 0.5 : 1,
+                    cursor: (sendingLink || !validEmail) ? "not-allowed" : "pointer",
+                  }}
                 >
-                  {sendingLink ? "Enviando..." : authMode === "register" ? "Crear mi cuenta" : "Enviar Magic Link"}
+                  {sendingLink ? "Enviando..." : authMode === "register" ? "Crear mi cuenta" : "Enviar magic link"}
                 </button>
               )}
             </div>
 
             {authMode === "login" && !showNotRegistered && (
-              <p style={{ marginTop: 14, fontSize: 12, color: "var(--t3)" }}>
+              <p style={{ marginTop: 16, fontSize: 12, color: "var(--t3)" }}>
                 ¿No tenés cuenta?{" "}
-                <button onClick={() => { setAuthMode("register"); setLoginError(""); setShowNotRegistered(false); }} style={{ background: "none", border: "none", color: "var(--ac)", fontWeight: 700, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}>
+                <button onClick={() => { setAuthMode("register"); setLoginError(""); setShowNotRegistered(false); }}
+                  style={{ background: "none", border: "none", color: "var(--ac)", fontWeight: 700, cursor: "pointer", fontSize: 12, textDecoration: "underline", fontFamily: "inherit" }}>
                   Registrate acá
                 </button>
               </p>
             )}
             {authMode === "register" && (
-              <p style={{ marginTop: 14, fontSize: 12, color: "var(--t3)" }}>
+              <p style={{ marginTop: 16, fontSize: 12, color: "var(--t3)" }}>
                 ¿Ya tenés cuenta?{" "}
-                <button onClick={() => { setAuthMode("login"); setLoginError(""); setShowNotRegistered(false); }} style={{ background: "none", border: "none", color: "var(--ac)", fontWeight: 700, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}>
+                <button onClick={() => { setAuthMode("login"); setLoginError(""); setShowNotRegistered(false); }}
+                  style={{ background: "none", border: "none", color: "var(--ac)", fontWeight: 700, cursor: "pointer", fontSize: 12, textDecoration: "underline", fontFamily: "inherit" }}>
                   Iniciá sesión
                 </button>
               </p>
             )}
 
-            <div style={{ marginTop: 20, padding: "16px", background: "linear-gradient(135deg, #FFF8E1, #FFF3E0)", borderRadius: 14, textAlign: "left" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#5D4037", marginBottom: 8 }}>Beneficios de tener cuenta</div>
-              <div style={{ fontSize: 13, color: "#5D4037", lineHeight: 1.7 }}>
+            <div style={{ marginTop: 22, padding: 18, background: "var(--b2)", borderRadius: 14, textAlign: "left", border: "1px solid var(--line)" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", marginBottom: 10 }}>Beneficios de tener cuenta</div>
+              <div style={{ fontSize: 13, color: "var(--t2)", lineHeight: 1.8 }}>
                 {["Guardá tus direcciones para pedir más rápido", "Accedé a tu historial de pedidos", "Marcá productos como favoritos", "Cupones y descuentos exclusivos", "No volvés a cargar tus datos"].map((b, i) => (
-                  <div key={i}>✓ {b}</div>
+                  <div key={i}>· {b}</div>
                 ))}
               </div>
             </div>
           </div>
         )}
 
-        <button onClick={() => navigate("/")} style={{ marginTop: 24, fontSize: 13, color: "var(--t3)", background: "none", border: "none", cursor: "pointer" }}>
+        <button onClick={() => navigate("/")}
+          style={{ marginTop: 26, fontSize: 13, color: "var(--t3)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
           ← Volver a la tienda
         </button>
       </div>
@@ -577,7 +587,7 @@ export default function MyAccount() {
                           <button
                             onClick={() => {
                               try {
-                                const saved = sessionStorage.getItem("lnp_cart");
+                                const saved = sessionStorage.getItem("hg_cart");
                                 const cart = saved ? JSON.parse(saved) : [];
                                 const existingItem = cart.find(item => item.id === p.id);
                                 if (existingItem) {
@@ -605,7 +615,7 @@ export default function MyAccount() {
                 </div>
                 {(() => {
                   try {
-                    const saved = sessionStorage.getItem("lnp_cart");
+                    const saved = sessionStorage.getItem("hg_cart");
                     const cart = saved ? JSON.parse(saved) : [];
                     const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
                     if (cartCount > 0) {
@@ -691,3 +701,24 @@ export default function MyAccount() {
     </div>
   );
 }
+
+// ─── Estilos compartidos del login (tokens-only) ──────────────────
+const lblStyle = {
+  display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+  letterSpacing: "0.06em", color: "var(--t2)", marginBottom: 6,
+};
+
+const inputStyle = {
+  width: "100%", height: 44, padding: "0 14px",
+  background: "var(--bg)", color: "var(--tx)",
+  border: "1px solid var(--line)", borderRadius: 12,
+  fontFamily: "inherit", fontSize: 14, outline: "none",
+  boxSizing: "border-box",
+};
+
+const btnPrimaryStyle = {
+  width: "100%", padding: "13px 16px",
+  background: "var(--ac)", color: "#fff",
+  border: 0, borderRadius: 12,
+  fontFamily: "inherit", fontSize: 14, fontWeight: 700, cursor: "pointer",
+};
