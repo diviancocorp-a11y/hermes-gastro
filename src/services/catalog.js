@@ -116,9 +116,26 @@ export async function submitOrder(orderData) {
       return { ok: false, orderId: null };
     }
 
+    // Upsert al CRM (tabla customers) con dedup-aware: busca por phone
+    // primero, despues por email. Centraliza la identidad para el guest
+    // y reusa la misma fila si el cliente vuelve con otro metodo.
+    let customerId = null;
+    try {
+      const { data: cid } = await supabase.rpc('upsert_customer', {
+        p_phone: validated.phone || null,
+        p_email: validated.email || null,
+        p_name:  validated.customer || null,
+        p_birth_date: orderData.birth_date || null,
+      });
+      customerId = cid || null;
+    } catch (e) {
+      console.warn('upsert_customer fallo (no bloquea):', e?.message);
+    }
+
     // Persistir identidad guest: el usuario ya tiene al menos 1 pedido,
     // queda "registrado" para ver ranking/preferencias sin volver a loguearse.
     setGuestUser({
+      id: customerId,
       name: validated.customer,
       phone: validated.phone,
       email: validated.email,

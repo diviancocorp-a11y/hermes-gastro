@@ -25,6 +25,7 @@ export function getGuestUser() {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return null;
     return {
+      id: parsed.id || null,
       name: parsed.name || "",
       phone: parsed.phone || "",
       email: parsed.email || "",
@@ -35,12 +36,13 @@ export function getGuestUser() {
   }
 }
 
-export function setGuestUser({ name, phone, email } = {}) {
+export function setGuestUser({ id, name, phone, email } = {}) {
   // Sólo persistimos si hay al menos un identificador (phone o email)
   const hasIdentity = !!(phone || email);
   if (!hasIdentity) return null;
   try {
     const data = {
+      id: id || null,
       name: name || "",
       phone: phone || "",
       email: (email || "").toLowerCase().trim(),
