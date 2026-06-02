@@ -37,7 +37,7 @@ import useFeature from "../hooks/useFeature";
 
 export default function Catalog() {
   const navigate = useNavigate();
-  const { user, profile, addresses, isFavorite, toggleFavorite, getOrderHistory } = useAuth();
+  const { user, profile, addresses, isFavorite, toggleFavorite, getOrderHistory, phoneSession, phoneSignOut } = useAuth();
 
   // --- Feature flags ---
   const ffGift = useFeature('GIFT_MODE');
@@ -702,7 +702,9 @@ export default function Catalog() {
     <>
       <HomeScreenPro settings={sett}
         store={storeForHome}
-        userName={profile?.name || (form.name ? form.name.split(" ")[0] : null)}
+        userName={profile?.name || phoneSession?.name || (form.name ? form.name.split(" ")[0] : null)}
+        phoneSession={phoneSession}
+        onPhoneLogout={phoneSignOut}
         products={products}
         categories={categories}
         cartCount={cc}

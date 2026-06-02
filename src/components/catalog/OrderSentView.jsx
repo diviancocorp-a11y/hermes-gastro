@@ -5,6 +5,8 @@
 import { useState } from "react";
 import { Icon, formatOrderCode } from "../../lib/utils";
 import business, { waLink } from "@business";
+import { upsertCustomer } from "../../services/phoneAuth";
+import { setGuestUser, getGuestUser } from "../../lib/guestUser";
 
 export default function OrderSentView({ orderId, form, receiptFile, onReset }) {
   const [copiedCode, setCopiedCode] = useState(false);
@@ -118,6 +120,9 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset }) {
           </>
         )}
 
+        {/* Captura post-pedido del email para activar cupones — solo si el cliente NO dejó email */}
+        <EmailCaptureCard form={form} />
+
         {wasPaidDigital && (
           <a href={waLink("Hola! Acabo de hacer un pedido y tengo una consulta")}
             target="_blank" rel="noopener noreferrer"
@@ -139,6 +144,101 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset }) {
           }}
         >
           ← Volver a la tienda
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── EmailCaptureCard ──────────────────────────────────────────
+// Después del pedido, si el cliente no dejó email, le ofrecemos guardarlo
+// para activar cupones / promociones. El gesto está en el momento de máxima
+// satisfacción (acaba de hacer el pedido), conversion rate alto.
+function EmailCaptureCard({ form }) {
+  const guest = getGuestUser();
+  // Si ya hay email cargado, no mostramos nada
+  if (form?.email || guest?.email) return null;
+
+  const [email, setEmail] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  const onSave = async () => {
+    if (!valid || saving) return;
+    setSaving(true);
+    try {
+      await upsertCustomer({
+        phone: form?.phone || guest?.phone,
+        email: email.trim(),
+        name: form?.name || guest?.name,
+      });
+      // Persistir en localStorage tambien (sin tocar el id)
+      setGuestUser({
+        id: guest?.id || null,
+        name: guest?.name || form?.name || "",
+        phone: guest?.phone || form?.phone || "",
+        email: email.trim(),
+      });
+      setSaved(true);
+    } catch (e) {
+      console.warn("upsert email:", e?.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (saved) {
+    return (
+      <div style={{
+        padding: "12px 16px", background: "var(--ag-c-sales-soft, #E8F5E9)",
+        border: "1px solid var(--ag-c-sales, #3a8a4a)", borderRadius: 12,
+        marginBottom: 14, fontSize: 13, color: "var(--ag-c-sales, #3a8a4a)", textAlign: "center", fontWeight: 600,
+      }}>
+        ✓ ¡Listo! Te avisamos cuando salgan cupones y promociones para vos.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      padding: 16, background: "var(--ag-bg-soft, #FBF7F2)",
+      border: "1px dashed var(--ag-line, rgba(0,0,0,0.15))", borderRadius: 14,
+      marginBottom: 14, textAlign: "left",
+    }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ag-ink, #2D1B0E)", marginBottom: 4 }}>
+        Activá tus cupones
+      </div>
+      <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--ag-ink-3, #9C8B7A)", lineHeight: 1.5 }}>
+        Dejá tu email y te avisamos cuando haya cupones y descuentos exclusivos para vos.
+      </p>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          type="email" value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="tu@email.com"
+          onKeyDown={(e) => e.key === "Enter" && valid && onSave()}
+          style={{
+            flex: 1, height: 40, padding: "0 12px",
+            background: "#fff", color: "var(--ag-ink, #2D1B0E)",
+            border: "1px solid var(--ag-line, rgba(0,0,0,0.15))",
+            borderRadius: 10, fontFamily: "inherit", fontSize: 13, outline: "none",
+            boxSizing: "border-box",
+          }}
+        />
+        <button
+          type="button" onClick={onSave} disabled={!valid || saving}
+          style={{
+            height: 40, padding: "0 16px", border: 0, borderRadius: 10,
+            background: valid ? "var(--ag-c-terra, #C45D3E)" : "var(--ag-bg-card, #f3ede4)",
+            color: valid ? "#fff" : "var(--ag-ink-3, #9C8B7A)",
+            fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+            cursor: valid ? "pointer" : "not-allowed",
+            opacity: saving ? 0.7 : 1,
+          }}
+        >
+          {saving ? "..." : "Guardar"}
         </button>
       </div>
     </div>
