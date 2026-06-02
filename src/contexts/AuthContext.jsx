@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import { useGuestUser, clearGuestUser } from "../lib/guestUser.js";
 
 const AuthContext = createContext(null);
 
@@ -9,6 +10,11 @@ export function AuthProvider({ children }) {
   const [addresses, setAddresses] = useState([]);
   const [favorites, setFavorites] = useState([]);   // array de recipe_id
   const [loading, setLoading] = useState(true);
+
+  // phoneSession: sesion "soft" persistida en localStorage (no Supabase Auth).
+  // Cuando el usuario hace phone-only login, se llena. Se limpia con phoneLogout.
+  const guestUser = useGuestUser();
+  const phoneSession = (!user && guestUser?.id) ? guestUser : null;
 
   // Cargar perfil, direcciones y favoritos
   const loadUserData = async (userId) => {
@@ -95,11 +101,15 @@ export function AuthProvider({ children }) {
   // --- LOGOUT ---
   const signOut = async () => {
     await supabase.auth.signOut();
+    clearGuestUser();
     setUser(null);
     setProfile(null);
     setAddresses([]);
     setFavorites([]);
   };
+
+  // Logout exclusivo de la phone session (no toca Supabase Auth).
+  const phoneSignOut = () => { clearGuestUser(); };
 
   // --- PERFIL ---
   const updateProfile = async (data) => {
@@ -184,7 +194,8 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, profile, addresses, favorites, loading,
-      sendMagicLink, signOut,
+      phoneSession, isPhoneOnly: !!phoneSession,
+      sendMagicLink, signOut, phoneSignOut,
       updateProfile,
       addAddress, removeAddress, updateAddress,
       toggleFavorite, isFavorite,

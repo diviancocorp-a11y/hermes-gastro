@@ -6,6 +6,7 @@ import { supabase } from "../lib/supabase";
 import business from "@business";
 import ReferralCard from "../components/catalog/ReferralCard";
 import GuestWelcomeCard from "../catalog-pro/GuestWelcomeCard";
+import { lookupCustomerByPhone, phoneLogin, cleanPhone } from "../services/phoneAuth";
 
 const TABS = ["perfil", "direcciones", "historial", "favoritos", "cupones", "referidos"];
 const TAB_ICONS = { perfil: "👤", direcciones: "📍", historial: "📦", favoritos: "❤️", cupones: "🎟️", referidos: "🎁" };
@@ -105,197 +106,9 @@ export default function MyAccount() {
     </div>
   );
 
-  // --- LOGIN / REGISTER SCREEN ---
+  // --- LOGIN PHONE-FIRST ---
   if (!user) {
-    const validEmail = loginEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail);
-
-    const validRegister = authMode === "register" ? (regName.trim().length >= 2 && regLastName.trim().length >= 2 && regPhone.trim().length >= 6) : true;
-
-    const handleAuth = async () => {
-      if (authMode === "register" && !validRegister) {
-        setLoginError("Completá todos los campos para registrarte.");
-        return;
-      }
-      setSendingLink(true);
-      setLoginError("");
-      setShowNotRegistered(false);
-      const isSignUp = authMode === "register";
-      const metadata = isSignUp ? { name: `${regName.trim()} ${regLastName.trim()}`, phone: regPhone.trim() } : {};
-      const { ok, error } = await sendMagicLink(loginEmail, isSignUp, metadata);
-      setSendingLink(false);
-
-      if (ok) {
-        setLinkSent(true);
-      } else if (error === "not_registered") {
-        setShowNotRegistered(true);
-        setLoginError("");
-      } else if (error === "already_registered") {
-        setLoginError("Este email ya tiene cuenta. Usá \"Iniciar sesión\" para entrar.");
-        setAuthMode("login");
-      } else if (error === "rate_limit") {
-        setLoginError("Enviamos demasiados emails en poco tiempo. Esperá unos minutos antes de intentar de nuevo. Si ya recibiste un email, revisá tu bandeja de entrada y spam.");
-      } else {
-        setLoginError(error || "Error al enviar el link. Intentá de nuevo.");
-      }
-    };
-
-    return (
-    <div className="cp-root cp-surface" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Header */}
-      <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid var(--line)", background: "var(--bg)" }}>
-        <button onClick={() => navigate("/")} aria-label="Atras"
-          style={{ width: 38, height: 38, borderRadius: 999, background: "transparent", border: "1px solid var(--line)", color: "var(--tx)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 18 }}>←</button>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, margin: 0, color: "var(--tx)" }}>Mi Cuenta</h2>
-      </div>
-
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 24px", textAlign: "center" }}>
-        {!linkSent && <GuestWelcomeCard onLoginClick={() => setAuthMode("login")} />}
-
-        {/* Icono editorial — sin marca hardcoded */}
-        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--ac-soft, var(--b2))", color: "var(--ac)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18, fontSize: 28 }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-        </div>
-
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: "0 0 8px", color: "var(--tx)", letterSpacing: "-0.01em" }}>
-          {linkSent ? "¡Revisá tu email!" : authMode === "register" ? "Crear cuenta" : "Iniciá sesión"}
-        </h2>
-
-        {linkSent ? (
-          <div style={{ maxWidth: 360 }}>
-            <p style={{ fontSize: 14, color: "var(--t2)", lineHeight: 1.6, margin: "8px 0 22px" }}>
-              Te enviamos un link mágico a <strong style={{ color: "var(--tx)" }}>{loginEmail}</strong>. Tocá el link en tu email para entrar. Revisá la carpeta de spam si no lo ves.
-            </p>
-            <button onClick={() => { setLinkSent(false); setLoginEmail(""); setShowNotRegistered(false); }}
-              style={{ fontSize: 13, color: "var(--ac)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", fontFamily: "inherit" }}>
-              Usar otro email
-            </button>
-          </div>
-        ) : (
-          <div style={{ width: "100%", maxWidth: 360 }}>
-            <p style={{ fontSize: 14, color: "var(--t2)", lineHeight: 1.6, margin: "0 0 22px" }}>
-              {authMode === "register"
-                ? "Registrate con tu email. Te mandamos un link mágico para activar tu cuenta, sin contraseña."
-                : "Ingresá tu email y te mandamos un link para entrar. Sin contraseña, simple y seguro."}
-            </p>
-
-            {/* Toggle Login / Registro */}
-            <div style={{ display: "flex", gap: 4, marginBottom: 16, background: "var(--b2)", borderRadius: 12, padding: 4, border: "1px solid var(--line)" }}>
-              <button onClick={() => { setAuthMode("login"); setLoginError(""); setShowNotRegistered(false); }}
-                style={{
-                  flex: 1, padding: "10px 0", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                  background: authMode === "login" ? "var(--ac)" : "transparent",
-                  color: authMode === "login" ? "#fff" : "var(--t2)",
-                  transition: "all .2s",
-                }}>Iniciar sesión</button>
-              <button onClick={() => { setAuthMode("register"); setLoginError(""); setShowNotRegistered(false); }}
-                style={{
-                  flex: 1, padding: "10px 0", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                  background: authMode === "register" ? "var(--ac)" : "transparent",
-                  color: authMode === "register" ? "#fff" : "var(--t2)",
-                  transition: "all .2s",
-                }}>Registrarse</button>
-            </div>
-
-            <div style={{ background: "var(--b2)", borderRadius: 16, padding: "22px", textAlign: "left", border: "1px solid var(--line)" }}>
-              {authMode === "register" && (
-                <>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={lblStyle}>Nombre</label>
-                      <input style={inputStyle} value={regName} onChange={e => setRegName(e.target.value)} placeholder="Juan" />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={lblStyle}>Apellido</label>
-                      <input style={inputStyle} value={regLastName} onChange={e => setRegLastName(e.target.value)} placeholder="Pérez" />
-                    </div>
-                  </div>
-                  <label style={lblStyle}>Teléfono</label>
-                  <input style={{ ...inputStyle, marginBottom: 10 }} type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value.replace(/\D/g, ""))} placeholder="Ej: 1155443322" />
-                </>
-              )}
-
-              <label style={lblStyle}>Email</label>
-              <input
-                type="email" style={{ ...inputStyle, marginBottom: 14 }}
-                value={loginEmail}
-                onChange={e => { setLoginEmail(e.target.value); setLoginError(""); setShowNotRegistered(false); }}
-                placeholder="tu@email.com" autoFocus
-                onKeyDown={e => e.key === "Enter" && validEmail && handleAuth()}
-              />
-
-              {loginError && <p style={{ fontSize: 12, color: "var(--err, #C62828)", margin: "0 0 10px", lineHeight: 1.4 }}>{loginError}</p>}
-
-              {showNotRegistered && (
-                <div style={{ background: "var(--ac-soft, var(--b2))", border: "1px solid var(--ac)", borderRadius: 12, padding: "12px 14px", marginBottom: 12 }}>
-                  <p style={{ fontSize: 13, color: "var(--ac-soft-fg, var(--tx))", fontWeight: 700, margin: "0 0 6px" }}>
-                    Este email no está registrado
-                  </p>
-                  <p style={{ fontSize: 12, color: "var(--t2)", margin: "0 0 10px", lineHeight: 1.4 }}>
-                    No encontramos una cuenta con <strong style={{ color: "var(--tx)" }}>{loginEmail}</strong>. Registrate para crear tu cuenta en {business.name}.
-                  </p>
-                  <button
-                    onClick={() => { setAuthMode("register"); setShowNotRegistered(false); }}
-                    style={btnPrimaryStyle}
-                  >Registrarme con este email</button>
-                </div>
-              )}
-
-              {!showNotRegistered && (
-                <button
-                  disabled={sendingLink || !validEmail || (authMode === "register" && !validRegister)}
-                  onClick={handleAuth}
-                  style={{
-                    ...btnPrimaryStyle,
-                    fontSize: 15,
-                    opacity: (sendingLink || !validEmail || (authMode === "register" && !validRegister)) ? 0.5 : 1,
-                    cursor: (sendingLink || !validEmail) ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {sendingLink ? "Enviando..." : authMode === "register" ? "Crear mi cuenta" : "Enviar magic link"}
-                </button>
-              )}
-            </div>
-
-            {authMode === "login" && !showNotRegistered && (
-              <p style={{ marginTop: 16, fontSize: 12, color: "var(--t3)" }}>
-                ¿No tenés cuenta?{" "}
-                <button onClick={() => { setAuthMode("register"); setLoginError(""); setShowNotRegistered(false); }}
-                  style={{ background: "none", border: "none", color: "var(--ac)", fontWeight: 700, cursor: "pointer", fontSize: 12, textDecoration: "underline", fontFamily: "inherit" }}>
-                  Registrate acá
-                </button>
-              </p>
-            )}
-            {authMode === "register" && (
-              <p style={{ marginTop: 16, fontSize: 12, color: "var(--t3)" }}>
-                ¿Ya tenés cuenta?{" "}
-                <button onClick={() => { setAuthMode("login"); setLoginError(""); setShowNotRegistered(false); }}
-                  style={{ background: "none", border: "none", color: "var(--ac)", fontWeight: 700, cursor: "pointer", fontSize: 12, textDecoration: "underline", fontFamily: "inherit" }}>
-                  Iniciá sesión
-                </button>
-              </p>
-            )}
-
-            <div style={{ marginTop: 22, padding: 18, background: "var(--b2)", borderRadius: 14, textAlign: "left", border: "1px solid var(--line)" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", marginBottom: 10 }}>Beneficios de tener cuenta</div>
-              <div style={{ fontSize: 13, color: "var(--t2)", lineHeight: 1.8 }}>
-                {["Guardá tus direcciones para pedir más rápido", "Accedé a tu historial de pedidos", "Marcá productos como favoritos", "Cupones y descuentos exclusivos", "No volvés a cargar tus datos"].map((b, i) => (
-                  <div key={i}>· {b}</div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <button onClick={() => navigate("/")}
-          style={{ marginTop: 26, fontSize: 13, color: "var(--t3)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
-          ← Volver a la tienda
-        </button>
-      </div>
-    </div>
-  );
+    return <PhoneLoginScreen onLoggedIn={() => navigate("/")} navigate={navigate} />;
   }
 
   // --- LOGGED IN: MY ACCOUNT ---
@@ -702,6 +515,165 @@ export default function MyAccount() {
   );
 }
 
+
+// ─── PhoneLoginScreen ──────────────────────────────────────────────
+// Login phone-only. Input telefono -> lookup -> "¿Sos vos Juan?" / signup.
+function PhoneLoginScreen({ onLoggedIn, navigate }) {
+  const [phone, setPhone] = useState("");
+  const [step, setStep] = useState("phone"); // phone | confirm | signup
+  const [match, setMatch] = useState(null);  // { displayName, hasEmail }
+  const [signupName, setSignupName] = useState("");
+  const [signupLast, setSignupLast] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const validPhone = cleanPhone(phone).length >= 10;
+  const validSignup = signupName.trim().length >= 2 && signupLast.trim().length >= 2
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupEmail.trim());
+
+  const handleContinue = async () => {
+    if (!validPhone) return;
+    setLoading(true); setError("");
+    const found = await lookupCustomerByPhone(phone);
+    setLoading(false);
+    if (found) { setMatch(found); setStep("confirm"); }
+    else { setStep("signup"); }
+  };
+
+  const handleSosVos = async (yes) => {
+    if (!yes) {
+      setError("Si no sos vos, vovlé a revisar el número o registrate como cliente nuevo.");
+      setStep("phone");
+      return;
+    }
+    setLoading(true);
+    const fullName = match?.displayName || "";
+    const result = await phoneLogin({ phone, name: fullName });
+    setLoading(false);
+    if (result.ok) onLoggedIn();
+    else setError("No pudimos iniciarte sesión. Intentá de nuevo.");
+  };
+
+  const handleSignup = async () => {
+    if (!validSignup) {
+      setError("Completá nombre, apellido y un email válido.");
+      return;
+    }
+    setLoading(true); setError("");
+    const fullName = `${signupName.trim()} ${signupLast.trim()}`;
+    const result = await phoneLogin({ phone, name: fullName, email: signupEmail.trim() });
+    setLoading(false);
+    if (result.ok) onLoggedIn();
+    else setError("Error al crear tu cuenta. Intentá de nuevo.");
+  };
+
+  return (
+    <div className="cp-root cp-surface" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid var(--line)", background: "var(--bg)" }}>
+        <button onClick={() => navigate("/")} aria-label="Atras"
+          style={{ width: 38, height: 38, borderRadius: 999, background: "transparent", border: "1px solid var(--line)", color: "var(--tx)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 18 }}>←</button>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, margin: 0, color: "var(--tx)" }}>Mi Cuenta</h2>
+      </div>
+
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 24px", textAlign: "center" }}>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--ac-soft, var(--b2))", color: "var(--ac)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+
+        {step === "phone" && (
+          <div style={{ width: "100%", maxWidth: 360 }}>
+            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: "0 0 8px", color: "var(--tx)" }}>Ingresá tu teléfono</h2>
+            <p style={{ fontSize: 14, color: "var(--t2)", margin: "0 0 22px", lineHeight: 1.6 }}>
+              Si ya pediste antes, te reconocemos. Si no, te registramos en un paso.
+            </p>
+            <input
+              type="tel" autoFocus value={phone}
+              onChange={e => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 15)); setError(""); }}
+              placeholder="Ej: 1155443322" maxLength={15}
+              onKeyDown={e => e.key === "Enter" && validPhone && handleContinue()}
+              style={{ ...inputStyle, fontSize: 17, textAlign: "center", letterSpacing: "0.05em", marginBottom: 14 }}
+            />
+            {phone && cleanPhone(phone).length < 10 && (
+              <p style={{ fontSize: 11.5, color: "var(--err, #C62828)", margin: "0 0 12px" }}>Mínimo 10 dígitos · ({cleanPhone(phone).length}/10)</p>
+            )}
+            {error && <p style={{ fontSize: 12, color: "var(--err, #C62828)", margin: "0 0 12px" }}>{error}</p>}
+            <button onClick={handleContinue} disabled={!validPhone || loading}
+              style={{ ...btnPrimaryStyle, opacity: (!validPhone || loading) ? 0.5 : 1 }}>
+              {loading ? "Buscando..." : "Continuar"}
+            </button>
+            <button onClick={() => navigate("/")}
+              style={{ marginTop: 18, fontSize: 13, color: "var(--t3)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+              ← Volver a la tienda
+            </button>
+          </div>
+        )}
+
+        {step === "confirm" && match && (
+          <div style={{ width: "100%", maxWidth: 360 }}>
+            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: "0 0 8px", color: "var(--tx)" }}>Hola {match.displayName}</h2>
+            <p style={{ fontSize: 14, color: "var(--t2)", margin: "0 0 22px", lineHeight: 1.6 }}>
+              ¿Sos vos? Si lo confirmás, entrás a tu cuenta.
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => handleSosVos(true)} disabled={loading}
+                style={{ ...btnPrimaryStyle, flex: 1 }}>
+                {loading ? "Entrando..." : "Sí, soy yo"}
+              </button>
+              <button onClick={() => handleSosVos(false)} disabled={loading}
+                style={{ flex: 1, padding: "13px 16px", background: "transparent", color: "var(--tx)", border: "1px solid var(--line)", borderRadius: 12, fontFamily: "inherit", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                No
+              </button>
+            </div>
+            <button onClick={() => { setStep("phone"); setError(""); setMatch(null); }}
+              style={{ marginTop: 18, fontSize: 13, color: "var(--t3)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+              ← Otro número
+            </button>
+          </div>
+        )}
+
+        {step === "signup" && (
+          <div style={{ width: "100%", maxWidth: 360 }}>
+            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, margin: "0 0 8px", color: "var(--tx)" }}>Creá tu cuenta</h2>
+            <p style={{ fontSize: 14, color: "var(--t2)", margin: "0 0 18px", lineHeight: 1.6 }}>
+              No encontramos este número. Completá tus datos para crear tu cuenta.
+            </p>
+            <div style={{ background: "var(--b2)", borderRadius: 16, padding: 18, textAlign: "left", border: "1px solid var(--line)" }}>
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={lblStyle}>Nombre</label>
+                  <input style={inputStyle} value={signupName} onChange={e => setSignupName(e.target.value)} placeholder="Juan" autoFocus />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={lblStyle}>Apellido</label>
+                  <input style={inputStyle} value={signupLast} onChange={e => setSignupLast(e.target.value)} placeholder="Pérez" />
+                </div>
+              </div>
+              <label style={lblStyle}>Email</label>
+              <input style={{ ...inputStyle, marginBottom: 14 }} type="email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} placeholder="tu@email.com"
+                onKeyDown={e => e.key === "Enter" && validSignup && handleSignup()} />
+              <p style={{ fontSize: 11, color: "var(--t3)", margin: "0 0 14px", lineHeight: 1.5 }}>
+                Lo usamos para que puedas acceder a cupones y promociones por email.
+              </p>
+              {error && <p style={{ fontSize: 12, color: "var(--err, #C62828)", margin: "0 0 10px" }}>{error}</p>}
+              <button onClick={handleSignup} disabled={!validSignup || loading}
+                style={{ ...btnPrimaryStyle, fontSize: 15, opacity: (!validSignup || loading) ? 0.5 : 1 }}>
+                {loading ? "Creando..." : "Crear mi cuenta"}
+              </button>
+            </div>
+            <button onClick={() => { setStep("phone"); setError(""); }}
+              style={{ marginTop: 18, fontSize: 13, color: "var(--t3)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+              ← Otro número
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 // ─── Estilos compartidos del login (tokens-only) ──────────────────
 const lblStyle = {
   display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
