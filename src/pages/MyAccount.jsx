@@ -15,7 +15,15 @@ export default function MyAccount() {
   const navigate = useNavigate();
   const { user, profile, addresses, favorites, loading, sendMagicLink, signOut, updateProfile, addAddress, removeAddress, getOrderHistory } = useAuth();
 
-  const [tab, setTab] = useState("perfil");
+  const [tab, setTab] = useState(() => {
+    // Leer ?tab= de la URL para abrir directamente la seccion deseada
+    try {
+      const url = new URL(window.location.href);
+      const t = url.searchParams.get("tab");
+      const valid = ["perfil", "direcciones", "historial", "favoritos", "cupones", "referidos"];
+      return valid.includes(t) ? t : "perfil";
+    } catch { return "perfil"; }
+  });
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
 

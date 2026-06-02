@@ -20,7 +20,6 @@ import CategoryScreenPro from "../catalog-pro/CategoryScreen";
 import CartScreenPro from "../catalog-pro/CartScreen";
 import CheckoutScreenPro from "../catalog-pro/CheckoutScreen";
 import OrdersScreenPro from "../catalog-pro/OrdersScreen";
-import BottomNavBarPro from "../catalog-pro/BottomNavBar";
 import { useToast } from "../hooks/useToast";
 import ConfirmationAnimation from "../components/catalog/ConfirmationAnimation";
 import OrderSentView from "../components/catalog/OrderSentView";
@@ -717,37 +716,13 @@ export default function Catalog() {
         onSearch={() => setCpScreen("search")}
         onSelectCategory={(name) => { const cat = categories.find(c => c.name === name); setCpScreen({ type: "category", name, displayName: cat?.displayName || name, subs: cat?.subs || [] }); }}
         onSelectProduct={(p) => { setCpDetail(p); window.scrollTo({ top: 0 }); }}
-        onOpenAccount={() => navigate("/mi-cuenta")}
+        onOpenAccount={(tab) => navigate(tab ? `/mi-cuenta?tab=${tab}` : "/mi-cuenta")}
       />
-      {!cpScreen && !cpDetail && !showCart && !showCk && (
-        <BottomNavBarPro
-          active="home"
-          onChange={(id) => {
-            if (id === "home") { setCpScreen(null); setCpDetail(null); }
-            else if (id === "search") setCpScreen("search");
-            else if (id === "orders") setCpScreen("orders");
-            else if (id === "favs") toast?.("Favoritos: próximamente");
-            else if (id === "me") navigate("/mi-cuenta");
-          }}
-        />
-      )}
       {cpScreen === "orders" && (
         <OrdersScreenPro
           loadOrders={getOrderHistory}
           onBack={() => setCpScreen(null)}
           onTrack={(id) => navigate(`/order/${id}`)}
-          bottomNav={
-            <BottomNavBarPro
-              active="orders"
-              onChange={(id) => {
-                if (id === "home") setCpScreen(null);
-                else if (id === "search") setCpScreen("search");
-                else if (id === "orders") setCpScreen("orders");
-                else if (id === "favs") { setCpScreen(null); toast?.("Favoritos: próximamente"); }
-                else if (id === "me") navigate("/mi-cuenta");
-              }}
-            />
-          }
         />
       )}
       {cpScreen === "search" && (
