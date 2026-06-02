@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
 import business from "@business";
 import ReferralCard from "../components/catalog/ReferralCard";
 import GuestWelcomeCard from "../catalog-pro/GuestWelcomeCard";
-import { lookupCustomerByPhone, phoneLogin, cleanPhone } from "../services/phoneAuth";
+import { lookupCustomerByPhone, phoneLogin, cleanPhone, blockPhone, isPhoneBlocked } from "../services/phoneAuth";
 
 const TABS = ["perfil", "direcciones", "historial", "favoritos", "cupones", "referidos"];
 const TAB_ICONS = { perfil: "👤", direcciones: "📍", historial: "📦", favoritos: "❤️", cupones: "🎟️", referidos: "🎁" };
@@ -534,6 +534,12 @@ function PhoneLoginScreen({ onLoggedIn, navigate }) {
 
   const handleContinue = async () => {
     if (!validPhone) return;
+    // Verificar si este telefono esta bloqueado en este dispositivo (cooldown 10min)
+    const block = isPhoneBlocked(phone);
+    if (block.blocked) {
+      setError(`Este número fue rechazado en este dispositivo. Probá en ${block.minutesLeft} ${block.minutesLeft === 1 ? "minuto" : "minutos"} o desde otro dispositivo.`);
+      return;
+    }
     setLoading(true); setError("");
     const found = await lookupCustomerByPhone(phone);
     setLoading(false);
@@ -543,7 +549,11 @@ function PhoneLoginScreen({ onLoggedIn, navigate }) {
 
   const handleSosVos = async (yes) => {
     if (!yes) {
-      setError("Si no sos vos, vovlé a revisar el número o registrate como cliente nuevo.");
+      // Honestidad del cliente: este numero ya tiene dueno, lo bloqueamos por
+      // 10 minutos en este dispositivo para evitar reintento casual.
+      blockPhone(phone);
+      setError("Alguien más ya se registró con este número. Por favor intentá con otro número.");
+      setMatch(null);
       setStep("phone");
       return;
     }

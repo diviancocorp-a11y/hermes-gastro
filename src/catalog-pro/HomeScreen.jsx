@@ -120,15 +120,11 @@ export default function HomeScreen({
             </div>
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            {phoneSession?.name && (
-              <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 4px 4px 10px", background: "var(--b2)", border: "1px solid var(--line)", borderRadius: 999, fontSize: 11, color: "var(--t2)" }}>
-                <span>{phoneSession.name.split(" ")[0]}, ¿sos vos?</span>
-                <button onClick={onPhoneLogout} aria-label="No soy yo, cerrar sesion"
-                  title="No soy yo"
-                  style={{ width: 22, height: 22, border: 0, borderRadius: 999, background: "transparent", color: "var(--t3)", cursor: "pointer", fontSize: 13, padding: 0, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  ×
-                </button>
-              </div>
+            {phoneSession && (
+              <button onClick={onPhoneLogout}
+                style={{ padding: "6px 10px", background: "transparent", border: "1px solid var(--line)", color: "var(--t2)", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                Cerrar sesión
+              </button>
             )}
             <button onClick={onOpenAccount} style={iconBtn} aria-label="Mi cuenta">
               <Icon name="user" size={16} />

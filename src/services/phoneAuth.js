@@ -86,3 +86,51 @@ export async function phoneLogin({ phone, name, email = '', birth_date = null })
 export function phoneLogout() {
   clearGuestUser();
 }
+
+// ─── Bloqueo de telefonos rechazados en este dispositivo ──────────
+// Cuando alguien ingresa un telefono y en la confirmacion dice "No, no soy yo",
+// guardamos {phone, expiresAt} en localStorage. Por 10 minutos ese mismo numero
+// no se puede usar EN ESTE DISPOSITIVO. Se desbloquea automaticamente despues.
+//
+// Limitacion conocida: bypassable con modo incognito u otro browser. Es proteccion
+// contra reintento casual, no contra atacante motivado.
+
+const BLOCK_KEY = "hermes_phone_blocks_v1";
+const BLOCK_DURATION_MS = 10 * 60 * 1000; // 10 minutos
+
+function readBlocks() {
+  try {
+    const raw = localStorage.getItem(BLOCK_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const now = Date.now();
+    // Filtrar expirados al leer (auto-cleanup)
+    return parsed.filter((b) => b && b.phone && b.expiresAt > now);
+  } catch {
+    return [];
+  }
+}
+
+function writeBlocks(blocks) {
+  try { localStorage.setItem(BLOCK_KEY, JSON.stringify(blocks)); } catch { /* ignore */ }
+}
+
+export function blockPhone(phone) {
+  const cleaned = cleanPhone(phone);
+  if (cleaned.length < 10) return;
+  const blocks = readBlocks().filter((b) => b.phone !== cleaned);
+  blocks.push({ phone: cleaned, expiresAt: Date.now() + BLOCK_DURATION_MS });
+  writeBlocks(blocks);
+}
+
+/** Retorna { blocked: boolean, minutesLeft: number } */
+export function isPhoneBlocked(phone) {
+  const cleaned = cleanPhone(phone);
+  if (cleaned.length < 10) return { blocked: false, minutesLeft: 0 };
+  const blocks = readBlocks();
+  const hit = blocks.find((b) => b.phone === cleaned);
+  if (!hit) return { blocked: false, minutesLeft: 0 };
+  const msLeft = hit.expiresAt - Date.now();
+  return { blocked: true, minutesLeft: Math.max(1, Math.ceil(msLeft / 60000)) };
+}
