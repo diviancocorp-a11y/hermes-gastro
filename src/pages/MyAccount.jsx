@@ -101,7 +101,7 @@ export default function MyAccount() {
   }, [tab, favorites]);
 
   if (loading) return (
-    <div className="app" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+    <div className="cp-root cp-surface" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
       <p style={{ color: "var(--t3)", fontSize: 15 }}>Cargando...</p>
     </div>
   );
@@ -113,7 +113,14 @@ export default function MyAccount() {
 
   // --- LOGGED IN: MY ACCOUNT ---
   return (
-    <div className="app" style={{ minHeight: "100vh" }}>
+    <div className="cp-root cp-surface" style={{ minHeight: "100vh" }}>
+      <style>{`
+        .cki-tokens { width: 100%; height: 44px; padding: 0 14px; background: var(--bg); color: var(--tx); border: 1px solid var(--line); border-radius: 12px; font-family: inherit; font-size: 14px; outline: none; box-sizing: border-box; }
+        .cki-tokens:focus { border-color: var(--ac); }
+        .cki-tokens:disabled { opacity: 0.6; background: var(--b2); cursor: not-allowed; }
+        .abtn-tokens { padding: 12px 16px; background: var(--ac); color: #fff; border: 0; border-radius: 12px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .abtn-tokens:disabled { opacity: 0.5; cursor: not-allowed; }
+      `}</style>
       {/* Header */}
       <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid var(--b2)" }}>
         <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--tx)", padding: 4 }}>←</button>
@@ -148,19 +155,19 @@ export default function MyAccount() {
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Nombre</label>
-                <input className="cki" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Tu nombre completo" />
+                <input className="cki-tokens" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Tu nombre completo" />
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Teléfono</label>
-                <input className="cki" type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value.replace(/\D/g, ""))} placeholder="Ej: 1155443322" />
+                <input className="cki-tokens" type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value.replace(/\D/g, ""))} placeholder="Ej: 1155443322" />
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Email</label>
-                <input className="cki" value={user.email} disabled style={{ opacity: 0.6 }} />
+                <input className="cki-tokens" value={user.email} disabled style={{ opacity: 0.6 }} />
               </div>
             </div>
             <button
-              className="abtn"
+              className="abtn-tokens"
               style={{ width: "100%", marginTop: 16 }}
               disabled={saving}
               onClick={async () => {
@@ -250,10 +257,10 @@ export default function MyAccount() {
                 >
                   {geoLoading ? "Localizando..." : "📍 Usar mi ubicación actual"}
                 </button>
-                <input className="cki" value={addrText} onChange={e => setAddrText(e.target.value)} placeholder="Calle, número, localidad..." style={{ marginBottom: 8 }} />
-                <input className="cki" value={addrNotes} onChange={e => setAddrNotes(e.target.value)} placeholder="Piso, depto, timbre (opcional)" style={{ marginBottom: 12 }} />
+                <input className="cki-tokens" value={addrText} onChange={e => setAddrText(e.target.value)} placeholder="Calle, número, localidad..." style={{ marginBottom: 8 }} />
+                <input className="cki-tokens" value={addrNotes} onChange={e => setAddrNotes(e.target.value)} placeholder="Piso, depto, timbre (opcional)" style={{ marginBottom: 12 }} />
                 <button
-                  className="abtn"
+                  className="abtn-tokens"
                   style={{ width: "100%", fontSize: 13 }}
                   disabled={addingAddr || addrText.length < 5}
                   onClick={async () => {
@@ -320,13 +327,13 @@ export default function MyAccount() {
               <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--t3)" }}>
                 <div style={{ fontSize: 40, marginBottom: 8 }}>📦</div>
                 <p style={{ fontSize: 14 }}>Todavía no hiciste pedidos</p>
-                <button onClick={() => navigate("/")} className="abtn" style={{ marginTop: 12, fontSize: 13 }}>Ir a la tienda</button>
+                <button onClick={() => navigate("/")} className="abtn-tokens" style={{ marginTop: 12, fontSize: 13 }}>Ir a la tienda</button>
               </div>
             )}
 
             {orders.map(o => {
               const statusMap = { new: "Nuevo", confirmed: "Confirmado", preparing: "Preparando", ready: "Listo", delivering: "En camino", delivered: "Entregado", cancelled: "Cancelado" };
-              const statusColors = { new: "#1976D2", confirmed: "#7B1FA2", preparing: "#E65100", ready: "#2E7D32", delivering: "#0277BD", delivered: "#388E3C", cancelled: "#C62828" };
+              const statusColors = { new: "var(--ac)", confirmed: "var(--ac)", preparing: "var(--ac)", ready: "var(--ok, #2A9D6E)", delivering: "var(--ac)", delivered: "var(--ok, #2A9D6E)", cancelled: "var(--err, #C62828)" };
               const isActive = ["new", "confirmed", "preparing", "ready", "delivering"].includes(o.status);
               const isDelivered = o.status === "delivered";
               return (
@@ -334,7 +341,7 @@ export default function MyAccount() {
                   <div onClick={() => navigate(`/order/${o.id}`)} style={{ cursor: "pointer" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                       <code style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", letterSpacing: 1 }}>{formatOrderCode(o.id)}</code>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: statusColors[o.status] || "var(--t3)", background: `${statusColors[o.status] || "#999"}15`, padding: "3px 10px", borderRadius: 20 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: statusColors[o.status] || "var(--t3)", background: `${statusColors[o.status] || "var(--t3)"}15`, padding: "3px 10px", borderRadius: 20 }}>
                         {statusMap[o.status] || o.status}
                       </span>
                     </div>
@@ -371,7 +378,7 @@ export default function MyAccount() {
                 <div style={{ fontSize: 40, marginBottom: 8 }}>❤️</div>
                 <p style={{ fontSize: 14 }}>No tenés favoritos todavía</p>
                 <p style={{ fontSize: 12, marginTop: 4 }}>Tocá el corazón en un producto del catálogo para agregarlo</p>
-                <button onClick={() => navigate("/")} className="abtn" style={{ marginTop: 12, fontSize: 13 }}>Ir a la tienda</button>
+                <button onClick={() => navigate("/")} className="abtn-tokens" style={{ marginTop: 12, fontSize: 13 }}>Ir a la tienda</button>
               </div>
             )}
 
@@ -417,7 +424,7 @@ export default function MyAccount() {
                                 sessionStorage.setItem("lnp_cart", JSON.stringify(cart));
                               } catch {}
                             }}
-                            style={{ padding: "6px 8px", background: "#D97A4C", color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", width: "100%" }}
+                            style={{ padding: "6px 8px", background: "var(--ac)", color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", width: "100%" }}
                           >
                             + Agregar
                           </button>
@@ -433,7 +440,7 @@ export default function MyAccount() {
                     const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
                     if (cartCount > 0) {
                       return (
-                        <button onClick={() => navigate("/")} className="abtn" style={{ width: "100%", fontSize: 14, marginBottom: 12 }}>
+                        <button onClick={() => navigate("/")} className="abtn-tokens" style={{ width: "100%", fontSize: 14, marginBottom: 12 }}>
                           Ver mi pedido ({cartCount} items)
                         </button>
                       );
@@ -441,7 +448,7 @@ export default function MyAccount() {
                   } catch {}
                   return null;
                 })()}
-                <button onClick={() => navigate("/")} className="abtn" style={{ width: "100%", fontSize: 14 }}>
+                <button onClick={() => navigate("/")} className="abtn-tokens" style={{ width: "100%", fontSize: 14 }}>
                   Ir a la tienda
                 </button>
               </div>
@@ -454,9 +461,9 @@ export default function MyAccount() {
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 16 }}>Descuentos y cupones</div>
 
-            <div style={{ background: "linear-gradient(135deg, #E3F2FD, #F3E5F5)", borderRadius: 14, padding: "16px", marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1565C0", marginBottom: 8 }}>Descuentos Rotativos Diarios</div>
-              <p style={{ fontSize: 12, color: "#283593", lineHeight: 1.6, marginBottom: 10 }}>
+            <div style={{ background: "linear-gradient(135deg, var(--ac-soft, var(--b2)), var(--ac-soft, var(--b2)))", borderRadius: 14, padding: "16px", marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ac)", marginBottom: 8 }}>Descuentos Rotativos Diarios</div>
+              <p style={{ fontSize: 12, color: "var(--ac)", lineHeight: 1.6, marginBottom: 10 }}>
                 Cada lunes a jueves tenemos un descuento del 15% en diferentes categorías:
               </p>
               <div style={{ display: "grid", gap: 6 }}>
@@ -466,7 +473,7 @@ export default function MyAccount() {
                   { day: "Miércoles", categories: "Conservas" },
                   { day: "Jueves", categories: "Bebidas" }
                 ].map((d, i) => (
-                  <div key={i} style={{ fontSize: 12, color: "#1565C0" }}>
+                  <div key={i} style={{ fontSize: 12, color: "var(--ac)" }}>
                     <strong>{d.day}:</strong> {d.categories}
                   </div>
                 ))}
@@ -474,7 +481,7 @@ export default function MyAccount() {
             </div>
 
             <input
-              className="cki"
+              className="cki-tokens"
               type="text"
               value={couponSearch}
               onChange={e => setCouponSearch(e.target.value)}
