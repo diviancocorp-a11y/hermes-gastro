@@ -13,7 +13,7 @@ const TAB_ICONS = { perfil: "👤", direcciones: "📍", historial: "📦", favo
 
 export default function MyAccount() {
   const navigate = useNavigate();
-  const { user, profile, addresses, favorites, loading, sendMagicLink, signOut, updateProfile, addAddress, removeAddress, getOrderHistory } = useAuth();
+  const { user, profile, addresses, favorites, loading, sendMagicLink, signOut, updateProfile, addAddress, removeAddress, getOrderHistory, phoneSession, phoneSignOut } = useAuth();
 
   const [tab, setTab] = useState(() => {
     // Leer ?tab= de la URL para abrir directamente la seccion deseada
@@ -62,13 +62,12 @@ export default function MyAccount() {
   // Cupones
   const [couponSearch, setCouponSearch] = useState("");
 
-  // Sync profile fields
+  // Sync profile/phoneSession fields
   useEffect(() => {
-    if (profile) {
-      setEditName(profile.name || "");
-      setEditPhone(profile.phone || "");
-    }
-  }, [profile]);
+    const src = profile || phoneSession || {};
+    setEditName(src.name || "");
+    setEditPhone(src.phone || "");
+  }, [profile, phoneSession]);
 
   // Si el usuario se logueó y tiene un carrito pendiente, volver al checkout
   useEffect(() => {
@@ -115,7 +114,8 @@ export default function MyAccount() {
   );
 
   // --- LOGIN PHONE-FIRST ---
-  if (!user) {
+  // Solo redirigir al login si NO hay ningun tipo de sesion (ni Supabase Auth ni phone-only).
+  if (!user && !phoneSession) {
     return <PhoneLoginScreen onLoggedIn={() => navigate("/")} navigate={navigate} />;
   }
 
@@ -134,9 +134,11 @@ export default function MyAccount() {
         <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--tx)", padding: 4 }}>←</button>
         <div style={{ flex: 1 }}>
           <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 20, margin: 0 }}>Mi Cuenta</h2>
-          <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 2 }}>{user.email}</div>
+          <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 2 }}>{user?.email || phoneSession?.email || phoneSession?.phone || ""}</div>
         </div>
-        <button onClick={signOut} style={{ padding: "8px 14px", background: "var(--b2)", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 600, color: "var(--t2)", cursor: "pointer" }}>
+        <button
+          onClick={() => { if (user) signOut(); else phoneSignOut?.(); navigate("/"); }}
+          style={{ padding: "8px 14px", background: "var(--b2)", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 600, color: "var(--t2)", cursor: "pointer" }}>
           Cerrar sesión
         </button>
       </div>
@@ -171,7 +173,12 @@ export default function MyAccount() {
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Email</label>
-                <input className="cki-tokens" value={user.email} disabled style={{ opacity: 0.6 }} />
+                <input className="cki-tokens" value={user?.email || phoneSession?.email || ""} disabled={!!user} placeholder={!user ? "Conectá tu email" : ""} style={{ opacity: user ? 0.6 : 1 }} />
+                {!user && (
+                  <p style={{ fontSize: 11, color: "var(--t3)", margin: "6px 0 0", lineHeight: 1.5 }}>
+                    Cuenta phone-only. Cargá tu email para acceder a cupones y direcciones guardadas en la nube.
+                  </p>
+                )}
               </div>
             </div>
             <button
