@@ -155,13 +155,14 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset }) {
 // para activar cupones / promociones. El gesto está en el momento de máxima
 // satisfacción (acaba de hacer el pedido), conversion rate alto.
 function EmailCaptureCard({ form }) {
-  const guest = getGuestUser();
-  // Si ya hay email cargado, no mostramos nada
-  if (form?.email || guest?.email) return null;
-
+  // Hooks siempre primero (Rules of Hooks) - aunque pueda retornar null despues.
   const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const guest = getGuestUser();
+
+  // Si ya hay email cargado en el form o en guest, no mostramos nada.
+  if (form?.email || guest?.email) return null;
 
   const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
