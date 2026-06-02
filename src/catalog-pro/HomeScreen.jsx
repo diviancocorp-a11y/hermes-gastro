@@ -13,7 +13,7 @@
 //   onAddToCart(p), onOpenCart(), onSearch(), onSelectCategory(name),
 //   onSelectProduct(p), onOpenAccount()
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
 import {
