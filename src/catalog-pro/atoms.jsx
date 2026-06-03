@@ -128,7 +128,7 @@ export function BottomNav({ active = "home", onChange }) {
 // ── SectionHeader — kicker + title display con em italic + action ──
 export function SectionHeader({ kicker, title, action, onAction, em }) {
   return (
-    <div style={{ padding: "56px 22px 18px", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+    <div style={{ padding: "80px 22px 24px", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
       <div>
         {kicker && <div className="caption" style={{ color: "var(--ac)", marginBottom: 4 }}>{kicker}</div>}
         <h2 className="h-2" style={{ margin: 0 }}>

@@ -155,7 +155,7 @@ export default function HomeScreen({
       </div>
 
       {/* ===== EDITORIAL ===== */}
-      <div style={{ padding: "24px 22px 28px" }}>
+      <div style={{ padding: "28px 22px 44px" }}>
         <h1 className="h-1" style={{ margin: 0, fontSize: 32 }}>
           ¿Qué te <em style={{ fontStyle: "italic", color: "var(--ac)" }}>tienta</em> hoy?
         </h1>

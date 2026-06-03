@@ -308,17 +308,19 @@ export default function Catalog() {
     return new Set(DAILY_DEALS[dow] || []);
   }, [serverNow, ffDeals]);
 
-  // Categorías madre con imagen: prioridad settings > primer producto con foto
+  // Categorías madre con imagen: prioridad settings > primer producto con foto.
+  // Mostramos todas las categorias visibles del backend (no filtramos por
+  // matching de subcategorias). Si el admin la creo, aparece. Productos
+  // pueden matchear con el nombre madre directamente o con una subcategoria.
   const categories = useMemo(() => {
     const catImgs = sett.cat_images || {};
-    const existingSubs = new Set(products.map(r => r.category));
     const hiddenCats = new Set(sett.hidden_cats || []);
     const catNames = sett.cat_names || {};
     const catData = catGroups
-      .filter(g => !hiddenCats.has(g.name) && g.subs.some(s => existingSubs.has(s)))
+      .filter(g => !hiddenCats.has(g.name))
       .map(g => {
         const customImg = catImgs[g.name];
-        const rep = !customImg ? products.find(p => g.subs.includes(p.category) && p.image_url) : null;
+        const rep = !customImg ? products.find(p => (p.category === g.name || g.subs.includes(p.category)) && p.image_url) : null;
         const displayName = catNames[g.name] || g.name;
         return { name: g.name, displayName, icon: g.icon, subs: g.subs, img: customImg || rep?.image_url || null, deal: dealCats.has(g.name) };
       });
@@ -337,12 +339,13 @@ export default function Catalog() {
     return p.sale_price;
   }, [hasDeal]);
 
-  // Filtrar productos por categoría madre seleccionada
+  // Filtrar productos por categoria madre seleccionada.
+  // Match flexible: producto.category puede ser el nombre madre o una subcategoria.
   const filteredProds = useMemo(() => {
     let list = products;
     if (selCat !== "Todos") {
       const group = catGroups.find(g => g.name === selCat);
-      if (group) list = list.filter(r => group.subs.includes(r.category));
+      if (group) list = list.filter(r => r.category === group.name || group.subs.includes(r.category));
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
