@@ -46,6 +46,7 @@ export default function MyAccount() {
   const [editLastName, setEditLastName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editNickname, setEditNickname] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -76,7 +77,8 @@ export default function MyAccount() {
     setEditLastName(parts.slice(1).join(" ") || "");
     setEditPhone(src.phone || "");
     setEditNickname(src.nickname || "");
-  }, [profile, phoneSession]);
+    setEditEmail(src.email || user?.email || "");
+  }, [profile, phoneSession, user]);
 
   // Si el usuario se logueó y tiene un carrito pendiente, volver al checkout
   useEffect(() => {
@@ -196,10 +198,22 @@ export default function MyAccount() {
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Email</label>
-                <input className="cki-tokens" value={user?.email || phoneSession?.email || ""} disabled={!!user} placeholder={!user ? "Conectá tu email" : ""} style={{ opacity: user ? 0.6 : 1 }} />
-                {!user && (
+                <input
+                  className="cki-tokens" type="email"
+                  value={editEmail}
+                  disabled={!!user || !editing}
+                  onChange={e => setEditEmail(e.target.value)}
+                  placeholder={!user ? "tu@email.com" : ""}
+                  style={{ opacity: user ? 0.6 : 1 }}
+                />
+                {!user && !phoneSession?.email && (
                   <p style={{ fontSize: 11, color: "var(--t3)", margin: "6px 0 0", lineHeight: 1.5 }}>
-                    Cuenta phone-only. Cargá tu email para acceder a cupones y direcciones guardadas en la nube.
+                    Cargá tu email para acceder a cupones y direcciones guardadas en la nube.
+                  </p>
+                )}
+                {!user && phoneSession?.email && (
+                  <p style={{ fontSize: 11, color: "var(--ok, #2A9D6E)", margin: "6px 0 0", lineHeight: 1.5 }}>
+                    ✓ Email registrado. Iniciá sesión con magic link para acceder a cupones y direcciones.
                   </p>
                 )}
               </div>
@@ -214,19 +228,20 @@ export default function MyAccount() {
                 // Para phone-only: usar upsertCustomer (no hay user de auth real).
                 if (phoneSession && !user) {
                   try {
+                    const emailClean = (editEmail || phoneSession.email || "").trim().toLowerCase();
                     await upsertCustomer({
                       phone: editPhone || phoneSession.phone,
-                      email: phoneSession.email || null,
+                      email: emailClean || null,
                       name: fullName,
                       nickname: editNickname || null,
                     });
-                    // actualizar guestUser local
+                    // actualizar guestUser local (incluyendo nickname y email nuevo)
                     setGuestUser({
                       id: phoneSession.id,
                       name: fullName,
-                      nickname: editNickname,
+                      nickname: editNickname || "",
                       phone: editPhone || phoneSession.phone,
-                      email: phoneSession.email || "",
+                      email: emailClean,
                     });
                     setSaving(false); setSaved(true); setEditing(false); setTimeout(() => setSaved(false), 2000);
                   } catch (e) { console.warn(e); setSaving(false); }

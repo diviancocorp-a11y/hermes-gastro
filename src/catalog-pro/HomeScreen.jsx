@@ -56,7 +56,8 @@ export default function HomeScreen({
 
   const stories = useMemo(() => buildStories(products, hasDeal), [products, hasDeal]);
   const guest = useGuestUser();
-  const firstName = guest?.name ? guest.name.trim().split(/\s+/)[0] : null;
+  // Priorizar nickname si existe, sino primer nombre del fullname.
+  const firstName = guest?.nickname || (guest?.name ? guest.name.trim().split(/\s+/)[0] : null);
   const recos = useMemo(() => buildRecos(products, hasDeal), [products, hasDeal]);
   const combos = useMemo(
     () => products
