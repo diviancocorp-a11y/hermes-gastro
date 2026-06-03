@@ -46,6 +46,7 @@ export default function MyAccount() {
   const [editLastName, setEditLastName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editNickname, setEditNickname] = useState("");
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -159,28 +160,39 @@ export default function MyAccount() {
         {/* ─── PERFIL ─── */}
         {tab === "perfil" && (
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 16 }}>Datos personales</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 0.5 }}>Datos personales</div>
+              {!editing && (
+                <button onClick={() => setEditing(true)}
+                  style={{ padding: "6px 14px", background: "transparent", border: "1px solid var(--ac)", color: "var(--ac)", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  Editar
+                </button>
+              )}
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "flex", gap: 8 }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Nombre</label>
-                  <input className="cki-tokens" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Juan" />
+                  <input className="cki-tokens" value={editName} disabled={!editing} onChange={e => setEditName(e.target.value)} placeholder="Juan" />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Apellido</label>
-                  <input className="cki-tokens" value={editLastName} onChange={e => setEditLastName(e.target.value)} placeholder="Pérez" />
+                  <input className="cki-tokens" value={editLastName} disabled={!editing} onChange={e => setEditLastName(e.target.value)} placeholder="Pérez" />
                 </div>
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Apodo (opcional)</label>
-                <input className="cki-tokens" value={editNickname} onChange={e => setEditNickname(e.target.value.slice(0, 30))} placeholder="Cómo te gusta que te llamen" />
+                <input className="cki-tokens" value={editNickname} disabled={!editing} onChange={e => setEditNickname(e.target.value.slice(0, 30))} placeholder="Cómo te gusta que te llamen" />
                 <p style={{ fontSize: 11, color: "var(--t3)", margin: "4px 0 0", lineHeight: 1.5 }}>
                   Si lo cargás, el catálogo te saluda con tu apodo.
                 </p>
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Teléfono</label>
-                <input className="cki-tokens" type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value.replace(/\D/g, ""))} placeholder="Ej: 1155443322" />
+                <input className="cki-tokens" type="tel" value={editPhone} disabled placeholder="Ej: 1155443322" />
+                <p style={{ fontSize: 11, color: "var(--t3)", margin: "4px 0 0", lineHeight: 1.5 }}>
+                  El teléfono es tu identidad. Para cambiarlo contactanos.
+                </p>
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Email</label>
@@ -192,7 +204,7 @@ export default function MyAccount() {
                 )}
               </div>
             </div>
-            <button
+            {editing && <button
               className="abtn-tokens"
               style={{ width: "100%", marginTop: 16 }}
               disabled={saving}
@@ -216,23 +228,33 @@ export default function MyAccount() {
                       phone: editPhone || phoneSession.phone,
                       email: phoneSession.email || "",
                     });
-                    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
+                    setSaving(false); setSaved(true); setEditing(false); setTimeout(() => setSaved(false), 2000);
                   } catch (e) { console.warn(e); setSaving(false); }
                   return;
                 }
                 // Auth real -> updateProfile (Supabase)
                 const ok = await updateProfile({ name: fullName, phone: editPhone, nickname: editNickname });
                 setSaving(false);
-                if (ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
+                if (ok) { setSaved(true); setEditing(false); setTimeout(() => setSaved(false), 2000); }
               }}
             >
               {saving ? "Guardando..." : saved ? "✓ Guardado" : "Guardar cambios"}
-            </button>
+            </button>}
           </div>
         )}
 
         {/* ─── DIRECCIONES ─── */}
-        {tab === "direcciones" && (
+        {tab === "direcciones" && !user && (
+          <AccessGate
+            tabLabel="direcciones"
+            hasEmail={!!(phoneSession?.email)}
+            email={phoneSession?.email || ""}
+            sendMagicLink={sendMagicLink}
+            setEditing={setEditing}
+            setTab={setTab}
+          />
+        )}
+        {tab === "direcciones" && user && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 0.5 }}>Mis direcciones</div>
@@ -506,7 +528,17 @@ export default function MyAccount() {
         )}
 
         {/* ─── CUPONES Y DESCUENTOS ─── */}
-        {tab === "cupones" && (
+        {tab === "cupones" && !user && (
+          <AccessGate
+            tabLabel="cupones"
+            hasEmail={!!(phoneSession?.email)}
+            email={phoneSession?.email || ""}
+            sendMagicLink={sendMagicLink}
+            setEditing={setEditing}
+            setTab={setTab}
+          />
+        )}
+        {tab === "cupones" && user && (
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 16 }}>Descuentos y cupones</div>
 
@@ -614,8 +646,14 @@ function PhoneLoginScreen({ onLoggedIn, navigate }) {
       return;
     }
     setLoading(true);
-    const fullName = match?.displayName || "";
-    const result = await phoneLogin({ phone, name: fullName });
+    // FIX: usar fullName real (no displayName anonimizado "Juan G.") y
+    // propagar el nickname para que persista entre sesiones.
+    const realFullName = match?.fullName || match?.displayName || "";
+    const result = await phoneLogin({
+      phone,
+      name: realFullName,
+      nickname: match?.nickname || "",
+    });
     setLoading(false);
     if (result.ok) onLoggedIn();
     else setError("No pudimos iniciarte sesión. Intentá de nuevo.");
@@ -740,6 +778,60 @@ function PhoneLoginScreen({ onLoggedIn, navigate }) {
     </div>
   );
 }
+
+// ─── AccessGate ───────────────────────────────────────────────
+// Para phone-only sin sesion auth real: cupones y direcciones quedan
+// gateados. Si no tiene email -> CTA "Registrá tu email". Si tiene email
+// -> CTA "Mandanos magic link" para abrir sesion cloud.
+function AccessGate({ tabLabel, hasEmail, email, sendMagicLink, setEditing, setTab }) {
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const onSendLink = async () => {
+    if (!email) return;
+    setSending(true);
+    const res = await sendMagicLink(email, false);
+    setSending(false);
+    if (res?.ok) setSent(true);
+  };
+
+  return (
+    <div style={{ padding: "32px 8px", textAlign: "center" }}>
+      <div style={{ fontSize: 44, marginBottom: 14 }}>{tabLabel === "cupones" ? "🎟️" : "📍"}</div>
+      <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 22, margin: "0 0 8px", color: "var(--tx)" }}>
+        Tus {tabLabel}
+      </h3>
+      {!hasEmail ? (
+        <>
+          <p style={{ margin: "0 auto 20px", maxWidth: 320, fontSize: 13, color: "var(--t2)", lineHeight: 1.6 }}>
+            Para acceder a tus {tabLabel}, registrá tu email en tu perfil. Lo necesitamos para que estén
+            sincronizados y seguros.
+          </p>
+          <button onClick={() => { setTab("perfil"); setEditing(true); }}
+            className="abtn-tokens" style={{ padding: "12px 22px" }}>
+            Registrar mi email
+          </button>
+        </>
+      ) : sent ? (
+        <div style={{ maxWidth: 340, margin: "0 auto", padding: "14px 18px", background: "var(--ok-soft, rgba(42,157,110,0.1))", border: "1px solid var(--ok, #2A9D6E)", borderRadius: 12, color: "var(--ok, #2A9D6E)", fontSize: 13, fontWeight: 600 }}>
+          ✓ Te mandamos un link mágico a {email}. Tocalo para abrir sesión y acceder a tus {tabLabel}.
+        </div>
+      ) : (
+        <>
+          <p style={{ margin: "0 auto 20px", maxWidth: 340, fontSize: 13, color: "var(--t2)", lineHeight: 1.6 }}>
+            Para ver tus {tabLabel} necesitás iniciar sesión con tu email registrado (<strong style={{ color: "var(--tx)" }}>{email}</strong>).
+            Te mandamos un link mágico para abrir sesión.
+          </p>
+          <button onClick={onSendLink} disabled={sending}
+            className="abtn-tokens" style={{ padding: "12px 22px" }}>
+            {sending ? "Enviando..." : "Enviar link mágico"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Estilos compartidos del login (tokens-only) ──────────────────
 const lblStyle = {
   display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
