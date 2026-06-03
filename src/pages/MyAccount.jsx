@@ -7,7 +7,8 @@ import business from "@business";
 import ReferralCard from "../components/catalog/ReferralCard";
 import GuestWelcomeCard from "../catalog-pro/GuestWelcomeCard";
 import AccountMenu from "../catalog-pro/AccountMenu";
-import { lookupCustomerByPhone, phoneLogin, cleanPhone, blockPhone, isPhoneBlocked } from "../services/phoneAuth";
+import { lookupCustomerByPhone, phoneLogin, cleanPhone, blockPhone, isPhoneBlocked, upsertCustomer } from "../services/phoneAuth";
+import { setGuestUser } from "../lib/guestUser";
 
 const TABS = ["perfil", "direcciones", "historial", "favoritos", "cupones", "referidos"];
 const TAB_ICONS = { perfil: "👤", direcciones: "📍", historial: "📦", favoritos: "❤️", cupones: "🎟️", referidos: "🎁" };

@@ -105,9 +105,15 @@ export default function HomeScreen({
             <div style={{
               width: 36, height: 36, borderRadius: 999,
               background: store.logoColor || "linear-gradient(135deg, var(--ac), var(--ac2))",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#fff", fontFamily: "var(--font-heading)", fontSize: 18,
-            }}>{logoLetter}</div>
+              display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
+              color: "#fff", fontFamily: "var(--font-heading)", fontSize: 18, flexShrink: 0,
+            }}>
+              {store.logoUrl ? (
+                <img src={store.logoUrl} alt={store.name || "Logo"} loading="eager"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  onError={(e) => { e.currentTarget.style.display = "none"; }} />
+              ) : logoLetter}
+            </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, color: "var(--tx)", lineHeight: 1 }}>
                 {firstName ? `${greeting}, ${firstName} 👋` : (store.name || "Tienda")}

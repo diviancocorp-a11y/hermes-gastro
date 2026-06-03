@@ -683,6 +683,7 @@ export default function Catalog() {
     pickupTime: sett.prep_time_min ? `${sett.prep_time_min} min` : null,
     logoLetter: sett.logo_letter || fallbackSettings.logo_letter,
     logoColor: sett.logo_color || fallbackSettings.logo_color,
+    logoUrl: sett.logo_url || null,
   };
 
   return (
