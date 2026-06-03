@@ -135,6 +135,15 @@ export default function HomeScreen({
                   ? `${store.name || "Tienda"} · ${store.isOpen ? "Abierto" : "Cerrado"}`
                   : (store.isOpen ? `Abierto${store.pickupTime ? ` · retiro ${store.pickupTime}` : ""}` : "Cerrado · pedidos programados")}
               </div>
+              {settings?.slogan && (
+                <div style={{
+                  marginTop: 4, fontSize: 11.5, color: "var(--t3)",
+                  lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}>
+                  {settings.slogan}
+                </div>
+              )}
             </div>
           </div>
           <AccountMenu
@@ -150,11 +159,6 @@ export default function HomeScreen({
         <h1 className="h-1" style={{ margin: 0, fontSize: 32 }}>
           ¿Qué te <em style={{ fontStyle: "italic", color: "var(--t2)" }}>tienta</em> hoy?
         </h1>
-        {settings?.slogan && (
-          <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--t2)", lineHeight: 1.4 }}>
-            {settings.slogan}
-          </p>
-        )}
       </div>
 
       {/* ===== SMART SEARCH ===== */}
