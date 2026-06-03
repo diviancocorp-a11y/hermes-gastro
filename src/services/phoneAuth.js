@@ -1,28 +1,16 @@
 // src/services/phoneAuth.js
 //
-// Phone-only login (sin Supabase Auth). El usuario ingresa SOLO su teléfono
-// y entra. La "sesión" vive en localStorage del dispositivo via guestUser
-// extendido — NO hay sesión real de Supabase Auth, por lo tanto:
-//   - No tiene acceso a tablas con RLS auth.uid()
-//   - No sincroniza entre dispositivos
-//   - Tampoco tiene los riesgos de compartir password
-//
-// Para cosas sensibles (cupones, perfiles persistentes cloud), el cliente
-// hace magic link aparte ("upgrade" voluntario).
+// Phone-only login (sin Supabase Auth). El usuario ingresa SOLO su telefono
+// y entra. La "sesion" vive en localStorage del dispositivo via guestUser
+// extendido — NO hay sesion real de Supabase Auth.
 
 import { supabase } from '../lib/supabase';
 import { setGuestUser, clearGuestUser } from '../lib/guestUser.js';
 
-/** Limpia un teléfono a solo dígitos. */
 export function cleanPhone(phone) {
   return String(phone || '').replace(/\D/g, '');
 }
 
-/**
- * Busca si ya hay un cliente con este teléfono.
- * RPC SECURITY DEFINER que solo devuelve el nombre anonimizado y has_email.
- * Si no hay match, retorna null.
- */
 export async function lookupCustomerByPhone(phone) {
   const cleaned = cleanPhone(phone);
   if (cleaned.length < 10) return null;
@@ -32,24 +20,19 @@ export async function lookupCustomerByPhone(phone) {
     console.error('lookupCustomerByPhone:', error.message);
     return null;
   }
-  // RPC retorna array (TABLE) — tomamos el primero o null
   const row = Array.isArray(data) ? data[0] : data;
   if (!row || !row.display_name) return null;
   return {
     displayName: row.display_name,
     fullName: row.full_name || row.display_name,
     nickname: row.nickname || "",
+    email: row.email || "",
     hasEmail: !!row.has_email,
     orderCount: row.order_count || 0,
     lastOrderAt: row.last_order_at || null,
   };
 }
 
-/**
- * Upsert dedup-aware del customer (busca por phone primero, después por email).
- * Retorna el customer_id (uuid). Usado tanto en signup phone-only como en
- * el guest order.
- */
 export async function upsertCustomer({ phone, email, name, birth_date = null, nickname = null }) {
   const { data, error } = await supabase.rpc('upsert_customer', {
     p_phone: phone || null,
@@ -62,15 +45,9 @@ export async function upsertCustomer({ phone, email, name, birth_date = null, ni
     console.error('upsertCustomer:', error.message);
     return null;
   }
-  return data; // uuid del customer
+  return data;
 }
 
-/**
- * "Login" phone-only:
- * - Hace upsert del customer (crea o reusa).
- * - Persiste en localStorage como guestUser extendido con customer_id.
- * - Retorna el guest object para que el AuthContext sepa actualizarse.
- */
 export async function phoneLogin({ phone, name, email = '', birth_date = null, nickname = '' }) {
   const customerId = await upsertCustomer({ phone, email, name, birth_date, nickname });
   if (!customerId) return { ok: false, error: 'no_customer' };
@@ -86,21 +63,13 @@ export async function phoneLogin({ phone, name, email = '', birth_date = null, n
   return { ok: true, guest };
 }
 
-/** Cierra la sesión phone-only (limpia localStorage). */
 export function phoneLogout() {
   clearGuestUser();
 }
 
 // ─── Bloqueo de telefonos rechazados en este dispositivo ──────────
-// Cuando alguien ingresa un telefono y en la confirmacion dice "No, no soy yo",
-// guardamos {phone, expiresAt} en localStorage. Por 10 minutos ese mismo numero
-// no se puede usar EN ESTE DISPOSITIVO. Se desbloquea automaticamente despues.
-//
-// Limitacion conocida: bypassable con modo incognito u otro browser. Es proteccion
-// contra reintento casual, no contra atacante motivado.
-
 const BLOCK_KEY = "hermes_phone_blocks_v1";
-const BLOCK_DURATION_MS = 10 * 60 * 1000; // 10 minutos
+const BLOCK_DURATION_MS = 10 * 60 * 1000;
 
 function readBlocks() {
   try {
@@ -109,7 +78,6 @@ function readBlocks() {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     const now = Date.now();
-    // Filtrar expirados al leer (auto-cleanup)
     return parsed.filter((b) => b && b.phone && b.expiresAt > now);
   } catch {
     return [];
@@ -128,7 +96,6 @@ export function blockPhone(phone) {
   writeBlocks(blocks);
 }
 
-/** Retorna { blocked: boolean, minutesLeft: number } */
 export function isPhoneBlocked(phone) {
   const cleaned = cleanPhone(phone);
   if (cleaned.length < 10) return { blocked: false, minutesLeft: 0 };

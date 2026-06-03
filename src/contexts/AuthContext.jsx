@@ -7,6 +7,9 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  // customerExtras: campos que viven en customers y no en profiles (ej: nickname).
+  // Se carga matching por email despues del login con magic link.
+  const [customerExtras, setCustomerExtras] = useState(null);
   const [addresses, setAddresses] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,7 +17,6 @@ export function AuthProvider({ children }) {
   const guestUser = useGuestUser();
   const phoneSession = (!user && guestUser?.id) ? guestUser : null;
 
-  // Sesion unificada (phone-only + magic link en un solo objeto).
   const buildSession = () => {
     if (phoneSession) {
       const name = phoneSession.name || "";
@@ -34,17 +36,18 @@ export function AuthProvider({ children }) {
       };
     }
     if (user) {
-      const name = profile?.name || "";
+      const name = profile?.name || customerExtras?.name || "";
+      const nickname = profile?.nickname || customerExtras?.nickname || "";
       return {
         kind: "auth",
         id: user.id,
         name,
-        nickname: profile?.nickname || "",
-        firstName: profile?.nickname
+        nickname,
+        firstName: nickname
           || (name ? name.trim().split(/\s+/)[0] : "")
           || (user.email ? user.email.split("@")[0] : "Cuenta"),
         email: user.email || profile?.email || "",
-        phone: profile?.phone || "",
+        phone: profile?.phone || customerExtras?.phone || "",
         displayName: name || user.email || "Tu cuenta",
         displaySub: user.email || profile?.phone || "",
         hasEmail: true,
@@ -54,8 +57,10 @@ export function AuthProvider({ children }) {
   };
   const session = buildSession();
 
-  const loadUserData = async (userId) => {
-    if (!userId) { setProfile(null); setAddresses([]); setFavorites([]); return; }
+  const loadUserData = async (userId, userEmail) => {
+    if (!userId) {
+      setProfile(null); setCustomerExtras(null); setAddresses([]); setFavorites([]); return;
+    }
     try {
       const [profRes, addrRes, favRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
@@ -65,6 +70,17 @@ export function AuthProvider({ children }) {
       if (profRes.data) setProfile(profRes.data);
       if (addrRes.data) setAddresses(addrRes.data);
       if (favRes.data) setFavorites(favRes.data.map(f => f.recipe_id));
+
+      // Customer matching por email: trae nickname/phone que el user guardo
+      // mientras era guest (phone-only). profiles no tiene nickname column.
+      if (userEmail) {
+        const { data: cust } = await supabase
+          .from("customers")
+          .select("name, nickname, phone, email")
+          .eq("email", userEmail.toLowerCase())
+          .maybeSingle();
+        if (cust) setCustomerExtras(cust);
+      }
     } catch (e) {
       console.warn("Error cargando datos de usuario:", e);
     }
@@ -74,14 +90,14 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session: sbSession } }) => {
       const u = sbSession?.user || null;
       setUser(u);
-      if (u) loadUserData(u.id);
+      if (u) loadUserData(u.id, u.email);
       setLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sbSession) => {
       const u = sbSession?.user || null;
       setUser(u);
-      if (u) loadUserData(u.id);
-      else { setProfile(null); setAddresses([]); setFavorites([]); }
+      if (u) loadUserData(u.id, u.email);
+      else { setProfile(null); setCustomerExtras(null); setAddresses([]); setFavorites([]); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -126,7 +142,7 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     clearGuestUser();
-    setUser(null); setProfile(null); setAddresses([]); setFavorites([]);
+    setUser(null); setProfile(null); setCustomerExtras(null); setAddresses([]); setFavorites([]);
   };
 
   const phoneSignOut = () => { clearGuestUser(); };
@@ -209,7 +225,7 @@ export function AuthProvider({ children }) {
       addAddress, removeAddress, updateAddress,
       toggleFavorite, isFavorite,
       getOrderHistory,
-      reload: () => user && loadUserData(user.id),
+      reload: () => user && loadUserData(user.id, user.email),
     }}>
       {children}
     </AuthContext.Provider>

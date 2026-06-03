@@ -664,12 +664,14 @@ function PhoneLoginScreen({ onLoggedIn, navigate }) {
     }
     setLoading(true);
     // FIX: usar fullName real (no displayName anonimizado "Juan G.") y
-    // propagar el nickname para que persista entre sesiones.
+    // propagar nickname + email para que persistan entre sesiones (no
+    // perder datos al hacer logout + re-login phone).
     const realFullName = match?.fullName || match?.displayName || "";
     const result = await phoneLogin({
       phone,
       name: realFullName,
       nickname: match?.nickname || "",
+      email: match?.email || "",
     });
     setLoading(false);
     if (result.ok) onLoggedIn();
@@ -898,6 +900,7 @@ const inputStyle = {
 const btnPrimaryStyle = {
   width: "100%", padding: "13px 16px",
   background: "var(--ac)", color: "#fff",
-  border: 0, borderRadius: 12,
+  border: 0,
+ borderRadius: 12,
   fontFamily: "inherit", fontSize: 14, fontWeight: 700, cursor: "pointer",
 };
