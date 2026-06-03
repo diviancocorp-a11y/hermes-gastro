@@ -267,6 +267,7 @@ export default function MyAccount() {
             sendMagicLink={sendMagicLink}
             setEditing={setEditing}
             setTab={setTab}
+            phoneSession={phoneSession}
           />
         )}
         {tab === "direcciones" && user && (
@@ -551,6 +552,7 @@ export default function MyAccount() {
             sendMagicLink={sendMagicLink}
             setEditing={setEditing}
             setTab={setTab}
+            phoneSession={phoneSession}
           />
         )}
         {tab === "cupones" && user && (
@@ -798,16 +800,39 @@ function PhoneLoginScreen({ onLoggedIn, navigate }) {
 // Para phone-only sin sesion auth real: cupones y direcciones quedan
 // gateados. Si no tiene email -> CTA "Registrá tu email". Si tiene email
 // -> CTA "Mandanos magic link" para abrir sesion cloud.
-function AccessGate({ tabLabel, hasEmail, email, sendMagicLink, setEditing, setTab }) {
+//
+// Importante: phone-only NO tiene cuenta en auth.users. Si intentamos
+// magic link con isSignUp=false, Supabase devuelve 'not_registered'.
+// Estrategia: probar primero login, si falla con not_registered probar
+// signUp (que crea la cuenta auth y envia confirm email magic link).
+function AccessGate({ tabLabel, hasEmail, email, sendMagicLink, setEditing, setTab, phoneSession }) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+
+  // Countdown del reenvio
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   const onSendLink = async () => {
-    if (!email) return;
-    setSending(true);
-    const res = await sendMagicLink(email, false);
+    if (!email || sending || cooldown > 0) return;
+    setSending(true); setError("");
+    // 1) Probar login
+    let res = await sendMagicLink(email, false);
+    // 2) Si no esta registrado en auth.users, hacer signUp para crear la cuenta auth
+    if (!res?.ok && res?.error === "not_registered") {
+      const metadata = { name: phoneSession?.name || "", phone: phoneSession?.phone || "" };
+      res = await sendMagicLink(email, true, metadata);
+    }
     setSending(false);
-    if (res?.ok) setSent(true);
+    if (res?.ok) { setSent(true); setCooldown(60); }
+    else if (res?.error === "rate_limit") setError("Esperá un minuto antes de reenviar.");
+    else if (res?.error === "already_registered") setError("Tu email ya tiene una cuenta. Probá iniciar sesión desde el login.");
+    else setError(res?.error || "No pudimos enviar el link. Intentá de nuevo.");
   };
 
   return (
@@ -827,19 +852,28 @@ function AccessGate({ tabLabel, hasEmail, email, sendMagicLink, setEditing, setT
             Registrar mi email
           </button>
         </>
-      ) : sent ? (
-        <div style={{ maxWidth: 340, margin: "0 auto", padding: "14px 18px", background: "var(--ok-soft, rgba(42,157,110,0.1))", border: "1px solid var(--ok, #2A9D6E)", borderRadius: 12, color: "var(--ok, #2A9D6E)", fontSize: 13, fontWeight: 600 }}>
-          ✓ Te mandamos un link mágico a {email}. Tocalo para abrir sesión y acceder a tus {tabLabel}.
-        </div>
       ) : (
         <>
-          <p style={{ margin: "0 auto 20px", maxWidth: 340, fontSize: 13, color: "var(--t2)", lineHeight: 1.6 }}>
-            Para ver tus {tabLabel} necesitás iniciar sesión con tu email registrado (<strong style={{ color: "var(--tx)" }}>{email}</strong>).
-            Te mandamos un link mágico para abrir sesión.
-          </p>
-          <button onClick={onSendLink} disabled={sending}
-            className="abtn-tokens" style={{ padding: "12px 22px" }}>
-            {sending ? "Enviando..." : "Enviar link mágico"}
+          {sent ? (
+            <div style={{ maxWidth: 340, margin: "0 auto 16px", padding: "14px 18px", background: "var(--ok-soft, rgba(42,157,110,0.1))", border: "1px solid var(--ok, #2A9D6E)", borderRadius: 12, color: "var(--ok, #2A9D6E)", fontSize: 13, fontWeight: 600 }}>
+              ✓ Link enviado a <strong>{email}</strong>. Tocá el link en tu email para abrir sesión. Revisá la carpeta de spam si no lo ves.
+            </div>
+          ) : (
+            <p style={{ margin: "0 auto 20px", maxWidth: 340, fontSize: 13, color: "var(--t2)", lineHeight: 1.6 }}>
+              Para ver tus {tabLabel} necesitás iniciar sesión con tu email registrado (<strong style={{ color: "var(--tx)" }}>{email}</strong>).
+              Te mandamos un link mágico para abrir sesión.
+            </p>
+          )}
+
+          {error && (
+            <p style={{ fontSize: 12, color: "var(--err, #C62828)", margin: "0 0 12px", maxWidth: 340, marginInline: "auto" }}>{error}</p>
+          )}
+
+          <button onClick={onSendLink} disabled={sending || cooldown > 0}
+            className="abtn-tokens" style={{ padding: "12px 22px", opacity: (sending || cooldown > 0) ? 0.5 : 1 }}>
+            {sending ? "Enviando..." :
+             cooldown > 0 ? `Reenviar en ${cooldown}s` :
+             sent ? "Reenviar link" : "Enviar link mágico"}
           </button>
         </>
       )}
