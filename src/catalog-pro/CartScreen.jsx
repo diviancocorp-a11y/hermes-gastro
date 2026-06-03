@@ -19,8 +19,15 @@ export default function CartScreen({
   items = [],
   subtotal = 0,
   onBack, onUpdateQty, onContinue, onSeguirAgregando,
+  // Upsell: productos populares para mostrar como "Lo mas pedido"
+  // antes del checkout. El user puede agregarlos al carrito desde aca.
+  topProducts = [],
+  onAddProduct,
 }) {
   const count = items.reduce((s, it) => s + it.qty, 0);
+  // Excluir lo que ya esta en el carrito.
+  const cartIds = new Set(items.map(it => it.id));
+  const upsell = (topProducts || []).filter(p => !cartIds.has(p.id)).slice(0, 6);
 
   if (items.length === 0) {
     return (
@@ -96,6 +103,43 @@ export default function CartScreen({
         </div>
       </div>
 
+      {/* Upsell: Lo mas pedido (antes era una seccion del home) */}
+      {upsell.length > 0 && (
+        <div style={{ padding: "12px 22px 8px" }}>
+          <div style={{ marginBottom: 12 }}>
+            <div className="caption" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--t3)" }}>Sumale algo extra</div>
+            <h3 style={{ margin: "4px 0 0", fontFamily: "var(--font-heading)", fontSize: 20, color: "var(--tx)" }}>
+              Lo mas <em style={{ fontStyle: "italic", color: "var(--ac)" }}>pedido</em>
+            </h3>
+          </div>
+          <div className="cp-no-scrollbar" style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 4 }}>
+            {upsell.map(p => (
+              <div key={p.id} style={{
+                flex: "0 0 140px", border: "1px solid var(--line)", borderRadius: 12,
+                background: "var(--bg)", overflow: "hidden", display: "flex", flexDirection: "column",
+              }}>
+                <div style={{ height: 90, background: toneFor(p.name), overflow: "hidden" }}>
+                  {p.image_url && <img src={p.image_url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = "none"; }} />}
+                </div>
+                <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+                  <div style={{ fontFamily: "var(--font-heading)", fontSize: 13, color: "var(--tx)", lineHeight: 1.2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 32 }}>{p.name}</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--tx)" }}>{fmtAR(p.sale_price)}</span>
+                    <button type="button" onClick={() => onAddProduct?.(p)} style={{
+                      width: 28, height: 28, borderRadius: 999, border: 0,
+                      background: "var(--ac)", color: "#fff", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }} aria-label="Agregar">
+                      <Icon name="plus" size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Sticky CTA */}
       <div style={{
         position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50,
@@ -122,5 +166,14 @@ export default function CartScreen({
   );
 }
 
-const iconBtn = { width: 38, height: 38, borderRadius: 999, background: "transparent", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--tx)", cursor: "pointer", flexShrink: 0 };
-const stepBtn = { width: 30, height: 30, border: 0, background: "transparent", color: "var(--t2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" };
+const iconBtn = {
+  width: 38, height: 38, borderRadius: 999, background: "transparent",
+  border: "1px solid var(--line)", display: "flex", alignItems: "center",
+  justifyContent: "center", color: "var(--tx)", cursor: "pointer",
+};
+
+const stepBtn = {
+  width: 28, height: 28, background: "transparent", border: 0,
+  color: "var(--tx)", cursor: "pointer",
+  display: "flex", alignItems: "center", justifyContent: "center",
+};

@@ -45,11 +45,12 @@ export default function HomeScreen({
   store = {}, userName, products = [], categories = [],
   cartCount = 0, cartTotal = 0,
   hasDeal, dealPrice, prepDefault,
-  onAddToCart, onOpenCart, onSearch, onSelectCategory, onSelectProduct, onOpenAccount,
+  onAddToCart, onOpenCart, onSelectProduct, onOpenAccount,
   session, onLogout,
   settings = {},
+  searchQuery = "", onSearchChange,
 }) {
-  const [activeCat, setActiveCat] = useState("all");
+  const [activeCat, setActiveCat] = useState("Todos");
   const [activeFilter, setActiveFilter] = useState(null);
   const [storyIdx, setStoryIdx] = useState(0);
 
@@ -65,10 +66,27 @@ export default function HomeScreen({
       .map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault })),
     [products, hasDeal, dealPrice, prepDefault]
   );
-  const popular = useMemo(
-    () => products.slice(0, 6).map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault })),
-    [products, hasDeal, dealPrice, prepDefault]
-  );
+  // Grid completo de TODOS los productos del catalogo, filtrados por
+  // categoria activa + searchQuery. Antes era solo `popular` (top 6).
+  const gridProducts = useMemo(() => {
+    let list = products;
+    if (activeCat && activeCat !== "Todos") {
+      const cat = categories.find(c => c.name === activeCat);
+      if (cat) {
+        list = list.filter(p =>
+          p.category === cat.name || (cat.subs || []).includes(p.category)
+        );
+      }
+    }
+    const q = (searchQuery || "").trim().toLowerCase();
+    if (q) {
+      list = list.filter(p =>
+        (p.name || "").toLowerCase().includes(q) ||
+        (p.description || "").toLowerCase().includes(q)
+      );
+    }
+    return list.map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault }));
+  }, [products, categories, activeCat, searchQuery, hasDeal, dealPrice, prepDefault]);
 
   useEffect(() => {
     if (stories.length === 0) return;
@@ -161,25 +179,37 @@ export default function HomeScreen({
         </h1>
       </div>
 
-      {/* ===== SMART SEARCH ===== */}
+      {/* ===== SMART SEARCH (in-place filter) ===== */}
       <div style={{ padding: "0 22px 18px" }}>
-        <button onClick={onSearch} style={{
+        <div style={{
           width: "100%", height: 50, background: "var(--b2)", borderRadius: 14,
           display: "flex", alignItems: "center", padding: "0 16px", gap: 12,
-          border: "1px solid transparent", cursor: "pointer", fontFamily: "var(--font-body)",
+          border: "1px solid transparent", fontFamily: "var(--font-body)",
         }}>
           <Icon name="search" size={18} style={{ color: "var(--t2)" }} />
-          <div className="body-m" style={{ flex: 1, color: "var(--t3)", display: "flex", alignItems: "baseline", gap: 4, textAlign: "left" }}>
-            <span>Buscar </span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchChange?.(e.target.value)}
+            placeholder="Buscar productos..."
+            style={{
+              flex: 1, height: "100%", border: 0, outline: "none",
+              background: "transparent", color: "var(--tx)",
+              fontFamily: "var(--font-body)", fontSize: 14,
+            }}
+          />
+          {searchQuery ? (
+            <button type="button" onClick={() => onSearchChange?.("")} style={{
+              width: 28, height: 28, borderRadius: 999, background: "var(--bg)",
+              border: "1px solid var(--line)", color: "var(--t2)", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }} aria-label="Limpiar busqueda">
+              <Icon name="x" size={12} />
+            </button>
+          ) : (
             <SearchTyping />
-          </div>
-          <div style={{
-            width: 32, height: 32, borderRadius: 8, background: "var(--bg)",
-            display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--line)",
-          }}>
-            <Icon name="filter" size={14} style={{ color: "var(--t2)" }} />
-          </div>
-        </button>
+          )}
+        </div>
       </div>
 
       {/* ===== STORIES ===== */}
@@ -222,11 +252,13 @@ export default function HomeScreen({
           <div className="caption">Carta · {totalCount} productos</div>
         </div>
         <div className="cp-no-scrollbar" style={{ display: "flex", gap: 6, padding: "0 22px", overflowX: "auto" }}>
-          {[{ name: "all", displayName: "Todos" }, ...categories.filter(c => c.name !== "Todos")].map(c => {
+          {categories.map(c => {
             const isActive = activeCat === c.name;
-            const count = c.name === "all" ? totalCount : products.filter(p => (c.subs || []).includes(p.category)).length;
+            const count = c.name === "Todos"
+              ? totalCount
+              : products.filter(p => p.category === c.name || (c.subs || []).includes(p.category)).length;
             return (
-              <button key={c.name} onClick={() => { setActiveCat(c.name); if (c.name !== "all") onSelectCategory?.(c.name); }} style={{
+              <button key={c.name} onClick={() => setActiveCat(c.name)} style={{
                 flex: "0 0 auto", height: 36, padding: "0 14px", borderRadius: 999,
                 background: isActive ? "var(--tx)" : "transparent",
                 color: isActive ? "var(--bg)" : "var(--t2)",
@@ -321,10 +353,15 @@ export default function HomeScreen({
         </>
       )}
 
-      {/* ===== POPULARES (grid 2) ===== */}
-      <SectionHeader title="Lo más" em="pedido" />
+      {/* ===== CARTA — TODOS los productos filtrados por categoria + busqueda ===== */}
+      <SectionHeader title="Nuestra" em="carta" />
+      {gridProducts.length === 0 && (
+        <div style={{ padding: "20px 22px", color: "var(--t3)", fontSize: 14, textAlign: "center" }}>
+          No encontramos productos con ese filtro.
+        </div>
+      )}
       <div style={{ padding: "0 22px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 14 }}>
-        {popular.map(p => (
+        {gridProducts.map(p => (
           <div key={p.id} onClick={() => onSelectProduct?.(p._raw)} style={{ position: "relative", cursor: "pointer", display: "flex", flexDirection: "column" }}>
             <div style={{ position: "relative" }}>
               <ProductPhoto src={p.img} height={140} radius={12} tone={p.tone} />
@@ -406,7 +443,7 @@ function AiRecosCollapsible({ recos, content, onSelectProduct: _ }) {
             <Icon name="sparkle" size={12} stroke={2} />
           </span>
           <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ac)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Recomendaciones para ti · {recos.length}
+            Recomendaciones para ti
           </span>
         </span>
         <span style={{ fontSize: 16, color: "var(--ac)", transition: "transform 200ms", transform: open ? "rotate(180deg)" : "none" }}>⌄</span>

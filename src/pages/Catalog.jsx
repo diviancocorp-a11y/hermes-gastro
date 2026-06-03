@@ -675,6 +675,8 @@ export default function Catalog() {
       onUpdateQty={(id, qty) => updQ(id, qty)}
       onSeguirAgregando={() => setShowCart(false)}
       onContinue={() => { setShowCart(false); setShowCk(true); }}
+      topProducts={products.slice(0, 8)}
+      onAddProduct={(p) => addC(p)}
     />
   );
 
@@ -706,8 +708,8 @@ export default function Catalog() {
         prepDefault={sett.prep_time_min}
         onAddToCart={(p) => addC(p)}
         onOpenCart={() => setShowCart(true)}
-        onSearch={() => setCpScreen("search")}
-        onSelectCategory={(name) => { const cat = categories.find(c => c.name === name); setCpScreen({ type: "category", name, displayName: cat?.displayName || name, subs: cat?.subs || [] }); }}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
         onSelectProduct={(p) => { setCpDetail(p); window.scrollTo({ top: 0 }); }}
         onOpenAccount={(tab) => navigate(tab ? `/mi-cuenta?tab=${tab}` : "/mi-cuenta")}
       />
