@@ -15,6 +15,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import Icon from "./Icon";
+import AccountMenu from "./AccountMenu";
 import { fmtAR } from "./format";
 import {
   ProductPhoto, PriceTag, Rating, StickyCart, SectionHeader, AddRound,
@@ -121,7 +122,7 @@ export default function HomeScreen({
           </div>
           <AccountMenu
             phoneSession={phoneSession}
-            onOpenAccount={onOpenAccount}
+            onSelect={onOpenAccount}
             onPhoneLogout={onPhoneLogout}
           />
         </div>
@@ -375,95 +376,6 @@ export default function HomeScreen({
     </div>
   );
 }
-
-
-// ─── AccountMenu: dropdown del header con accesos a mi cuenta ──
-// Reemplaza el viejo BottomNavBar. Da accesos directos a las tabs
-// de /mi-cuenta usando ?tab=X (perfil, historial, direcciones, favoritos,
-// cupones). Si hay phoneSession, agrega "Cerrar sesion" al final.
-function AccountMenu({ phoneSession, onOpenAccount, onPhoneLogout }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", onClick);
-    document.addEventListener("touchstart", onClick);
-    return () => {
-      document.removeEventListener("mousedown", onClick);
-      document.removeEventListener("touchstart", onClick);
-    };
-  }, [open]);
-
-  const go = (tab) => {
-    setOpen(false);
-    if (typeof onOpenAccount === "function") onOpenAccount(tab);
-  };
-
-  const items = [
-    { id: "perfil",       label: "Mi perfil",       icon: "user" },
-    { id: "historial",    label: "Mis pedidos",     icon: "package" },
-    { id: "direcciones",  label: "Direcciones",     icon: "map-pin" },
-    { id: "favoritos",    label: "Favoritos",       icon: "heart" },
-    { id: "cupones",      label: "Cupones",         icon: "ticket" },
-    { id: "referidos",    label: "Referidos",       icon: "gift" },
-  ];
-
-  return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button onClick={() => setOpen(o => !o)} aria-label="Menu de cuenta" aria-expanded={open}
-        style={{ ...iconBtn, background: open ? "var(--b2)" : "transparent" }}>
-        <Icon name="user" size={16} />
-      </button>
-
-      {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 6px)", right: 0, minWidth: 220,
-          background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 14,
-          boxShadow: "0 12px 28px rgba(0,0,0,0.08)", overflow: "hidden", zIndex: 30,
-        }}>
-          {phoneSession && (
-            <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--line)", background: "var(--b2)" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)" }}>{phoneSession.name?.split(" ")[0] || "Tu cuenta"}</div>
-              <div style={{ fontSize: 11, color: "var(--t3)", marginTop: 2 }}>{phoneSession.phone || phoneSession.email}</div>
-            </div>
-          )}
-          {!phoneSession && (
-            <button onClick={() => go()} style={menuItemStyle}>
-              <Icon name="user" size={16} style={{ color: "var(--ac)" }} />
-              <span style={{ fontWeight: 600, color: "var(--tx)" }}>Iniciar sesión</span>
-            </button>
-          )}
-          {phoneSession && items.map(it => (
-            <button key={it.id} onClick={() => go(it.id)} style={menuItemStyle}>
-              <Icon name={it.icon} size={16} style={{ color: "var(--t2)" }} />
-              <span style={{ color: "var(--tx)" }}>{it.label}</span>
-            </button>
-          ))}
-          {phoneSession && (
-            <button
-              onClick={() => { setOpen(false); onPhoneLogout?.(); }}
-              style={{ ...menuItemStyle, borderTop: "1px solid var(--line)" }}
-            >
-              <Icon name="log-out" size={16} style={{ color: "var(--err, #C62828)" }} />
-              <span style={{ color: "var(--err, #C62828)", fontWeight: 600 }}>Cerrar sesión</span>
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-const menuItemStyle = {
-  display: "flex", alignItems: "center", gap: 10,
-  width: "100%", padding: "12px 14px", textAlign: "left",
-  background: "transparent", border: 0, borderRadius: 0,
-  cursor: "pointer", fontFamily: "inherit", fontSize: 13.5,
-  borderTop: "1px solid var(--line)",
-};
-
 const iconBtn = {
   width: 38, height: 38, borderRadius: 999, background: "transparent",
   border: "1px solid var(--line)", display: "flex", alignItems: "center",

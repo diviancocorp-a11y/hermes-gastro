@@ -6,6 +6,7 @@ import { supabase } from "../lib/supabase";
 import business from "@business";
 import ReferralCard from "../components/catalog/ReferralCard";
 import GuestWelcomeCard from "../catalog-pro/GuestWelcomeCard";
+import AccountMenu from "../catalog-pro/AccountMenu";
 import { lookupCustomerByPhone, phoneLogin, cleanPhone, blockPhone, isPhoneBlocked } from "../services/phoneAuth";
 
 const TABS = ["perfil", "direcciones", "historial", "favoritos", "cupones", "referidos"];
@@ -136,11 +137,11 @@ export default function MyAccount() {
           <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 20, margin: 0 }}>Mi Cuenta</h2>
           <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 2 }}>{user?.email || phoneSession?.email || phoneSession?.phone || ""}</div>
         </div>
-        <button
-          onClick={() => { if (user) signOut(); else phoneSignOut?.(); navigate("/"); }}
-          style={{ padding: "8px 14px", background: "var(--b2)", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 600, color: "var(--t2)", cursor: "pointer" }}>
-          Cerrar sesión
-        </button>
+        <AccountMenu
+          phoneSession={phoneSession}
+          onSelect={(t) => { if (t) setTab(t); else navigate("/mi-cuenta"); }}
+          onPhoneLogout={() => { if (user) signOut(); else phoneSignOut?.(); navigate("/"); }}
+        />
       </div>
 
       {/* Tabs eliminados — la barra del header del catalogo ya da accesos directos
