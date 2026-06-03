@@ -1,7 +1,7 @@
 # ── Hermes pre-commit ────────────────────────────────────
 # 1. git diff --check (conflict markers + trailing whitespace)
 # 2. Auto-arregla trailing newline en archivos staged (--fix)
-# 3. Valida integridad (rechaza NULL bytes, JSON/JS rotos)
+# 3. Valida integridad GLOBAL de src/ (NULL bytes, EOF, JSON, JSX-en-.js)
 # 4. Corre eslint sobre archivos staged (lint-staged)
 # 5. Schema ↔ DB sync
 # 6. Typecheck global
@@ -20,12 +20,16 @@ STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(js
 STAGED_SRC=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^src/.*\.(js|jsx|ts|tsx)$' || true)
 
 if [ -n "$STAGED_FILES" ]; then
-  echo "→ Verificando + auto-fix integridad de $(echo "$STAGED_FILES" | wc -l) archivo(s)..."
+  echo "→ Verificando + auto-fix integridad de $(echo "$STAGED_FILES" | wc -l) archivo(s) staged..."
   echo "$STAGED_FILES" | xargs node scripts/check-file-integrity.mjs --fix
 
   echo "→ Corriendo lint-staged..."
   npx lint-staged
 fi
+
+# Check global de src/ — atrapa NULL bytes en archivos no staged (workdir contaminado por tools)
+echo "→ Integridad global de src/ (NULL bytes, EOF, sintaxis)..."
+npm run check:integrity --silent
 
 echo "→ Schema ↔ DB sync..."
 node scripts/check-schema-sync.mjs
