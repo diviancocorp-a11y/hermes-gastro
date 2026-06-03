@@ -27,6 +27,7 @@ export function getGuestUser() {
     return {
       id: parsed.id || null,
       name: parsed.name || "",
+      nickname: parsed.nickname || "",
       phone: parsed.phone || "",
       email: parsed.email || "",
       updatedAt: parsed.updatedAt || 0,
@@ -36,7 +37,7 @@ export function getGuestUser() {
   }
 }
 
-export function setGuestUser({ id, name, phone, email } = {}) {
+export function setGuestUser({ id, name, nickname, phone, email } = {}) {
   // Sólo persistimos si hay al menos un identificador (phone o email)
   const hasIdentity = !!(phone || email);
   if (!hasIdentity) return null;
@@ -44,6 +45,7 @@ export function setGuestUser({ id, name, phone, email } = {}) {
     const data = {
       id: id || null,
       name: name || "",
+      nickname: nickname || "",
       phone: phone || "",
       email: (email || "").toLowerCase().trim(),
       updatedAt: Date.now(),

@@ -42,7 +42,9 @@ export default function MyAccount() {
 
   // Profile edit state
   const [editName, setEditName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editNickname, setEditNickname] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -63,11 +65,15 @@ export default function MyAccount() {
   // Cupones
   const [couponSearch, setCouponSearch] = useState("");
 
-  // Sync profile/phoneSession fields
+  // Sync profile/phoneSession fields. Splitea name en nombre + apellido.
   useEffect(() => {
     const src = profile || phoneSession || {};
-    setEditName(src.name || "");
+    const full = (src.name || "").trim();
+    const parts = full.split(/\s+/);
+    setEditName(parts[0] || "");
+    setEditLastName(parts.slice(1).join(" ") || "");
     setEditPhone(src.phone || "");
+    setEditNickname(src.nickname || "");
   }, [profile, phoneSession]);
 
   // Si el usuario se logueó y tiene un carrito pendiente, volver al checkout
@@ -154,9 +160,22 @@ export default function MyAccount() {
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--t3)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 16 }}>Datos personales</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Nombre</label>
+                  <input className="cki-tokens" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Juan" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Apellido</label>
+                  <input className="cki-tokens" value={editLastName} onChange={e => setEditLastName(e.target.value)} placeholder="Pérez" />
+                </div>
+              </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Nombre</label>
-                <input className="cki-tokens" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Tu nombre completo" />
+                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Apodo (opcional)</label>
+                <input className="cki-tokens" value={editNickname} onChange={e => setEditNickname(e.target.value.slice(0, 30))} placeholder="Cómo te gusta que te llamen" />
+                <p style={{ fontSize: 11, color: "var(--t3)", margin: "4px 0 0", lineHeight: 1.5 }}>
+                  Si lo cargás, el catálogo te saluda con tu apodo.
+                </p>
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "var(--t3)", marginBottom: 4, display: "block" }}>Teléfono</label>
@@ -178,7 +197,30 @@ export default function MyAccount() {
               disabled={saving}
               onClick={async () => {
                 setSaving(true);
-                const ok = await updateProfile({ name: editName, phone: editPhone });
+                const fullName = `${editName.trim()} ${editLastName.trim()}`.trim();
+                // Para phone-only: usar upsertCustomer (no hay user de auth real).
+                if (phoneSession && !user) {
+                  try {
+                    await upsertCustomer({
+                      phone: editPhone || phoneSession.phone,
+                      email: phoneSession.email || null,
+                      name: fullName,
+                      nickname: editNickname || null,
+                    });
+                    // actualizar guestUser local
+                    setGuestUser({
+                      id: phoneSession.id,
+                      name: fullName,
+                      nickname: editNickname,
+                      phone: editPhone || phoneSession.phone,
+                      email: phoneSession.email || "",
+                    });
+                    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
+                  } catch (e) { console.warn(e); setSaving(false); }
+                  return;
+                }
+                // Auth real -> updateProfile (Supabase)
+                const ok = await updateProfile({ name: fullName, phone: editPhone, nickname: editNickname });
                 setSaving(false);
                 if (ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
               }}

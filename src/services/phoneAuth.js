@@ -37,6 +37,8 @@ export async function lookupCustomerByPhone(phone) {
   if (!row || !row.display_name) return null;
   return {
     displayName: row.display_name,
+    fullName: row.full_name || row.display_name,
+    nickname: row.nickname || "",
     hasEmail: !!row.has_email,
     orderCount: row.order_count || 0,
     lastOrderAt: row.last_order_at || null,
@@ -48,12 +50,13 @@ export async function lookupCustomerByPhone(phone) {
  * Retorna el customer_id (uuid). Usado tanto en signup phone-only como en
  * el guest order.
  */
-export async function upsertCustomer({ phone, email, name, birth_date = null }) {
+export async function upsertCustomer({ phone, email, name, birth_date = null, nickname = null }) {
   const { data, error } = await supabase.rpc('upsert_customer', {
     p_phone: phone || null,
     p_email: email || null,
     p_name: name || null,
     p_birth_date: birth_date || null,
+    p_nickname: nickname || null,
   });
   if (error) {
     console.error('upsertCustomer:', error.message);
@@ -68,13 +71,14 @@ export async function upsertCustomer({ phone, email, name, birth_date = null }) 
  * - Persiste en localStorage como guestUser extendido con customer_id.
  * - Retorna el guest object para que el AuthContext sepa actualizarse.
  */
-export async function phoneLogin({ phone, name, email = '', birth_date = null }) {
-  const customerId = await upsertCustomer({ phone, email, name, birth_date });
+export async function phoneLogin({ phone, name, email = '', birth_date = null, nickname = '' }) {
+  const customerId = await upsertCustomer({ phone, email, name, birth_date, nickname });
   if (!customerId) return { ok: false, error: 'no_customer' };
 
   const guest = setGuestUser({
     id: customerId,
     name: name || '',
+    nickname: nickname || '',
     phone: cleanPhone(phone),
     email: (email || '').toLowerCase().trim(),
   });

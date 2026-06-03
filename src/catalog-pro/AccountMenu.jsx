@@ -69,7 +69,7 @@ export default function AccountMenu({ phoneSession, onSelect, onPhoneLogout, ali
         }}>
           {phoneSession && (
             <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--line)", background: "var(--b2)" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)" }}>{phoneSession.name?.split(" ")[0] || "Tu cuenta"}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)" }}>{phoneSession.name || "Tu cuenta"}</div>
               <div style={{ fontSize: 11, color: "var(--t3)", marginTop: 2 }}>{phoneSession.phone || phoneSession.email}</div>
             </div>
           )}

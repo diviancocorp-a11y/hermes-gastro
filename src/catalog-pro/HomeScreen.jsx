@@ -110,7 +110,7 @@ export default function HomeScreen({
             }}>{logoLetter}</div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, color: "var(--tx)", lineHeight: 1 }}>
-                {firstName ? `Hola ${firstName} 👋` : (store.name || "Tienda")}
+                {firstName ? `${greeting}, ${firstName} 👋` : (store.name || "Tienda")}
               </div>
               <div className="body-s" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2, fontSize: 12 }}>
                 <span style={{ width: 6, height: 6, borderRadius: 999, background: store.isOpen ? "var(--ok)" : "var(--err)" }} />
@@ -128,11 +128,8 @@ export default function HomeScreen({
         </div>
       </div>
 
-      {/* ===== GREETING EDITORIAL ===== */}
+      {/* ===== EDITORIAL ===== */}
       <div style={{ padding: "14px 22px 18px" }}>
-        <div className="caption" style={{ color: "var(--ac)", marginBottom: 8 }}>
-          {greeting}{userName ? `, ${userName}` : ""}
-        </div>
         <h1 className="h-1" style={{ margin: 0, fontSize: 32 }}>
           ¿Qué te <em style={{ fontStyle: "italic", color: "var(--t2)" }}>tienta</em> hoy?
         </h1>
@@ -233,24 +230,10 @@ export default function HomeScreen({
         </div>
       </div>
 
-      {/* ===== AI RECOS "PARA VOS" ===== */}
+      {/* ===== AI RECOS "PARA VOS" — chip plegable ===== */}
       {recos.length > 0 && (
-        <div style={{
-          margin: "28px 22px 0", padding: "20px 18px",
-          background: "linear-gradient(135deg, color-mix(in oklab, var(--ac) 9%, var(--bg)) 0%, var(--bg) 100%)",
-          border: "1px solid color-mix(in oklab, var(--ac) 22%, var(--line))", borderRadius: 18,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 26, height: 26, borderRadius: 999, background: "var(--ac)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon name="sparkle" size={14} stroke={2} />
-              </div>
-              <div className="caption" style={{ color: "var(--ac)", margin: 0 }}>Para vos</div>
-            </div>
-          </div>
-          <h3 className="h-3" style={{ margin: "4px 0 14px", fontSize: 20 }}>
-            Pensamos en estos <em style={{ fontStyle: "italic", color: "var(--t2)" }}>para vos</em>
-          </h3>
+        <AiRecosCollapsible recos={recos} onSelectProduct={onSelectProduct} content={
+          <>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {recos.map(p => (
               <div key={p.id} onClick={() => onSelectProduct?.(p._raw)} style={{ display: "grid", gridTemplateColumns: "64px 1fr auto", gap: 12, alignItems: "center", cursor: "pointer" }}>
@@ -266,8 +249,8 @@ export default function HomeScreen({
                 <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
               </div>
             ))}
-          </div>
-        </div>
+          </>
+        } />
       )}
 
       {/* ===== TOP CUSTOMERS ===== */}
@@ -376,6 +359,40 @@ export default function HomeScreen({
     </div>
   );
 }
+
+// ─── AiRecosCollapsible ───────────────────────────────────────
+// Bloque "Para vos" como chip plegable. Por default CERRADO para no ocupar
+// tanto espacio del inicio. El usuario lo abre con un toque.
+function AiRecosCollapsible({ recos, content, onSelectProduct: _ }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{
+      margin: "20px 22px 0", padding: open ? "16px 18px" : "12px 14px",
+      background: "linear-gradient(135deg, color-mix(in oklab, var(--ac) 9%, var(--bg)) 0%, var(--bg) 100%)",
+      border: "1px solid color-mix(in oklab, var(--ac) 22%, var(--line))", borderRadius: 14,
+      transition: "padding 180ms var(--ease)",
+    }}>
+      <button onClick={() => setOpen(o => !o)} aria-expanded={open}
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "transparent", border: 0, cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ width: 22, height: 22, borderRadius: 999, background: "var(--ac)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon name="sparkle" size={12} stroke={2} />
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ac)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            Recomendaciones con IA · {recos.length}
+          </span>
+        </span>
+        <span style={{ fontSize: 16, color: "var(--ac)", transition: "transform 200ms", transform: open ? "rotate(180deg)" : "none" }}>⌄</span>
+      </button>
+      {open && (
+        <div style={{ marginTop: 14 }}>
+          {content}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const iconBtn = {
   width: 38, height: 38, borderRadius: 999, background: "transparent",
   border: "1px solid var(--line)", display: "flex", alignItems: "center",

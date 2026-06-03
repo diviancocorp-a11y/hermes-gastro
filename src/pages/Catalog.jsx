@@ -689,7 +689,7 @@ export default function Catalog() {
     <>
       <HomeScreenPro settings={sett}
         store={storeForHome}
-        userName={profile?.name || phoneSession?.name || (form.name ? form.name.split(" ")[0] : null)}
+        userName={phoneSession?.nickname || profile?.name || phoneSession?.name || (form.name ? form.name.split(" ")[0] : null)}
         phoneSession={phoneSession}
         onPhoneLogout={phoneSignOut}
         products={products}
