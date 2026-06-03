@@ -28,8 +28,7 @@ import DynamicQrs from "../DynamicQrs";
 import { useConfirm } from "../../ConfirmSlideProvider";
 import ToggleSwitch from "./forms/ToggleSwitch";
 import DecimalInput from "../../ui/DecimalInput";
-
-const CAT_NAMES = ["Todos", "Primeros Mimos", "La Mesa Principal", "El Sanguche de la Nona", "La Nona Amasó", "La Última Mordida", "Cocina Consciente"];
+import { fetchCategoryGroups } from "../../../services/categories";
 const COLORS = [
   { h: "#C45D3E", l: "Terracota" },
   { h: "#3A7D44", l: "Verde" },
@@ -62,6 +61,20 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingCat, setUploadingCat] = useState(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  // Categorias reales del backend de ESTE tenant (no hardcoded).
+  // Fallback: solo "Todos" para clientes nuevos.
+  const [catNames, setCatNames] = useState(["Todos"]);
+  const reloadCatNames = () => {
+    fetchCategoryGroups().then(groups => {
+      const names = ["Todos", ...groups.map(g => g.name).filter(Boolean)];
+      setCatNames(names);
+    }).catch(() => setCatNames(["Todos"]));
+  };
+  useEffect(() => {
+    if (!open) return;
+    reloadCatNames();
+     
+  }, [open]);
 
   // Sincroniza si se abre y settings cambió desde afuera
   useEffect(() => {
@@ -240,7 +253,7 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
 
         <div className="ag-modal-body">
           {editorOpen && (
-            <CategoryEditor embedded msg={showToast} onClose={() => setEditorOpen(false)} />
+            <CategoryEditor embedded msg={showToast} onClose={() => { setEditorOpen(false); reloadCatNames(); }} />
           )}
           {qrsOpen && (
             <DynamicQrs onClose={() => setQrsOpen(false)} showToast={showToast} />
@@ -614,7 +627,7 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
               >
                 Crear · editar · eliminar categorías
               </button>
-              {CAT_NAMES.map(name => {
+              {catNames.map(name => {
                 const img = (s.cat_images || {})[name];
                 const isHidden = (s.hidden_cats || []).includes(name);
                 const customName = (s.cat_names || {})[name] || "";
@@ -677,7 +690,7 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                           onClick={() => setCatImg(name, "")}
                           style={{ background: "none", border: 0, fontSize: 14, color: "var(--ag-c-orders)", cursor: "pointer", padding: 4 }}
                           aria-label="Quitar imagen"
-                        >✕</button>
+                        >X</button>
                       )}
                     </div>
                   </div>
