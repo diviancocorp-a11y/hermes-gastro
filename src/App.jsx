@@ -28,29 +28,31 @@ const Loading = () => (
 export default function App() {
   useTheme();
 
-  // Tema global + favicon + og:image dinamicos desde settings.
   useEffect(() => {
     let cancelled = false;
     const apply = (sett) => {
       const t = ['ambar','noche','carbon'].includes(sett?.catalog_theme) ? sett.catalog_theme : 'ambar';
       document.body.setAttribute('data-cp-theme', t);
-      if (sett?.favicon_url) {
+      // Favicon: usa favicon_url si esta, sino el logo de la empresa
+      const faviconSrc = sett?.favicon_url || sett?.logo_url;
+      if (faviconSrc) {
         let link = document.querySelector("link[rel~='icon']");
         if (!link) {
           link = document.createElement('link');
           link.rel = 'icon';
           document.head.appendChild(link);
         }
-        link.href = sett.favicon_url;
+        link.href = faviconSrc;
       }
-      if (sett?.og_image_url) {
+      // og:image (preview al compartir): siempre el logo de la empresa
+      if (sett?.logo_url) {
         let og = document.querySelector("meta[property='og:image']");
         if (!og) {
           og = document.createElement('meta');
           og.setAttribute('property', 'og:image');
           document.head.appendChild(og);
         }
-        og.setAttribute('content', sett.og_image_url);
+        og.setAttribute('content', sett.logo_url);
       }
     };
     fetchSettings().then((sett) => { if (!cancelled) apply(sett); });

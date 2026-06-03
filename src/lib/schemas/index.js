@@ -180,7 +180,6 @@ export const SettingsInputSchema = z.object({
   logo_letter: optionalText(5),
   logo_color: hexColor.nullable(),
   logo_url: optionalText(2000),
-  cover_url: optionalText(2000),
   cat_images: z.json().nullable().optional(),
   hidden_cats: z.array(z.string()).nullable().optional(),
   cat_names: z.json().nullable().optional(),
@@ -203,11 +202,9 @@ export const SettingsInputSchema = z.object({
   description: optionalText(2000),
   whatsapp: optionalText(50),
   instagram: optionalText(100),
-  og_image_url: optionalText(2000),
   favicon_url: optionalText(2000),
   // Catálogo público
   min_order_amount: z.number().min(0).nullable().optional(),
-  prep_time_min: z.number().int().min(0).nullable().optional(),
   // Grupos de cat / daily deals
   cat_groups: z.json().nullable().optional(),
   daily_deals: z.json().nullable().optional(),

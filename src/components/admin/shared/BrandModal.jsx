@@ -156,8 +156,8 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
 
   const TABS = [
     { id: 'identity', label: 'Identidad' },
-    { id: 'cover',    label: 'Portada' },
     { id: 'catalog',  label: 'Catálogo' },
+    { id: 'qrs',      label: 'QRs' },
     { id: 'cats',     label: 'Categorías' },
   ];
 
@@ -370,34 +370,16 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
             </div>
           )}
 
-          {/* ── PORTADA ── */}
-          {section === 'cover' && (
-            <div>
-              {s.cover_url && (
-                <img
-                  src={s.cover_url}
-                  alt="portada"
-                  loading="lazy"
-                  style={{ width: "100%", height: 160, objectFit: "cover", borderRadius: 12, marginBottom: 12 }}
-                />
-              )}
-              <div style={{ display: "flex", gap: 8 }}>
-                <label className="ag-btn-primary" style={{ flex: 1 }}>
-                  {uploadingCover ? "Subiendo..." : "Subir foto"}
-                  <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleCoverFile} disabled={uploadingCover} />
-                </label>
-                {s.cover_url && (
-                  <button type="button" className="ag-btn-ghost" onClick={() => set("cover_url", "")}>Quitar</button>
-                )}
+          {/* ── QRS DINÁMICOS (tab propio) ── */}
+          {section === 'qrs' && (
+            <div className="ag-catalog-group">
+              <div style={{ fontSize: 13, color: 'var(--ag-ink-3)', marginBottom: 14, lineHeight: 1.5 }}>
+                Crea un QR con un slug fijo para imprimir. Cambia a donde redirige sin reimprimir nada.
               </div>
-
-              <label className="ag-field-lbl" style={{ marginTop: 16 }}>O pegá una URL</label>
-              <input
-                className="ag-field-input"
-                value={s.cover_url || ""}
-                onChange={e => set("cover_url", e.target.value)}
-                placeholder="https://..."
-              />
+              <button type="button" onClick={() => setQrsOpen(true)}
+                style={{ width: '100%', padding: '14px', background: 'var(--ag-bg-card)', border: '1.5px solid var(--ag-c-terra)', color: 'var(--ag-c-terra)', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                Gestionar QRs dinámicos →
+              </button>
             </div>
           )}
 
@@ -475,18 +457,6 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                 </div>
               </div>
 
-              {/* QRs dinamicos — short URLs editables para imprimir */}
-              <div className="ag-catalog-group">
-                <div className="ag-catalog-group-title">QRs dinámicos</div>
-                <div style={{ fontSize: 12, color: 'var(--ag-ink-3, #9C8B7A)', marginBottom: 10, lineHeight: 1.5 }}>
-                  Crea un QR con un slug fijo para imprimir. Cambia a donde redirige sin reimprimir nada.
-                </div>
-                <button type="button" onClick={() => setQrsOpen(true)}
-                  style={{ width: '100%', padding: '12px', background: 'var(--ag-bg-card)', border: '1.5px solid var(--ag-c-terra)', color: 'var(--ag-c-terra)', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  Gestionar QRs dinamicos →
-                </button>
-              </div>
-
               {/* Banner de bienvenida */}
               <div className="ag-catalog-group">
                 <div className="ag-catalog-group-title">Banner de bienvenida</div>
@@ -518,22 +488,6 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                         onChange={(n) => set("min_order_amount", n)}
                         placeholder="0"
                       />
-                    </div>
-                  </div>
-
-                  <div className="ag-cat-row">
-                    <div className="ag-cat-row-main">
-                      <div className="ag-cat-row-label">Tiempo de preparación</div>
-                      <div className="ag-cat-row-hint">Minutos desde que se acepta el pedido</div>
-                    </div>
-                    <div className="ag-cat-row-input">
-                      <DecimalInput
-                        min={0} max={240} step="1"
-                        value={s.prep_time_min ?? 0}
-                        onChange={(n) => set("prep_time_min", n)}
-                        placeholder="25"
-                      />
-                      <span className="ag-cat-row-suffix">min</span>
                     </div>
                   </div>
 
@@ -606,44 +560,13 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                 })()}
               </div>
 
-              {/* Compartir / SEO */}
+              {/* Favicon */}
               <div className="ag-catalog-group">
-                <div className="ag-catalog-group-title">Imágenes técnicas</div>
-
-                {/* OG image */}
-                <label className="ag-field-lbl">Imagen Open Graph</label>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <div style={{
-                    width: 96, height: 50, borderRadius: 10,
-                    background: 'var(--ag-bg-soft)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    overflow: 'hidden', flexShrink: 0,
-                    border: '1px solid var(--ag-line)',
-                  }}>
-                    {s.og_image_url
-                      ? <img src={s.og_image_url} alt="og" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none' }} />
-                      : <span style={{ fontSize: 10, color: 'var(--ag-ink-3)' }}>Sin img</span>}
-                  </div>
-                  <div style={{ flex: 1, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <label className="ag-btn-primary" style={{ flex: 1, minWidth: 0 }}>
-                      {uploadingOg ? 'Subiendo…' : '📷 Subir'}
-                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleOgFile} disabled={uploadingOg} />
-                    </label>
-                    <label className="ag-btn-ghost" style={{ flex: 1, minWidth: 0 }}>
-                      📸 Cámara
-                      <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleOgFile} disabled={uploadingOg} />
-                    </label>
-                    {s.og_image_url && (
-                      <button type="button" className="ag-btn-ghost" onClick={() => set('og_image_url', '')} style={{ flex: 0 }}>Quitar</button>
-                    )}
-                  </div>
+                <div className="ag-catalog-group-title">Favicon</div>
+                <div style={{ fontSize: 11, color: 'var(--ag-ink-3)', marginBottom: 8 }}>
+                  Icono del navegador. Si no subis uno, se usa el logo de la empresa.
                 </div>
-                <div style={{ fontSize: 10.5, color: 'var(--ag-ink-3)', marginTop: 6 }}>
-                  Preview al compartir el link · ideal 1200×630 px
-                </div>
-
-                {/* Favicon */}
-                <label className="ag-field-lbl" style={{ marginTop: 16 }}>Favicon</label>
+                <label className="ag-field-lbl">Favicon</label>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <div style={{
                     width: 50, height: 50, borderRadius: 10,

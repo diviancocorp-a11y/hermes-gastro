@@ -137,9 +137,9 @@ export default function HomeScreen({
               </div>
               {settings?.slogan && (
                 <div style={{
-                  marginTop: 4, fontSize: 11.5, color: "var(--t3)",
+                  marginTop: 4, fontSize: 11.5, color: "var(--ac)",
                   lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
+                  whiteSpace: "nowrap", fontWeight: 600,
                 }}>
                   {settings.slogan}
                 </div>
@@ -155,9 +155,9 @@ export default function HomeScreen({
       </div>
 
       {/* ===== EDITORIAL ===== */}
-      <div style={{ padding: "14px 22px 18px" }}>
+      <div style={{ padding: "20px 22px 14px" }}>
         <h1 className="h-1" style={{ margin: 0, fontSize: 32 }}>
-          ¿Qué te <em style={{ fontStyle: "italic", color: "var(--t2)" }}>tienta</em> hoy?
+          ¿Qué te <em style={{ fontStyle: "italic", color: "var(--ac)" }}>tienta</em> hoy?
         </h1>
       </div>
 
@@ -406,7 +406,7 @@ function AiRecosCollapsible({ recos, content, onSelectProduct: _ }) {
             <Icon name="sparkle" size={12} stroke={2} />
           </span>
           <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ac)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Recomendaciones con IA · {recos.length}
+            Recomendaciones para ti · {recos.length}
           </span>
         </span>
         <span style={{ fontSize: 16, color: "var(--ac)", transition: "transform 200ms", transform: open ? "rotate(180deg)" : "none" }}>⌄</span>
