@@ -537,34 +537,6 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                     </div>
                   </div>
 
-                  <div className="ag-cat-row">
-                    <div className="ag-cat-row-main">
-                      <div className="ag-cat-row-label">Tiempo de delivery</div>
-                      <div className="ag-cat-row-hint">Minutos adicionales si lleva delivery</div>
-                    </div>
-                    <div className="ag-cat-row-input">
-                      <DecimalInput
-                        min={0} max={180} step="1"
-                        value={s.delivery_time_min ?? 0}
-                        onChange={(n) => set("delivery_time_min", n)}
-                        placeholder="45"
-                      />
-                      <span className="ag-cat-row-suffix">min</span>
-                    </div>
-                  </div>
-
-                  <div className="ag-cat-row">
-                    <div className="ag-cat-row-main">
-                      <div className="ag-cat-row-label">Mostrar horarios en el catálogo</div>
-                      <div className="ag-cat-row-hint">Si está activo, el cliente ve los horarios de apertura</div>
-                    </div>
-                    <ToggleSwitch
-                      checked={s.show_hours_on_catalog !== false}
-                      onChange={v => set("show_hours_on_catalog", v)}
-                      label="Mostrar horarios"
-                    />
-                  </div>
-
                 </div>
               </div>
 
@@ -632,38 +604,6 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                     </>
                   );
                 })()}
-              </div>
-
-              {/* Tipografía */}
-              <div className="ag-catalog-group">
-                <div className="ag-catalog-group-title">Tipografía del catálogo</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                  {[
-                    { key: 'dm-sans',  label: 'DM Sans',  ff: "'DM Sans', sans-serif" },
-                    { key: 'inter',    label: 'Inter',    ff: "'Inter', sans-serif" },
-                    { key: 'playfair', label: 'Playfair', ff: "'Playfair Display', serif" },
-                  ].map(f => {
-                    const on = (s.catalog_font || 'dm-sans') === f.key;
-                    return (
-                      <button
-                        key={f.key}
-                        type="button"
-                        onClick={() => set("catalog_font", f.key)}
-                        style={{
-                          padding: '12px 8px',
-                          borderRadius: 10,
-                          border: on ? '2px solid var(--ag-c-terra)' : '1px solid var(--ag-line)',
-                          background: on ? 'rgba(196,93,62,0.08)' : 'var(--ag-bg)',
-                          color: on ? 'var(--ag-c-terra)' : 'var(--ag-ink-2)',
-                          fontFamily: f.ff,
-                          fontSize: 15,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >{f.label}</button>
-                    );
-                  })}
-                </div>
               </div>
 
               {/* Compartir / SEO */}

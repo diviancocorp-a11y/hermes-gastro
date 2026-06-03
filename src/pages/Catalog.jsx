@@ -611,6 +611,7 @@ export default function Catalog() {
         form={form}
         sf={sf}
         navigate={navigate}
+        settings={sett}
         scheduleMode={scheduleMode}
         setScheduleMode={setScheduleMode}
         storeStatus={storeStatus}

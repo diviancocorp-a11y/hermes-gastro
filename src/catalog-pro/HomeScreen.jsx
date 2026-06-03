@@ -95,6 +95,17 @@ export default function HomeScreen({
 
   return (
     <div className="cp-root cp-surface cp-no-scrollbar" style={{ paddingBottom: 200, minHeight: "100vh", width: "100%" }}>
+      {/* ===== BANNER DE BIENVENIDA (settings.banner_text) ===== */}
+      {settings?.banner_text && (
+        <div style={{
+          padding: "8px 16px", background: "var(--ac)", color: "var(--bg)",
+          fontSize: 12.5, fontWeight: 600, textAlign: "center",
+          letterSpacing: 0.2,
+        }}>
+          {settings.banner_text}
+        </div>
+      )}
+
       {/* ===== HEADER ===== */}
       <div style={{
         padding: "16px 16px 8px 22px", background: "var(--bg)",
@@ -139,6 +150,11 @@ export default function HomeScreen({
         <h1 className="h-1" style={{ margin: 0, fontSize: 32 }}>
           ¿Qué te <em style={{ fontStyle: "italic", color: "var(--t2)" }}>tienta</em> hoy?
         </h1>
+        {settings?.slogan && (
+          <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--t2)", lineHeight: 1.4 }}>
+            {settings.slogan}
+          </p>
+        )}
       </div>
 
       {/* ===== SMART SEARCH ===== */}

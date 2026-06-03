@@ -33,14 +33,21 @@ export default function CheckoutScreen(props) {
     cart, ct, ctWithDelivery, discount, deliveryKmDisplay,
     coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr,
     ffGift,
+    // settings (para min_order_amount)
+    settings,
     // submit
     orderErr, sending, onSubmit,
   } = props;
 
+  // Minimo de pedido (settings.min_order_amount). 0 o null = sin minimo.
+  const minOrder = Number(settings?.min_order_amount) || 0;
+  const minOk = minOrder === 0 || ct >= minOrder;
+
   const canNext0 =
     form.name.trim().length >= 2 &&
     form.phone.length >= 10 &&
-    (!form.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email));
+    (!form.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) &&
+    minOk;
   const canNext1 = form.delivery === "retiro" || (form.delivery === "envio" && form.address.trim().length > 3);
   // Fix de validacion: efectivo requiere que se haya elegido "justo" o un monto.
   const canNext2 =
@@ -84,7 +91,7 @@ export default function CheckoutScreen(props) {
       </div>
 
       <div style={{ padding: "18px 22px 0" }}>
-        {step === 0 && <Step0Datos {...props} canNext={canNext0} onNext={goNext} />}
+        {step === 0 && <Step0Datos {...props} canNext={canNext0} onNext={goNext} minOrder={minOrder} minOk={minOk} ct={ct} />}
         {step === 1 && <Step1Entrega {...props} canNext={canNext1} onNext={goNext} />}
         {step === 2 && <Step2Pago {...props} canNext={canNext2} needsReceipt={needsReceipt} onNext={goNext} />}
         {step === 3 && <Step3Resumen {...props} />}
@@ -94,9 +101,22 @@ export default function CheckoutScreen(props) {
 }
 
 // ─── PASO 0: Datos ─────────────────────────────────────────────────
-function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, setScheduleMode, storeStatus, minDate, availableHours, selectedDayInfo, canNext, onNext }) {
+function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, setScheduleMode, storeStatus, minDate, availableHours, selectedDayInfo, canNext, onNext, minOrder, minOk, ct }) {
   return (
     <>
+      {minOrder > 0 && !minOk && (
+        <div style={{
+          ...section,
+          padding: "12px 14px",
+          background: "var(--err-soft, #FFE8E5)",
+          border: "1px solid var(--err, #C62828)",
+          borderRadius: 12,
+          color: "var(--err, #C62828)",
+          fontSize: 13, fontWeight: 600,
+        }}>
+          Te faltan ${(minOrder - ct).toLocaleString("es-AR")} para alcanzar el mínimo de pedido (${minOrder.toLocaleString("es-AR")}).
+        </div>
+      )}
       {/* Si esta logueado, mostrar saludo */}
       {user ? (
         <div style={section}>

@@ -196,8 +196,6 @@ export const SettingsInputSchema = z.object({
   // Medios de pago admin + subset visible en catálogo
   payment_methods: z.array(z.string()).nullable().optional(),
   catalog_payment_methods: z.array(z.string()).nullable().optional(),
-  // Theming público
-  catalog_font: optionalText(50),
   // Tema visual: ambar (default) | noche | carbon
   catalog_theme: z.enum(['ambar', 'noche', 'carbon']).nullable().optional(),
   // Identidad social / SEO
@@ -210,8 +208,6 @@ export const SettingsInputSchema = z.object({
   // Catálogo público
   min_order_amount: z.number().min(0).nullable().optional(),
   prep_time_min: z.number().int().min(0).nullable().optional(),
-  delivery_time_min: z.number().int().min(0).nullable().optional(),
-  show_hours_on_catalog: z.boolean().nullable().optional(),
   // Grupos de cat / daily deals
   cat_groups: z.json().nullable().optional(),
   daily_deals: z.json().nullable().optional(),

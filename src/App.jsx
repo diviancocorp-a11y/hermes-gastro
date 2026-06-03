@@ -13,7 +13,6 @@ import { useEffect } from 'react'
 import { fetchSettings } from './services/settings'
 import { supabase } from './lib/supabase'
 
-// Lazy-load admin, tracker & account: catalog visitors don't download these chunks
 const Admin = lazy(() => import('./pages/Admin'))
 const OrderTracker = lazy(() => import('./pages/OrderTracker'))
 const MyAccount = lazy(() => import('./pages/MyAccount'))
@@ -27,26 +26,39 @@ const Loading = () => (
 )
 
 export default function App() {
-  // Initialize theme (sets data-theme on <html>, listens for system changes)
   useTheme();
 
-  // Aplicar tema del catalogo (ambar/noche/carbon) GLOBALMENTE al body.
-  // Antes vivia en Catalog.jsx -> al navegar a /mi-cuenta o /q/:slug
-  // el cleanup quitaba el atributo y otras paginas perdian el tema
-  // (pantalla blanca cuando estaba 'noche'). Ahora es global y persiste.
+  // Tema global + favicon + og:image dinamicos desde settings.
   useEffect(() => {
     let cancelled = false;
-    const apply = (theme) => {
-      const t = ['ambar','noche','carbon'].includes(theme) ? theme : 'ambar';
+    const apply = (sett) => {
+      const t = ['ambar','noche','carbon'].includes(sett?.catalog_theme) ? sett.catalog_theme : 'ambar';
       document.body.setAttribute('data-cp-theme', t);
+      if (sett?.favicon_url) {
+        let link = document.querySelector("link[rel~='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = sett.favicon_url;
+      }
+      if (sett?.og_image_url) {
+        let og = document.querySelector("meta[property='og:image']");
+        if (!og) {
+          og = document.createElement('meta');
+          og.setAttribute('property', 'og:image');
+          document.head.appendChild(og);
+        }
+        og.setAttribute('content', sett.og_image_url);
+      }
     };
-    fetchSettings().then((sett) => { if (!cancelled) apply(sett?.catalog_theme); });
+    fetchSettings().then((sett) => { if (!cancelled) apply(sett); });
 
-    // Subscribe a cambios en settings (admin cambia el tema -> aplicar live)
     const channel = supabase
       .channel('app-theme-watch')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'settings' },
-        (payload) => apply(payload?.new?.catalog_theme))
+        (payload) => apply(payload?.new))
       .subscribe();
     return () => { cancelled = true; supabase.removeChannel(channel); };
   }, []);
