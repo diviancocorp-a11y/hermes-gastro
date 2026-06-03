@@ -9,6 +9,9 @@ import SkipToContent from './components/ui/SkipToContent'
 import OfflineBanner from './components/ui/OfflineBanner'
 import useTheme from './hooks/useTheme'
 import Catalog from './pages/Catalog'
+import { useEffect } from 'react'
+import { fetchSettings } from './services/settings'
+import { supabase } from './lib/supabase'
 
 // Lazy-load admin, tracker & account: catalog visitors don't download these chunks
 const Admin = lazy(() => import('./pages/Admin'))
@@ -26,6 +29,27 @@ const Loading = () => (
 export default function App() {
   // Initialize theme (sets data-theme on <html>, listens for system changes)
   useTheme();
+
+  // Aplicar tema del catalogo (ambar/noche/carbon) GLOBALMENTE al body.
+  // Antes vivia en Catalog.jsx -> al navegar a /mi-cuenta o /q/:slug
+  // el cleanup quitaba el atributo y otras paginas perdian el tema
+  // (pantalla blanca cuando estaba 'noche'). Ahora es global y persiste.
+  useEffect(() => {
+    let cancelled = false;
+    const apply = (theme) => {
+      const t = ['ambar','noche','carbon'].includes(theme) ? theme : 'ambar';
+      document.body.setAttribute('data-cp-theme', t);
+    };
+    fetchSettings().then((sett) => { if (!cancelled) apply(sett?.catalog_theme); });
+
+    // Subscribe a cambios en settings (admin cambia el tema -> aplicar live)
+    const channel = supabase
+      .channel('app-theme-watch')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'settings' },
+        (payload) => apply(payload?.new?.catalog_theme))
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, []);
 
   return (
     <ErrorBoundary>

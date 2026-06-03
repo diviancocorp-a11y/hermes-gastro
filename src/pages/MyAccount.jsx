@@ -143,18 +143,8 @@ export default function MyAccount() {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, padding: "12px 16px", overflowX: "auto", borderBottom: "1px solid var(--b2)" }}>
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{
-            padding: "8px 16px", borderRadius: 20, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer",
-            background: tab === t ? "var(--ac)" : "var(--b2)", color: tab === t ? "#fff" : "var(--t2)",
-            whiteSpace: "nowrap", transition: "all .2s",
-          }}>
-            {TAB_ICONS[t]} {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
-      </div>
+      {/* Tabs eliminados — la barra del header del catalogo ya da accesos directos
+          via ?tab=. Si queres cambiar de seccion, volves al home y la eliges del menu. */}
 
       <div style={{ padding: "20px 16px" }}>
 
