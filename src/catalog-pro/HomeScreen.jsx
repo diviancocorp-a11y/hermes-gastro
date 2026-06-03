@@ -255,6 +255,7 @@ export default function HomeScreen({
                 <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
               </div>
             ))}
+          </div>
           </>
         } />
       )}
