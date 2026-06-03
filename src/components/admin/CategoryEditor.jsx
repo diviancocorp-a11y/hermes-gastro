@@ -131,7 +131,7 @@ export default function CategoryEditor({ msg, onClose, embedded = false }) {
             className="ag-field-input"
             value={form.name}
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Ej: La Mesa Principal"
+            placeholder="Ej: Postres"
             style={{ marginBottom: 12 }}
           />
 

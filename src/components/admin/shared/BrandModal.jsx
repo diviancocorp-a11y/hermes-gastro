@@ -73,7 +73,7 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
   useEffect(() => {
     if (!open) return;
     reloadCatNames();
-     
+
   }, [open]);
 
   // Sincroniza si se abre y settings cambió desde afuera
