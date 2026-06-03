@@ -66,8 +66,8 @@ export default function HomeScreen({
       .map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault })),
     [products, hasDeal, dealPrice, prepDefault]
   );
-  // Grid completo de TODOS los productos del catalogo, filtrados por
-  // categoria activa + searchQuery. Antes era solo `popular` (top 6).
+  // Grid completo de TODOS los productos filtrados por categoria activa +
+  // busqueda + quick filter (en oferta / vegetariano / nuevos / mas pedidos).
   const gridProducts = useMemo(() => {
     let list = products;
     if (activeCat && activeCat !== "Todos") {
@@ -85,8 +85,37 @@ export default function HomeScreen({
         (p.description || "").toLowerCase().includes(q)
       );
     }
+    // Quick filters
+    if (activeFilter === "deal") {
+      list = list.filter(p => hasDeal?.(p));
+    } else if (activeFilter === "veg") {
+      list = list.filter(p => p.is_vegetarian || /veg|vegan|vegetal/i.test(p.tags || p.description || ""));
+    } else if (activeFilter === "new") {
+      // Nuevos: creados en los ultimos 30 dias
+      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      list = list.filter(p => p.created_at && new Date(p.created_at).getTime() > cutoff);
+    } else if (activeFilter === "top") {
+      // Mas pedidos: ordenar por sale_count o veces que aparece en orders.
+      list = [...list].sort((a, b) => (b.sale_count || 0) - (a.sale_count || 0));
+    }
     return list.map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault }));
-  }, [products, categories, activeCat, searchQuery, hasDeal, dealPrice, prepDefault]);
+  }, [products, categories, activeCat, searchQuery, activeFilter, hasDeal, dealPrice, prepDefault]);
+
+  // Categorias ordenadas por hora del dia (personalizacion).
+  // Si una categoria matchea palabras clave del momento, aparece primera.
+  const sortedCategories = useMemo(() => {
+    const h = new Date().getHours();
+    let kws = [];
+    if (h >= 6 && h < 11) kws = ["desayuno", "cafe", "café", "merienda", "panaderia", "panadería", "dulce"];
+    else if (h >= 11 && h < 16) kws = ["almuerzo", "principal", "mesa", "ensalada", "pasta", "pizza"];
+    else if (h >= 16 && h < 19) kws = ["merienda", "cafe", "café", "dulce", "torta", "pasteleria"];
+    else kws = ["cena", "pizza", "pasta", "hamburguesa", "sanguche"];
+    const matches = (name) => kws.some(k => name.toLowerCase().includes(k));
+    const todos = categories.find(c => c.name === "Todos");
+    const rest = categories.filter(c => c.name !== "Todos");
+    rest.sort((a, b) => Number(matches(b.name)) - Number(matches(a.name)));
+    return todos ? [todos, ...rest] : rest;
+  }, [categories]);
 
   useEffect(() => {
     if (stories.length === 0) return;
@@ -252,7 +281,7 @@ export default function HomeScreen({
           <div className="caption">Carta · {totalCount} productos</div>
         </div>
         <div className="cp-no-scrollbar" style={{ display: "flex", gap: 6, padding: "0 22px", overflowX: "auto" }}>
-          {categories.map(c => {
+          {sortedCategories.map(c => {
             const isActive = activeCat === c.name;
             const count = c.name === "Todos"
               ? totalCount

@@ -19,15 +19,17 @@ export default function CartScreen({
   items = [],
   subtotal = 0,
   onBack, onUpdateQty, onContinue, onSeguirAgregando,
-  // Upsell: productos populares para mostrar como "Lo mas pedido"
-  // antes del checkout. El user puede agregarlos al carrito desde aca.
   topProducts = [],
   onAddProduct,
+  minOrder = 0,
 }) {
   const count = items.reduce((s, it) => s + it.qty, 0);
-  // Excluir lo que ya esta en el carrito.
   const cartIds = new Set(items.map(it => it.id));
   const upsell = (topProducts || []).filter(p => !cartIds.has(p.id)).slice(0, 6);
+  // Progreso al minimo de pedido.
+  const minOk = minOrder === 0 || subtotal >= minOrder;
+  const minPct = minOrder > 0 ? Math.min(100, Math.round((subtotal / minOrder) * 100)) : 100;
+  const missing = Math.max(0, minOrder - subtotal);
 
   if (items.length === 0) {
     return (
@@ -89,8 +91,33 @@ export default function CartScreen({
         }}>+ Seguir agregando productos</button>
       </div>
 
+      {/* Barra de progreso al minimo de pedido (si esta activo) */}
+      {minOrder > 0 && (
+        <div style={{ padding: "20px 22px 0" }}>
+          <div style={{
+            background: minOk ? "color-mix(in oklab, var(--ok, #2A9D6E) 12%, var(--bg))" : "color-mix(in oklab, var(--ac) 12%, var(--bg))",
+            border: `1px solid ${minOk ? "var(--ok, #2A9D6E)" : "var(--ac)"}`,
+            borderRadius: 12, padding: "12px 14px",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, fontSize: 12.5 }}>
+              <span style={{ fontWeight: 600, color: minOk ? "var(--ok, #2A9D6E)" : "var(--ac)" }}>
+                {minOk ? "✓ Minimo de pedido alcanzado" : `Faltan ${fmtAR(missing)} para el minimo`}
+              </span>
+              <span style={{ color: "var(--t3)", fontSize: 11 }}>{fmtAR(subtotal)} / {fmtAR(minOrder)}</span>
+            </div>
+            <div style={{ height: 6, background: "var(--b2)", borderRadius: 999, overflow: "hidden" }}>
+              <div style={{
+                height: "100%", width: `${minPct}%`,
+                background: minOk ? "var(--ok, #2A9D6E)" : "var(--ac)",
+                transition: "width 240ms var(--ease)",
+              }} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Subtotal — sin cupon/propina/envio (eso se decide en el checkout) */}
-      <div style={{ padding: "28px 22px 12px" }}>
+      <div style={{ padding: "20px 22px 12px" }}>
         <div style={{ background: "var(--b2)", borderRadius: 14, padding: "18px" }}>
           <div className="caption" style={{ marginBottom: 12, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--t3)" }}>Subtotal</div>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
@@ -146,9 +173,11 @@ export default function CartScreen({
         background: "var(--bg)", borderTop: "1px solid var(--line)",
         padding: "14px 22px max(20px, env(safe-area-inset-bottom))",
       }}>
-        <button onClick={() => onContinue?.()} style={{
+        <button onClick={() => minOk && onContinue?.()} disabled={!minOk} style={{
           width: "100%", height: 56, borderRadius: "var(--rs)", border: 0,
-          background: "var(--ac)", color: "#fff", cursor: "pointer",
+          background: minOk ? "var(--ac)" : "var(--b2)",
+          color: minOk ? "#fff" : "var(--t3)",
+          cursor: minOk ? "pointer" : "not-allowed",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           paddingLeft: 22, paddingRight: 18, fontFamily: "var(--font-body)",
         }}>

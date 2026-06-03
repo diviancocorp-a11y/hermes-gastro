@@ -677,6 +677,7 @@ export default function Catalog() {
       onContinue={() => { setShowCart(false); setShowCk(true); }}
       topProducts={products.slice(0, 8)}
       onAddProduct={(p) => addC(p)}
+      minOrder={Number(sett?.min_order_amount) || 0}
     />
   );
 
