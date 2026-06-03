@@ -8,15 +8,52 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [addresses, setAddresses] = useState([]);
-  const [favorites, setFavorites] = useState([]);   // array de recipe_id
+  const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // phoneSession: sesion "soft" persistida en localStorage (no Supabase Auth).
-  // Cuando el usuario hace phone-only login, se llena. Se limpia con phoneLogout.
   const guestUser = useGuestUser();
   const phoneSession = (!user && guestUser?.id) ? guestUser : null;
 
-  // Cargar perfil, direcciones y favoritos
+  // Sesion unificada (phone-only + magic link en un solo objeto).
+  const buildSession = () => {
+    if (phoneSession) {
+      const name = phoneSession.name || "";
+      return {
+        kind: "phone",
+        id: phoneSession.id,
+        name,
+        nickname: phoneSession.nickname || "",
+        firstName: phoneSession.nickname
+          || (name ? name.trim().split(/\s+/)[0] : "")
+          || (phoneSession.phone || "Cuenta"),
+        email: phoneSession.email || "",
+        phone: phoneSession.phone || "",
+        displayName: name || "Tu cuenta",
+        displaySub: phoneSession.phone || phoneSession.email || "",
+        hasEmail: !!phoneSession.email,
+      };
+    }
+    if (user) {
+      const name = profile?.name || "";
+      return {
+        kind: "auth",
+        id: user.id,
+        name,
+        nickname: profile?.nickname || "",
+        firstName: profile?.nickname
+          || (name ? name.trim().split(/\s+/)[0] : "")
+          || (user.email ? user.email.split("@")[0] : "Cuenta"),
+        email: user.email || profile?.email || "",
+        phone: profile?.phone || "",
+        displayName: name || user.email || "Tu cuenta",
+        displaySub: user.email || profile?.phone || "",
+        hasEmail: true,
+      };
+    }
+    return null;
+  };
+  const session = buildSession();
+
   const loadUserData = async (userId) => {
     if (!userId) { setProfile(null); setAddresses([]); setFavorites([]); return; }
     try {
@@ -33,60 +70,48 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Inicializar sesión
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const u = session?.user || null;
+    supabase.auth.getSession().then(({ data: { session: sbSession } }) => {
+      const u = sbSession?.user || null;
       setUser(u);
       if (u) loadUserData(u.id);
       setLoading(false);
     });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      const u = session?.user || null;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sbSession) => {
+      const u = sbSession?.user || null;
       setUser(u);
       if (u) loadUserData(u.id);
       else { setProfile(null); setAddresses([]); setFavorites([]); }
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
-  // --- MAGIC LINK (login o registro) ---
-  // Helper: traducir errores de Supabase al español
   const translateError = (msg) => {
-    if (!msg) return "Error desconocido. Intentá de nuevo.";
+    if (!msg) return "Error desconocido. Intenta de nuevo.";
     const m = msg.toLowerCase();
     if (m.includes("rate limit") || m.includes("too many")) return "rate_limit";
     if (m.includes("already registered") || m.includes("already been registered")) return "already_registered";
     if (m.includes("signups not allowed") || m.includes("not allowed") || m.includes("otp_disabled")) return "not_registered";
-    if (m.includes("password")) return "Error interno de registro. Intentá de nuevo.";
-    if (m.includes("error sending confirmation") || m.includes("sending confirmation email")) return "Error enviando el email de confirmación. Intentá de nuevo en unos minutos.";
-    if (m.includes("invalid email")) return "Email no válido.";
-    if (m.includes("network") || m.includes("fetch")) return "Error de conexión. Revisá tu internet e intentá de nuevo.";
+    if (m.includes("password")) return "Error interno de registro. Intenta de nuevo.";
+    if (m.includes("error sending confirmation") || m.includes("sending confirmation email")) return "Error enviando el email de confirmacion. Intenta de nuevo en unos minutos.";
+    if (m.includes("invalid email")) return "Email no valido.";
+    if (m.includes("network") || m.includes("fetch")) return "Error de conexion. Revisa tu internet e intenta de nuevo.";
     return msg;
   };
 
   const sendMagicLink = async (email, isSignUp = false, metadata = {}) => {
     try {
       if (isSignUp) {
-        // Generar password aleatorio — el usuario siempre usa Magic Link
         const randomPwd = crypto.randomUUID() + "Aa1!";
         const { data, error } = await supabase.auth.signUp({
           email,
           password: randomPwd,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: metadata, // nombre, apellido, phone
-          },
+          options: { emailRedirectTo: window.location.origin, data: metadata },
         });
         if (error) return { ok: false, error: translateError(error.message) };
-        // Supabase retorna user con identities vacías si ya existe
         if (data?.user?.identities?.length === 0) return { ok: false, error: "already_registered" };
-        // El trigger handle_new_user() guarda nombre y teléfono en profiles automáticamente
         return { ok: true };
       }
-      // Login: enviar OTP
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: window.location.origin, shouldCreateUser: false },
@@ -94,38 +119,32 @@ export function AuthProvider({ children }) {
       if (error) return { ok: false, error: translateError(error.message) };
       return { ok: true };
     } catch (e) {
-      return { ok: false, error: "Error de conexión. Revisá tu internet e intentá de nuevo." };
+      return { ok: false, error: "Error de conexion. Revisa tu internet e intenta de nuevo." };
     }
   };
 
-  // --- LOGOUT ---
   const signOut = async () => {
     await supabase.auth.signOut();
     clearGuestUser();
-    setUser(null);
-    setProfile(null);
-    setAddresses([]);
-    setFavorites([]);
+    setUser(null); setProfile(null); setAddresses([]); setFavorites([]);
   };
 
-  // Logout exclusivo de la phone session (no toca Supabase Auth).
   const phoneSignOut = () => { clearGuestUser(); };
 
-  // --- PERFIL ---
+  const sessionLogout = async () => {
+    if (user) await signOut();
+    else phoneSignOut();
+  };
+
   const updateProfile = async (data) => {
     if (!user) return false;
     const { error } = await supabase.from("profiles").update({
-      ...data,
-      updated_at: new Date().toISOString(),
+      ...data, updated_at: new Date().toISOString(),
     }).eq("id", user.id);
-    if (!error) {
-      setProfile(p => ({ ...p, ...data }));
-      return true;
-    }
+    if (!error) { setProfile(p => ({ ...p, ...data })); return true; }
     return false;
   };
 
-  // --- DIRECCIONES ---
   const addAddress = async (addr) => {
     if (!user) return null;
     const { data, error } = await supabase.from("addresses").insert({
@@ -136,34 +155,24 @@ export function AuthProvider({ children }) {
       lng: addr.lng || null,
       notes: addr.notes || null,
     }).select().single();
-    if (!error && data) {
-      setAddresses(p => [...p, data]);
-      return data;
-    }
+    if (!error && data) { setAddresses(p => [...p, data]); return data; }
     return null;
   };
 
   const removeAddress = async (id) => {
     if (!user) return false;
     const { error } = await supabase.from("addresses").delete().eq("id", id).eq("user_id", user.id);
-    if (!error) {
-      setAddresses(p => p.filter(a => a.id !== id));
-      return true;
-    }
+    if (!error) { setAddresses(p => p.filter(a => a.id !== id)); return true; }
     return false;
   };
 
   const updateAddress = async (id, data) => {
     if (!user) return false;
     const { error } = await supabase.from("addresses").update(data).eq("id", id).eq("user_id", user.id);
-    if (!error) {
-      setAddresses(p => p.map(a => a.id === id ? { ...a, ...data } : a));
-      return true;
-    }
+    if (!error) { setAddresses(p => p.map(a => a.id === id ? { ...a, ...data } : a)); return true; }
     return false;
   };
 
-  // --- FAVORITOS ---
   const toggleFavorite = async (recipeId) => {
     if (!user) return false;
     const isFav = favorites.includes(recipeId);
@@ -179,7 +188,6 @@ export function AuthProvider({ children }) {
 
   const isFavorite = (recipeId) => favorites.includes(recipeId);
 
-  // --- HISTORIAL ---
   const getOrderHistory = async () => {
     if (!user) return [];
     const { data } = await supabase
@@ -195,6 +203,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user, profile, addresses, favorites, loading,
       phoneSession, isPhoneOnly: !!phoneSession,
+      session, sessionLogout,
       sendMagicLink, signOut, phoneSignOut,
       updateProfile,
       addAddress, removeAddress, updateAddress,

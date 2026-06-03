@@ -25,7 +25,6 @@ import HermesMark from "../components/HermesMark";
 import CatalogFooter from "./CatalogFooter";
 import BadgeTag from "../components/BadgeTag";
 import TopCustomersCard from "./TopCustomersCard";
-import { useGuestUser } from "../lib/guestUser.js";
 
 const SEARCH_PHRASES = ["empanadas…", "tortilla de papa…", "algo dulce…", "pasta de hoy…"];
 
@@ -47,7 +46,7 @@ export default function HomeScreen({
   cartCount = 0, cartTotal = 0,
   hasDeal, dealPrice, prepDefault,
   onAddToCart, onOpenCart, onSearch, onSelectCategory, onSelectProduct, onOpenAccount,
-  phoneSession, onPhoneLogout,
+  session, onLogout,
   settings = {},
 }) {
   const [activeCat, setActiveCat] = useState("all");
@@ -55,9 +54,9 @@ export default function HomeScreen({
   const [storyIdx, setStoryIdx] = useState(0);
 
   const stories = useMemo(() => buildStories(products, hasDeal), [products, hasDeal]);
-  const guest = useGuestUser();
-  // Priorizar nickname si existe, sino primer nombre del fullname.
-  const firstName = guest?.nickname || (guest?.name ? guest.name.trim().split(/\s+/)[0] : null);
+  // Saludo: viene de la session unificada (phone-only o magic link).
+  // session.firstName ya tiene la prioridad correcta (nickname > nombre > email/phone).
+  const firstName = session?.firstName || null;
   const recos = useMemo(() => buildRecos(products, hasDeal), [products, hasDeal]);
   const combos = useMemo(
     () => products
@@ -128,9 +127,9 @@ export default function HomeScreen({
             </div>
           </div>
           <AccountMenu
-            phoneSession={phoneSession}
+            session={session}
             onSelect={onOpenAccount}
-            onPhoneLogout={onPhoneLogout}
+            onLogout={onLogout}
           />
         </div>
       </div>

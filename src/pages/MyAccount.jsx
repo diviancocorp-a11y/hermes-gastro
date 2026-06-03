@@ -15,7 +15,7 @@ const TAB_ICONS = { perfil: "👤", direcciones: "📍", historial: "📦", favo
 
 export default function MyAccount() {
   const navigate = useNavigate();
-  const { user, profile, addresses, favorites, loading, sendMagicLink, signOut, updateProfile, addAddress, removeAddress, getOrderHistory, phoneSession, phoneSignOut } = useAuth();
+  const { user, profile, addresses, favorites, loading, sendMagicLink, updateProfile, addAddress, removeAddress, getOrderHistory, phoneSession, session, sessionLogout } = useAuth();
 
   const [tab, setTab] = useState(() => {
     // Leer ?tab= de la URL para abrir directamente la seccion deseada
@@ -148,9 +148,9 @@ export default function MyAccount() {
           <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 2 }}>{user?.email || phoneSession?.email || phoneSession?.phone || ""}</div>
         </div>
         <AccountMenu
-          phoneSession={phoneSession}
+          session={session}
           onSelect={(t) => { if (t) setTab(t); else navigate("/mi-cuenta"); }}
-          onPhoneLogout={() => { if (user) signOut(); else phoneSignOut?.(); navigate("/"); }}
+          onLogout={async () => { await sessionLogout(); navigate("/"); }}
         />
       </div>
 
