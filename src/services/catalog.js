@@ -36,16 +36,35 @@ export async function fetchCatalog() {
       cover_url: business.defaultSettings.cover_url,
     };
 
-    const { data: products, error: prodErr } = await supabase
-      .from('recipes')
-      .select('id, name, category, sale_price, image_url, description, related_ids, is_vegetarian, created_at')
-      .eq('visible', true)
-      .eq('is_archived', false)
-      .order('category', { ascending: true });
-
+    // Defense in depth: si alguna columna nueva no existe en un tenant,
+    // intentar el select completo PRIMERO; si falla, fallback al minimo
+    // garantizado. Asi el catalogo nunca queda vacio por una migration
+    // no aplicada en algun tenant.
+    let products = null;
+    let prodErr = null;
+    {
+      const res = await supabase
+        .from('recipes')
+        .select('id, name, category, sale_price, image_url, description, related_ids, is_vegetarian, created_at')
+        .eq('visible', true)
+        .eq('is_archived', false)
+        .order('category', { ascending: true });
+      products = res.data;
+      prodErr = res.error;
+    }
     if (prodErr) {
-      console.error('Error cargando productos:', prodErr.message);
-      return null;
+      console.warn('Fetch productos con columnas extra fallo, fallback al minimo:', prodErr.message);
+      const res = await supabase
+        .from('recipes')
+        .select('id, name, category, sale_price, image_url, description, related_ids')
+        .eq('visible', true)
+        .eq('is_archived', false)
+        .order('category', { ascending: true });
+      products = res.data;
+      if (res.error) {
+        console.error('Error cargando productos:', res.error.message);
+        return null;
+      }
     }
 
     // Enriquecer con sale_count desde la vista materializada (silently fail).
