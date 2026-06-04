@@ -2,7 +2,10 @@
 // Admin panel for sending push notifications and viewing subscriber stats.
 import { useState, useEffect } from 'react';
 import { Icon } from '../../lib/utils';
-import { sendPushNotification, getSubscriberCount } from '../../services/push';
+import {
+  sendPushNotification, getSubscriberCount,
+  isPushSupported, isSubscribed, subscribeToPush, unsubscribeFromPush,
+} from '../../services/push';
 
 export default function PushNotifications({ msg, onClose }) {
   const [title, setTitle] = useState('');
@@ -10,10 +13,32 @@ export default function PushNotifications({ msg, onClose }) {
   const [url, setUrl] = useState('/');
   const [loading, setLoading] = useState(false);
   const [subCount, setSubCount] = useState(0);
+  const [adminSubscribed, setAdminSubscribed] = useState(false);
+  const [adminBusy, setAdminBusy] = useState(false);
 
   useEffect(() => {
     getSubscriberCount().then(setSubCount).catch(() => {});
+    if (isPushSupported()) isSubscribed().then(setAdminSubscribed);
   }, []);
+
+  const handleAdminToggle = async () => {
+    setAdminBusy(true);
+    try {
+      if (adminSubscribed) {
+        await unsubscribeFromPush();
+        setAdminSubscribed(false);
+        msg?.('Suscripcion admin eliminada');
+      } else {
+        const sub = await subscribeToPush({ role: 'admin' });
+        if (sub) { setAdminSubscribed(true); msg?.('Recibiras push en este dispositivo'); }
+        else { msg?.('No se pudo suscribir. Revisa permisos del browser.'); }
+      }
+    } catch (e) {
+      msg?.(`Error: ${e.message}`);
+    } finally {
+      setAdminBusy(false);
+    }
+  };
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -41,7 +66,7 @@ export default function PushNotifications({ msg, onClose }) {
 
         {/* Stats */}
         <div style={{
-          padding: '12px 14px', background: 'var(--b2)', borderRadius: 10, marginBottom: 16,
+          padding: '12px 14px', background: 'var(--b2)', borderRadius: 10, marginBottom: 12,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div>
@@ -50,6 +75,38 @@ export default function PushNotifications({ msg, onClose }) {
           </div>
           <div style={{ fontSize: 40 }}>📱</div>
         </div>
+
+        {/* Admin opt-in: este dispositivo recibe push de nuevos pedidos */}
+        {isPushSupported() && (
+          <div style={{
+            padding: '12px 14px', background: 'var(--b2)', borderRadius: 10, marginBottom: 16,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)' }}>
+                Recibir push de nuevos pedidos
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--t3)', marginTop: 2 }}>
+                Notificacion en este dispositivo cuando entra un pedido nuevo.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleAdminToggle}
+              disabled={adminBusy}
+              style={{
+                padding: '8px 14px', fontSize: 12, fontWeight: 700,
+                background: adminSubscribed ? 'transparent' : 'var(--ac)',
+                color: adminSubscribed ? 'var(--ac)' : '#fff',
+                border: adminSubscribed ? '1px solid var(--ac)' : 0,
+                borderRadius: 999, cursor: adminBusy ? 'wait' : 'pointer',
+                fontFamily: 'inherit', flexShrink: 0,
+              }}
+            >
+              {adminBusy ? '...' : adminSubscribed ? 'Activado' : 'Activar'}
+            </button>
+          </div>
+        )}
 
         {subCount === 0 && (
           <div style={{

@@ -1,5 +1,6 @@
 // src/services/orders.js
 import { supabase } from '../lib/supabase';
+import { notifyOrderStatusChange } from './push';
 
 // Status values must match exactly what's stored in DB.
 // See OrderStatus + ACTIVE_ORDER_STATUSES in src/lib/utils.jsx.
@@ -62,8 +63,17 @@ export async function fetchOrders() {
 }
 
 export async function updateOrderStatus(id, status) {
+  // Leer phone antes del update para poder notificar despues sin extra round-trip.
+  const { data: ord } = await supabase
+    .from('orders')
+    .select('phone')
+    .eq('id', id)
+    .maybeSingle();
   const { error } = await supabase.from('orders').update({ status }).eq('id', id);
-  return !error;
+  if (error) return false;
+  // Fire-and-forget push al cliente. No bloquea ni rompe si push falla.
+  if (ord?.phone) notifyOrderStatusChange(ord.phone, status);
+  return true;
 }
 
 export async function verifyReceipt(id) {

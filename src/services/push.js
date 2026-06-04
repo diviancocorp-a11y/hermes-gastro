@@ -101,6 +101,28 @@ export async function sendPushNotification({ title, body, url, icon, target = { 
   return data;
 }
 
+
+// Helper para mapear order.status -> push payload listo para sendPushNotification.
+// Solo dispara para los 3 status que el cliente quiere saber.
+const ORDER_STATUS_PUSH = {
+  preparing: { title: 'Estamos preparando tu pedido', body: 'Cocina arranco. Te avisamos cuando salga.' },
+  ready:     { title: 'Tu pedido esta listo',         body: 'Sale en camino o pasalo a buscar.' },
+  done:      { title: 'Pedido entregado',             body: 'Gracias por elegirnos.' },
+};
+
+/**
+ * Notifica al cliente (por phone) el cambio de status. Fire-and-forget.
+ */
+export async function notifyOrderStatusChange(phone, status) {
+  if (!phone || !ORDER_STATUS_PUSH[status]) return;
+  try {
+    const payload = ORDER_STATUS_PUSH[status];
+    await sendPushNotification({ ...payload, url: '/mi-cuenta?tab=historial', target: { phone } });
+  } catch (e) {
+    console.warn('notifyOrderStatusChange (non-blocking):', e?.message);
+  }
+}
+
 export async function getSubscriberCount(role = 'customer') {
   const { count, error } = await supabase
     .from('push_subscriptions')

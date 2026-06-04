@@ -99,6 +99,19 @@ Deno.serve(async (req) => {
     const orderItems = validatedItems.map((item) => ({ order_id: order.id, recipe_id: item.recipeId, qty: item.qty, unit_price: item.unitPrice, unit_cost: costMap[item.recipeId] || 0, subtotal: item.subtotal }));
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
     if (itemsError) { console.error("Error creando items:", itemsError); await supabase.from("orders").delete().eq("id", order.id); return jsonRes({ error: "Error al crear los items" }, 500); }
+    // Push al admin (fire-and-forget, no bloquea el response al cliente)
+    try {
+      await supabase.functions.invoke("send-push", {
+        body: {
+          title: "Nuevo pedido",
+          body: `${customer || "Cliente"} - $${finalTotal}`,
+          url: "/admin/orders",
+          target: { role: "admin" },
+        },
+      });
+    } catch (e) {
+      console.warn("send-push admin (non-blocking):", e?.message);
+    }
     return jsonRes({ ok: true, orderId: order.id, total: finalTotal, discount: validDiscount, tip: tipAmount });
   } catch (err) {
     console.error("submit-order error:", err);
