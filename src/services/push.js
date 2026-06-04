@@ -89,9 +89,9 @@ export async function isSubscribed() {
  * @param {Object} payload
  * @param {string} payload.title
  * @param {string} payload.body
- * @param {string} [payload.url] - URL al hacer click
+ * @param {string} [payload.url]
  * @param {string} [payload.icon]
- * @param {Object} [payload.target] - { role?, user_id?, phone? }. Default: broadcast a todos los customers.
+ * @param {Object} [payload.target] - { role?, user_id?, phone? }
  */
 export async function sendPushNotification({ title, body, url, icon, target = { role: 'customer' } }) {
   const { data, error } = await supabase.functions.invoke('send-push', {

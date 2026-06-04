@@ -7,6 +7,7 @@ import business from "@business";
 import ReferralCard from "../components/catalog/ReferralCard";
 import GuestWelcomeCard from "../catalog-pro/GuestWelcomeCard";
 import AccountMenu from "../catalog-pro/AccountMenu";
+import PushOptInBanner from "../catalog-pro/PushOptInBanner";
 import { lookupCustomerByPhone, phoneLogin, cleanPhone, blockPhone, isPhoneBlocked, upsertCustomer } from "../services/phoneAuth";
 import { setGuestUser } from "../lib/guestUser";
 
@@ -158,6 +159,12 @@ export default function MyAccount() {
           via ?tab=. Si queres cambiar de seccion, volves al home y la eliges del menu. */}
 
       <div style={{ padding: "20px 16px" }}>
+
+        {/* Push opt-in: aparece arriba del contenido en perfil/historial.
+            Se oculta solo si ya esta suscrito o el user dijo "Ahora no". */}
+        {(tab === "perfil" || tab === "historial") && (
+          <PushOptInBanner session={session} />
+        )}
 
         {/* ─── PERFIL ─── */}
         {tab === "perfil" && (
