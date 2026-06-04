@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { OrderStatus } from "../lib/utils";
 import useFeature from "../hooks/useFeature";
 
@@ -13,7 +14,6 @@ import AdminTopbar from "../components/admin/shared/AdminTopbar";
 import BottomNav from "../components/admin/shared/BottomNav";
 import AdminDrawer from "../components/admin/shared/AdminDrawer";
 import AdminMore from "../components/admin/shared/AdminMore";
-import BrandModal from "../components/admin/shared/BrandModal";
 import ConfirmSlideProvider from "../components/ConfirmSlideProvider";
 
 // Pantallas (todavía visuales viejos — se adaptan en próximos pasos)
@@ -44,11 +44,11 @@ import "../styles/admin-orders.css";
 import "../styles/admin-shared.css";
 
 export default function Admin() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState("home");
   const [ov, setOv] = useState(null);
   const [toast, setToast] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [brandOpen, setBrandOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem('ag-theme') || 'light' } catch { return 'light' }
   });
@@ -167,7 +167,7 @@ export default function Admin() {
         avatarText={avatarLetter}
         avatarImage={sett.logo_url || null}
         onMenu={() => setDrawerOpen(true)}
-        onAvatar={() => setBrandOpen(true)}
+        onAvatar={() => navigate("/admin/personalizacion", { state: { from: "admin" } })}
       />
 
       <main style={{ position: 'relative', zIndex: 2, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, paddingBottom: 'var(--ag-bottom-nav-h, 76px)' }}>
@@ -220,8 +220,9 @@ export default function Admin() {
         />
       </AdminDrawer>
 
-      {/* BrandModal SIEMPRE montado: el CSS .ag-modal-sheet usa transform según `open` para animar abrir/cerrar. */}
-      <BrandModal open={brandOpen} settings={sett} setSettings={setSett} onClose={() => setBrandOpen(false)} showToast={msg} />
+      {/* Personalizacion migrada a /admin/personalizacion (#95).
+          BrandModal sigue siendo el componente reusado por esa ruta.
+          Esta ruta queda como fallback por compat (avatar -> navigate). */}
     </div>
     </ConfirmSlideProvider>
   );

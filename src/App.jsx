@@ -14,6 +14,7 @@ import { fetchSettings } from './services/settings'
 import { supabase } from './lib/supabase'
 
 const Admin = lazy(() => import('./pages/Admin'))
+const Personalizacion = lazy(() => import('./pages/Personalizacion'))
 const OrderTracker = lazy(() => import('./pages/OrderTracker'))
 const MyAccount = lazy(() => import('./pages/MyAccount'))
 const MpCallback = lazy(() => import('./pages/MpCallback'))
@@ -76,6 +77,7 @@ export default function App() {
               <Route path="/" element={<Catalog />} />
               <Route path="/q/:slug" element={<QrRedirect />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/personalizacion" element={<Personalizacion />} />
               <Route path="/order/:id" element={<OrderTracker />} />
               <Route path="/mi-cuenta" element={<MyAccount />} />
               <Route path="/mp-callback" element={<MpCallback />} />
