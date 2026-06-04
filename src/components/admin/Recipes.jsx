@@ -321,6 +321,7 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
               related_ids: r.related_ids || [], is_combo: r.is_combo || false,
               sizes: r.sizes ?? null,
               batch_yield: r.batch_yield ?? null,
+              is_vegetarian: r.is_vegetarian || false,
             });
             if (saved?.__error === "duplicate") {
               showToast("⚠ Ya existe una receta activa con ese nombre");
@@ -552,6 +553,7 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
     image_url: "", description: "", ingredients: [], related_ids: [], is_combo: false,
     sizes: null,
     batch_yield: null,
+    is_vegetarian: false,
   });
   const [ad, setAd] = useState(false);
   const [si, setSi] = useState("");
@@ -664,6 +666,9 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
           <div style={{ borderTop: "1px solid var(--ag-line)" }} />
           <ToggleRow label="Es un combo" hint="Compuesto por otras recetas"
             checked={!!f.is_combo} onChange={v => s("is_combo", v)} />
+          <div style={{ borderTop: "1px solid var(--ag-line)" }} />
+          <ToggleRow label="Es vegetariano" hint="Aparece cuando el cliente filtra por vegetariano"
+            checked={!!f.is_vegetarian} onChange={v => s("is_vegetarian", v)} />
         </div>
 
         {f.is_combo && (
@@ -708,7 +713,7 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
                       </div>
                       <button type="button" onClick={() => setAd(true)} className="ag-btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }}>+ Ingrediente</button>
                     </div>
-            
+
                     {ad && (
                       <div className="ag-card" style={{ padding: 12, marginBottom: 10, background: "var(--ag-bg-card)", border: "1.5px solid var(--ag-c-prep)" }}>
                         <label className="ag-field-lbl">Insumo</label>
@@ -723,7 +728,7 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
                         </div>
                       </div>
                     )}
-            
+
                     <div className="ag-card" style={{ padding: 0, overflow: "hidden", marginBottom: 14 }}>
                       {(f.ingredients || []).length === 0 ? (
                         <div style={{ padding: 16, textAlign: "center", color: "var(--ag-ink-3)", fontSize: 12 }}>Sin ingredientes</div>

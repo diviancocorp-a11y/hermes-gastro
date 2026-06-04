@@ -38,7 +38,7 @@ export async function fetchCatalog() {
 
     const { data: products, error: prodErr } = await supabase
       .from('recipes')
-      .select('id, name, category, sale_price, image_url, description, related_ids')
+      .select('id, name, category, sale_price, image_url, description, related_ids, is_vegetarian, created_at')
       .eq('visible', true)
       .eq('is_archived', false)
       .order('category', { ascending: true });
@@ -46,6 +46,22 @@ export async function fetchCatalog() {
     if (prodErr) {
       console.error('Error cargando productos:', prodErr.message);
       return null;
+    }
+
+    // Enriquecer con sale_count desde la vista materializada (silently fail).
+    try {
+      const { data: counts } = await supabase
+        .from('recipe_sale_counts')
+        .select('recipe_id, sale_count');
+      if (counts && Array.isArray(counts)) {
+        const byId = new Map(counts.map(c => [c.recipe_id, c.sale_count]));
+        for (const p of products || []) {
+          p.sale_count = byId.get(p.id) || 0;
+        }
+      }
+    } catch (e) {
+      // Si la vista no existe en este tenant, no rompemos el catalogo.
+      console.warn('recipe_sale_counts no disponible:', e?.message);
     }
 
     let serverNow = new Date().toISOString();
@@ -233,8 +249,8 @@ export async function validateCouponPublic(code, email) {
     if (data.email && cleanEmail && data.email.toLowerCase() !== cleanEmail.toLowerCase()) return null;
     if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
     return { id: data.id, discount_pct: data.discount_pct };
-  } catch (e) {
-    console.warn('validateCouponPublic:', e?.message || e);
+  } catch (err) {
+    console.error('Error en validateCouponPublic:', err);
     return null;
   }
 }
