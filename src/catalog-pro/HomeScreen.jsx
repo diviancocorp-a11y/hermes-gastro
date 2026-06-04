@@ -26,21 +26,6 @@ import CatalogFooter from "./CatalogFooter";
 import BadgeTag from "../components/BadgeTag";
 import TopCustomersCard from "./TopCustomersCard";
 
-const SEARCH_PHRASES = ["empanadas…", "tortilla de papa…", "algo dulce…", "pasta de hoy…"];
-
-function SearchTyping() {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI(v => (v + 1) % SEARCH_PHRASES.length), 2200);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    <span key={i} style={{ color: "var(--t2)", animation: "cp-fade-in 280ms var(--ease)", display: "inline-block" }}>
-      {SEARCH_PHRASES[i]}
-    </span>
-  );
-}
-
 export default function HomeScreen({
   store = {}, userName, products = [], categories = [],
   cartCount = 0, cartTotal = 0,
@@ -264,7 +249,7 @@ export default function HomeScreen({
               fontFamily: "var(--font-body)", fontSize: 14,
             }}
           />
-          {searchQuery ? (
+          {searchQuery && (
             <button type="button" onClick={() => onSearchChange?.("")} style={{
               width: 28, height: 28, borderRadius: 999, background: "var(--bg)",
               border: "1px solid var(--line)", color: "var(--t2)", cursor: "pointer",
@@ -272,8 +257,6 @@ export default function HomeScreen({
             }} aria-label="Limpiar busqueda">
               <Icon name="x" size={12} />
             </button>
-          ) : (
-            <SearchTyping />
           )}
         </div>
         {/* Autocomplete: hasta 4 sugerencias cuando hay 2+ caracteres */}
