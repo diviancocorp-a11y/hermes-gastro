@@ -1,25 +1,14 @@
 #!/usr/bin/env node
 // scripts/check-file-integrity.mjs
-// ─────────────────────────────────────────────────────────
 // Valida que los archivos pasados como argumentos NO estén:
 //  1. Truncados (deben terminar con '\n')
 //  2. Corruptos con NULL bytes
-//  3. Con sintaxis JS rota (.mjs / .cjs)
-//  4. JSON malformado (.json)
-//
-// Uso:
-//   node scripts/check-file-integrity.mjs <file1> <file2> ...
-//   node scripts/check-file-integrity.mjs --fix <file1> ...
-//
-// Con --fix: appendea '\n' al final si falta (auto-arregla trailing newline).
-// El fix sólo cubre el newline — null bytes / JSON / JS rotos siguen requiriendo
-// intervención manual porque auto-arreglarlos puede borrar contenido válido.
-//
-// Escape hatch JSX-en-.js: agregar `// @no-jsx-check` en la primera línea
-// para archivos que generan XML/HTML como strings (XLSX, SVG, etc).
-//
-// Salida: 0 si OK, 1 si quedan problemas. Imprime errores en stderr.
-// ─────────────────────────────────────────────────────────
+//  3. Truncados al medio (ultima linea cortada en expresion)
+//  4. JSX en .js (Vite no lo procesa)
+//  5. Patron roto type="number" + Number(e.target.value) en .jsx/.tsx
+//  6. JSON malformado
+//  7. Sintaxis JS en .mjs/.cjs
+
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { extname } from 'node:path';
 import { execSync } from 'node:child_process';
@@ -45,29 +34,25 @@ for (const file of files) {
     continue;
   }
 
-  // 1) NULL bytes — error fatal, NO se auto-arregla
+  // 1) NULL bytes
   if (buf.includes(0x00)) {
-    console.error(`✗ ${file}: contiene NULL bytes (archivo corrupto, requiere fix manual)`);
+    console.error(`✗ ${file}: contiene NULL bytes (archivo corrupto)`);
     errors++;
     continue;
   }
 
-  // 2) EOF correcto: termina con UN SOLO \n (sin blank lines extras).
-  // git diff --check rechaza blank lines al final → tenemos que normalizar.
+  // 2) EOF: termina con un solo \n
   if (buf.length > 0) {
     const endsWithSingleNewline =
       buf[buf.length - 1] === 0x0a &&
       (buf.length === 1 || buf[buf.length - 2] !== 0x0a);
     if (!endsWithSingleNewline) {
       if (fixMode) {
-        // Quitar TODO whitespace final y agregar UN solo \n
         let end = buf.length;
-        while (end > 0 && (buf[end - 1] === 0x0a || buf[end - 1] === 0x0d || buf[end - 1] === 0x20 || buf[end - 1] === 0x09)) {
-          end--;
-        }
+        while (end > 0 && (buf[end - 1] === 0x0a || buf[end - 1] === 0x0d || buf[end - 1] === 0x20 || buf[end - 1] === 0x09)) end--;
         const cleaned = Buffer.concat([buf.subarray(0, end), Buffer.from('\n')]);
         writeFileSync(file, cleaned);
-        console.log(`↻ ${file}: fixed EOF (normalizado a 1 \\n)`);
+        console.log(`↻ ${file}: fixed EOF`);
         fixed++;
         buf = readFileSync(file);
       } else {
@@ -80,85 +65,91 @@ for (const file of files) {
 
   const ext = extname(file).toLowerCase();
 
-  // 3) JSX dentro de .js → Vite no lo procesa, build de Vercel rompe
-  // Detectamos tags JSX típicos. Heurística conservadora para evitar falsos positivos
-  // (comparaciones `a < b`, template strings con HTML/XML).
-  if (ext === '.js') {
-    const src = buf.toString('utf-8');
-    if (/^\s*\/\/\s*@no-jsx-check/m.test(src.slice(0, 200))) continue;
-    // Excluir comments (// ... y /* ... */) y template strings (backticks)
-    const stripped = src
-      .replace(/\/\/.*$/gm, '')
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/`[\s\S]*?`/g, '');
-    const jsxPatterns = [
-      /<[A-Z][A-Za-z0-9]*[\s/>]/,                                          // <Component
-      /<(div|span|button|input|img|a|p|h[1-6]|ul|li|form|section|article|nav|header|footer|main|aside|label|select|textarea|table|tr|td|th|tbody|thead|svg|path|g|rect|circle|line|polyline|polygon)[\s/>]/, // <tagHTML
-      /<\/[A-Za-z]/,                                                       // </Anything (cierre JSX)
-    ];
-    if (jsxPatterns.some((re) => re.test(stripped))) {
-      console.error(`✗ ${file}: contiene JSX en .js — renombrar a .jsx (Vite no compila JSX en .js, Vercel rompe)`);
+  // 2.5) Truncamiento al medio (heuristica)
+  if (['.jsx', '.js', '.ts', '.tsx', '.mjs', '.cjs'].includes(ext)) {
+    const lines = buf.toString('utf-8').split(/\r?\n/);
+    let i = lines.length - 1;
+    while (i >= 0 && lines[i].trim() === '') i--;
+    const lastLine = (lines[i] || '').trim();
+    const noComment = lastLine.replace(/\/\/.*$/, '');
+    const truncated =
+      /[+\-*/&|=<>?,]$/.test(noComment) ||
+      /=\s*\{?\s*$/.test(noComment) ||
+      /\b(const|let|var|return|import|export)\s*$/.test(noComment) ||
+      (/[(\[{]\s*$/.test(noComment) && !lastLine.startsWith('//'));
+    const singleQ = (noComment.match(/'/g) || []).length;
+    const doubleQ = (noComment.match(/"/g) || []).length;
+    const backtickQ = (noComment.match(/`/g) || []).length;
+    const unbalanced = (singleQ % 2) + (doubleQ % 2) + (backtickQ % 2) > 0;
+    if (truncated || unbalanced) {
+      console.error(`✗ ${file}: posible truncamiento — ultima linea: "${lastLine.slice(0, 80)}${lastLine.length > 80 ? '...' : ''}"`);
       errors++;
       continue;
     }
   }
 
-  // 4) Patrón roto `type="number"` + `Number(e.target.value)` en .jsx/.tsx
-  // Causa: value={x || ""} hace "0" falsy y desaparece; Number("0.") = 0
-  // pierde el punto. Solución: usar <DecimalInput /> de components/ui.
-  // Escape hatch: `// @allow-bad-number-input` en la primera línea.
+  // 3) JSX dentro de .js
+  if (ext === '.js') {
+    const src = buf.toString('utf-8');
+    if (/^\s*\/\/\s*@no-jsx-check/m.test(src.slice(0, 200))) continue;
+    const stripped = src
+      .replace(/\/\/.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/`[\s\S]*?`/g, '');
+    const jsxPatterns = [
+      /<[A-Z][A-Za-z0-9]*[\s/>]/,
+      /<(div|span|button|input|img|a|p|h[1-6]|ul|li|form|section|article|nav|header|footer|main|aside|label|select|textarea|table|tr|td|th|tbody|thead|svg|path|g|rect|circle|line|polyline|polygon)[\s/>]/,
+      /<\/[A-Za-z]/,
+    ];
+    if (jsxPatterns.some((re) => re.test(stripped))) {
+      console.error(`✗ ${file}: JSX en .js — renombrar a .jsx`);
+      errors++;
+      continue;
+    }
+  }
+
+  // 4) type="number" + Number(e.target.value)
   if (ext === '.jsx' || ext === '.tsx') {
     const src = buf.toString('utf-8');
     if (!/^\s*\/\/\s*@allow-bad-number-input/m.test(src.slice(0, 200))) {
-      const hasNumType = /type=["']number["']/.test(src);
-      const hasNumberParse = /Number\(e\.target\.value\)/.test(src);
-      if (hasNumType && hasNumberParse) {
-        console.error(`✗ ${file}: combina type="number" con Number(e.target.value) — bug "0.x" perdido.\n    Usá <DecimalInput /> de src/components/ui/DecimalInput.jsx (o agregá // @allow-bad-number-input en la línea 1).`);
+      if (/type=["']number["']/.test(src) && /Number\(e\.target\.value\)/.test(src)) {
+        console.error(`✗ ${file}: type="number" con Number(e.target.value) — usa DecimalInput`);
         errors++;
         continue;
       }
     }
   }
 
-  // 4) JSON válido
+  // 5) JSON
   if (ext === '.json') {
-    try {
-      JSON.parse(buf.toString('utf-8'));
-    } catch (e) {
-      console.error(`✗ ${file}: JSON inválido — ${e.message}`);
-      errors++;
-    }
+    try { JSON.parse(buf.toString('utf-8')); }
+    catch (e) { console.error(`✗ ${file}: JSON invalido — ${e.message}`); errors++; }
     continue;
   }
 
-  // 5) Sintaxis JS válida (solo módulos puros, no JSX/TS)
+  // 6) Sintaxis JS pura
   if (ext === '.mjs' || ext === '.cjs') {
-    try {
-      execSync(`node --check "${file}"`, { stdio: 'pipe' });
-    } catch (e) {
+    try { execSync(`node --check "${file}"`, { stdio: 'pipe' }); }
+    catch (e) {
       const msg = (e.stderr?.toString() || e.message).split('\n').slice(0, 4).join('\n');
-      console.error(`✗ ${file}: error de sintaxis JS\n${msg}`);
-      errors++;
+      console.error(`✗ ${file}: sintaxis JS\n${msg}`); errors++;
     }
     continue;
   }
 }
 
 if (errors > 0) {
-  console.error(`\n✖ Pre-commit: ${errors} archivo(s) con problemas de integridad.`);
-  console.error(`  ${fixMode ? 'No se pudieron auto-arreglar' : 'Corregilos antes de commitear'} (típicamente: cerrar líneas truncadas o quitar NULL bytes).`);
+  console.error(`\n✖ ${errors} archivo(s) con problemas`);
   process.exit(1);
 }
 
 if (fixed > 0) {
-  console.log(`\n↻ Pre-commit: ${fixed} archivo(s) auto-arreglado(s), ${files.length - fixed} ya estaban OK.`);
+  console.log(`\n↻ ${fixed} archivo(s) auto-arreglado(s)`);
   if (fixMode) {
     const list = files.slice(0, fixed).join(' ');
-    try {
-      execSync(`git add ${list}`, { stdio: 'pipe' });
-    } catch { /* ignorar si no estamos en repo o el add falla */ }
+    try { execSync(`git add ${list}`, { stdio: 'pipe' }); } catch { /* ignore */ }
   }
 } else {
-  console.log(`✓ Pre-commit: ${files.length} archivo(s) sin problemas de integridad.`);
+  console.log(`✓ ${files.length} archivo(s) sin problemas`);
 }
 process.exit(0);
