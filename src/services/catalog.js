@@ -199,7 +199,7 @@ async function syncCustomerBackup() {
   try {
     const { data: orders } = await supabase
       .from('orders')
-      .select('customer, phone, email, total, status, created_at, delivery, payment, address')
+      .select('customer, phone, email, total, status, created_at, delivery, payment, delivery_address')
       .order('created_at', { ascending: false });
     if (!orders || orders.length === 0) return;
 

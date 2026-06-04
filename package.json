@@ -15,6 +15,7 @@
     "test:e2e:ui": "playwright test --ui",
     "create-client": "node scripts/create-client.mjs",
     "check:integrity": "node scripts/check-integrity-all.mjs",
+    "check:columns": "node scripts/check-supabase-columns.mjs --all",
     "prepare": "husky",
     "check:schema": "node scripts/check-schema-sync.mjs"
   },

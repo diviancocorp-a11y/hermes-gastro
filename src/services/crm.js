@@ -118,7 +118,7 @@ export async function backupCustomers() {
   // 1. Traer clientes CRM consolidados desde orders
   const { data: orders } = await supabase
     .from('orders')
-    .select('customer, phone, email, total, status, created_at, delivery, payment, address')
+    .select('customer, phone, email, total, status, created_at, delivery, payment, delivery_address')
     .order('created_at', { ascending: false });
 
   if (!orders || orders.length === 0) return { ok: true, count: 0 };
@@ -130,7 +130,7 @@ export async function backupCustomers() {
     if (!key) return;
     if (!map[key]) map[key] = {
       nombre: o.customer || '', telefono: o.phone || '', email: o.email || '',
-      pedidos: 0, total_gastado: 0, ultimo_pedido: '', direccion: o.address || '',
+      pedidos: 0, total_gastado: 0, ultimo_pedido: '', direccion: o.delivery_address || '',
       metodo_pago: '', metodo_entrega: ''
     };
     map[key].pedidos++;
@@ -138,7 +138,7 @@ export async function backupCustomers() {
     if (!map[key].nombre && o.customer) map[key].nombre = o.customer;
     if (!map[key].telefono && o.phone) map[key].telefono = o.phone;
     if (!map[key].email && o.email) map[key].email = o.email;
-    if (!map[key].direccion && o.address) map[key].direccion = o.address;
+    if (!map[key].direccion && o.delivery_address) map[key].direccion = o.delivery_address;
     if (o.created_at > map[key].ultimo_pedido) {
       map[key].ultimo_pedido = o.created_at;
       map[key].metodo_pago = o.payment || '';

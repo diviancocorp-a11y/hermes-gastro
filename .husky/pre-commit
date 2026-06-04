@@ -31,6 +31,12 @@ fi
 echo "→ Integridad global de src/ (NULL bytes, EOF, sintaxis)..."
 npm run check:integrity --silent
 
+# Check de columnas Supabase referenciadas en .select() contra schema snapshot.
+# Atrapa el bug clase "agregaste columna al select pero la migration no
+# se aplico en algun tenant" — el catalogo termina vacio en produccion.
+echo "→ Columnas Supabase vs schema snapshot..."
+node scripts/check-supabase-columns.mjs --all
+
 echo "→ Schema ↔ DB sync..."
 node scripts/check-schema-sync.mjs
 
