@@ -1,8 +1,11 @@
 // src/services/push.js
-// Web Push notification service: subscribe/unsubscribe, send via Edge Function.
+// Web Push notifications. Suscripciones se asocian con:
+//   - user_id (si esta logueado)
+//   - phone (si es guest)
+//   - role: 'customer' para el catalogo, 'admin' para el panel admin.
+// La edge function send-push usa esto para targetear especificos vs broadcast.
 import { supabase } from '../lib/supabase';
 
-// VAPID public key (set this from environment or settings)
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
 function urlBase64ToUint8Array(base64String) {
@@ -18,16 +21,22 @@ export function isPushSupported() {
 
 export async function getPushPermission() {
   if (!isPushSupported()) return 'unsupported';
-  return Notification.permission; // 'default' | 'granted' | 'denied'
+  return Notification.permission;
 }
 
 export async function requestPushPermission() {
   if (!isPushSupported()) return 'unsupported';
-  const permission = await Notification.requestPermission();
-  return permission;
+  return await Notification.requestPermission();
 }
 
-export async function subscribeToPush() {
+/**
+ * Suscribe el browser actual a push notifications.
+ * @param {Object} opts
+ * @param {'customer'|'admin'} opts.role - quien se suscribe
+ * @param {string|null} opts.userId - auth user id (logueado)
+ * @param {string|null} opts.phone - phone (guest)
+ */
+export async function subscribeToPush({ role = 'customer', userId = null, phone = null } = {}) {
   if (!isPushSupported() || !VAPID_PUBLIC_KEY) return null;
 
   const permission = await requestPushPermission();
@@ -35,7 +44,6 @@ export async function subscribeToPush() {
 
   const registration = await navigator.serviceWorker.ready;
   let subscription = await registration.pushManager.getSubscription();
-
   if (!subscription) {
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
@@ -43,13 +51,16 @@ export async function subscribeToPush() {
     });
   }
 
-  // Save to Supabase
   const subJson = subscription.toJSON();
   const { error } = await supabase.from('push_subscriptions').upsert({
     endpoint: subJson.endpoint,
     keys_p256dh: subJson.keys?.p256dh || '',
     keys_auth: subJson.keys?.auth || '',
     user_agent: navigator.userAgent,
+    user_id: userId,
+    phone: phone,
+    role,
+    last_seen_at: new Date().toISOString(),
   }, { onConflict: 'endpoint' });
 
   if (error) console.error('Push subscription save error:', error);
@@ -60,11 +71,9 @@ export async function unsubscribeFromPush() {
   if (!isPushSupported()) return;
   const registration = await navigator.serviceWorker.ready;
   const subscription = await registration.pushManager.getSubscription();
-
   if (subscription) {
     const endpoint = subscription.endpoint;
     await subscription.unsubscribe();
-    // Remove from DB
     await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint);
   }
 }
@@ -72,26 +81,31 @@ export async function unsubscribeFromPush() {
 export async function isSubscribed() {
   if (!isPushSupported()) return false;
   const registration = await navigator.serviceWorker.ready;
-  const subscription = await registration.pushManager.getSubscription();
-  return !!subscription;
+  return !!(await registration.pushManager.getSubscription());
 }
 
-// Admin: send push notification to all subscribers
-export async function sendPushNotification({ title, body, url, icon }) {
+/**
+ * Envia push notification via Edge Function.
+ * @param {Object} payload
+ * @param {string} payload.title
+ * @param {string} payload.body
+ * @param {string} [payload.url] - URL al hacer click
+ * @param {string} [payload.icon]
+ * @param {Object} [payload.target] - { role?, user_id?, phone? }. Default: broadcast a todos los customers.
+ */
+export async function sendPushNotification({ title, body, url, icon, target = { role: 'customer' } }) {
   const { data, error } = await supabase.functions.invoke('send-push', {
-    body: { title, body, url, icon },
+    body: { title, body, url, icon, target },
   });
-
   if (error) throw error;
   return data;
 }
 
-// Admin: get subscriber count
-export async function getSubscriberCount() {
+export async function getSubscriberCount(role = 'customer') {
   const { count, error } = await supabase
     .from('push_subscriptions')
-    .select('*', { count: 'exact', head: true });
-
+    .select('*', { count: 'exact', head: true })
+    .eq('role', role);
   if (error) return 0;
   return count || 0;
 }
