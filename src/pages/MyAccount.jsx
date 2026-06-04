@@ -827,7 +827,11 @@ function AccessGate({ tabLabel, hasEmail, email, sendMagicLink, setEditing, setT
     let res = await sendMagicLink(email, false);
     // 2) Si no esta registrado en auth.users, hacer signUp para crear la cuenta auth
     if (!res?.ok && res?.error === "not_registered") {
-      const metadata = { name: phoneSession?.name || "", phone: phoneSession?.phone || "" };
+      const metadata = {
+        name: phoneSession?.name || "",
+        phone: phoneSession?.phone || "",
+        nickname: phoneSession?.nickname || "",
+      };
       res = await sendMagicLink(email, true, metadata);
     }
     setSending(false);
