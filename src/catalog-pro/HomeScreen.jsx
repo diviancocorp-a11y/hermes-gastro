@@ -49,6 +49,9 @@ export default function HomeScreen({
   session, onLogout,
   settings = {},
   searchQuery = "", onSearchChange,
+  // Quick reorder: ultimos items pedidos por el user. [{id, name, qty}]
+  lastOrderItems = [],
+  onReorder,
 }) {
   const [activeCat, setActiveCat] = useState("Todos");
   const [activeFilter, setActiveFilter] = useState(null);
@@ -201,6 +204,36 @@ export default function HomeScreen({
         </div>
       </div>
 
+      {/* ===== QUICK REORDER (si hay pedido previo) ===== */}
+      {lastOrderItems.length > 0 && (
+        <div style={{ padding: "20px 22px 0" }}>
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            gap: 12, padding: "14px 16px", borderRadius: 14,
+            background: "color-mix(in oklab, var(--ac) 10%, var(--bg))",
+            border: "1px solid color-mix(in oklab, var(--ac) 30%, var(--line))",
+          }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ac)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>
+                ⚡ Pedi de nuevo
+              </div>
+              <div style={{ fontSize: 13, color: "var(--tx)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {lastOrderItems.map(it => it.name).slice(0, 3).join(", ")}
+                {lastOrderItems.length > 3 && ` +${lastOrderItems.length - 3}`}
+              </div>
+            </div>
+            <button onClick={() => onReorder?.(lastOrderItems)} style={{
+              flexShrink: 0, padding: "10px 14px", borderRadius: 999,
+              background: "var(--ac)", color: "#fff", border: 0,
+              fontSize: 13, fontWeight: 600, cursor: "pointer",
+              fontFamily: "var(--font-body)",
+            }}>
+              Repetir
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ===== EDITORIAL ===== */}
       <div style={{ padding: "28px 22px 44px" }}>
         <h1 className="h-1" style={{ margin: 0, fontSize: 32 }}>
@@ -208,8 +241,8 @@ export default function HomeScreen({
         </h1>
       </div>
 
-      {/* ===== SMART SEARCH (in-place filter) ===== */}
-      <div style={{ padding: "0 22px 18px" }}>
+      {/* ===== SMART SEARCH (in-place filter + autocomplete) ===== */}
+      <div style={{ padding: "0 22px 18px", position: "relative" }}>
         <div style={{
           width: "100%", height: 50, background: "var(--b2)", borderRadius: 14,
           display: "flex", alignItems: "center", padding: "0 16px", gap: 12,
@@ -239,6 +272,34 @@ export default function HomeScreen({
             <SearchTyping />
           )}
         </div>
+        {/* Autocomplete: hasta 4 sugerencias cuando hay 2+ caracteres */}
+        {searchQuery.trim().length >= 2 && gridProducts.length > 0 && (
+          <div style={{
+            position: "absolute", left: 22, right: 22, top: 56, zIndex: 30,
+            background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 12,
+            boxShadow: "0 12px 28px rgba(0,0,0,0.10)", overflow: "hidden",
+          }}>
+            {gridProducts.slice(0, 4).map((p, i) => (
+              <button key={p.id} type="button"
+                onClick={() => { onSelectProduct?.(p._raw); onSearchChange?.(""); }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 10,
+                  padding: "10px 12px", background: "transparent",
+                  border: 0, borderTop: i === 0 ? 0 : "1px solid var(--line)",
+                  cursor: "pointer", textAlign: "left", fontFamily: "inherit",
+                }}>
+                <div style={{ width: 38, height: 38, borderRadius: 8, overflow: "hidden", background: p.tone || "var(--b2)", flexShrink: 0 }}>
+                  {p.img && <img src={p.img} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = "none"; }} />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--tx)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+                  <div style={{ fontSize: 11, color: "var(--t3)" }}>{fmtAR(p.price)}</div>
+                </div>
+                <Icon name="arrow-right" size={14} style={{ color: "var(--t3)" }} />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ===== STORIES ===== */}
@@ -424,38 +485,13 @@ export default function HomeScreen({
         ))}
       </div>
 
-      {/* ===== FOOTER CORPORATIVO HERMES =====
-           El triple-click oculto al /admin sigue funcionando via el logo grande del footer. */}
-      <div
-        onClick={() => {
-          const now = Date.now();
-          if (now - (window.__hgFooterClick?.t || 0) > 700) window.__hgFooterClick = { t: now, n: 1 };
-          else window.__hgFooterClick = { t: now, n: (window.__hgFooterClick?.n || 0) + 1 };
-          if (window.__hgFooterClick.n >= 3) {
-            window.__hgFooterClick = null;
-            window.location.assign("/admin");
-          }
-        }}
-      >
-        <CatalogFooter settings={settings} />
-      </div>
-
-      {/* ===== STICKY CART ===== */}
-      {cartCount > 0 && (
-        <StickyCart count={cartCount} total={cartTotal} label="Ver pedido" onClick={onOpenCart} />
-      )}
-
-      <style>{`
-        @keyframes cp-fade-in { from { opacity: 0; transform: translateY(-2px) } to { opacity: 1; transform: none } }
-        @keyframes cp-story-progress { from { width: 0% } to { width: 100% } }
-      `}</style>
+      {/* ===== STICKY CART + FOOTER ===== */}
+      {cartCount > 0 && <StickyCart count={cartCount} total={cartTotal} onClick={onOpenCart} />}
+      <CatalogFooter brand={<HermesMark size={18} />} />
     </div>
   );
 }
 
-// ─── AiRecosCollapsible ───────────────────────────────────────
-// Bloque "Para vos" como chip plegable. Por default CERRADO para no ocupar
-// tanto espacio del inicio. El usuario lo abre con un toque.
 function AiRecosCollapsible({ recos, content, onSelectProduct: _ }) {
   const [open, setOpen] = useState(false);
   return (

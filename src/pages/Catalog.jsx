@@ -128,6 +128,22 @@ export default function Catalog() {
   }, []);
 
   const [upsell, setUpsell] = useState(null); // {product, suggestions[]}
+  // Quick reorder: ultimo pedido del user (max 4 items, solo si esta logueado)
+  const [lastOrderItems, setLastOrderItems] = useState([]);
+  useEffect(() => {
+    if (!user) { setLastOrderItems([]); return; }
+    getOrderHistory().then(orders => {
+      const last = orders?.[0];
+      if (!last) return;
+      // Parse items: orders.customer guarda JSON con items o usar order_items table
+      try {
+        const raw = typeof last.customer === "string" ? JSON.parse(last.customer) : last.customer;
+        const items = (raw?.items || []).slice(0, 4).map(it => ({ id: it.id, name: it.name, qty: it.qty || 1 }));
+        setLastOrderItems(items);
+      } catch { setLastOrderItems([]); }
+    }).catch(() => setLastOrderItems([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState(null); // {id, discount_pct}
   const [couponErr, setCouponErr] = useState("");
@@ -711,6 +727,14 @@ export default function Catalog() {
         onOpenCart={() => setShowCart(true)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        lastOrderItems={lastOrderItems}
+        onReorder={(items) => {
+          items.forEach(it => {
+            const prod = products.find(p => p.id === it.id);
+            if (prod) for (let i = 0; i < (it.qty || 1); i++) addC(prod);
+          });
+          setShowCart(true);
+        }}
         onSelectProduct={(p) => { setCpDetail(p); window.scrollTo({ top: 0 }); }}
         onOpenAccount={(tab) => navigate(tab ? `/mi-cuenta?tab=${tab}` : "/mi-cuenta")}
       />
