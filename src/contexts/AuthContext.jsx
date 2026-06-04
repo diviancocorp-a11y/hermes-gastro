@@ -205,6 +205,13 @@ export function AuthProvider({ children }) {
   const isFavorite = (recipeId) => favorites.includes(recipeId);
 
   const getOrderHistory = async () => {
+    // Phone-only: RPC SECURITY DEFINER que matchea orders.customer_phone
+    // (los pedidos del catalogo phone-only se guardan con customer_phone).
+    if (!user && phoneSession?.phone) {
+      const { data } = await supabase
+        .rpc("get_phone_customer_orders", { phone_search: phoneSession.phone });
+      return data || [];
+    }
     if (!user) return [];
     const { data } = await supabase
       .from("orders")

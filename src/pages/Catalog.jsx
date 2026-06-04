@@ -356,12 +356,19 @@ export default function Catalog() {
   }, [hasDeal]);
 
   // Filtrar productos por categoria madre seleccionada.
-  // Match flexible: producto.category puede ser el nombre madre o una subcategoria.
+  // Trim para tolerar trailing spaces en recipe.category (data legacy).
   const filteredProds = useMemo(() => {
     let list = products;
     if (selCat !== "Todos") {
       const group = catGroups.find(g => g.name === selCat);
-      if (group) list = list.filter(r => r.category === group.name || group.subs.includes(r.category));
+      if (group) {
+        const gName = (group.name || "").trim();
+        const gSubs = (group.subs || []).map(s => (s || "").trim());
+        list = list.filter(r => {
+          const rc = (r.category || "").trim();
+          return rc === gName || gSubs.includes(rc);
+        });
+      }
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();

@@ -76,9 +76,13 @@ export default function HomeScreen({
     if (activeCat && activeCat !== "Todos") {
       const cat = categories.find(c => c.name === activeCat);
       if (cat) {
-        list = list.filter(p =>
-          p.category === cat.name || (cat.subs || []).includes(p.category)
-        );
+        // Trim para tolerar trailing spaces en recipe.category (data legacy).
+        const catName = (cat.name || "").trim();
+        const subs = (cat.subs || []).map(s => (s || "").trim());
+        list = list.filter(p => {
+          const pc = (p.category || "").trim();
+          return pc === catName || subs.includes(pc);
+        });
       }
     }
     const q = (searchQuery || "").trim().toLowerCase();
@@ -344,9 +348,14 @@ export default function HomeScreen({
         <div className="cp-no-scrollbar" style={{ display: "flex", gap: 6, padding: "0 22px", overflowX: "auto" }}>
           {sortedCategories.map(c => {
             const isActive = activeCat === c.name;
+            const catName = (c.name || "").trim();
+            const subs = (c.subs || []).map(s => (s || "").trim());
             const count = c.name === "Todos"
               ? totalCount
-              : products.filter(p => p.category === c.name || (c.subs || []).includes(p.category)).length;
+              : products.filter(p => {
+                  const pc = (p.category || "").trim();
+                  return pc === catName || subs.includes(pc);
+                }).length;
             return (
               <button key={c.name} onClick={() => setActiveCat(c.name)} style={{
                 flex: "0 0 auto", height: 36, padding: "0 14px", borderRadius: 999,
