@@ -322,6 +322,7 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
               sizes: r.sizes ?? null,
               batch_yield: r.batch_yield ?? null,
               is_vegetarian: r.is_vegetarian || false,
+              requires_age_gate: r.requires_age_gate || false,
             });
             if (saved?.__error === "duplicate") {
               showToast("⚠ Ya existe una receta activa con ese nombre");
@@ -554,6 +555,7 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
     sizes: null,
     batch_yield: null,
     is_vegetarian: false,
+    requires_age_gate: false,
   });
   const [ad, setAd] = useState(false);
   const [si, setSi] = useState("");
@@ -669,6 +671,9 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
           <div style={{ borderTop: "1px solid var(--ag-line)" }} />
           <ToggleRow label="Es vegetariano" hint="Aparece cuando el cliente filtra por vegetariano"
             checked={!!f.is_vegetarian} onChange={v => s("is_vegetarian", v)} />
+          <div style={{ borderTop: "1px solid var(--ag-line)" }} />
+          <ToggleRow label="Requiere +18" hint="Pide confirmacion de edad antes de agregar al carrito"
+            checked={!!f.requires_age_gate} onChange={v => s("requires_age_gate", v)} />
         </div>
 
         {f.is_combo && (

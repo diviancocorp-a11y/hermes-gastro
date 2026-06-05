@@ -457,6 +457,11 @@ export default function HomeScreen({
                   <BadgeTag compact label={p.dealLabel} tone={p.dealTone}>{p.dealShort}</BadgeTag>
                 </div>
               )}
+              {p._raw?.requires_age_gate && (
+                <div style={{ position: "absolute", bottom: 8, left: 8, background: "rgba(198,40,40,0.92)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "3px 7px", borderRadius: 999, letterSpacing: "0.04em" }}>
+                  +18
+                </div>
+              )}
               <div style={{ position: "absolute", bottom: -10, right: 8 }}>
                 <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
               </div>

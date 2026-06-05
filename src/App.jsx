@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import QrRedirect from './pages/QrRedirect'
+import InfoPage from './pages/InfoPage'
 import { lazy, Suspense } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
@@ -15,6 +16,7 @@ import { supabase } from './lib/supabase'
 
 const Admin = lazy(() => import('./pages/Admin'))
 const Personalizacion = lazy(() => import('./pages/Personalizacion'))
+const InfoPagesAdmin = lazy(() => import('./pages/admin/InfoPages'))
 const OrderTracker = lazy(() => import('./pages/OrderTracker'))
 const MyAccount = lazy(() => import('./pages/MyAccount'))
 const MpCallback = lazy(() => import('./pages/MpCallback'))
@@ -76,8 +78,10 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Catalog />} />
               <Route path="/q/:slug" element={<QrRedirect />} />
+              <Route path="/info/:slug" element={<InfoPage />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/personalizacion" element={<Personalizacion />} />
+              <Route path="/admin/paginas" element={<InfoPagesAdmin />} />
               <Route path="/order/:id" element={<OrderTracker />} />
               <Route path="/mi-cuenta" element={<MyAccount />} />
               <Route path="/mp-callback" element={<MpCallback />} />

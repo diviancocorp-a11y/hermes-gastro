@@ -90,6 +90,7 @@ export const RecipeInputSchema = z.object({
   related_ids: z.array(uuid).optional().default([]),
   is_combo: z.boolean().optional().default(false),
   is_vegetarian: z.boolean().optional().default(false),
+  requires_age_gate: z.boolean().optional().default(false),
   is_archived: z.boolean().optional().default(false),
   // Rendimiento por tanda (migration recipes_add_batch_yield).
   // NULL = receta normal por unidad. Si tiene valor, indica que los

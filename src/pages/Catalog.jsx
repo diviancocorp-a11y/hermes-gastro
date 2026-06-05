@@ -14,6 +14,7 @@ import { catalogPaymentMethods, paymentLabel, paymentIcon } from "../lib/payment
 import CatalogSkeleton from "../components/catalog/CatalogSkeleton";
 import "../catalog-pro/tokens.css";
 import HomeScreenPro from "../catalog-pro/HomeScreen";
+import AgeGate from "../catalog-pro/AgeGate";
 import ProductDetailScreenPro from "../catalog-pro/ProductDetailScreen";
 import SearchScreenPro from "../catalog-pro/SearchScreen";
 import CategoryScreenPro from "../catalog-pro/CategoryScreen";
@@ -128,6 +129,7 @@ export default function Catalog() {
   }, []);
 
   const [upsell, setUpsell] = useState(null); // {product, suggestions[]}
+  const [ageGatePending, setAgeGatePending] = useState(null); // {product, size} - add diferido por +18
   // Quick reorder: ultimo pedido del user (max 4 items, solo si esta logueado)
   const [lastOrderItems, setLastOrderItems] = useState([]);
   useEffect(() => {
@@ -425,6 +427,16 @@ export default function Catalog() {
       size = e; e = null;
     }
     e?.stopPropagation?.();
+    // +18 gate: si la receta lo requiere y no confirmo en esta sesion,
+    // diferir el add hasta que pase el modal AgeGate.
+    if (p?.requires_age_gate) {
+      let alreadyConfirmed = false;
+      try { alreadyConfirmed = !!sessionStorage.getItem("hg_age_18_cart"); } catch { /* empty */ }
+      if (!alreadyConfirmed) {
+        setAgeGatePending({ product: p, size });
+        return;
+      }
+    }
     const finalPrice = size ? size.size_price : getPrice(p);
     // Cart key: items con tamaños distintos son entradas distintas.
     const itemKey = size ? `${p.id}__${size.size_label}` : p.id;
@@ -787,17 +799,23 @@ export default function Catalog() {
             .filter(Boolean)
             .concat(products.filter(x => x.category === cpDetail.category && x.id !== cpDetail.id))
             .slice(0, 4)}
-          hasDeal={hasDeal}
-          dealPrice={getPrice}
-          prepDefault={sett.prep_time_min}
-          isFav={isFavorite(cpDetail.id)}
-          onToggleFav={toggleFavorite}
           onBack={() => setCpDetail(null)}
           onSelectRelated={(p) => { setCpDetail(p); window.scrollTo({ top: 0 }); }}
           onAddToCart={(p, qty = 1, size = null) => {
             for (let i = 0; i < qty; i++) addC(p, null, size);
             setCpDetail(null);
             setShowCart(true);
+          }}
+        />
+      )}
+      {ageGatePending && (
+        <AgeGate
+          title={ageGatePending.product?.name || "este producto"}
+          onConfirm={() => {
+            try { sessionStorage.setItem("hg_age_18_cart", "1"); } catch { /* empty */ }
+            const { product, size } = ageGatePending;
+            setAgeGatePending(null);
+            addC(product, null, size);
           }}
         />
       )}
