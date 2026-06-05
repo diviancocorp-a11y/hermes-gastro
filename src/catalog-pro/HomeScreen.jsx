@@ -183,6 +183,15 @@ export default function HomeScreen({
                   {settings.slogan}
                 </div>
               )}
+              {settings?.description && (
+                <div style={{
+                  marginTop: 6, fontSize: 12, color: "var(--t2)",
+                  lineHeight: 1.4, display: "-webkit-box",
+                  WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                }}>
+                  {settings.description}
+                </div>
+              )}
             </div>
           </div>
           <AccountMenu

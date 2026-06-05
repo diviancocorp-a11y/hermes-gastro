@@ -390,8 +390,15 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                 Crea un QR con un slug fijo para imprimir. Cambia a donde redirige sin reimprimir nada.
               </div>
               <button type="button" onClick={() => setQrsOpen(true)}
-                style={{ width: '100%', padding: '14px', background: 'var(--ag-bg-card)', border: '1.5px solid var(--ag-c-terra)', color: 'var(--ag-c-terra)', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                style={{ width: '100%', padding: '14px', background: 'var(--ag-bg-card)', border: '1.5px solid var(--ag-c-terra)', color: 'var(--ag-c-terra)', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 12 }}>
                 Gestionar QRs dinámicos →
+              </button>
+              <div style={{ fontSize: 13, color: 'var(--ag-ink-3)', marginBottom: 14, lineHeight: 1.5 }}>
+                Páginas informativas (ej: instrucciones de un producto). El QR puede apuntar a una de estas páginas.
+              </div>
+              <button type="button" onClick={() => { window.location.href = '/admin/paginas'; }}
+                style={{ width: '100%', padding: '14px', background: 'var(--ag-bg-card)', border: '1.5px solid var(--ag-c-terra)', color: 'var(--ag-c-terra)', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                Gestionar páginas informativas →
               </button>
             </div>
           )}

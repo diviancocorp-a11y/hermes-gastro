@@ -70,7 +70,26 @@ export default function CategoryEditor({ msg, onClose, embedded = false }) {
     if (result?.__error) { msg?.(result.__error); return; }
     if (result) {
       setForm(f => ({ ...f, image_url: result }));
-      msg?.('Imagen cargada ✓');
+      // Si ya estamos editando una categoria existente, persist automaticamente
+      // para evitar el bug de "subi la imagen pero no le di guardar".
+      if (editing?.id) {
+        try {
+          await upsertCategoryGroup({
+            id: editing.id,
+            name: form.name.trim(),
+            image_url: result,
+            subcategories: form.subcategories.split(',').map(s => s.trim()).filter(Boolean),
+            visible: form.visible,
+            sort_order: editing.sort_order ?? groups.length,
+          });
+          msg?.('Imagen guardada ✓');
+          await load();
+        } catch (e) {
+          msg?.(`Imagen cargada pero NO guardada: ${e.message}`);
+        }
+      } else {
+        msg?.('Imagen lista — apretá Guardar para confirmar la categoría');
+      }
     } else {
       msg?.('Error al subir');
     }

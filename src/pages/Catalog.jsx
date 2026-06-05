@@ -15,6 +15,7 @@ import CatalogSkeleton from "../components/catalog/CatalogSkeleton";
 import "../catalog-pro/tokens.css";
 import HomeScreenPro from "../catalog-pro/HomeScreen";
 import AgeGate from "../catalog-pro/AgeGate";
+import WhatsAppFloat from "../catalog-pro/WhatsAppFloat";
 import ProductDetailScreenPro from "../catalog-pro/ProductDetailScreen";
 import SearchScreenPro from "../catalog-pro/SearchScreen";
 import CategoryScreenPro from "../catalog-pro/CategoryScreen";
@@ -819,6 +820,7 @@ export default function Catalog() {
           }}
         />
       )}
+      <WhatsAppFloat whatsapp={sett?.whatsapp} bizName={sett?.biz_name} />
       <ToastContainer />
     </>
   );
