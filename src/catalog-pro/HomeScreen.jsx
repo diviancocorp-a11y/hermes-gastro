@@ -37,7 +37,15 @@ export default function HomeScreen({
   // Quick reorder: ultimos items pedidos por el user. [{id, name, qty}]
   lastOrderItems = [],
   onReorder,
+  // Cart actions (mostrar [-][qty][+] cuando el item ya esta en cart)
+  cart = [],
+  onDecCart,
+  onRemoveCart,
 }) {
+  const cartQtyById = (id) => {
+    const item = (cart || []).find(c => c.id === id || c.product_id === id);
+    return item ? item.qty : 0;
+  };
   const [activeCat, setActiveCat] = useState("Todos");
   const [activeFilter, setActiveFilter] = useState(null);
   const [storyIdx, setStoryIdx] = useState(0);
@@ -181,15 +189,6 @@ export default function HomeScreen({
                   whiteSpace: "nowrap", fontWeight: 600,
                 }}>
                   {settings.slogan}
-                </div>
-              )}
-              {settings?.description && (
-                <div style={{
-                  marginTop: 6, fontSize: 12, color: "var(--t2)",
-                  lineHeight: 1.4, display: "-webkit-box",
-                  WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-                }}>
-                  {settings.description}
                 </div>
               )}
             </div>
@@ -472,7 +471,23 @@ export default function HomeScreen({
                 </div>
               )}
               <div style={{ position: "absolute", bottom: -10, right: 8 }}>
-                <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
+                {(() => {
+                  const qty = cartQtyById(p.id);
+                  if (qty === 0) return <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />;
+                  return (
+                    <div onClick={(e) => e.stopPropagation()} style={{
+                      display: "flex", alignItems: "center", gap: 4,
+                      background: "var(--ac)", color: "#fff",
+                      borderRadius: 999, padding: "3px 6px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    }}>
+                      <button type="button" onClick={() => onDecCart?.(p.id)} style={qtyBtnStyle} aria-label="restar">−</button>
+                      <span style={{ minWidth: 18, textAlign: "center", fontSize: 13, fontWeight: 700 }}>{qty}</span>
+                      <button type="button" onClick={() => onAddToCart?.(p._raw)} style={qtyBtnStyle} aria-label="sumar">+</button>
+                      <button type="button" onClick={() => onRemoveCart?.(p.id)} style={{ ...qtyBtnStyle, marginLeft: 2, opacity: 0.85 }} aria-label="eliminar">✕</button>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
             <div style={{ paddingTop: 14, paddingRight: 4 }}>
@@ -532,4 +547,12 @@ const iconBtn = {
   width: 38, height: 38, borderRadius: 999, background: "transparent",
   border: "1px solid var(--line)", display: "flex", alignItems: "center",
   justifyContent: "center", color: "var(--tx)", cursor: "pointer",
+};
+
+const qtyBtnStyle = {
+  width: 22, height: 22, borderRadius: 999, border: 0,
+  background: "rgba(255,255,255,0.2)", color: "#fff",
+  fontSize: 14, fontWeight: 700, cursor: "pointer",
+  display: "flex", alignItems: "center", justifyContent: "center",
+  padding: 0, fontFamily: "inherit",
 };

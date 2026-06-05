@@ -174,6 +174,14 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
                       <span style={{ fontWeight: 700, fontSize: 14.5, color: "var(--ag-ink)" }}>{r.name}</span>
+                      {r.requires_age_gate && (
+                        <span style={{
+                          fontSize: 9.5, fontWeight: 800,
+                          padding: "1px 6px", borderRadius: 6,
+                          background: "rgba(198,40,40,0.12)", color: "#C62828",
+                          letterSpacing: "0.04em",
+                        }}>+18</span>
+                      )}
                       {r.is_archived && (
                         <span style={{
                           fontSize: 9.5, fontWeight: 800,

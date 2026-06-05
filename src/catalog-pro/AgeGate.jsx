@@ -6,7 +6,9 @@ import business from "@business";
 export default function AgeGate({ onConfirm, title }) {
   return (
     <div className="cp-root cp-surface" style={{
-      minHeight: "100vh", display: "flex", flexDirection: "column",
+      position: "fixed", inset: 0, zIndex: 9999,
+      background: "var(--bg, #FBF7F2)",
+      display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center", padding: 24,
     }}>
       <div style={{

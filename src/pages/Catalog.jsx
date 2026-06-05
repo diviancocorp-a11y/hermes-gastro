@@ -738,12 +738,18 @@ export default function Catalog() {
         onLogout={sessionLogout}
         products={products}
         categories={categories}
+        cart={cart}
         cartCount={cc}
         cartTotal={ct}
         hasDeal={hasDeal}
         dealPrice={getPrice}
         prepDefault={sett.prep_time_min}
         onAddToCart={(p) => addC(p)}
+        onDecCart={(productId) => {
+          const item = cart.find(i => i.id === productId);
+          if (item) updQ(item.id, item.qty - 1);
+        }}
+        onRemoveCart={(productId) => updQ(productId, 0)}
         onOpenCart={() => setShowCart(true)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
