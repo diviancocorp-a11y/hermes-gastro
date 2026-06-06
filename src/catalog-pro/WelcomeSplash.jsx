@@ -7,6 +7,7 @@
 //   logoUrl?: si hay, se muestra arriba del texto
 //   show: boolean, controla visibilidad
 import { useEffect, useState } from "react";
+import GooeyText from "./GooeyText";
 
 export default function WelcomeSplash({ bizName, logoUrl, duration = 1800 }) {
   const [visible, setVisible] = useState(true);
@@ -57,14 +58,13 @@ export default function WelcomeSplash({ bizName, logoUrl, duration = 1800 }) {
       }}>
         Bienvenido a
       </div>
-      <h1 style={{
-        fontFamily: "var(--font-heading, 'DM Serif Display', serif)",
-        fontSize: 38, lineHeight: 1.15, color: "var(--tx)",
-        margin: 0, textAlign: "center",
-        animation: "hg-splash-rise 700ms ease 100ms both",
-      }}>
-        {bizName || "tu tienda"}
-      </h1>
+      <GooeyText
+        texts={["Bienvenido", bizName || "tu tienda"]}
+        morphTime={0.7}
+        cooldownTime={0.5}
+        fontSize={42}
+        style={{ width: "100%", maxWidth: 420 }}
+      />
       <style>{`
         @keyframes hg-splash-rise {
           from { opacity: 0; transform: translateY(8px); }
