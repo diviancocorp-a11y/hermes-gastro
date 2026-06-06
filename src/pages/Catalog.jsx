@@ -841,7 +841,7 @@ export default function Catalog() {
         />
       )}
       <WhatsAppFloat whatsapp={sett?.whatsapp} bizName={sett?.biz_name} />
-      <WelcomeSplash bizName={sett?.biz_name || business.name} logoUrl={sett?.logo_url} duration={3000} />
+      <WelcomeSplash bizName={sett?.biz_name || business.name} duration={5500} />
       <ToastContainer />
     </>
   );

@@ -37,33 +37,12 @@ export default function WelcomeSplash({ bizName, logoUrl, duration = 1800 }) {
         pointerEvents: fading ? "none" : "auto",
       }}
     >
-      {logoUrl && (
-        <div style={{
-          width: 88, height: 88, borderRadius: 999,
-          marginBottom: 18, overflow: "hidden",
-          background: "var(--b2)",
-          border: "1px solid var(--line)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          animation: "hg-splash-pop 600ms ease both",
-        }}>
-          <img src={logoUrl} alt={bizName || "Logo"}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        </div>
-      )}
-      <div style={{
-        fontSize: 14, color: "var(--t3)",
-        letterSpacing: "0.04em", textTransform: "uppercase",
-        fontWeight: 600, marginBottom: 6,
-        animation: "hg-splash-rise 700ms ease both",
-      }}>
-        Bienvenido a
-      </div>
       <GooeyText
-        texts={["Bienvenido", bizName || "tu tienda"]}
-        morphTime={0.7}
-        cooldownTime={0.5}
-        fontSize={42}
-        style={{ width: "100%", maxWidth: 420 }}
+        texts={["Bienvenido a", bizName || "tu tienda"]}
+        morphTime={1.4}
+        cooldownTime={1.4}
+        fontSize={64}
+        style={{ width: "100%", maxWidth: 520 }}
       />
       <style>{`
         @keyframes hg-splash-rise {
