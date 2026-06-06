@@ -428,8 +428,9 @@ export default function Catalog() {
       size = e; e = null;
     }
     e?.stopPropagation?.();
-    // +18 gate: si la receta lo requiere y no confirmo en esta sesion,
-    // diferir el add hasta que pase el modal AgeGate.
+    // +18 gate: una sola vez por sesion del browser. Si ya confirmo en esta
+    // sesion (sessionStorage), no preguntamos mas. Persiste mientras la tab
+    // este abierta; si cierra y reabre, vuelve a preguntar.
     if (p?.requires_age_gate) {
       let alreadyConfirmed = false;
       try { alreadyConfirmed = !!sessionStorage.getItem("hg_age_18_cart"); } catch { /* empty */ }
@@ -826,6 +827,7 @@ export default function Catalog() {
           }}
         />
       )}
+      <WhatsAppFloat whatsapp={sett?.whatsapp} bizName={sett?.biz_name} />
       <WhatsAppFloat whatsapp={sett?.whatsapp} bizName={sett?.biz_name} />
       <ToastContainer />
     </>

@@ -481,10 +481,9 @@ export default function HomeScreen({
                       borderRadius: 999, padding: "3px 6px",
                       boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                     }}>
-                      <button type="button" onClick={() => onDecCart?.(p.id)} style={qtyBtnStyle} aria-label="restar">−</button>
+                      <button type="button" onClick={() => onDecCart?.(p.id)} style={qtyBtnStyle} aria-label={qty === 1 ? "eliminar" : "restar"}>−</button>
                       <span style={{ minWidth: 18, textAlign: "center", fontSize: 13, fontWeight: 700 }}>{qty}</span>
                       <button type="button" onClick={() => onAddToCart?.(p._raw)} style={qtyBtnStyle} aria-label="sumar">+</button>
-                      <button type="button" onClick={() => onRemoveCart?.(p.id)} style={{ ...qtyBtnStyle, marginLeft: 2, opacity: 0.85 }} aria-label="eliminar">✕</button>
                     </div>
                   );
                 })()}

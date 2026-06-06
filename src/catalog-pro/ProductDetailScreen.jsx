@@ -106,6 +106,15 @@ export default function ProductDetailScreen({
         )}
         <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 34, lineHeight: 1.25, letterSpacing: "-0.01em", margin: "0 0 10px", paddingBottom: "0.06em", color: "var(--tx)" }}>
           {p.name}
+          {p.requires_age_gate && (
+            <span style={{
+              display: "inline-block", verticalAlign: "middle", marginLeft: 10,
+              background: "rgba(198,40,40,0.92)", color: "#fff",
+              fontSize: 13, fontWeight: 800, padding: "3px 10px",
+              borderRadius: 999, letterSpacing: "0.05em",
+              fontFamily: "inherit",
+            }}>+18</span>
+          )}
         </h1>
         {p.desc && <p className="body-l" style={{ color: "var(--t2)", margin: 0, fontSize: 15 }}>{p.desc}</p>}
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
