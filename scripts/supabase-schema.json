@@ -1,6 +1,6 @@
 {
   "_comment": "Snapshot del schema de Supabase para validar columnas en .select(). Refrescar con: npm run schema:sync",
-  "_refreshed_at": "2026-06-03",
+  "_refreshed_at": "2026-06-05",
   "tables": {
     "addresses": ["id","user_id","label","address","lat","lng","notes","created_at"],
     "category_groups": ["id","name","icon","subcategories","sort_order","visible","created_at","updated_at","image_url"],
@@ -17,6 +17,6 @@
     "recipe_sale_counts": ["recipe_id","sale_count","order_count","last_sold_at"],
     "recipes": ["id","name","category","sale_price","visible","image_url","description","related_ids","is_combo","is_archived","sizes","batch_yield","is_vegetarian","created_at","requires_age_gate"],
     "sales": ["id","date","recipe_id","qty","unit_price","total","created_at","unit_cost"],
-    "settings": ["id","biz_name","logo_letter","logo_color","exp_cats","ing_cats","cover_url","banner_text","banner_color","store_open","store_hours","cat_images","logo_url","hidden_cats","cat_names","waste_pct","store_name","app_url","daily_deals","cat_groups","deal_pct","slogan","description","whatsapp","instagram","min_order_amount","prep_time_min","delivery_time_min","payment_methods","show_hours_on_catalog","catalog_font","og_image_url","favicon_url","expense_pct","catalog_payment_methods","usar_targets","catalog_theme"]
+    "settings": ["id","biz_name","logo_letter","logo_color","exp_cats","ing_cats","cover_url","banner_text","banner_color","store_open","store_hours","cat_images","logo_url","hidden_cats","cat_names","waste_pct","store_name","app_url","daily_deals","cat_groups","deal_pct","slogan","whatsapp","instagram","facebook","tiktok","linkedin","twitter","youtube","min_order_amount","prep_time_min","delivery_time_min","payment_methods","show_hours_on_catalog","catalog_font","og_image_url","favicon_url","expense_pct","catalog_payment_methods","usar_targets","catalog_theme"]
   }
 }

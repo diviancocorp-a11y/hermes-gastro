@@ -341,19 +341,11 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                 maxLength={80}
               />
 
-              <label className="ag-field-lbl" style={{ marginTop: 14 }}>Descripción</label>
-              <textarea
-                className="ag-field-input"
-                value={s.description || ""}
-                onChange={e => set("description", e.target.value.slice(0, 400))}
-                placeholder="Contale al cliente quién sos, qué hacés, qué te diferencia (hasta 400 caracteres)"
-                maxLength={400}
-                rows={4}
-                style={{ resize: 'vertical', minHeight: 80, fontFamily: 'inherit' }}
-              />
-
               {/* ── Contacto / Redes ── */}
-              <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ marginTop: 18, fontSize: 12, fontWeight: 700, color: 'var(--ag-ink-2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                Redes y contacto
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
                   <label className="ag-field-lbl">WhatsApp</label>
                   <input
@@ -364,7 +356,7 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                     inputMode="numeric"
                   />
                   <div style={{ fontSize: 10.5, color: 'var(--ag-ink-3)', marginTop: 3 }}>
-                    Sin + ni espacios · ej: 549112345678. Aparece como burbuja flotante.
+                    Sin + ni espacios · burbuja flotante en el catálogo.
                   </div>
                 </div>
                 <div>
@@ -375,8 +367,53 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                     onChange={e => set("instagram", e.target.value.replace(/[@\s]/g, '').slice(0, 30))}
                     placeholder="tu_usuario"
                   />
+                </div>
+                <div>
+                  <label className="ag-field-lbl">Facebook</label>
+                  <input
+                    className="ag-field-input"
+                    value={s.facebook || ""}
+                    onChange={e => set("facebook", e.target.value.replace(/\s/g, '').slice(0, 60))}
+                    placeholder="tu_pagina"
+                  />
+                </div>
+                <div>
+                  <label className="ag-field-lbl">TikTok</label>
+                  <input
+                    className="ag-field-input"
+                    value={s.tiktok || ""}
+                    onChange={e => set("tiktok", e.target.value.replace(/[@\s]/g, '').slice(0, 30))}
+                    placeholder="tu_usuario"
+                  />
+                </div>
+                <div>
+                  <label className="ag-field-lbl">YouTube</label>
+                  <input
+                    className="ag-field-input"
+                    value={s.youtube || ""}
+                    onChange={e => set("youtube", e.target.value.replace(/\s/g, '').slice(0, 60))}
+                    placeholder="@tu_canal o ID"
+                  />
+                </div>
+                <div>
+                  <label className="ag-field-lbl">X / Twitter</label>
+                  <input
+                    className="ag-field-input"
+                    value={s.twitter || ""}
+                    onChange={e => set("twitter", e.target.value.replace(/[@\s]/g, '').slice(0, 30))}
+                    placeholder="tu_usuario"
+                  />
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label className="ag-field-lbl">LinkedIn</label>
+                  <input
+                    className="ag-field-input"
+                    value={s.linkedin || ""}
+                    onChange={e => set("linkedin", e.target.value.replace(/\s/g, '').slice(0, 80))}
+                    placeholder="company/tu-empresa o in/tu-usuario"
+                  />
                   <div style={{ fontSize: 10.5, color: 'var(--ag-ink-3)', marginTop: 3 }}>
-                    Sin @ · aparece en el footer del catálogo.
+                    Path completo después de linkedin.com/
                   </div>
                 </div>
               </div>
