@@ -507,7 +507,7 @@ export default function HomeScreen({
 
       {/* ===== STICKY CART + FOOTER ===== */}
       {cartCount > 0 && <StickyCart count={cartCount} total={cartTotal} onClick={onOpenCart} />}
-      <CatalogFooter brand={<HermesMark size={18} />} />
+      <CatalogFooter settings={settings} brand={<HermesMark size={18} />} />
     </div>
   );
 }
