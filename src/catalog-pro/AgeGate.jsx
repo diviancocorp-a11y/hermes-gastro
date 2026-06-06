@@ -1,6 +1,6 @@
 // src/catalog-pro/AgeGate.jsx
-// Modal +18 para paginas con contenido sensible (ej: cannabis).
-// Bloquea acceso hasta confirmacion. Persistencia via localStorage del caller.
+// Modal +18 para páginas con contenido sensible (ej: cannabis).
+// Bloquea acceso hasta confirmación. Persistencia via storage del caller.
 import business from "@business";
 
 export default function AgeGate({ onConfirm, title }) {
@@ -21,7 +21,7 @@ export default function AgeGate({ onConfirm, title }) {
           Contenido para adultos
         </h1>
         <p style={{ fontSize: 14, color: "var(--t2)", lineHeight: 1.6, margin: "0 0 24px" }}>
-          {title ? `"${title}" contiene` : "Esta pagina contiene"} informacion sobre un producto exclusivo para mayores de 18 anos.
+          {title ? `"${title}" contiene` : "Esta página contiene"} información sobre un producto exclusivo para mayores de 18 años.
         </p>
         <button
           type="button"
@@ -34,7 +34,7 @@ export default function AgeGate({ onConfirm, title }) {
             cursor: "pointer", marginBottom: 10,
           }}
         >
-          Soy mayor de 18 anos
+          Soy mayor de 18 años
         </button>
         <a
           href="/"
