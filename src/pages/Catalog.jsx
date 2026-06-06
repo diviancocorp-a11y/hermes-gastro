@@ -11,7 +11,7 @@ import business, { waLink } from "@business";
 import { catalogPaymentMethods, paymentLabel, paymentIcon } from "../lib/payments";
 
 // ── Extracted components ──
-import CatalogSkeleton from "../components/catalog/CatalogSkeleton";
+import WelcomeSplash from "../catalog-pro/WelcomeSplash";
 import "../catalog-pro/tokens.css";
 import HomeScreenPro from "../catalog-pro/HomeScreen";
 import AgeGate from "../catalog-pro/AgeGate";
@@ -631,7 +631,8 @@ export default function Catalog() {
   }, [confirmAnim]);
 
   // --- VISTA: CARGANDO ---
-  if (loading) return <CatalogSkeleton />;
+  // Splash de bienvenida arriba del catalogo durante el primer load.
+  // Sobre tokens del tema (no mas sombras grises).
 
   // --- VISTA: ANIMACIÓN DE CONFIRMACIÓN ---
   if (confirmAnim) return <ConfirmationAnimation />;
@@ -840,6 +841,7 @@ export default function Catalog() {
         />
       )}
       <WhatsAppFloat whatsapp={sett?.whatsapp} bizName={sett?.biz_name} />
+      <WelcomeSplash bizName={sett?.biz_name || business.name} logoUrl={sett?.logo_url} />
       <ToastContainer />
     </>
   );
