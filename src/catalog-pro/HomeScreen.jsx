@@ -234,7 +234,7 @@ export default function HomeScreen({
       {/* ===== EDITORIAL ===== */}
       <div style={{ padding: "28px 22px 44px" }}>
         <h1 className="h-1" style={{ margin: 0, fontSize: 32 }}>
-          ¿Qué te <em style={{ fontStyle: "italic", color: "var(--ac)" }}>tienta</em> hoy?
+          ¿Qué te <RotatingVerb words={["tienta", "seduce", "atrae"]} /> hoy?
         </h1>
       </div>
 
@@ -555,3 +555,32 @@ const qtyBtnStyle = {
   display: "flex", alignItems: "center", justifyContent: "center",
   padding: 0, fontFamily: "inherit",
 };
+
+// Verbo rotativo con crossfade suave. Cambia entre sinonimos cada 2.5s.
+// Inline aqui para no crear archivo nuevo por un componentito de 20 lineas.
+function RotatingVerb({ words = [], intervalMs = 2500, fadeMs = 350 }) {
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    if (words.length < 2) return;
+    const tick = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % words.length);
+        setVisible(true);
+      }, fadeMs);
+    }, intervalMs);
+    return () => clearInterval(tick);
+  }, [words, intervalMs, fadeMs]);
+  return (
+    <em style={{
+      fontStyle: "italic", color: "var(--ac)",
+      display: "inline-block",
+      opacity: visible ? 1 : 0,
+      transition: `opacity ${fadeMs}ms ease`,
+      minWidth: "5ch",
+    }}>
+      {words[idx] || ""}
+    </em>
+  );
+}
