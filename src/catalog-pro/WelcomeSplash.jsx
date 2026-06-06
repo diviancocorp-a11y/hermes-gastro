@@ -1,18 +1,16 @@
 // src/catalog-pro/WelcomeSplash.jsx
 // Splash de bienvenida con animacion split-door al final.
-// Fases:
-//   1. fadeIn (300ms): logo + textos entran con rise
-//   2. hold (duration): se muestra estatico
-//   3. open (700ms): dos mitades de pantalla se deslizan hacia los lados
-//   4. unmount
 //
 // Tipografia:
-//   "Bienvenido a"        color var(--t2)   (subtitulo)
-//   nombre del negocio    color var(--ac)   (acento del tema)
-// Fondo solido var(--bg) heredado del tema (ambar/noche/carbon).
+//   "Bienvenido a"        color var(--t2)
+//   nombre del negocio    color var(--ac)
+//
+// IMPORTANTE: el wrapper usa className="cp-root cp-surface" para que las
+// variables CSS del tema (data-cp-theme="carbon"|"noche"|...) se apliquen.
+// Sin esto, caia al fallback de colores antiguos.
 import { useEffect, useState } from "react";
 
-export default function WelcomeSplash({ bizName, logoUrl, duration = 2200 }) {
+export default function WelcomeSplash({ bizName, duration = 1800 }) {
   const [phase, setPhase] = useState("hold"); // 'hold' | 'open' | 'done'
 
   useEffect(() => {
@@ -33,50 +31,35 @@ export default function WelcomeSplash({ bizName, logoUrl, duration = 2200 }) {
 
   return (
     <>
-      {/* Mitad izquierda */}
-      <div style={{
+      <div className="cp-root cp-surface" style={{
         ...halfBase, left: 0,
         transform: opening ? "translateX(-100%)" : "translateX(0)",
       }} />
-      {/* Mitad derecha */}
-      <div style={{
+      <div className="cp-root cp-surface" style={{
         ...halfBase, right: 0,
         transform: opening ? "translateX(100%)" : "translateX(0)",
       }} />
 
-      {/* Contenido centrado (logo + textos) por encima de los halves */}
-      <div style={{
+      <div className="cp-root cp-surface" style={{
         position: "fixed", inset: 0, zIndex: 9001,
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
         padding: 24, pointerEvents: "none",
+        background: "transparent",
         opacity: opening ? 0 : 1,
         transition: "opacity 300ms ease",
       }}>
-        {logoUrl && (
-          <div style={{
-            width: 96, height: 96, borderRadius: 999,
-            marginBottom: 22, overflow: "hidden",
-            background: "var(--b2)",
-            border: "1px solid var(--line)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            animation: "hg-splash-pop 600ms ease both",
-          }}>
-            <img src={logoUrl} alt={bizName || "Logo"}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </div>
-        )}
         <div style={{
           fontSize: 15, color: "var(--t2)",
           letterSpacing: "0.04em",
           fontWeight: 500, marginBottom: 8,
-          animation: "hg-splash-rise 700ms ease both",
+          animation: "hg-splash-rise 600ms ease both",
         }}>
           Bienvenido a
         </div>
         <h1 style={{
           fontFamily: "var(--font-heading, 'DM Serif Display', serif)",
-          fontSize: 44, lineHeight: 1.1, color: "var(--ac, #D97706)",
+          fontSize: 48, lineHeight: 1.1, color: "var(--ac, #D97706)",
           margin: 0, textAlign: "center",
           animation: "hg-splash-rise 700ms ease 120ms both",
         }}>
@@ -88,10 +71,6 @@ export default function WelcomeSplash({ bizName, logoUrl, duration = 2200 }) {
         @keyframes hg-splash-rise {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes hg-splash-pop {
-          from { opacity: 0; transform: scale(0.85); }
-          to   { opacity: 1; transform: scale(1); }
         }
       `}</style>
     </>
