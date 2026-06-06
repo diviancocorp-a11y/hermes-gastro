@@ -810,6 +810,14 @@ export default function Catalog() {
           onBack={() => setCpDetail(null)}
           onSelectRelated={(p) => { setCpDetail(p); window.scrollTo({ top: 0 }); }}
           onAddToCart={(p, qty = 1, size = null) => {
+            // +18: si pendiente confirmacion, abrir solo el modal y diferir el resto.
+            // El onConfirm del AgeGate cierra detail y abre cart despues.
+            let alreadyConfirmed = false;
+            try { alreadyConfirmed = !!sessionStorage.getItem("hg_age_18_cart"); } catch { /* empty */ }
+            if (p?.requires_age_gate && !alreadyConfirmed) {
+              setAgeGatePending({ product: p, size, qty, fromDetail: true });
+              return;
+            }
             for (let i = 0; i < qty; i++) addC(p, null, size);
             setCpDetail(null);
             setShowCart(true);
@@ -821,13 +829,16 @@ export default function Catalog() {
           title={ageGatePending.product?.name || "este producto"}
           onConfirm={() => {
             try { sessionStorage.setItem("hg_age_18_cart", "1"); } catch { /* empty */ }
-            const { product, size } = ageGatePending;
+            const { product, size, qty = 1, fromDetail } = ageGatePending;
             setAgeGatePending(null);
-            addC(product, null, size);
+            for (let i = 0; i < qty; i++) addC(product, null, size);
+            if (fromDetail) {
+              setCpDetail(null);
+              setShowCart(true);
+            }
           }}
         />
       )}
-      <WhatsAppFloat whatsapp={sett?.whatsapp} bizName={sett?.biz_name} />
       <WhatsAppFloat whatsapp={sett?.whatsapp} bizName={sett?.biz_name} />
       <ToastContainer />
     </>

@@ -68,7 +68,8 @@ export default function ProductDetailScreen({
         <button onClick={onBack} style={{
           width: 38, height: 38, borderRadius: 999, pointerEvents: "auto",
           background: scrolled ? "transparent" : "rgba(255,255,255,0.92)",
-          backdropFilter: "blur(8px)", border: 0, color: "var(--tx)",
+          backdropFilter: "blur(8px)", border: 0,
+          color: scrolled ? "var(--tx)" : "#2D1B0E",
           display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
         }}><Icon name="arrow-left" size={18} /></button>
         {scrolled && (
@@ -82,7 +83,8 @@ export default function ProductDetailScreen({
         <button onClick={() => onToggleFav?.(product.id)} style={{
           width: 38, height: 38, borderRadius: 999, pointerEvents: "auto",
           background: scrolled ? "transparent" : "rgba(255,255,255,0.92)",
-          backdropFilter: "blur(8px)", border: 0, color: isFav ? "var(--err)" : "var(--tx)",
+          backdropFilter: "blur(8px)", border: 0,
+          color: isFav ? "var(--err, #C62828)" : (scrolled ? "var(--tx)" : "#2D1B0E"),
           display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
         }}><Icon name={isFav ? "heart-fill" : "heart"} size={18} /></button>
       </div>
@@ -106,7 +108,7 @@ export default function ProductDetailScreen({
         )}
         <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 34, lineHeight: 1.25, letterSpacing: "-0.01em", margin: "0 0 10px", paddingBottom: "0.06em", color: "var(--tx)" }}>
           {p.name}
-          {p.requires_age_gate && (
+          {product?.requires_age_gate && (
             <span style={{
               display: "inline-block", verticalAlign: "middle", marginLeft: 10,
               background: "rgba(198,40,40,0.92)", color: "#fff",
@@ -274,7 +276,7 @@ export default function ProductDetailScreen({
           }}
         >
           <span>Agregar al pedido</span>
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: 17 }}>{fmtAR(total)}</span>
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 15 }}>{fmtAR(total)}</span>
         </button>
       </div>
     </div>
