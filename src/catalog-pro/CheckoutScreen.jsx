@@ -531,7 +531,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
         {coupon && <p style={hint("ok")}>Descuento {coupon.discount_pct}% — ahorrás {fmtAR(discount)}</p>}
       </div>
 
-      {/* Desglose del total: que el cliente vea exactamente que paga antes del resumen final */}
+      {/* Desglose del total a pagar antes del resumen final */}
       <div style={{ ...section, padding: "14px 16px", background: "var(--b2)", borderRadius: 12, border: "1px solid var(--line)" }}>
         <div style={miniLabel}>Total a pagar</div>
         <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: "var(--t2)" }}>
@@ -796,7 +796,6 @@ function PayBankBox({ label, value, amount, receiptFile, setReceiptFile, receipt
   );
 }
 
-// ─── Estilos compartidos (tokens-only) ─────�
 // ─── Estilos compartidos (tokens-only) ──────────────────────────
 
 const section = { marginBottom: 20 };
