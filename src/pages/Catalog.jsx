@@ -63,7 +63,8 @@ export default function Catalog() {
   const [showCart, setShowCart] = useState(false);
   const [cpDetail, setCpDetail] = useState(null); // producto en pantalla Detalle (catalog-pro)
   const [cpScreen, setCpScreen] = useState(null); // null | "search" | { type:"category", name, displayName }
-  const [cpTip, setCpTip] = useState(0); // % propina elegido en el carrito (catalog-pro)
+  const [cpTip, setCpTip] = useState(0); // % propina elegido (presets). Ignorado si cpTipCustom != null
+  const [cpTipCustom, setCpTipCustom] = useState(null); // monto fijo de propina en $ (null = usa %)
   const [showCk, setShowCk] = useState(false);
   const [sent, setSent] = useState(false);
   const [orderId, setOrderId] = useState(null);
@@ -399,10 +400,16 @@ export default function Catalog() {
     const ctBase = cart.reduce((s, i) => s + i.qty * i.price, 0);
     const discount = coupon ? Math.round(ctBase * coupon.discount_pct / 100) : 0;
     const ct = ctBase - discount;
-    const tipAmount = Math.round(ctBase * (cpTip || 0) / 100);
-    const ctWithDelivery = ct + (form.delivery === "envio" ? deliveryCost : 0) + tipAmount;
+    const baseTotal = ct + (form.delivery === "envio" ? deliveryCost : 0);
+    // Propina: monto fijo (cpTipCustom) tiene prioridad sobre el % (cpTip).
+    const tipRaw = cpTipCustom != null
+      ? cpTipCustom
+      : Math.round(ctBase * (cpTip || 0) / 100);
+    // Tope de seguridad: la propina no puede superar el total del pedido.
+    const tipAmount = Math.max(0, Math.min(tipRaw, baseTotal));
+    const ctWithDelivery = baseTotal + tipAmount;
     return { cc, discount, ct, tipAmount, ctWithDelivery };
-  }, [cart, coupon, deliveryCost, form.delivery, cpTip]);
+  }, [cart, coupon, deliveryCost, form.delivery, cpTip, cpTipCustom]);
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -515,7 +522,9 @@ export default function Catalog() {
       coupon_id: coupon?.id || null,
       discount: discount,
       delivery_cost: form.delivery === "envio" ? deliveryCost : 0,
-      tip_pct: cpTip || 0,
+      tip_pct: cpTipCustom != null
+        ? ((ct + discount) > 0 ? Math.round(tipAmount / (ct + discount) * 100) : 0)
+        : (cpTip || 0),
       tip_amount: tipAmount,
       total: ctWithDelivery,
       delivery_date: scheduleMode === "later" ? (form.delivery_date || null) : null,
@@ -696,6 +705,9 @@ export default function Catalog() {
         ffGift={ffGift}
         tip={cpTip}
         setTip={setCpTip}
+        tipCustom={cpTipCustom}
+        setTipCustom={setCpTipCustom}
+        tipCap={ct + (form.delivery === "envio" ? deliveryCost : 0)}
         tipAmount={tipAmount}
         orderErr={orderErr}
         sending={sending}

@@ -389,7 +389,7 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
 }
 
 // ─── PASO 2: Pago ──────────────────────────────────────────────────
-function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, ct, ctWithDelivery, deliveryCost, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, canNext, needsReceipt, onNext }) {
+function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, ct, ctWithDelivery, deliveryCost, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, canNext, needsReceipt, onNext }) {
   return (
     <>
       <div style={section}>
@@ -480,10 +480,10 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
         <p style={{ fontSize: 11.5, color: "var(--t3)", margin: "0 0 10px" }}>Opcional. 100% va para el equipo.</p>
         <div style={{ display: "flex", gap: 6 }}>
           {[0, 5, 10, 15, 20].map(v => {
-            const active = tip === v;
+            const active = tipCustom == null && tip === v;
             return (
               <button
-                key={v} type="button" onClick={() => setTip(v)}
+                key={v} type="button" onClick={() => { setTip(v); setTipCustom(null); }}
                 style={{
                   flex: 1, height: 44, borderRadius: 10,
                   background: active ? "var(--tx)" : "transparent",
@@ -494,8 +494,38 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
               >{v === 0 ? "No" : `${v}%`}</button>
             );
           })}
+          <button
+            type="button" onClick={() => setTipCustom(tipCustom != null ? tipCustom : 0)}
+            style={{
+              flex: 1, height: 44, borderRadius: 10,
+              background: tipCustom != null ? "var(--tx)" : "transparent",
+              color: tipCustom != null ? "var(--bg)" : "var(--t2)",
+              border: `1px solid ${tipCustom != null ? "var(--tx)" : "var(--line)"}`,
+              fontFamily: "inherit", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+            }}
+          >Otro</button>
         </div>
-        {tip > 0 && tipAmount > 0 && (
+        {tipCustom != null && (
+          <div style={{ marginTop: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--line)", borderRadius: 12, padding: "0 12px", background: "var(--bg)" }}>
+              <span style={{ color: "var(--t2)", fontSize: 15, fontWeight: 600 }}>$</span>
+              <input
+                type="text" inputMode="numeric" autoFocus
+                value={tipCustom ? tipCustom : ""}
+                onChange={e => {
+                  const digits = e.target.value.replace(/[^\d]/g, "");
+                  let n = digits === "" ? 0 : parseInt(digits, 10);
+                  if (tipCap > 0 && n > tipCap) n = tipCap;
+                  setTipCustom(n);
+                }}
+                placeholder="Monto en pesos"
+                style={{ flex: 1, height: 44, border: 0, padding: 0, background: "transparent", fontFamily: "inherit", fontSize: 15, color: "var(--tx)", outline: "none" }}
+              />
+            </div>
+            <p style={{ fontSize: 11, color: "var(--t3)", margin: "6px 2px 0" }}>Maximo {fmtAR(tipCap)} (total del pedido).</p>
+          </div>
+        )}
+        {tipAmount > 0 && (
           <p style={{ ...hint("ok"), marginTop: 8 }}>
             Dejás <strong>{fmtAR(tipAmount)}</strong> de propina
           </p>
@@ -550,9 +580,9 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
             <span>−{fmtAR(discount)}</span>
           </div>
         )}
-        {tip > 0 && tipAmount > 0 && (
+        {tipAmount > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: "var(--t2)" }}>
-            <span>Propina ({tip}%)</span>
+            <span>{tipCustom != null ? "Propina" : `Propina (${tip}%)`}</span>
             <span style={{ color: "var(--tx)" }}>{fmtAR(tipAmount)}</span>
           </div>
         )}
@@ -571,7 +601,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
 }
 
 // ─── PASO 3: Resumen ───────────────────────────────────────────────
-function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, ctWithDelivery, discount, coupon, tip, tipAmount, receiptFile, sending, orderErr, onSubmit, settings }) {
+function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, ctWithDelivery, discount, coupon, tip, tipCustom, tipAmount, receiptFile, sending, orderErr, onSubmit, settings }) {
   return (
     <>
       <div style={section}>
@@ -598,7 +628,7 @@ function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, 
         </div>
         {receiptFile && <div style={{ ...summaryVal, fontSize: 12, color: "var(--ok, #2A9D6E)" }}>Comprobante adjunto</div>}
         {coupon && <div style={{ ...summaryVal, fontSize: 12, color: "var(--ok, #2A9D6E)" }}>Cupón -{coupon.discount_pct}%</div>}
-        {tip > 0 && <div style={{ ...summaryVal, fontSize: 12, color: "var(--t2)" }}>Propina · {tip}%</div>}
+        {tipAmount > 0 && <div style={{ ...summaryVal, fontSize: 12, color: "var(--t2)" }}>Propina{tipCustom != null ? "" : ` · ${tip}%`}</div>}
         {form.is_gift && <div style={{ ...summaryVal, fontSize: 12, color: "var(--ac)" }}>Es un regalo{form.gift_note ? `: "${form.gift_note.slice(0, 40)}${form.gift_note.length > 40 ? "..." : ""}"` : ""}</div>}
       </div>
 
@@ -632,9 +662,9 @@ function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, 
             <span>−{fmtAR(discount)}</span>
           </div>
         )}
-        {tip > 0 && tipAmount > 0 && (
+        {tipAmount > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: "var(--t2)" }}>
-            <span>Propina ({tip}%)</span>
+            <span>{tipCustom != null ? "Propina" : `Propina (${tip}%)`}</span>
             <span style={{ color: "var(--tx)" }}>{fmtAR(tipAmount)}</span>
           </div>
         )}
