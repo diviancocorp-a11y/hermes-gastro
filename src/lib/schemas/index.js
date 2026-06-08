@@ -201,10 +201,19 @@ export const SettingsInputSchema = z.object({
   catalog_theme: z.enum(['ambar', 'noche', 'carbon']).nullable().optional(),
   // Identidad social / SEO
   slogan: optionalText(300),
-  description: optionalText(2000),
   whatsapp: optionalText(50),
   instagram: optionalText(100),
+  facebook: optionalText(200),
+  tiktok: optionalText(100),
+  youtube: optionalText(200),
+  twitter: optionalText(100),
+  linkedin: optionalText(200),
   favicon_url: optionalText(2000),
+  cover_url: optionalText(2000),
+  og_image_url: optionalText(2000),
+  // Local fisico (toggle + direccion para retiro en el local)
+  has_physical_store: z.boolean().nullable().optional(),
+  store_address: optionalText(300),
   // Catálogo público
   min_order_amount: z.number().min(0).nullable().optional(),
   // Grupos de cat / daily deals

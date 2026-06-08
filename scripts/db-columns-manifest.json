@@ -1,6 +1,56 @@
 {
   "$comment": "Mapeo de tabla DB → columnas que el schema Zod DEBE conocer. Si agregás una columna a la DB que se va a poder guardar desde el cliente, agregala acá Y al schema Zod correspondiente. Las columnas autogeneradas (id, created_at, updated_at) o calculadas server-side se ponen en 'serverOnly' para que el script no las exija al schema.",
   "tables": {
+    "settings": {
+      "schema": "SettingsInputSchema",
+      "columns": [
+        "biz_name",
+        "logo_letter",
+        "logo_color",
+        "logo_url",
+        "cat_images",
+        "hidden_cats",
+        "cat_names",
+        "banner_text",
+        "banner_color",
+        "store_open",
+        "store_hours",
+        "exp_cats",
+        "ing_cats",
+        "waste_pct",
+        "expense_pct",
+        "payment_methods",
+        "catalog_payment_methods",
+        "catalog_theme",
+        "slogan",
+        "whatsapp",
+        "instagram",
+        "facebook",
+        "tiktok",
+        "youtube",
+        "twitter",
+        "linkedin",
+        "favicon_url",
+        "cover_url",
+        "og_image_url",
+        "has_physical_store",
+        "store_address",
+        "min_order_amount",
+        "cat_groups",
+        "daily_deals",
+        "deal_pct",
+        "store_name",
+        "app_url"
+      ],
+      "serverOnly": [
+        "id",
+        "prep_time_min",
+        "delivery_time_min",
+        "show_hours_on_catalog",
+        "catalog_font",
+        "usar_targets"
+      ]
+    },
     "ingredients": {
       "schema": "IngredientInputSchema",
       "columns": [
