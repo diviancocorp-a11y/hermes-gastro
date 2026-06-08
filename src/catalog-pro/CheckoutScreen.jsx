@@ -389,7 +389,7 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
 }
 
 // ─── PASO 2: Pago ──────────────────────────────────────────────────
-function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, ctWithDelivery, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, canNext, needsReceipt, onNext }) {
+function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, ct, ctWithDelivery, deliveryCost, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, canNext, needsReceipt, onNext }) {
   return (
     <>
       <div style={section}>
@@ -495,6 +495,11 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
             );
           })}
         </div>
+        {tip > 0 && tipAmount > 0 && (
+          <p style={{ ...hint("ok"), marginTop: 8 }}>
+            Dejás <strong>{fmtAR(tipAmount)}</strong> de propina
+          </p>
+        )}
       </div>
 
       {/* Cupon */}
@@ -524,6 +529,38 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
         </div>
         {couponErr && <p style={hint("err")}>{couponErr}</p>}
         {coupon && <p style={hint("ok")}>Descuento {coupon.discount_pct}% — ahorrás {fmtAR(discount)}</p>}
+      </div>
+
+      {/* Desglose del total: que el cliente vea exactamente que paga antes del resumen final */}
+      <div style={{ ...section, padding: "14px 16px", background: "var(--b2)", borderRadius: 12, border: "1px solid var(--line)" }}>
+        <div style={miniLabel}>Total a pagar</div>
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: "var(--t2)" }}>
+          <span>Subtotal</span>
+          <span style={{ color: "var(--tx)" }}>{fmtAR(ct + discount)}</span>
+        </div>
+        {form.delivery === "envio" && deliveryCost > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: "var(--t2)" }}>
+            <span>Envío</span>
+            <span style={{ color: "var(--tx)" }}>{fmtAR(deliveryCost)}</span>
+          </div>
+        )}
+        {coupon && discount > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: "var(--ok, #2A9D6E)" }}>
+            <span>Cupón -{coupon.discount_pct}%</span>
+            <span>−{fmtAR(discount)}</span>
+          </div>
+        )}
+        {tip > 0 && tipAmount > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: "var(--t2)" }}>
+            <span>Propina ({tip}%)</span>
+            <span style={{ color: "var(--tx)" }}>{fmtAR(tipAmount)}</span>
+          </div>
+        )}
+        <hr style={{ margin: "8px 0", border: 0, borderTop: "1px solid var(--line)" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)" }}>Total</span>
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 22, color: "var(--ac)" }}>{fmtAR(ctWithDelivery)}</span>
+        </div>
       </div>
 
       {/* Regalo + notas: movidos al carrito (#146), antes de entrar al checkout */}
@@ -759,6 +796,7 @@ function PayBankBox({ label, value, amount, receiptFile, setReceiptFile, receipt
   );
 }
 
+// ─── Estilos compartidos (tokens-only) ─────�
 // ─── Estilos compartidos (tokens-only) ──────────────────────────
 
 const section = { marginBottom: 20 };
