@@ -176,6 +176,23 @@ export const CouponCreateSchema = z.object({
 // SCHEMAS ADMIN — Settings
 // ═══════════════════════════════════════════════════════
 
+// Cuenta de pago configurable (settings.payment_accounts).
+// Efectivo es IMPLICITO (no se carga aca). looseObject: si agregamos un campo
+// nuevo a la cuenta no se descarta silenciosamente (defensa vs strip-mode).
+export const PaymentAccountSchema = z.looseObject({
+  id: z.string().max(60),
+  type: z.string().max(40),          // transferencia | mercadopago | tarjeta | <custom>
+  label: z.string().max(60).optional().default(''),
+  titular: z.string().max(120).optional().default(''),
+  alias: z.string().max(120).optional().default(''),
+  cbu: z.string().max(40).optional().default(''),     // CBU o CVU
+  banco: z.string().max(80).optional().default(''),
+  instrucciones: z.string().max(500).optional().default(''),
+  active: z.boolean().optional().default(true),
+  show_in_catalog: z.boolean().optional().default(true),
+  sort: z.number().optional().default(0),
+});
+
 export const SettingsInputSchema = z.object({
   id: z.number().int().optional(),
   biz_name: optionalText(200),
@@ -197,6 +214,8 @@ export const SettingsInputSchema = z.object({
   // Medios de pago admin + subset visible en catálogo
   payment_methods: z.array(z.string()).nullable().optional(),
   catalog_payment_methods: z.array(z.string()).nullable().optional(),
+  // Cuentas de pago con datos (CBU/alias/titular/banco/instrucciones)
+  payment_accounts: z.array(PaymentAccountSchema).nullable().optional(),
   // Tema visual: ambar (default) | noche | carbon
   catalog_theme: z.enum(['ambar', 'noche', 'carbon']).nullable().optional(),
   // Identidad social / SEO

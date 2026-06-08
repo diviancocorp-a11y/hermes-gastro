@@ -29,6 +29,7 @@ import ToggleSwitch from "./shared/forms/ToggleSwitch";
 import CatChipsEditor from "../ui/CatChipsEditor";
 import DecimalInput from "../ui/DecimalInput";
 import PaymentMethodsEditor from "../ui/PaymentMethodsEditor";
+import PaymentAccountsEditor from "../ui/PaymentAccountsEditor";
 
 function Icon({ d, viewBox = "0 0 24 24" }) {
   return (
@@ -328,12 +329,24 @@ function CatsSubPage({ open, title, intro, field, label, icon, settings, setSett
 function PaymentsSubPage({ open, settings, setSettings, showToast, onBack }) {
   return (
     <SubPage open={open} title="Medios de pago" onBack={onBack}>
-      <p className="ag-subpage-intro">Los medios habilitados aparecen en Gastos, Compras y Pedidos.</p>
-      <PaymentMethodsEditor
+      <p className="ag-subpage-intro">Cargá las cuentas que cobran tus clientes. Aparecen en el checkout y quedan registradas en cada pedido.</p>
+      <PaymentAccountsEditor
         settings={settings}
         setSettings={setSettings}
         showToast={showToast}
       />
+
+      <div style={{ marginTop: 26, paddingTop: 18, borderTop: "1px solid var(--ag-line)" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "var(--ag-ink-3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+          Uso interno
+        </div>
+        <p className="ag-subpage-intro" style={{ marginTop: 0 }}>Medios para clasificar Gastos y Compras (no afecta el checkout).</p>
+        <PaymentMethodsEditor
+          settings={settings}
+          setSettings={setSettings}
+          showToast={showToast}
+        />
+      </div>
     </SubPage>
   );
 }

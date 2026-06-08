@@ -21,6 +21,7 @@
         "expense_pct",
         "payment_methods",
         "catalog_payment_methods",
+        "payment_accounts",
         "catalog_theme",
         "slogan",
         "whatsapp",
