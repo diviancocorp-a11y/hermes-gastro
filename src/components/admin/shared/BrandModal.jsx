@@ -341,6 +341,32 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                 maxLength={80}
               />
 
+              {/* ── Local físico ── */}
+              <div style={{ marginTop: 18, fontSize: 12, fontWeight: 700, color: 'var(--ag-ink-2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                Local físico
+              </div>
+              <ToggleSwitch
+                checked={s.has_physical_store !== false}
+                onChange={(v) => set("has_physical_store", v)}
+                label="Tengo local físico para retiro en persona"
+                hint="Si lo desactivás, los pedidos serán solo por envío y no aparece la opción de retiro en el checkout."
+              />
+              {s.has_physical_store !== false && (
+                <>
+                  <label className="ag-field-lbl" style={{ marginTop: 12 }}>Dirección del local</label>
+                  <input
+                    className="ag-field-input"
+                    value={s.store_address || ""}
+                    onChange={e => set("store_address", e.target.value.slice(0, 200))}
+                    placeholder="Ej: Av. Corrientes 1234, CABA"
+                    maxLength={200}
+                  />
+                  <div style={{ fontSize: 10.5, color: 'var(--ag-ink-3)', marginTop: 3 }}>
+                    Aparece debajo del nombre del local en el catálogo y en la confirmación de pedidos.
+                  </div>
+                </>
+              )}
+
               {/* ── Contacto / Redes ── */}
               <div style={{ marginTop: 18, fontSize: 12, fontWeight: 700, color: 'var(--ag-ink-2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                 Redes y contacto

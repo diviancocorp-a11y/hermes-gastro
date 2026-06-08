@@ -22,6 +22,8 @@ export default function CartScreen({
   topProducts = [],
   onAddProduct,
   minOrder = 0,
+  // Form del pedido — para regalo + notas a la cocina (antes vivian en checkout step 3)
+  form = {}, sf = () => {}, ffGift = false,
 }) {
   const count = items.reduce((s, it) => s + it.qty, 0);
   const cartIds = new Set(items.map(it => it.id));
@@ -125,9 +127,63 @@ export default function CartScreen({
             <span style={{ fontFamily: "var(--font-heading)", fontSize: 28, color: "var(--tx)" }}>{fmtAR(subtotal)}</span>
           </div>
           <p style={{ margin: "10px 0 0", fontSize: 11, color: "var(--t3)", lineHeight: 1.4 }}>
-            Envio, cupon y propina se calculan en el siguiente paso.
+            Envío, cupón y propina se calculan en el siguiente paso.
           </p>
         </div>
+
+        {/* Notas a la cocina */}
+        <div style={{ marginTop: 12, background: "var(--b2)", borderRadius: 14, padding: "14px 16px" }}>
+          <label style={{ fontSize: 12, color: "var(--t3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 8 }}>
+            Notas para la cocina
+          </label>
+          <textarea
+            value={form.note || ""}
+            maxLength={300}
+            onChange={e => sf("note", e.target.value)}
+            placeholder="Sin sal, sin cebolla, bien cocido..."
+            style={{
+              width: "100%", minHeight: 60, padding: "10px 12px",
+              border: "1px solid var(--line)", borderRadius: 10,
+              background: "var(--bg)", color: "var(--tx)",
+              fontFamily: "inherit", fontSize: 13, resize: "vertical",
+              outline: "none", boxSizing: "border-box",
+            }}
+          />
+          <div style={{ textAlign: "right", fontSize: 10.5, color: "var(--t3)", marginTop: 2 }}>{(form.note || "").length}/300</div>
+        </div>
+
+        {/* Es un regalo */}
+        {ffGift && (
+          <div style={{ marginTop: 12, background: "var(--b2)", borderRadius: 14, padding: "14px 16px" }}>
+            <div onClick={() => sf("is_gift", !form.is_gift)} style={{ cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--tx)" }}>¿Es un regalo?</div>
+                <div style={{ fontSize: 11.5, color: "var(--t2)", marginTop: 2 }}>Incluimos una tarjeta con tu mensaje.</div>
+              </div>
+              <div style={{ width: 44, height: 24, borderRadius: 999, background: form.is_gift ? "var(--ac)" : "var(--b3)", position: "relative", transition: "background 150ms", flexShrink: 0 }}>
+                <div style={{ position: "absolute", top: 2, left: form.is_gift ? 22 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 150ms" }} />
+              </div>
+            </div>
+            {form.is_gift && (
+              <div style={{ marginTop: 12 }}>
+                <textarea
+                  value={form.gift_note || ""}
+                  maxLength={200}
+                  onChange={e => sf("gift_note", e.target.value)}
+                  placeholder="Tu mensaje para la tarjeta..."
+                  style={{
+                    width: "100%", minHeight: 60, padding: "10px 12px",
+                    border: "1px solid var(--line)", borderRadius: 10,
+                    background: "var(--bg)", color: "var(--tx)",
+                    fontFamily: "inherit", fontSize: 13, resize: "vertical",
+                    outline: "none", boxSizing: "border-box",
+                  }}
+                />
+                <div style={{ textAlign: "right", fontSize: 10.5, color: "var(--t3)", marginTop: 2 }}>{(form.gift_note || "").length}/200</div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Upsell: Lo mas pedido (antes era una seccion del home) */}

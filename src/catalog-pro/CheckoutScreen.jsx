@@ -8,11 +8,31 @@
 // 71 referencias a tokens --ag-* del admin. El catalogo cambiaba de tema pero
 // al entrar al checkout el cliente "salia" del tema.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
 
 const STEPS = ["Datos", "Entrega", "Pago", "Resumen"];
+
+// Genera 7 dias hacia adelante para el dropdown de programar.
+// La gente no programa pedidos a mas de 1 semana; ofrecer mas confunde.
+function buildNext7Days() {
+  const DOW = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"];
+  const MONTH = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  const out = [];
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const value = d.toISOString().split("T")[0];
+    let label;
+    if (i === 0) label = "Hoy";
+    else if (i === 1) label = "Mañana";
+    else label = `${DOW[d.getDay()]} ${d.getDate()} ${MONTH[d.getMonth()]}`;
+    out.push({ value, label });
+  }
+  return out;
+}
 
 export default function CheckoutScreen(props) {
   const {
@@ -185,10 +205,15 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ flex: 1 }}>
               <label style={miniLabel}>Fecha</label>
-              <input
-                style={input} type="date" value={form.delivery_date} min={minDate}
+              <select
+                style={input} value={form.delivery_date}
                 onChange={e => { sf("delivery_date", e.target.value); sf("delivery_time", ""); }}
-              />
+              >
+                <option value="">Elegí un día</option>
+                {buildNext7Days().map(d => (
+                  <option key={d.value} value={d.value}>{d.label}</option>
+                ))}
+              </select>
             </div>
             <div style={{ flex: 1 }}>
               <label style={miniLabel}>Hora</label>
@@ -226,26 +251,34 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
 }
 
 // ─── PASO 1: Entrega ───────────────────────────────────────────────
-function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryKm, haversine, STORE_LAT, STORE_LNG, calcDeliveryCost, estimateDelivery, calcingDelivery, deliveryCost, deliveryKm, geoLoading, setGeoLoading, canNext, onNext }) {
+function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryKm, haversine, STORE_LAT, STORE_LNG, calcDeliveryCost, estimateDelivery, calcingDelivery, deliveryCost, deliveryKm, geoLoading, setGeoLoading, canNext, onNext, settings }) {
+  // Si el local no tiene local fisico, forzamos delivery (sin chance de retiro).
+  const hasPhysical = settings?.has_physical_store !== false;
+  useEffect(() => {
+    if (!hasPhysical && form.delivery !== "envio") sf("delivery", "envio");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasPhysical]);
   return (
     <>
-      <div style={section}>
-        <label style={labelStyle}>¿Como lo recibis?</label>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <CardOption
-            active={form.delivery === "retiro"}
-            onClick={() => { sf("delivery", "retiro"); setDeliveryCost(0); setDeliveryKm(null); }}
-            title="Retiro en local"
-            subtitle="Andres Chazarreta 1435, Villa Rosa, Pilar"
-          />
-          <CardOption
-            active={form.delivery === "envio"}
-            onClick={() => sf("delivery", "envio")}
-            title="Delivery"
-            subtitle="Te lo llevamos a tu direccion"
-          />
+      {hasPhysical && (
+        <div style={section}>
+          <label style={labelStyle}>¿Cómo lo recibís?</label>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <CardOption
+              active={form.delivery === "retiro"}
+              onClick={() => { sf("delivery", "retiro"); setDeliveryCost(0); setDeliveryKm(null); }}
+              title="Retiro en local"
+              subtitle={settings?.store_address || "Dirección del local"}
+            />
+            <CardOption
+              active={form.delivery === "envio"}
+              onClick={() => sf("delivery", "envio")}
+              title="Delivery"
+              subtitle="Te lo llevamos a tu dirección"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {form.delivery === "envio" && (
         <div style={section}>
@@ -493,31 +526,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
         {coupon && <p style={hint("ok")}>Descuento {coupon.discount_pct}% — ahorrás {fmtAR(discount)}</p>}
       </div>
 
-      {/* Regalo */}
-      {ffGift && (
-        <div style={{ ...section, padding: 16, background: "var(--b2)", border: "1px solid var(--line)", borderRadius: 14 }}>
-          <div onClick={() => sf("is_gift", !form.is_gift)} style={{ cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--tx)" }}>¿Es un regalo?</div>
-              <div style={{ fontSize: 12, color: "var(--t2)" }}>Incluimos una tarjeta especial</div>
-            </div>
-            <div style={{ width: 44, height: 24, borderRadius: 999, background: form.is_gift ? "var(--ac)" : "var(--b3)", position: "relative", transition: "background 150ms" }}>
-              <div style={{ position: "absolute", top: 2, left: form.is_gift ? 22 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 150ms" }} />
-            </div>
-          </div>
-          {form.is_gift && (
-            <div style={{ marginTop: 12 }}>
-              <textarea
-                value={form.gift_note} maxLength={200}
-                onChange={e => sf("gift_note", e.target.value)}
-                placeholder="Tu mensaje para la tarjeta..."
-                style={{ width: "100%", minHeight: 80, padding: "10px 12px", border: "1px solid var(--line)", borderRadius: 10, background: "var(--bg)", color: "var(--tx)", fontFamily: "inherit", fontSize: 13, resize: "vertical", outline: "none", boxSizing: "border-box" }}
-              />
-              <div style={{ textAlign: "right", fontSize: 11, color: "var(--t3)", marginTop: 4 }}>{form.gift_note.length}/200</div>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Regalo + notas: movidos al carrito (#146), antes de entrar al checkout */}
 
       <NextButton disabled={!canNext || (needsReceipt && !receiptFile)} onClick={onNext} label={needsReceipt && !receiptFile ? "Subí el comprobante para continuar" : "Siguiente"} />
     </>
@@ -525,7 +534,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
 }
 
 // ─── PASO 3: Resumen ───────────────────────────────────────────────
-function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, ctWithDelivery, discount, coupon, tip, tipAmount, receiptFile, sending, orderErr, onSubmit }) {
+function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, ctWithDelivery, discount, coupon, tip, tipAmount, receiptFile, sending, orderErr, onSubmit, settings }) {
   return (
     <>
       <div style={section}>
@@ -536,7 +545,7 @@ function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, 
 
       <div style={section}>
         <div style={miniLabel}>Entrega</div>
-        <div style={summaryVal}>{form.delivery === "retiro" ? "Retiro en local — Andres Chazarreta 1435, Villa Rosa" : `Delivery — ${form.address}`}</div>
+        <div style={summaryVal}>{form.delivery === "retiro" ? `Retiro en local${settings?.store_address ? ` — ${settings.store_address}` : ""}` : `Delivery — ${form.address}`}</div>
         {scheduleMode === "later" && (
           <div style={{ ...summaryVal, fontSize: 12, color: "var(--ac)" }}>
             Programado: {form.delivery_date}{form.delivery_time ? ` a las ${form.delivery_time}` : ""}
