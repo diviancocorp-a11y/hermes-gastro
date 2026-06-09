@@ -90,7 +90,7 @@ export default function useAdminData() {
   const adminEntryTime = useRef(Date.now());
 
   useEffect(() => {
-    const audio = new Audio(business.branding.sound);
+    const audio = new Audio("/new-order.mp3");
     audio.loop = true;
     alarmRef.current = audio;
     const unlock = () => {

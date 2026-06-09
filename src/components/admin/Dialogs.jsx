@@ -236,28 +236,35 @@ function StockWarningDlg({ deficits = [], onForce, onClose }) {
 }
 
 function NewOrderOverlay({count,onAck}){
+  const [closing,setClosing]=useState(false);
+  const ack=()=>{ if(closing) return; setClosing(true); setTimeout(onAck,300); };
   return(
-    <div onClick={onAck} style={{
+    <div onClick={ack} style={{
       position:"fixed",inset:0,zIndex:9999,
-      background:"var(--ac,#F59E0B)",
+      background:"#F59E0B",
       display:"flex",flexDirection:"column",
       alignItems:"center",justifyContent:"center",
       cursor:"pointer",userSelect:"none",
-      padding:32,textAlign:"center"
+      padding:32,textAlign:"center",
+      opacity:closing?0:1,transition:"opacity 0.3s ease"
     }}>
-      <div style={{fontSize:80,marginBottom:16,animation:"bounce 0.6s infinite alternate"}}>🦆</div>
-      <div style={{fontSize:48,fontWeight:900,color:"#fff",lineHeight:1.1,marginBottom:12,textShadow:"0 2px 8px rgba(0,0,0,0.2)"}}>
+      <style>{`@keyframes hg-no-rise{0%{transform:translateY(24px);opacity:0}100%{transform:translateY(0);opacity:1}}@keyframes hg-no-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}`}</style>
+      <img src="/brand/hermes-logo-on-light.png" alt="" aria-hidden="true" style={{
+        width:240,maxWidth:"72%",marginBottom:22,
+        filter:"brightness(0) invert(1)",
+        animation:"hg-no-rise 0.5s ease-out, hg-no-pulse 1.3s ease-in-out 0.5s infinite"
+      }}/>
+      <div style={{fontSize:46,fontWeight:900,color:"#fff",lineHeight:1.05,marginBottom:10,textShadow:"0 2px 8px rgba(0,0,0,0.18)"}}>
         ¡{count} PEDIDO{count!==1?"S":""} NUEVO{count!==1?"S":""}!
       </div>
-      <div style={{fontSize:18,color:"rgba(255,255,255,0.85)",marginBottom:32,fontWeight:500}}>
+      <div style={{fontSize:17,color:"rgba(255,255,255,0.9)",marginBottom:30,fontWeight:500}}>
         Tocá en cualquier lugar para ver
       </div>
       <div style={{
         background:"rgba(255,255,255,0.25)",
         border:"2px solid rgba(255,255,255,0.6)",
         borderRadius:40,padding:"14px 36px",
-        fontSize:18,fontWeight:700,color:"#fff",
-        backdropFilter:"blur(4px)"
+        fontSize:18,fontWeight:700,color:"#fff"
       }}>
         Ver pedidos →
       </div>
