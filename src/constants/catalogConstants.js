@@ -46,6 +46,6 @@ export const calcDeliveryCost = (km) => {
   return 5000;
 };
 
-export const CHECKOUT_STEPS = ["Datos", "Entrega", "Pago", "Resumen"];
+export const CHECKOUT_STEPS = ["Datos", "Entrega", "Pago"];
 
 export const DEFAULT_FORM = { name: "", phone: "", email: "", birth_date: "", delivery: "retiro", payment: "efectivo", payment_account_id: null, address: "", address_piso: "", address_notas: "", note: "", is_gift: false, gift_note: "", delivery_date: "", delivery_time: "", change_amount: "justo" };

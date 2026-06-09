@@ -1,5 +1,5 @@
 // src/catalog-pro/CheckoutScreen.jsx
-// Checkout stepper 4 pasos: Datos -> Entrega -> Pago -> Resumen.
+// Checkout stepper 3 pasos: Datos -> Entrega -> Pago (el pago es el paso final).
 // Reescrito desde el inline de Catalog.jsx para usar SOLO tokens del catalog-pro
 // (--ac, --bg, --tx, --t2, --line, --b2, --ok, --err) y respetar el tema activo
 // (ambar/noche/carbon).
@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
 
-const STEPS = ["Datos", "Entrega", "Pago", "Resumen"];
+const STEPS = ["Datos", "Entrega", "Pago"];
 
 // Genera 7 dias hacia adelante para el dropdown de programar.
 // La gente no programa pedidos a mas de 1 semana; ofrecer mas confunde.
@@ -87,8 +87,14 @@ export default function CheckoutScreen(props) {
   // Toda cuenta registrada es manual: pide comprobante (gating en el paso final).
   const needsReceipt = !!selectedAccount;
 
-  const goNext = () => onStepChange(Math.min(step + 1, 3));
+  const goNext = () => onStepChange(Math.min(step + 1, 2));
   const goBack = () => { if (step === 0) onClose(); else onStepChange(step - 1); };
+
+  // Boton de ayuda (header): abre WhatsApp del negocio con mensaje pre-llenado.
+  const bizWhatsapp = (settings?.whatsapp || "").replace(/\D/g, "");
+  const helpHref = bizWhatsapp
+    ? "https://wa.me/" + bizWhatsapp + "?text=" + encodeURIComponent("Hola! No puedo completar mi pedido porque: ")
+    : null;
 
   return (
     <div className="cp-root cp-surface cp-no-scrollbar" style={{ position: "fixed", inset: 0, zIndex: 240, overflowY: "auto", paddingBottom: 130 }}>
@@ -96,6 +102,12 @@ export default function CheckoutScreen(props) {
       <div style={{ position: "sticky", top: 0, zIndex: 5, background: "var(--bg)", borderBottom: "1px solid var(--line)", padding: "14px 18px 12px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={goBack} aria-label="Atras" style={iconBtn}><Icon name="arrow-left" size={18} /></button>
         <div style={{ flex: 1, fontFamily: "var(--font-heading)", fontSize: 18, color: "var(--tx)" }}>{STEPS[step]}</div>
+        {helpHref && (
+          <a href={helpHref} target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: "var(--err, #C62828)", padding: "5px 12px", borderRadius: 999, textDecoration: "none" }}>
+            Ayuda
+          </a>
+        )}
         <span style={{ fontSize: 11, color: "var(--t3)", fontWeight: 600 }}>{step + 1}/{STEPS.length}</span>
       </div>
 
@@ -123,8 +135,7 @@ export default function CheckoutScreen(props) {
       <div style={{ padding: "18px 22px 0" }}>
         {step === 0 && <Step0Datos {...props} canNext={canNext0} onNext={goNext} minOrder={minOrder} minOk={minOk} ct={ct} />}
         {step === 1 && <Step1Entrega {...props} canNext={canNext1} onNext={goNext} />}
-        {step === 2 && <Step2Pago {...props} accounts={paymentAccounts} selectedAccount={selectedAccount} canNext={canNext2} needsReceipt={needsReceipt} onNext={goNext} />}
-        {step === 3 && <Step3Resumen {...props} accounts={paymentAccounts} selectedAccount={selectedAccount} needsReceipt={needsReceipt} />}
+        {step === 2 && <Step2Pago {...props} accounts={paymentAccounts} selectedAccount={selectedAccount} needsReceipt={needsReceipt} />}
       </div>
     </div>
   );
@@ -399,7 +410,7 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
 }
 
 // ─── PASO 2: Pago ──────────────────────────────────────────────────
-function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, accounts, selectedAccount, ct, ctWithDelivery, deliveryCost, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, canNext, needsReceipt, onNext }) {
+function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, accounts, selectedAccount, ct, ctWithDelivery, deliveryCost, deliveryKm, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, needsReceipt, cart, scheduleMode, settings, onSubmit, sending, orderErr }) {
   return (
     <>
       <div style={section}>
@@ -565,84 +576,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
         {coupon && <p style={hint("ok")}>Descuento {coupon.discount_pct}% — ahorrás {fmtAR(discount)}</p>}
       </div>
 
-      {/* Desglose del total a pagar antes del resumen final */}
-      <div style={{ ...section, padding: "14px 16px", background: "var(--b2)", borderRadius: 12, border: "1px solid var(--line)" }}>
-        <div style={miniLabel}>Total a pagar</div>
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: "var(--t2)" }}>
-          <span>Subtotal</span>
-          <span style={{ color: "var(--tx)" }}>{fmtAR(ct + discount)}</span>
-        </div>
-        {form.delivery === "envio" && deliveryCost > 0 && (
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: "var(--t2)" }}>
-            <span>Envío</span>
-            <span style={{ color: "var(--tx)" }}>{fmtAR(deliveryCost)}</span>
-          </div>
-        )}
-        {coupon && discount > 0 && (
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: "var(--ok, #2A9D6E)" }}>
-            <span>Cupón -{coupon.discount_pct}%</span>
-            <span>−{fmtAR(discount)}</span>
-          </div>
-        )}
-        {tipAmount > 0 && (
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: "var(--t2)" }}>
-            <span>{tipCustom != null ? "Propina" : `Propina (${tip}%)`}</span>
-            <span style={{ color: "var(--tx)" }}>{fmtAR(tipAmount)}</span>
-          </div>
-        )}
-        <hr style={{ margin: "8px 0", border: 0, borderTop: "1px solid var(--line)" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)" }}>Total</span>
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: 22, color: "var(--ac)" }}>{fmtAR(ctWithDelivery)}</span>
-        </div>
-      </div>
-
-      {/* Regalo + notas: movidos al carrito (#146), antes de entrar al checkout */}
-
-      <NextButton disabled={!canNext} onClick={onNext} label="Siguiente" />
-    </>
-  );
-}
-
-// ─── PASO 3: Resumen ───────────────────────────────────────────────
-function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, ctWithDelivery, discount, coupon, tip, tipCustom, tipAmount, selectedAccount, needsReceipt, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, sending, orderErr, onSubmit, settings }) {
-  return (
-    <>
-      <div style={section}>
-        <div style={miniLabel}>Cliente</div>
-        <div style={summaryVal}>{form.name}</div>
-        <div style={{ ...summaryVal, fontSize: 12, color: "var(--t3)" }}>{form.phone}{form.email ? ` · ${form.email}` : ""}</div>
-      </div>
-
-      <div style={section}>
-        <div style={miniLabel}>Entrega</div>
-        <div style={summaryVal}>{form.delivery === "retiro" ? `Retiro en local${settings?.store_address ? ` — ${settings.store_address}` : ""}` : `Delivery — ${form.address}`}</div>
-        {scheduleMode === "later" && (
-          <div style={{ ...summaryVal, fontSize: 12, color: "var(--ac)" }}>
-            Programado: {form.delivery_date}{form.delivery_time ? ` a las ${form.delivery_time}` : ""}
-          </div>
-        )}
-      </div>
-
-      <div style={section}>
-        <div style={miniLabel}>Pago</div>
-        <div style={{ ...summaryVal, textTransform: "capitalize" }}>
-          {selectedAccount ? (selectedAccount.banco || selectedAccount.label) : (form.payment === "mercadopago" ? "MercadoPago" : "Efectivo")}
-          {!form.payment_account_id && form.payment !== "mercadopago" && form.change_amount ? ` — ${form.change_amount === "justo" ? "Pago justo" : `Paga con $${form.change_amount}`}` : ""}
-        </div>
-        {receiptFile && <div style={{ ...summaryVal, fontSize: 12, color: "var(--ok, #2A9D6E)" }}>Comprobante adjunto</div>}
-        {coupon && <div style={{ ...summaryVal, fontSize: 12, color: "var(--ok, #2A9D6E)" }}>Cupón -{coupon.discount_pct}%</div>}
-        {tipAmount > 0 && <div style={{ ...summaryVal, fontSize: 12, color: "var(--t2)" }}>Propina{tipCustom != null ? "" : ` · ${tip}%`}</div>}
-        {form.is_gift && <div style={{ ...summaryVal, fontSize: 12, color: "var(--ac)" }}>Es un regalo{form.gift_note ? `: "${form.gift_note.slice(0, 40)}${form.gift_note.length > 40 ? "..." : ""}"` : ""}</div>}
-      </div>
-
-      {form.note && (
-        <div style={section}>
-          <div style={miniLabel}>Notas</div>
-          <div style={summaryVal}>{form.note}</div>
-        </div>
-      )}
-
+      {/* Productos + total (este es el paso final; reemplaza al resumen) */}
       <div style={{ ...section, padding: "14px 16px", background: "var(--b2)", borderRadius: 12, border: "1px solid var(--line)" }}>
         <div style={miniLabel}>Productos</div>
         {cart.map(it => (
@@ -679,6 +613,7 @@ function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, 
         </div>
       </div>
 
+      {/* Comprobante: debajo del total. Solo cuentas manuales lo piden (desbloquea el boton). */}
       {needsReceipt && (
         <div style={section}>
           <div style={miniLabel}>Comprobante de pago</div>
@@ -690,6 +625,24 @@ function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, 
           />
         </div>
       )}
+
+      {/* Entrega: debajo del comprobante */}
+      <div style={section}>
+        <div style={miniLabel}>Entrega</div>
+        <div style={summaryVal}>{form.delivery === "retiro" ? `Retiro en local${settings?.store_address ? ` — ${settings.store_address}` : ""}` : `Delivery — ${form.address}`}</div>
+        {scheduleMode === "later" && (
+          <div style={{ ...summaryVal, fontSize: 12, color: "var(--ac)" }}>
+            Programado: {form.delivery_date}{form.delivery_time ? ` a las ${form.delivery_time}` : ""}
+          </div>
+        )}
+      </div>
+
+      {/* Datos del cliente: debajo de la direccion, para corroborar */}
+      <div style={section}>
+        <div style={miniLabel}>Tus datos</div>
+        <div style={summaryVal}>{form.name}</div>
+        <div style={{ ...summaryVal, fontSize: 12, color: "var(--t3)" }}>{form.phone}{form.email ? ` · ${form.email}` : ""}</div>
+      </div>
 
       {orderErr && <div style={{ background: "var(--err-soft, rgba(220,38,38,0.1))", color: "var(--err, #C62828)", fontSize: 13, padding: "10px 14px", borderRadius: 10, marginBottom: 12, textAlign: "center", border: "1px solid var(--err, #C62828)" }}>{orderErr}</div>}
 
@@ -703,10 +656,12 @@ function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, 
           cursor: (sending || ctWithDelivery === 0 || (needsReceipt && !receiptFile)) ? "not-allowed" : "pointer",
           fontSize: 16, height: 56,
         }}
-      >{sending ? "Enviando..." : (needsReceipt && !receiptFile ? "Cargá el comprobante" : "Confirmar pedido")}</button>
+      >{sending ? "Enviando..." : (needsReceipt && !receiptFile ? "Cargá el comprobante" : "Completar pedido")}</button>
     </>
   );
 }
+
+// (Paso Resumen eliminado: el Pago es ahora el paso final — ver Step2Pago)
 
 // ─── Sub-componentes ──────────────────────────────────────────────
 
