@@ -242,6 +242,12 @@
       "usar_targets",
       "catalog_theme",
       "payment_accounts"
+    ],
+    "admin_users": [
+      "user_id",
+      "role",
+      "created_at",
+      "added_by"
     ]
   }
 }

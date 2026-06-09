@@ -32,6 +32,7 @@ import PushNotifications from "../components/admin/PushNotifications";
 import CategoryEditor from "../components/admin/CategoryEditor";
 import MonthSummary from "../components/admin/MonthSummary";
 import Suppliers from "../components/admin/Suppliers";
+import Users from "../components/admin/Users";
 import { CancelDlg, StockWarningDlg, NewOrderOverlay } from "../components/admin/Dialogs";
 
 // Estilos del sistema visual v2
@@ -139,6 +140,7 @@ export default function Admin() {
       case 'waste':     setTab('waste'); break;
       case 'suppliers': setTab('suppliers'); break;
       case 'settings':  setTab('settings'); break;
+      case 'users':     setTab('users'); break;
       case 'invoicing': setOv({ type: 'invoicing' }); break;
       case 'exports':   setOv({ type: 'exports' }); break;
       default: break;
@@ -180,6 +182,7 @@ export default function Admin() {
         {tab === "crm"      && <CRM orders={orders} recipes={recs} ingredients={ings} showToast={msg} />}
         {tab === "waste"    && <Waste waste={waste} orders={orders} recipes={recs} ingredients={ings} setIngredients={setIngs} showToast={msg} loadAll={loadAll} />}
         {tab === "suppliers" && <Suppliers onBack={() => setTab("home")} showToast={msg} />}
+        {tab === "users"    && <Users showToast={msg} onBack={() => setTab("more")} currentUserId={session?.user?.id} />}
         {tab === "purchase"  && <Purchase ingredients={ings} setIngredients={setIngs} expenses={exps} setExpenses={setExps} settings={sett} onClose={() => setTab("home")} showToast={msg} loadAll={loadAll} user={session?.user} />}
         {tab === "expenses"  && <Expenses expenses={exps} setExpenses={setExps} settings={sett} setSettings={setSett} showToast={msg} onClose={() => setTab("home")} user={session?.user} />}
         {tab === "settings" && <Settings settings={sett} setSettings={setSett} showToast={msg} theme={theme} onThemeChange={handleThemeChange} exportData={{ sales, expenses: exps, ingredients: ings, orders, recipes: recs, sett }} />}

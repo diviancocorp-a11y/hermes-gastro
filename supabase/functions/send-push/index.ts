@@ -1,8 +1,12 @@
 // supabase/functions/send-push/index.ts
-// Web Push via VAPID. Reescrito en #121.
+// Web Push via VAPID. Reescrito en #121. Auth interna agregada en Sprint 1.
 //
 // Body: { title, body, url?, icon?, target?: { role?, user_id?, phone? } }
 //   Default target: { role: 'customer' } => broadcast a todos los customers.
+//
+// AUTH: solo acepta (a) service role (invocaciones internas, ej submit-order)
+// o (b) JWT de un usuario presente en admin_users. Antes cualquiera con la
+// anon key (publica en el bundle) podia mandar push broadcast a toda la base.
 //
 // Env (Supabase secrets):
 //   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:...)
@@ -19,27 +23,35 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
+
+    // ── Auth interna: service role o admin real ──
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    let authorized = false;
+    if (token && token === serviceKey) {
+      authorized = true; // invocacion interna (submit-order, crons)
+    } else if (token) {
+      const { data: userData } = await supabase.auth.getUser(token);
+      const uid = userData?.user?.id;
+      if (uid) {
+        const { data: adminRow } = await supabase.from("admin_users").select("user_id").eq("user_id", uid).maybeSingle();
+        if (adminRow) authorized = true;
+      }
+    }
+    if (!authorized) return json({ error: "No autorizado" }, 401);
 
     const { title, body, url, icon, target } = await req.json();
-    if (!title || !body) {
-      return json({ error: "title and body are required" }, 400);
-    }
+    if (!title || !body) return json({ error: "title and body are required" }, 400);
 
     const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY") || "";
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY") || "";
     const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:admin@hermes.local";
-    if (!vapidPublicKey || !vapidPrivateKey) {
-      return json({ error: "VAPID keys not configured" }, 500);
-    }
+    if (!vapidPublicKey || !vapidPrivateKey) return json({ error: "VAPID keys not configured" }, 500);
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 
-    // Resolver target a query
     let q = supabase.from("push_subscriptions").select("*");
     const t = target || { role: "customer" };
     if (t.user_id) q = q.eq("user_id", t.user_id);
@@ -51,14 +63,12 @@ Deno.serve(async (req) => {
     if (!subs?.length) return json({ ok: true, sent: 0, message: "No subscribers" });
 
     const payload = JSON.stringify({
-      title,
-      body,
+      title, body,
       url: url || "/",
       icon: icon || "/icons/icon-192.png",
     });
 
-    let sent = 0;
-    let failed = 0;
+    let sent = 0, failed = 0;
     const staleEndpoints: string[] = [];
 
     await Promise.all(subs.map(async (sub) => {

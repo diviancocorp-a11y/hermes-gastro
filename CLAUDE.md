@@ -122,7 +122,16 @@ CLIENT=la-nona-pato vite build  # build de un tenant especifico
 
 ## Tareas pendientes
 
-**El backlog vivo esta en PLAN-DE-ACCION.md** (Sprint 0 completado el 9/jun/2026: address + delivery_cost persisten, verify_jwt fix, deps fantasma removidas). Proximos: Sprint 1 (seguridad: roles admin, adjust_stock anon, send-push auth) → Sprint 2 (multi-tenant) → Sprint 3 (limpieza) → Sprint 4 (vendible).
+**El backlog vivo esta en PLAN-DE-ACCION.md** (Sprints 0 y 1 completados el 9/jun/2026).
+
+Sprint 1 (seguridad) aplicado en los 3 tenants:
+- **Roles admin**: tabla `admin_users` (owner/staff) + `is_admin()`/`is_owner()`. TODAS las policies "cualquier authenticated" ahora exigen is_admin(). Solo usuarios en admin_users entran al panel. Bootstrap de tenant nuevo: ver seccion ROLES en 000_initial_schema.sql
+- **UI Usuarios**: Mas > Usuarios (src/components/admin/Users.jsx) + edge function `admin-users` (solo owners gestionan)
+- `adjust_stock` con guard is_admin + revoke anon; `send-push` exige service role o JWT admin; `push_subscriptions` solo via RPCs por endpoint (upsert/delete/count_push_subscription[s])
+- INSERT publico directo de orders/order_items eliminado (submit-order usa service role)
+- Pendiente manual de Ricky: habilitar leaked password protection en el dashboard de los 3 proyectos (Auth > Settings, 1 click)
+
+Proximos: Sprint 2 (multi-tenant: scheduled-export, CatalogFooter, delivery a settings) → Sprint 3 (limpieza) → Sprint 4 (vendible).
 
 Pendientes heredados (ahora en Sprint 4/5 del plan): Sentry sourcemaps + Seer, refactor check-schema-sync para leer supabase-schema.json directo, pre-commit UTF-8 strict.
 

@@ -52,16 +52,17 @@ export async function subscribeToPush({ role = 'customer', userId = null, phone 
   }
 
   const subJson = subscription.toJSON();
-  const { error } = await supabase.from('push_subscriptions').upsert({
-    endpoint: subJson.endpoint,
-    keys_p256dh: subJson.keys?.p256dh || '',
-    keys_auth: subJson.keys?.auth || '',
-    user_agent: navigator.userAgent,
-    user_id: userId,
-    phone: phone,
-    role,
-    last_seen_at: new Date().toISOString(),
-  }, { onConflict: 'endpoint' });
+  // RPC SECURITY DEFINER: solo toca la fila de ESTE endpoint.
+  // El acceso directo a push_subscriptions se cerro en Sprint 1 (anon podia borrar todo).
+  const { error } = await supabase.rpc('upsert_push_subscription', {
+    p_endpoint: subJson.endpoint,
+    p_p256dh: subJson.keys?.p256dh || '',
+    p_auth: subJson.keys?.auth || '',
+    p_user_agent: navigator.userAgent,
+    p_user_id: userId,
+    p_phone: phone,
+    p_role: role,
+  });
 
   if (error) console.error('Push subscription save error:', error);
   return subscription;
@@ -74,7 +75,7 @@ export async function unsubscribeFromPush() {
   if (subscription) {
     const endpoint = subscription.endpoint;
     await subscription.unsubscribe();
-    await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint);
+    await supabase.rpc('delete_push_subscription', { p_endpoint: endpoint });
   }
 }
 
@@ -124,10 +125,7 @@ export async function notifyOrderStatusChange(phone, status) {
 }
 
 export async function getSubscriberCount(role = 'customer') {
-  const { count, error } = await supabase
-    .from('push_subscriptions')
-    .select('*', { count: 'exact', head: true })
-    .eq('role', role);
+  const { data, error } = await supabase.rpc('count_push_subscriptions', { p_role: role });
   if (error) return 0;
-  return count || 0;
+  return data || 0;
 }

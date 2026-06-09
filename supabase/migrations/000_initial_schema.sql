@@ -624,6 +624,123 @@ ON CONFLICT (key) DO NOTHING;
 INSERT INTO public.theme_config (name, is_active) VALUES ('default', true) ON CONFLICT DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- ROLES DE ADMIN (Sprint 1, jun 2026)
+-- Solo usuarios en admin_users acceden al panel. Las policies de tablas
+-- operativas usan is_admin() en vez de "cualquier authenticated".
+-- BOOTSTRAP de tenant nuevo: crear el primer usuario en Auth y correr:
+--   INSERT INTO public.admin_users (user_id, role)
+--   SELECT id, 'owner' FROM auth.users WHERE email = '<email-del-dueno>';
+-- Despues, el resto de los usuarios se gestionan desde el panel (Mas > Usuarios).
+-- ═══════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS public.admin_users (
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL DEFAULT 'staff' CHECK (role IN ('owner','staff')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  added_by uuid REFERENCES auth.users(id)
+);
+ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
+
+CREATE OR REPLACE FUNCTION public.is_admin() RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
+$fn$ SELECT EXISTS (SELECT 1 FROM public.admin_users WHERE user_id = auth.uid()) $fn$;
+
+CREATE OR REPLACE FUNCTION public.is_owner() RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
+$fn$ SELECT EXISTS (SELECT 1 FROM public.admin_users WHERE user_id = auth.uid() AND role = 'owner') $fn$;
+
+REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.is_owner() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_owner() TO anon, authenticated;
+
+DROP POLICY IF EXISTS admin_users_admin_read ON public.admin_users;
+CREATE POLICY admin_users_admin_read ON public.admin_users FOR SELECT TO authenticated USING (public.is_admin());
+DROP POLICY IF EXISTS admin_users_owner_all ON public.admin_users;
+CREATE POLICY admin_users_owner_all ON public.admin_users FOR ALL TO authenticated USING (public.is_owner()) WITH CHECK (public.is_owner());
+
+-- Reescribir policies "cualquier autenticado = admin" a is_admin()
+-- (las policies de arriba en este archivo se crean con auth.uid() IS NOT NULL
+--  y este bloque las convierte — asi el archivo queda consistente al correrlo entero)
+DROP POLICY IF EXISTS orders_public_insert ON public.orders;
+DROP POLICY IF EXISTS order_items_public_insert ON public.order_items;
+DROP POLICY IF EXISTS customers_authenticated_insert ON public.customers;
+
+DO $do$
+DECLARE p record;
+BEGIN
+  FOR p IN
+    SELECT tablename, policyname, cmd FROM pg_policies
+    WHERE schemaname = 'public' AND tablename <> 'admin_users'
+      AND (coalesce(qual,'') IN ('(auth.uid() IS NOT NULL)', '(auth.role() = ''authenticated''::text)')
+        OR coalesce(with_check,'') IN ('(auth.uid() IS NOT NULL)', '(auth.role() = ''authenticated''::text)'))
+  LOOP
+    IF p.cmd = 'SELECT' THEN
+      EXECUTE format('ALTER POLICY %I ON public.%I USING (public.is_admin())', p.policyname, p.tablename);
+    ELSIF p.cmd = 'INSERT' THEN
+      EXECUTE format('ALTER POLICY %I ON public.%I WITH CHECK (public.is_admin())', p.policyname, p.tablename);
+    ELSE
+      EXECUTE format('ALTER POLICY %I ON public.%I USING (public.is_admin()) WITH CHECK (public.is_admin())', p.policyname, p.tablename);
+    END IF;
+  END LOOP;
+END
+$do$;
+
+-- adjust_stock con guard de admin (la version base de este archivo no lo tiene)
+CREATE OR REPLACE FUNCTION public.adjust_stock(p_ingredient_id uuid, p_delta numeric)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $function$
+BEGIN
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'adjust_stock: requiere rol admin';
+  END IF;
+  UPDATE ingredients SET stock = GREATEST(0, COALESCE(stock, 0) + p_delta)
+  WHERE id = p_ingredient_id;
+END;
+$function$;
+REVOKE EXECUTE ON FUNCTION public.adjust_stock(uuid, numeric) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.adjust_stock(uuid, numeric) TO authenticated;
+
+-- push_subscriptions: acceso solo via RPCs por endpoint (sin policies directas)
+CREATE OR REPLACE FUNCTION public.upsert_push_subscription(
+  p_endpoint text, p_p256dh text, p_auth text, p_user_agent text,
+  p_user_id uuid, p_phone text, p_role text
+) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+BEGIN
+  IF p_endpoint IS NULL OR length(p_endpoint) < 20 OR length(p_endpoint) > 1000 THEN
+    RAISE EXCEPTION 'endpoint invalido';
+  END IF;
+  IF p_role IS NULL OR p_role NOT IN ('customer','admin') THEN p_role := 'customer'; END IF;
+  IF p_role = 'admin' AND NOT public.is_admin() THEN
+    RAISE EXCEPTION 'rol admin requiere sesion de admin';
+  END IF;
+  INSERT INTO push_subscriptions (endpoint, keys_p256dh, keys_auth, user_agent, user_id, phone, role, last_seen_at)
+  VALUES (p_endpoint, coalesce(p_p256dh,''), coalesce(p_auth,''), left(coalesce(p_user_agent,''),300), p_user_id, left(p_phone,20), p_role, now())
+  ON CONFLICT (endpoint) DO UPDATE SET
+    keys_p256dh = EXCLUDED.keys_p256dh, keys_auth = EXCLUDED.keys_auth,
+    user_agent = EXCLUDED.user_agent, user_id = EXCLUDED.user_id,
+    phone = EXCLUDED.phone, role = EXCLUDED.role, last_seen_at = now();
+END; $fn$;
+
+CREATE OR REPLACE FUNCTION public.delete_push_subscription(p_endpoint text)
+RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS
+$fn$ DELETE FROM push_subscriptions WHERE endpoint = p_endpoint $fn$;
+
+CREATE OR REPLACE FUNCTION public.count_push_subscriptions(p_role text DEFAULT 'customer')
+RETURNS integer LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS
+$fn$ SELECT count(*)::int FROM push_subscriptions WHERE role = p_role $fn$;
+
+REVOKE ALL ON FUNCTION public.upsert_push_subscription(text,text,text,text,uuid,text,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.delete_push_subscription(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.count_push_subscriptions(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.upsert_push_subscription(text,text,text,text,uuid,text,text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.delete_push_subscription(text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.count_push_subscriptions(text) TO authenticated;
+
+DROP POLICY IF EXISTS push_subs_insert ON public.push_subscriptions;
+DROP POLICY IF EXISTS push_subs_update ON public.push_subscriptions;
+DROP POLICY IF EXISTS push_subs_delete ON public.push_subscriptions;
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- END OF INITIAL SCHEMA — verify with: SELECT count(*) FROM information_schema.tables WHERE table_schema='public';
--- Expected: 22 tables (20 base + feature_flags + theme_config) + 2 views.
+-- Expected: 23 tables (20 base + feature_flags + theme_config + admin_users) + 2 views.
 -- ═══════════════════════════════════════════════════════════════════════════

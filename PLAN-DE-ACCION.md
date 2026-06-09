@@ -67,6 +67,7 @@
 | 4.7 | Sentry sourcemaps (`@sentry/vite-plugin`) + activar Seer — tarea pendiente #1 de CLAUDE.md | 7 |
 | 4.8 | Mensajes de error utiles en checkout: propagar el mensaje del server (429, producto no disponible) en vez del generico | 1 |
 | 4.9 | Set completo de iconos PWA para LNP y mala-miga | 7 |
+| 4.10 | **Script `deploy-functions.mjs`**: deploya supabase/functions/ identico a los 3 tenants (una sola fuente de verdad, evita drift tipo verify_jwt). Detectado en Sprint 0: LNP tenia el fix de create-payment-preference y Cochi/MM no | S0 |
 
 ## Sprint 5 — Escala (cuando haya cliente #4 en puerta)
 
