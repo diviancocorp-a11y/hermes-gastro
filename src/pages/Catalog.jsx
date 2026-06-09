@@ -613,6 +613,7 @@ export default function Catalog() {
         }
       }
       setOrderId(result.orderId);
+      try { localStorage.setItem("cp_last_order", result.orderId); } catch { /* ignore */ }
       // Mostrar animación de confirmación
       setConfirmAnim(true);
       setCart([]);
@@ -655,7 +656,7 @@ export default function Catalog() {
   if (confirmAnim) return <ConfirmationAnimation />;
 
   // --- VISTA: PEDIDO ENVIADO ---
-  if (sent) return <OrderSentView orderId={orderId} form={form} receiptFile={receiptFile} onReset={() => { setSent(false); setOrderId(null); setShowCk(false); }} />;
+  if (sent) return <OrderSentView orderId={orderId} form={form} receiptFile={receiptFile} settings={sett} onReset={() => { setSent(false); setOrderId(null); setShowCk(false); }} />;
 
   // --- VISTA: CHECKOUT STEPPER ---
   if (showCk) {

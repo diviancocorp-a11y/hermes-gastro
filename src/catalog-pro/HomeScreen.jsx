@@ -43,6 +43,9 @@ export default function HomeScreen({
   onDecCart,
   onRemoveCart,
 }) {
+  // Link de "seguir mi pedido" si hay un pedido reciente (Catalog lo guarda al confirmar).
+  let lastOrder = null;
+  try { lastOrder = localStorage.getItem("cp_last_order"); } catch { /* ignore */ }
   const cartQtyById = (id) => {
     const item = (cart || []).find(c => c.id === id || c.product_id === id);
     return item ? item.qty : 0;
@@ -251,6 +254,18 @@ export default function HomeScreen({
 
       {/* ===== EDITORIAL ===== */}
       <div style={{ padding: "28px 22px 44px" }}>
+        {lastOrder && (
+          <a href={"/order/" + lastOrder} style={{
+            display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 14,
+            padding: "9px 14px", borderRadius: 999,
+            background: "color-mix(in oklab, var(--ac) 12%, var(--bg))",
+            border: "1px solid color-mix(in oklab, var(--ac) 35%, var(--line))",
+            color: "var(--ac)", fontSize: 13, fontWeight: 700, textDecoration: "none",
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ac)", display: "inline-block" }} />
+            Seguí tu pedido en vivo →
+          </a>
+        )}
         <h1 className="h-1" style={{ margin: 0, fontSize: 32 }}>
           ¿Qué te <RotatingVerb words={["tienta", "seduce", "atrae"]} /> hoy?
         </h1>

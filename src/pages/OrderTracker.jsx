@@ -107,17 +107,17 @@ export default function OrderTracker() {
 
   // ─── Loading ──────────────────────────────────────
   if (loading) return (
-    <div className="tracker-shell">
+    <div className="tracker-shell cp-root">
       <div className="tracker-loading">
-        <div className="tracker-logo">🦆</div>
-        <p>Buscando el pato pedido<Dots /></p>
+        <div className="tracker-logo">📦</div>
+        <p>Buscando tu pedido<Dots /></p>
       </div>
     </div>
   );
 
   // ─── No encontrado ────────────────────────────────
   if (notFound) return (
-    <div className="tracker-shell">
+    <div className="tracker-shell cp-root">
       <div className="tracker-notfound">
         <div style={{ fontSize: 56 }}>🔍</div>
         <h2>Pedido no encontrado</h2>
@@ -131,14 +131,11 @@ export default function OrderTracker() {
   const stepIdx     = isCancelled ? -1 : (STEP_IDX[order.status] ?? 0);
 
   return (
-    <div className="tracker-shell">
+    <div className="tracker-shell cp-root">
       {/* Header */}
       <div className="tracker-header">
-        <Link to="/" className="tracker-logo-link">
-          <div className="tracker-logo">🦆</div>
-        </Link>
         <div>
-          <h1 className="tracker-title">Sigue tu pato pedido</h1>
+          <h1 className="tracker-title">Seguí tu pedido en vivo</h1>
           <p className="tracker-sub">Seguimiento en tiempo real</p>
         </div>
       </div>
@@ -180,7 +177,7 @@ export default function OrderTracker() {
       <div className="tracker-summary">
         <div className="tracker-summary-hd" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span>📦 Tu pedido</span>
-          <span style={{fontSize:13,fontWeight:700,color:"var(--pr,#C45D3E)",letterSpacing:1}}>{formatOrderCode(resolvedId||id)}</span>
+          <span style={{fontSize:13,fontWeight:700,color:"var(--ac)",letterSpacing:1}}>{formatOrderCode(resolvedId||id)}</span>
         </div>
         <div className="tracker-summary-info">
           <span>👤 {order.customer}</span>

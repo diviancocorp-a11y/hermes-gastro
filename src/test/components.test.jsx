@@ -98,12 +98,12 @@ describe('OrderSentView', () => {
   });
 
   it('shows pickup info for retiro delivery', () => {
-    render(<OrderSentView {...baseProps} />);
+    render(<OrderSentView {...baseProps} settings={{ store_address: 'Andrés Chazarreta 1435' }} />);
     expect(screen.getByText(/Andrés Chazarreta 1435/)).toBeInTheDocument();
   });
 
   it('hides pickup info for envío delivery', () => {
-    render(<OrderSentView {...baseProps} form={{ payment: 'efectivo', delivery: 'envio' }} />);
+    render(<OrderSentView {...baseProps} form={{ payment: 'efectivo', delivery: 'envio' }} settings={{ store_address: 'Andrés Chazarreta 1435' }} />);
     expect(screen.queryByText(/Andrés Chazarreta/)).not.toBeInTheDocument();
   });
 
