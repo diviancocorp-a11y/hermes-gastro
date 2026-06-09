@@ -515,6 +515,7 @@ export default function Catalog() {
       email: user ? user.email : form.email,
       delivery: form.delivery,
       payment: form.payment,
+      payment_account_id: form.payment_account_id || null,
       address: fullAddress,
       note: finalNote,
       is_gift: form.is_gift,

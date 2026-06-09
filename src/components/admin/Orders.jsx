@@ -432,7 +432,7 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
               <span style={{fontWeight:700,color:"#fff",fontSize:10,background:"rgba(255,255,255,0.2)",padding:"2px 8px",borderRadius:6}}>{formatOrderCode(o.id)}</span>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:13,color:"rgba(255,255,255,0.7)",textTransform:"capitalize"}}>{o.payment==="mercadopago"?"MercadoPago":o.payment}</span>
+              <span style={{fontSize:13,color:"rgba(255,255,255,0.7)",textTransform:"capitalize"}}>{o.payment_account_snapshot?.label || (o.payment==="mercadopago"?"MercadoPago":o.payment)}</span>
               <span style={{fontSize:22,fontWeight:800,color:"#4CAF50",fontFamily:"'DM Serif Display',monospace"}}>$ {formatInt(o.total)}</span>
             </div>
             <div style={{marginTop:8,fontSize:12,color:"rgba(255,255,255,0.5)"}}>Verificá que el monto y la cuenta destino coincidan con el comprobante</div>

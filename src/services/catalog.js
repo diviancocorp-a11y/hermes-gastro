@@ -130,6 +130,7 @@ export async function submitOrder(orderData) {
         email: validated.email,
         delivery: validated.delivery,
         payment: validated.payment,
+        payment_account_id: validated.payment_account_id || null,
         note: validated.note,
         items: validated.items.map(item => ({ recipeId: item.recipeId, qty: item.qty })),
         coupon_code: validated.coupon_code || null,

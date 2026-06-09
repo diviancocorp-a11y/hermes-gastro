@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   try {
-    const { data: cfg } = await supabase.from("settings").select("cat_groups, daily_deals, deal_pct").eq("id", 1).single();
+    const { data: cfg } = await supabase.from("settings").select("cat_groups, daily_deals, deal_pct, payment_accounts").eq("id", 1).single();
     const catGroups = (cfg?.cat_groups || []);
     const dailyDeals = (cfg?.daily_deals || {});
     const dealPct = (cfg?.deal_pct ?? 15);
@@ -44,7 +44,20 @@ Deno.serve(async (req) => {
     const phone = (body.phone || "").replace(/\D/g, "").slice(0, 20);
     const email = body.email ? body.email.trim().toLowerCase().slice(0, 200) : null;
     const delivery = ["retiro", "envio"].includes(body.delivery) ? body.delivery : "retiro";
-    const payment = ["efectivo", "transferencia", "mercadopago"].includes(body.payment) ? body.payment : "efectivo";
+    // Medio de pago + cuenta. El snapshot lo arma el server desde settings (anti-spoof).
+    const paymentAccounts = Array.isArray(cfg?.payment_accounts) ? cfg.payment_accounts : [];
+    let payment = "efectivo";
+    let paymentAccountId = null;
+    let paymentAccountSnapshot = null;
+    if (body.payment_account_id) {
+      const acc = paymentAccounts.find((a) => a.id === body.payment_account_id && a.active !== false);
+      if (!acc) return jsonRes({ error: "Cuenta de pago no válida" }, 400);
+      payment = "transferencia"; // bucket legacy; el detalle exacto va en el snapshot
+      paymentAccountId = acc.id;
+      paymentAccountSnapshot = { id: acc.id, label: acc.label || "", banco: acc.banco || "", titular: acc.titular || "", alias: acc.alias || "", cbu: acc.cbu || "" };
+    } else if (["efectivo", "transferencia", "mercadopago", "tarjeta"].includes(body.payment)) {
+      payment = body.payment; // compat clientes viejos (sin account_id)
+    }
     const note = body.note ? body.note.trim().slice(0, 500) : null;
     const isGift = body.is_gift === true;
     const giftNote = body.gift_note ? body.gift_note.trim().slice(0, 300) : "";
@@ -88,7 +101,7 @@ Deno.serve(async (req) => {
     const tipAmount = Math.round(serverTotal * tipPct / 100);
     const finalTotal = Math.max(0, serverTotal - validDiscount) + tipAmount;
     if (email) await supabase.from("customers").upsert({ email, name: customer, phone, last_order_at: new Date().toISOString() }, { onConflict: "email" });
-    const { data: order, error: orderError } = await supabase.from("orders").insert({ status: "new", date: new Date().toISOString().split("T")[0], customer, phone, email, delivery, payment, note, total: finalTotal, is_gift: isGift, gift_note: giftNote, coupon_id: validCouponId, discount: validDiscount, tip_pct: tipPct, tip_amount: tipAmount, delivery_date: deliveryDate, user_id: userId }).select("id").single();
+    const { data: order, error: orderError } = await supabase.from("orders").insert({ status: "new", date: new Date().toISOString().split("T")[0], customer, phone, email, delivery, payment, payment_account_id: paymentAccountId, payment_account_snapshot: paymentAccountSnapshot, note, total: finalTotal, is_gift: isGift, gift_note: giftNote, coupon_id: validCouponId, discount: validDiscount, tip_pct: tipPct, tip_amount: tipAmount, delivery_date: deliveryDate, user_id: userId }).select("id").single();
     if (orderError || !order) { console.error("Error creando pedido:", orderError); return jsonRes({ error: "Error al crear el pedido" }, 500); }
     if (validCouponId) await supabase.from("coupons").update({ used: true, used_at: new Date().toISOString() }).eq("id", validCouponId);
     const costMap = {};

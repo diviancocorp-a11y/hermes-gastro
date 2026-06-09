@@ -69,13 +69,23 @@ export default function CheckoutScreen(props) {
     (!form.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) &&
     minOk;
   const canNext1 = form.delivery === "retiro" || (form.delivery === "envio" && form.address.trim().length > 3);
-  // Fix de validacion: efectivo requiere que se haya elegido "justo" o un monto.
-  const canNext2 =
-    !!form.payment &&
-    (form.payment !== "efectivo" || form.change_amount === "justo" || (form.change_amount && Number(form.change_amount) > 0));
-  const needsReceipt =
-    form.payment === "transferencia" ||
-    (form.payment === "mercadopago" && !mpConnected);
+
+  // Cuentas de pago (settings.payment_accounts) = unica fuente. Efectivo implicito.
+  const paymentAccounts = (Array.isArray(settings?.payment_accounts) ? settings.payment_accounts : [])
+    .filter(a => a && a.active !== false)
+    .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+  const selectedAccount = form.payment_account_id
+    ? (paymentAccounts.find(a => a.id === form.payment_account_id) || null)
+    : null;
+  // MP pasarela (integracion API): proceso externo, se cobra solo, sin comprobante.
+  const isGateway = !form.payment_account_id && form.payment === "mercadopago" && mpConnected;
+  const isEfectivo = !form.payment_account_id && !isGateway;
+
+  const canNext2 = isEfectivo
+    ? (form.change_amount === "justo" || (form.change_amount && Number(form.change_amount) > 0))
+    : (!!selectedAccount || isGateway);
+  // Toda cuenta registrada es manual: pide comprobante (gating en el paso final).
+  const needsReceipt = !!selectedAccount;
 
   const goNext = () => onStepChange(Math.min(step + 1, 3));
   const goBack = () => { if (step === 0) onClose(); else onStepChange(step - 1); };
@@ -113,8 +123,8 @@ export default function CheckoutScreen(props) {
       <div style={{ padding: "18px 22px 0" }}>
         {step === 0 && <Step0Datos {...props} canNext={canNext0} onNext={goNext} minOrder={minOrder} minOk={minOk} ct={ct} />}
         {step === 1 && <Step1Entrega {...props} canNext={canNext1} onNext={goNext} />}
-        {step === 2 && <Step2Pago {...props} canNext={canNext2} needsReceipt={needsReceipt} onNext={goNext} />}
-        {step === 3 && <Step3Resumen {...props} />}
+        {step === 2 && <Step2Pago {...props} accounts={paymentAccounts} selectedAccount={selectedAccount} canNext={canNext2} needsReceipt={needsReceipt} onNext={goNext} />}
+        {step === 3 && <Step3Resumen {...props} accounts={paymentAccounts} selectedAccount={selectedAccount} needsReceipt={needsReceipt} />}
       </div>
     </div>
   );
@@ -389,27 +399,40 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
 }
 
 // ─── PASO 2: Pago ──────────────────────────────────────────────────
-function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, ct, ctWithDelivery, deliveryCost, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, canNext, needsReceipt, onNext }) {
+function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, accounts, selectedAccount, ct, ctWithDelivery, deliveryCost, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, canNext, needsReceipt, onNext }) {
   return (
     <>
       <div style={section}>
         <label style={labelStyle}>Medio de pago</label>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {payments.map(pm => {
-            const HINTS = {
-              efectivo: "Pagas al recibir",
-              transferencia: "Transferi y subi el comprobante",
-              mercadopago: mpConnected ? "Checkout seguro de MercadoPago" : "Paga con alias y subi comprobante",
-              tarjeta: "Al recibir, con POS",
-            };
+          <CardOption
+            active={!form.payment_account_id && form.payment !== "mercadopago"}
+            onClick={() => { sf("payment", "efectivo"); sf("payment_account_id", null); setReceiptFile(null); setReceiptPreview(null); }}
+            icon="💵"
+            title="Efectivo"
+            subtitle="Pagás al recibir"
+          />
+          {mpConnected && (
+            <CardOption
+              active={!form.payment_account_id && form.payment === "mercadopago"}
+              onClick={() => { sf("payment", "mercadopago"); sf("payment_account_id", null); setReceiptFile(null); setReceiptPreview(null); }}
+              icon="💳"
+              title="MercadoPago (pago online)"
+              subtitle="Pagás online al confirmar"
+            />
+          )}
+          {accounts.map(acc => {
+            const sub = acc.alias ? "Alias: " + acc.alias
+              : acc.cbu ? "CBU ···" + String(acc.cbu).slice(-4)
+              : "Coordiná con el local";
             return (
               <CardOption
-                key={pm}
-                active={form.payment === pm}
-                onClick={() => { sf("payment", pm); setReceiptFile(null); setReceiptPreview(null); }}
-                icon={paymentIcon(pm)}
-                title={paymentLabel(pm)}
-                subtitle={HINTS[pm] || "Coordina con el local al confirmar"}
+                key={acc.id}
+                active={form.payment_account_id === acc.id}
+                onClick={() => { sf("payment", "transferencia"); sf("payment_account_id", acc.id); setReceiptFile(null); setReceiptPreview(null); }}
+                icon="🏦"
+                title={acc.banco || acc.label}
+                subtitle={sub}
               />
             );
           })}
@@ -417,7 +440,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
       </div>
 
       {/* Detalles efectivo */}
-      {form.payment === "efectivo" && (
+      {!form.payment_account_id && (
         <div style={detailBox}>
           <div style={labelStyle}>¿Con cuanto pagas?</div>
           <div style={{ display: "flex", gap: 10 }}>
@@ -436,20 +459,8 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
         </div>
       )}
 
-      {/* Detalles transferencia */}
-      {form.payment === "transferencia" && (
-        <PayBankBox
-          label="CBU"
-          value="0000003100000535412820"
-          amount={ctWithDelivery}
-          receiptFile={receiptFile} setReceiptFile={setReceiptFile}
-          receiptPreview={receiptPreview} setReceiptPreview={setReceiptPreview}
-          receiptStatus={receiptStatus}
-        />
-      )}
-
-      {/* MP conectado */}
-      {form.payment === "mercadopago" && mpConnected && (
+      {/* MP pasarela (integracion API): redirige al checkout de MP */}
+      {!form.payment_account_id && form.payment === "mercadopago" && mpConnected && (
         <div style={detailBox}>
           <div style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 24, height: 24, borderRadius: 6, background: "#009EE3", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 11 }}>MP</span>
@@ -462,16 +473,9 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
         </div>
       )}
 
-      {/* MP manual (sin conexion) */}
-      {form.payment === "mercadopago" && !mpConnected && (
-        <PayBankBox
-          label="Alias"
-          value="pato.jhs"
-          amount={ctWithDelivery}
-          receiptFile={receiptFile} setReceiptFile={setReceiptFile}
-          receiptPreview={receiptPreview} setReceiptPreview={setReceiptPreview}
-          receiptStatus={receiptStatus}
-        />
+      {/* Cuenta manual: datos para transferir (el comprobante se sube en el resumen) */}
+      {selectedAccount && (
+        <PayBankBox account={selectedAccount} amount={ctWithDelivery} />
       )}
 
       {/* Propina (movida desde el carrito: el cliente la decide aca, cuando ya sabe envio + total) */}
@@ -595,13 +599,13 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
 
       {/* Regalo + notas: movidos al carrito (#146), antes de entrar al checkout */}
 
-      <NextButton disabled={!canNext || (needsReceipt && !receiptFile)} onClick={onNext} label={needsReceipt && !receiptFile ? "Subí el comprobante para continuar" : "Siguiente"} />
+      <NextButton disabled={!canNext} onClick={onNext} label="Siguiente" />
     </>
   );
 }
 
 // ─── PASO 3: Resumen ───────────────────────────────────────────────
-function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, ctWithDelivery, discount, coupon, tip, tipCustom, tipAmount, receiptFile, sending, orderErr, onSubmit, settings }) {
+function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, ctWithDelivery, discount, coupon, tip, tipCustom, tipAmount, selectedAccount, needsReceipt, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, sending, orderErr, onSubmit, settings }) {
   return (
     <>
       <div style={section}>
@@ -623,8 +627,8 @@ function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, 
       <div style={section}>
         <div style={miniLabel}>Pago</div>
         <div style={{ ...summaryVal, textTransform: "capitalize" }}>
-          {form.payment === "mercadopago" ? "MercadoPago" : form.payment}
-          {form.payment === "efectivo" && form.change_amount ? ` — ${form.change_amount === "justo" ? "Pago justo" : `Paga con $${form.change_amount}`}` : ""}
+          {selectedAccount ? (selectedAccount.banco || selectedAccount.label) : (form.payment === "mercadopago" ? "MercadoPago" : "Efectivo")}
+          {!form.payment_account_id && form.payment !== "mercadopago" && form.change_amount ? ` — ${form.change_amount === "justo" ? "Pago justo" : `Paga con $${form.change_amount}`}` : ""}
         </div>
         {receiptFile && <div style={{ ...summaryVal, fontSize: 12, color: "var(--ok, #2A9D6E)" }}>Comprobante adjunto</div>}
         {coupon && <div style={{ ...summaryVal, fontSize: 12, color: "var(--ok, #2A9D6E)" }}>Cupón -{coupon.discount_pct}%</div>}
@@ -675,19 +679,31 @@ function Step3Resumen({ form, scheduleMode, cart, deliveryCost, deliveryKm, ct, 
         </div>
       </div>
 
+      {needsReceipt && (
+        <div style={section}>
+          <div style={miniLabel}>Comprobante de pago</div>
+          <p style={{ fontSize: 12, color: "var(--t3)", margin: "2px 0 10px" }}>Cargá la foto o PDF de tu comprobante para desbloquear el botón.</p>
+          <ReceiptUploader
+            receiptFile={receiptFile} setReceiptFile={setReceiptFile}
+            receiptPreview={receiptPreview} setReceiptPreview={setReceiptPreview}
+            receiptStatus={receiptStatus}
+          />
+        </div>
+      )}
+
       {orderErr && <div style={{ background: "var(--err-soft, rgba(220,38,38,0.1))", color: "var(--err, #C62828)", fontSize: 13, padding: "10px 14px", borderRadius: 10, marginBottom: 12, textAlign: "center", border: "1px solid var(--err, #C62828)" }}>{orderErr}</div>}
 
       <button
-        disabled={sending || ctWithDelivery === 0}
+        disabled={sending || ctWithDelivery === 0 || (needsReceipt && !receiptFile)}
         onClick={onSubmit}
         style={{
           ...btnPrimary,
-          background: sending || ctWithDelivery === 0 ? "var(--b3)" : "var(--ok, #2A9D6E)",
-          color: sending || ctWithDelivery === 0 ? "var(--t3)" : "#fff",
-          cursor: sending || ctWithDelivery === 0 ? "not-allowed" : "pointer",
+          background: (sending || ctWithDelivery === 0 || (needsReceipt && !receiptFile)) ? "var(--b3)" : "var(--ok, #2A9D6E)",
+          color: (sending || ctWithDelivery === 0 || (needsReceipt && !receiptFile)) ? "var(--t3)" : "#fff",
+          cursor: (sending || ctWithDelivery === 0 || (needsReceipt && !receiptFile)) ? "not-allowed" : "pointer",
           fontSize: 16, height: 56,
         }}
-      >{sending ? "Enviando..." : "Confirmar pedido"}</button>
+      >{sending ? "Enviando..." : (needsReceipt && !receiptFile ? "Cargá el comprobante" : "Confirmar pedido")}</button>
     </>
   );
 }
@@ -766,62 +782,78 @@ function NextButton({ disabled, onClick, label = "Siguiente" }) {
   );
 }
 
-function PayBankBox({ label, value, amount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus }) {
-  const [copied, setCopied] = useState(false);
-  const onCopy = () => {
-    navigator.clipboard?.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+function PayBankBox({ account, amount }) {
+  const [copied, setCopied] = useState("");
+  const copy = (key, val) => {
+    if (!val) return;
+    navigator.clipboard?.writeText(val);
+    setCopied(key);
+    setTimeout(() => setCopied(""), 1500);
   };
+  const rows = [
+    account.alias ? { key: "alias", label: "Alias", value: account.alias } : null,
+    account.cbu ? { key: "cbu", label: "CBU / CVU", value: account.cbu } : null,
+  ].filter(Boolean);
   return (
     <div style={detailBox}>
-      <div style={{ ...labelStyle, marginBottom: 12 }}>{label === "CBU" ? "Datos para transferir" : "Pagá con MercadoPago"}</div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "12px 14px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 12 }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontSize: 11, color: "var(--t3)", marginBottom: 2 }}>{label}</div>
-          <div style={{ fontWeight: 700, fontSize: 14, color: "var(--tx)", letterSpacing: 0.5, overflowWrap: "anywhere" }}>{value}</div>
+      <div style={{ ...labelStyle, marginBottom: 12 }}>{"Datos para pagar" + (account.banco ? " — " + account.banco : "")}</div>
+      {account.titular && (
+        <div style={{ fontSize: 12.5, color: "var(--t2)", marginBottom: 8 }}>Titular: <strong style={{ color: "var(--tx)" }}>{account.titular}</strong></div>
+      )}
+      {rows.map(r => (
+        <div key={r.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "12px 14px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 12, marginBottom: 8 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 11, color: "var(--t3)", marginBottom: 2 }}>{r.label}</div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: "var(--tx)", letterSpacing: 0.5, overflowWrap: "anywhere" }}>{r.value}</div>
+          </div>
+          <button onClick={() => copy(r.key, r.value)} style={{
+            padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ac)",
+            background: copied === r.key ? "var(--ac)" : "transparent",
+            color: copied === r.key ? "#fff" : "var(--ac)",
+            fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
+          }}>{copied === r.key ? "✓ Copiado" : "Copiar"}</button>
         </div>
-        <button onClick={onCopy} style={{
-          padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ac)",
-          background: copied ? "var(--ac)" : "transparent",
-          color: copied ? "#fff" : "var(--ac)",
-          fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
-        }}>{copied ? "✓ Copiado" : `Copiar ${label.toLowerCase()}`}</button>
-      </div>
-      <div style={{ marginTop: 14, fontSize: 14, color: "var(--tx)", fontWeight: 700 }}>
-        Monto a {label === "CBU" ? "transferir" : "pagar"}: <span style={{ color: "var(--ac)" }}>{fmtAR(amount)}</span>
+      ))}
+      <div style={{ marginTop: 6, fontSize: 14, color: "var(--tx)", fontWeight: 700 }}>
+        Monto a transferir: <span style={{ color: "var(--ac)" }}>{fmtAR(amount)}</span>
       </div>
 
-      <div style={{ marginTop: 18 }}>
-        <div style={{ ...labelStyle, marginBottom: 8 }}>Subí tu comprobante</div>
-        <label style={{
-          display: "block", padding: 18, background: "var(--bg)",
-          border: "1.5px dashed var(--line)", borderRadius: 12, cursor: "pointer", textAlign: "center",
-        }}>
-          <input type="file" accept="image/*,.pdf" style={{ display: "none" }} onChange={e => {
-            const file = e.target.files?.[0]; if (!file) return;
-            setReceiptFile(file);
-            if (file.type.startsWith("image/")) {
-              const reader = new FileReader();
-              reader.onload = ev => setReceiptPreview(ev.target.result);
-              reader.readAsDataURL(file);
-            } else { setReceiptPreview(null); }
-          }} />
-          {receiptPreview ? (
-            <img src={receiptPreview} alt="Comprobante" style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 10 }} />
-          ) : receiptFile ? (
-            <div style={{ color: "var(--tx)" }}><div style={{ fontSize: 28 }}>📄</div><div style={{ fontSize: 13, marginTop: 6 }}>{receiptFile.name}</div></div>
-          ) : (
-            <div style={{ color: "var(--t3)" }}>
-              <div style={{ fontSize: 28 }}>📸</div>
-              <div style={{ fontSize: 13, marginTop: 6 }}>Tocá para subir foto o PDF</div>
-            </div>
-          )}
-        </label>
-        {receiptFile && receiptStatus === "" && <p style={hint("ok")}>Comprobante cargado — se verificará al confirmar</p>}
-        {receiptStatus === "ok" && <p style={hint("ok")}>Comprobante verificado</p>}
-        {receiptStatus === "error" && <p style={hint("err")}>No pudimos verificar — lo revisaremos manualmente</p>}
-      </div>
+    </div>
+  );
+}
+
+// Subida de comprobante reutilizable. Se usa en el resumen (Step3) y desbloquea
+// el boton de "Realizar pedido".
+function ReceiptUploader({ receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus }) {
+  return (
+    <div>
+      <label style={{
+        display: "block", padding: 18, background: "var(--bg)",
+        border: "1.5px dashed var(--line)", borderRadius: 12, cursor: "pointer", textAlign: "center",
+      }}>
+        <input type="file" accept="image/*,.pdf" style={{ display: "none" }} onChange={e => {
+          const file = e.target.files?.[0]; if (!file) return;
+          setReceiptFile(file);
+          if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onload = ev => setReceiptPreview(ev.target.result);
+            reader.readAsDataURL(file);
+          } else { setReceiptPreview(null); }
+        }} />
+        {receiptPreview ? (
+          <img src={receiptPreview} alt="Comprobante" style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 10 }} />
+        ) : receiptFile ? (
+          <div style={{ color: "var(--tx)" }}><div style={{ fontSize: 28 }}>📄</div><div style={{ fontSize: 13, marginTop: 6 }}>{receiptFile.name}</div></div>
+        ) : (
+          <div style={{ color: "var(--t3)" }}>
+            <div style={{ fontSize: 28 }}>📸</div>
+            <div style={{ fontSize: 13, marginTop: 6 }}>Tocá para subir foto o PDF</div>
+          </div>
+        )}
+      </label>
+      {receiptFile && receiptStatus === "" && <p style={hint("ok")}>Comprobante cargado ✓</p>}
+      {receiptStatus === "ok" && <p style={hint("ok")}>Comprobante verificado</p>}
+      {receiptStatus === "error" && <p style={hint("err")}>No pudimos verificar — lo revisaremos manualmente</p>}
     </div>
   );
 }

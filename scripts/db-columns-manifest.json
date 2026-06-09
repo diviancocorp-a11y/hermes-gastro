@@ -141,6 +141,7 @@
         "user_id",
         "tip_pct",
         "tip_amount",
+        "payment_account_id",
         "delivery_channel",
         "platform_commission_amt"
       ]
