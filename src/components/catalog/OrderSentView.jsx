@@ -1,17 +1,19 @@
 // src/catalog-pro/OrderSentView.jsx
-// Pantalla post-checkout: codigo pedido + tracking + retiro (dinamico) + WA.
-// La direccion de retiro sale de settings.store_address (no hardcodeada).
+// Pantalla post-checkout: usa el TEMA del catalogo (cp-root + tokens --*).
+// Direccion de retiro dinamica (settings.store_address). Recibe un snapshot
+// del form (el form vivo del catalogo se resetea al confirmar).
 
 import { useState } from "react";
 import { Icon, formatOrderCode } from "../../lib/utils";
-import business, { waLink } from "@business";
+import { waLink } from "@business";
 import { upsertCustomer } from "../../services/phoneAuth";
 import { setGuestUser, getGuestUser } from "../../lib/guestUser";
+
+const GREEN = "#16A34A";
 
 export default function OrderSentView({ orderId, form, receiptFile, onReset, settings = {} }) {
   const [copiedCode, setCopiedCode] = useState(false);
   const wasPaidDigital = form.payment === "transferencia" || form.payment === "mercadopago";
-  const primary = business.branding?.primary || "var(--ag-c-terra)";
   const storeAddress = settings?.store_address || "";
   const mapsHref = storeAddress
     ? ("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(storeAddress))
@@ -27,30 +29,31 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
 
   return (
     <div
+      className="cp-root cp-surface"
       data-testid="order-confirmation"
       style={{
-        position: "fixed", inset: 0, background: "var(--ag-bg, #fafaf7)",
+        position: "fixed", inset: 0, background: "var(--bg)", color: "var(--tx)",
         zIndex: 250, overflowY: "auto",
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start",
-        padding: "32px 18px", fontFamily: "system-ui, -apple-system, sans-serif",
+        padding: "32px 18px",
       }}
     >
       <div style={{ width: "100%", maxWidth: 440, textAlign: "center" }}>
 
         <div style={{
           width: 88, height: 88, margin: "0 auto 16px", borderRadius: "50%",
-          background: "var(--ag-c-sales, #3a8a4a)",
+          background: GREEN,
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 12px 28px rgba(58,138,74,0.25)",
+          boxShadow: "0 12px 28px rgba(22,163,74,0.28)",
         }}>
           {Icon.check({ size: 44, color: "#fff" })}
         </div>
 
-        <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 28, margin: "0 0 12px", color: "var(--ag-ink, #1a1a1a)" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 28, margin: "0 0 12px", color: "var(--tx)" }}>
           ¡Pedido confirmado!
         </h2>
 
-        <p style={{ fontSize: 14, color: "var(--ag-ink-3)", lineHeight: 1.6, margin: "0 0 24px" }}>
+        <p style={{ fontSize: 14, color: "var(--t2)", lineHeight: 1.6, margin: "0 0 24px" }}>
           {wasPaidDigital && receiptFile
             ? "Tu comprobante fue recibido. Lo estamos verificando y tu pedido pasará a preparación en breve."
             : wasPaidDigital
@@ -64,58 +67,56 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
               style={{
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 padding: "12px 18px", borderRadius: 12,
-                background: primary, color: "#fff",
-                fontSize: 14, fontWeight: 700, textDecoration: "none",
-                marginBottom: 18, boxShadow: "0 6px 18px " + primary + "40",
+                background: "var(--ac)", color: "#fff",
+                fontSize: 14, fontWeight: 700, textDecoration: "none", marginBottom: 18,
               }}
             >
               🔴 Seguir mi pedido en vivo
             </a>
 
             <div style={{
-              padding: "14px 16px", background: "var(--ag-bg-soft)",
-              border: "1px solid var(--ag-line)", borderRadius: 12,
+              padding: "14px 16px", background: "var(--b2)",
+              border: "1px solid var(--line)", borderRadius: 12,
               marginBottom: 14, textAlign: "center",
             }}>
-              <div style={{ fontSize: 11, color: "var(--ag-ink-3)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+              <div style={{ fontSize: 11, color: "var(--t3)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
                 📋 Código de tu pedido
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-                <code style={{ fontSize: 22, fontWeight: 700, color: "var(--ag-ink)", letterSpacing: 2, fontFamily: "'DM Serif Display', monospace" }}>
+                <code style={{ fontSize: 22, fontWeight: 700, color: "var(--tx)", letterSpacing: 2, fontFamily: "var(--font-heading)" }}>
                   {formatOrderCode(orderId)}
                 </code>
                 <button onClick={copyCode}
                   style={{
                     flexShrink: 0, padding: "6px 14px",
-                    background: copiedCode ? "var(--ag-c-sales)" : primary,
+                    background: copiedCode ? GREEN : "var(--ac)",
                     color: "#fff", border: "none", borderRadius: 8,
-                    fontSize: 12, fontWeight: 700, fontFamily: "inherit",
-                    cursor: "pointer", transition: "background .2s",
+                    fontSize: 12, fontWeight: 700, fontFamily: "inherit", cursor: "pointer",
                   }}
                 >
                   {copiedCode ? "✓ Copiado" : "Copiar"}
                 </button>
               </div>
-              <p style={{ fontSize: 11, color: "var(--ag-ink-3)", margin: "8px 0 0", lineHeight: 1.4 }}>
+              <p style={{ fontSize: 11, color: "var(--t3)", margin: "8px 0 0", lineHeight: 1.4 }}>
                 Usá este código para reclamos, factura o seguimiento.
               </p>
             </div>
 
             {form.delivery === "retiro" && storeAddress && (
               <div style={{
-                padding: "14px 16px", background: "var(--ag-bg-soft)",
-                border: "1px solid var(--ag-line)", borderRadius: 12,
+                padding: "14px 16px", background: "var(--b2)",
+                border: "1px solid var(--line)", borderRadius: 12,
                 marginBottom: 14, textAlign: "left",
               }}>
-                <div style={{ fontSize: 11, color: "var(--ag-ink-3)", marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                <div style={{ fontSize: 11, color: "var(--t3)", marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                   📍 Retirá en
                 </div>
-                <div style={{ fontSize: 14, color: "var(--ag-ink)", lineHeight: 1.5, marginBottom: 10 }}>
+                <div style={{ fontSize: 14, color: "var(--tx)", lineHeight: 1.5, marginBottom: 10 }}>
                   {storeAddress}
                 </div>
                 {mapsHref && (
                   <a href={mapsHref} target="_blank" rel="noopener noreferrer"
-                    style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ag-c-prep)", fontWeight: 700, textDecoration: "none" }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ac)", fontWeight: 700, textDecoration: "none" }}
                   >
                     📌 Ver en Google Maps
                   </a>
@@ -125,7 +126,9 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
           </>
         )}
 
-        <ProfileCaptureCard form={form} />
+        {/* Card 1: cupones (email) — Card 2: cumpleaños */}
+        <EmailCard form={form} />
+        <BirthdayCard form={form} />
 
         {wasPaidDigital && (
           <a href={waLink("Hola! Acabo de hacer un pedido y tengo una consulta")}
@@ -142,7 +145,7 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
 
         <button onClick={onReset}
           style={{
-            marginTop: 4, fontSize: 12, color: "var(--ag-ink-3)",
+            marginTop: 4, fontSize: 12, color: "var(--t3)",
             background: "none", border: "none", cursor: "pointer",
             textDecoration: "underline", padding: 8, fontFamily: "inherit",
           }}
@@ -154,119 +157,110 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
   );
 }
 
-// Captura post-pedido: email (cupones) + cumpleaños (premios/galletas).
-function ProfileCaptureCard({ form }) {
-  const guest = getGuestUser();
-  const hasEmail = !!(form?.email || guest?.email);
-  const hasBday = !!form?.birth_date;
+const cardBox = {
+  padding: 16, background: "var(--b2)",
+  border: "1px dashed var(--line)", borderRadius: 14,
+  marginBottom: 14, textAlign: "left",
+};
+const inputBox = {
+  width: "100%", height: 40, padding: "0 12px",
+  background: "var(--bg)", color: "var(--tx)",
+  border: "1px solid var(--line)", borderRadius: 10,
+  fontFamily: "inherit", fontSize: 13, outline: "none", boxSizing: "border-box",
+};
+const savedBox = {
+  padding: "12px 16px", background: "rgba(22,163,74,0.12)",
+  border: "1px solid rgba(22,163,74,0.4)", borderRadius: 12,
+  marginBottom: 14, fontSize: 13, color: GREEN, textAlign: "center", fontWeight: 600,
+};
+function saveBtn(enabled, saving) {
+  return {
+    width: "100%", height: 42, border: 0, borderRadius: 10,
+    background: enabled ? "var(--ac)" : "var(--b3)",
+    color: enabled ? "#fff" : "var(--t3)",
+    fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+    cursor: enabled ? "pointer" : "not-allowed", opacity: saving ? 0.7 : 1,
+  };
+}
 
+// ─── Card de cupones (email) ───
+function EmailCard({ form }) {
+  const guest = getGuestUser();
   const [email, setEmail] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  if (form?.email) return null; // ya dejó email en el pedido
+
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  const onSave = async () => {
+    if (!valid || saving) return;
+    setSaving(true);
+    try {
+      await upsertCustomer({ phone: form?.phone || guest?.phone, name: form?.name || guest?.name, email: email.trim() });
+      setGuestUser({ id: guest?.id || null, name: guest?.name || form?.name || "", phone: guest?.phone || form?.phone || "", email: email.trim() });
+      setSaved(true);
+    } catch (e) { console.warn("email capture:", e?.message); }
+    finally { setSaving(false); }
+  };
+
+  if (saved) return <div style={savedBox}>✓ ¡Listo! Te vamos a avisar de cupones y descuentos. 🎟️</div>;
+
+  return (
+    <div style={cardBox}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", marginBottom: 4 }}>🎟️ Cupones y descuentos</div>
+      <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--t3)", lineHeight: 1.5 }}>
+        Dejá tu correo y te avisamos cuando haya cupones y promociones exclusivas para vos.
+      </p>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+          placeholder="tu@email.com"
+          onKeyDown={(e) => e.key === "Enter" && valid && onSave()}
+          style={{ ...inputBox, flex: 1 }} />
+        <button type="button" onClick={onSave} disabled={!valid || saving}
+          style={{ ...saveBtn(valid, saving), width: "auto", padding: "0 16px" }}>
+          {saving ? "..." : "Guardar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Card de cumpleaños (premios / galletas) ───
+function BirthdayCard({ form }) {
+  const guest = getGuestUser();
   const [bday, setBday] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  if (hasEmail && hasBday) return null;
-
-  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const emailValid = emailRe.test(email.trim());
-  const canSave = (hasEmail || emailValid) && (hasBday || !!bday);
+  if (form?.birth_date) return null; // ya dejó su cumple en el pedido
 
   const onSave = async () => {
-    if (!canSave || saving) return;
+    if (!bday || saving) return;
     setSaving(true);
     try {
-      const finalEmail = !hasEmail && email.trim() ? email.trim() : (form?.email || guest?.email || null);
-      const finalBday = !hasBday && bday ? bday : (form?.birth_date || null);
-      await upsertCustomer({
-        phone: form?.phone || guest?.phone,
-        name: form?.name || guest?.name,
-        email: finalEmail,
-        birth_date: finalBday,
-      });
-      setGuestUser({
-        id: guest?.id || null,
-        name: guest?.name || form?.name || "",
-        phone: guest?.phone || form?.phone || "",
-        email: finalEmail || guest?.email || "",
-      });
+      await upsertCustomer({ phone: form?.phone || guest?.phone, name: form?.name || guest?.name, birth_date: bday });
       setSaved(true);
-    } catch (e) {
-      console.warn("profile capture:", e?.message);
-    } finally {
-      setSaving(false);
-    }
+    } catch (e) { console.warn("bday capture:", e?.message); }
+    finally { setSaving(false); }
   };
 
-  if (saved) {
-    return (
-      <div style={{
-        padding: "12px 16px", background: "var(--ag-c-sales-soft, #E8F5E9)",
-        border: "1px solid var(--ag-c-sales, #3a8a4a)", borderRadius: 12,
-        marginBottom: 14, fontSize: 13, color: "var(--ag-c-sales, #3a8a4a)", textAlign: "center", fontWeight: 600,
-      }}>
-        ✓ ¡Listo! Te vamos a mimar con cupones y un regalo en tu cumpleaños. 🎂
-      </div>
-    );
-  }
+  if (saved) return <div style={savedBox}>✓ ¡Listo! Te vamos a mimar con un regalo en tu cumpleaños. 🎂</div>;
 
   return (
-    <div style={{
-      padding: 16, background: "var(--ag-bg-soft, #FBF7F2)",
-      border: "1px dashed var(--ag-line, rgba(0,0,0,0.15))", borderRadius: 14,
-      marginBottom: 14, textAlign: "left",
-    }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ag-ink, #2D1B0E)", marginBottom: 4 }}>
-        Sumá beneficios
-      </div>
-      <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--ag-ink-3, #9C8B7A)", lineHeight: 1.5 }}>
-        Dejá tu correo para optar por cupones y descuentos, y tu fecha de nacimiento para premios y galletas gratis en tu cumpleaños. 🎂
+    <div style={cardBox}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)", marginBottom: 4 }}>🎂 Premios de cumpleaños</div>
+      <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--t3)", lineHeight: 1.5 }}>
+        Registrá tu fecha de nacimiento y optá por premios y galletas gratis en tu cumpleaños.
       </p>
-
-      {!hasEmail && (
-        <input
-          type="email" value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="tu@email.com"
-          style={{
-            width: "100%", height: 40, padding: "0 12px", marginBottom: 8,
-            background: "#fff", color: "var(--ag-ink, #2D1B0E)",
-            border: "1px solid var(--ag-line, rgba(0,0,0,0.15))",
-            borderRadius: 10, fontFamily: "inherit", fontSize: 13, outline: "none",
-            boxSizing: "border-box",
-          }}
-        />
-      )}
-
-      {!hasBday && (
-        <label style={{ display: "block", marginBottom: 10 }}>
-          <span style={{ display: "block", fontSize: 11, color: "var(--ag-ink-3, #9C8B7A)", marginBottom: 4 }}>Fecha de nacimiento</span>
-          <input
-            type="date" value={bday}
-            onChange={(e) => setBday(e.target.value)}
-            style={{
-              width: "100%", height: 40, padding: "0 12px",
-              background: "#fff", color: "var(--ag-ink, #2D1B0E)",
-              border: "1px solid var(--ag-line, rgba(0,0,0,0.15))",
-              borderRadius: 10, fontFamily: "inherit", fontSize: 13, outline: "none",
-              boxSizing: "border-box",
-            }}
-          />
-        </label>
-      )}
-
-      <button
-        type="button" onClick={onSave} disabled={!canSave || saving}
-        style={{
-          width: "100%", height: 42, border: 0, borderRadius: 10,
-          background: canSave ? "var(--ag-c-terra, #C45D3E)" : "var(--ag-bg-card, #f3ede4)",
-          color: canSave ? "#fff" : "var(--ag-ink-3, #9C8B7A)",
-          fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-          cursor: canSave ? "pointer" : "not-allowed",
-          opacity: saving ? 0.7 : 1,
-        }}
-      >
-        {saving ? "Guardando..." : "Guardar mis beneficios"}
-      </button>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input type="date" value={bday} onChange={(e) => setBday(e.target.value)} style={{ ...inputBox, flex: 1 }} />
+        <button type="button" onClick={onSave} disabled={!bday || saving}
+          style={{ ...saveBtn(!!bday, saving), width: "auto", padding: "0 16px" }}>
+          {saving ? "..." : "Guardar"}
+        </button>
+      </div>
     </div>
   );
 }

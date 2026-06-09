@@ -75,6 +75,7 @@ export default function Catalog() {
   const [mpConnected, setMpConnected] = useState(false);
   const [orderErr, setOrderErr] = useState("");
   const [form, setForm] = useState({ ...DEFAULT_FORM });
+  const [sentForm, setSentForm] = useState(null); // snapshot del form al confirmar (el form vivo se resetea)
   const [scheduleMode, setScheduleMode] = useState("now"); // "now" | "later"
   const [ckStep, setCkStep] = useState(0); // 0=Datos, 1=Entrega, 2=Pago, 3=Resumen
   const [faqOpen, setFaqOpen] = useState(null); // índice de FAQ abierta
@@ -617,6 +618,7 @@ export default function Catalog() {
       // Mostrar animación de confirmación
       setConfirmAnim(true);
       setCart([]);
+      setSentForm({ ...form });
       setForm({ ...DEFAULT_FORM });
       setScheduleMode("now");
       setCoupon(null); setCouponCode("");
@@ -656,7 +658,7 @@ export default function Catalog() {
   if (confirmAnim) return <ConfirmationAnimation />;
 
   // --- VISTA: PEDIDO ENVIADO ---
-  if (sent) return <OrderSentView orderId={orderId} form={form} receiptFile={receiptFile} settings={sett} onReset={() => { setSent(false); setOrderId(null); setShowCk(false); }} />;
+  if (sent) return <OrderSentView orderId={orderId} form={sentForm || form} receiptFile={receiptFile} settings={sett} onReset={() => { setSent(false); setOrderId(null); setShowCk(false); }} />;
 
   // --- VISTA: CHECKOUT STEPPER ---
   if (showCk) {
