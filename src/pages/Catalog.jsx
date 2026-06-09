@@ -16,7 +16,6 @@ import "../catalog-pro/tokens.css";
 import HomeScreenPro from "../catalog-pro/HomeScreen";
 import AgeGate from "../catalog-pro/AgeGate";
 import WhatsAppFloat from "../catalog-pro/WhatsAppFloat";
-import CatalogMusicToggle from "../catalog-pro/CatalogMusicToggle";
 import { ensureMusic, stopMusic } from "../catalog-pro/catalogMusic";
 import ProductDetailScreenPro from "../catalog-pro/ProductDetailScreen";
 import SearchScreenPro from "../catalog-pro/SearchScreen";
@@ -865,7 +864,6 @@ export default function Catalog() {
         />
       )}
       <WhatsAppFloat whatsapp={sett?.whatsapp} bizName={sett?.biz_name} />
-      <CatalogMusicToggle />
       <WelcomeSplash bizName={sett?.biz_name || business.name} logoUrl={sett?.logo_url} duration={2200} />
       <ToastContainer />
     </>

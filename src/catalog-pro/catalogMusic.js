@@ -1,17 +1,19 @@
 // src/catalog-pro/catalogMusic.js
-// Musica ambiente del catalogo: loop a volumen bajo. Arranca en el primer gesto
-// del cliente (los navegadores bloquean autoplay con sonido) y recuerda si el
-// cliente la apago (localStorage). Singleton a nivel modulo para que NO se corte
-// al cambiar de pantalla (catalogo -> carrito -> checkout).
+// Musica ambiente del catalogo: loop a volumen muy bajo. Arranca en el primer
+// gesto del cliente (scroll / tap / click) porque los navegadores bloquean el
+// autoplay con sonido. REINTENTA en cada gesto hasta que play() funciona (no se
+// rinde al primer intento). Singleton a nivel modulo: NO se corta al cambiar de
+// pantalla (catalogo -> carrito -> checkout).
 const SRC = "/catalog-music.mp3";
 const KEY = "cp_music";   // 'on' | 'off' (default: on)
-const VOL = 0.13;
+const VOL = 0.06;
 
 let audio = null;
 let wantOn = null;
 let inited = false;
-let gestureBound = false;
+let unlockBound = false;
 const subs = new Set();
+const EVENTS = ["scroll", "wheel", "touchstart", "touchmove", "pointerdown", "mousedown", "keydown", "click"];
 
 function readWant() {
   if (wantOn === null) {
@@ -41,26 +43,25 @@ function fadeTo(target, ms) {
     const k = Math.min(1, (Date.now() - t0) / ms);
     a.volume = start + (target - start) * k;
     if (k >= 1) { clearInterval(fadeId); fadeId = null; if (target === 0) a.pause(); }
-  }, 60);
+  }, 50);
 }
 
-function startPlay() {
+function tryPlay() {
   const a = el();
-  a.play().then(() => fadeTo(VOL, 1400)).catch(() => {});
+  return a.play().then(() => { fadeTo(VOL, 1400); return true; }).catch(() => false);
 }
 
-function bindGesture() {
-  if (gestureBound) return;
-  gestureBound = true;
-  const go = () => {
-    if (wantOn && audio && audio.paused) startPlay();
-    window.removeEventListener("pointerdown", go);
-    window.removeEventListener("keydown", go);
-    window.removeEventListener("touchstart", go);
+function bindUnlock() {
+  if (unlockBound) return;
+  unlockBound = true;
+  const handler = () => {
+    const done = () => { EVENTS.forEach(e => window.removeEventListener(e, handler, true)); unlockBound = false; };
+    if (!wantOn) { done(); return; }
+    const a = el();
+    if (!a.paused) { done(); return; }
+    a.play().then(() => { fadeTo(VOL, 1400); done(); }).catch(() => { /* sigue escuchando el proximo gesto */ });
   };
-  window.addEventListener("pointerdown", go);
-  window.addEventListener("keydown", go);
-  window.addEventListener("touchstart", go);
+  EVENTS.forEach(e => window.addEventListener(e, handler, { capture: true, passive: true }));
 }
 
 export function musicOn() { return readWant(); }
@@ -69,17 +70,17 @@ export function ensureMusic() {
   readWant();
   if (!inited) {
     inited = true;
-    if (wantOn) { startPlay(); bindGesture(); }
+    if (wantOn) { tryPlay(); bindUnlock(); }
     return;
   }
-  if (wantOn && audio && audio.paused) startPlay();
+  if (wantOn && audio && audio.paused) { tryPlay(); bindUnlock(); }
 }
 
 export function toggleMusic() {
   readWant();
   wantOn = !wantOn;
   save();
-  if (wantOn) startPlay();
+  if (wantOn) { tryPlay(); bindUnlock(); }
   else if (audio) fadeTo(0, 400);
   notify();
   return wantOn;

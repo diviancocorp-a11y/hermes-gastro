@@ -16,6 +16,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import Icon from "./Icon";
 import AccountMenu from "./AccountMenu";
+import CatalogMusicToggle from "./CatalogMusicToggle";
 import { fmtAR } from "./format";
 import {
   ProductPhoto, PriceTag, Rating, StickyCart, SectionHeader, AddRound,
@@ -207,11 +208,14 @@ export default function HomeScreen({
               )}
             </div>
           </div>
-          <AccountMenu
-            session={session}
-            onSelect={onOpenAccount}
-            onLogout={onLogout}
-          />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <CatalogMusicToggle />
+            <AccountMenu
+              session={session}
+              onSelect={onOpenAccount}
+              onLogout={onLogout}
+            />
+          </div>
         </div>
       </div>
 
