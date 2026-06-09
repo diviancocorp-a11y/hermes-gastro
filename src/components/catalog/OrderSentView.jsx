@@ -10,7 +10,7 @@ import { setGuestUser, getGuestUser } from "../../lib/guestUser";
 
 export default function OrderSentView({ orderId, form, receiptFile, onReset }) {
   const [copiedCode, setCopiedCode] = useState(false);
-  const wasPaidDigital = !!form.payment_account_id && form.payment !== "tarjeta";
+  const wasPaidDigital = form.payment === "transferencia" || form.payment === "mercadopago";
   const primary = business.branding?.primary || "var(--ag-c-terra)";
 
   const copyCode = () => {

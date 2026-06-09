@@ -633,10 +633,10 @@ export default function Catalog() {
     }
   };
 
-  // Sonido de pato al confirmar pedido
+  // Sonido al confirmar pedido (asset compartido, desacoplado de la alarma del admin)
   useEffect(() => {
     if (confirmAnim) {
-      try { const a = new Audio(business.branding.sound); a.play().catch(() => {}); } catch {}
+      try { const a = new Audio("/order-confirmed.mp3"); a.play().catch(() => {}); } catch {}
     }
   }, [confirmAnim]);
 

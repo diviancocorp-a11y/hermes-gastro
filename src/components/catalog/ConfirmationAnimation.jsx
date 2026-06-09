@@ -1,37 +1,45 @@
 // src/components/catalog/ConfirmationAnimation.jsx
+// Pantalla de "pedido confirmado": fondo verde + check que sube de abajo hacia
+// arriba y se dibuja. El sonido lo dispara Catalog (public/order-confirmed.mp3).
 import business from "@business";
 
 export default function ConfirmationAnimation() {
-  const primary = business.branding?.primary || "#C45D3E";
-  const surface = "#FFF8F0";
-
+  const green = "#16A34A";
   return (
     <div
       data-testid="order-confirmation"
-      style={{ position: "fixed", inset: 0, background: primary, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", zIndex: 250 }}
+      style={{ position: "fixed", inset: 0, background: green, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", zIndex: 250, overflow: "hidden" }}
     >
       <style>{`
-        @keyframes hg-heart-bounce {
-          0%   { transform: scale(0) rotate(-15deg); opacity: 0; }
-          60%  { transform: scale(1.15) rotate(0deg); opacity: 1; }
-          80%  { transform: scale(0.95); }
-          100% { transform: scale(1); }
+        @keyframes hg-check-rise {
+          0%   { transform: translateY(110px); opacity: 0; }
+          55%  { transform: translateY(-10px); opacity: 1; }
+          75%  { transform: translateY(4px); }
+          100% { transform: translateY(0); opacity: 1; }
         }
-        .hg-heart-anim { animation: hg-heart-bounce 0.8s cubic-bezier(0.68,-0.55,0.265,1.55) forwards; opacity: 0; }
+        @keyframes hg-check-draw { to { stroke-dashoffset: 0; } }
+        @keyframes hg-fade-up {
+          0%   { transform: translateY(16px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
+        .hg-check-rise { animation: hg-check-rise 0.7s cubic-bezier(0.22,1,0.36,1) forwards; opacity: 0; }
+        .hg-check-path { stroke-dasharray: 90; stroke-dashoffset: 90; animation: hg-check-draw 0.4s ease-out 0.45s forwards; }
+        .hg-fade-up { animation: hg-fade-up 0.5s ease-out 0.5s forwards; opacity: 0; }
         @media (prefers-reduced-motion: reduce) {
-          .hg-heart-anim { animation: none !important; opacity: 1 !important; }
+          .hg-check-rise, .hg-fade-up { animation: none !important; opacity: 1 !important; transform: none !important; }
+          .hg-check-path { animation: none !important; stroke-dashoffset: 0 !important; }
         }
       `}</style>
-      <div className="hg-heart-anim" style={{ marginBottom: 32 }}>
-        <svg width="140" height="140" viewBox="0 0 140 140" aria-hidden="true">
-          <path d="M70,125 C30,95 5,72 5,48 C5,30 18,18 35,18 C48,18 58,25 70,38 C82,25 92,18 105,18 C122,18 135,30 135,48 C135,72 110,95 70,125Z" fill={surface}/>
-          <path d="M45,62 L62,78 L95,48" stroke={primary} strokeWidth="10" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      <div className="hg-check-rise" style={{ marginBottom: 28 }}>
+        <svg width="148" height="148" viewBox="0 0 148 148" aria-hidden="true">
+          <circle cx="74" cy="74" r="66" fill="#fff" />
+          <path className="hg-check-path" d="M44,76 L66,98 L104,52" stroke={green} strokeWidth="12" fill="none" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
-      <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 26, margin: 0, color: surface }}>
+      <h2 className="hg-fade-up" style={{ fontFamily: "'DM Serif Display', serif", fontSize: 26, margin: 0, color: "#fff" }}>
         ¡Pedido confirmado!
       </h2>
-      <p style={{ fontSize: 14, color: "rgba(255,248,240,0.85)", marginTop: 8 }}>
+      <p className="hg-fade-up" style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", marginTop: 8 }}>
         Gracias por elegir {business.name}
       </p>
     </div>
