@@ -67,6 +67,8 @@ function toCardProps(o, recipes = []) {
     status: STATUS_MAP[o.status] || 'new',
     minutes,
     phone: o.phone || o.customer_phone || '',
+    // Direccion de envio: clave para que el repartidor sepa a donde ir
+    address: o.delivery === 'envio' ? (o.delivery_address || '') : '',
   };
 }
 

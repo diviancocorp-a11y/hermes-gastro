@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   delivery_method text DEFAULT 'retiro'::text,
   payment_method text DEFAULT 'efectivo'::text,
   delivery_address text,
+  delivery_cost numeric NOT NULL DEFAULT 0,
   is_gift boolean DEFAULT false,
   gift_note text DEFAULT ''::text,
   coupon_id uuid,

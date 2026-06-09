@@ -275,6 +275,11 @@ function OrderCard({ order, actions, onPrimary, onCancel, onGhost, onContact }) 
               <span className="sep">·</span>
               <span>{order.mode}{order.total ? ` · ${order.total}` : ''}</span>
             </div>
+            {order.address && (
+              <div className="ag-o-meta" style={{ marginTop: 2, fontSize: 12, opacity: 0.85, overflowWrap: 'anywhere' }}>
+                <span aria-hidden="true">📍</span> <span>{order.address}</span>
+              </div>
+            )}
           </div>
           {/* Acciones uniformes arriba derecha: contacto + kebab */}
           <div className="ag-o-head-actions">

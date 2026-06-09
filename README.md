@@ -1,16 +1,48 @@
-# React + Vite
+# Hermes Gastro
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Multi-tenant SaaS para dark kitchens. Mismo codigo, N clientes: cada tenant tiene su proyecto Supabase, su proyecto Vercel y su dominio.
 
-Currently, two official plugins are available:
+**Tenants activos:** `la-nona-pato` · `cochi` · `mala-miga`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Stack
 
-## React Compiler
+- React 19 + Vite + JavaScript (sin TypeScript)
+- CSS plano con design tokens (`--ac`, `--bg`, `--tx`, ...)
+- Supabase: Postgres + Auth + Edge Functions (Deno) + Storage + Realtime
+- Vercel (1 proyecto por tenant, build con `CLIENT=<slug>`)
+- Sentry + edge function `sentry-to-telegram` para errores en prod
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Correr local
 
-## Expanding the ESLint configuration
+```bash
+npm install
+CLIENT=mala-miga npm run dev      # cualquier slug de clients/
+CLIENT=mala-miga npm run build
+npm test                          # vitest
+npx playwright test               # e2e (ver TESTING.md)
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Documentacion
+
+| Doc | Que contiene |
+|---|---|
+| [CLAUDE.md](./CLAUDE.md) | Contexto operativo: convenciones, bugs recurrentes, gotchas |
+| [SCHEMA.md](./SCHEMA.md) | Schema de DB documentado por dominio + onboarding de cliente nuevo |
+| [INFORME-AUDITORIA.md](./INFORME-AUDITORIA.md) | Auditoria completa de codigo e infra (jun 2026) |
+| [PLAN-DE-ACCION.md](./PLAN-DE-ACCION.md) | Plan priorizado de arreglos y mejoras |
+| [TESTING.md](./TESTING.md) | Unit tests + suite E2E Playwright |
+| [DIAGNOSTICO.md](./DIAGNOSTICO.md) | Diagnostico historico del refactor (may 2026) |
+| [docs/security.md](./docs/security.md) | Medidas de seguridad implementadas |
+
+## Estructura
+
+```
+clients/<slug>/business.js   identidad por tenant (nombre, colores, geo)
+.env.<slug>                  keys Supabase por tenant (gitignored)
+src/pages/Catalog.jsx        orquestador del catalogo publico (/)
+src/catalog-pro/             screens del catalogo
+src/components/admin/        panel interno (/admin)
+supabase/functions/          edge functions Deno
+supabase/migrations/000_initial_schema.sql   source of truth del schema
+scripts/create-client.mjs    generador de cliente nuevo
+```

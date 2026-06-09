@@ -108,7 +108,8 @@ export async function fetchCatalog() {
  *
  * @param {Object} orderData - Los datos del pedido:
  *   { customer, phone, email, delivery, payment, note, items: [{recipeId, qty}],
- *     coupon_code?, is_gift?, gift_note?, delivery_date?, user_id? }
+ *     coupon_code?, is_gift?, gift_note?, delivery_date?, user_id?,
+ *     address?, delivery_cost?, tip_pct? }
  *
  * @returns {{ ok: boolean, orderId: string|null }}
  */
@@ -138,7 +139,10 @@ export async function submitOrder(orderData) {
         gift_note: validated.gift_note || '',
         delivery_date: validated.delivery_date || null,
         user_id: validated.user_id || null,
-        tip_pct: orderData.tip_pct || 0,
+        // address y delivery_cost DEBEN ir validados (Zod) — ver bug Zod-strip #5
+        address: validated.address || null,
+        delivery_cost: validated.delivery_cost || 0,
+        tip_pct: validated.tip_pct || 0,
       },
     });
 

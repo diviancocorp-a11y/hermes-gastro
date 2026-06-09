@@ -87,6 +87,18 @@ python3 -c "open('FILE','rb').read().decode('utf-8','strict')"
 - `src/components/admin/shared/BrandModal.jsx` — grande, se trunca facil
 - `scripts/supabase-schema.json` — JSON sensible a comas/strings cortados
 
+### 5. NODE_ENV=production global en Windows de Ricky
+**Sintoma:** `npm install` instala ~59 paquetes (omite devDeps, borra vite/husky de node_modules). `npm test` falla masivo con `React.act is not a function`.
+
+**Fix:** `npm install --include=dev` y `set NODE_ENV=test&& npm test`. De fondo: sacar NODE_ENV de las env vars del sistema.
+
+### 6. Keys sb_publishable_ + verify_jwt=true = guest checkout roto
+**Sintoma:** edge function devuelve `UNAUTHORIZED_INVALID_JWT_FORMAT` para guests. Paso en mala-miga desde su creacion (detectado 9/jun/2026).
+
+**Causa:** las keys nuevas de Supabase (`sb_publishable_...`) NO son JWT; el gateway con `verify_jwt=true` las rechaza. Solo sesiones logueadas pasaban (mandan access token JWT). LNP ya tenia el fix en create-payment-preference (v8) pero nunca se propago a Cochi/MM.
+
+**Fix aplicado:** funciones publicas (`submit-order`, `validate-coupon`, `create-payment-preference`, `mp-*`) con `verify_jwt=false` en los 3 tenants — la proteccion real es rate-limit + validacion interna. Toda function publica nueva: verify_jwt=false.
+
 ## Pre-commit hooks (lo que YA corre)
 
 - `check-file-integrity.mjs` — EOF, NULL bytes, lineas truncadas
@@ -108,11 +120,11 @@ CLIENT=la-nona-pato vite build  # build de un tenant especifico
 - **Vercel** (`mcp__ac4fffd9-1da6-4512-8868-9dc6b8907e90__*`) — team_E5ATCc0AjW66Ej0axz7l5SSg
 - **GitHub** repo: `diviancocorp-a11y/hermes-gastro` (publico)
 
-## Tareas pendientes (al cierre del chat anterior)
+## Tareas pendientes
 
-1. **Sentry sourcemaps + Seer** — el user quiere activar el agente de Anthropic en Sentry. Antes hay que configurar `@sentry/vite-plugin` para subir sourcemaps. Sin eso, Seer ve codigo minified igual que nosotros
-2. **Refactor check-schema-sync** — actualmente usa manifest manual (3er lugar duplicado). Mejora: que lea directo `scripts/supabase-schema.json`. 30 min de trabajo
-3. **Pre-commit UTF-8 strict check** — agregar al pre-commit `python3 -c "open(f,'rb').read().decode('utf-8','strict')"` para todo archivo staged. Hubiera evitado el build fail de hoy
+**El backlog vivo esta en PLAN-DE-ACCION.md** (Sprint 0 completado el 9/jun/2026: address + delivery_cost persisten, verify_jwt fix, deps fantasma removidas). Proximos: Sprint 1 (seguridad: roles admin, adjust_stock anon, send-push auth) → Sprint 2 (multi-tenant) → Sprint 3 (limpieza) → Sprint 4 (vendible).
+
+Pendientes heredados (ahora en Sprint 4/5 del plan): Sentry sourcemaps + Seer, refactor check-schema-sync para leer supabase-schema.json directo, pre-commit UTF-8 strict.
 
 ## Preferencias del usuario (Ricky)
 

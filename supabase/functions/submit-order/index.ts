@@ -63,6 +63,11 @@ Deno.serve(async (req) => {
     const giftNote = body.gift_note ? body.gift_note.trim().slice(0, 300) : "";
     const deliveryDate = body.delivery_date || null;
     const userId = body.user_id || null;
+    // ── Direccion de envio: persiste en orders.delivery_address ──
+    const address = body.address ? String(body.address).trim().slice(0, 500) : null;
+    // ── Costo de envio: solo aplica si delivery=envio, clampeado server-side ──
+    // TODO Sprint 2.3: recalcular desde settings (hoy el pricing vive en el cliente)
+    const deliveryCost = delivery === "envio" ? Math.max(0, Math.min(50000, Math.round(Number(body.delivery_cost) || 0))) : 0;
     // ── Propina (catalog-pro): % sobre subtotal, validado server-side ──
     const tipPct = Math.max(0, Math.min(100, Number(body.tip_pct) || 0));
     if (!customer || !phone) return jsonRes({ error: "Faltan datos: nombre y teléfono son obligatorios" }, 400);
@@ -99,9 +104,9 @@ Deno.serve(async (req) => {
     }
     // Propina: calculada sobre el subtotal server-side (no se confía en el cliente)
     const tipAmount = Math.round(serverTotal * tipPct / 100);
-    const finalTotal = Math.max(0, serverTotal - validDiscount) + tipAmount;
+    const finalTotal = Math.max(0, serverTotal - validDiscount) + tipAmount + deliveryCost;
     if (email) await supabase.from("customers").upsert({ email, name: customer, phone, last_order_at: new Date().toISOString() }, { onConflict: "email" });
-    const { data: order, error: orderError } = await supabase.from("orders").insert({ status: "new", date: new Date().toISOString().split("T")[0], customer, phone, email, delivery, payment, payment_account_id: paymentAccountId, payment_account_snapshot: paymentAccountSnapshot, note, total: finalTotal, is_gift: isGift, gift_note: giftNote, coupon_id: validCouponId, discount: validDiscount, tip_pct: tipPct, tip_amount: tipAmount, delivery_date: deliveryDate, user_id: userId }).select("id").single();
+    const { data: order, error: orderError } = await supabase.from("orders").insert({ status: "new", date: new Date().toISOString().split("T")[0], customer, phone, email, delivery, payment, payment_account_id: paymentAccountId, payment_account_snapshot: paymentAccountSnapshot, note, total: finalTotal, is_gift: isGift, gift_note: giftNote, coupon_id: validCouponId, discount: validDiscount, tip_pct: tipPct, tip_amount: tipAmount, delivery_date: deliveryDate, user_id: userId, delivery_address: address, delivery_cost: deliveryCost }).select("id").single();
     if (orderError || !order) { console.error("Error creando pedido:", orderError); return jsonRes({ error: "Error al crear el pedido" }, 500); }
     if (validCouponId) await supabase.from("coupons").update({ used: true, used_at: new Date().toISOString() }).eq("id", validCouponId);
     const costMap = {};
@@ -125,7 +130,7 @@ Deno.serve(async (req) => {
     } catch (e) {
       console.warn("send-push admin (non-blocking):", e?.message);
     }
-    return jsonRes({ ok: true, orderId: order.id, total: finalTotal, discount: validDiscount, tip: tipAmount });
+    return jsonRes({ ok: true, orderId: order.id, total: finalTotal, discount: validDiscount, tip: tipAmount, delivery_cost: deliveryCost });
   } catch (err) {
     console.error("submit-order error:", err);
     return jsonRes({ error: err.message }, 500);

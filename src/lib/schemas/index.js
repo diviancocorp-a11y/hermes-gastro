@@ -69,6 +69,14 @@ export const OrderInputSchema = z.object({
   gift_note: optionalText(500),
   delivery_date: dateString.nullable().optional(),
   user_id: optionalUuid,
+  // Direccion de envio (incluye piso/depto y notas). Persiste en orders.delivery_address.
+  // BUG #5 del patron Zod-strip: este campo se mandaba desde el checkout pero
+  // el schema no lo declaraba -> se descartaba en silencio. NO sacar de aca.
+  address: optionalText(500),
+  // Costo de envio calculado en el cliente; el server lo clampa y lo suma al total.
+  delivery_cost: z.number().min(0).max(50000).optional().default(0),
+  // Propina en % — antes bypasseaba la validacion (se leia de orderData crudo).
+  tip_pct: z.number().min(0).max(100).optional().default(0),
 });
 
 /** Validación de cupón público */

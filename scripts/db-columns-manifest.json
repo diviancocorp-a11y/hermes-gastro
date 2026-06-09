@@ -1,5 +1,5 @@
 {
-  "$comment": "Mapeo de tabla DB → columnas que el schema Zod DEBE conocer. Si agregás una columna a la DB que se va a poder guardar desde el cliente, agregala acá Y al schema Zod correspondiente. Las columnas autogeneradas (id, created_at, updated_at) o calculadas server-side se ponen en 'serverOnly' para que el script no las exija al schema.",
+  "$comment": "Mapeo de tabla DB -> columnas que el schema Zod DEBE conocer. Si agregas una columna a la DB que se va a poder guardar desde el cliente, agregala aca Y al schema Zod correspondiente. Las columnas autogeneradas (id, created_at, updated_at) o calculadas server-side se ponen en 'serverOnly' para que el script no las exija al schema.",
   "tables": {
     "settings": {
       "schema": "SettingsInputSchema",
@@ -117,11 +117,25 @@
       ]
     },
     "orders": {
+      "$comment": "TODO campo que el checkout envia DEBE estar en columns (= declarado en OrderInputSchema). serverOnly es SOLO para columnas calculadas por la edge function. El bug #5 (delivery_address perdida) paso porque address estaba mal clasificada como serverOnly.",
       "schema": "OrderInputSchema",
       "columns": [
         "customer",
         "phone",
-        "items"
+        "email",
+        "delivery",
+        "payment",
+        "payment_account_id",
+        "note",
+        "items",
+        "coupon_code",
+        "is_gift",
+        "gift_note",
+        "delivery_date",
+        "user_id",
+        "address",
+        "delivery_cost",
+        "tip_pct"
       ],
       "serverOnly": [
         "id",
@@ -129,19 +143,14 @@
         "date",
         "status",
         "total",
-        "email",
-        "delivery",
-        "payment",
-        "note",
-        "address",
-        "coupon_code",
-        "is_gift",
-        "gift_note",
-        "delivery_date",
-        "user_id",
-        "tip_pct",
+        "discount",
         "tip_amount",
-        "payment_account_id",
+        "coupon_id",
+        "delivery_address",
+        "payment_account_snapshot",
+        "receipt_url",
+        "receipt_verified",
+        "tracking_token",
         "delivery_channel",
         "platform_commission_amt"
       ]
