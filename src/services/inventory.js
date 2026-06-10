@@ -43,11 +43,6 @@ export async function archiveIngredient(id) {
   return !error;
 }
 
-export async function unarchiveIngredient(id) {
-  const { error } = await supabase.from('ingredients').update({ is_archived: false }).eq('id', id);
-  return !error;
-}
-
 export async function deleteIngredient(id) {
   const { error } = await supabase.from('ingredients').delete().eq('id', id);
   return !error;

@@ -98,16 +98,6 @@ function loadFontUrl(url) {
   document.head.appendChild(link);
 }
 
-/**
- * Force refresh theme from DB
- */
-export async function refreshTheme() {
-  cachedTheme = null;
-  const theme = await fetchActiveTheme();
-  applyTheme(theme);
-  return theme;
-}
-
 // ─── Auto-derive dark palette from light ────────────────────
 
 /**
@@ -154,45 +144,6 @@ function hexToRgb(hex) {
 
 function rgbToHex(r, g, b) {
   return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('').toUpperCase();
-}
-
-// ─── Admin CRUD ─────────────────────────────────────────────
-
-export async function fetchAllThemes() {
-  const { data, error } = await supabase
-    .from('theme_config')
-    .select('*')
-    .order('created_at', { ascending: true });
-  if (error) { console.error('fetchAllThemes:', error.message); return []; }
-  return data || [];
-}
-
-export async function saveTheme(theme) {
-  const payload = { ...theme, updated_at: new Date().toISOString() };
-  delete payload.created_at; // Don't overwrite
-
-  if (theme.id) {
-    const { error } = await supabase.from('theme_config').update(payload).eq('id', theme.id);
-    if (error) throw error;
-  } else {
-    const { data, error } = await supabase.from('theme_config').insert(payload).select().single();
-    if (error) throw error;
-    return data;
-  }
-  return payload;
-}
-
-export async function activateTheme(id) {
-  // Deactivate all first
-  await supabase.from('theme_config').update({ is_active: false }).neq('id', '');
-  // Activate selected
-  const { error } = await supabase.from('theme_config').update({ is_active: true }).eq('id', id);
-  if (error) throw error;
-}
-
-export async function deleteTheme(id) {
-  const { error } = await supabase.from('theme_config').delete().eq('id', id);
-  if (error) throw error;
 }
 
 /** Preset palettes for quick selection */

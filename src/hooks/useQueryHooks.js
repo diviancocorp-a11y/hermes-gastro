@@ -1,17 +1,15 @@
 // src/hooks/useQueryHooks.js
 // TanStack Query wrappers for service functions.
 // Each hook replaces a manual useState+useEffect pattern.
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { queryKeys, STALE_TIMES } from '../lib/queryClient';
 import {
   fetchAllRecipes, fetchAllRecipeIngredients,
 } from '../services/recipes';
-import { fetchActiveOrders, fetchOrderHistory } from '../services/orders';
+import { fetchActiveOrders } from '../services/orders';
 import { fetchIngredients, fetchWasteLog } from '../services/inventory';
-import { fetchSales, fetchExpenses, fetchPurchases, fetchDashboardStats } from '../services/finance';
-import { fetchCoupons } from '../services/coupons';
+import { fetchSales, fetchExpenses } from '../services/finance';
 import { fetchSettings } from '../services/settings';
-import { fetchCatalog } from '../services/catalog';
 
 // ─── Admin queries ──────────────────────────────────────
 
@@ -49,14 +47,6 @@ export function useActiveOrders() {
   });
 }
 
-export function useOrderHistory(cursor) {
-  return useQuery({
-    queryKey: queryKeys.orders.history(cursor),
-    queryFn: () => fetchOrderHistory({ before: cursor }),
-    staleTime: STALE_TIMES.finance,
-  });
-}
-
 export function useSales() {
   return useQuery({
     queryKey: queryKeys.sales.all,
@@ -73,14 +63,6 @@ export function useExpenses() {
   });
 }
 
-export function usePurchases() {
-  return useQuery({
-    queryKey: queryKeys.purchases.all,
-    queryFn: () => fetchPurchases(),
-    staleTime: STALE_TIMES.finance,
-  });
-}
-
 export function useWasteLog() {
   return useQuery({
     queryKey: queryKeys.ingredients.waste(null),
@@ -89,36 +71,10 @@ export function useWasteLog() {
   });
 }
 
-export function useCoupons() {
-  return useQuery({
-    queryKey: queryKeys.coupons.all,
-    queryFn: () => fetchCoupons(),
-    staleTime: STALE_TIMES.coupons,
-  });
-}
-
 export function useSettings() {
   return useQuery({
     queryKey: queryKeys.settings.all,
     queryFn: fetchSettings,
     staleTime: STALE_TIMES.settings,
-  });
-}
-
-export function useDashboardStats() {
-  return useQuery({
-    queryKey: queryKeys.dashboard.stats,
-    queryFn: fetchDashboardStats,
-    staleTime: STALE_TIMES.orders,
-  });
-}
-
-// ─── Catalog (public) ───────────────────────────────────
-
-export function useCatalog() {
-  return useQuery({
-    queryKey: ['catalog'],
-    queryFn: fetchCatalog,
-    staleTime: STALE_TIMES.products,
   });
 }

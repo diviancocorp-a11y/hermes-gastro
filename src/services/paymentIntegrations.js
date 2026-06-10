@@ -99,25 +99,8 @@ export async function connectMercadoPagoManual({ accessToken, publicKey }) {
 
 /**
  * @deprecated Usar connectMercadoPagoManual. OAuth no funciona con apps
- * de tipo "Integración propia" (default del nuevo panel MP).
- */
-export function startMercadoPagoOAuth({ redirectUri, state = "" }) {
-  const clientId = import.meta.env.VITE_MP_CLIENT_ID;
-  if (!clientId) {
-    throw new Error("VITE_MP_CLIENT_ID no configurado en el .env del cliente");
-  }
-  const params = new URLSearchParams({
-    client_id: clientId,
-    response_type: "code",
-    redirect_uri: redirectUri,
-    state,
-  });
-  const authUrl = `https://auth.mercadopago.com.ar/authorization?${params.toString()}`;
-  window.location.href = authUrl;
-}
-
-/**
- * @deprecated Ver startMercadoPagoOAuth.
+ * de tipo "Integracion propia" (default del nuevo panel MP).
+ * Lo consume MpCallback.jsx (ruta legacy del callback OAuth).
  */
 export async function completeMercadoPagoOAuth({ code, redirectUri }) {
   const { data, error } = await supabase.functions.invoke("mp-oauth-callback", {

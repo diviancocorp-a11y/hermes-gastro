@@ -8,7 +8,6 @@
 import { useState, useMemo } from "react";
 import BadgeTag from "../components/BadgeTag";
 import Icon from "./Icon";
-import { fmtAR } from "./format";
 import { ProductPhoto, Rating, AddRound, PriceTag } from "./atoms";
 import { mapProduct } from "./homeHelpers";
 

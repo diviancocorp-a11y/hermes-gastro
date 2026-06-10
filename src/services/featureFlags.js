@@ -83,27 +83,3 @@ export async function refreshFlags() {
   flagCache = new Map();
   return loadFlags();
 }
-
-// ─── Admin operations ─────────────────────────────────────────
-
-export async function fetchAllFlags() {
-  const { data, error } = await supabase
-    .from('feature_flags')
-    .select('*')
-    .order('key', { ascending: true });
-
-  if (error) { console.error('fetchAllFlags:', error.message); return []; }
-  return data || [];
-}
-
-export async function updateFlag(key, enabled) {
-  const { error } = await supabase
-    .from('feature_flags')
-    .update({ enabled, updated_at: new Date().toISOString() })
-    .eq('key', key);
-
-  if (error) throw error;
-
-  // Update local cache
-  flagCache.set(key, enabled);
-}

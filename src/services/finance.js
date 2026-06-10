@@ -1,10 +1,8 @@
 // src/services/finance.js
 import { supabase } from '../lib/supabase';
 import {
-  SaleInputSchema, ExpenseInputSchema, PurchaseInputSchema, PurchaseItemSchema,
-  validateInput,
+  SaleInputSchema, ExpenseInputSchema, validateInput,
 } from '../lib/schemas/index.js';
-import { updateIngredientStock } from './inventory.js';
 import { captureException } from '../lib/observability.js';
 
 const PAGE_SIZE = 50;
@@ -93,31 +91,6 @@ export async function fetchPurchases({ before, limit } = {}) {
   return paginate('purchases', { before, limit, select: '*, purchase_items(*, ingredients(name, unit))' });
 }
 
-export async function createPurchase(purchase, items) {
-  const pValidation = validateInput(PurchaseInputSchema, purchase, 'createPurchase');
-  if (!pValidation.ok) { console.error('createPurchase validation:', pValidation.errors); return null; }
-  // Validar cada item individualmente
-  for (const item of items) {
-    const iValid = validateInput(PurchaseItemSchema, item, 'createPurchase.item');
-    if (!iValid.ok) { console.error('createPurchase item validation:', iValid.errors); return null; }
-  }
-  const { data, error } = await supabase.from('purchases').insert(pValidation.data).select().single();
-  if (error) { console.error('createPurchase:', error.message); return null; }
-  if (items.length) {
-    const rows = items.map(i => ({ ...i, purchase_id: data.id }));
-    await supabase.from('purchase_items').insert(rows);
-    // Update ingredient stock (atómico) + actualizar costo
-    for (const item of items) {
-      if (item.ingredient_id) {
-        await updateIngredientStock(item.ingredient_id, item.quantity);
-        if (item.unit_price > 0) {
-          await supabase.from('ingredients').update({ cost: item.unit_price }).eq('id', item.ingredient_id);
-        }
-      }
-    }
-  }
-  return data;
-}
 
 // ─── DASHBOARD STATS ──────────────────────────────────
 export async function fetchDashboardStats() {

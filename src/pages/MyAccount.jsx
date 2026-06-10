@@ -5,7 +5,6 @@ import { formatInt, formatOrderCode, optimizeImage } from "../lib/utils";
 import { supabase } from "../lib/supabase";
 import business from "@business";
 import ReferralCard from "../components/catalog/ReferralCard";
-import GuestWelcomeCard from "../catalog-pro/GuestWelcomeCard";
 import AccountMenu from "../catalog-pro/AccountMenu";
 import PushOptInBanner from "../catalog-pro/PushOptInBanner";
 import { lookupCustomerByPhone, phoneLogin, cleanPhone, blockPhone, isPhoneBlocked, upsertCustomer } from "../services/phoneAuth";

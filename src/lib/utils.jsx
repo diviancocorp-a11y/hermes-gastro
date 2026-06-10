@@ -59,7 +59,7 @@ export const formatOrderCode = (id) => { const s = String(id || "").replace(/-/g
 // to serving original URLs directly.
 
 // Default to false (disabled) — image transforms require Supabase Pro plan.
-// Call enableImageTransforms() if on Pro plan, or probeImageTransforms() to auto-detect.
+// Call probeImageTransforms() to auto-detect.
 let _transformsAvailable = false;
 
 /** Test if Supabase image transforms are available (Pro plan feature). */
@@ -92,16 +92,6 @@ export function disableImageTransforms() {
   _transformsAvailable = false;
 }
 
-/** Check if image transforms are currently enabled. */
-export function imageTransformsEnabled() {
-  return _transformsAvailable === true;
-}
-
-/** Enable image transforms (for Supabase Pro plan users). */
-export function enableImageTransforms() {
-  _transformsAvailable = true;
-}
-
 /** Reset transforms state to untested (for testing). */
 export function resetImageTransforms() {
   _transformsAvailable = null;
@@ -123,22 +113,6 @@ export const optimizeImage = (url, { width, height, quality = 75, format } = {})
   return out + '?' + params.join('&');
 };
 
-/**
- * Devuelve un srcSet con AVIF + WebP + JPEG para uso con <picture>.
- * Uso:
- *   const sources = optimizeImageSources(url, { width: 300 });
- *   <picture>
- *     <source type="image/avif" srcSet={sources.avif} />
- *     <source type="image/webp" srcSet={sources.webp} />
- *     <img src={sources.fallback} alt="..." />
- *   </picture>
- */
-export const optimizeImageSources = (url, opts = {}) => ({
-  avif: optimizeImage(url, { ...opts, format: 'avif' }),
-  webp: optimizeImage(url, { ...opts, format: 'webp' }),
-  fallback: optimizeImage(url, opts),
-});
-
 /** Convert a render/image URL back to the original object/public URL. */
 export const originalImageUrl = (url) => {
   if (!url || typeof url !== 'string') return url;
@@ -159,7 +133,6 @@ export const OrderStatus = Object.freeze({
 });
 /** Lifecycle subsets — use these instead of inline string arrays. */
 export const ACTIVE_ORDER_STATUSES   = [OrderStatus.NEW, OrderStatus.PREPARING, OrderStatus.ACTIVE];
-export const FINISHED_ORDER_STATUSES = [OrderStatus.COMPLETED, OrderStatus.CANCELLED];
 
 export const OrderStatusLabels = {
   [OrderStatus.NEW]:       "Nuevo",
@@ -183,8 +156,6 @@ export const OrderStatusBorders = {
   [OrderStatus.CANCELLED]: "#C62828",
 };
 
-export const CAT_E = { "Tortas": "🎂", "Alfajores": "🍪", "Budines": "🍞", "Tartas": "🥧", "Postres": "🍮" };
-export const CAT_CO = ["#D4785C", "#7A9E5D", "#5C7AD4", "#D4A85C", "#8B5CD4", "#5CBBD4"];
 export const COLORS = [{ h: "#C45D3E" }, { h: "#5D7A2E" }, { h: "#2E5D7A" }, { h: "#7A2E4A" }, { h: "#C49A3E" }, { h: "#2D1B0E" }, { h: "#6B3FA0" }, { h: "#2E7A6B" }];
 
 export function playNotificationSound() {

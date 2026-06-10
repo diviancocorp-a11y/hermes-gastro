@@ -1,6 +1,5 @@
 // src/services/coupons.js
 import { supabase } from '../lib/supabase';
-import { CouponCreateSchema, validateInput } from '../lib/schemas/index.js';
 import business from '@business';
 
 const PAGE_SIZE = 50;
@@ -53,27 +52,6 @@ export async function createCustomerCoupon({ email, kind = 'percent', discountPc
     expires_at: expires.toISOString()
   }).select().single();
   if (error) { console.error('createCustomerCoupon:', error.message); return null; }
-  return data;
-}
-
-// Crea un cupón "plantilla" (sin email asignado) que cualquiera puede usar.
-// Para los cupones pre-hechos tipo "20%OFF general" o "2x1 hamburguesas".
-export async function createTemplateCoupon({ code, kind = 'percent', discountPct, label = null, expiresDays = 90 }) {
-  if (!code) return null;
-  if (kind === 'percent' && !discountPct) return null;
-  if ((kind === 'twoxone' || kind === 'other') && !label?.trim()) return null;
-
-  const expires = new Date();
-  expires.setDate(expires.getDate() + (Number(expiresDays) || 90));
-  const { data, error } = await supabase.from('coupons').insert({
-    code: code.toUpperCase(),
-    kind,
-    label: label?.trim() || null,
-    discount_pct: kind === 'percent' ? Math.round(discountPct) : 0,
-    email: null,                  // global, sin restricción de email
-    expires_at: expires.toISOString()
-  }).select().single();
-  if (error) { console.error('createTemplateCoupon:', error.message); return null; }
   return data;
 }
 

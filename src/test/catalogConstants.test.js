@@ -102,8 +102,8 @@ describe('calcDeliveryCost', () => {
 });
 
 describe('CHECKOUT_STEPS', () => {
-  it('has 4 steps in order', () => {
-    expect(CHECKOUT_STEPS).toEqual(["Datos", "Entrega", "Pago", "Resumen"]);
+  it('has 3 steps in order (Resumen se fusiono en Pago)', () => {
+    expect(CHECKOUT_STEPS).toEqual(["Datos", "Entrega", "Pago"]);
   });
 });
 

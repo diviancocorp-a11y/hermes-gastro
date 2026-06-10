@@ -1,2 +1,0 @@
--- DELETED in FASE 3 cleanup — legacy migration superseded by supabase/migrations/.
--- Run `git rm supabase_auth_migration.sql` to remove from the repo.

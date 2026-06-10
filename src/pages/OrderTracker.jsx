@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { formatOrderCode } from "../lib/utils";
+import { fmtAR } from "../lib/format";
 
 // ─── Mapa de estados ──────────────────────────────────
 const STEPS = [
@@ -188,12 +189,12 @@ export default function OrderTracker() {
           {items.map((it, i) => (
             <div key={i} className="tracker-item">
               <span>{it.recipes?.name || "Producto"} × {it.qty}</span>
-              <span>${(it.qty * it.unit_price).toLocaleString("es-AR")}</span>
+              <span>{fmtAR(it.qty * it.unit_price)}</span>
             </div>
           ))}
           <div className="tracker-item tracker-total">
             <span>Total</span>
-            <span>${(order.total || 0).toLocaleString("es-AR")}</span>
+            <span>{fmtAR(order.total)}</span>
           </div>
         </div>
         {order.note && (

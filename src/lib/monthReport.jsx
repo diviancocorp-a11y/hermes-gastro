@@ -7,8 +7,7 @@
  * buildMonthRecommendations() por una llamada al backend.
  */
 import { todayISO } from './utils';
-
-const fmt = (n) => '$' + Number(n || 0).toLocaleString('es-AR');
+import { fmtAR as fmt } from './format';
 
 /* ────────────────────────────────────────────────────────────
  * Recomendaciones (heurísticas determinísticas)

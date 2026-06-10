@@ -23,10 +23,6 @@ export async function checkAfipStatus() {
   return callInvoiceFunction({ action: 'status' });
 }
 
-export async function getLastInvoiceNumber(invoiceType = 11, puntoVenta = 1) {
-  return callInvoiceFunction({ action: 'last_number', invoice_type: invoiceType, punto_venta: puntoVenta });
-}
-
 export async function createInvoice({ orderId, total, items, invoiceType = 11, puntoVenta = 1, docTipo = 99, docNro = '0' }) {
   return callInvoiceFunction({
     action: 'create',
@@ -38,10 +34,6 @@ export async function createInvoice({ orderId, total, items, invoiceType = 11, p
     doc_tipo: docTipo,
     doc_nro: docNro,
   });
-}
-
-export async function getInvoiceForOrder(orderId) {
-  return callInvoiceFunction({ action: 'consult', order_id: orderId });
 }
 
 // Local query for invoice list

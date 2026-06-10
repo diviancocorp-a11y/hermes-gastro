@@ -24,7 +24,7 @@ export async function getPushPermission() {
   return Notification.permission;
 }
 
-export async function requestPushPermission() {
+async function requestPushPermission() {
   if (!isPushSupported()) return 'unsupported';
   return await Notification.requestPermission();
 }

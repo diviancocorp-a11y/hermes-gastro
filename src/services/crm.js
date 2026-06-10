@@ -2,15 +2,6 @@
 import { supabase } from '../lib/supabase';
 import business from '@business';
 
-export async function fetchCustomers() {
-  const { data, error } = await supabase
-    .from('customers')
-    .select('*')
-    .order('last_order_at', { ascending: false });
-  if (error) { console.error('fetchCustomers:', error.message); return []; }
-  return data || [];
-}
-
 export async function fetchCustomerStats() {
   // Agregamos clientes desde orders (fuente principal) + LEFT JOIN con customers
   // para enriquecer con birth_date (capturado en checkout, requiere email).
@@ -96,25 +87,10 @@ export async function fetchCustomerStats() {
   return Object.values(map).sort((a, b) => b.total - a.total);
 }
 
-// ─── DOWNLOAD SERVER BACKUP ──────────────────────────
-// Descarga el CSV de clientes almacenado en Supabase Storage (bucket privado)
-export async function downloadServerBackup() {
-  const { data, error } = await supabase.storage
-    .from('backups')
-    .download('clientes/clientes_export.csv');
-  if (error) { console.error('downloadServerBackup:', error.message); return { ok: false, msg: error.message }; }
-  // Trigger download en el navegador
-  const url = URL.createObjectURL(data);
-  const a = document.createElement('a');
-  const dateStr = new Date().toISOString().split('T')[0];
-  a.href = url; a.download = `Clientes_${business.name.replace(/\s+/g, '_')}_${dateStr}.csv`; a.click();
-  URL.revokeObjectURL(url);
-  return { ok: true };
-}
-
 // ─── BACKUP CUSTOMERS (respaldo antes de reset) ──────
 // Genera y descarga un CSV con todos los clientes (datos de orders + customers)
-export async function backupCustomers() {
+// Solo se usa internamente desde resetHistoricalData.
+async function backupCustomers() {
   // 1. Traer clientes CRM consolidados desde orders
   const { data: orders } = await supabase
     .from('orders')

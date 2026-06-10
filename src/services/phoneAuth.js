@@ -5,7 +5,7 @@
 // extendido — NO hay sesion real de Supabase Auth.
 
 import { supabase } from '../lib/supabase';
-import { setGuestUser, clearGuestUser } from '../lib/guestUser.js';
+import { setGuestUser } from '../lib/guestUser.js';
 
 export function cleanPhone(phone) {
   return String(phone || '').replace(/\D/g, '');
@@ -61,10 +61,6 @@ export async function phoneLogin({ phone, name, email = '', birth_date = null, n
   });
 
   return { ok: true, guest };
-}
-
-export function phoneLogout() {
-  clearGuestUser();
 }
 
 // ─── Bloqueo de telefonos rechazados en este dispositivo ──────────

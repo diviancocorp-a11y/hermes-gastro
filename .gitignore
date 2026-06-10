@@ -30,3 +30,4 @@ dist-ssr
 .env.e2e
 test-results/
 coverage/
+*.docx

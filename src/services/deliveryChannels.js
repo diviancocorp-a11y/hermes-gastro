@@ -40,15 +40,6 @@ export async function upsertDeliveryChannel(channel) {
   return data;
 }
 
-export async function deleteDeliveryChannel(id) {
-  const { error } = await supabase
-    .from("delivery_channels")
-    .update({ is_active: false, updated_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) { console.error("deleteDeliveryChannel:", error.message); return false; }
-  return true;
-}
-
 /**
  * Calcula la comisión absoluta para un total dado.
  */

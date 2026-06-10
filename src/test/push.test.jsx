@@ -9,6 +9,8 @@ vi.mock('../lib/supabase', () => ({
       delete: vi.fn(() => ({ eq: vi.fn().mockResolvedValue({ error: null }) })),
       select: vi.fn(() => ({ count: 'exact', head: true })),
     })),
+    // Sprint 1: push.js usa RPCs (upsert/delete/count_push_subscription[s])
+    rpc: vi.fn().mockResolvedValue({ data: 0, error: null }),
     functions: {
       invoke: vi.fn().mockResolvedValue({ data: { ok: true, sent: 5 }, error: null }),
     },
@@ -49,6 +51,14 @@ describe('Push service', () => {
     const result = await sendPushNotification({ title: 'Test', body: 'Hello', url: '/' });
     expect(result).toEqual({ ok: true, sent: 5 });
   });
+
+  it('getSubscriberCount usa el RPC count_push_subscriptions', async () => {
+    const { getSubscriberCount } = await import('../services/push');
+    const { supabase } = await import('../lib/supabase');
+    const count = await getSubscriberCount('customer');
+    expect(supabase.rpc).toHaveBeenCalledWith('count_push_subscriptions', { p_role: 'customer' });
+    expect(count).toBe(0);
+  });
 });
 
 describe('PushNotifications admin component', () => {
@@ -81,19 +91,11 @@ describe('PushNotifications admin component', () => {
     const { default: PushNotifications } = await import('../components/admin/PushNotifications');
 
     render(React.createElement(PushNotifications, { msg: vi.fn(), onClose: vi.fn() }));
-    const btn = screen.getByText(/Enviar a \d+ suscriptores/);
-    expect(btn.closest('button').disabled).toBe(true);
+    // Puede haber mas de un boton con este texto (segments) — alcanza con que el primero este deshabilitado
+    const btns = screen.getAllByText(/Enviar a \d+ suscriptores/);
+    expect(btns.length).toBeGreaterThanOrEqual(1);
+    expect(btns[0].closest('button').disabled).toBe(true);
   });
 });
 
-describe('PushBanner catalog component', () => {
-  it('renders without crashing (hidden by default in jsdom)', async () => {
-    const React = await import('react');
-    const { render } = await import('@testing-library/react');
-    const { default: PushBanner } = await import('../components/catalog/PushBanner');
-
-    const { container } = render(React.createElement(PushBanner));
-    // In jsdom, push is not supported, so banner should not render
-    expect(container.innerHTML).toBe('');
-  });
-});
+// PushBanner tests removed in Sprint 3 — componente muerto (el vivo es catalog-pro/PushOptInBanner).

@@ -3,6 +3,7 @@
 // con heurísticas ESTABLES por id (mismo producto → mismo valor siempre).
 
 import { DEAL_PCT } from "../constants/catalogConstants";
+import { fmtAR } from "../lib/format";
 
 function hashStr(s) {
   let h = 0;
@@ -69,7 +70,7 @@ export function mapProduct(p, opts = {}) {
     dealTone:    deal ? "promo" : null,
     dealIcon:    deal ? "🔥" : null,
     dealShort:   deal ? "Oferta" : null,
-    dealLong:    deal ? `Oferta del día · ahorrá $${savings.toLocaleString("es-AR")}` : null,
+    dealLong:    deal ? `Oferta del día · ahorrá ${fmtAR(savings)}` : null,
     dealSavings: deal ? savings : 0,
     _raw: p,
   };

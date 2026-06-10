@@ -21,6 +21,7 @@ export function chain(resolvedValue = { data: null, error: null }) {
     order: returnSelf,
     limit: returnSelf,
     single: vi.fn().mockResolvedValue(resolvedValue),
+    maybeSingle: vi.fn().mockResolvedValue(resolvedValue),
     then(resolve) { return resolve(resolvedValue); },
   });
   return self;
