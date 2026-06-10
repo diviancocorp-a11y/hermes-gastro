@@ -122,7 +122,7 @@ CLIENT=la-nona-pato vite build  # build de un tenant especifico
 
 ## Tareas pendientes
 
-**El backlog vivo esta en PLAN-DE-ACCION.md** (Sprints 0 y 1 completados el 9/jun/2026).
+**El backlog vivo esta en PLAN-DE-ACCION.md** (Sprints 0 a 4 completados el 9-10/jun/2026; queda Sprint 5/escala). Onboarding de cliente nuevo: ver ONBOARDING.md. Deploy de functions: `node scripts/deploy-functions.mjs --all`. Tareas manuales de Ricky: TAREAS-MANUALES.md.
 
 Sprint 1 (seguridad) aplicado en los 3 tenants:
 - **Roles admin**: tabla `admin_users` (owner/staff) + `is_admin()`/`is_owner()`. TODAS las policies "cualquier authenticated" ahora exigen is_admin(). Solo usuarios en admin_users entran al panel. Bootstrap de tenant nuevo: ver seccion ROLES en 000_initial_schema.sql
