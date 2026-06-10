@@ -8,7 +8,7 @@
 import { useState, useMemo } from "react";
 import BadgeTag from "../components/BadgeTag";
 import Icon from "./Icon";
-import { ProductPhoto, Rating, AddRound, PriceTag } from "./atoms";
+import { ProductPhoto, Rating, AddRound, PriceTag, SoldOutBadge } from "./atoms";
 import { mapProduct } from "./homeHelpers";
 
 const SORT_LABELS = {
@@ -21,6 +21,7 @@ const SORT_LABELS = {
 export default function CategoryScreen({
   categoryName, displayName, products = [],
   hasDeal, dealPrice, prepDefault,
+  soldOutIds, // Set de recipe_ids agotados
   onBack, onSelectProduct, onAddToCart, onOpenSearch,
 }) {
   const [view, setView] = useState("list");
@@ -28,8 +29,8 @@ export default function CategoryScreen({
   const [sortOpen, setSortOpen] = useState(false);
 
   const mapped = useMemo(
-    () => products.map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault })),
-    [products, hasDeal, dealPrice, prepDefault]
+    () => products.map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault, soldOutIds })),
+    [products, hasDeal, dealPrice, prepDefault, soldOutIds]
   );
 
   const sorted = useMemo(() => {
@@ -112,7 +113,14 @@ export default function CategoryScreen({
               display: "grid", gridTemplateColumns: "100px 1fr auto", gap: 14, alignItems: "center",
               padding: "12px 22px", borderBottom: "1px solid var(--line)", cursor: "pointer",
             }}>
-              <ProductPhoto src={p.img} height={100} radius={10} tone={p.tone} />
+              <div style={{ position: "relative" }}>
+                <ProductPhoto src={p.img} height={100} radius={10} tone={p.tone} dim={p.soldOut} />
+                {p.soldOut && (
+                  <div style={{ position: "absolute", top: 6, left: 6 }}>
+                    <SoldOutBadge compact />
+                  </div>
+                )}
+              </div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, color: "var(--tx)", lineHeight: 1.3, marginBottom: 4 }}>{p.name}</div>
                 {p.desc && <div className="body-s" style={{ fontSize: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 6 }}>{p.desc}</div>}
@@ -121,7 +129,7 @@ export default function CategoryScreen({
                   <PriceTag price={p.price} oldPrice={p.oldPrice} size="sm" />
                 </div>
               </div>
-              <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
+              <AddRound size={32} disabled={p.soldOut} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
             </div>
           ))}
         </div>
@@ -130,14 +138,19 @@ export default function CategoryScreen({
           {sorted.map(p => (
             <div key={p.id} onClick={() => onSelectProduct?.(p._raw)} style={{ position: "relative", cursor: "pointer" }}>
               <div style={{ position: "relative" }}>
-                <ProductPhoto src={p.img} height={140} radius={12} tone={p.tone} />
+                <ProductPhoto src={p.img} height={140} radius={12} tone={p.tone} dim={p.soldOut} />
+                {p.soldOut && (
+                  <div style={{ position: "absolute", top: 8, left: 8 }}>
+                    <SoldOutBadge />
+                  </div>
+                )}
                 {p.deal && (
                   <div style={{ position: "absolute", top: 8, right: 8 }}>
                     <BadgeTag compact label={p.dealLabel} tone={p.dealTone}>{p.dealShort}</BadgeTag>
                   </div>
                 )}
                 <div style={{ position: "absolute", bottom: -10, right: 8 }}>
-                  <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
+                  <AddRound size={32} disabled={p.soldOut} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
                 </div>
               </div>
               <div style={{ paddingTop: 14 }}>

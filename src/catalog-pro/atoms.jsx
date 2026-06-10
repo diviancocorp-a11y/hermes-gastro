@@ -6,7 +6,8 @@ import Icon from "./Icon";
 import { fmtAR } from "./format";
 
 // ── ProductPhoto — imagen con fallback a tone gradient + fade-in ──
-export function ProductPhoto({ src, alt = "", tone = "var(--b3)", height = 120, radius = 10, ratio }) {
+// dim: atenua la foto (grayscale + opacity) para productos agotados.
+export function ProductPhoto({ src, alt = "", tone = "var(--b3)", height = 120, radius = 10, ratio, dim = false }) {
   const [loaded, setLoaded] = useState(false);
   const [err, setErr] = useState(false);
   return (
@@ -26,10 +27,25 @@ export function ProductPhoto({ src, alt = "", tone = "var(--b3)", height = 120, 
           onLoad={() => setLoaded(true)} onError={() => setErr(true)}
           style={{
             position: "absolute", inset: 0, width: "100%", height: "100%",
-            objectFit: "cover", opacity: loaded ? 1 : 0, transition: "opacity 240ms ease",
+            objectFit: "cover", opacity: loaded ? (dim ? 0.45 : 1) : 0,
+            filter: dim ? "grayscale(0.8)" : "none",
+            transition: "opacity 240ms ease",
           }} />
       )}
     </div>
+  );
+}
+
+// ── SoldOutBadge — pill "Agotado" para overlay sobre la foto ──
+export function SoldOutBadge({ compact = false }) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center",
+      background: "color-mix(in oklab, var(--tx) 80%, transparent)", color: "var(--bg)",
+      fontSize: compact ? 9 : 10, fontWeight: 700, letterSpacing: "0.06em",
+      textTransform: "uppercase", padding: compact ? "3px 7px" : "4px 9px",
+      borderRadius: 4, backdropFilter: "blur(4px)",
+    }}>Agotado</span>
   );
 }
 
@@ -171,16 +187,19 @@ export function Stepper({ value, onChange, size = "md" }) {
   );
 }
 
-// ── AddRound — botón circular + (dark o amber) ──
-export function AddRound({ size = 32, onClick, dark = true }) {
+// ── AddRound — botón circular + (dark o amber). disabled = producto agotado ──
+export function AddRound({ size = 32, onClick, dark = true, disabled = false }) {
   return (
-    <button onClick={onClick} style={{
+    <button onClick={disabled ? undefined : onClick} disabled={disabled}
+      aria-label={disabled ? "Producto agotado" : "Agregar al carrito"} style={{
       width: size, height: size, borderRadius: 999,
-      background: dark ? "var(--tx)" : "var(--ac)",
-      color: dark ? "var(--bg)" : "#fff",
+      background: disabled ? "var(--b3)" : (dark ? "var(--tx)" : "var(--ac)"),
+      color: disabled ? "var(--t3)" : (dark ? "var(--bg)" : "#fff"),
       border: dark ? "2px solid var(--bg)" : "none",
       display: "flex", alignItems: "center", justifyContent: "center",
-      cursor: "pointer", boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
+      cursor: disabled ? "not-allowed" : "pointer",
+      boxShadow: disabled ? "none" : "0 2px 6px rgba(0,0,0,0.12)",
+      opacity: disabled ? 0.7 : 1,
     }}><Icon name="plus" size={size < 32 ? 12 : 14} stroke={2} /></button>
   );
 }

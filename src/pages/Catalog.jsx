@@ -35,6 +35,7 @@ import {
   haversine, calcDeliveryCost, CHECKOUT_STEPS, DEFAULT_FORM
 } from "../constants/catalogConstants";
 import { fetchCategoryGroups, toClientFormat, buildSubToParent } from "../services/categories";
+import { computeAvailability } from "../lib/stockAvailability";
 import useFeature from "../hooks/useFeature";
 
 export default function Catalog() {
@@ -57,6 +58,9 @@ export default function Catalog() {
   const [serverNow, setServerNow] = useState(null); // hora del servidor para validar horarios
   const [catGroups, setCatGroups] = useState(FALLBACK_CAT_GROUPS);
   const [subToParent, setSubToParent] = useState(FALLBACK_SUB_TO_PARENT);
+  // Data de stock para marcar "Agotado" (recipe_ingredients + ingredients + combo_items).
+  // Si el fetch falla queda vacio → nada se marca agotado (fail-open a proposito).
+  const [stockData, setStockData] = useState({ recipeIngredients: [], ingredients: [], comboItems: [] });
 
   // --- Estado de UI ---
   const [selCat, setSelCat] = useState("Todos");
@@ -308,6 +312,40 @@ export default function Catalog() {
     loadData();
   }, []);
 
+  // Cargar data de stock en paralelo al catalogo (lectura publica RLS).
+  // No bloquea el render: hasta que llega, ningun producto se marca agotado.
+  useEffect(() => {
+    let cancelled = false;
+    async function loadStock() {
+      try {
+        const [ri, ing, ci] = await Promise.all([
+          supabase.from("recipe_ingredients").select("recipe_id, ingredient_id, qty"),
+          supabase.from("ingredients").select("id, stock"),
+          supabase.from("combo_items").select("recipe_id, sub_recipe_id, qty"),
+        ]);
+        if (cancelled) return;
+        setStockData({
+          recipeIngredients: ri.data || [],
+          ingredients: ing.data || [],
+          comboItems: ci.data || [],
+        });
+      } catch (e) {
+        // Sin data de stock no marcamos nada como agotado
+        console.warn("No se pudo cargar data de stock (no bloquea):", e?.message);
+      }
+    }
+    loadStock();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Recipe ids agotados segun stock de ingredientes (helper puro, ver stockAvailability.js)
+  const soldOutIds = useMemo(() => computeAvailability({
+    recipes: products,
+    recipeIngredients: stockData.recipeIngredients,
+    ingredients: stockData.ingredients,
+    comboItems: stockData.comboItems,
+  }), [products, stockData]);
+
   // Restaurar carrito si vuelve del registro
   useEffect(() => {
     try {
@@ -438,6 +476,12 @@ export default function Catalog() {
       size = e; e = null;
     }
     e?.stopPropagation?.();
+    // Bloqueo por stock: si la receta esta agotada no entra al carrito.
+    // Unico punto de entrada al cart → cubre todas las pantallas.
+    if (p?.id && soldOutIds.has(p.id)) {
+      toast("Producto agotado");
+      return;
+    }
     // +18 gate: una sola vez por sesion del browser. Si ya confirmo en esta
     // sesion (sessionStorage), no preguntamos mas. Persiste mientras la tab
     // este abierta; si cierra y reabre, vuelve a preguntar.
@@ -471,7 +515,7 @@ export default function Catalog() {
       }
       return newCart;
     });
-  }, [products, getPrice, toast]);
+  }, [products, getPrice, toast, soldOutIds]);
 
   // Agregar desde upsell y cerrar popup (memoizado)
   const addFromUpsell = useCallback((p) => {
@@ -633,8 +677,11 @@ export default function Catalog() {
         setSent(true);
       }, 2500);
     } else {
-      console.error("Pedido no se guardó en Supabase.");
-      setOrderErr("No pudimos procesar tu pedido. Revisá tu conexión e intentá de nuevo.");
+      // Mensaje util del server si existe (rate limit, producto no disponible,
+      // cuenta de pago invalida...) — antes se descartaba y el cliente veia
+      // siempre el generico (Sprint 4).
+      console.error("Pedido no se guardó en Supabase:", result?.error);
+      setOrderErr(result?.error || "No pudimos procesar tu pedido. Revisá tu conexión e intentá de nuevo.");
     }
   };
 
@@ -773,6 +820,7 @@ export default function Catalog() {
         hasDeal={hasDeal}
         dealPrice={getPrice}
         prepDefault={sett.prep_time_min}
+        soldOutIds={soldOutIds}
         onAddToCart={(p) => addC(p)}
         onDecCart={(productId) => {
           const item = cart.find(i => i.id === productId);
@@ -807,6 +855,7 @@ export default function Catalog() {
           hasDeal={hasDeal}
           dealPrice={getPrice}
           prepDefault={sett.prep_time_min}
+          soldOutIds={soldOutIds}
           onBack={() => setCpScreen(null)}
           onSelectProduct={(p) => { setCpScreen(null); setCpDetail(p); }}
           onSelectCategory={(name) => { const cat = categories.find(c => c.name === name); setCpScreen({ type: "category", name, displayName: cat?.displayName || name, subs: cat?.subs || [] }); }}
@@ -821,6 +870,7 @@ export default function Catalog() {
           hasDeal={hasDeal}
           dealPrice={getPrice}
           prepDefault={sett.prep_time_min}
+          soldOutIds={soldOutIds}
           onBack={() => setCpScreen(null)}
           onOpenSearch={() => setCpScreen("search")}
           onSelectProduct={(p) => setCpDetail(p)}
@@ -830,6 +880,7 @@ export default function Catalog() {
       {cpDetail && (
         <ProductDetailScreenPro
           product={cpDetail}
+          soldOutIds={soldOutIds}
           related={(cpDetail.related_ids || [])
             .map(id => products.find(x => x.id === id))
             .filter(Boolean)

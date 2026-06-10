@@ -7,7 +7,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
-import { ProductPhoto, AddRound } from "./atoms";
+import { ProductPhoto, AddRound, SoldOutBadge } from "./atoms";
 import { mapProduct } from "./homeHelpers";
 
 const RECENTS_KEY = "cp_recent_searches";
@@ -39,6 +39,7 @@ function highlight(text, q) {
 
 export default function SearchScreen({
   products = [], categories = [], hasDeal, dealPrice, prepDefault,
+  soldOutIds, // Set de recipe_ids agotados
   onBack, onSelectProduct, onSelectCategory, onAddToCart,
 }) {
   const [q, setQ] = useState("");
@@ -93,20 +94,23 @@ export default function SearchScreen({
               <p className="body-s" style={{ margin: 0 }}>Probá con otra palabra o mirá las categorías.</p>
             </div>
           ) : matches.map(p => {
-            const m = mapProduct(p, { hasDeal, dealPrice, prepDefault });
+            const m = mapProduct(p, { hasDeal, dealPrice, prepDefault, soldOutIds });
             return (
               <div key={p.id} onClick={() => { commitSearch(q); onSelectProduct?.(p); }} style={{
                 display: "grid", gridTemplateColumns: "52px 1fr auto", gap: 12, alignItems: "center",
                 padding: "10px 22px", cursor: "pointer",
               }}>
-                <ProductPhoto src={m.img} height={52} radius={8} tone={m.tone} />
+                <ProductPhoto src={m.img} height={52} radius={8} tone={m.tone} dim={m.soldOut} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 14, color: "var(--tx)" }}>
                     {highlight(p.name, q)}
                   </div>
-                  <div style={{ fontSize: 12, color: "var(--t2)", marginTop: 2 }}>{fmtAR(m.price)}</div>
+                  <div style={{ fontSize: 12, color: "var(--t2)", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+                    {fmtAR(m.price)}
+                    {m.soldOut && <SoldOutBadge compact />}
+                  </div>
                 </div>
-                <AddRound size={30} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p); }} />
+                <AddRound size={30} disabled={m.soldOut} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p); }} />
               </div>
             );
           })}

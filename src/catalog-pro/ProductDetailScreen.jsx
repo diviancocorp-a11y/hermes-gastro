@@ -15,14 +15,16 @@ import { useState, useRef, useEffect } from "react";
 import BadgeTag from "../components/BadgeTag";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
-import { ProductPhoto, Rating, Stepper, AddRound, SectionHeader } from "./atoms";
+import { ProductPhoto, Rating, Stepper, AddRound, SectionHeader, SoldOutBadge } from "./atoms";
 import { mapProduct } from "./homeHelpers";
 
 export default function ProductDetailScreen({
   product, related = [], hasDeal, dealPrice, prepDefault,
+  soldOutIds, // Set de recipe_ids agotados
   onBack, onAddToCart, onSelectRelated, onToggleFav, isFav = false,
 }) {
-  const p = mapProduct(product, { hasDeal, dealPrice, prepDefault });
+  const p = mapProduct(product, { hasDeal, dealPrice, prepDefault, soldOutIds });
+  const soldOut = p.soldOut;
   // Sizes vienen del raw del producto (la DB recipes.sizes), no del mapProduct.
   const sizes = Array.isArray(product?.sizes) && product.sizes.length > 0 ? product.sizes : null;
   const [selectedSizeIdx, setSelectedSizeIdx] = useState(0);
@@ -42,7 +44,7 @@ export default function ProductDetailScreen({
   const selectedSize = sizes ? sizes[selectedSizeIdx] : null;
   const unitPrice = selectedSize ? Number(selectedSize.price) || 0 : p.price;
   const total = unitPrice * qty;
-  const relatedMapped = related.slice(0, 4).map(x => mapProduct(x, { hasDeal, dealPrice, prepDefault }));
+  const relatedMapped = related.slice(0, 4).map(x => mapProduct(x, { hasDeal, dealPrice, prepDefault, soldOutIds }));
 
   return (
     <div className="cp-root cp-surface cp-no-scrollbar" ref={scrollRef} style={{
@@ -50,7 +52,7 @@ export default function ProductDetailScreen({
     }}>
       {/* Hero */}
       <div style={{ position: "relative", height: 320 }}>
-        <ProductPhoto src={p.img} height={320} radius={0} tone={p.tone} />
+        <ProductPhoto src={p.img} height={320} radius={0} tone={p.tone} dim={soldOut} />
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 120, background: "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 100%)" }} />
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 100, background: "linear-gradient(180deg, transparent 0%, var(--bg) 100%)" }} />
       </div>
@@ -98,6 +100,11 @@ export default function ProductDetailScreen({
             fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
             padding: "4px 9px", borderRadius: 4,
           }}>{p.badge}</span>
+        )}
+        {soldOut && (
+          <div style={{ marginBottom: 10 }}>
+            <SoldOutBadge />
+          </div>
         )}
         {p.deal && (
           <div style={{ marginBottom: 10 }}>
@@ -235,9 +242,14 @@ export default function ProductDetailScreen({
             {relatedMapped.map(x => (
               <div key={x.id} onClick={() => onSelectRelated?.(x._raw)} style={{ flex: "0 0 130px", cursor: "pointer" }}>
                 <div style={{ position: "relative" }}>
-                  <ProductPhoto src={x.img} height={120} radius={10} tone={x.tone} />
+                  <ProductPhoto src={x.img} height={120} radius={10} tone={x.tone} dim={x.soldOut} />
+                  {x.soldOut && (
+                    <div style={{ position: "absolute", top: 6, left: 6 }}>
+                      <SoldOutBadge compact />
+                    </div>
+                  )}
                   <div style={{ position: "absolute", bottom: -10, right: 6 }}>
-                    <AddRound size={28} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(x._raw, 1); }} />
+                    <AddRound size={28} disabled={x.soldOut} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(x._raw, 1); }} />
                   </div>
                 </div>
                 <div style={{ paddingTop: 14 }}>
@@ -262,21 +274,23 @@ export default function ProductDetailScreen({
       }}>
         <Stepper value={qty} onChange={(v) => setQty(Math.max(1, v))} size="lg" />
         <button
-          onClick={() => onAddToCart?.(product, qty, selectedSize ? {
+          disabled={soldOut}
+          onClick={soldOut ? undefined : () => onAddToCart?.(product, qty, selectedSize ? {
             size_label: selectedSize.label,
             size_qty:   Number(selectedSize.qty) || 1,
             size_price: Number(selectedSize.price) || 0,
           } : null)}
           style={{
             flex: 1, height: 52, borderRadius: "var(--rs)", border: 0,
-            background: "var(--ac)", color: "#fff",
+            background: soldOut ? "var(--b3)" : "var(--ac)",
+            color: soldOut ? "var(--t3)" : "#fff",
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            paddingLeft: 18, paddingRight: 14, cursor: "pointer",
+            paddingLeft: 18, paddingRight: 14, cursor: soldOut ? "not-allowed" : "pointer",
             fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 15,
           }}
         >
-          <span>Agregar al pedido</span>
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: 15 }}>{fmtAR(total)}</span>
+          <span>{soldOut ? "Agotado" : "Agregar al pedido"}</span>
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 15 }}>{soldOut ? "" : fmtAR(total)}</span>
         </button>
       </div>
     </div>

@@ -87,6 +87,19 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
   const [fil,setFil]=useState(OrderStatus.NEW);const [showH,setShowH]=useState(false);const [showSched,setShowSched]=useState(false);const t=todayISO();
   const [histPage,setHistPage]=useState(1);const HIST_PER_PAGE=20;
   const [viewReceipt,setViewReceipt]=useState(null); // order object to view receipt
+  // Buscador por cliente / telefono (Sprint 4). Si hay query, busca en TODOS
+  // los pedidos (cualquier estado y fecha) — es la via rapida para "el pedido de Maria".
+  const [search,setSearch]=useState("");
+  const searchResults=useMemo(()=>{
+    const q=search.trim().toLowerCase();
+    if(q.length<2)return null;
+    const qDigits=q.replace(/\D/g,"");
+    return orders.filter(o=>{
+      const name=(o.customer||"").toLowerCase();
+      const phone=String(o.phone||"").replace(/\D/g,"");
+      return name.includes(q)||(qDigits.length>=3&&phone.includes(qDigits));
+    }).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||"")).slice(0,30);
+  },[orders,search]);
 
   // Calcular si el local está abierto ahora (misma lógica que Catalog)
   const storeIsOpen=useMemo(()=>{
@@ -216,7 +229,60 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
         </div>
       </div>
     </div>
+    {/* ─── Buscador por cliente / telefono (Sprint 4) ─── */}
+    <div style={{ padding: '0 16px 8px' }}>
+      <div style={{ position: 'relative' }}>
+        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ag-ink-3)', display: 'inline-flex' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </span>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar por nombre o teléfono..."
+          aria-label="Buscar pedidos por nombre o teléfono"
+          style={{
+            width: '100%', padding: '10px 36px', borderRadius: 12,
+            border: '1px solid var(--ag-line, rgba(127,127,127,0.2))',
+            background: 'var(--ag-bg-soft, rgba(127,127,127,0.06))',
+            color: 'var(--ag-ink)', fontSize: 13, fontFamily: 'inherit',
+          }}
+        />
+        {search && (
+          <button type="button" onClick={() => setSearch('')} aria-label="Limpiar búsqueda"
+            style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 0, color: 'var(--ag-ink-3)', cursor: 'pointer', fontSize: 16, padding: 4 }}>×</button>
+        )}
+      </div>
+    </div>
+
+    {/* ─── Resultados de busqueda (cualquier estado y fecha) ─── */}
+    {searchResults !== null && (
+      <div className="s">
+        <div style={{ padding: '4px 4px 8px', fontSize: 12, color: 'var(--ag-ink-3)' }}>
+          {searchResults.length === 0 ? 'Sin resultados' : `${searchResults.length} resultado${searchResults.length > 1 ? 's' : ''}`} para "{search.trim()}"
+        </div>
+        {searchResults.map(o => {
+          const cardProps = toCardProps(o, recipes);
+          const next = NEXT_STATUS[o.status];
+          return (
+            <OrderCard
+              key={o.id}
+              order={cardProps}
+              onPrimary={next ? () => {
+                moveOrderStatus(o.id, next);
+                showToast(`Pedido ${cardProps.id} → ${OrderStatusLabels[next] || next}`);
+              } : undefined}
+              onCancel={() => setOverlay({ type: 'cancel', orderId: o.id, order: o })}
+              onGhost={() => onUpdateOrder?.(o.id, { _showDetail: true })}
+            />
+          );
+        })}
+      </div>
+    )}
+
     {/* ─── Tabs de filtros (pills horizontales con scroll) ─── */}
+    {searchResults === null && (
     <div className="ag-o-tabs">
       {sfs.map(sf => {
         const on = fil === sf.id;
@@ -242,6 +308,8 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
         );
       })}
     </div>
+    )}
+    {searchResults === null && (
     <div className="s">
       {/* Lista de pedidos reales con el nuevo OrderCard */}
       {filt.map(o => {
@@ -273,6 +341,7 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
         </div>
       )}
     </div>
+    )}
     {/* CTA centrado al fondo de la lista de pedidos · reemplaza el FAB "+" */}
     <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 16px 90px' }}>
       <button

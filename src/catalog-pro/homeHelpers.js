@@ -39,10 +39,11 @@ export function prepFor(id, fallback) {
 /**
  * Mapea un producto real (DB) al shape que usan los componentes catalog-pro.
  * @param p producto real {id, name, sale_price, description, image_url, category, related_ids}
- * @param opts { hasDeal, dealPrice, prepDefault }
+ * @param opts { hasDeal, dealPrice, prepDefault, soldOutIds }
+ *   soldOutIds: Set de recipe_ids agotados (ver lib/stockAvailability.js)
  */
 export function mapProduct(p, opts = {}) {
-  const { hasDeal, dealPrice, prepDefault } = opts;
+  const { hasDeal, dealPrice, prepDefault, soldOutIds } = opts;
   const deal = hasDeal ? hasDeal(p) : false;
   const price = deal && dealPrice ? dealPrice(p) : p.sale_price;
   const oldPrice = deal ? p.sale_price : null;
@@ -64,6 +65,8 @@ export function mapProduct(p, opts = {}) {
     reviews: reviewsFor(p.id),
     prepMin: prepFor(p.id, prepDefault),
     badge: deal ? "Oferta" : null,
+    // Sin stock de ingredientes suficiente para 1 unidad
+    soldOut: !!(soldOutIds && soldOutIds.has(p.id)),
     // Deal chip (centralizado)
     deal,
     dealLabel:   deal ? `-${DEAL_PCT}%` : null,

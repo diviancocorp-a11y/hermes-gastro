@@ -83,8 +83,31 @@ function businessHtmlPlugin() {
   }
 }
 
-export default defineConfig({
-  plugins: [businessHtmlPlugin(), tailwindcss(), react()],
+// ── Sentry sourcemaps (Sprint 4.7) ──────────────────────────────────────────
+// Solo se activa si hay SENTRY_AUTH_TOKEN en el entorno de build (Vercel env o
+// local). Sin token: build normal sin sourcemaps, cero impacto.
+// Setup: crear token en Sentry > Settings > Auth Tokens (scope project:releases)
+// y agregar SENTRY_AUTH_TOKEN + SENTRY_ORG + SENTRY_PROJECT a las env del build.
+const SENTRY_ENABLED = !!process.env.SENTRY_AUTH_TOKEN
+async function sentryPlugins() {
+  if (!SENTRY_ENABLED) return []
+  try {
+    const { sentryVitePlugin } = await import('@sentry/vite-plugin')
+    return [sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      release: { name: `${CLIENT}@${process.env.npm_package_version || 'dev'}` },
+      sourcemaps: { filesToDeleteAfterUpload: ['dist/**/*.map'] },
+    })]
+  } catch {
+    console.warn('[sentry] @sentry/vite-plugin no instalado — sourcemaps omitidos')
+    return []
+  }
+}
+
+export default defineConfig(async () => ({
+  plugins: [businessHtmlPlugin(), tailwindcss(), react(), ...(await sentryPlugins())],
   resolve: {
     alias: {
       '@business': path.resolve(__dirname, `clients/${CLIENT}/business.js`),
@@ -117,6 +140,8 @@ export default defineConfig({
     },
   },
   build: {
+    // Sourcemaps solo cuando Sentry los va a subir (se borran del deploy despues)
+    sourcemap: SENTRY_ENABLED ? 'hidden' : false,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -131,4 +156,4 @@ export default defineConfig({
     target: 'es2020',
     cssMinify: true,
   },
-})
+}))

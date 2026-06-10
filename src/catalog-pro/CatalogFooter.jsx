@@ -65,6 +65,29 @@ Podés borrar las cookies desde la configuración de tu navegador en cualquier m
     ],
 
     worksWithUs: `${bizName} busca sumar gente al equipo. Si te interesa trabajar con nosotros, contactanos por WhatsApp o email y contanos tu experiencia.`,
+
+    // Politica de privacidad — Ley 25.326 de Proteccion de Datos Personales (AR)
+    privacy: `POLÍTICA DE PRIVACIDAD — ${bizName}
+
+1. Qué datos recolectamos
+Para procesar tu pedido guardamos: nombre, teléfono, email (opcional), dirección de entrega (solo pedidos con envío) y el historial de tus pedidos.
+
+2. Para qué los usamos
+· Procesar y entregarte tu pedido.
+· Contactarte por WhatsApp o email sobre el estado del pedido.
+· Avisarte de promociones de ${bizName} (podés pedir que no, en cualquier momento).
+Nunca vendemos ni cedemos tus datos a terceros con fines publicitarios.
+
+3. Dónde se guardan
+Los datos se almacenan en servidores seguros (Supabase) con acceso restringido al personal autorizado de ${bizName}.
+
+4. Tus derechos (Ley 25.326)
+Podés pedir acceso, rectificación o eliminación de tus datos contactando a ${bizName} por WhatsApp o email. La Agencia de Acceso a la Información Pública (www.argentina.gob.ar/aaip) es el órgano de control de la Ley 25.326 y atiende denuncias por incumplimiento.
+
+5. Plataforma
+La infraestructura técnica está provista por Hermes Gastro, que procesa los datos únicamente por cuenta y orden de ${bizName}.
+
+Última actualización: 2026`,
   };
 }
 
@@ -199,6 +222,7 @@ export default function CatalogFooter({ settings = {} }) {
         }}>
           <FooterCol title="Legal" items={[
             { label: "Términos y condiciones", onClick: () => open("terms") },
+            { label: "Política de privacidad", onClick: () => open("privacy") },
             { label: "Política de cookies", onClick: () => open("cookies") },
             { label: "Libro de quejas", href: DEFENSA_CONSUMIDOR_AR, external: true },
           ]} />
@@ -262,6 +286,7 @@ export default function CatalogFooter({ settings = {} }) {
 
       {/* ─── MODALES ─── */}
       {modal === "terms" && <Modal title="Términos y condiciones" onClose={close}>{copy.terms}</Modal>}
+      {modal === "privacy" && <Modal title="Política de privacidad" onClose={close}>{copy.privacy}</Modal>}
       {modal === "cookies" && <Modal title="Política de cookies" onClose={close}>{copy.cookies}</Modal>}
       {modal === "faq" && <Modal title="Preguntas frecuentes" onClose={close}><FaqList items={copy.faq} /></Modal>}
       {modal === "worksWithUs" && <Modal title="Trabajá con nosotros" onClose={close}>{copy.worksWithUs}</Modal>}

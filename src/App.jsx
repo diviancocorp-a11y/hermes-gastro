@@ -10,6 +10,7 @@ import SkipToContent from './components/ui/SkipToContent'
 import OfflineBanner from './components/ui/OfflineBanner'
 import useTheme from './hooks/useTheme'
 import Catalog from './pages/Catalog'
+import NotFound from './pages/NotFound'
 import { useEffect } from 'react'
 import { fetchSettings } from './services/settings'
 import { supabase } from './lib/supabase'
@@ -88,6 +89,8 @@ export default function App() {
               <Route path="/pago/exitoso" element={<MpStatus status="exitoso" />} />
               <Route path="/pago/fallido" element={<MpStatus status="fallido" />} />
               <Route path="/pago/pendiente" element={<MpStatus status="pendiente" />} />
+              {/* 404 catch-all (Sprint 4) — sin esto, URL invalida = pantalla blanca */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
             </main>
           </Suspense>

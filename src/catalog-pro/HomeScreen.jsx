@@ -19,7 +19,7 @@ import AccountMenu from "./AccountMenu";
 import CatalogMusicToggle from "./CatalogMusicToggle";
 import { fmtAR } from "./format";
 import {
-  ProductPhoto, PriceTag, Rating, StickyCart, SectionHeader, AddRound,
+  ProductPhoto, PriceTag, Rating, StickyCart, SectionHeader, AddRound, SoldOutBadge,
 } from "./atoms";
 import { mapProduct, buildStories, buildRecos } from "./homeHelpers";
 import HermesMark from "../components/HermesMark";
@@ -31,6 +31,7 @@ export default function HomeScreen({
   store = {}, userName, products = [], categories = [],
   cartCount = 0, cartTotal = 0,
   hasDeal, dealPrice, prepDefault,
+  soldOutIds, // Set de recipe_ids agotados (stock de ingredientes)
   onAddToCart, onOpenCart, onSelectProduct, onOpenAccount,
   session, onLogout,
   settings = {},
@@ -63,8 +64,8 @@ export default function HomeScreen({
     () => products
       .filter(p => /combo|pack|promo|caja|docena|mesa/i.test(p.category || ""))
       .slice(0, 8)
-      .map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault })),
-    [products, hasDeal, dealPrice, prepDefault]
+      .map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault, soldOutIds })),
+    [products, hasDeal, dealPrice, prepDefault, soldOutIds]
   );
   // Grid completo de TODOS los productos filtrados por categoria activa +
   // busqueda + quick filter (en oferta / vegetariano / nuevos / mas pedidos).
@@ -102,8 +103,8 @@ export default function HomeScreen({
       // Mas pedidos: ordenar por sale_count o veces que aparece en orders.
       list = [...list].sort((a, b) => (b.sale_count || 0) - (a.sale_count || 0));
     }
-    return list.map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault }));
-  }, [products, categories, activeCat, searchQuery, activeFilter, hasDeal, dealPrice, prepDefault]);
+    return list.map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault, soldOutIds }));
+  }, [products, categories, activeCat, searchQuery, activeFilter, hasDeal, dealPrice, prepDefault, soldOutIds]);
 
   // Categorias ordenadas por hora del dia (personalizacion).
   // Si una categoria matchea palabras clave del momento, aparece primera.
@@ -449,8 +450,13 @@ export default function HomeScreen({
                 position: "relative", cursor: "pointer", border: "1px solid var(--line)",
               }}>
                 <div style={{ position: "relative", height: 140 }}>
-                  <ProductPhoto src={b.img} height={140} radius={0} tone={b.tone} />
+                  <ProductPhoto src={b.img} height={140} radius={0} tone={b.tone} dim={b.soldOut} />
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.55) 100%)" }} />
+                  {b.soldOut && (
+                    <div style={{ position: "absolute", top: 10, left: 10 }}>
+                      <SoldOutBadge />
+                    </div>
+                  )}
                   {b.oldPrice && (
                     <div style={{
                       position: "absolute", top: 10, right: 10, background: "var(--ac)", color: "#fff",
@@ -467,7 +473,7 @@ export default function HomeScreen({
                   )}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <PriceTag price={b.price} oldPrice={b.oldPrice} size="md" />
-                    <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(b._raw); }} />
+                    <AddRound size={32} disabled={b.soldOut} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(b._raw); }} />
                   </div>
                 </div>
               </div>
@@ -487,8 +493,13 @@ export default function HomeScreen({
         {gridProducts.map(p => (
           <div key={p.id} onClick={() => onSelectProduct?.(p._raw)} style={{ position: "relative", cursor: "pointer", display: "flex", flexDirection: "column" }}>
             <div style={{ position: "relative" }}>
-              <ProductPhoto src={p.img} height={140} radius={12} tone={p.tone} />
-              {p.badge && (
+              <ProductPhoto src={p.img} height={140} radius={12} tone={p.tone} dim={p.soldOut} />
+              {p.soldOut && (
+                <div style={{ position: "absolute", top: 8, left: 8 }}>
+                  <SoldOutBadge />
+                </div>
+              )}
+              {!p.soldOut && p.badge && (
                 <div style={{ position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", color: "#fff", fontSize: 10, fontWeight: 600, letterSpacing: "0.04em", padding: "3px 7px", borderRadius: 4 }}>
                   {p.badge}
                 </div>
@@ -505,6 +516,8 @@ export default function HomeScreen({
               )}
               <div style={{ position: "absolute", bottom: -10, right: 8 }}>
                 {(() => {
+                  // Agotado: boton deshabilitado, sin stepper aunque este en cart
+                  if (p.soldOut) return <AddRound size={32} disabled />;
                   const qty = cartQtyById(p.id);
                   if (qty === 0) return <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />;
                   return (

@@ -147,13 +147,23 @@ export async function submitOrder(orderData) {
     });
 
     if (error) {
-      console.error('submitOrder edge function error:', error);
-      return { ok: false, orderId: null };
+      // FunctionsHttpError: el mensaje util del server (429 rate limit,
+      // "producto no disponible", "cuenta de pago no valida") viene en
+      // error.context — propagarlo para que el checkout lo muestre (Sprint 4).
+      let serverMsg = null;
+      try {
+        if (error.context && typeof error.context.json === 'function') {
+          const body = await error.context.json();
+          serverMsg = body?.error || null;
+        }
+      } catch { /* body no-json: usamos generico */ }
+      console.error('submitOrder edge function error:', serverMsg || error);
+      return { ok: false, orderId: null, error: serverMsg };
     }
 
     if (!data?.ok) {
       console.error('submitOrder server error:', data?.error);
-      return { ok: false, orderId: null };
+      return { ok: false, orderId: null, error: data?.error || null };
     }
 
     // Upsert al CRM (tabla customers) con dedup-aware: busca por phone
