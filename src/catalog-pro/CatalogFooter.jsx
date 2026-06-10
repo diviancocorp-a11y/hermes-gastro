@@ -10,10 +10,13 @@
 import { useState } from "react";
 import HermesMark from "../components/HermesMark";
 
+// Datos de contacto de Hermes (la plataforma). Mientras sean null, los botones
+// de contacto del modal "para tu negocio" NO se muestran — antes habia un
+// WhatsApp falso (5491100000000) en produccion. Ver TAREAS-MANUALES.md.
 const HERMES = {
-  whatsapp: "5491100000000",          // TODO: número real Hermes
-  email: "hola@hermesgastro.com",     // TODO: dominio real Hermes
-  instagram: "hermesgastro",          // TODO: handle real Hermes
+  whatsapp: null,   // ej: "5491122334455" (solo digitos, con 54 9)
+  email: null,      // ej: "hola@hermesgastro.com"
+  instagram: null,  // ej: "hermesgastro"
 };
 
 const DEFENSA_CONSUMIDOR_AR = "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario";
@@ -266,23 +269,32 @@ export default function CatalogFooter({ settings = {} }) {
         <Modal title="Hermes para tu negocio" onClose={close}>
           <div style={{ whiteSpace: "pre-line", marginBottom: 18 }}>{HERMES_BUSINESS_COPY}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <a
-              href={`https://wa.me/${HERMES.whatsapp}?text=${encodeURIComponent("Hola! Tengo un local gastronómico y me interesa Hermes Gastro.")}`}
-              target="_blank" rel="noopener noreferrer"
-              style={{
-                padding: "12px 16px", background: "#25D366", color: "#fff",
-                borderRadius: 12, textDecoration: "none", fontWeight: 700, fontSize: 14,
-                textAlign: "center", display: "block",
-              }}
-            >📱 Hablar por WhatsApp</a>
-            <a
-              href={`mailto:${HERMES.email}?subject=${encodeURIComponent("Hermes para mi negocio")}`}
-              style={{
-                padding: "12px 16px", background: "#F59E0B", color: "#000",
-                borderRadius: 12, textDecoration: "none", fontWeight: 700, fontSize: 14,
-                textAlign: "center", display: "block",
-              }}
-            >📧 Enviar email</a>
+            {HERMES.whatsapp && (
+              <a
+                href={`https://wa.me/${HERMES.whatsapp}?text=${encodeURIComponent("Hola! Tengo un local gastronómico y me interesa Hermes Gastro.")}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{
+                  padding: "12px 16px", background: "#25D366", color: "#fff",
+                  borderRadius: 12, textDecoration: "none", fontWeight: 700, fontSize: 14,
+                  textAlign: "center", display: "block",
+                }}
+              >📱 Hablar por WhatsApp</a>
+            )}
+            {HERMES.email && (
+              <a
+                href={`mailto:${HERMES.email}?subject=${encodeURIComponent("Hermes para mi negocio")}`}
+                style={{
+                  padding: "12px 16px", background: "#F59E0B", color: "#000",
+                  borderRadius: 12, textDecoration: "none", fontWeight: 700, fontSize: 14,
+                  textAlign: "center", display: "block",
+                }}
+              >📧 Enviar email</a>
+            )}
+            {!HERMES.whatsapp && !HERMES.email && (
+              <div style={{ fontSize: 13, opacity: 0.7, textAlign: "center" }}>
+                Datos de contacto disponibles próximamente.
+              </div>
+            )}
           </div>
         </Modal>
       )}

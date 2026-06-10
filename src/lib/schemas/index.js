@@ -243,6 +243,13 @@ export const SettingsInputSchema = z.object({
   store_address: optionalText(300),
   // Catálogo público
   min_order_amount: z.number().min(0).nullable().optional(),
+  // Escalones de costo de envio [{max_km, cost}] — max_km null = "resto" (Sprint 2)
+  delivery_pricing: z.array(z.object({
+    max_km: z.number().positive().nullable(),
+    cost: z.number().min(0),
+  })).max(12).nullable().optional(),
+  // Descuento % default de cupones post-pedido (Sprint 2)
+  coupon_default_pct: z.number().min(0).max(100).nullable().optional(),
   // Grupos de cat / daily deals
   cat_groups: z.json().nullable().optional(),
   daily_deals: z.json().nullable().optional(),

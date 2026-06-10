@@ -37,10 +37,11 @@ Deno.serve(async (req) => {
 
     if (settErr) throw settErr;
 
+    // Fallback generico — NUNCA marca de un tenant (multi-tenant, Sprint 2)
     const settings = settingsRows?.[0] ?? {
-      biz_name: 'La Nona Pato',
-      logo_letter: 'N',
-      logo_color: '#C45D3E',
+      biz_name: 'Mi Negocio',
+      logo_letter: 'M',
+      logo_color: '#888888',
     };
 
     // Fetch visible, non-archived products

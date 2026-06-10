@@ -1,4 +1,11 @@
 // supabase/functions/afip-invoice/index.ts
+//
+// ⚠⚠ STUB NO FUNCIONAL — NO DEPLOYAR ⚠⚠
+// getAuthToken devuelve PLACEHOLDER_TOKEN/PLACEHOLDER_SIGN: la autenticacion
+// WSAA real (firma CMS del TRA con certificado AFIP) NO esta implementada.
+// Decision pendiente en TAREAS-MANUALES.md. Feature flag E_INVOICE esta OFF.
+// No esta deployada en ningun tenant (verificado 9/jun/2026).
+//
 // AFIP Electronic Invoice Edge Function
 // Handles: authorize invoice (FECAESolicitar), get last invoice (FECompUltimoAutorizado),
 // and get invoice details (FECompConsultar).

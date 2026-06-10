@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   try {
-    const { data: cfg } = await supabase.from("settings").select("cat_groups, daily_deals, deal_pct, payment_accounts").eq("id", 1).single();
+    const { data: cfg } = await supabase.from("settings").select("cat_groups, daily_deals, deal_pct, payment_accounts, delivery_pricing").eq("id", 1).single();
     const catGroups = (cfg?.cat_groups || []);
     const dailyDeals = (cfg?.daily_deals || {});
     const dealPct = (cfg?.deal_pct ?? 15);
@@ -66,8 +66,14 @@ Deno.serve(async (req) => {
     // ── Direccion de envio: persiste en orders.delivery_address ──
     const address = body.address ? String(body.address).trim().slice(0, 500) : null;
     // ── Costo de envio: solo aplica si delivery=envio, clampeado server-side ──
-    // TODO Sprint 2.3: recalcular desde settings (hoy el pricing vive en el cliente)
-    const deliveryCost = delivery === "envio" ? Math.max(0, Math.min(50000, Math.round(Number(body.delivery_cost) || 0))) : 0;
+    // Techo real = costo maximo de settings.delivery_pricing (Sprint 2).
+    // El server no conoce la distancia (geocoding es client-side), pero ningun
+    // envio puede costar mas que el escalon mas caro configurado por el tenant.
+    const pricingTable = Array.isArray(cfg?.delivery_pricing) ? cfg.delivery_pricing : [];
+    const maxDeliveryCost = pricingTable.length > 0
+      ? Math.max(...pricingTable.map((s) => Number(s?.cost) || 0))
+      : 50000; // fallback si el tenant no tiene tabla configurada
+    const deliveryCost = delivery === "envio" ? Math.max(0, Math.min(maxDeliveryCost, Math.round(Number(body.delivery_cost) || 0))) : 0;
     // ── Propina (catalog-pro): % sobre subtotal, validado server-side ──
     const tipPct = Math.max(0, Math.min(100, Number(body.tip_pct) || 0));
     if (!customer || !phone) return jsonRes({ error: "Faltan datos: nombre y teléfono son obligatorios" }, 400);

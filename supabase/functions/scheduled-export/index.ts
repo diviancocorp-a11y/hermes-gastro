@@ -28,12 +28,30 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
+
+    // AUTH (Sprint 2): solo service role (pg_cron) o JWT de admin.
+    // Antes era invocable con la anon key publica.
+    const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+    let authorized = token === serviceKey;
+    if (!authorized && token) {
+      const { data: userData } = await supabase.auth.getUser(token);
+      const uid = userData?.user?.id;
+      if (uid) {
+        const { data: adminRow } = await supabase.from("admin_users").select("user_id").eq("user_id", uid).maybeSingle();
+        authorized = !!adminRow;
+      }
+    }
+    if (!authorized) {
+      return new Response(JSON.stringify({ error: "No autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const { period = "week" } = await req.json().catch(() => ({}));
+
+    // Multi-tenant: el nombre del negocio sale de settings, NUNCA hardcodeado
+    const { data: cfg } = await supabase.from("settings").select("biz_name, store_name").eq("id", 1).single();
+    const bizName = cfg?.store_name || cfg?.biz_name || "Mi Negocio";
 
     // Calculate date range
     const now = new Date();
@@ -82,7 +100,7 @@ Deno.serve(async (req) => {
     // Prepare email body
     const subject = `Reporte ${period === 'day' ? 'diario' : period === 'month' ? 'mensual' : 'semanal'} — ${fromISO} a ${toISO}`;
     const htmlBody = `
-      <h2>📊 Reporte de La Nona Pato</h2>
+      <h2>📊 Reporte de ${bizName}</h2>
       <p><strong>Período:</strong> ${fromISO} a ${toISO}</p>
       <table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse">
         <tr><td><strong>Ventas</strong></td><td style="text-align:right">$${totalSales.toLocaleString()}</td></tr>
@@ -102,7 +120,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          from: "La Nona Pato <noreply@resend.dev>",
+          from: `${bizName} <noreply@resend.dev>`,
           to: [exportEmail],
           subject,
           html: htmlBody,

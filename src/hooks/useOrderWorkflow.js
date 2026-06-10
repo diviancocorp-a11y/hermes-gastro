@@ -146,7 +146,9 @@ export default function useOrderWorkflow({
         return nw;
       });
       if (o.email) {
-        const coupon = await createCouponForOrder(o.id, o.email, 10);
+        // % configurable por tenant (settings.coupon_default_pct, Sprint 2)
+        const couponPct = Number(sett?.coupon_default_pct) > 0 ? Number(sett.coupon_default_pct) : 10;
+        const coupon = await createCouponForOrder(o.id, o.email, couponPct);
         if (coupon) msg(`✅ Completado · Cupón ${coupon.code} enviado a ${o.email}`);
         else msg("Completado · Venta registrada");
       } else {

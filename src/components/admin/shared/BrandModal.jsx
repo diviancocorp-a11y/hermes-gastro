@@ -574,6 +574,69 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                     </div>
                   </div>
 
+                  {/* Costo de envio por distancia (settings.delivery_pricing, Sprint 2) */}
+                  <div style={{ paddingTop: 10 }}>
+                    <div className="ag-cat-row-label" style={{ marginBottom: 2 }}>Costo de envío por distancia</div>
+                    <div className="ag-cat-row-hint" style={{ marginBottom: 8 }}>El último escalón (sin km) aplica a distancias mayores.</div>
+                    {(Array.isArray(s.delivery_pricing) && s.delivery_pricing.length > 0
+                      ? s.delivery_pricing
+                      : [{ max_km: 2, cost: 500 }, { max_km: 5, cost: 1000 }, { max_km: 10, cost: 1800 }, { max_km: 15, cost: 2500 }, { max_km: 25, cost: 3500 }, { max_km: null, cost: 5000 }]
+                    ).map((step, i, arr) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        {step.max_km != null ? (
+                          <>
+                            <span style={{ fontSize: 12, color: 'var(--ag-ink-3)', minWidth: 42 }}>hasta</span>
+                            <div style={{ width: 64 }}>
+                              <DecimalInput
+                                step="1"
+                                value={step.max_km}
+                                onChange={(n) => {
+                                  const next = arr.map((x, j) => j === i ? { ...x, max_km: Math.max(1, n || 1) } : x);
+                                  set("delivery_pricing", next);
+                                }}
+                                placeholder="km"
+                              />
+                            </div>
+                            <span style={{ fontSize: 12, color: 'var(--ag-ink-3)' }}>km →</span>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: 12, color: 'var(--ag-ink-3)', minWidth: 132 }}>más lejos →</span>
+                        )}
+                        <span className="ag-cat-row-prefix">$</span>
+                        <div style={{ width: 84 }}>
+                          <DecimalInput
+                            step="50"
+                            value={step.cost}
+                            onChange={(n) => {
+                              const next = arr.map((x, j) => j === i ? { ...x, cost: Math.max(0, n || 0) } : x);
+                              set("delivery_pricing", next);
+                            }}
+                            placeholder="0"
+                          />
+                        </div>
+                        {step.max_km != null && arr.length > 2 && (
+                          <button type="button" aria-label="Quitar escalón"
+                            onClick={() => set("delivery_pricing", arr.filter((_, j) => j !== i))}
+                            style={{ background: 'none', border: 'none', color: 'var(--ag-ink-3)', cursor: 'pointer', fontSize: 16, padding: 2 }}>×</button>
+                        )}
+                      </div>
+                    ))}
+                    <button type="button"
+                      onClick={() => {
+                        const cur = Array.isArray(s.delivery_pricing) && s.delivery_pricing.length > 0
+                          ? s.delivery_pricing
+                          : [{ max_km: 2, cost: 500 }, { max_km: 5, cost: 1000 }, { max_km: 10, cost: 1800 }, { max_km: 15, cost: 2500 }, { max_km: 25, cost: 3500 }, { max_km: null, cost: 5000 }];
+                        const numeric = cur.filter(x => x.max_km != null);
+                        const rest = cur.filter(x => x.max_km == null);
+                        const lastKm = numeric.length > 0 ? Math.max(...numeric.map(x => x.max_km)) : 0;
+                        const lastCost = numeric.length > 0 ? numeric[numeric.length - 1].cost : 500;
+                        set("delivery_pricing", [...numeric, { max_km: lastKm + 5, cost: lastCost + 500 }, ...rest]);
+                      }}
+                      style={{ fontSize: 12, padding: '6px 10px', borderRadius: 8, border: '1px dashed var(--ag-line, rgba(127,127,127,0.35))', background: 'none', color: 'var(--ag-ink-2)', cursor: 'pointer' }}>
+                      + Agregar escalón
+                    </button>
+                  </div>
+
                 </div>
               </div>
 

@@ -13,7 +13,7 @@ export default function SkipToContent({ target = '#main-content' }) {
         height: '1px',
         overflow: 'hidden',
         zIndex: 9999,
-        background: '#C45D3E',
+        background: 'var(--ac, #C45D3E)',
         color: '#fff',
         padding: '12px 24px',
         borderRadius: '0 0 8px 0',

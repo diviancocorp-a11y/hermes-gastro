@@ -241,7 +241,9 @@
       "catalog_payment_methods",
       "usar_targets",
       "catalog_theme",
-      "payment_accounts"
+      "payment_accounts",
+      "delivery_pricing",
+      "coupon_default_pct"
     ],
     "admin_users": [
       "user_id",

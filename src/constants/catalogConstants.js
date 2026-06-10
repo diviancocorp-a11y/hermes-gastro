@@ -37,13 +37,37 @@ export const haversine = (lat1, lon1, lat2, lon2) => {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 };
 
-export const calcDeliveryCost = (km) => {
-  if (km <= 2) return 500;
-  if (km <= 5) return 1000;
-  if (km <= 10) return 1800;
-  if (km <= 15) return 2500;
-  if (km <= 25) return 3500;
-  return 5000;
+// Escalones default — fallback si el tenant no configuro settings.delivery_pricing.
+// max_km null = "el resto" (distancias mayores al ultimo escalon).
+export const DEFAULT_DELIVERY_PRICING = [
+  { max_km: 2,  cost: 500 },
+  { max_km: 5,  cost: 1000 },
+  { max_km: 10, cost: 1800 },
+  { max_km: 15, cost: 2500 },
+  { max_km: 25, cost: 3500 },
+  { max_km: null, cost: 5000 },
+];
+
+/**
+ * Costo de envio por distancia. `pricing` viene de settings.delivery_pricing
+ * (configurable por tenant en Personalizacion); si falta o es invalida usa
+ * DEFAULT_DELIVERY_PRICING.
+ */
+export const calcDeliveryCost = (km, pricing = null) => {
+  const table = Array.isArray(pricing) && pricing.length > 0
+    && pricing.every(s => s && typeof s.cost === 'number' && s.cost >= 0)
+    ? pricing
+    : DEFAULT_DELIVERY_PRICING;
+  // Ordenar por max_km asc, null (resto) al final
+  const sorted = [...table].sort((a, b) => {
+    if (a.max_km == null) return 1;
+    if (b.max_km == null) return -1;
+    return a.max_km - b.max_km;
+  });
+  for (const step of sorted) {
+    if (step.max_km == null || km <= step.max_km) return step.cost;
+  }
+  return sorted[sorted.length - 1]?.cost ?? 0;
 };
 
 export const CHECKOUT_STEPS = ["Datos", "Entrega", "Pago"];

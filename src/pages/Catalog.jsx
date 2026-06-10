@@ -103,7 +103,8 @@ export default function Catalog() {
       const data = await r.json();
       if (data?.[0]) {
         const km = haversine(STORE_LAT, STORE_LNG, parseFloat(data[0].lat), parseFloat(data[0].lon));
-        const cost = calcDeliveryCost(km);
+        // Escalones configurables por tenant (settings.delivery_pricing, Sprint 2)
+        const cost = calcDeliveryCost(km, sett?.delivery_pricing);
         setDeliveryKm(Math.round(km * 10) / 10);
         setDeliveryCost(cost);
       } else {
@@ -111,7 +112,7 @@ export default function Catalog() {
       }
     } catch { setDeliveryCost(0); setDeliveryKm(null); }
     setCalcingDelivery(false);
-  }, []);
+  }, [sett?.delivery_pricing]);
 
   // Fecha mínima para agendamiento: hoy (siempre permite programar para hoy y mañana)
   const minDate = useMemo(() => {
