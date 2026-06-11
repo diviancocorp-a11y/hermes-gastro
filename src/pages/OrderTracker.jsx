@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { formatOrderCode } from "../lib/utils";
 import { fmtAR } from "../lib/format";
+import { waLink } from "@business";
 
 // ─── Mapa de estados ──────────────────────────────────
 const STEPS = [
@@ -209,6 +210,22 @@ export default function OrderTracker() {
           Actualización en tiempo real
         </div>
       )}
+
+      {/* Ayuda SIEMPRE visible: cancelado, completado o en curso — cualquier
+          consulta va directo al WhatsApp del local con el codigo del pedido */}
+      <a
+        href={waLink(`Hola! Tengo una consulta sobre mi pedido ${formatOrderCode(order.id)}`)}
+        target="_blank" rel="noopener noreferrer"
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          margin: "14px auto 0", maxWidth: 420, padding: "12px 18px",
+          borderRadius: 999, border: "1px solid var(--ac, #D97706)",
+          background: "transparent", color: "var(--ac, #D97706)",
+          fontSize: 14, fontWeight: 700, textDecoration: "none",
+        }}
+      >
+        💬 ¿Necesitás ayuda con tu pedido?
+      </a>
 
       <Link to="/" className="tracker-back-btn">← Volver a la tienda</Link>
     </div>

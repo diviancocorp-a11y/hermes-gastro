@@ -9,7 +9,42 @@
 //
 // Ilustracion: repartidor en bici (thiings.co, mismo asset del componente
 // original); si no carga cae al emoji 🛵 — nunca queda hueco roto.
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
+
 const ILLUSTRATION = "https://www.thiings.co/_next/image?url=https%3A%2F%2Flftz25oez4aqbxpq.public.blob.vercel-storage.com%2Fimage-uBD2X8E9FMFPGgAZv0YYRXCMZbaJTt.png&w=320&q=75";
+
+/* El pedido sigue "vivo"? Fetch inicial + realtime: cuando pasa a
+   completed/cancelled la card del catalogo desaparece sola y se limpia
+   cp_last_order para que no vuelva a aparecer. */
+function useOrderAlive(orderId) {
+  const [alive, setAlive] = useState(true); // optimista mientras carga
+  useEffect(() => {
+    if (!orderId) return;
+    let cancel = false;
+    const kill = () => {
+      if (cancel) return;
+      setAlive(false);
+      try { localStorage.removeItem("cp_last_order"); } catch { /* empty */ }
+    };
+    supabase.rpc("get_order_tracker", { p_order_id: orderId }).then(({ data, error }) => {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (error) return; // sin info: dejamos la card visible
+      if (!row || row.status === "completed" || row.status === "cancelled") kill();
+    });
+    const channel = supabase
+      .channel(`order-card-${orderId}`)
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` },
+        (payload) => {
+          const st = payload?.new?.status;
+          if (st === "completed" || st === "cancelled") kill();
+        })
+      .subscribe();
+    return () => { cancel = true; supabase.removeChannel(channel); };
+  }, [orderId]);
+  return alive;
+}
 
 function Illu({ size = 110 }) {
   return (
@@ -25,7 +60,11 @@ function Illu({ size = 110 }) {
   );
 }
 
-export default function OrderStatusCard({ href, compact = false, title, description }) {
+export default function OrderStatusCard({ href, compact = false, title, description, orderId }) {
+  // Solo el compacto del catalogo vigila el estado (la pagina final no hace falta)
+  const alive = useOrderAlive(compact ? orderId : null);
+  if (compact && !alive) return null;
+
   if (compact) {
     // Version mini para el home: una linea, siempre visible arriba de todo
     return (
@@ -48,7 +87,8 @@ export default function OrderStatusCard({ href, compact = false, title, descript
             {description || "Tocá para seguirlo en vivo"}
           </span>
         </span>
-        <span style={{ position: "absolute", right: 46, bottom: -6, opacity: 0.9, pointerEvents: "none" }}>
+        {/* camion centrado verticalmente respecto a la card */}
+        <span style={{ position: "absolute", right: 44, top: "50%", transform: "translateY(-50%)", opacity: 0.9, pointerEvents: "none" }}>
           <Illu size={54} />
         </span>
         <span style={{ flexShrink: 0, color: "var(--ac, #D97706)", fontWeight: 800, fontSize: 16 }} aria-hidden>→</span>

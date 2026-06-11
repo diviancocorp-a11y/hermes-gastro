@@ -236,7 +236,7 @@ export default function HomeScreen({
       {/* ===== PEDIDO ACTIVO — siempre arriba de todo (StatusCard compacto) ===== */}
       {lastOrder && (
         <div style={{ padding: "14px 22px 0" }}>
-          <OrderStatusCard compact href={"/order/" + lastOrder} />
+          <OrderStatusCard compact href={"/order/" + lastOrder} orderId={lastOrder} />
         </div>
       )}
 

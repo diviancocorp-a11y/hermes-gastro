@@ -432,7 +432,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
           <div style={labelStyle}>¿Con cuanto pagas?</div>
           <div style={{ display: "flex", gap: 10 }}>
             <ToggleBtn active={form.change_amount === "justo"} onClick={() => sf("change_amount", "justo")}>Pago justo</ToggleBtn>
-            <ToggleBtn active={form.change_amount !== null && form.change_amount !== "justo"} onClick={() => sf("change_amount", "")}>Necesito vuelto</ToggleBtn>
+            <ToggleBtn active={form.change_amount !== null && form.change_amount !== "justo"} onClick={() => sf("change_amount", "")}>Necesito cambio</ToggleBtn>
           </div>
           {form.change_amount !== null && form.change_amount !== "justo" && (
             <input
