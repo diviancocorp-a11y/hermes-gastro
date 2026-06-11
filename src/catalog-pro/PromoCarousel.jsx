@@ -1,13 +1,9 @@
 // src/catalog-pro/PromoCarousel.jsx
-// Carrusel de promos (galeria circular: card cuadrada, reveal clip-path
-// circle desde las burbujas-thumbnail) + leaderboard semanal estilo
-// "Weekly Leaderboard" (podio con avatares + coronas + columnas, lista con
-// posicion/corona/inicial/nombre/puntos, fila del cliente con su posicion
-// real). Sin GSAP/Tailwind: CSS + tokens.
-//
-// El CTA del ranking dice "Saber mas": el modal ademas de mostrar el podio
-// explica la mecanica de puntos. Avatares: deterministicos por nombre
-// (src/lib/avatars.jsx), el cliente no los elige.
+// Carrusel de promos (galeria circular: card 4/5, reveal clip-path circle
+// desde las burbujas-thumbnail). El slide de RANKING muestra el leaderboard
+// COMPLETO dentro del card (podio con avatares/coronas/columnas + lista +
+// fila con la posicion real del cliente). El boton "Saber mas" abre solo la
+// explicacion de como funciona. Sin GSAP/Tailwind: CSS + tokens.
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useGuestUser } from "../lib/guestUser.js";
@@ -19,10 +15,10 @@ const TOUCH_HOLD_MS = 15000; // si alguien toco, esta leyendo: pausa larga
 const REVEAL_MS = 650;
 const DOT_SIZE = 30;
 const DOT_GAP = 10;
-const DOT_BOTTOM = 24;
+const DOT_BOTTOM = 20;
 
 /* ---------- Corona (oro / plata / bronce) ---------- */
-function Crown({ color = "#E8A33D", size = 16 }) {
+function Crown({ color = "#E8A33D", size = 14 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden>
       <path d="M3 8 L7.5 12 L12 5 L16.5 12 L21 8 L19 18 Q12 20 5 18 Z" />
@@ -39,46 +35,46 @@ function weekRangeLabel() {
   const sun = new Date(mon);
   sun.setDate(mon.getDate() + 6);
   const f = (d) => d.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
-  return `${f(mon)} - ${f(sun)} · los lunes premiamos al podio`;
+  return `${f(mon)} - ${f(sun)}`;
 }
 
-/* Fila de la lista: posicion · corona · inicial · nombre · puntos */
+/* Fila de la lista (sobre fondo oscuro del card) */
 function LeaderRow({ pos, name, pts, mine, placeholder }) {
   return (
     <div style={{
-      display: "grid", gridTemplateColumns: "24px 22px 36px 1fr auto",
-      alignItems: "center", gap: 10, padding: "12px 14px",
-      background: mine ? "color-mix(in srgb, var(--ac, #D97706) 10%, transparent)" : "transparent",
+      display: "grid", gridTemplateColumns: "18px 18px 30px 1fr auto",
+      alignItems: "center", gap: 9, padding: "9px 12px",
+      background: mine ? "color-mix(in srgb, var(--ac, #D97706) 22%, transparent)" : "transparent",
       borderRadius: mine ? 12 : 0,
     }}>
-      <span style={{ fontSize: 14, fontWeight: 800, color: "var(--tx, #2D2418)" }}>{pos ?? "—"}</span>
+      <span style={{ fontSize: 13, fontWeight: 800, color: "#fff" }}>{pos ?? "—"}</span>
       <span style={{ display: "flex", alignItems: "center" }}>
-        {pos && pos <= 3 ? <Crown color={CROWN_COLORS[pos]} /> : <span style={{ width: 16 }} />}
+        {pos && pos <= 3 ? <Crown color={CROWN_COLORS[pos]} /> : <span style={{ width: 14 }} />}
       </span>
       <span style={{
-        width: 36, height: 36, borderRadius: 999,
-        background: "var(--b2, #F4EDE3)", color: "var(--t2, #8A7A66)",
+        width: 30, height: 30, borderRadius: 999,
+        background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.85)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 14, fontWeight: 800,
+        fontSize: 12.5, fontWeight: 800,
       }}>{(name || "?").charAt(0).toUpperCase()}</span>
       <span style={{ minWidth: 0 }}>
         <span style={{
-          display: "block", fontSize: 13.5, fontWeight: 700, color: "var(--tx, #2D2418)",
+          display: "block", fontSize: 13, fontWeight: 700, color: "#fff",
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-        }}>{name}{mine ? " (vos)" : ""}</span>
+        }}>{name}</span>
         {placeholder && (
-          <span style={{ display: "block", fontSize: 11, color: "var(--t3, #B0A48F)" }}>{placeholder}</span>
+          <span style={{ display: "block", fontSize: 10.5, color: "rgba(255,255,255,0.55)", lineHeight: 1.3 }}>{placeholder}</span>
         )}
       </span>
-      <span style={{ fontSize: 13.5, fontWeight: 800, color: "var(--tx, #2D2418)" }}>
+      <span style={{ fontSize: 12.5, fontWeight: 800, color: "#fff" }}>
         {pts !== null ? `${pts} pts` : ""}
       </span>
     </div>
   );
 }
 
-/* ---------- Modal: leaderboard + explicacion ---------- */
-function LeaderboardModal({ top, onClose }) {
+/* ---------- Leaderboard completo (vive DENTRO del card del carrusel) ---------- */
+function RankingBoard({ top }) {
   const { user, profile, session } = useAuth();
   const guest = useGuestUser();
   const myEmail = user?.email || guest?.email || "";
@@ -87,22 +83,97 @@ function LeaderboardModal({ top, onClose }) {
   const { ranking } = useMyRanking({ email: myEmail, phone: myPhone });
 
   const podium = top.slice(0, 3);
-  // Orden visual: 2do | 1ro | 3ro
-  const podiumOrder = [podium[1], podium[0], podium[2]].filter(Boolean);
-  const colHeight = { 1: 110, 2: 78, 3: 62 };
-  const colBg = {
-    1: "var(--ac, #D97706)",
-    2: "color-mix(in srgb, var(--tx, #2D2418) 28%, var(--bg, #FBF7F2))",
-    3: "color-mix(in srgb, #B0763B 75%, var(--bg, #FBF7F2))",
-  };
+  const podiumOrder = [podium[1], podium[0], podium[2]].filter(Boolean); // 2 | 1 | 3
+  const colHeight = { 1: 64, 2: 46, 3: 38 };
+  const colBg = { 1: "#E8B23D", 2: "#6B6B66", 3: "#A06A33" };
 
-  const myFirst = session?.firstName || (profile?.name || guest?.name || "").trim().split(/\s+/)[0] || null;
+  const myFirstRaw = session?.firstName || (profile?.name || guest?.name || "").trim().split(/\s+/)[0];
+  const myName = myFirstRaw || "Vos";
   const myPos = ranking?.my_position ?? null;
-
-  // Fila destacada del cliente: su posicion REAL (si esta en top 3 se
-  // resalta esa fila; si no, se agrega 4ta fila con su distancia al podio)
   const showMyRow = myPos === null || myPos > 3;
 
+  return (
+    <div style={{
+      position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+      justifyContent: "flex-end", padding: "0 16px",
+      paddingBottom: DOT_BOTTOM + DOT_SIZE + 58, // deja lugar para CTA + burbujas
+      paddingTop: 54,
+    }}>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 10 }}>
+        {weekRangeLabel()} · los lunes premiamos al podio
+      </div>
+
+      {/* Podio: avatar + corona + nombre + pts + columna */}
+      {podiumOrder.length > 0 && (
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 10, marginBottom: 12 }}>
+          {podiumOrder.map((row) => {
+            const pos = row.rank_position ?? row.position;
+            const isFirst = pos === 1;
+            return (
+              <div key={pos} style={{ flex: 1, maxWidth: 104, textAlign: "center" }}>
+                <div style={{ position: "relative", display: "inline-block", marginBottom: 5 }}>
+                  <div style={{
+                    width: isFirst ? 54 : 42, height: isFirst ? 54 : 42, borderRadius: 999,
+                    overflow: "hidden", border: "2px solid rgba(255,255,255,0.85)", background: "#fff",
+                  }}>
+                    <Avatar name={row.display_name} size={isFirst ? 50 : 38} />
+                  </div>
+                  <span style={{
+                    position: "absolute", bottom: -3, right: -5,
+                    width: 18, height: 18, borderRadius: 999, background: "#1a1611",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Crown color={CROWN_COLORS[pos]} size={10} />
+                  </span>
+                </div>
+                <div style={{
+                  fontSize: 11.5, fontWeight: 700, color: "#fff",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>{row.display_name}</div>
+                <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.6)", marginBottom: 6 }}>{row.points} pts</div>
+                <div style={{
+                  height: colHeight[pos], borderRadius: "10px 10px 0 0", background: colBg[pos],
+                  display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 7,
+                  color: "#fff", fontSize: 17, fontWeight: 800,
+                  fontFamily: "var(--font-heading, serif)",
+                }}>{pos}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Lista: posicion · corona · inicial · nombre · puntos + fila del cliente */}
+      <div style={{
+        background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)",
+        border: "1px solid rgba(255,255,255,0.12)", borderRadius: 16, overflow: "hidden",
+      }}>
+        {top.slice(0, 3).map((row, i) => {
+          const pos = row.rank_position ?? row.position;
+          return (
+            <div key={pos} style={{ borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,0.08)" }}>
+              <LeaderRow pos={pos} name={row.display_name + (myPos === pos ? " (vos)" : "")} pts={row.points} mine={myPos === pos} />
+            </div>
+          );
+        })}
+        {showMyRow && (
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: 3 }}>
+            {ranking ? (
+              <LeaderRow pos={myPos} name={myName} pts={ranking.my_points} mine
+                placeholder={ranking.points_to_top5 > 0 ? `Te faltan ${ranking.points_to_top5} pts para el top 5` : "¡Estás en el top 5!"} />
+            ) : (
+              <LeaderRow pos={null} name={myName} pts={null} mine
+                placeholder={isIdentified ? "Todavía sin puntos — tu próximo pedido te suma" : "Hacé tu primer pedido y entrás al ranking"} />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Modal "Saber mas": solo la explicacion ---------- */
+function HowItWorksModal({ onClose }) {
   return (
     <div className="cp-root" onClick={onClose} style={{
       position: "fixed", inset: 0, zIndex: 8000,
@@ -111,105 +182,32 @@ function LeaderboardModal({ top, onClose }) {
       animation: "cp-promo-fade 250ms ease both",
     }}>
       <div onClick={(e) => e.stopPropagation()} style={{
-        width: "100%", maxWidth: 420, maxHeight: "88vh", overflowY: "auto",
-        background: "var(--bg, #FBF7F2)", borderRadius: 24,
-        border: "1px solid var(--line, #E8DFD2)", padding: "22px 18px",
+        width: "100%", maxWidth: 380,
+        background: "var(--bg, #FBF7F2)", borderRadius: 22,
+        border: "1px solid var(--line, #E8DFD2)", padding: "22px 20px",
         boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
         animation: "cp-promo-pop 350ms cubic-bezier(0.34,1.56,0.64,1) both",
       }}>
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <h2 style={{ fontFamily: "var(--font-heading, 'DM Serif Display', serif)", fontSize: 22, margin: 0, color: "var(--tx, #2D2418)" }}>
-              Ranking semanal
-            </h2>
-            <p style={{ fontSize: 12, color: "var(--t2, #8A7A66)", margin: "3px 0 0" }}>{weekRangeLabel()}</p>
-          </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+          <h2 style={{ fontFamily: "var(--font-heading, 'DM Serif Display', serif)", fontSize: 21, margin: 0, color: "var(--tx, #2D2418)" }}>
+            ¿Cómo funciona?
+          </h2>
           <button onClick={onClose} aria-label="Cerrar" style={{
             width: 32, height: 32, borderRadius: 99, border: "none", flexShrink: 0,
             background: "var(--b2, #F4EDE3)", color: "var(--t2, #8A7A66)",
             fontSize: 15, cursor: "pointer", lineHeight: 1,
           }}>✕</button>
         </div>
-
-        {/* Podio con avatares + coronas + columnas */}
-        {podiumOrder.length > 0 && (
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12, margin: "22px 0 18px" }}>
-            {podiumOrder.map((row) => {
-              const pos = row.rank_position ?? row.position;
-              const isFirst = pos === 1;
-              return (
-                <div key={pos} style={{ flex: 1, maxWidth: 116, textAlign: "center" }}>
-                  <div style={{ position: "relative", display: "inline-block", marginBottom: 8 }}>
-                    <div style={{
-                      width: isFirst ? 64 : 52, height: isFirst ? 64 : 52, borderRadius: 999,
-                      overflow: "hidden", border: "2px solid var(--line, #E8DFD2)",
-                      background: "#fff",
-                    }}>
-                      <Avatar name={row.display_name} size={isFirst ? 60 : 48} />
-                    </div>
-                    <span style={{
-                      position: "absolute", bottom: -4, right: -6,
-                      width: 22, height: 22, borderRadius: 999,
-                      background: "var(--tx, #2D2418)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <Crown color={CROWN_COLORS[pos]} size={12} />
-                    </span>
-                  </div>
-                  <div style={{
-                    fontSize: 12.5, fontWeight: 700, color: "var(--tx, #2D2418)",
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>{row.display_name}</div>
-                  <div style={{ fontSize: 11.5, color: "var(--t2, #8A7A66)", marginBottom: 8 }}>{row.points} pts</div>
-                  <div style={{
-                    height: colHeight[pos], borderRadius: "12px 12px 0 0",
-                    background: colBg[pos],
-                    display: "flex", alignItems: "flex-start", justifyContent: "center",
-                    paddingTop: 10,
-                    color: pos === 2 ? "var(--bg, #FBF7F2)" : "#fff",
-                    fontSize: 22, fontWeight: 800, fontFamily: "var(--font-heading, serif)",
-                  }}>{pos}</div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Lista: posicion · corona · inicial · nombre · puntos */}
-        <div style={{ border: "1px solid var(--line, #E8DFD2)", borderRadius: 16, overflow: "hidden" }}>
-          {top.slice(0, 3).map((row, i) => {
-            const pos = row.rank_position ?? row.position;
-            return (
-              <div key={pos} style={{ borderTop: i === 0 ? "none" : "1px solid var(--line, #E8DFD2)" }}>
-                <LeaderRow pos={pos} name={row.display_name} pts={row.points} mine={myPos === pos} />
-              </div>
-            );
-          })}
-          {/* Fila del cliente: su posicion real, para saber a que distancia esta */}
-          {showMyRow && (
-            <div style={{ borderTop: "1px solid var(--line, #E8DFD2)", padding: 4 }}>
-              {ranking ? (
-                <LeaderRow pos={myPos} name={myFirst || "Vos"} pts={ranking.my_points} mine
-                  placeholder={ranking.points_to_top5 > 0 ? `Te faltan ${ranking.points_to_top5} pts para el top 5` : "¡Estás en el top 5!"} />
-              ) : (
-                <LeaderRow pos={null} name={myFirst || "Vos"} pts={null} mine
-                  placeholder={isIdentified ? "Todavía sin puntos esta semana — tu próximo pedido te suma" : "Hacé tu primer pedido y entrás al ranking"} />
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Como funciona (el CTA del carrusel dice "Saber mas") */}
-        <div style={{
-          marginTop: 14, padding: "12px 14px", borderRadius: 14,
-          background: "var(--b2, #F4EDE3)", fontSize: 12.5,
-          color: "var(--t2, #8A7A66)", lineHeight: 1.55,
-        }}>
-          <strong style={{ color: "var(--tx, #2D2418)" }}>¿Cómo funciona?</strong> Cada $10.000 en pedidos
-          suma 1 punto. La semana corre de lunes a domingo y arranca de cero cada lunes, cuando premiamos
-          al podio de la semana anterior. No hace falta registrarse: con tu primer pedido ya estás compitiendo.
-        </div>
+        <p style={{ fontSize: 13.5, color: "var(--t2, #8A7A66)", lineHeight: 1.6, margin: 0 }}>
+          Cada <strong style={{ color: "var(--tx, #2D2418)" }}>$10.000 en pedidos suma 1 punto</strong>.
+          La semana corre de lunes a domingo y arranca de cero cada lunes, cuando premiamos
+          al podio de la semana anterior. No hace falta registrarse: con tu primer pedido
+          ya estás compitiendo.
+        </p>
+        <button onClick={onClose} style={{
+          marginTop: 16, width: "100%", padding: "11px 0", borderRadius: 99, border: "none",
+          background: "var(--ac, #D97706)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
+        }}>¡A sumar puntos!</button>
       </div>
     </div>
   );
@@ -235,15 +233,15 @@ function SlideVisual({ slide }) {
 /* ---------- Carrusel circular ---------- */
 export default function PromoCarousel({ onOpenAccount, products = [] }) {
   const { top, loading: topLoading } = useWeeklyTop();
-  const [showBoard, setShowBoard] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const imgs = products.filter((p) => p.image_url).map((p) => p.image_url);
   const slides = [];
   if (topLoading || top.length > 0) {
     slides.push({
-      id: "ranking", emoji: "🏆", label: "Ranking semanal", img: imgs[0] || null,
-      desc: "Cada $10.000 suma 1 punto. Los lunes premiamos al podio.",
-      cta: "Saber más", onCta: () => setShowBoard(true),
+      id: "ranking", emoji: "🏆", label: "Ranking semanal",
+      img: imgs[0] || null, board: true, // leaderboard adentro del card
+      cta: "Saber más", onCta: () => setShowHelp(true),
     });
   }
   slides.push({
@@ -282,19 +280,18 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
 
   const next = useCallback(() => goTo((base + 1) % len), [base, len, goTo]);
   const prev = useCallback(() => goTo((base - 1 + len) % len), [base, len, goTo]);
-  // Toco algo = esta mirando/analizando → pausa larga, se renueva con cada toque
+  // Toco algo = esta mirando/analizando → pausa larga, renovable con cada toque
   const holdAutoplay = () => { pauseUntil.current = Date.now() + TOUCH_HOLD_MS; };
   const userGo = (fn) => { holdAutoplay(); fn(); };
 
   useEffect(() => {
     if (len < 2) return;
     const t = setInterval(() => {
-      // hover (desktop) o toque reciente (mobile) = estatico hasta que suelte/pase el tiempo
-      if (busy || showBoard || hovering || Date.now() < pauseUntil.current) return;
+      if (busy || showHelp || hovering || Date.now() < pauseUntil.current) return;
       next();
     }, AUTO_PLAY_MS);
     return () => clearInterval(t);
-  }, [len, busy, showBoard, hovering, next]);
+  }, [len, busy, showHelp, hovering, next]);
 
   if (len === 0) return null;
   const active = incoming ?? base;
@@ -303,7 +300,21 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
   const dotOffset = (i) => (i - (len - 1) / 2) * (DOT_SIZE + DOT_GAP);
   const clipFrom = (i) =>
     `circle(${DOT_SIZE / 2}px at calc(50% + ${dotOffset(i)}px) calc(100% - ${DOT_BOTTOM + DOT_SIZE / 2}px))`;
-  const clipFull = `circle(135% at 50% 50%)`;
+  const clipFull = `circle(140% at 50% 50%)`;
+
+  // Capa de un slide: leaderboard (ranking) o foto/gradiente
+  const renderLayer = (s) => (
+    <>
+      <SlideVisual slide={s} />
+      {s.board && (
+        <>
+          {/* velo oscuro para que el board lea sobre la foto */}
+          <div style={{ position: "absolute", inset: 0, background: "rgba(16,13,10,0.82)" }} />
+          <RankingBoard top={top} />
+        </>
+      )}
+    </>
+  );
 
   return (
     <div style={{ padding: "18px 16px 26px", display: "flex", justifyContent: "center" }}>
@@ -313,7 +324,7 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
         onTouchStart={holdAutoplay}
       >
         <div style={{ position: "absolute", inset: 0 }}>
-          <SlideVisual slide={slides[base]} />
+          {renderLayer(slides[base])}
         </div>
 
         {incoming !== null && (
@@ -323,17 +334,20 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
             WebkitClipPath: revealed ? clipFull : clipFrom(incoming),
             transition: `clip-path ${REVEAL_MS}ms cubic-bezier(0.5, 0, 0.15, 1), -webkit-clip-path ${REVEAL_MS}ms cubic-bezier(0.5, 0, 0.15, 1)`,
           }}>
-            <SlideVisual slide={slides[incoming]} />
+            {renderLayer(slides[incoming])}
           </div>
         )}
 
-        <div style={{
-          position: "absolute", inset: 0, zIndex: 10, pointerEvents: "none",
-          background: "linear-gradient(180deg, rgba(0,0,0,0.35), transparent 32%, transparent 50%, rgba(0,0,0,0.72))",
-        }} />
+        {/* Velo inferior solo para slides con texto sobre foto */}
+        {!slide.board && (
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 10, pointerEvents: "none",
+            background: "linear-gradient(180deg, rgba(0,0,0,0.35), transparent 32%, transparent 50%, rgba(0,0,0,0.72))",
+          }} />
+        )}
 
         <div key={slide.id} style={{
-          position: "absolute", left: 20, right: 20, top: 18, zIndex: 20,
+          position: "absolute", left: 18, right: 18, top: 16, zIndex: 20,
           animation: "cp-pcg-rise 450ms ease both",
         }}>
           <div style={{
@@ -345,18 +359,21 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
             <span aria-hidden>{slide.emoji}</span> {active + 1} • {slide.label}
           </div>
         </div>
+
         <div key={slide.id + "-b"} style={{
-          position: "absolute", left: 20, right: 20, zIndex: 20,
-          bottom: DOT_BOTTOM + DOT_SIZE + 16,
+          position: "absolute", left: 18, right: 18, zIndex: 20,
+          bottom: DOT_BOTTOM + DOT_SIZE + 14,
           animation: "cp-pcg-rise 450ms ease 80ms both",
         }}>
-          <p style={{
-            color: "#fff", fontSize: 19, lineHeight: 1.3, margin: 0,
-            letterSpacing: "-0.01em", textShadow: "0 2px 10px rgba(0,0,0,0.5)", maxWidth: 340,
-          }}>{slide.desc}</p>
+          {slide.desc && (
+            <p style={{
+              color: "#fff", fontSize: 19, lineHeight: 1.3, margin: "0 0 10px",
+              letterSpacing: "-0.01em", textShadow: "0 2px 10px rgba(0,0,0,0.5)", maxWidth: 340,
+            }}>{slide.desc}</p>
+          )}
           {slide.cta && (
             <button onClick={() => { holdAutoplay(); slide.onCta?.(); }} style={{
-              marginTop: 10, padding: "9px 18px", borderRadius: 999, border: "none",
+              padding: "9px 18px", borderRadius: 999, border: "none",
               background: "#fff", color: "#1a1611", fontSize: 13, fontWeight: 700,
               cursor: "pointer", fontFamily: "inherit",
             }}>{slide.cta} →</button>
@@ -399,12 +416,12 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
         </button>
       </div>
 
-      {showBoard && <LeaderboardModal top={top} onClose={() => setShowBoard(false)} />}
+      {showHelp && <HowItWorksModal onClose={() => setShowHelp(false)} />}
 
       <style>{`
         .cp-pcg-card {
-          position: relative; width: 100%; max-width: 460px;
-          aspect-ratio: 1 / 1; overflow: hidden; border-radius: 20px;
+          position: relative; width: 100%; max-width: 440px;
+          aspect-ratio: 4 / 5; overflow: hidden; border-radius: 20px;
           background: #1a1611;
           box-shadow: 0 2.8px 2.2px rgba(0,0,0,0.02), 0 6.7px 5.3px rgba(0,0,0,0.028),
             0 12.5px 10px rgba(0,0,0,0.035), 0 22.3px 17.9px rgba(0,0,0,0.042),
