@@ -25,8 +25,8 @@ import { mapProduct, buildStories, buildRecos } from "./homeHelpers";
 import HermesMark from "../components/HermesMark";
 import CatalogFooter from "./CatalogFooter";
 import BadgeTag from "../components/BadgeTag";
-import TopCustomersCard from "./TopCustomersCard";
 import TopPedidos from "./TopPedidos";
+import PromoCarousel from "./PromoCarousel";
 
 export default function HomeScreen({
   store = {}, userName, products = [], categories = [],
@@ -437,13 +437,11 @@ export default function HomeScreen({
         } />
       )}
 
-      {/* ===== TOP CUSTOMERS ===== */}
-      <TopCustomersCard />
-
-      {/* ===== COMBOS ===== */}
+      {/* ===== SUPER COMBOS (subio al lugar del Top de la semana; el ranking
+           vive ahora en el PromoCarousel de abajo, antes del footer) ===== */}
       {combos.length > 0 && (
         <>
-          <SectionHeader kicker="Combos" title="Para una mesa" em="completa" />
+          <SectionHeader kicker="Super Combos" title="Para una mesa" em="completa" />
           <div className="cp-no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 22px", overflowX: "auto" }}>
             {combos.map(b => (
               <div key={b.id} onClick={() => onSelectProduct?.(b._raw)} style={{
@@ -560,6 +558,9 @@ export default function HomeScreen({
           </div>
         ))}
       </div>
+
+      {/* ===== PROMOS (carrusel: ranking semanal, cumple, programados) ===== */}
+      {!searchQuery && <PromoCarousel onOpenAccount={onOpenAccount} />}
 
       {/* ===== STICKY CART + FOOTER ===== */}
       {cartCount > 0 && <StickyCart count={cartCount} total={cartTotal} onClick={onOpenCart} />}

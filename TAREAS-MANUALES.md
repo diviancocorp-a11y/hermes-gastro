@@ -89,6 +89,15 @@ Herencia del plan que quedo sin ejecutar (lo digo explicito para que no se pierd
   "🎂 Tenes un regalo esperandote" con link al catalogo. La edge function
   `birthday-gift` ya genera el cupon idempotente; solo falta el disparador.
   Encaja con la decision B.4 (WhatsApp Business API, Sprint 5).
+- [ ] **Ruleta de premios** (11/jun, pedida para el PromoCarousel): gira 1 vez por
+  dia/semana por cliente, premio = cupon. Necesita backend: tabla de giros,
+  probabilidades por premio, anti-abuso (idempotencia por cliente/periodo) y
+  edge function que decida el premio server-side. Al existir, se agrega como
+  slide del carrusel.
+- [ ] **Encuesta de nuevos sabores de cookies** (11/jun, idem): votacion 1 voto por
+  cliente identificado. Necesita: tabla flavor_votes (+ opcion de sabores en
+  settings o tabla propia), RPC de voto idempotente y slide en el carrusel con
+  resultados en vivo. Decision de negocio previa: ¿que sabores van a la encuesta?
 
 ---
 
