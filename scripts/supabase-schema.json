@@ -243,7 +243,8 @@
       "catalog_theme",
       "payment_accounts",
       "delivery_pricing",
-      "coupon_default_pct"
+      "coupon_default_pct",
+      "birthday_coupon_pct"
     ],
     "admin_users": [
       "user_id",

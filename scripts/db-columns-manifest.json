@@ -39,6 +39,7 @@
         "min_order_amount",
         "delivery_pricing",
         "coupon_default_pct",
+        "birthday_coupon_pct",
         "cat_groups",
         "daily_deals",
         "deal_pct",

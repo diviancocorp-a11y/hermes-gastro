@@ -9,7 +9,6 @@
 
 import { useState } from "react";
 import HermesMark from "../components/HermesMark";
-import ArcLogo from "./ArcLogo";
 
 // Datos de contacto de Hermes (la plataforma). Mientras sean null, los botones
 // de contacto del modal "para tu negocio" NO se muestran — antes habia un
@@ -381,14 +380,28 @@ function CircularHero({ logoUrl, bizName, logoLetter, logoColor, accentColor, so
   const activeSocials = socials.filter(s => s.url);
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-      {/* Logo + "GRACIAS POR VISITARNOS" girando (ArcLogo: textPath SVG,
-          espaciado perfecto, color del TEMA — fix del desfase y del rosa) */}
-      <ArcLogo
-        logoUrl={logoUrl}
-        logoColor={logoColor}
-        logoLetter={logoLetter}
-        bizName={bizName}
-      />
+      {/* Logo en burbuja (el arco "GRACIAS POR VISITARNOS" vive en el
+          WelcomeSplash — aca se veia enorme y lo saco a pedido del user) */}
+      <div style={{
+        width: 96, height: 96, borderRadius: 999,
+        background: hexToRgba(accentColor, 0.15, "rgba(245,158,11,0.12)"),
+        padding: 8, display: "flex", alignItems: "center", justifyContent: "center",
+        flexShrink: 0,
+      }}>
+        <div style={{
+          width: "100%", height: "100%", borderRadius: 999,
+          background: logoColor || accentColor,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          overflow: "hidden", color: "#fff",
+          fontFamily: "var(--font-heading, 'DM Serif Display', serif)", fontSize: 38,
+        }}>
+          {logoUrl ? (
+            <img src={logoUrl} alt={bizName} loading="lazy"
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              onError={(e) => { e.currentTarget.style.display = "none"; }} />
+          ) : (logoLetter || "").toUpperCase()}
+        </div>
+      </div>
 
       {/* Circulos de redes */}
       {activeSocials.length > 0 && (

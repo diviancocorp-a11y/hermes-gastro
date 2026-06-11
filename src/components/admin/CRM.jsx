@@ -10,6 +10,7 @@ import { formatInt, todayISO } from "../../lib/utils";
 import { fetchCustomerStats } from "../../lib/adminService";
 import { paymentLabel, paymentIcon } from "../../lib/payments";
 import { fetchCoupons, createCustomerCoupon, describeCoupon } from "../../services/coupons";
+import { fetchSettings, updateSettings } from "../../services/settings";
 import DecimalInput from "../ui/DecimalInput";
 
 const CRM_PER_PAGE = 30;
@@ -198,6 +199,8 @@ function CRM({ orders, showToast }) {
         </>
       )}
 
+      <BirthdayGiftConfig showToast={showToast} />
+
       <div style={{ position: "relative", marginBottom: 10 }}>
         <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--ag-ink-3)", pointerEvents: "none" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -339,6 +342,87 @@ function CRM({ orders, showToast }) {
 
       {showPromo && (
         <PromoFidelidadModal selected={selectedCustomers} onClose={() => setShowPromo(false)} showToast={showToast} onSent={() => { setShowPromo(false); clearSelection(); }} />
+      )}
+    </div>
+  );
+}
+
+/**
+ * BirthdayGiftConfig — gestiona el premio de cumpleanos desde el CRM.
+ * Guarda settings.birthday_coupon_pct (0 = apagado). El catalogo le muestra
+ * al cliente una tarjeta-regalo el dia de su cumple (customers.birth_date,
+ * validado server-side por la edge function birthday-gift) con un cupon
+ * unico por anio que vence ese mismo dia.
+ */
+function BirthdayGiftConfig({ showToast }) {
+  const [pct, setPct] = useState(null);   // null = cargando
+  const [draft, setDraft] = useState("");
+  const [sett, setSett] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    fetchSettings().then(s => {
+      setSett(s);
+      const v = Number(s?.birthday_coupon_pct ?? 0);
+      setPct(v);
+      setDraft(String(v));
+    });
+  }, []);
+
+  const save = async () => {
+    const v = Math.max(0, Math.min(100, Math.round(Number(draft) || 0)));
+    setSaving(true);
+    const updated = await updateSettings({ ...sett, birthday_coupon_pct: v });
+    setSaving(false);
+    if (updated) {
+      setSett(updated);
+      setPct(v);
+      setDraft(String(v));
+      showToast?.(v > 0 ? `Regalo de cumpleaños: ${v}% activo 🎂` : "Regalo de cumpleaños desactivado");
+    } else {
+      showToast?.("No se pudo guardar. Probá de nuevo.");
+    }
+  };
+
+  const active = pct !== null && pct > 0;
+
+  return (
+    <div className="ag-card" style={{ padding: 0, overflow: "hidden", marginBottom: 16, borderTop: "3px solid var(--ag-c-terra)" }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "transparent", border: 0, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+        <div style={{ width: 32, height: 32, borderRadius: 10, background: "var(--ag-bg-soft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🎂</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ag-ink)" }}>Regalo de cumpleaños</div>
+          <div style={{ fontSize: 11, color: "var(--ag-ink-3)", marginTop: 1 }}>
+            {pct === null ? "Cargando…" : active ? `Cupón del ${pct}% el día del cumple del cliente` : "Desactivado"}
+          </div>
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 999, flexShrink: 0,
+          background: active ? "rgba(94,160,94,0.14)" : "var(--ag-bg-soft)",
+          color: active ? "var(--ag-c-sales)" : "var(--ag-ink-3)" }}>
+          {pct === null ? "…" : active ? "ACTIVO" : "OFF"}
+        </div>
+        <span style={{ color: "var(--ag-ink-3)", fontSize: 11, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▼</span>
+      </button>
+      {open && (
+        <div style={{ padding: "0 14px 14px", borderTop: "1px solid var(--ag-line)" }}>
+          <p style={{ fontSize: 11.5, color: "var(--ag-ink-3)", lineHeight: 1.5, margin: "10px 0 12px" }}>
+            Los clientes que cargaron su fecha de cumpleaños ven una tarjeta-regalo al entrar al catálogo
+            ese día: deslizan para abrirla y reciben un cupón de descuento único que vence esa misma noche.
+            Poné 0 para desactivar el regalo.
+          </p>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ position: "relative", width: 110 }}>
+              <DecimalInput className="ag-field-input" value={draft} onChange={setDraft} placeholder="10" />
+              <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--ag-ink-3)", fontWeight: 700, pointerEvents: "none" }}>%</span>
+            </div>
+            <button type="button" onClick={save} disabled={saving || pct === null}
+              style={{ padding: "10px 18px", borderRadius: 12, border: 0, background: "var(--ag-c-terra)", color: "#fff", fontSize: 13, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.6 : 1 }}>
+              {saving ? "Guardando…" : "Guardar"}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

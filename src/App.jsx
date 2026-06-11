@@ -37,6 +37,8 @@ export default function App() {
     const apply = (sett) => {
       const t = ['ambar','noche','carbon'].includes(sett?.catalog_theme) ? sett.catalog_theme : 'ambar';
       document.body.setAttribute('data-cp-theme', t);
+      // Cache para el anti-flash de index.html (proxima carga pinta el tema correcto)
+      try { localStorage.setItem('cp_theme', t); } catch { /* empty */ }
       // Pestania del navegador: titulo y descripcion salen de settings
       // (Personalizacion), no del business.js de build. Asi el slogan que
       // carga el cliente afecta el catalogo Y la pestania, y en su idioma.

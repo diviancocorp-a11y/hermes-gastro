@@ -270,6 +270,8 @@ export const SettingsInputSchema = z.object({
   })).max(12).nullable().optional(),
   // Descuento % default de cupones post-pedido (Sprint 2)
   coupon_default_pct: z.number().min(0).max(100).nullable().optional(),
+  // Descuento % del cupon de cumpleanos, 0 = desactivado (se gestiona desde CRM)
+  birthday_coupon_pct: z.number().min(0).max(100).nullable().optional(),
   // Grupos de cat / daily deals
   cat_groups: z.json().nullable().optional(),
   daily_deals: z.json().nullable().optional(),

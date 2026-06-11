@@ -53,7 +53,9 @@ CREATE TABLE IF NOT EXISTS public.settings (
   -- Escalones de costo de envio (Sprint 2): [{max_km, cost}], max_km null = resto
   delivery_pricing jsonb DEFAULT '[{"max_km":2,"cost":500},{"max_km":5,"cost":1000},{"max_km":10,"cost":1800},{"max_km":15,"cost":2500},{"max_km":25,"cost":3500},{"max_km":null,"cost":5000}]'::jsonb,
   -- Descuento % default de cupones post-pedido (Sprint 2)
-  coupon_default_pct numeric NOT NULL DEFAULT 10
+  coupon_default_pct numeric NOT NULL DEFAULT 10,
+  -- Descuento % del cupon de cumpleanos, 0 = desactivado (CRM + edge function birthday-gift)
+  birthday_coupon_pct numeric NOT NULL DEFAULT 10
 );
 COMMENT ON COLUMN public.settings.waste_pct IS 'Porcentaje de merma promedio (0-100)';
 

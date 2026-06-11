@@ -12,6 +12,7 @@ import { catalogPaymentMethods, paymentLabel, paymentIcon } from "../lib/payment
 
 // ── Extracted components ──
 import WelcomeSplash from "../catalog-pro/WelcomeSplash";
+import BirthdayGift from "../catalog-pro/BirthdayGift";
 import "../catalog-pro/tokens.css";
 import HomeScreenPro from "../catalog-pro/HomeScreen";
 import AgeGate from "../catalog-pro/AgeGate";
@@ -49,7 +50,15 @@ export default function Catalog() {
   const ffWhatsapp = useFeature('WHATSAPP');
 
   // --- Estado de datos ---
-  const [sett, setSett] = useState(fallbackSettings);
+  // Hidratacion inicial desde cache local (fix jun 2026): sin esto, el primer
+  // render usa fallbackSettings → se ve la letra "M" hasta que llega el logo
+  // real de la DB. Con cache, desde la 2da visita la identidad pinta al instante.
+  const [sett, setSett] = useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem('cp_sett_cache') || 'null');
+      return cached ? { ...fallbackSettings, ...cached } : fallbackSettings;
+    } catch { return fallbackSettings; }
+  });
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -291,6 +300,15 @@ export default function Catalog() {
 
       if (data) {
         setSett(data.settings);
+        // Cache de identidad para la proxima carga (anti-flash de logo/tema)
+        try {
+          const s = data.settings || {};
+          localStorage.setItem('cp_sett_cache', JSON.stringify({
+            biz_name: s.biz_name, slogan: s.slogan, logo_url: s.logo_url,
+            logo_color: s.logo_color, logo_letter: s.logo_letter,
+            catalog_theme: s.catalog_theme,
+          }));
+        } catch { /* empty */ }
         setProducts(data.products);
         if (data.serverNow) setServerNow(new Date(data.serverNow));
         // Probe if Supabase image transforms are available (Pro plan feature)
@@ -921,7 +939,16 @@ export default function Catalog() {
         />
       )}
       <WhatsAppFloat whatsapp={sett?.whatsapp} bizName={sett?.biz_name} />
-      <WelcomeSplash bizName={sett?.biz_name || business.name} logoUrl={sett?.logo_url} logoColor={sett?.logo_color} logoLetter={sett?.logo_letter} duration={2200} />
+      {/* logoLetter solo cuando settings ya cargo: evita el flash de la "M"
+          antes del logo real en la primera visita (sin cache local) */}
+      <WelcomeSplash bizName={sett?.biz_name || business.name} logoUrl={sett?.logo_url} logoColor={sett?.logo_color} logoLetter={loading && !sett?.logo_url ? null : sett?.logo_letter} duration={2200} />
+      {/* Regalo de cumpleanos: el server valida birth_date (customers) contra
+          hoy; % configurable desde CRM. Solo si hay identidad (login o guest) */}
+      <BirthdayGift
+        email={user?.email || null}
+        phone={phoneSession?.phone || null}
+        bizName={sett?.biz_name || business.name}
+      />
       <ToastContainer />
     </>
   );

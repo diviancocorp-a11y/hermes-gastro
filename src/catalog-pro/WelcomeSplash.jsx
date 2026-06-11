@@ -12,12 +12,23 @@ import { useEffect, useState } from "react";
 import ArcLogo from "./ArcLogo";
 
 export default function WelcomeSplash({ bizName, logoUrl, logoColor, logoLetter, duration = 1800 }) {
-  const [phase, setPhase] = useState("hold"); // 'hold' | 'open' | 'done'
+  // Solo UNA VEZ por sesion (fix jun 2026): antes aparecia en cada vuelta al
+  // catalogo (ej: configurar perfil y volver) — tedioso. sessionStorage dura
+  // mientras la pestania este abierta; visita nueva = splash de nuevo.
+  const [phase, setPhase] = useState(() => {
+    try { return sessionStorage.getItem("cp_splash_done") ? "done" : "hold"; }
+    catch { return "hold"; }
+  });
 
   useEffect(() => {
+    if (phase === "done") return;
     const t1 = setTimeout(() => setPhase("open"), duration);
-    const t2 = setTimeout(() => setPhase("done"), duration + 750);
+    const t2 = setTimeout(() => {
+      setPhase("done");
+      try { sessionStorage.setItem("cp_splash_done", "1"); } catch { /* empty */ }
+    }, duration + 750);
     return () => { clearTimeout(t1); clearTimeout(t2); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [duration]);
 
   if (phase === "done") return null;

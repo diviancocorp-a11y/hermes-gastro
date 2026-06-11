@@ -55,6 +55,22 @@
     </script>
   </head>
   <body>
+    <!-- Anti-flash de tema del CATALOGO (jun 2026): aplica el ultimo tema
+         guardado ANTES del primer pintado. Sin esto la pagina carga blanca
+         y "salta" al tema oscuro cuando llegan los settings. -->
+    <script>
+      (function(){
+        try {
+          var t = localStorage.getItem('cp_theme');
+          var bgs = { ambar: '#FFFFFF', noche: '#161412', carbon: '#FAF5EE' };
+          if (t && bgs[t]) {
+            document.body.setAttribute('data-cp-theme', t);
+            document.body.style.background = bgs[t];
+            document.documentElement.style.background = bgs[t];
+          }
+        } catch (e) { /* sin storage: tema default */ }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

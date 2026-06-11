@@ -41,6 +41,7 @@ const SKIP = new Set([
 const NO_VERIFY_JWT = new Set([
   "submit-order",
   "validate-coupon",
+  "birthday-gift",      // guests sin JWT; auth interna: rate limit + birth_date validado en DB
   "create-payment-preference",
   "mp-webhook",
   "mp-status",
