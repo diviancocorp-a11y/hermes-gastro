@@ -16,12 +16,12 @@ import { useMemo, useState } from "react";
 import { formatInt } from "../../lib/utils";
 
 // Nombres en espanol (nomenclatura clasica de la matriz Kasavana-Smith
-// traducida): Star=Estrella, Puzzle=Incognita, Plowhorse=Caballito de
+// traducida): Star=Estrella, Puzzle=Rompecabezas, Plowhorse=Caballo de
 // batalla, Dog=Perro. Las keys internas quedan en ingles (no tocar).
 const QUADRANT_META = {
   star:     { label: "ESTRELLA",  emoji: "⭐", color: "var(--ag-c-sales)",   bg: "var(--ag-c-sales-soft)",   advice: "Tu mejor plato: popular Y rentable. Protegelo, destacalo en el catálogo y no le toques el precio." },
-  puzzle:   { label: "INCÓGNITA", emoji: "🧩", color: "var(--ag-c-prep)",    bg: "var(--ag-c-prep-soft)",    advice: "Deja buen margen pero vende poco. Dale visibilidad: foto mejor, primera posición, promo del día." },
-  plowhorse:{ label: "CABALLITO", emoji: "🐴", color: "var(--ag-c-stock)",   bg: "var(--ag-c-stock-soft)",   advice: "Vende mucho pero deja poco. Subí el precio de a poco o bajá el costo de la receta (porción/insumo)." },
+  puzzle:   { label: "ROMPECABEZAS", emoji: "🧩", color: "var(--ag-c-prep)", bg: "var(--ag-c-prep-soft)",    advice: "Deja buen margen pero vende poco. Dale visibilidad: foto mejor, primera posición, promo del día." },
+  plowhorse:{ label: "CABALLO",   emoji: "🐴", color: "var(--ag-c-stock)",   bg: "var(--ag-c-stock-soft)",   advice: "Vende mucho pero deja poco. Subí el precio de a poco o bajá el costo de la receta (porción/insumo)." },
   dog:      { label: "PERRO",     emoji: "🐶", color: "var(--ag-c-orders)",  bg: "var(--ag-c-orders-soft)",  advice: "Ni vende ni deja margen. Evaluá sacarlo del menú o reinventarlo — ocupa lugar y stock." },
 };
 
@@ -115,8 +115,8 @@ export default function MenuEngineering({
   const tabs = [
     { id: "all",       label: "Todos",         count: items.length },
     { id: "star",      label: "⭐ Estrellas",   count: counts.star,      color: QUADRANT_META.star.color },
-    { id: "puzzle",    label: "🧩 Incógnitas",  count: counts.puzzle,    color: QUADRANT_META.puzzle.color },
-    { id: "plowhorse", label: "🐴 Caballitos",  count: counts.plowhorse, color: QUADRANT_META.plowhorse.color },
+    { id: "puzzle",    label: "🧩 Rompecabezas", count: counts.puzzle,   color: QUADRANT_META.puzzle.color },
+    { id: "plowhorse", label: "🐴 Caballos",    count: counts.plowhorse, color: QUADRANT_META.plowhorse.color },
     { id: "dog",       label: "🐶 Perros",      count: counts.dog,       color: QUADRANT_META.dog.color },
   ];
 
@@ -129,7 +129,7 @@ export default function MenuEngineering({
         </div>
       </div>
       <p style={{ fontSize: 11, color: "var(--ag-ink-3)", margin: "4px 0 8px", lineHeight: 1.4 }}>
-        Clasifica cada plato según popularidad y margen vs el promedio del menú. <strong>Estrellas</strong> protegé, <strong>Caballitos</strong> subí precio, <strong>Incógnitas</strong> dales visibilidad, <strong>Perros</strong> evaluá sacar.{" "}
+        Clasifica cada plato según popularidad y margen vs el promedio del menú. <strong>Estrellas</strong> protegé, <strong>Caballos</strong> subí precio, <strong>Rompecabezas</strong> dales visibilidad, <strong>Perros</strong> evaluá sacar.{" "}
         <button type="button" onClick={() => setShowHelp(h => !h)}
           style={{ background: "none", border: 0, padding: 0, color: "var(--ag-c-sales)", fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>
           {showHelp ? "Ocultar explicación" : "¿Cómo funciona?"}
@@ -145,8 +145,8 @@ export default function MenuEngineering({
           precio de venta menos costo de receta, vs el promedio).
           <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
             <div>⭐ <strong>Estrella</strong>: vende mucho y deja mucho</div>
-            <div>🧩 <strong>Incógnita</strong>: deja mucho, vende poco</div>
-            <div>🐴 <strong>Caballito</strong>: vende mucho, deja poco</div>
+            <div>🧩 <strong>Rompecabezas</strong>: deja mucho, vende poco</div>
+            <div>🐴 <strong>Caballo</strong>: vende mucho, deja poco</div>
             <div>🐶 <strong>Perro</strong>: ni vende ni deja</div>
           </div>
           <div style={{ marginTop: 8 }}>
