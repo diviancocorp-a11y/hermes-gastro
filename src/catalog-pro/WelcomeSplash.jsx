@@ -9,8 +9,9 @@
 // variables CSS del tema (data-cp-theme="carbon"|"noche"|...) se apliquen.
 // Sin esto, caia al fallback de colores antiguos.
 import { useEffect, useState } from "react";
+import ArcLogo from "./ArcLogo";
 
-export default function WelcomeSplash({ bizName, duration = 1800 }) {
+export default function WelcomeSplash({ bizName, logoUrl, logoColor, logoLetter, duration = 1800 }) {
   const [phase, setPhase] = useState("hold"); // 'hold' | 'open' | 'done'
 
   useEffect(() => {
@@ -49,6 +50,19 @@ export default function WelcomeSplash({ bizName, duration = 1800 }) {
         opacity: opening ? 0 : 1,
         transition: "opacity 300ms ease",
       }}>
+        {/* Logo con "GRACIAS POR VISITARNOS" girando — aca lo ve el 100%
+            de los visitantes (en el footer solo el que llega al final) */}
+        <div style={{ marginBottom: 14, animation: "hg-splash-rise 600ms ease both" }}>
+          <ArcLogo
+            logoUrl={logoUrl}
+            logoColor={logoColor}
+            logoLetter={logoLetter}
+            bizName={bizName}
+            size={172}
+            logoSize={84}
+            duration={14}
+          />
+        </div>
         <div style={{
           fontSize: 15, color: "var(--t2)",
           letterSpacing: "0.04em",
