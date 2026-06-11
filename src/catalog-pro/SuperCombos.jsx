@@ -16,49 +16,11 @@ import { formatInt } from "../lib/utils";
 const ROTATE_MS = 6400;   // = duracion del loop de capas (sincronizados)
 const TOUCH_HOLD_MS = 15000;
 
-/* 3 variantes de capas para el clipPath (rotan por combo). La variante 0 son
-   CIRCULOS (una cookie grande + satelites — aca no se venden hamburguesas) */
-const CIRCLES = [
-  { cx: 250, cy: 250, r: 165 },
-  { cx: 95,  cy: 95,  r: 70 },
-  { cx: 405, cy: 95,  r: 58 },
-  { cx: 95,  cy: 405, r: 58 },
-  { cx: 405, cy: 405, r: 70 },
-];
-
-function ClipShapes({ setIndex, clipId }) {
-  const variant = setIndex % 3;
-  if (variant === 0) {
-    return (
-      <clipPath id={clipId}>
-        {CIRCLES.map((c, i) => (
-          <circle key={i} className="cp-sc-path" style={{ animationDelay: `${i * 0.09}s` }}
-            cx={c.cx} cy={c.cy} r={c.r} />
-        ))}
-      </clipPath>
-    );
-  }
-  if (variant === 1) {
-    const rects = [
-      { x: 20, y: 20, w: 200, h: 280 }, { x: 20, y: 320, w: 200, h: 160 },
-      { x: 240, y: 20, w: 240, h: 140 }, { x: 240, y: 180, w: 110, h: 160 },
-      { x: 370, y: 180, w: 110, h: 160 }, { x: 240, y: 360, w: 240, h: 120 },
-    ];
-    return (
-      <clipPath id={clipId}>
-        {rects.map((r, i) => (
-          <rect key={i} className="cp-sc-path" style={{ animationDelay: `${i * 0.08}s` }}
-            x={r.x} y={r.y} width={r.w} height={r.h} rx="12" />
-        ))}
-      </clipPath>
-    );
-  }
+/* Reveal simple: UN solo circulo centrado que crece, respira y sale */
+function ClipShapes({ clipId }) {
   return (
     <clipPath id={clipId}>
-      {Array.from({ length: 9 }).map((_, i) => (
-        <rect key={i} className="cp-sc-path" style={{ animationDelay: `${(i % 4) * 0.07 + Math.floor(i / 4) * 0.05}s` }}
-          x={(i % 3) * 160 + 20} y={Math.floor(i / 3) * 160 + 20} width="140" height="140" rx="4" />
-      ))}
+      <circle className="cp-sc-path" cx="250" cy="250" r="240" />
     </clipPath>
   );
 }
@@ -128,7 +90,7 @@ export default function SuperCombos({ combos = [], onSelectProduct, onAddToCart 
           <svg key={safe} viewBox="0 0 500 500" onClick={() => onSelectProduct?.(combo._raw)}
             style={{ width: "100%", maxWidth: 400, height: "auto", cursor: "pointer", filter: "drop-shadow(0 18px 40px rgba(0,0,0,0.45))" }}>
             <defs>
-              <ClipShapes setIndex={safe} clipId={clipId} />
+              <ClipShapes clipId={clipId} />
             </defs>
             <g clipPath={`url(#${clipId})`}>
               {combo.img ? (
