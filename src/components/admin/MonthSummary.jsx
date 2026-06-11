@@ -18,6 +18,13 @@ import { buildMonthRecommendations, printMonthReport } from '../../lib/monthRepo
 import UsarPnL from "./UsarPnL";
 import MenuEngineering from "./MenuEngineering";
 import TheoreticalFoodCost from "./TheoreticalFoodCost";
+import AnimatedStatCard from "./shared/cards/AnimatedStatCard";
+
+// Gastos de comida/packaging NO cuentan como gasto operativo: ya viven en el
+// costo de mercaderia (mismo criterio que useFinancials, fix doble conteo jun 2026)
+const isFoodExpense = (e) =>
+  typeof e.usar_category === 'string' &&
+  (e.usar_category.startsWith('food_') || e.usar_category === 'packaging');
 
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -98,8 +105,12 @@ export default function MonthSummary({
   const margenBruto = totalIngresos - totalCostMP;
 
   // ─── EGRESOS ───
-  const totalGastos = me.reduce((a, e) => a + (e.amount || 0), 0);
-  const fixedExp = me.filter(e => e.is_fixed).reduce((a, e) => a + (e.amount || 0), 0);
+  // Fix jun 2026: (1) excluir compras de comida (ya estan en totalCostMP — sumarlas
+  // era doble conteo), (2) e.is_fixed NO EXISTE en la tabla → fijos daban siempre 0;
+  // el campo real es expense_type.
+  const opExpenses = useMemo(() => me.filter(e => !isFoodExpense(e)), [me]);
+  const totalGastos = opExpenses.reduce((a, e) => a + (e.amount || 0), 0);
+  const fixedExp = opExpenses.filter(e => e.expense_type === 'fixed').reduce((a, e) => a + (e.amount || 0), 0);
   const varExp = totalGastos - fixedExp;
 
   const mermaCost = useMemo(() => {
@@ -280,6 +291,53 @@ export default function MonthSummary({
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>
+      </div>
+
+      {/* CARDS ANIMADOS: ingresos y gastos por dia del mes (hover = resaltar
+          dias sobre el promedio + mejor dia). Datos reales, no decorativos. */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 14 }}>
+        {(() => {
+          const daysInMonth = new Date(year, month, 0).getDate();
+          const dayLabel = (i) => `${pad(i + 1)}/${pad(month)}`;
+          const salesByDay = Array.from({ length: daysInMonth }, (_, i) => ({ label: dayLabel(i), value: 0 }));
+          ms.forEach(s => {
+            const d = Number((s.date || '').slice(8, 10)) - 1;
+            if (d >= 0 && d < daysInMonth) salesByDay[d].value += s.total || 0;
+          });
+          const expByDay = Array.from({ length: daysInMonth }, (_, i) => ({ label: dayLabel(i), value: 0 }));
+          opExpenses.forEach(e => {
+            const d = Number((e.date || '').slice(8, 10)) - 1;
+            if (d >= 0 && d < daysInMonth) expByDay[d].value += e.amount || 0;
+          });
+          // Delta vs mes anterior (real)
+          const prevKey = monthKey(new Date(year, month - 2, 1));
+          const prevSales = sales.filter(s => (s.date || '').slice(0, 7) === prevKey).reduce((a, s) => a + (s.total || 0), 0);
+          const prevExp = expenses.filter(e => (e.date || '').slice(0, 7) === prevKey && !isFoodExpense(e)).reduce((a, e) => a + (e.amount || 0), 0);
+          const deltaIngresos = prevSales > 0 ? ((totalIngresos - prevSales) / prevSales) * 100 : null;
+          const deltaGastos = prevExp > 0 ? ((totalGastos - prevExp) / prevExp) * 100 : null;
+          return (
+            <>
+              <AnimatedStatCard
+                title="Ingresos"
+                description="Ventas por día del mes"
+                value={`$${formatInt(totalIngresos)}`}
+                deltaPct={deltaIngresos}
+                bars={salesByDay}
+                mainColor="var(--ag-c-sales)"
+                secondaryColor="var(--ag-c-stock)"
+              />
+              <AnimatedStatCard
+                title="Gastos operativos"
+                description="Sin compras de comida (van en costo de mercadería)"
+                value={`$${formatInt(totalGastos)}`}
+                deltaPct={deltaGastos}
+                bars={expByDay}
+                mainColor="var(--ag-c-orders)"
+                secondaryColor="var(--ag-c-prep)"
+              />
+            </>
+          );
+        })()}
       </div>
 
       {/* ANÁLISIS AUTOMÁTICO (heurísticas locales — futuro: IA real) */}
