@@ -25,6 +25,7 @@ import { voidExpense } from "../../services/finance";
 import SlideToConfirm from "../SlideToConfirm";
 import DecimalInput from "../ui/DecimalInput";
 import { paymentLabel, paymentIcon, enabledPaymentMethods } from "../../lib/payments";
+import { Avatar } from "../../lib/avatars.jsx";
 import { USAR_EXPENSE_CATEGORIES, getUsarExpense } from "../../constants/usar";
 
 const DEFAULT_SETTINGS = {
@@ -1808,6 +1809,9 @@ function SalesView({ sales, setSales, orders, recipes, overlay, setOverlay, show
                     cursor: "pointer",
                   }} onClick={() => setExpanded(isExp ? null : s.id)}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      {/* Avatar doodle deterministico por nombre (mismo que ve
+                          el cliente en el ranking del catalogo) */}
+                      <Avatar name={s.customer} size={36} style={{ marginRight: 10, background: "var(--ag-bg-soft)" }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontWeight: 700, fontSize: 13.5, color: "var(--ag-ink)" }}>{s.customer}</span>
