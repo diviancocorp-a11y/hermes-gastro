@@ -31,6 +31,12 @@
 
 ### Cuando puedas
 
+- [ ] **Secrets de Telegram en Mala Miga y Cochi** (11/jun): el informe diario
+  a Telegram (hermes-daily-report, 09:00 AR) ya funciona en La Nona Pato pero
+  MM y Cochi devuelven "Missing Telegram credentials". En el dashboard de cada
+  proyecto: Settings → Edge Functions → Secrets, agregar TELEGRAM_BOT_TOKEN y
+  TELEGRAM_CHAT_ID (copialos del proyecto de La Nona Pato). 2 minutos por tenant.
+
 - [ ] **Iconos PWA** para la-nona-pato y mala-miga (solo cochi tiene set completo).
   Patron: `public/clients/<slug>/` con icon-192.png, icon-512.png, favicon.
 - [ ] **GIF del 404 (cavernicola)**: es un hotlink a Dribbble (obra de un tercero).
