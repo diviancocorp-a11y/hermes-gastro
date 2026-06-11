@@ -213,44 +213,74 @@ function HowItWorksModal({ onClose }) {
   );
 }
 
-/* ---------- Visual de un slide (foto o gradiente+emoji) ---------- */
-function SlideVisual({ slide }) {
-  if (slide.img) {
-    return <img src={slide.img} alt={slide.label} loading="lazy" draggable={false}
-      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />;
-  }
+/* ---------- Fondo de gradientes animados (adaptacion del
+   BackgroundGradientAnimation de aceternity, sin Tailwind: blobs radiales
+   con mix-blend-mode + keyframes CSS, colores derivados del acento) ---------- */
+function GradientBackdrop() {
+  const blob = (color, anim, origin, opacity = 1) => (
+    <div aria-hidden style={{
+      position: "absolute", width: "80%", height: "80%",
+      top: "10%", left: "10%", borderRadius: "50%",
+      background: `radial-gradient(circle at center, ${color} 0, transparent 50%)`,
+      mixBlendMode: "hard-light", transformOrigin: origin, opacity,
+      animation: anim,
+    }} />
+  );
   return (
     <div style={{
-      width: "100%", height: "100%",
-      background: "linear-gradient(155deg, color-mix(in srgb, var(--ac, #D97706) 60%, #1a1611), #1a1611)",
-      display: "flex", alignItems: "center", justifyContent: "center",
+      position: "absolute", inset: 0, overflow: "hidden",
+      background: "linear-gradient(40deg, color-mix(in srgb, var(--ac, #D97706) 40%, #14100c), #14100c)",
     }}>
-      <span style={{ fontSize: 120, opacity: 0.92 }} aria-hidden>{slide.emoji}</span>
+      <div style={{ position: "absolute", inset: 0, filter: "blur(36px)" }}>
+        {blob("color-mix(in srgb, var(--ac, #D97706) 85%, transparent)", "cp-pcg-vert 30s ease infinite", "center center")}
+        {blob("rgba(232, 93, 117, 0.7)", "cp-pcg-circle 20s reverse infinite", "calc(50% - 200px)")}
+        {blob("rgba(242, 193, 78, 0.7)", "cp-pcg-circle 40s linear infinite", "calc(50% + 200px)")}
+        {blob("rgba(160, 106, 51, 0.75)", "cp-pcg-horiz 40s ease infinite", "calc(50% - 100px)", 0.7)}
+        {blob("color-mix(in srgb, var(--ac, #D97706) 65%, #fff)", "cp-pcg-circle 24s ease infinite", "calc(50% - 300px) calc(50% + 300px)", 0.8)}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Visual de un slide: fondo animado + emoji ---------- */
+function SlideVisual({ slide }) {
+  return (
+    <div style={{ position: "absolute", inset: 0 }}>
+      <GradientBackdrop />
+      {!slide.board && (
+        <div style={{
+          position: "absolute", inset: 0, display: "flex",
+          alignItems: "center", justifyContent: "center",
+        }}>
+          <span style={{ fontSize: 120, filter: "drop-shadow(0 6px 18px rgba(0,0,0,0.35))" }} aria-hidden>
+            {slide.emoji}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 
 /* ---------- Carrusel circular ---------- */
-export default function PromoCarousel({ onOpenAccount, products = [] }) {
+export default function PromoCarousel({ onOpenAccount }) {
   const { top, loading: topLoading } = useWeeklyTop();
   const [showHelp, setShowHelp] = useState(false);
 
-  const imgs = products.filter((p) => p.image_url).map((p) => p.image_url);
   const slides = [];
   if (topLoading || top.length > 0) {
     slides.push({
       id: "ranking", emoji: "🏆", label: "Ranking semanal",
-      img: imgs[0] || null, board: true, // leaderboard adentro del card
+      board: true, // leaderboard adentro del card
       cta: "Saber más", onCta: () => setShowHelp(true),
     });
   }
   slides.push({
-    id: "cumple", emoji: "🎂", label: "Regalo de cumple", img: imgs[1] || null,
+    id: "cumple", emoji: "🎂", label: "Regalo de cumple",
     desc: "Contanos tu fecha de nacimiento y tu cumple llega con regalo.",
     cta: "Completar mi perfil", onCta: () => onOpenAccount?.(),
   });
   slides.push({
-    id: "programados", emoji: "📅", label: "Pedidos programados", img: imgs[2] || null,
+    id: "programados", emoji: "📅", label: "Pedidos programados",
     desc: "Elegí día y horario en el checkout. Tu pedido sale justo a tiempo.",
   });
   const len = slides.length;
@@ -301,14 +331,14 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
     `circle(${DOT_SIZE / 2}px at calc(50% + ${dotOffset(i)}px) calc(100% - ${DOT_BOTTOM + DOT_SIZE / 2}px))`;
   const clipFull = `circle(140% at 50% 50%)`;
 
-  // Capa de un slide: leaderboard (ranking) o foto/gradiente
+  // Capa de un slide: fondo animado (+leaderboard si es el ranking)
   const renderLayer = (s) => (
     <>
       <SlideVisual slide={s} />
       {s.board && (
         <>
-          {/* velo oscuro para que el board lea sobre la foto */}
-          <div style={{ position: "absolute", inset: 0, background: "rgba(16,13,10,0.82)" }} />
+          {/* velo suave: el board lee bien y los blobs siguen vivos atras */}
+          <div style={{ position: "absolute", inset: 0, background: "rgba(16,13,10,0.45)" }} />
           <RankingBoard top={top} />
         </>
       )}
@@ -398,10 +428,7 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
                   background: "transparent",
                 }}>
                 <div style={{ width: "100%", height: "100%" }}>
-                  {/* burbuja del ranking = trofeo (no la foto del producto) */}
-                  {s.img && !s.board
-                    ? <img src={s.img} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                    : <div style={{ width: "100%", height: "100%", background: "color-mix(in srgb, var(--ac, #D97706) 70%, #1a1611)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }} aria-hidden>{s.emoji}</div>}
+                  <div style={{ width: "100%", height: "100%", background: "color-mix(in srgb, var(--ac, #D97706) 70%, #1a1611)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }} aria-hidden>{s.emoji}</div>
                 </div>
               </button>
             );
@@ -428,6 +455,22 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
             0 41.8px 33.4px rgba(0,0,0,0.05), 0 100px 80px rgba(0,0,0,0.07);
         }
         @keyframes cp-pcg-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        /* keyframes de los blobs (adaptados del BackgroundGradientAnimation) */
+        @keyframes cp-pcg-vert {
+          0% { transform: translateY(-50%); }
+          50% { transform: translateY(50%); }
+          100% { transform: translateY(-50%); }
+        }
+        @keyframes cp-pcg-horiz {
+          0% { transform: translateX(-50%) translateY(-10%); }
+          50% { transform: translateX(50%) translateY(10%); }
+          100% { transform: translateX(-50%) translateY(-10%); }
+        }
+        @keyframes cp-pcg-circle {
+          0% { transform: rotate(0deg); }
+          50% { transform: rotate(180deg); }
+          100% { transform: rotate(360deg); }
+        }
         @keyframes cp-promo-fade { from { opacity: 0; } to { opacity: 1; } }
         @keyframes cp-promo-pop { from { opacity: 0; transform: scale(0.9) translateY(14px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         @media (prefers-reduced-motion: reduce) {
