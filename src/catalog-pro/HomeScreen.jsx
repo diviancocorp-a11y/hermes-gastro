@@ -111,6 +111,8 @@ export default function HomeScreen({
       // Mas pedidos: ordenar por sale_count o veces que aparece en orders.
       list = [...list].sort((a, b) => (b.sale_count || 0) - (a.sale_count || 0));
     }
+    // Combos al final de la carta (sort estable: el resto conserva su orden)
+    list = [...list].sort((a, b) => (a.is_combo ? 1 : 0) - (b.is_combo ? 1 : 0));
     return list.map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault, soldOutIds }));
   }, [products, categories, activeCat, searchQuery, activeFilter, hasDeal, dealPrice, prepDefault, soldOutIds]);
 
@@ -492,6 +494,17 @@ export default function HomeScreen({
               {p._raw?.requires_age_gate && (
                 <div style={{ position: "absolute", bottom: 8, left: 8, background: "rgba(198,40,40,0.92)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "3px 7px", borderRadius: 999, letterSpacing: "0.04em" }}>
                   +18
+                </div>
+              )}
+              {/* Etiqueta COMBO (mismo estilo que +18) para identificarlos en la carta */}
+              {p._raw?.is_combo && !p._raw?.requires_age_gate && (
+                <div style={{ position: "absolute", bottom: 8, left: 8, background: "color-mix(in srgb, var(--ac) 92%, #000)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "3px 7px", borderRadius: 999, letterSpacing: "0.04em" }}>
+                  COMBO
+                </div>
+              )}
+              {p._raw?.is_combo && p._raw?.requires_age_gate && (
+                <div style={{ position: "absolute", bottom: 8, left: 52, background: "color-mix(in srgb, var(--ac) 92%, #000)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "3px 7px", borderRadius: 999, letterSpacing: "0.04em" }}>
+                  COMBO
                 </div>
               )}
               <div style={{ position: "absolute", bottom: -10, right: 8 }}>

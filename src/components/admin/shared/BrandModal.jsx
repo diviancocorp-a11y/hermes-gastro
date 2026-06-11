@@ -20,15 +20,12 @@ import { memo, useEffect, useRef, useState } from "react";
 import {
   updateSettings,
   uploadCoverImage,
-  uploadCatImage,
   uploadLogoImage,
 } from "../../../lib/adminService";
-import CategoryEditor from "../CategoryEditor";
 import DynamicQrs from "../DynamicQrs";
 import { useConfirm } from "../../ConfirmSlideProvider";
 import ToggleSwitch from "./forms/ToggleSwitch";
 import DecimalInput from "../../ui/DecimalInput";
-import { fetchCategoryGroups } from "../../../services/categories";
 const COLORS = [
   { h: "#C45D3E", l: "Terracota" },
   { h: "#3A7D44", l: "Verde" },
@@ -38,43 +35,13 @@ const COLORS = [
   { h: "#2D1B0E", l: "Negro" },
 ];
 
-function EyeIcon({ off = false }) {
-  return off ? (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94 M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
-  ) : (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
 function BrandModal({ open, onClose, settings, setSettings, showToast }) {
   const [s, setS] = useState({ ...settings });
   const confirmSlide = useConfirm();
-  const [section, setSection] = useState('identity'); // 'identity' | 'cover' | 'cats'
-  const [editorOpen, setEditorOpen] = useState(false); // sub-página: CategoryEditor
+  const [section, setSection] = useState('identity'); // 'identity' | 'cover' | 'qrs'
   const [qrsOpen, setQrsOpen] = useState(false); // sub-página: DynamicQrs
   const [uploadingCover, setUploadingCover] = useState(false);
-  const [uploadingCat, setUploadingCat] = useState(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  // Categorias reales del backend de ESTE tenant (no hardcoded).
-  // Fallback: solo "Todos" para clientes nuevos.
-  const [catNames, setCatNames] = useState(["Todos"]);
-  const reloadCatNames = () => {
-    fetchCategoryGroups().then(groups => {
-      const names = ["Todos", ...groups.map(g => g.name).filter(Boolean)];
-      setCatNames(names);
-    }).catch(() => setCatNames(["Todos"]));
-  };
-  useEffect(() => {
-    if (!open) return;
-    reloadCatNames();
-
-  }, [open]);
 
   // Sincroniza si se abre y settings cambió desde afuera
   useEffect(() => {
@@ -113,12 +80,6 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
   }, [settings?.catalog_theme]);
 
   const set = (k, v) => setS(p => ({ ...p, [k]: v }));
-  const setCatImg = (name, url) => setS(p => ({ ...p, cat_images: { ...(p.cat_images || {}), [name]: url } }));
-  const toggleCatHidden = (name) => setS(p => {
-    const cur = p.hidden_cats || [];
-    return { ...p, hidden_cats: cur.includes(name) ? cur.filter(x => x !== name) : [...cur, name] };
-  });
-  const setCatName = (origName, val) => setS(p => ({ ...p, cat_names: { ...(p.cat_names || {}), [origName]: val } }));
 
   // Upload handlers
   const handleCoverFile = async (e) => {
@@ -128,14 +89,6 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
     setUploadingCover(false);
     if (result?.__error) { showToast(result.__error); return; }
     if (result) { set("cover_url", result); showToast("Imagen cargada ✓"); } else { showToast("Error al subir"); }
-  };
-  const handleCatFile = async (catName, e) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    setUploadingCat(catName);
-    const result = await uploadCatImage(file, catName);
-    setUploadingCat(null);
-    if (result?.__error) { showToast(result.__error); return; }
-    if (result) { setCatImg(catName, result); showToast(`Imagen "${catName}" cargada ✓`); } else { showToast("Error al subir"); }
   };
   const handleLogoFile = async (e) => {
     const file = e.target.files?.[0]; if (!file) return;
@@ -171,7 +124,6 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
     { id: 'identity', label: 'Identidad' },
     { id: 'catalog',  label: 'Catálogo' },
     { id: 'qrs',      label: 'QRs' },
-    { id: 'cats',     label: 'Categorías' },
   ];
 
   // ─── catalog_payment_methods: subset de payment_methods visible en el catálogo público.
@@ -207,28 +159,10 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
         aria-hidden={!open}
       >
         <header className="ag-modal-header">
-          {editorOpen ? (
-            <button
-              type="button"
-              className="ag-subpage-back"
-              onClick={() => setEditorOpen(false)}
-              aria-label="Atrás"
-              style={{ marginLeft: -4 }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              <span>Atrás</span>
-            </button>
-          ) : (
-            <div>
-              <h3>Personalización</h3>
-              <p>Marca, imágenes y categorías · autosave</p>
-            </div>
-          )}
-          {editorOpen && (
-            <h3 style={{ flex: 1, textAlign: 'center', margin: 0, fontSize: 16, paddingRight: 60 }}>Categorías</h3>
-          )}
+          <div>
+            <h3>Personalización</h3>
+            <p>Marca e imágenes · autosave</p>
+          </div>
           <button type="button" className="ag-modal-close" onClick={onClose} aria-label="Cerrar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <line x1="18" y1="6"  x2="6"  y2="18"/>
@@ -237,28 +171,22 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
           </button>
         </header>
 
-        {/* Tabs (ocultos cuando estamos en sub-página) */}
-        {!editorOpen && (
-          <div className="ag-modal-tabs">
-            {TABS.map(t => (
-              <button
-                key={t.id}
-                type="button"
-                className={`ag-modal-tab ${section === t.id ? 'active' : ''}`}
-                onClick={() => setSection(t.id)}
-              >{t.label}</button>
-            ))}
-          </div>
-        )}
+        <div className="ag-modal-tabs">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              type="button"
+              className={`ag-modal-tab ${section === t.id ? 'active' : ''}`}
+              onClick={() => setSection(t.id)}
+            >{t.label}</button>
+          ))}
+        </div>
 
         <div className="ag-modal-body">
-          {editorOpen && (
-            <CategoryEditor embedded msg={showToast} onClose={() => { setEditorOpen(false); reloadCatNames(); }} />
-          )}
           {qrsOpen && (
             <DynamicQrs onClose={() => setQrsOpen(false)} showToast={showToast} />
           )}
-          {!editorOpen && (<>
+          <>
 
 
           {/* ── IDENTIDAD ── */}
@@ -746,20 +674,8 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
             </div>
           )}
 
-          {/* ── CATEGORÍAS: editor embebido SIEMPRE abierto. El listado viejo
-               (imagenes/ojito/rename) se elimino: el catalogo solo muestra
-               nombres y el listado no se refrescaba al eliminar. Todo se
-               gestiona aca directo contra category_groups. ── */}
-          {section === 'cats' && (
-            <div>
-              <p style={{ fontSize: 12, color: "var(--ag-ink-3)", marginTop: 0, marginBottom: 12, lineHeight: 1.4 }}>
-                Creá, editá o eliminá las categorías de la carta y sus subcategorías.
-                Estas mismas aparecen en el desplegable al crear recetas.
-              </p>
-              <CategoryEditor embedded msg={showToast} onClose={reloadCatNames} />
-            </div>
-          )}
-          </>)}
+          {/* Categorias: se mudo a Recetas (boton 🏷️ Categorías en el header) */}
+          </>
         </div>
       </div>
     </>

@@ -14,7 +14,7 @@ export default function CategoryEditor({ msg, onClose, embedded = false }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', image_url: '', subcategories: '', visible: true });
+  const [form, setForm] = useState({ name: '', image_url: '', visible: true });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -30,25 +30,26 @@ export default function CategoryEditor({ msg, onClose, embedded = false }) {
     setForm({
       name: g.name,
       image_url: g.image_url || '',
-      subcategories: (g.subcategories || []).join(', '),
       visible: g.visible,
     });
   };
 
   const startNew = () => {
     setEditing({});
-    setForm({ name: '', image_url: '', subcategories: '', visible: true });
+    setForm({ name: '', image_url: '', visible: true });
   };
 
   const handleSave = async () => {
     if (!form.name.trim()) { msg?.('El nombre es obligatorio'); return; }
-    const subs = form.subcategories.split(',').map(s => s.trim()).filter(Boolean);
     try {
       const payload = {
         ...(editing?.id ? { id: editing.id } : {}),
         name: form.name.trim(),
         image_url: form.image_url || '',
-        subcategories: subs,
+        // Subcategorias eliminadas del flujo (complicaban sin aportar).
+        // Se preservan las existentes en data vieja para no romper el
+        // agrupado de recetas legacy; categorias nuevas van sin subs.
+        subcategories: editing?.subcategories ?? [],
         visible: form.visible,
         sort_order: editing?.sort_order ?? groups.length,
       };
@@ -122,16 +123,8 @@ export default function CategoryEditor({ msg, onClose, embedded = false }) {
             style={{ marginBottom: 12 }}
           />
 
-          {/* Imagen de categoria eliminada: el catalogo solo muestra nombres */}
-          <label className="ag-field-lbl">Subcategorías (separadas por coma)</label>
-          <input
-            className="ag-field-input"
-            value={form.subcategories}
-            onChange={e => setForm(f => ({ ...f, subcategories: e.target.value }))}
-            placeholder="Rotisería, Pizzas"
-            style={{ marginBottom: 14 }}
-          />
-
+          {/* Imagen y subcategorias eliminadas: el catalogo solo muestra
+              nombres y las subs complicaban sin aportar */}
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 18, cursor: 'pointer', color: 'var(--ag-ink-2)' }}>
             <input
               type="checkbox"
@@ -182,7 +175,7 @@ export default function CategoryEditor({ msg, onClose, embedded = false }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ag-ink)' }}>{g.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--ag-ink-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {(g.subcategories || []).join(', ') || 'Sin subcategorías'}
+                  {g.visible ? 'Visible en el catálogo' : 'Oculta'}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>

@@ -33,6 +33,7 @@ import {
 import BatchCalculator from "./recipes/BatchCalculator";
 import SizesEditor from "./recipes/SizesEditor";
 import { fetchCategoryGroups } from "../../services/categories";
+import CategoryEditor from "./CategoryEditor";
 
 // Color de rentabilidad según margen
 function marginColor(m) {
@@ -45,6 +46,7 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
   const confirmSlide = useConfirm();
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [showCats, setShowCats] = useState(false); // editor de categorias (mudado de Personalizacion)
 
   const active = useMemo(() => recipes.filter(r => !r.is_archived), [recipes]);
   const archived = useMemo(() => recipes.filter(r => r.is_archived), [recipes]);
@@ -78,24 +80,43 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
               {active.length} activa{active.length !== 1 ? "s" : ""}{archived.length > 0 && ` · ${archived.length} archivada${archived.length !== 1 ? "s" : ""}`}
             </p>
           </div>
-          {archived.length > 0 && (
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            {/* Categorias de la carta (antes vivia en Personalizacion) */}
             <button
               type="button"
-              onClick={() => setShowArchived(p => !p)}
+              onClick={() => setShowCats(true)}
               style={{
                 padding: "8px 12px",
-                background: showArchived ? "var(--ag-c-stock)" : "var(--ag-bg-card)",
-                border: `1.5px solid ${showArchived ? "var(--ag-c-stock)" : "var(--ag-line)"}`,
-                color: showArchived ? "#fff" : "var(--ag-ink-2)",
+                background: "var(--ag-bg-card)",
+                border: "1.5px solid var(--ag-line)",
+                color: "var(--ag-ink-2)",
                 borderRadius: 12,
                 fontSize: 12, fontWeight: 700, fontFamily: "inherit",
-                cursor: "pointer", flexShrink: 0,
+                cursor: "pointer",
                 display: "flex", alignItems: "center", gap: 6,
               }}
             >
-              📦 {showArchived ? "Ver activas" : `Archivadas (${archived.length})`}
+              🏷️ Categorías
             </button>
-          )}
+            {archived.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowArchived(p => !p)}
+                style={{
+                  padding: "8px 12px",
+                  background: showArchived ? "var(--ag-c-stock)" : "var(--ag-bg-card)",
+                  border: `1.5px solid ${showArchived ? "var(--ag-c-stock)" : "var(--ag-line)"}`,
+                  color: showArchived ? "#fff" : "var(--ag-ink-2)",
+                  borderRadius: 12,
+                  fontSize: 12, fontWeight: 700, fontFamily: "inherit",
+                  cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}
+              >
+                📦 {showArchived ? "Ver activas" : `Archivadas (${archived.length})`}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Banner si está viendo archivadas */}
@@ -312,6 +333,9 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
             showToast("Receta restaurada");
           }}
         />
+      )}
+      {showCats && (
+        <CategoryEditor msg={showToast} onClose={() => { setShowCats(false); loadAll?.(); }} />
       )}
       {overlay?.type === "editR" && (
         <RecForm
@@ -613,15 +637,14 @@ function RecForm({ data, ingredients, recipes, settings, onClose, onSave }) {
   );
   const profitNeg = !f.is_combo && totalCost > 0 && totalCost > (f.sale_price || 0);
 
-  // Categorias de la carta = las de Personalizacion (tabla category_groups:
-  // madres + subcategorias). Dropdown CERRADO: nada de categorias inventadas
+  // Categorias de la carta = las de category_groups (sin subcategorias, se
+  // eliminaron del flujo). Dropdown CERRADO: nada de categorias inventadas
   // tipo "cookis"/"perro". La categoria actual de la receta se agrega solo
   // para no romper data vieja al editar.
   const [catOptions, setCatOptions] = useState([]);
   useEffect(() => {
     fetchCategoryGroups().then(groups => {
-      const names = groups.flatMap(g => [g.name, ...(g.subcategories || [])]).filter(Boolean);
-      setCatOptions([...new Set(names)]);
+      setCatOptions([...new Set(groups.map(g => g.name).filter(Boolean))]);
     }).catch(() => setCatOptions([]));
   }, []);
   const cartCategories = useMemo(() => {
@@ -656,9 +679,14 @@ function RecForm({ data, ingredients, recipes, settings, onClose, onSave }) {
           <ToggleRow label="Visible en catálogo" hint="Los clientes pueden verla y pedirla"
             checked={f.visible !== false} onChange={v => s("visible", v)} />
           <div style={{ borderTop: "1px solid var(--ag-line)" }} />
-          <ToggleRow label="Es un combo" hint="Compuesto por sub-recetas; usa los ingredientes de esas recetas"
+          <ToggleRow label="Es un combo" hint='Compuesto por sub-recetas de varias categorias; su categoria queda fija en "Combos"'
             checked={!!f.is_combo}
-            onChange={v => setF(p => ({ ...p, is_combo: v, ...(v ? { sizes: null, batch_yield: null } : {}) }))} />
+            onChange={v => setF(p => ({
+              ...p, is_combo: v,
+              // Un combo mezcla items de varias categorias → categoria fija
+              category: v ? "Combos" : (p.category === "Combos" ? "" : p.category),
+              ...(v ? { sizes: null, batch_yield: null } : {}),
+            }))} />
           <div style={{ borderTop: "1px solid var(--ag-line)" }} />
           <ToggleRow label="Es vegetariano" hint="Aparece cuando el cliente filtra por vegetariano"
             checked={!!f.is_vegetarian} onChange={v => s("is_vegetarian", v)} />
@@ -701,10 +729,15 @@ function RecForm({ data, ingredients, recipes, settings, onClose, onSave }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           <div>
             <label className="ag-field-lbl">Categoría *</label>
-            <select className="ag-field-input" value={f.category} onChange={e => s("category", e.target.value)}>
-              <option value="">Seleccionar...</option>
-              {cartCategories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            {f.is_combo ? (
+              <input className="ag-field-input" value="Combos" disabled
+                title='Los combos van siempre en "Combos" (mezclan items de varias categorias)' />
+            ) : (
+              <select className="ag-field-input" value={f.category} onChange={e => s("category", e.target.value)}>
+                <option value="">Seleccionar...</option>
+                {cartCategories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
           </div>
           <div>
             <label className="ag-field-lbl">Precio venta *</label>
