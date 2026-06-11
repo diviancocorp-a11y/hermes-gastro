@@ -3,7 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { formatOrderCode } from "../lib/utils";
 import { fmtAR } from "../lib/format";
-import { waLink } from "@business";
+import business from "@business";
+import { cancelOwnOrder, useRegretCountdown } from "../catalog-pro/regretOrder";
 
 // ─── Mapa de estados ──────────────────────────────────
 const STEPS = [
@@ -35,6 +36,30 @@ export default function OrderTracker() {
   // Para códigos cortos #XXXXXX seguimos haciendo el fallback contra la tabla,
   // pero ahora resolvemos el UUID completo y delegamos al RPC.
   const [resolvedId, setResolvedId] = useState(null);
+
+  // WhatsApp del local: settings.whatsapp (runtime, lo configura el tenant)
+  // con fallback al de build. Sin numero valido NO mostramos el boton de
+  // ayuda — un wa.me sin numero abre la pantalla "enviar a" de WhatsApp.
+  const [waNumber, setWaNumber] = useState((business?.whatsapp || "").replace(/\D/g, ""));
+  useEffect(() => {
+    supabase.from("settings").select("whatsapp").eq("id", 1).single().then(({ data }) => {
+      const n = (data?.whatsapp || "").replace(/\D/g, "");
+      if (n) setWaNumber(n);
+    });
+  }, []);
+
+  // Arrepentimiento: 60s desde la creacion, solo pedidos "new"
+  const [cancelling, setCancelling] = useState(false);
+  const regretLeft = useRegretCountdown(
+    order && order.status === "new" ? order.created_at : null
+  );
+  const onRegret = async () => {
+    if (cancelling || !order) return;
+    setCancelling(true);
+    const ok = await cancelOwnOrder(order.id);
+    setCancelling(false);
+    if (ok) setOrder(prev => ({ ...prev, status: "cancelled" }));
+  };
   useEffect(() => {
     async function load() {
       setLoading(true);
@@ -211,21 +236,36 @@ export default function OrderTracker() {
         </div>
       )}
 
-      {/* Ayuda SIEMPRE visible: cancelado, completado o en curso — cualquier
-          consulta va directo al WhatsApp del local con el codigo del pedido */}
-      <a
-        href={waLink(`Hola! Tengo una consulta sobre mi pedido ${formatOrderCode(order.id)}`)}
-        target="_blank" rel="noopener noreferrer"
-        style={{
+      {/* Arrepentimiento: ventana de 60s para cancelar si se equivoco */}
+      {regretLeft > 0 && (
+        <button onClick={onRegret} disabled={cancelling} style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          margin: "14px auto 0", maxWidth: 420, padding: "12px 18px",
-          borderRadius: 999, border: "1px solid var(--ac, #D97706)",
-          background: "transparent", color: "var(--ac, #D97706)",
-          fontSize: 14, fontWeight: 700, textDecoration: "none",
-        }}
-      >
-        💬 ¿Necesitás ayuda con tu pedido?
-      </a>
+          margin: "14px auto 0", maxWidth: 420, width: "100%", padding: "12px 18px",
+          borderRadius: 999, border: "1px solid var(--err, #C62828)",
+          background: "transparent", color: "var(--err, #C62828)",
+          fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+        }}>
+          {cancelling ? "Cancelando…" : `✕ ¿Te equivocaste? Cancelar pedido (${regretLeft}s)`}
+        </button>
+      )}
+
+      {/* Ayuda SIEMPRE visible: va directo al chat de WhatsApp del local con
+          el codigo del pedido prellenado (solo si hay numero configurado) */}
+      {waNumber && (
+        <a
+          href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Hola! Tengo una consulta sobre mi pedido ${formatOrderCode(order.id)}`)}`}
+          target="_blank" rel="noopener noreferrer"
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            margin: "14px auto 0", maxWidth: 420, padding: "12px 18px",
+            borderRadius: 999, border: "1px solid var(--ac, #D97706)",
+            background: "transparent", color: "var(--ac, #D97706)",
+            fontSize: 14, fontWeight: 700, textDecoration: "none",
+          }}
+        >
+          💬 ¿Necesitás ayuda con tu pedido?
+        </a>
+      )}
 
       <Link to="/" className="tracker-back-btn">← Volver a la tienda</Link>
     </div>

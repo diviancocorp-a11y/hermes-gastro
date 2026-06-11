@@ -9,11 +9,24 @@ import { waLink } from "@business";
 import { upsertCustomer } from "../../services/phoneAuth";
 import { setGuestUser, getGuestUser } from "../../lib/guestUser";
 import OrderStatusCard from "../../catalog-pro/OrderStatusCard";
+import { cancelOwnOrder, useRegretCountdown } from "../../catalog-pro/regretOrder";
 
 const GREEN = "#16A34A";
 
 export default function OrderSentView({ orderId, form, receiptFile, onReset, settings = {} }) {
   const [copiedCode, setCopiedCode] = useState(false);
+  // Arrepentimiento: el pedido se acaba de crear, ventana de 60s desde ahora
+  const [placedAt] = useState(() => Date.now());
+  const regretLeft = useRegretCountdown(orderId ? placedAt : null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+  const onRegret = async () => {
+    if (cancelling) return;
+    setCancelling(true);
+    const ok = await cancelOwnOrder(orderId);
+    setCancelling(false);
+    if (ok) setCancelled(true);
+  };
   const wasPaidDigital = form.payment === "transferencia" || form.payment === "mercadopago";
   const storeAddress = settings?.store_address || "";
   const mapsHref = storeAddress
@@ -65,9 +78,33 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
         {orderId && (
           <>
             {/* StatusCard de seguimiento (card-24 adaptado) */}
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
-              <OrderStatusCard href={"/order/" + orderId} />
-            </div>
+            {!cancelled ? (
+              <>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: regretLeft > 0 ? 10 : 18 }}>
+                  <OrderStatusCard href={"/order/" + orderId} />
+                </div>
+                {/* Arrepentimiento: 60s para cancelar si se equivoco */}
+                {regretLeft > 0 && (
+                  <button onClick={onRegret} disabled={cancelling} style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    margin: "0 auto 18px", padding: "10px 18px", borderRadius: 999,
+                    border: "1px solid var(--err, #C62828)", background: "transparent",
+                    color: "var(--err, #C62828)", fontSize: 13, fontWeight: 700,
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}>
+                    {cancelling ? "Cancelando…" : `✕ ¿Te equivocaste? Cancelar pedido (${regretLeft}s)`}
+                  </button>
+                )}
+              </>
+            ) : (
+              <div style={{
+                margin: "0 auto 18px", maxWidth: 420, padding: "16px 18px",
+                borderRadius: 16, background: "var(--b2)", border: "1px solid var(--line)",
+                fontSize: 14, color: "var(--tx)", fontWeight: 600,
+              }}>
+                ✓ Pedido cancelado — no se te cobró nada. Podés volver a la carta y pedir de nuevo.
+              </div>
+            )}
 
             <div style={{
               padding: "14px 16px", background: "var(--b2)",

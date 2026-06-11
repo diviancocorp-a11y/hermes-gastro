@@ -11,26 +11,31 @@
 // original); si no carga cae al emoji 🛵 — nunca queda hueco roto.
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { removeActiveOrder } from "../lib/activeOrders";
+import { cancelOwnOrder, useRegretCountdown } from "./regretOrder";
 
 const ILLUSTRATION = "https://www.thiings.co/_next/image?url=https%3A%2F%2Flftz25oez4aqbxpq.public.blob.vercel-storage.com%2Fimage-uBD2X8E9FMFPGgAZv0YYRXCMZbaJTt.png&w=320&q=75";
 
 /* El pedido sigue "vivo"? Fetch inicial + realtime: cuando pasa a
-   completed/cancelled la card del catalogo desaparece sola y se limpia
-   cp_last_order para que no vuelva a aparecer. */
+   completed/cancelled la card del catalogo desaparece sola y se saca de la
+   lista de pedidos activos. Tambien expone created_at/status para la
+   ventana de arrepentimiento. */
 function useOrderAlive(orderId) {
-  const [alive, setAlive] = useState(true); // optimista mientras carga
+  const [state, setState] = useState({ alive: true, createdAt: null, status: null });
   useEffect(() => {
     if (!orderId) return;
     let cancel = false;
     const kill = () => {
       if (cancel) return;
-      setAlive(false);
-      try { localStorage.removeItem("cp_last_order"); } catch { /* empty */ }
+      setState((s) => ({ ...s, alive: false }));
+      removeActiveOrder(orderId);
     };
     supabase.rpc("get_order_tracker", { p_order_id: orderId }).then(({ data, error }) => {
+      if (cancel) return;
       const row = Array.isArray(data) ? data[0] : data;
       if (error) return; // sin info: dejamos la card visible
-      if (!row || row.status === "completed" || row.status === "cancelled") kill();
+      if (!row || row.status === "completed" || row.status === "cancelled") { kill(); return; }
+      setState({ alive: true, createdAt: row.created_at, status: row.status });
     });
     const channel = supabase
       .channel(`order-card-${orderId}`)
@@ -39,11 +44,12 @@ function useOrderAlive(orderId) {
         (payload) => {
           const st = payload?.new?.status;
           if (st === "completed" || st === "cancelled") kill();
+          else if (st) setState((s) => ({ ...s, status: st }));
         })
       .subscribe();
     return () => { cancel = true; supabase.removeChannel(channel); };
   }, [orderId]);
-  return alive;
+  return state;
 }
 
 function Illu({ size = 110 }) {
@@ -62,8 +68,41 @@ function Illu({ size = 110 }) {
 
 export default function OrderStatusCard({ href, compact = false, title, description, orderId }) {
   // Solo el compacto del catalogo vigila el estado (la pagina final no hace falta)
-  const alive = useOrderAlive(compact ? orderId : null);
-  if (compact && !alive) return null;
+  const { alive, createdAt, status } = useOrderAlive(compact ? orderId : null);
+  // Ventana de arrepentimiento: 60s desde la creacion, solo pedidos "new"
+  const regretLeft = useRegretCountdown(compact && status === "new" ? createdAt : null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+
+  if (compact && !alive && !cancelled) return null;
+
+  const onRegret = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (cancelling) return;
+    setCancelling(true);
+    const ok = await cancelOwnOrder(orderId);
+    setCancelling(false);
+    if (ok) {
+      setCancelled(true);
+      setTimeout(() => setCancelled(false), 4000); // se despide y desaparece
+    }
+  };
+
+  if (compact && cancelled) {
+    return (
+      <div className="cp-osc cp-osc-compact" style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "12px 14px", borderRadius: 16,
+        background: "var(--b2, #F4EDE3)", border: "1px solid var(--line, #E8DFD2)",
+      }}>
+        <span aria-hidden>✓</span>
+        <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--tx, #2D2418)" }}>
+          Pedido cancelado — no se te cobró nada
+        </span>
+      </div>
+    );
+  }
 
   if (compact) {
     // Version mini para el home: una linea, siempre visible arriba de todo
@@ -86,6 +125,17 @@ export default function OrderStatusCard({ href, compact = false, title, descript
           <span style={{ display: "block", fontSize: 11.5, color: "var(--t2, #8A7A66)" }}>
             {description || "Tocá para seguirlo en vivo"}
           </span>
+          {/* Arrepentimiento: 60s para cancelar si se equivoco */}
+          {regretLeft > 0 && (
+            <button onClick={onRegret} disabled={cancelling} style={{
+              marginTop: 6, padding: "4px 10px", borderRadius: 999,
+              border: "1px solid var(--err, #C62828)", background: "transparent",
+              color: "var(--err, #C62828)", fontSize: 11, fontWeight: 700,
+              cursor: "pointer", fontFamily: "inherit",
+            }}>
+              {cancelling ? "Cancelando…" : `✕ ¿Te equivocaste? Cancelar (${regretLeft}s)`}
+            </button>
+          )}
         </span>
         {/* camion centrado verticalmente respecto a la card */}
         <span style={{ position: "absolute", right: 44, top: "50%", transform: "translateY(-50%)", opacity: 0.9, pointerEvents: "none" }}>

@@ -29,6 +29,7 @@ import TopPedidos from "./TopPedidos";
 import PromoCarousel from "./PromoCarousel";
 import SuperCombos from "./SuperCombos";
 import OrderStatusCard from "./OrderStatusCard";
+import { getActiveOrders } from "../lib/activeOrders";
 
 export default function HomeScreen({
   store = {}, userName, products = [], categories = [],
@@ -48,8 +49,9 @@ export default function HomeScreen({
   onRemoveCart,
 }) {
   // Link de "seguir mi pedido" si hay un pedido reciente (Catalog lo guarda al confirmar).
-  let lastOrder = null;
-  try { lastOrder = localStorage.getItem("cp_last_order"); } catch { /* ignore */ }
+  // Pedidos activos (pueden ser varios a la vez): una card de seguimiento
+  // por cada uno; cada card se auto-oculta al completarse/cancelarse
+  const activeOrders = getActiveOrders();
   const cartQtyById = (id) => {
     const item = (cart || []).find(c => c.id === id || c.product_id === id);
     return item ? item.qty : 0;
@@ -234,9 +236,11 @@ export default function HomeScreen({
       </div>
 
       {/* ===== PEDIDO ACTIVO — siempre arriba de todo (StatusCard compacto) ===== */}
-      {lastOrder && (
-        <div style={{ padding: "14px 22px 0" }}>
-          <OrderStatusCard compact href={"/order/" + lastOrder} orderId={lastOrder} />
+      {activeOrders.length > 0 && (
+        <div style={{ padding: "14px 22px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+          {activeOrders.map((oid) => (
+            <OrderStatusCard key={oid} compact href={"/order/" + oid} orderId={oid} />
+          ))}
         </div>
       )}
 

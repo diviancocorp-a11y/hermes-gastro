@@ -13,6 +13,7 @@ import { catalogPaymentMethods, paymentLabel, paymentIcon } from "../lib/payment
 // ── Extracted components ──
 import WelcomeSplash from "../catalog-pro/WelcomeSplash";
 import BirthdayGift from "../catalog-pro/BirthdayGift";
+import { addActiveOrder } from "../lib/activeOrders";
 import "../catalog-pro/tokens.css";
 import HomeScreenPro from "../catalog-pro/HomeScreen";
 import AgeGate from "../catalog-pro/AgeGate";
@@ -683,7 +684,7 @@ export default function Catalog() {
         }
       }
       setOrderId(result.orderId);
-      try { localStorage.setItem("cp_last_order", result.orderId); } catch { /* ignore */ }
+      try { addActiveOrder(result.orderId); } catch { /* ignore */ }
       // Mostrar animación de confirmación
       setConfirmAnim(true);
       setCart([]);
