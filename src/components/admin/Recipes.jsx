@@ -317,6 +317,7 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
           data={overlay.data}
           ingredients={ingredients}
           recipes={recipes}
+          settings={settings}
           onClose={() => setOverlay(null)}
           onSave={async (r) => {
             // Pasamos el objeto completo: Zod strip-mode (RecipeInputSchema)
@@ -556,7 +557,7 @@ function RecDet({ r, ingredients, calculateRecipeCost, settings, onClose, onEdit
   );
 }
 
-function RecForm({ data, ingredients, recipes, onClose, onSave }) {
+function RecForm({ data, ingredients, recipes, settings, onClose, onSave }) {
   const [f, setF] = useState(data || {
     name: "", category: "", sale_price: 0, visible: true,
     image_url: "", description: "", ingredients: [], related_ids: [], is_combo: false,
@@ -609,8 +610,24 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
     [f.ingredients, ingredients]
   );
   const profitNeg = !f.is_combo && totalCost > 0 && totalCost > (f.sale_price || 0);
-  const isExisting = !!f.id;
-  const canSave = f.name && (f.sale_price || 0) > 0 && (isExisting || f.is_combo || (f.ingredients || []).length > 0);
+
+  // Categorias de la carta: las subs de cat_groups + las que ya usan otras
+  // recetas. Dropdown cerrado para evitar typos/desorden ("cookis" vs "Cookies")
+  const cartCategories = useMemo(() => {
+    const fromGroups = (settings?.cat_groups || []).flatMap(g => g.subs || []);
+    const fromRecipes = (recipes || []).map(r => r.category).filter(Boolean);
+    const cur = f.category ? [f.category] : [];
+    return [...new Set([...fromGroups, ...fromRecipes, ...cur])].sort((a, b) => a.localeCompare(b, "es"));
+  }, [settings, recipes, f.category]);
+
+  // Reglas de guardado: sin ingredientes no hay receta (quedan incompletas);
+  // si es combo, las sub-recetas SON los ingredientes
+  const validComboItems = comboItems.filter(ci => ci.sub_recipe_id && Number(ci.qty) > 0);
+  const canSave = f.name && f.category && (f.sale_price || 0) > 0 &&
+    (f.is_combo ? validComboItems.length > 0 : (f.ingredients || []).length > 0);
+
+  // Vender por tamanos: el toggle vive arriba; combo no vende por tamanos
+  const sizesOn = Array.isArray(f.sizes);
 
   return (
     <div className="ag-page-over">
@@ -625,13 +642,42 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
       </div>
 
       <div className="ag-page-over-body">
+        {/* ── 1. ACTIVABLES (arriba del todo) ── */}
+        <div className="ag-card" style={{ padding: "4px 12px", marginBottom: 14 }}>
+          <ToggleRow label="Visible en catálogo" hint="Los clientes pueden verla y pedirla"
+            checked={f.visible !== false} onChange={v => s("visible", v)} />
+          <div style={{ borderTop: "1px solid var(--ag-line)" }} />
+          <ToggleRow label="Es un combo" hint="Compuesto por sub-recetas; usa los ingredientes de esas recetas"
+            checked={!!f.is_combo}
+            onChange={v => setF(p => ({ ...p, is_combo: v, ...(v ? { sizes: null, batch_yield: null } : {}) }))} />
+          <div style={{ borderTop: "1px solid var(--ag-line)" }} />
+          <ToggleRow label="Es vegetariano" hint="Aparece cuando el cliente filtra por vegetariano"
+            checked={!!f.is_vegetarian} onChange={v => s("is_vegetarian", v)} />
+          <div style={{ borderTop: "1px solid var(--ag-line)" }} />
+          <ToggleRow label="Requiere +18" hint="Pide confirmacion de edad antes de agregar al carrito"
+            checked={!!f.requires_age_gate} onChange={v => s("requires_age_gate", v)} />
+          {/* Un combo no vende por tamanos */}
+          {!f.is_combo && (
+            <>
+              <div style={{ borderTop: "1px solid var(--ag-line)" }} />
+              <ToggleRow label="Vender por tamaños / presentaciones" hint="Ej: unidad / ½ docena / docena, cada una con su precio"
+                checked={sizesOn}
+                onChange={v => s("sizes", v ? [{ label: "", qty: 1, price: 0, hint: "" }] : null)} />
+            </>
+          )}
+        </div>
+
+        {/* ── 2. DATOS ── */}
         <label className="ag-field-lbl">Nombre *</label>
         <input className="ag-field-input" value={f.name} onChange={e => s("name", e.target.value)} placeholder="Ej: Torta de chocolate" style={{ marginBottom: 12 }} />
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           <div>
-            <label className="ag-field-lbl">Categoría</label>
-            <input className="ag-field-input" value={f.category} onChange={e => s("category", e.target.value)} placeholder="Ej: Tortas" />
+            <label className="ag-field-lbl">Categoría *</label>
+            <select className="ag-field-input" value={f.category} onChange={e => s("category", e.target.value)}>
+              <option value="">Seleccionar...</option>
+              {cartCategories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
           <div>
             <label className="ag-field-lbl">Precio venta *</label>
@@ -644,44 +690,39 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
           style={{ resize: "vertical", marginBottom: 12, fontFamily: "inherit" }}
           placeholder="Descripción que verá el cliente..." />
 
-        <label className="ag-field-lbl">Imagen del catálogo</label>
+        {/* ── 3. SUGERENCIAS DE VENTA (debajo de descripcion) ── */}
         <div style={{ marginBottom: 14 }}>
-          {f.image_url && (
-            <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", marginBottom: 8, background: "var(--ag-bg-card)", border: "1px solid var(--ag-line)" }}>
-              <img src={f.image_url} alt="" loading="lazy" onError={e => { e.target.style.display = "none"; }}
-                style={{ width: "100%", maxHeight: 180, objectFit: "cover", display: "block" }} />
-              <button type="button" onClick={() => s("image_url", "")} aria-label="Quitar imagen"
-                style={{ position: "absolute", top: 8, right: 8, width: 30, height: 30, borderRadius: 999, background: "rgba(20,18,16,0.7)", color: "#fff", border: 0, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-ink-2)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              🎯 Sugerencias de venta ({(f.related_ids || []).length})
+            </div>
+            <button type="button" onClick={() => setShowRel(p => !p)} className="ag-btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }}>
+              {showRel ? "Ocultar" : "Elegir"}
+            </button>
+          </div>
+          {showRel && (
+            <div className="ag-card" style={{ padding: 0, maxHeight: 220, overflowY: "auto" }}>
+              {otherRecs.length === 0 ? (
+                <div style={{ padding: 16, textAlign: "center", color: "var(--ag-ink-3)", fontSize: 12 }}>No hay otras recetas</div>
+              ) : otherRecs.map((r, i) => {
+                const sel = (f.related_ids || []).includes(r.id);
+                return (
+                  <div key={r.id} onClick={() => toggleRel(r.id)}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderTop: i === 0 ? "none" : "1px solid var(--ag-line)", cursor: "pointer" }}>
+                    <div style={{ width: 20, height: 20, borderRadius: 6, border: "2px solid " + (sel ? "var(--ag-c-terra)" : "var(--ag-line)"), background: sel ? "var(--ag-c-terra)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}>
+                      {sel && (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </div>
+                    <span style={{ flex: 1, fontSize: 13, color: "var(--ag-ink)" }}>{r.name}</span>
+                    <span style={{ fontSize: 11.5, color: "var(--ag-ink-3)" }}>${formatInt(r.sale_price)}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImageUpload} />
-          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-            style={{ width: "100%", padding: "12px", background: "var(--ag-bg-card)", border: "1.5px solid var(--ag-c-terra)", color: "var(--ag-c-terra)", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: uploading ? "wait" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
-            </svg>
-            {uploading ? "Subiendo…" : f.image_url ? "Cambiar foto" : "Subir foto"}
-          </button>
-          {uploadErr && <div style={{ fontSize: 11.5, color: "var(--ag-c-orders)", marginTop: 6 }}>{uploadErr}</div>}
-        </div>
-
-        <div className="ag-card" style={{ padding: "4px 12px", marginBottom: 14 }}>
-          <ToggleRow label="Visible en catálogo" hint="Los clientes pueden verla y pedirla"
-            checked={f.visible !== false} onChange={v => s("visible", v)} />
-          <div style={{ borderTop: "1px solid var(--ag-line)" }} />
-          <ToggleRow label="Es un combo" hint="Compuesto por otras recetas"
-            checked={!!f.is_combo} onChange={v => s("is_combo", v)} />
-          <div style={{ borderTop: "1px solid var(--ag-line)" }} />
-          <ToggleRow label="Es vegetariano" hint="Aparece cuando el cliente filtra por vegetariano"
-            checked={!!f.is_vegetarian} onChange={v => s("is_vegetarian", v)} />
-          <div style={{ borderTop: "1px solid var(--ag-line)" }} />
-          <ToggleRow label="Requiere +18" hint="Pide confirmacion de edad antes de agregar al carrito"
-            checked={!!f.requires_age_gate} onChange={v => s("requires_age_gate", v)} />
         </div>
 
         {f.is_combo && (
@@ -718,7 +759,8 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
           </div>
         )}
 
-{!f.batch_yield && (
+{/* Combo: las sub-recetas SON los ingredientes — este bloque se oculta */}
+        {!f.is_combo && !f.batch_yield && (
           <>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-ink-2)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
@@ -766,56 +808,55 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
           </>
         )}
 
-        {/* Calculadora de tanda: persiste recipes.batch_yield. Cuando está activa,
-            OCULTA el bloque natural de ingredientes — toda la edición pasa por acá. */}
-        <BatchCalculator
-          ingredients={ingredients}
-          recipeIngredients={f.ingredients || []}
-          onChange={(items) => s("ingredients", items)}
-          batchYield={f.batch_yield}
-          setBatchYield={(n) => s("batch_yield", n)}
-        />
+        {/* Calculadora de tanda: solo recetas con ingredientes propios.
+            En un combo no hay nada que calcular (los costos vienen de las
+            sub-recetas) */}
+        {!f.is_combo && (
+          <BatchCalculator
+            ingredients={ingredients}
+            recipeIngredients={f.ingredients || []}
+            onChange={(items) => s("ingredients", items)}
+            batchYield={f.batch_yield}
+            setBatchYield={(n) => s("batch_yield", n)}
+          />
+        )}
 
-        {/* Tamaños/presentaciones de venta — persiste en recipes.sizes (jsonb) */}
-        <SizesEditor
-          sizes={f.sizes}
-          onChange={(arr) => s("sizes", arr)}
-          costPerUnit={totalCost}
-          basePrice={f.sale_price || 0}
-        />
+        {/* Tamaños: el toggle vive en los activables de arriba */}
+        {!f.is_combo && sizesOn && (
+          <SizesEditor
+            sizes={f.sizes}
+            onChange={(arr) => s("sizes", arr)}
+            costPerUnit={totalCost}
+            basePrice={f.sale_price || 0}
+            showToggle={false}
+          />
+        )}
 
+        {/* ── IMAGEN (al final, arriba de Guardar) ── */}
+        <label className="ag-field-lbl">Imagen del catálogo</label>
         <div style={{ marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-ink-2)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              🎯 Sugerencias de venta ({(f.related_ids || []).length})
-            </div>
-            <button type="button" onClick={() => setShowRel(p => !p)} className="ag-btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }}>
-              {showRel ? "Ocultar" : "Elegir"}
-            </button>
-          </div>
-          {showRel && (
-            <div className="ag-card" style={{ padding: 0, maxHeight: 220, overflowY: "auto" }}>
-              {otherRecs.length === 0 ? (
-                <div style={{ padding: 16, textAlign: "center", color: "var(--ag-ink-3)", fontSize: 12 }}>No hay otras recetas</div>
-              ) : otherRecs.map((r, i) => {
-                const sel = (f.related_ids || []).includes(r.id);
-                return (
-                  <div key={r.id} onClick={() => toggleRel(r.id)}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderTop: i === 0 ? "none" : "1px solid var(--ag-line)", cursor: "pointer" }}>
-                    <div style={{ width: 20, height: 20, borderRadius: 6, border: "2px solid " + (sel ? "var(--ag-c-terra)" : "var(--ag-line)"), background: sel ? "var(--ag-c-terra)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}>
-                      {sel && (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
-                    </div>
-                    <span style={{ flex: 1, fontSize: 13, color: "var(--ag-ink)" }}>{r.name}</span>
-                    <span style={{ fontSize: 11.5, color: "var(--ag-ink-3)" }}>${formatInt(r.sale_price)}</span>
-                  </div>
-                );
-              })}
+          {f.image_url && (
+            <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", marginBottom: 8, background: "var(--ag-bg-card)", border: "1px solid var(--ag-line)" }}>
+              <img src={f.image_url} alt="" loading="lazy" onError={e => { e.target.style.display = "none"; }}
+                style={{ width: "100%", maxHeight: 180, objectFit: "cover", display: "block" }} />
+              <button type="button" onClick={() => s("image_url", "")} aria-label="Quitar imagen"
+                style={{ position: "absolute", top: 8, right: 8, width: 30, height: 30, borderRadius: 999, background: "rgba(20,18,16,0.7)", color: "#fff", border: 0, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
           )}
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImageUpload} />
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+            style={{ width: "100%", padding: "12px", background: "var(--ag-bg-card)", border: "1.5px solid var(--ag-c-terra)", color: "var(--ag-c-terra)", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: uploading ? "wait" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+            {uploading ? "Subiendo…" : f.image_url ? "Cambiar foto" : "Subir foto"}
+          </button>
+          {uploadErr && <div style={{ fontSize: 11.5, color: "var(--ag-c-orders)", marginTop: 6 }}>{uploadErr}</div>}
         </div>
 
         {profitNeg && (
@@ -830,8 +871,10 @@ function RecForm({ data, ingredients, recipes, onClose, onSave }) {
         {!canSave && (
           <div style={{ fontSize: 11.5, color: "var(--ag-ink-3)", margin: "8px 0 0", textAlign: "center" }}>
             {!f.name ? "Ingresá un nombre" :
+             !f.category ? "Elegí una categoría de la carta" :
              !(f.sale_price > 0) ? "Ingresá un precio mayor a 0" :
-             !isExisting && !f.is_combo && (f.ingredients || []).length === 0 ? "Agregá al menos un ingrediente" : ""}
+             f.is_combo ? "Agregá al menos una sub-receta con cantidad" :
+             "Agregá al menos un ingrediente — las recetas no pueden quedar incompletas"}
           </div>
         )}
 

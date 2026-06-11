@@ -22,7 +22,9 @@ import { useState, useEffect } from "react";
 import DecimalInput from "../../ui/DecimalInput";
 import { formatInt } from "../../../lib/utils";
 
-export default function SizesEditor({ sizes, onChange, costPerUnit = 0, basePrice = 0 }) {
+// showToggle=false: el toggle vive afuera (card de activables del RecForm) y
+// este editor se renderiza siempre "encendido".
+export default function SizesEditor({ sizes, onChange, costPerUnit = 0, basePrice = 0, showToggle = true }) {
   const [enabled, setEnabled] = useState(Array.isArray(sizes) && sizes.length > 0);
 
   // Si llega sizes desde DB con items, marcar como enabled
@@ -53,18 +55,22 @@ export default function SizesEditor({ sizes, onChange, costPerUnit = 0, basePric
     if (next.length === 0) setEnabled(false);
   };
 
+  const isOn = showToggle ? enabled : true;
+
   return (
     <div className="ag-card" style={{ padding: "4px 12px", marginBottom: 14 }}>
-      <ToggleRow
-        label="Vender por tamaños / presentaciones"
-        hint='Ej: galleta unidad / ½ docena / docena. Si está OFF, vende por unidad con el "precio venta" de arriba.'
-        checked={enabled}
-        onChange={handleToggle}
-      />
+      {showToggle && (
+        <ToggleRow
+          label="Vender por tamaños / presentaciones"
+          hint='Ej: galleta unidad / ½ docena / docena. Si está OFF, vende por unidad con el "precio venta" de arriba.'
+          checked={enabled}
+          onChange={handleToggle}
+        />
+      )}
 
-      {enabled && (
+      {isOn && (
         <>
-          <div style={{ borderTop: "1px solid var(--ag-line)" }} />
+          {showToggle && <div style={{ borderTop: "1px solid var(--ag-line)" }} />}
           <div style={{ padding: "10px 4px" }}>
             <p style={{ margin: "0 0 10px", fontSize: 11.5, color: "var(--ag-ink-3)", lineHeight: 1.5 }}>
               Cada presentación tiene una <strong>cantidad</strong> (unidades reales que entrega)

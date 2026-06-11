@@ -45,7 +45,7 @@ export async function fetchCatalog() {
     {
       const res = await supabase
         .from('recipes')
-        .select('id, name, category, sale_price, image_url, description, related_ids, is_vegetarian, requires_age_gate, created_at')
+        .select('id, name, category, sale_price, image_url, description, related_ids, is_vegetarian, requires_age_gate, is_combo, created_at')
         .eq('visible', true)
         .eq('is_archived', false)
         .order('category', { ascending: true });

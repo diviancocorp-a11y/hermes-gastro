@@ -27,6 +27,7 @@ import CatalogFooter from "./CatalogFooter";
 import BadgeTag from "../components/BadgeTag";
 import TopPedidos from "./TopPedidos";
 import PromoCarousel from "./PromoCarousel";
+import SuperCombos from "./SuperCombos";
 
 export default function HomeScreen({
   store = {}, userName, products = [], categories = [],
@@ -61,9 +62,11 @@ export default function HomeScreen({
   // session.firstName ya tiene la prioridad correcta (nickname > nombre > email/phone).
   const firstName = session?.firstName || null;
   const recos = useMemo(() => buildRecos(products, hasDeal), [products, hasDeal]);
+  // Combos: el flag is_combo de la receta manda (toggle "Es un combo" del
+  // admin). El regex por categoria queda como fallback para data vieja.
   const combos = useMemo(
     () => products
-      .filter(p => /combo|pack|promo|caja|docena|mesa/i.test(p.category || ""))
+      .filter(p => p.is_combo || /combo|pack|promo|caja|docena|mesa/i.test(p.category || ""))
       .slice(0, 8)
       .map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault, soldOutIds })),
     [products, hasDeal, dealPrice, prepDefault, soldOutIds]
@@ -437,48 +440,14 @@ export default function HomeScreen({
         } />
       )}
 
-      {/* ===== SUPER COMBOS (subio al lugar del Top de la semana; el ranking
-           vive ahora en el PromoCarousel de abajo, antes del footer) ===== */}
+      {/* ===== SUPER COMBOS — connoisseur stack: lista numerada + foto
+           revelada por clip-path en capas (SuperCombos.jsx) ===== */}
       {combos.length > 0 && (
-        <>
-          <SectionHeader kicker="Super Combos" title="Para una mesa" em="completa" />
-          <div className="cp-no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 22px", overflowX: "auto" }}>
-            {combos.map(b => (
-              <div key={b.id} onClick={() => onSelectProduct?.(b._raw)} style={{
-                flex: "0 0 260px", borderRadius: 16, overflow: "hidden",
-                position: "relative", cursor: "pointer", border: "1px solid var(--line)",
-              }}>
-                <div style={{ position: "relative", height: 140 }}>
-                  <ProductPhoto src={b.img} height={140} radius={0} tone={b.tone} dim={b.soldOut} />
-                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.55) 100%)" }} />
-                  {b.soldOut && (
-                    <div style={{ position: "absolute", top: 10, left: 10 }}>
-                      <SoldOutBadge />
-                    </div>
-                  )}
-                  {b.oldPrice && (
-                    <div style={{
-                      position: "absolute", top: 10, right: 10, background: "var(--ac)", color: "#fff",
-                      fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", padding: "4px 8px", borderRadius: 4,
-                    }}>AHORRÁ {fmtAR(b.oldPrice - b.price)}</div>
-                  )}
-                  <div style={{ position: "absolute", bottom: 12, left: 14, color: "#fff" }}>
-                    <div style={{ fontFamily: "var(--font-heading)", fontSize: 22, lineHeight: 1.25 }}>{b.name}</div>
-                  </div>
-                </div>
-                <div style={{ background: "var(--bg)", padding: "12px 14px" }}>
-                  {b.desc && (
-                    <div className="body-s" style={{ fontSize: 12, marginBottom: 10, color: "var(--t2)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 30 }}>{b.desc}</div>
-                  )}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <PriceTag price={b.price} oldPrice={b.oldPrice} size="md" />
-                    <AddRound size={32} disabled={b.soldOut} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(b._raw); }} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
+        <SuperCombos
+          combos={combos}
+          onSelectProduct={onSelectProduct}
+          onAddToCart={onAddToCart}
+        />
       )}
 
       {/* ===== LO MAS PEDIDO — top 3 real con reveal animado (lite, sin GSAP) ===== */}
