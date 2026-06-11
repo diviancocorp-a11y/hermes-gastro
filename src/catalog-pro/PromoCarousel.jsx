@@ -116,7 +116,7 @@ function RankingBoard({ top }) {
                     width: isFirst ? 54 : 42, height: isFirst ? 54 : 42, borderRadius: 999,
                     overflow: "hidden", border: "2px solid rgba(255,255,255,0.85)", background: "#fff",
                   }}>
-                    <Avatar name={row.display_name} size={isFirst ? 50 : 38} />
+                    <Avatar name={row.display_name} avatarKey={row.avatar_key} size={isFirst ? 50 : 38} />
                   </div>
                   <span style={{
                     position: "absolute", bottom: -3, right: -5,
@@ -398,7 +398,8 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
                   background: "transparent",
                 }}>
                 <div style={{ width: "100%", height: "100%" }}>
-                  {s.img
+                  {/* burbuja del ranking = trofeo (no la foto del producto) */}
+                  {s.img && !s.board
                     ? <img src={s.img} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     : <div style={{ width: "100%", height: "100%", background: "color-mix(in srgb, var(--ac, #D97706) 70%, #1a1611)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }} aria-hidden>{s.emoji}</div>}
                 </div>

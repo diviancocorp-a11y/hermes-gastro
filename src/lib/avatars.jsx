@@ -1,96 +1,36 @@
 // src/lib/avatars.jsx
-// Avatares doodle (estilo notion-faces b/n) para clientes: deterministicos
-// por nombre — el cliente NO lo elige. Heuristica de genero por nombre en
-// espanol (termina en 'a' = femenino; imperfecta pero estable) y variante
-// por hash. Mismo nombre = mismo avatar SIEMPRE (catalogo y admin).
+// Avatares de clientes (ilustraciones que paso Ricky, recortadas de
+// "Linea de 8 avatares" — son 10: 4 hombres, 5 mujeres y el capibara).
 //
-// Cuando Ricky pase los PNG definitivos: reemplazar los SVG de MALE/FEMALE
-// por <img src> manteniendo avatarFor() y <Avatar /> igual.
+// Asignacion: deterministica por nombre (hash + heuristica de genero es-AR)
+// — el cliente arranca con uno asignado y puede CAMBIARLO desde Mi Cuenta.
+// La eleccion se guarda en customers.avatar_key (RPC set_customer_avatar)
+// para que el ranking se la muestre a todos, y en localStorage para verla
+// al instante en este dispositivo.
+import m1 from "../assets/avatars/m1.png"; // lentes
+import m2 from "../assets/avatars/m2.png"; // barba
+import m3 from "../assets/avatars/m3.png"; // camiseta argentina
+import m4 from "../assets/avatars/m4.png"; // gaucho
+import f1 from "../assets/avatars/f1.png"; // rulos
+import f2 from "../assets/avatars/f2.png"; // colorada
+import f3 from "../assets/avatars/f3.png"; // colita + saco
+import f4 from "../assets/avatars/f4.png"; // punk
+import f5 from "../assets/avatars/f5.png"; // tocado de colores
+import capi from "../assets/avatars/capi.png"; // capibara con mate
 
-const stroke = "#1a1a1a";
-const sw = 5;
+export const AVATARS = { m1, m2, m3, m4, f1, f2, f3, f4, f5, capi };
+export const AVATAR_KEYS = Object.keys(AVATARS);
 
-/* Caras doodle: circulo blanco + rasgos negros (viewBox 0 0 100 100) */
-const FACE_BASE = (children) => (
-  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%", display: "block" }} aria-hidden>
-    <circle cx="50" cy="50" r="48" fill="#fff" />
-    {children}
-    <circle cx="50" cy="50" r="48" fill="none" stroke={stroke} strokeWidth="3" />
-  </svg>
-);
+const MALE_KEYS = ["m1", "m2", "m3", "m4"];
+const FEMALE_KEYS = ["f1", "f2", "f3", "f4", "f5"];
 
-const MALE = [
-  // m1: pelo corto + anteojos
-  FACE_BASE(<>
-    <path d="M22 38 Q30 14 50 14 Q70 14 78 38 L74 40 Q66 24 50 24 Q34 24 26 40 Z" fill={stroke} />
-    <circle cx="36" cy="48" r="9" fill="none" stroke={stroke} strokeWidth={sw} />
-    <circle cx="64" cy="48" r="9" fill="none" stroke={stroke} strokeWidth={sw} />
-    <line x1="45" y1="48" x2="55" y2="48" stroke={stroke} strokeWidth={sw} />
-    <circle cx="36" cy="48" r="2.5" fill={stroke} />
-    <circle cx="64" cy="48" r="2.5" fill={stroke} />
-    <path d="M40 72 Q50 80 60 72" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
-  </>),
-  // m2: jopo al costado + sonrisa
-  FACE_BASE(<>
-    <path d="M20 42 Q22 16 52 14 Q76 14 80 36 Q66 26 48 30 Q30 34 24 46 Z" fill={stroke} />
-    <circle cx="37" cy="50" r="3.5" fill={stroke} />
-    <circle cx="63" cy="50" r="3.5" fill={stroke} />
-    <path d="M38 70 Q50 79 62 70" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
-  </>),
-  // m3: lentes de sol + pelo batido
-  FACE_BASE(<>
-    <path d="M24 34 Q28 12 50 13 Q72 12 76 34 L70 32 Q64 20 50 21 Q36 20 30 32 Z" fill={stroke} />
-    <rect x="26" y="42" width="20" height="12" rx="5" fill={stroke} />
-    <rect x="54" y="42" width="20" height="12" rx="5" fill={stroke} />
-    <line x1="46" y1="46" x2="54" y2="46" stroke={stroke} strokeWidth={sw} />
-    <path d="M40 71 Q50 77 60 71" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
-  </>),
-  // m4: rapado + barba
-  FACE_BASE(<>
-    <path d="M28 30 Q36 18 50 18 Q64 18 72 30 L68 32 Q60 24 50 24 Q40 24 32 32 Z" fill={stroke} />
-    <circle cx="37" cy="46" r="3.5" fill={stroke} />
-    <circle cx="63" cy="46" r="3.5" fill={stroke} />
-    <path d="M32 62 Q34 80 50 82 Q66 80 68 62 Q60 70 50 70 Q40 70 32 62 Z" fill={stroke} />
-    <path d="M43 66 Q50 70 57 66" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" />
-  </>),
-];
-
-const FEMALE = [
-  // f1: carre / bob
-  FACE_BASE(<>
-    <path d="M18 64 Q14 18 50 14 Q86 18 82 64 L72 64 Q76 30 50 26 Q24 30 28 64 Z" fill={stroke} />
-    <circle cx="38" cy="50" r="3.5" fill={stroke} />
-    <circle cx="62" cy="50" r="3.5" fill={stroke} />
-    <path d="M40 70 Q50 78 60 70" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
-  </>),
-  // f2: pelo largo lacio con raya al medio
-  FACE_BASE(<>
-    <path d="M16 86 Q12 22 50 13 Q88 22 84 86 L70 86 Q74 40 58 30 L50 26 L42 30 Q26 40 30 86 Z" fill={stroke} />
-    <circle cx="39" cy="50" r="3.5" fill={stroke} />
-    <circle cx="61" cy="50" r="3.5" fill={stroke} />
-    <path d="M41 69 Q50 76 59 69" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
-  </>),
-  // f3: rodete + anteojos
-  FACE_BASE(<>
-    <circle cx="50" cy="12" r="10" fill={stroke} />
-    <path d="M24 40 Q30 18 50 17 Q70 18 76 40 L70 40 Q64 26 50 26 Q36 26 30 40 Z" fill={stroke} />
-    <circle cx="37" cy="49" r="8" fill="none" stroke={stroke} strokeWidth="4.5" />
-    <circle cx="63" cy="49" r="8" fill="none" stroke={stroke} strokeWidth="4.5" />
-    <line x1="45" y1="49" x2="55" y2="49" stroke={stroke} strokeWidth="4.5" />
-    <circle cx="37" cy="49" r="2.5" fill={stroke} />
-    <circle cx="63" cy="49" r="2.5" fill={stroke} />
-    <path d="M42 70 Q50 76 58 70" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
-  </>),
-  // f4: flequillo + colitas
-  FACE_BASE(<>
-    <path d="M22 44 Q22 16 50 15 Q78 16 78 44 L72 42 Q72 34 64 36 Q52 38 40 36 Q30 34 28 42 Z" fill={stroke} />
-    <circle cx="16" cy="52" r="8" fill={stroke} />
-    <circle cx="84" cy="52" r="8" fill={stroke} />
-    <circle cx="38" cy="51" r="3.5" fill={stroke} />
-    <circle cx="62" cy="51" r="3.5" fill={stroke} />
-    <path d="M39 70 Q50 79 61 70" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
-  </>),
-];
+const LS_KEY = "cp_avatar_key";
+export function getLocalAvatarKey() {
+  try { const k = localStorage.getItem(LS_KEY); return AVATARS[k] ? k : null; } catch { return null; }
+}
+export function setLocalAvatarKey(key) {
+  try { if (AVATARS[key]) localStorage.setItem(LS_KEY, key); } catch { /* empty */ }
+}
 
 // Hash simple y estable (mismo nombre → mismo numero)
 function hashStr(s) {
@@ -100,7 +40,6 @@ function hashStr(s) {
 }
 
 // Heuristica es-AR: primer nombre terminado en 'a' → femenino.
-// Excepciones masculinas comunes terminadas en 'a'.
 const MALE_EXCEPTIONS = new Set(["joshua", "elia", "nicola", "luca", "matias", "tobias", "elias", "jeremias"]);
 function isFemaleName(name) {
   const first = (name || "").trim().toLowerCase().split(/\s+/)[0].normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -109,20 +48,28 @@ function isFemaleName(name) {
   return first.endsWith("a") || first.endsWith("ia");
 }
 
-export function avatarFor(name) {
-  const key = (name || "Cliente").trim().toLowerCase();
-  const set = isFemaleName(key) ? FEMALE : MALE;
+/** Clave de avatar deterministica por nombre. Sin nombre → capibara. */
+export function avatarKeyFor(name) {
+  const key = (name || "").trim().toLowerCase();
+  if (!key || key === "cliente" || key === "sin nombre" || key === "venta manual") return "capi";
+  const set = isFemaleName(key) ? FEMALE_KEYS : MALE_KEYS;
   return set[hashStr(key) % set.length];
 }
 
-/** Burbuja de avatar: <Avatar name="Cami R." size={40} /> */
-export function Avatar({ name, size = 40, style }) {
+/**
+ * Burbuja de avatar.
+ *   <Avatar name="Cami R." size={40} />            → deterministico
+ *   <Avatar name="..." avatarKey="f4" size={40} /> → eleccion explicita
+ */
+export function Avatar({ name, avatarKey, size = 40, style }) {
+  const key = avatarKey && AVATARS[avatarKey] ? avatarKey : avatarKeyFor(name);
   return (
     <div style={{
       width: size, height: size, borderRadius: 999, overflow: "hidden",
-      flexShrink: 0, ...style,
+      flexShrink: 0, background: "#fff", ...style,
     }}>
-      {avatarFor(name)}
+      <img src={AVATARS[key]} alt="" draggable={false}
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
     </div>
   );
 }

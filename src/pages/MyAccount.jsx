@@ -9,6 +9,7 @@ import AccountMenu from "../catalog-pro/AccountMenu";
 import PushOptInBanner from "../catalog-pro/PushOptInBanner";
 import { lookupCustomerByPhone, phoneLogin, cleanPhone, blockPhone, isPhoneBlocked, upsertCustomer } from "../services/phoneAuth";
 import { setGuestUser } from "../lib/guestUser";
+import { Avatar, AVATARS, AVATAR_KEYS, getLocalAvatarKey, setLocalAvatarKey, avatarKeyFor } from "../lib/avatars.jsx";
 
 const TABS = ["perfil", "direcciones", "historial", "favoritos", "cupones", "referidos"];
 const TAB_ICONS = { perfil: "👤", direcciones: "📍", historial: "📦", favoritos: "❤️", cupones: "🎟️", referidos: "🎁" };
@@ -67,6 +68,25 @@ export default function MyAccount() {
 
   // Cupones
   const [couponSearch, setCouponSearch] = useState("");
+
+  // Avatar: asignado por nombre, el cliente puede cambiarlo. Local primero
+  // (visible al instante) + customers.avatar_key via RPC (lo ve el ranking).
+  const [avatarKey, setAvatarKey] = useState(getLocalAvatarKey());
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+
+  const pickAvatar = async (key) => {
+    setAvatarKey(key);
+    setLocalAvatarKey(key);
+    setShowAvatarPicker(false);
+    try {
+      const src = profile || phoneSession || {};
+      await supabase.rpc("set_customer_avatar", {
+        p_phone: src.phone || null,
+        p_email: src.email || user?.email || null,
+        p_avatar: key,
+      });
+    } catch { /* sin pedido previo todavia: queda local y listo */ }
+  };
 
   // Sync profile/phoneSession fields. Splitea name en nombre + apellido.
   useEffect(() => {
@@ -143,6 +163,19 @@ export default function MyAccount() {
       {/* Header */}
       <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid var(--b2)" }}>
         <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--tx)", padding: 4 }}>←</button>
+        {/* Avatar (tap para cambiarlo — el mismo que aparece en el ranking) */}
+        <button onClick={() => setShowAvatarPicker(true)} aria-label="Cambiar avatar" style={{
+          position: "relative", background: "none", border: "none", padding: 0, cursor: "pointer", flexShrink: 0,
+        }}>
+          <Avatar name={(profile || phoneSession)?.name} avatarKey={avatarKey} size={46}
+            style={{ border: "2px solid var(--line)" }} />
+          <span style={{
+            position: "absolute", bottom: -2, right: -2, width: 18, height: 18, borderRadius: 999,
+            background: "var(--ac)", color: "#fff", fontSize: 10, lineHeight: 1,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "2px solid var(--bg)",
+          }}>✎</span>
+        </button>
         <div style={{ flex: 1 }}>
           <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 20, margin: 0 }}>Mi Cuenta</h2>
           <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 2 }}>{user?.email || phoneSession?.email || phoneSession?.phone || ""}</div>
@@ -153,6 +186,49 @@ export default function MyAccount() {
           onLogout={async () => { await sessionLogout(); navigate("/"); }}
         />
       </div>
+
+      {/* Picker de avatar */}
+      {showAvatarPicker && (
+        <div onClick={() => setShowAvatarPicker(false)} style={{
+          position: "fixed", inset: 0, zIndex: 8000,
+          background: "rgba(0,0,0,0.45)", backdropFilter: "blur(3px)",
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+        }}>
+          <div onClick={(e) => e.stopPropagation()} style={{
+            width: "100%", maxWidth: 360, background: "var(--bg)", borderRadius: 22,
+            border: "1px solid var(--line)", padding: "20px 18px",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <h3 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 19, margin: 0, color: "var(--tx)" }}>Elegí tu avatar</h3>
+              <button onClick={() => setShowAvatarPicker(false)} aria-label="Cerrar" style={{
+                width: 30, height: 30, borderRadius: 99, border: "none", background: "var(--b2)",
+                color: "var(--t2)", fontSize: 14, cursor: "pointer", lineHeight: 1,
+              }}>✕</button>
+            </div>
+            <p style={{ fontSize: 12, color: "var(--t3)", margin: "0 0 14px" }}>
+              Es el que te representa en el ranking semanal.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+              {AVATAR_KEYS.map((k) => {
+                const selected = (avatarKey || avatarKeyFor((profile || phoneSession)?.name)) === k;
+                return (
+                  <button key={k} onClick={() => pickAvatar(k)} aria-label={`Avatar ${k}`} style={{
+                    padding: 0, border: "none", background: "none", cursor: "pointer",
+                    borderRadius: 999,
+                    outline: selected ? "3px solid var(--ac)" : "2px solid var(--line)",
+                    outlineOffset: 1,
+                  }}>
+                    <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 999, overflow: "hidden", background: "#fff" }}>
+                      <img src={AVATARS[k]} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs eliminados — la barra del header del catalogo ya da accesos directos
           via ?tab=. Si queres cambiar de seccion, volves al home y la eliges del menu. */}
