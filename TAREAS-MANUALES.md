@@ -94,6 +94,12 @@ Herencia del plan que quedo sin ejecutar (lo digo explicito para que no se pierd
   probabilidades por premio, anti-abuso (idempotencia por cliente/periodo) y
   edge function que decida el premio server-side. Al existir, se agrega como
   slide del carrusel.
+- [ ] **Pagina Conciliaciones bancarias** (11/jun, FASE 3 del plan de pagos —
+  hacer con el local CERRADO): saldos por cuenta (ingresos de orders por
+  payment_account_id - gastos por expenses.payment_account_id), tabla
+  account_movements solo para transferencias entre cuentas propias y ajustes,
+  lista filtrable con check de conciliado. La base ya esta: cuentas con scope
+  + expenses.payment_account_id (commit e70657b).
 - [ ] **Encuesta de nuevos sabores de cookies** (11/jun, idem): votacion 1 voto por
   cliente identificado. Necesita: tabla flavor_votes (+ opcion de sabores en
   settings o tabla propia), RPC de voto idempotente y slide en el carrusel con
