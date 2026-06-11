@@ -376,29 +376,81 @@ function FooterCol({ title, items, accent = "#F59E0B" }) {
 // ============ HERO CIRCULAR (logo grande + redes) ============
 // Mantiene el bloque legal/ayuda/contacto debajo (sigue existiendo).
 // Aqui solo va el bloque hero visual: logo en burbuja + circulos de redes.
+// Texto en arco circular alrededor del logo (patron "text arc effect",
+// adaptado sin framer-motion: rotacion con CSS keyframes y color de acento
+// del tenant). Cada caracter se rota sobre el centro del circulo.
+function ArcText({ text, diameter, color }) {
+  const chars = text.split("");
+  const radius = diameter / 2;
+  const step = 360 / chars.length;
+  return (
+    <div aria-hidden="true" style={{ position: "relative", width: diameter, height: diameter }}>
+      {chars.map((ch, i) => (
+        <div key={i} style={{
+          position: "absolute", top: 0, left: "50%",
+          height: radius, marginLeft: "-0.5em",
+          transform: `rotate(${step * i}deg)`, transformOrigin: "bottom center",
+        }}>
+          <span style={{
+            fontSize: 12.5, fontWeight: 800, letterSpacing: "0.04em",
+            color, fontFamily: "var(--font-body, inherit)",
+          }}>
+            {ch}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CircularHero({ logoUrl, bizName, logoLetter, logoColor, accentColor, socials = [] }) {
   const activeSocials = socials.filter(s => s.url);
+  const ARC_SIZE = 196; // diametro del anillo de texto (logo 96px + aire)
+  const arcColor = accentColor || "#F59E0B";
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-      {/* Logo en burbuja grande con tinte del color de marca */}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+      <style>{`
+        @keyframes cf-arc-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .cf-arc-ring { animation: cf-arc-spin 22s linear infinite; }
+        .cf-logo-pop { transition: transform 250ms ease; }
+        .cf-logo-pop:hover { transform: scale(1.08) rotate(4deg); }
+        @media (prefers-reduced-motion: reduce) {
+          .cf-arc-ring { animation: none !important; }
+          .cf-logo-pop, .cf-logo-pop:hover { transform: none !important; }
+        }
+      `}</style>
+
+      {/* Logo en burbuja + "GRACIAS POR VISITARNOS" girando alrededor */}
       <div style={{
-        width: 96, height: 96, borderRadius: 999,
-        background: hexToRgba(accentColor, 0.15, "rgba(245,158,11,0.12)"),
-        padding: 8, display: "flex", alignItems: "center", justifyContent: "center",
-        flexShrink: 0,
+        position: "relative", width: ARC_SIZE, height: ARC_SIZE,
+        display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        <div style={{
-          width: "100%", height: "100%", borderRadius: 999,
-          background: logoColor || accentColor,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          overflow: "hidden", color: "#fff",
-          fontFamily: "var(--font-heading, 'DM Serif Display', serif)", fontSize: 38,
+        <div className="cf-arc-ring" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+          <ArcText
+            text={"GRACIAS POR VISITARNOS • GRACIAS POR VISITARNOS • "}
+            diameter={ARC_SIZE}
+            color={arcColor}
+          />
+        </div>
+        <div className="cf-logo-pop" style={{
+          width: 96, height: 96, borderRadius: 999,
+          background: hexToRgba(accentColor, 0.15, "rgba(245,158,11,0.12)"),
+          padding: 8, display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0,
         }}>
-          {logoUrl ? (
-            <img src={logoUrl} alt={bizName} loading="lazy"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              onError={(e) => { e.currentTarget.style.display = "none"; }} />
-          ) : (logoLetter || "").toUpperCase()}
+          <div style={{
+            width: "100%", height: "100%", borderRadius: 999,
+            background: logoColor || accentColor,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            overflow: "hidden", color: "#fff",
+            fontFamily: "var(--font-heading, 'DM Serif Display', serif)", fontSize: 38,
+          }}>
+            {logoUrl ? (
+              <img src={logoUrl} alt={bizName} loading="lazy"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                onError={(e) => { e.currentTarget.style.display = "none"; }} />
+            ) : (logoLetter || "").toUpperCase()}
+          </div>
         </div>
       </div>
 

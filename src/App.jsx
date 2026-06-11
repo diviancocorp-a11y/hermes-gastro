@@ -37,6 +37,25 @@ export default function App() {
     const apply = (sett) => {
       const t = ['ambar','noche','carbon'].includes(sett?.catalog_theme) ? sett.catalog_theme : 'ambar';
       document.body.setAttribute('data-cp-theme', t);
+      // Pestania del navegador: titulo y descripcion salen de settings
+      // (Personalizacion), no del business.js de build. Asi el slogan que
+      // carga el cliente afecta el catalogo Y la pestania, y en su idioma.
+      if (sett?.biz_name) {
+        document.title = sett.slogan ? `${sett.biz_name} — ${sett.slogan}` : sett.biz_name;
+      }
+      const desc = sett?.slogan || '';
+      if (desc) {
+        for (const sel of ["meta[name='description']", "meta[property='og:description']"]) {
+          let m = document.querySelector(sel);
+          if (!m) {
+            m = document.createElement('meta');
+            if (sel.includes('property')) m.setAttribute('property', 'og:description');
+            else m.setAttribute('name', 'description');
+            document.head.appendChild(m);
+          }
+          m.setAttribute('content', desc);
+        }
+      }
       // Favicon: usa favicon_url si esta, sino el logo de la empresa
       const faviconSrc = sett?.favicon_url || sett?.logo_url;
       if (faviconSrc) {
