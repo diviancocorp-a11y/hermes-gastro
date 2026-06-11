@@ -79,7 +79,9 @@ CREATE TABLE IF NOT EXISTS public.recipes (
   description text,
   related_ids uuid[] DEFAULT '{}'::uuid[],
   is_combo boolean DEFAULT false,
-  is_archived boolean DEFAULT false
+  is_archived boolean DEFAULT false,
+  -- Descuento % propio del producto (switch Tiene descuento; pisa el deal por categoria)
+  discount_pct numeric
 );
 
 CREATE TABLE IF NOT EXISTS public.recipe_ingredients (

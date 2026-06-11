@@ -746,89 +746,17 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
             </div>
           )}
 
-          {/* ── CARÁTULAS DE CATEGORÍAS ── */}
+          {/* ── CATEGORÍAS: editor embebido SIEMPRE abierto. El listado viejo
+               (imagenes/ojito/rename) se elimino: el catalogo solo muestra
+               nombres y el listado no se refrescaba al eliminar. Todo se
+               gestiona aca directo contra category_groups. ── */}
           {section === 'cats' && (
             <div>
               <p style={{ fontSize: 12, color: "var(--ag-ink-3)", marginTop: 0, marginBottom: 12, lineHeight: 1.4 }}>
-                Imagen, nombre y visibilidad de cada categoría. El ojito oculta/muestra del catálogo.
+                Creá, editá o eliminá las categorías de la carta y sus subcategorías.
+                Estas mismas aparecen en el desplegable al crear recetas.
               </p>
-              <button
-                type="button"
-                className="ag-btn-ghost"
-                style={{ width: "100%", marginBottom: 12 }}
-                onClick={() => setEditorOpen(true)}
-              >
-                Crear · editar · eliminar categorías
-              </button>
-              {catNames.map(name => {
-                const img = (s.cat_images || {})[name];
-                const isHidden = (s.hidden_cats || []).includes(name);
-                const customName = (s.cat_names || {})[name] || "";
-                const isTodos = name === "Todos";
-                return (
-                  <div
-                    key={name}
-                    style={{
-                      padding: "10px 0",
-                      borderBottom: "1px solid var(--ag-line)",
-                      opacity: isHidden ? 0.5 : 1,
-                      transition: "opacity .2s",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      {!isTodos && (
-                        <button
-                          type="button"
-                          onClick={() => toggleCatHidden(name)}
-                          style={{
-                            background: "none", border: 0, cursor: "pointer", padding: 4, flexShrink: 0,
-                            color: isHidden ? "var(--ag-ink-3)" : "var(--ag-c-sales)",
-                          }}
-                          title={isHidden ? "Mostrar" : "Ocultar"}
-                          aria-label={isHidden ? "Mostrar categoría" : "Ocultar categoría"}
-                        >
-                          <EyeIcon off={isHidden} />
-                        </button>
-                      )}
-                      <div style={{
-                        width: 56, height: 42, borderRadius: 10, overflow: "hidden",
-                        background: "var(--ag-bg-soft)", flexShrink: 0,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}>
-                        {img
-                          ? <img src={img} alt={name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          : <span style={{ fontSize: 10, color: "var(--ag-ink-3)" }}>Sin img</span>}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        {isTodos
-                          ? <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ag-ink)" }}>{name}</div>
-                          : (
-                            <input
-                              className="ag-field-input"
-                              value={customName || name}
-                              onChange={e => setCatName(name, e.target.value)}
-                              placeholder={name}
-                              style={{ fontSize: 12.5, fontWeight: 600, padding: "6px 8px", marginBottom: 0 }}
-                            />
-                          )
-                        }
-                      </div>
-                      <label className="ag-btn-mini" title="Subir imagen">
-                        {uploadingCat === name ? "..." : "📷"}
-                        <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleCatFile(name, e)} disabled={uploadingCat === name} />
-                      </label>
-                      {img && (
-                        <button
-                          type="button"
-                          onClick={() => setCatImg(name, "")}
-                          style={{ background: "none", border: 0, fontSize: 14, color: "var(--ag-c-orders)", cursor: "pointer", padding: 4 }}
-                          aria-label="Quitar imagen"
-                        >X</button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+              <CategoryEditor embedded msg={showToast} onClose={reloadCatNames} />
             </div>
           )}
           </>)}

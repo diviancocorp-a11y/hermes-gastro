@@ -45,7 +45,8 @@
       "last_order_at",
       "created_at",
       "birth_date",
-      "nickname"
+      "nickname",
+      "avatar_key"
     ],
     "dynamic_qrs": [
       "id",
@@ -185,7 +186,8 @@
       "batch_yield",
       "is_vegetarian",
       "created_at",
-      "requires_age_gate"
+      "requires_age_gate",
+      "discount_pct"
     ],
     "sales": [
       "id",

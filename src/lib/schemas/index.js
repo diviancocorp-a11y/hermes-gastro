@@ -103,6 +103,9 @@ export const RecipeInputSchema = z.object({
   is_vegetarian: z.boolean().optional().default(false),
   requires_age_gate: z.boolean().optional().default(false),
   is_archived: z.boolean().optional().default(false),
+  // Descuento % propio del producto (switch "Tiene descuento"). NULL/0 = sin
+  // descuento. Pisa el deal del dia por categoria; valida tambien submit-order.
+  discount_pct: z.number().min(0).max(90).nullable().optional(),
   // Rendimiento por tanda (migration recipes_add_batch_yield).
   // NULL = receta normal por unidad. Si tiene valor, indica que los
   // ingredientes se ingresaron pensando en la tanda y se dividieron por

@@ -406,17 +406,23 @@ export default function Catalog() {
     return [{ name: "Todos", icon: "🏠", subs: [], img: catImgs["Todos"] || null, deal: false, displayName: "Todos" }, ...catData];
   }, [products, dealCats, sett, catGroups]);
 
-  // Helper: ¿un producto pertenece a una categoría madre con descuento?
+  // Helper: ¿el producto esta en oferta? Descuento propio (recipes.discount_pct,
+  // switch "Tiene descuento" del editor) O deal del dia por categoria madre.
   const hasDeal = useCallback((p) => {
+    if (Number(p?.discount_pct) > 0) return true;
     const parent = subToParent[p.category];
     return parent ? dealCats.has(parent) : false;
   }, [dealCats]);
 
-  // Precio con descuento del día aplicado (basado en categoría madre)
+  // Precio con descuento. El descuento propio PISA al deal del dia (no se
+  // acumulan). Mismo Math.round que submit-order valida server-side.
   const getPrice = useCallback((p) => {
-    if (hasDeal(p)) return Math.round(p.sale_price * (1 - DEAL_PCT / 100));
+    const own = Number(p?.discount_pct) || 0;
+    if (own > 0) return Math.round(p.sale_price * (1 - own / 100));
+    const parent = subToParent[p.category];
+    if (parent && dealCats.has(parent)) return Math.round(p.sale_price * (1 - DEAL_PCT / 100));
     return p.sale_price;
-  }, [hasDeal]);
+  }, [dealCats]);
 
   // Filtrar productos por categoria madre seleccionada.
   // Trim para tolerar trailing spaces en recipe.category (data legacy).
@@ -816,10 +822,20 @@ export default function Catalog() {
   const isOpen = sett.store_open === false ? false : storeStatus.open;
 
   // --- VISTA PRINCIPAL: CATÁLOGO PRO (Fase 1) ---
+  // Horario de HOY para el header ("Abierto · 18:00 a 23:00")
+  const todayHours = (() => {
+    const hrs = sett?.store_hours;
+    if (!hrs) return null;
+    const now = serverNow || new Date();
+    const today = hrs[(now.getDay() + 6) % 7];
+    if (!today || today.closed || !today.open || !today.close) return null;
+    return `${today.open} a ${today.close}`;
+  })();
+
   const storeForHome = {
     name: sett.biz_name || fallbackSettings.biz_name,
     isOpen,
-    pickupTime: sett.prep_time_min ? `${sett.prep_time_min} min` : null,
+    hours: todayHours,
     logoLetter: sett.logo_letter || fallbackSettings.logo_letter,
     logoColor: sett.logo_color || fallbackSettings.logo_color,
     logoUrl: sett.logo_url || null,

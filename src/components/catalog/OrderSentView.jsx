@@ -8,6 +8,7 @@ import { Icon, formatOrderCode } from "../../lib/utils";
 import { waLink } from "@business";
 import { upsertCustomer } from "../../services/phoneAuth";
 import { setGuestUser, getGuestUser } from "../../lib/guestUser";
+import OrderStatusCard from "../../catalog-pro/OrderStatusCard";
 
 const GREEN = "#16A34A";
 
@@ -63,16 +64,10 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
 
         {orderId && (
           <>
-            <a href={"/order/" + orderId}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                padding: "12px 18px", borderRadius: 12,
-                background: "var(--ac)", color: "#fff",
-                fontSize: 14, fontWeight: 700, textDecoration: "none", marginBottom: 18,
-              }}
-            >
-              🔴 Seguir mi pedido en vivo
-            </a>
+            {/* StatusCard de seguimiento (card-24 adaptado) */}
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+              <OrderStatusCard href={"/order/" + orderId} />
+            </div>
 
             <div style={{
               padding: "14px 16px", background: "var(--b2)",

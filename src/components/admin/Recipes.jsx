@@ -15,7 +15,7 @@
  *   - RecDet: ver receta + stats grid + tabla ingredientes + archivar/restaurar
  *   - RecForm: crear/editar con upload de imagen, combos y sugerencias upselling
  */
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useConfirm } from "../ConfirmSlideProvider";
 import DecimalInput from "../ui/DecimalInput";
 import { formatInt, formatMoney } from "../../lib/utils";
@@ -32,6 +32,7 @@ import {
 } from "../../lib/adminService";
 import BatchCalculator from "./recipes/BatchCalculator";
 import SizesEditor from "./recipes/SizesEditor";
+import { fetchCategoryGroups } from "../../services/categories";
 
 // Color de rentabilidad según margen
 function marginColor(m) {
@@ -332,6 +333,7 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
               batch_yield: r.batch_yield ?? null,
               is_vegetarian: r.is_vegetarian || false,
               requires_age_gate: r.requires_age_gate || false,
+              discount_pct: Number(r.discount_pct) > 0 ? Number(r.discount_pct) : null,
             });
             if (saved?.__error === "duplicate") {
               showToast("⚠ Ya existe una receta activa con ese nombre");
@@ -611,14 +613,21 @@ function RecForm({ data, ingredients, recipes, settings, onClose, onSave }) {
   );
   const profitNeg = !f.is_combo && totalCost > 0 && totalCost > (f.sale_price || 0);
 
-  // Categorias de la carta: las subs de cat_groups + las que ya usan otras
-  // recetas. Dropdown cerrado para evitar typos/desorden ("cookis" vs "Cookies")
+  // Categorias de la carta = las de Personalizacion (tabla category_groups:
+  // madres + subcategorias). Dropdown CERRADO: nada de categorias inventadas
+  // tipo "cookis"/"perro". La categoria actual de la receta se agrega solo
+  // para no romper data vieja al editar.
+  const [catOptions, setCatOptions] = useState([]);
+  useEffect(() => {
+    fetchCategoryGroups().then(groups => {
+      const names = groups.flatMap(g => [g.name, ...(g.subcategories || [])]).filter(Boolean);
+      setCatOptions([...new Set(names)]);
+    }).catch(() => setCatOptions([]));
+  }, []);
   const cartCategories = useMemo(() => {
-    const fromGroups = (settings?.cat_groups || []).flatMap(g => g.subs || []);
-    const fromRecipes = (recipes || []).map(r => r.category).filter(Boolean);
     const cur = f.category ? [f.category] : [];
-    return [...new Set([...fromGroups, ...fromRecipes, ...cur])].sort((a, b) => a.localeCompare(b, "es"));
-  }, [settings, recipes, f.category]);
+    return [...new Set([...catOptions, ...cur])].sort((a, b) => a.localeCompare(b, "es"));
+  }, [catOptions, f.category]);
 
   // Reglas de guardado: sin ingredientes no hay receta (quedan incompletas);
   // si es combo, las sub-recetas SON los ingredientes
@@ -656,6 +665,24 @@ function RecForm({ data, ingredients, recipes, settings, onClose, onSave }) {
           <div style={{ borderTop: "1px solid var(--ag-line)" }} />
           <ToggleRow label="Requiere +18" hint="Pide confirmacion de edad antes de agregar al carrito"
             checked={!!f.requires_age_gate} onChange={v => s("requires_age_gate", v)} />
+          <div style={{ borderTop: "1px solid var(--ag-line)" }} />
+          {/* Descuento propio: entra al filtro "En oferta" del catalogo y
+              muestra el precio tachado. Pisa al deal del dia por categoria. */}
+          <ToggleRow label="¿Tiene descuento?" hint='Entra al filtro "En oferta" con precio tachado'
+            checked={Number(f.discount_pct) > 0}
+            onChange={v => s("discount_pct", v ? 10 : null)} />
+          {Number(f.discount_pct) > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "2px 4px 12px" }}>
+              <div style={{ position: "relative", width: 110 }}>
+                <DecimalInput className="ag-field-input" min={1} step="1" value={f.discount_pct}
+                  onChange={(n) => s("discount_pct", Math.max(1, Math.min(90, Math.round(n))))} placeholder="10" />
+                <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--ag-ink-3)", fontWeight: 700, pointerEvents: "none" }}>%</span>
+              </div>
+              <span style={{ fontSize: 11.5, color: "var(--ag-ink-3)" }}>
+                Queda en ${formatInt(Math.round((f.sale_price || 0) * (1 - (Number(f.discount_pct) || 0) / 100)))}
+              </span>
+            </div>
+          )}
           {/* Un combo no vende por tamanos */}
           {!f.is_combo && (
             <>

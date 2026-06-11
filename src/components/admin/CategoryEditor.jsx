@@ -15,7 +15,6 @@ export default function CategoryEditor({ msg, onClose, embedded = false }) {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', image_url: '', subcategories: '', visible: true });
-  const [uploadingImg, setUploadingImg] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,38 +61,7 @@ export default function CategoryEditor({ msg, onClose, embedded = false }) {
     }
   };
 
-  const handleImageFile = async (e) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    setUploadingImg(true);
-    const result = await uploadCatImage(file, form.name || 'category');
-    setUploadingImg(false);
-    if (result?.__error) { msg?.(result.__error); return; }
-    if (result) {
-      setForm(f => ({ ...f, image_url: result }));
-      // Si ya estamos editando una categoria existente, persist automaticamente
-      // para evitar el bug de "subi la imagen pero no le di guardar".
-      if (editing?.id) {
-        try {
-          await upsertCategoryGroup({
-            id: editing.id,
-            name: form.name.trim(),
-            image_url: result,
-            subcategories: form.subcategories.split(',').map(s => s.trim()).filter(Boolean),
-            visible: form.visible,
-            sort_order: editing.sort_order ?? groups.length,
-          });
-          msg?.('Imagen guardada ✓');
-          await load();
-        } catch (e) {
-          msg?.(`Imagen cargada pero NO guardada: ${e.message}`);
-        }
-      } else {
-        msg?.('Imagen lista — apretá Guardar para confirmar la categoría');
-      }
-    } else {
-      msg?.('Error al subir');
-    }
-  };
+  // (subida de imagen de categoria eliminada: el catalogo solo muestra nombres)
 
   const handleDelete = async (id) => {
     const ok = await confirmSlide({ title: "Eliminar categoría", body: "Los productos en esta categoría no se borran, solo dejan de aparecer agrupados.", label: "Deslizá para eliminar" });
@@ -154,34 +122,7 @@ export default function CategoryEditor({ msg, onClose, embedded = false }) {
             style={{ marginBottom: 12 }}
           />
 
-          <label className="ag-field-lbl">Imagen de la categoría</label>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: 12,
-              background: 'var(--ag-bg-soft)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              overflow: 'hidden', flexShrink: 0,
-              border: '1px solid var(--ag-line)',
-            }}>
-              {form.image_url
-                ? <img src={form.image_url} alt="categoría" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none' }} />
-                : <span style={{ fontSize: 11, color: 'var(--ag-ink-3)' }}>Sin img</span>}
-            </div>
-            <div style={{ flex: 1, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              <label className="ag-btn-primary" style={{ flex: 1, minWidth: 0 }}>
-                {uploadingImg ? 'Subiendo…' : '📷 Subir'}
-                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageFile} disabled={uploadingImg} />
-              </label>
-              <label className="ag-btn-ghost" style={{ flex: 1, minWidth: 0 }}>
-                📸 Cámara
-                <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleImageFile} disabled={uploadingImg} />
-              </label>
-              {form.image_url && (
-                <button type="button" className="ag-btn-ghost" onClick={() => setForm(f => ({ ...f, image_url: '' }))} style={{ flex: 0 }}>Quitar</button>
-              )}
-            </div>
-          </div>
-
+          {/* Imagen de categoria eliminada: el catalogo solo muestra nombres */}
           <label className="ag-field-lbl">Subcategorías (separadas por coma)</label>
           <input
             className="ag-field-input"

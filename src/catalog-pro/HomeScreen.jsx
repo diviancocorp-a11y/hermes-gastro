@@ -28,6 +28,7 @@ import BadgeTag from "../components/BadgeTag";
 import TopPedidos from "./TopPedidos";
 import PromoCarousel from "./PromoCarousel";
 import SuperCombos from "./SuperCombos";
+import OrderStatusCard from "./OrderStatusCard";
 
 export default function HomeScreen({
   store = {}, userName, products = [], categories = [],
@@ -73,6 +74,9 @@ export default function HomeScreen({
   );
   // Grid completo de TODOS los productos filtrados por categoria activa +
   // busqueda + quick filter (en oferta / vegetariano / nuevos / mas pedidos).
+  // Busqueda activa: muestra cards de resultados en vivo y difumina el resto
+  const searching = (searchQuery || "").trim().length >= 1;
+
   const gridProducts = useMemo(() => {
     let list = products;
     if (activeCat && activeCat !== "Todos") {
@@ -188,8 +192,8 @@ export default function HomeScreen({
               <div className="body-s" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2, fontSize: 12 }}>
                 <span style={{ width: 6, height: 6, borderRadius: 999, background: store.isOpen ? "var(--ok)" : "var(--err)" }} />
                 {firstName
-                  ? `${store.name || "Tienda"} · ${store.isOpen ? "Abierto" : "Cerrado"}`
-                  : (store.isOpen ? `Abierto${store.pickupTime ? ` · retiro ${store.pickupTime}` : ""}` : "Cerrado · pedidos programados")}
+                  ? `${store.name || "Tienda"} · ${store.isOpen ? "Abierto" : "Cerrado"}${store.isOpen && store.hours ? ` · ${store.hours}` : ""}`
+                  : (store.isOpen ? `Abierto${store.hours ? ` · ${store.hours}` : ""}` : "Cerrado · pedidos programados")}
               </div>
               {settings?.slogan && (
                 <div style={{
@@ -227,6 +231,13 @@ export default function HomeScreen({
         </div>
       </div>
 
+      {/* ===== PEDIDO ACTIVO — siempre arriba de todo (StatusCard compacto) ===== */}
+      {lastOrder && (
+        <div style={{ padding: "14px 22px 0" }}>
+          <OrderStatusCard compact href={"/order/" + lastOrder} />
+        </div>
+      )}
+
       {/* ===== QUICK REORDER (si hay pedido previo) ===== */}
       {lastOrderItems.length > 0 && (
         <div style={{ padding: "20px 22px 0" }}>
@@ -257,20 +268,42 @@ export default function HomeScreen({
         </div>
       )}
 
+      {/* ===== STORIES (arriba del editorial) ===== */}
+      {stories.length > 0 && (
+        <div style={{ paddingTop: 20 }}>
+          <div className="cp-no-scrollbar" style={{ display: "flex", gap: 10, padding: "0 22px", overflowX: "auto" }}>
+            {stories.map((s, i) => (
+              <div key={s.id} onClick={() => onSelectProduct?.(s._raw)} style={{
+                flex: "0 0 100px", height: 140, borderRadius: 16,
+                position: "relative", overflow: "hidden", cursor: "pointer",
+                border: i === storyIdx ? "2px solid var(--ac)" : "1px solid var(--line)",
+                transition: "border 200ms ease",
+              }}>
+                <ProductPhoto src={s.img} ratio="100/140" radius={0} tone="#5C4A3F" />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.65) 100%)" }} />
+                <div style={{ position: "absolute", top: 8, left: 8 }}>
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "#fff",
+                    background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)",
+                    padding: "3px 7px", borderRadius: 4, textTransform: "uppercase",
+                  }}>{s.tag}</span>
+                </div>
+                <div style={{ position: "absolute", bottom: 10, left: 10, right: 10, color: "#fff", fontSize: 12, fontWeight: 500, lineHeight: 1.2 }}>
+                  {s.label}
+                </div>
+                {i === storyIdx && (
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.25)" }}>
+                    <div style={{ height: "100%", background: "#fff", animation: "cp-story-progress 4500ms linear" }} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ===== EDITORIAL ===== */}
-      <div style={{ padding: "28px 22px 44px" }}>
-        {lastOrder && (
-          <a href={"/order/" + lastOrder} style={{
-            display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 14,
-            padding: "9px 14px", borderRadius: 999,
-            background: "color-mix(in oklab, var(--ac) 12%, var(--bg))",
-            border: "1px solid color-mix(in oklab, var(--ac) 35%, var(--line))",
-            color: "var(--ac)", fontSize: 13, fontWeight: 700, textDecoration: "none",
-          }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ac)", display: "inline-block" }} />
-            Seguí tu pedido en vivo →
-          </a>
-        )}
+      <div style={{ padding: "24px 22px 36px" }}>
         <h1 className="h-1" style={{ margin: 0, fontSize: 32 }}>
           ¿Qué te <RotatingVerb words={["tienta", "seduce", "atrae"]} /> hoy?
         </h1>
@@ -305,69 +338,67 @@ export default function HomeScreen({
             </button>
           )}
         </div>
-        {/* Autocomplete: hasta 4 sugerencias cuando hay 2+ caracteres */}
-        {searchQuery.trim().length >= 2 && gridProducts.length > 0 && (
-          <div style={{
-            position: "absolute", left: 22, right: 22, top: 56, zIndex: 30,
-            background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 12,
-            boxShadow: "0 12px 28px rgba(0,0,0,0.10)", overflow: "hidden",
-          }}>
-            {gridProducts.slice(0, 4).map((p, i) => (
-              <button key={p.id} type="button"
-                onClick={() => { onSelectProduct?.(p._raw); onSearchChange?.(""); }}
-                style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: 10,
-                  padding: "10px 12px", background: "transparent",
-                  border: 0, borderTop: i === 0 ? 0 : "1px solid var(--line)",
-                  cursor: "pointer", textAlign: "left", fontFamily: "inherit",
-                }}>
-                <div style={{ width: 38, height: 38, borderRadius: 8, overflow: "hidden", background: p.tone || "var(--b2)", flexShrink: 0 }}>
-                  {p.img && <img src={p.img} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = "none"; }} />}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--tx)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
-                  <div style={{ fontSize: 11, color: "var(--t3)" }}>{fmtAR(p.price)}</div>
-                </div>
-                <Icon name="arrow-right" size={14} style={{ color: "var(--t3)" }} />
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* ===== STORIES ===== */}
-      {stories.length > 0 && (
-        <div style={{ paddingBottom: 6 }}>
-          <div className="cp-no-scrollbar" style={{ display: "flex", gap: 10, padding: "0 22px", overflowX: "auto" }}>
-            {stories.map((s, i) => (
-              <div key={s.id} onClick={() => onSelectProduct?.(s._raw)} style={{
-                flex: "0 0 100px", height: 140, borderRadius: 16,
-                position: "relative", overflow: "hidden", cursor: "pointer",
-                border: i === storyIdx ? "2px solid var(--ac)" : "1px solid var(--line)",
-                transition: "border 200ms ease",
+      {/* ===== RESULTADOS DE BUSQUEDA — cards en vivo mientras tipea ===== */}
+      {searching && (
+        <div style={{ padding: "0 22px 24px" }}>
+          <div className="caption" style={{ marginBottom: 10 }}>
+            {gridProducts.length === 0 ? "Sin resultados para tu búsqueda" : `${gridProducts.length} resultado${gridProducts.length !== 1 ? "s" : ""}`}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 14 }}>
+            {gridProducts.slice(0, 12).map(p => (
+              <div key={p.id} onClick={() => onSelectProduct?.(p._raw)} style={{
+                cursor: "pointer", animation: "cp-pcg-rise 300ms ease both",
               }}>
-                <ProductPhoto src={s.img} ratio="100/140" radius={0} tone="#5C4A3F" />
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.65) 100%)" }} />
-                <div style={{ position: "absolute", top: 8, left: 8 }}>
-                  <span style={{
-                    fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "#fff",
-                    background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)",
-                    padding: "3px 7px", borderRadius: 4, textTransform: "uppercase",
-                  }}>{s.tag}</span>
+                <div style={{ position: "relative" }}>
+                  <ProductPhoto src={p.img} height={120} radius={12} tone={p.tone} dim={p.soldOut} />
+                  {p.soldOut && <div style={{ position: "absolute", top: 8, left: 8 }}><SoldOutBadge /></div>}
+                  {!p.soldOut && (
+                    <div style={{ position: "absolute", bottom: 8, right: 8 }}>
+                      <AddRound size={30} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
+                    </div>
+                  )}
                 </div>
-                <div style={{ position: "absolute", bottom: 10, left: 10, right: 10, color: "#fff", fontSize: 12, fontWeight: 500, lineHeight: 1.2 }}>
-                  {s.label}
-                </div>
-                {i === storyIdx && (
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.25)" }}>
-                    <div style={{ height: "100%", background: "#fff", animation: "cp-story-progress 4500ms linear" }} />
-                  </div>
-                )}
+                <div style={{ fontFamily: "var(--font-heading)", fontSize: 14.5, color: "var(--tx)", marginTop: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+                <div style={{ marginTop: 2 }}><PriceTag price={p.price} oldPrice={p.oldPrice} size="sm" /></div>
               </div>
             ))}
           </div>
         </div>
       )}
+
+      {/* ===== RECOS "PARA VOS" — debajo del buscador ===== */}
+      {!searching && recos.length > 0 && (
+        <AiRecosCollapsible recos={recos} onSelectProduct={onSelectProduct} content={
+          <>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {recos.map(p => (
+              <div key={p.id} onClick={() => onSelectProduct?.(p._raw)} style={{ display: "grid", gridTemplateColumns: "64px 1fr auto", gap: 12, alignItems: "center", cursor: "pointer" }}>
+                <ProductPhoto src={p.img} height={64} radius={10} tone={p.tone} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "var(--tx)", marginBottom: 2 }}>{p.name}</div>
+                  <div className="body-s" style={{ fontSize: 11, color: "var(--ac)" }}>
+                    <Icon name="sparkle" size={10} style={{ verticalAlign: "-1px", marginRight: 3, display: "inline-block" }} />
+                    {p.reason}
+                  </div>
+                  <div style={{ marginTop: 4 }}><PriceTag price={p.price} oldPrice={p.oldPrice} size="sm" /></div>
+                </div>
+                <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
+              </div>
+            ))}
+          </div>
+          </>
+        } />
+      )}
+
+      {/* Todo lo de abajo se difumina mientras se tipea una busqueda */}
+      <div style={{
+        filter: searching ? "blur(7px)" : "none",
+        opacity: searching ? 0.45 : 1,
+        pointerEvents: searching ? "none" : "auto",
+        transition: "filter 300ms ease, opacity 300ms ease",
+      }} aria-hidden={searching}>
 
       {/* ===== CATEGORÍAS CHIPS ===== */}
       <div style={{ paddingTop: 28 }}>
@@ -404,7 +435,13 @@ export default function HomeScreen({
         {/* Quick filters */}
         <div className="cp-no-scrollbar" style={{ display: "flex", gap: 6, padding: "12px 22px 0", overflowX: "auto" }}>
           {quickFilters.map(f => (
-            <button key={f.id} onClick={() => setActiveFilter(activeFilter === f.id ? null : f.id)} style={{
+            <button key={f.id} onClick={() => {
+              const next = activeFilter === f.id ? null : f.id;
+              setActiveFilter(next);
+              // Anti falso-positivo: activar un quick filter resetea la
+              // categoria a Todos; despues puede combinar eligiendo categoria
+              if (next) setActiveCat("Todos");
+            }} style={{
               flex: "0 0 auto", height: 28, padding: "0 11px", borderRadius: 6,
               background: activeFilter === f.id ? "color-mix(in oklab, var(--ac) 14%, transparent)" : "transparent",
               color: activeFilter === f.id ? "var(--ac)" : "var(--t2)",
@@ -415,40 +452,6 @@ export default function HomeScreen({
           ))}
         </div>
       </div>
-
-      {/* ===== AI RECOS "PARA VOS" — chip plegable ===== */}
-      {recos.length > 0 && (
-        <AiRecosCollapsible recos={recos} onSelectProduct={onSelectProduct} content={
-          <>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {recos.map(p => (
-              <div key={p.id} onClick={() => onSelectProduct?.(p._raw)} style={{ display: "grid", gridTemplateColumns: "64px 1fr auto", gap: 12, alignItems: "center", cursor: "pointer" }}>
-                <ProductPhoto src={p.img} height={64} radius={10} tone={p.tone} />
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "var(--tx)", marginBottom: 2 }}>{p.name}</div>
-                  <div className="body-s" style={{ fontSize: 11, color: "var(--ac)" }}>
-                    <Icon name="sparkle" size={10} style={{ verticalAlign: "-1px", marginRight: 3, display: "inline-block" }} />
-                    {p.reason}
-                  </div>
-                  <div style={{ marginTop: 4 }}><PriceTag price={p.price} oldPrice={p.oldPrice} size="sm" /></div>
-                </div>
-                <AddRound size={32} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
-              </div>
-            ))}
-          </div>
-          </>
-        } />
-      )}
-
-      {/* ===== SUPER COMBOS — connoisseur stack: lista numerada + foto
-           revelada por clip-path en capas (SuperCombos.jsx) ===== */}
-      {combos.length > 0 && (
-        <SuperCombos
-          combos={combos}
-          onSelectProduct={onSelectProduct}
-          onAddToCart={onAddToCart}
-        />
-      )}
 
       {/* ===== LO MAS PEDIDO — top 3 real con reveal animado (lite, sin GSAP) ===== */}
       {!searchQuery && (
@@ -528,8 +531,20 @@ export default function HomeScreen({
         ))}
       </div>
 
+      {/* ===== SUPER COMBOS — debajo de la carta ===== */}
+      {combos.length > 0 && (
+        <SuperCombos
+          combos={combos}
+          onSelectProduct={onSelectProduct}
+          onAddToCart={onAddToCart}
+        />
+      )}
+
       {/* ===== PROMOS (carrusel: ranking semanal, cumple, programados) ===== */}
       {!searchQuery && <PromoCarousel onOpenAccount={onOpenAccount} />}
+
+      {/* cierre del wrapper que se difumina durante la busqueda */}
+      </div>
 
       {/* ===== STICKY CART + FOOTER ===== */}
       {cartCount > 0 && <StickyCart count={cartCount} total={cartTotal} onClick={onOpenCart} />}

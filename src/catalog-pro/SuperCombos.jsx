@@ -16,18 +16,14 @@ import { formatInt } from "../lib/utils";
 const ROTATE_MS = 6400;   // = duracion del loop de capas (sincronizados)
 const TOUCH_HOLD_MS = 15000;
 
-/* 3 sets de capas para el clipPath (rotan por combo, como el original) */
-const CLIP_SETS = [
-  // "burger": rebanadas horizontales (paths del TSX original)
-  [
-    "M480.6,235H19.4c-6,0-10.8-4.9-10.8-10.8v-9.5c0-6,4.9-10.8,10.8-10.8h461.1c6,0,10.8,4.9,10.8,10.8v9.5C491.4,230.2,486.6,235,480.6,235z",
-    "M483.1,362.4H16.9c-4.6,0-8.3-3.7-8.3-8.3v-1.8c0-4.6,3.7-8.3,8.3-8.3h466.1c4.6,0,8.3,3.7,8.3,8.3v1.8C491.4,358.7,487.7,362.4,483.1,362.4z",
-    "M460.3,336.3H39.7c-17.2,0-31.1-13.9-31.1-31.1v-31.5c0-17.2,13.9-31.1,31.1-31.1h420.7c17.2,0,31.1,13.9,31.1,31.1v31.5C491.4,322.4,477.5,336.3,460.3,336.3z",
-    "M459.2,196.2H40.8v-35c0-47.5,38.5-86,86-86h246.5c47.5,0,86,38.5,86,86V196.2z",
-    "M441.9,424.9H58.1c-9.6,0-17.3-7.8-17.3-17.3v-37.4h418.5v37.4C459.2,417.1,451.5,424.9,441.9,424.9z",
-  ],
-  null, // mosaico (rects, se renderiza aparte)
-  null, // grilla 3x3 (rects)
+/* 3 variantes de capas para el clipPath (rotan por combo). La variante 0 son
+   CIRCULOS (una cookie grande + satelites — aca no se venden hamburguesas) */
+const CIRCLES = [
+  { cx: 250, cy: 250, r: 165 },
+  { cx: 95,  cy: 95,  r: 70 },
+  { cx: 405, cy: 95,  r: 58 },
+  { cx: 95,  cy: 405, r: 58 },
+  { cx: 405, cy: 405, r: 70 },
 ];
 
 function ClipShapes({ setIndex, clipId }) {
@@ -35,8 +31,9 @@ function ClipShapes({ setIndex, clipId }) {
   if (variant === 0) {
     return (
       <clipPath id={clipId}>
-        {CLIP_SETS[0].map((d, i) => (
-          <path key={i} className="cp-sc-path" style={{ animationDelay: `${i * 0.09}s` }} d={d} />
+        {CIRCLES.map((c, i) => (
+          <circle key={i} className="cp-sc-path" style={{ animationDelay: `${i * 0.09}s` }}
+            cx={c.cx} cy={c.cy} r={c.r} />
         ))}
       </clipPath>
     );

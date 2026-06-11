@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     const items = body.items;
     if (!Array.isArray(items) || items.length === 0 || items.length > 50) return jsonRes({ error: "El pedido debe tener entre 1 y 50 productos" }, 400);
     const recipeIds = [...new Set(items.map((item) => item.recipeId))];
-    const { data: dbRecipes, error: recipesError } = await supabase.from("recipes").select("id, sale_price, category, visible, is_archived").in("id", recipeIds);
+    const { data: dbRecipes, error: recipesError } = await supabase.from("recipes").select("id, sale_price, category, visible, is_archived, discount_pct").in("id", recipeIds);
     if (recipesError || !dbRecipes) return jsonRes({ error: "Error al obtener productos" }, 500);
     const recipeMap = {};
     dbRecipes.forEach((r) => { recipeMap[r.id] = r; });
@@ -93,7 +93,11 @@ Deno.serve(async (req) => {
       const qty = Math.max(1, Math.min(999, Math.round(item.qty || 1)));
       const basePrice = recipe.sale_price;
       let unitPrice = basePrice;
-      if (hasDealToday(recipe.category)) unitPrice = Math.round(basePrice * (1 - dealPct / 100));
+      // Descuento propio del producto (recipes.discount_pct) PISA al deal del
+      // dia por categoria — mismo Math.round que getPrice() en el cliente
+      const ownPct = Number(recipe.discount_pct) || 0;
+      if (ownPct > 0) unitPrice = Math.round(basePrice * (1 - ownPct / 100));
+      else if (hasDealToday(recipe.category)) unitPrice = Math.round(basePrice * (1 - dealPct / 100));
       const subtotal = qty * unitPrice;
       serverTotal += subtotal;
       validatedItems.push({ recipeId: item.recipeId, qty, unitPrice, subtotal });
