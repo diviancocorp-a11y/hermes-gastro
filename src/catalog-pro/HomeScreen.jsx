@@ -26,6 +26,7 @@ import HermesMark from "../components/HermesMark";
 import CatalogFooter from "./CatalogFooter";
 import BadgeTag from "../components/BadgeTag";
 import TopCustomersCard from "./TopCustomersCard";
+import TopPedidos from "./TopPedidos";
 
 export default function HomeScreen({
   store = {}, userName, products = [], categories = [],
@@ -480,6 +481,15 @@ export default function HomeScreen({
             ))}
           </div>
         </>
+      )}
+
+      {/* ===== LO MAS PEDIDO — top 3 real con reveal animado (lite, sin GSAP) ===== */}
+      {!searchQuery && (
+        <TopPedidos
+          products={products}
+          soldOutIds={soldOutIds}
+          onSelectProduct={onSelectProduct}
+        />
       )}
 
       {/* ===== CARTA — TODOS los productos filtrados por categoria + busqueda ===== */}
