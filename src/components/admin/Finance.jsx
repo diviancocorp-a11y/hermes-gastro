@@ -1090,10 +1090,15 @@ function ExpForm({ onClose, onSave, settings, user }) {
           value={f.usar_category}
           onChange={e => s("usar_category", e.target.value)}
         >
-          {["COGS", "Labor", "OPEX"].map(group => (
-            <optgroup key={group} label={group}>
+          {/* Labels en espanol para los grupos USAR (las keys internas no cambian) */}
+          {[
+            { key: "COGS", label: "Mercadería (COGS)" },
+            { key: "Labor", label: "Personal" },
+            { key: "OPEX", label: "Gastos operativos (OPEX)" },
+          ].map(group => (
+            <optgroup key={group.key} label={group.label}>
               {USAR_EXPENSE_CATEGORIES
-                .filter(c => c.group === group)
+                .filter(c => c.group === group.key)
                 .filter(c => !c.value.startsWith("food_") && c.value !== "packaging")
                 .map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </optgroup>

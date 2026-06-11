@@ -17,7 +17,7 @@
 //
 // Cada % en su propia línea con semáforo (verde si ≤ target, rojo si pasa).
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { formatInt } from "../../lib/utils";
 import { FOOD_CATEGORIES, DEFAULT_USAR_TARGETS } from "../../constants/usar";
 import DeltaBadge from "../DeltaBadge";
@@ -113,6 +113,7 @@ export default function UsarPnL({
   calculateRecipeCost,
 }) {
   const targets = settings?.usar_targets || DEFAULT_USAR_TARGETS;
+  const [showHelp, setShowHelp] = useState(false);
 
   // ─── INGRESOS POR CANAL ─────────────────────────────────────
   const byChannel = useMemo(() => {
@@ -194,12 +195,42 @@ export default function UsarPnL({
 
   return (
     <div className="ag-card" style={{ padding: "14px 16px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ag-ink)" }}>P&L USAR · Dark Kitchen</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ag-ink)" }}>Estado de Resultados · USAR Dark Kitchen</div>
         <div style={{ fontSize: 10, color: "var(--ag-ink-3)", letterSpacing: "0.05em" }}>
-          Targets: Food ≤{targets.food_cost_pct}% · Labor ≤{targets.labor_pct}% · EBITDA ≥{targets.target_ebitda_pct}%
+          Objetivos: Insumos ≤{targets.food_cost_pct}% · Personal ≤{targets.labor_pct}% · EBITDA ≥{targets.target_ebitda_pct}%
         </div>
       </div>
+      <p style={{ fontSize: 11, color: "var(--ag-ink-3)", margin: "0 0 8px", lineHeight: 1.4 }}>
+        Cuánto entró, cuánto se fue y cuánto quedó — con semáforo contra tus objetivos.{" "}
+        <button type="button" onClick={() => setShowHelp(h => !h)}
+          style={{ background: "none", border: 0, padding: 0, color: "var(--ag-c-sales)", fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>
+          {showHelp ? "Ocultar explicación" : "¿Cómo leer este reporte?"}
+        </button>
+      </p>
+
+      {showHelp && (
+        <div style={{ padding: "12px 14px", borderRadius: 10, background: "var(--ag-bg-soft)", fontSize: 11.5, color: "var(--ag-ink-2)", lineHeight: 1.55, marginBottom: 12 }}>
+          <strong>¿Qué es USAR?</strong> El <em>Uniform System of Accounts for Restaurants</em> es
+          el formato estándar mundial para ordenar las cuentas de un restaurante, acá adaptado
+          a dark kitchen. La gracia: todos los números se leen como % de lo que vendiste, así
+          podés compararte mes a mes y contra la industria.
+          <div style={{ marginTop: 8 }}>
+            <strong>Se lee de arriba hacia abajo, como una cascada:</strong><br />
+            1. <strong>Ingreso Bruto</strong>: todo lo que vendiste, abierto por canal (WhatsApp, Rappi, mostrador...).<br />
+            2. <strong>− Comisiones</strong>: lo que se llevan las apps de delivery.<br />
+            3. <strong>− Costo de mercadería</strong>: los insumos que usaste (proteínas, lácteos, etc.) + envases.<br />
+            4. <strong>= Margen Bruto</strong>: lo que queda después de la comida.<br />
+            5. <strong>− Personal de cocina − Gastos operativos</strong> (marketing, alquiler, servicios).<br />
+            6. <strong>= EBITDA</strong>: la ganancia operativa real del negocio — el número que importa.
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <strong>Semáforos:</strong> verde = dentro del objetivo, rojo = te pasaste
+            (en EBITDA es al revés: verde si superás el objetivo). Referencias de la industria:
+            insumos ≤30%, personal ≤20%, EBITDA ≥15%.
+          </div>
+        </div>
+      )}
 
       {/* ── INGRESOS ──────────────────────────────────────── */}
       <Row label="Ingresos por canal" kind="header" />
@@ -218,7 +249,7 @@ export default function UsarPnL({
       <Row label="Ingreso Neto" value={netRevenue} kind="total" />
 
       {/* ── COGS ──────────────────────────────────────────── */}
-      <Row label="COGS — Costo de mercadería" kind="header" />
+      <Row label="Costo de mercadería (COGS)" kind="header" />
       {FOOD_CATEGORIES.filter(c => c.value !== "packaging").map(c => (
         <Row
           key={c.value}
@@ -228,7 +259,7 @@ export default function UsarPnL({
         />
       ))}
       <Row
-        label="Food Cost total"
+        label="Costo de insumos (Food Cost)"
         value={-foodCostTotal}
         percent={foodPct}
         semaState={semaphore(foodPct, targets.food_cost_pct, "less")}
@@ -236,20 +267,20 @@ export default function UsarPnL({
         indent={1}
       />
       <Row
-        label="📦 Packaging"
+        label="📦 Packaging (envases)"
         value={-packagingCost}
         percent={packagingPct}
         semaState={semaphore(packagingPct, targets.packaging_pct, "less")}
         indent={1}
       />
-      <Row label="COGS total" value={-cogsTotal} percent={cogsPct} kind="total" />
+      <Row label="Costo de mercadería total" value={-cogsTotal} percent={cogsPct} kind="total" />
 
       <Row label="Margen Bruto" value={grossMargin} percent={pct(grossMargin, grossTotal)} kind="total" />
 
       {/* ── LABOR ────────────────────────────────────────── */}
-      <Row label="Labor" kind="header" />
+      <Row label="Personal" kind="header" />
       <Row
-        label="Personal cocina (BOH)"
+        label="Personal de cocina"
         value={-laborTotal}
         percent={laborPct}
         semaState={semaphore(laborPct, targets.labor_pct, "less")}
@@ -257,7 +288,7 @@ export default function UsarPnL({
       />
 
       {/* ── OPEX ─────────────────────────────────────────── */}
-      <Row label="OPEX" kind="header" />
+      <Row label="Gastos operativos (OPEX)" kind="header" />
       <Row
         label="Marketing digital"
         value={-marketingTotal}
@@ -265,12 +296,12 @@ export default function UsarPnL({
         semaState={semaphore(marketingPct, targets.marketing_pct, "less")}
         indent={1}
       />
-      <Row label="Otros OPEX (alquiler, servicios)" value={-otherOpex} indent={1} />
-      <Row label="OPEX total" value={-opexTotal} kind="sub" indent={1} />
+      <Row label="Otros (alquiler, servicios)" value={-otherOpex} indent={1} />
+      <Row label="Gastos operativos total" value={-opexTotal} kind="sub" indent={1} />
 
       {/* ── EBITDA ───────────────────────────────────────── */}
       <Row
-        label="EBITDA"
+        label="EBITDA (ganancia operativa)"
         value={ebitda}
         percent={ebitdaPct}
         semaState={semaphore(ebitdaPct, targets.target_ebitda_pct, "more")}
@@ -278,8 +309,8 @@ export default function UsarPnL({
       />
 
       <p style={{ fontSize: 10, color: "var(--ag-ink-3)", margin: "12px 0 0", lineHeight: 1.4, fontStyle: "italic" }}>
-        Estructura USAR adaptada a Dark Kitchen. % calculados sobre Ingreso Bruto.
-        Semáforo: verde ≤ target / rojo &gt; target (EBITDA invertido: verde ≥ target).
+        Estructura USAR adaptada a dark kitchen. Los % se calculan sobre el Ingreso Bruto.
+        Semáforo: verde dentro del objetivo / rojo pasado (EBITDA al revés: verde si lo superás).
       </p>
     </div>
   );

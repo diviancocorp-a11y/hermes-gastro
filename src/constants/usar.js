@@ -42,7 +42,7 @@ export const USAR_EXPENSE_CATEGORIES = [
   { value: 'food_beverage',       label: 'Comida — Bebidas',    group: 'COGS' },
   { value: 'packaging',           label: 'Packaging',           group: 'COGS' },
   // ── LABOR ────────────────────────────────────────────────────────
-  { value: 'labor_boh',           label: 'Personal cocina (BOH)', group: 'Labor' },
+  { value: 'labor_boh',           label: 'Personal de cocina', group: 'Labor' },
   // ── OPEX ─────────────────────────────────────────────────────────
   { value: 'marketing',           label: 'Marketing digital',   group: 'OPEX' },
   { value: 'commission_delivery', label: 'Comisiones delivery', group: 'OPEX' },

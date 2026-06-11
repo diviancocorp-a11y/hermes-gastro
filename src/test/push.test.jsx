@@ -19,7 +19,9 @@ vi.mock('../lib/supabase', () => ({
 
 describe('Push service', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    // clearAllMocks (no restoreAllMocks): limpia llamadas pero conserva las
+    // implementaciones del vi.mock de supabase (rpc/invoke mockResolvedValue)
+    vi.clearAllMocks();
   });
 
   it('isPushSupported detects browser support', async () => {
@@ -63,7 +65,9 @@ describe('Push service', () => {
 
 describe('PushNotifications admin component', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    // clearAllMocks (no restoreAllMocks): limpia llamadas pero conserva las
+    // implementaciones del vi.mock de supabase (rpc/invoke mockResolvedValue)
+    vi.clearAllMocks();
   });
 
   it('renders without crashing', async () => {

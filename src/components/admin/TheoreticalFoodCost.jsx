@@ -101,7 +101,7 @@ export default function TheoreticalFoodCost({
   return (
     <div className="ag-card" style={{ padding: "14px 16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ag-ink)" }}>Detector de fugas · Theoretical vs Actual</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ag-ink)" }}>Detector de fugas · Teórico vs Real</div>
         <div style={{ fontSize: 10, color: "var(--ag-ink-3)" }}>Alerta &gt; ±{VARIANCE_ALERT_THRESHOLD}%</div>
       </div>
       <p style={{ fontSize: 11, color: "var(--ag-ink-3)", margin: "4px 0 12px", lineHeight: 1.4 }}>
@@ -117,7 +117,7 @@ export default function TheoreticalFoodCost({
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-ink-3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            VARIANCE TOTAL
+            DESVÍO TOTAL
           </div>
           {totalVariance != null && (
             <div style={{ fontSize: 18, fontWeight: 800, color: totalStyle.fg, fontVariantNumeric: "tabular-nums" }}>
