@@ -5,6 +5,7 @@ import { formatInt, todayISO, OrderStatus } from "../../lib/utils";
 import KpiCard from "./shared/cards/KpiCard";
 import AnaCard from "./shared/cards/AnaCard";
 import AlertRow from "./shared/cards/AlertRow";
+import AnimateNumber from "./shared/AnimateNumber";
 
 const Analytics = lazy(() => import("./Analytics"));
 
@@ -110,7 +111,7 @@ function Home({
         <KpiCard
           state="sales"
           label="Ventas del mes"
-          value={`$${formatInt(monthSales)}`}
+          value={<AnimateNumber value={Math.round(monthSales)} prefix="$" />}
           deltaNode={prevMonthSales > 0 ? (() => {
             const d = computeDelta(monthSales, prevMonthSales);
             return <DeltaBadge value={d.value} deltaType={d.type} variant="solid" iconStyle="filled" size="sm" />;
@@ -120,7 +121,7 @@ function Home({
         <KpiCard
           state="orders"
           label="Gastos del mes"
-          value={`$${formatInt(monthExpenses || 0)}`}
+          value={<AnimateNumber value={Math.round(monthExpenses || 0)} prefix="$" />}
           deltaNode={prevMonthExpenses > 0 ? (() => {
             const d = computeDelta(monthExpenses, prevMonthExpenses);
             // En gastos, subir es malo: invertimos el sentido visual
@@ -132,7 +133,7 @@ function Home({
         <KpiCard
           state={monthProfit >= 0 ? "crm" : "orders"}
           label="Ganancia del mes"
-          value={`$${formatInt(monthProfit)}`}
+          value={<AnimateNumber value={Math.round(monthProfit)} prefix="$" />}
           deltaNode={prevMonthProfit !== 0 ? (() => {
             const d = computeDelta(monthProfit, prevMonthProfit);
             return <DeltaBadge value={d.value} deltaType={d.type} variant="solid" iconStyle="filled" size="sm" />;
@@ -143,7 +144,7 @@ function Home({
         <KpiCard
           state="prep"
           label="Pedidos del mes"
-          value={String(monthOrdersCount)}
+          value={<AnimateNumber value={monthOrdersCount} />}
           deltaNode={prevMonthOrdersCount > 0 ? (() => {
             const d = computeDelta(monthOrdersCount, prevMonthOrdersCount);
             return <DeltaBadge value={d.value} deltaType={d.type} variant="solid" iconStyle="filled" size="sm" />;

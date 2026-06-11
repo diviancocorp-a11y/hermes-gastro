@@ -87,6 +87,16 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
   const [fil,setFil]=useState(OrderStatus.NEW);const [showH,setShowH]=useState(false);const [showSched,setShowSched]=useState(false);const t=todayISO();
   const [histPage,setHistPage]=useState(1);const HIST_PER_PAGE=20;
   const [viewReceipt,setViewReceipt]=useState(null); // order object to view receipt
+  // Reloj vivo de las tarjetas (fix jun 2026): `minutes` se calcula en render
+  // (toCardProps usa Date.now()) pero nada re-renderizaba periodicamente — el
+  // tiempo del pedido quedaba congelado hasta refrescar la pagina. Este tick
+  // fuerza un re-render cada 30s para que el semaforo y los minutos avancen.
+  const [,setClockTick]=useState(0);
+  useEffect(()=>{
+    const id=setInterval(()=>setClockTick(t=>t+1),30000);
+    return ()=>clearInterval(id);
+  },[]);
+
   // Buscador por cliente / telefono (Sprint 4). Si hay query, busca en TODOS
   // los pedidos (cualquier estado y fecha) — es la via rapida para "el pedido de Maria".
   const [search,setSearch]=useState("");
