@@ -414,6 +414,9 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
       <style>{`
         .cp-pcg-card {
           position: relative; width: 100%; max-width: 440px;
+          /* isolation: los z-index internos (badge, burbujas, CTA) quedan
+             contenidos en el card y nunca superan al header sticky del home */
+          isolation: isolate; z-index: 0;
           /* min-height fijo: el leaderboard (podio + 4 filas + CTA + burbujas)
              necesita ~600px de alto sin importar el ancho del telefono */
           aspect-ratio: 4 / 5; min-height: 610px;
