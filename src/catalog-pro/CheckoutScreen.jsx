@@ -11,6 +11,7 @@
 import { useState, useEffect } from "react";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
+import SchedulePicker from "./SchedulePicker";
 
 const STEPS = ["Datos", "Entrega", "Pago"];
 
@@ -142,7 +143,7 @@ export default function CheckoutScreen(props) {
 }
 
 // ─── PASO 0: Datos ─────────────────────────────────────────────────
-function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, setScheduleMode, storeStatus, minDate, availableHours, selectedDayInfo, canNext, onNext, minOrder, minOk, ct }) {
+function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, setScheduleMode, storeStatus, minDate, availableHours, selectedDayInfo, storeHours, getAvailableHours, canNext, onNext, minOrder, minOk, ct }) {
   return (
     <>
       {minOrder > 0 && !minOk && (
@@ -222,43 +223,18 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
       </div>
 
       {scheduleMode === "later" && (
-        <div style={{ ...section, background: "var(--b2)", borderRadius: 12, padding: "14px 16px" }}>
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ flex: 1 }}>
-              <label style={miniLabel}>Fecha</label>
-              <select
-                style={input} value={form.delivery_date}
-                onChange={e => { sf("delivery_date", e.target.value); sf("delivery_time", ""); }}
-              >
-                <option value="">Elegí un día</option>
-                {buildNext7Days().map(d => (
-                  <option key={d.value} value={d.value}>{d.label}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={miniLabel}>Hora</label>
-              <select
-                style={input} value={form.delivery_time}
-                onChange={e => sf("delivery_time", e.target.value)}
-                disabled={!form.delivery_date || availableHours.length === 0}
-              >
-                <option value="">Elegi una hora</option>
-                {availableHours.map(h => (
-                  <option key={h} value={`${String(h).padStart(2, "0")}:00`}>{String(h).padStart(2, "0")}:00 hs</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          {selectedDayInfo && selectedDayInfo.closed && (
-            <div style={infoBox("err")}>El {selectedDayInfo.dayName} no abrimos. Elegi otro dia.</div>
-          )}
-          {selectedDayInfo && !selectedDayInfo.closed && availableHours.length === 0 && form.delivery_date && (
-            <div style={infoBox("warn")}>No hay horarios disponibles. Abrimos {selectedDayInfo.open} a {selectedDayInfo.close} — proba otro dia.</div>
-          )}
-          {selectedDayInfo && !selectedDayInfo.closed && availableHours.length > 0 && (
-            <p style={{ ...hint(), marginTop: 8 }}>{selectedDayInfo.dayName}: {selectedDayInfo.open} – {selectedDayInfo.close}</p>
-          )}
+        <div style={section}>
+          {/* Calendario + pills de horario (SchedulePicker, jun 2026).
+              Reemplaza los dos selects de fecha/hora manteniendo el mismo
+              estado del form (delivery_date / delivery_time). */}
+          <SchedulePicker
+            dateValue={form.delivery_date}
+            timeValue={form.delivery_time}
+            onSelectDate={(d) => { sf("delivery_date", d); sf("delivery_time", ""); }}
+            onSelectTime={(t) => sf("delivery_time", t)}
+            storeHours={storeHours}
+            getAvailableHours={getAvailableHours}
+          />
           {!form.delivery_date && <p style={hint("err")}>Seleccioná una fecha</p>}
         </div>
       )}

@@ -727,6 +727,8 @@ export default function Catalog() {
         minDate={minDate}
         availableHours={availableHours}
         selectedDayInfo={selectedDayInfo}
+        storeHours={sett?.store_hours}
+        getAvailableHours={getAvailableHours}
         addresses={addresses}
         geoLoading={geoLoading}
         setGeoLoading={setGeoLoading}
