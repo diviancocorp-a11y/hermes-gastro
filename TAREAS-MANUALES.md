@@ -81,6 +81,14 @@ Herencia del plan que quedo sin ejecutar (lo digo explicito para que no se pierd
 - [ ] Refactor check-schema-sync para leer supabase-schema.json directo (3er lugar
   duplicado de columnas) + pre-commit UTF-8 strict.
 - [ ] Consolidar shims adminService/catalogService → imports directos (Sprint 5).
+- [ ] **Push/WhatsApp proactivo de cumpleanos** (complemento de la tarjeta-regalo,
+  11/jun): hoy el regalo solo aparece si el cliente ENTRA al catalogo ese dia y la
+  app lo reconoce (login o sesion guest) — alcance bajo. Invertir la direccion:
+  cron diario (pg_cron o scheduled function) que busque customers con cumple HOY
+  y dispare push (`send-push` ya existe, target por phone) o WhatsApp
+  "🎂 Tenes un regalo esperandote" con link al catalogo. La edge function
+  `birthday-gift` ya genera el cupon idempotente; solo falta el disparador.
+  Encaja con la decision B.4 (WhatsApp Business API, Sprint 5).
 
 ---
 
