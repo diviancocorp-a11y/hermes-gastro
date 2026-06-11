@@ -1,26 +1,28 @@
 // src/catalog-pro/PromoCarousel.jsx
-// Carrusel de promos del catalogo (adaptacion del FeatureCarousel TSX que
-// paso el user: chips + panel con auto-play). SIN motion/Tailwind/hugeicons:
-// CSS transitions + tokens del tema + emojis. Va al final del home, antes
-// del footer.
+// Carrusel de promos — recreacion FIEL del FeatureCarousel TSX que paso el
+// user (split panel: izquierda color acento con rueda vertical de chips,
+// derecha panel oscuro con cards apiladas 4/5 que rotan), pero en el stack
+// propio: JS puro + CSS con tokens, sin motion/Tailwind/hugeicons.
 //
-// Slides actuales:
-//   - Ranking semanal  → abre el podio (LeaderboardModal, estilo leaderboard-card)
-//   - Regalo de cumple → CTA a Mi cuenta para cargar la fecha
-//   - Pedidos programados → informativo
-// Ruleta y encuesta de sabores: anotadas en TAREAS-MANUALES (backend pendiente).
+// Slides: Ranking semanal (abre podio), Regalo de cumple (CTA perfil),
+// Pedidos programados. Las fotos salen de los productos del tenant
+// (fallback: panel tintado con emoji gigante).
 //
-// Datos reales: useWeeklyTop / useMyRanking (RPCs publicas con nombres
-// anonimizados server-side). El slide de ranking se oculta si no hay data.
+// Ruleta y encuesta de sabores: en TAREAS-MANUALES (backend pendiente).
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useGuestUser } from "../lib/guestUser.js";
 import { useWeeklyTop, useMyRanking } from "./useTopCustomers";
-import { SectionHeader } from "./atoms";
 
-const AUTO_PLAY_MS = 4500;
-const PAUSE_AFTER_TOUCH_MS = 8000;
+const AUTO_PLAY_MS = 4000;
+const ITEM_H = 58; // alto de cada chip en la rueda (equivale al ITEM_HEIGHT=65 del original)
 const MEDALS = ["🥇", "🥈", "🥉"];
+
+// wrap() del original: distancia circular para la rueda de chips
+const wrap = (min, max, v) => {
+  const range = max - min;
+  return ((((v - min) % range) + range) % range) + min;
+};
 
 /* ---------- Podio + lista (adaptacion del leaderboard-card) ---------- */
 function LeaderboardModal({ top, onClose }) {
@@ -31,7 +33,6 @@ function LeaderboardModal({ top, onClose }) {
   const { ranking } = useMyRanking({ email: myEmail, phone: myPhone });
 
   const podium = top.slice(0, 3);
-  // Orden visual del podio: 2do | 1ro | 3ro (alturas escalonadas)
   const podiumOrder = [podium[1], podium[0], podium[2]].filter(Boolean);
   const heights = { 1: 92, 2: 66, 3: 50 };
   const rest = top.slice(3);
@@ -66,7 +67,6 @@ function LeaderboardModal({ top, onClose }) {
           }}>✕</button>
         </div>
 
-        {/* Podio */}
         {podiumOrder.length > 0 && (
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 10, margin: "18px 0 6px" }}>
             {podiumOrder.map((row) => {
@@ -95,7 +95,6 @@ function LeaderboardModal({ top, onClose }) {
           </div>
         )}
 
-        {/* Resto del top */}
         {rest.length > 0 && (
           <div style={{ borderTop: "1px solid var(--line, #E8DFD2)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
             {rest.map((row) => {
@@ -111,7 +110,6 @@ function LeaderboardModal({ top, onClose }) {
           </div>
         )}
 
-        {/* Tu posicion */}
         <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--line, #E8DFD2)", fontSize: 12.5, color: "var(--t2, #8A7A66)", textAlign: "center", lineHeight: 1.5 }}>
           {ranking
             ? <>📍 Vos sos <strong style={{ color: "var(--ac, #D97706)" }}>#{ranking.my_position}</strong> con {ranking.my_points} pts{ranking.my_position > 5 && ranking.points_to_top5 > 0 ? ` · te faltan ${ranking.points_to_top5} pts para el top 5` : ""}</>
@@ -124,140 +122,247 @@ function LeaderboardModal({ top, onClose }) {
   );
 }
 
-/* ---------- Carrusel ---------- */
-export default function PromoCarousel({ onOpenAccount }) {
+/* ---------- Carrusel (recreacion fiel del FeatureCarousel) ---------- */
+export default function PromoCarousel({ onOpenAccount, products = [] }) {
   const { top, loading: topLoading } = useWeeklyTop();
   const [showBoard, setShowBoard] = useState(false);
-  const [idx, setIdx] = useState(0);
-  const pausedUntil = useRef(0);
+  const [step, setStep] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const touchPause = useRef(0);
+
+  // Fotos reales del tenant para las cards (distintas por slide)
+  const imgs = products.filter((p) => p.image_url).map((p) => p.image_url);
 
   const slides = [];
   if (topLoading || top.length > 0) {
     slides.push({
-      id: "ranking", emoji: "🏆", chip: "Ranking",
-      title: "Ranking semanal",
-      desc: "Cada $10.000 en pedidos suma 1 punto. Los lunes premiamos al podio de la semana.",
+      id: "ranking", emoji: "🏆", label: "Ranking semanal", live: true,
+      img: imgs[0] || null,
+      desc: "Cada $10.000 en pedidos suma 1 punto. Los lunes premiamos al podio.",
       cta: "Ver ranking", onCta: () => setShowBoard(true),
     });
   }
   slides.push({
-    id: "cumple", emoji: "🎂", chip: "Cumpleaños",
-    title: "Regalo de cumpleaños",
-    desc: "Contanos tu fecha de nacimiento y el día de tu cumple te espera un cupón de regalo.",
+    id: "cumple", emoji: "🎂", label: "Regalo de cumple",
+    img: imgs[1] || null,
+    desc: "Contanos tu fecha de nacimiento y el día de tu cumple te espera un regalo.",
     cta: "Completar mi perfil", onCta: () => onOpenAccount?.(),
   });
   slides.push({
-    id: "programados", emoji: "📅", chip: "Programados",
-    title: "Pedidos programados",
-    desc: "Elegí día y horario en el checkout y tu pedido sale justo para ese momento.",
+    id: "programados", emoji: "📅", label: "Pedidos programados",
+    img: imgs[2] || null,
+    desc: "Elegí día y horario en el checkout y tu pedido sale justo a tiempo.",
   });
 
-  // Auto-play con pausa tras interaccion
+  const len = slides.length;
+  const currentIndex = ((step % len) + len) % len;
+
   useEffect(() => {
-    if (slides.length < 2) return;
+    if (len < 2) return;
     const t = setInterval(() => {
-      if (Date.now() < pausedUntil.current || showBoard) return;
-      setIdx((i) => (i + 1) % slides.length);
+      if (paused || showBoard || Date.now() < touchPause.current) return;
+      setStep((s) => s + 1);
     }, AUTO_PLAY_MS);
     return () => clearInterval(t);
-  }, [slides.length, showBoard]);
+  }, [len, paused, showBoard]);
 
-  const goTo = (i) => {
-    pausedUntil.current = Date.now() + PAUSE_AFTER_TOUCH_MS;
-    setIdx(i);
+  // Mismo comportamiento que el original: el click avanza hacia adelante
+  const handleChipClick = (index) => {
+    touchPause.current = Date.now() + 8000;
+    const diff = (index - currentIndex + len) % len;
+    if (diff > 0) setStep((s) => s + diff);
   };
 
-  if (slides.length === 0) return null;
-  const safeIdx = idx % slides.length;
+  // Estado de cada card en la pila (active / prev / next / hidden)
+  const getCardStatus = (index) => {
+    let d = index - currentIndex;
+    if (d > len / 2) d -= len;
+    if (d < -len / 2) d += len;
+    if (d === 0) return "active";
+    if (d === -1) return "prev";
+    if (d === 1) return "next";
+    return "hidden";
+  };
+
+  if (len === 0) return null;
 
   return (
-    <div style={{ padding: "8px 0 26px" }}>
-      <SectionHeader kicker="Promos" title="Para vos" em="esta semana" />
-
-      <div style={{
-        margin: "0 22px", borderRadius: 22, overflow: "hidden",
-        border: "1px solid var(--line, #E8DFD2)",
-      }}>
-        {/* Panel del slide activo */}
-        <div style={{
-          position: "relative", minHeight: 190,
-          background: "color-mix(in srgb, var(--ac, #D97706) 10%, var(--bg, #FBF7F2))",
-        }}>
-          {slides.map((s, i) => {
-            const active = i === safeIdx;
-            return (
-              <div key={s.id} aria-hidden={!active} style={{
-                position: "absolute", inset: 0, padding: "20px 22px",
-                display: "flex", flexDirection: "column", justifyContent: "flex-end",
-                opacity: active ? 1 : 0,
-                transform: active ? "translateY(0)" : "translateY(10px)",
-                transition: "opacity 450ms ease, transform 450ms ease",
-                pointerEvents: active ? "auto" : "none",
-              }}>
-                {/* Emoji gigante de fondo */}
-                <div aria-hidden style={{
-                  position: "absolute", top: -8, right: 2, fontSize: 96,
-                  opacity: 0.16, transform: "rotate(8deg)", pointerEvents: "none",
-                  filter: "saturate(0.9)",
-                }}>{s.emoji}</div>
-
-                <div style={{
-                  fontSize: 10, fontWeight: 800, letterSpacing: "0.18em",
-                  textTransform: "uppercase", color: "var(--ac, #D97706)", marginBottom: 6,
+    <div style={{ padding: "18px 16px 26px" }}>
+      <div className="cp-pc2-wrap">
+        {/* ===== Panel izquierdo: rueda vertical de chips sobre color acento ===== */}
+        <div className="cp-pc2-left">
+          <div className="cp-pc2-fade cp-pc2-fade-top" />
+          <div className="cp-pc2-fade cp-pc2-fade-bottom" />
+          <div className="cp-pc2-wheel">
+            {slides.map((s, index) => {
+              const isActive = index === currentIndex;
+              const wd = wrap(-(len / 2), len / 2, index - currentIndex);
+              return (
+                <div key={s.id} className="cp-pc2-chip-slot" style={{
+                  height: ITEM_H,
+                  transform: `translateY(${wd * ITEM_H}px)`,
+                  opacity: 1 - Math.abs(wd) * 0.3,
+                  zIndex: isActive ? 10 : 1,
                 }}>
-                  {i + 1} / {slides.length} · {s.chip}
+                  <button
+                    onClick={() => handleChipClick(index)}
+                    onMouseEnter={() => setPaused(true)}
+                    onMouseLeave={() => setPaused(false)}
+                    className={"cp-pc2-chip" + (isActive ? " is-active" : "")}
+                  >
+                    <span aria-hidden style={{ fontSize: 15, lineHeight: 1 }}>{s.emoji}</span>
+                    <span className="cp-pc2-chip-label">{s.label}</span>
+                  </button>
                 </div>
-                <div style={{
-                  fontFamily: "var(--font-heading, 'DM Serif Display', serif)",
-                  fontSize: 24, lineHeight: 1.15, color: "var(--tx, #2D2418)", marginBottom: 6,
-                }}>{s.title}</div>
-                <p style={{ fontSize: 13, color: "var(--t2, #8A7A66)", margin: 0, lineHeight: 1.5, maxWidth: 420 }}>
-                  {s.desc}
-                </p>
-                {s.cta && (
-                  <button onClick={s.onCta} style={{
-                    marginTop: 12, alignSelf: "flex-start",
-                    padding: "9px 18px", borderRadius: 99, border: "none",
-                    background: "var(--ac, #D97706)", color: "#fff",
-                    fontSize: 13, fontWeight: 700, cursor: "pointer",
-                  }}>{s.cta}</button>
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
-        {/* Chips (adaptacion de la columna de chips del FeatureCarousel) */}
-        <div className="cp-no-scrollbar" style={{
-          display: "flex", gap: 8, padding: "12px 14px",
-          overflowX: "auto", background: "var(--bg, #FBF7F2)",
-          borderTop: "1px solid var(--line, #E8DFD2)",
-        }}>
-          {slides.map((s, i) => {
-            const active = i === safeIdx;
-            return (
-              <button key={s.id} onClick={() => goTo(i)} style={{
-                display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
-                padding: "8px 14px", borderRadius: 99, cursor: "pointer",
-                fontSize: 12, fontWeight: 700, letterSpacing: "0.02em",
-                border: active ? "1px solid var(--ac, #D97706)" : "1px solid var(--line, #E8DFD2)",
-                background: active ? "var(--ac, #D97706)" : "transparent",
-                color: active ? "#fff" : "var(--t2, #8A7A66)",
-                transition: "background 300ms ease, color 300ms ease, border-color 300ms ease",
-              }}>
-                <span aria-hidden>{s.emoji}</span>{s.chip}
-              </button>
-            );
-          })}
+        {/* ===== Panel derecho: pila de cards 4/5 ===== */}
+        <div className="cp-pc2-right">
+          <div className="cp-pc2-stage">
+            {slides.map((s, index) => {
+              const status = getCardStatus(index);
+              const isActive = status === "active";
+              const isPrev = status === "prev";
+              const isNext = status === "next";
+              return (
+                <div key={s.id} className="cp-pc2-card" style={{
+                  transform: `translateX(${isActive ? 0 : isPrev ? -70 : isNext ? 70 : 0}px) scale(${isActive ? 1 : isPrev || isNext ? 0.85 : 0.7}) rotate(${isPrev ? -3 : isNext ? 3 : 0}deg)`,
+                  opacity: isActive ? 1 : isPrev || isNext ? 0.4 : 0,
+                  zIndex: isActive ? 20 : isPrev || isNext ? 10 : 0,
+                  pointerEvents: isActive ? "auto" : "none",
+                }}>
+                  {/* Foto del tenant o fallback tintado con emoji */}
+                  {s.img ? (
+                    <img src={s.img} alt={s.label} loading="lazy" className="cp-pc2-img" style={{
+                      filter: isActive ? "none" : "grayscale(1) blur(2px) brightness(0.75)",
+                    }} />
+                  ) : (
+                    <div className="cp-pc2-img" style={{
+                      background: "linear-gradient(160deg, color-mix(in srgb, var(--ac, #D97706) 55%, #1a1611), #1a1611)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      filter: isActive ? "none" : "grayscale(1) blur(2px) brightness(0.75)",
+                    }}>
+                      <span style={{ fontSize: 110, opacity: 0.9 }} aria-hidden>{s.emoji}</span>
+                    </div>
+                  )}
+
+                  {/* Punto "en vivo" arriba a la izquierda (como el original) */}
+                  <div style={{
+                    position: "absolute", top: 22, left: 22, display: "flex", alignItems: "center", gap: 8,
+                    opacity: isActive && s.live ? 1 : 0, transition: "opacity 300ms ease",
+                  }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 99, background: "#fff", boxShadow: "0 0 10px #fff" }} />
+                    <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.3em", fontFamily: "monospace" }}>
+                      Esta semana
+                    </span>
+                  </div>
+
+                  {/* Caption inferior con gradiente, badge y descripcion */}
+                  <div className="cp-pc2-caption" style={{ opacity: isActive ? 1 : 0, transform: isActive ? "translateY(0)" : "translateY(12px)" }}>
+                    <div className="cp-pc2-badge">{index + 1} • {s.label}</div>
+                    <p className="cp-pc2-desc">{s.desc}</p>
+                    {s.cta && (
+                      <button onClick={s.onCta} className="cp-pc2-cta">{s.cta} →</button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {showBoard && <LeaderboardModal top={top} onClose={() => setShowBoard(false)} />}
 
       <style>{`
+        .cp-pc2-wrap {
+          position: relative; overflow: hidden; border-radius: 2.5rem;
+          display: flex; flex-direction: column;
+          border: 1px solid var(--line, #E8DFD2);
+        }
+        /* --- izquierda --- */
+        .cp-pc2-left {
+          position: relative; z-index: 30; overflow: hidden;
+          background: var(--ac, #D97706);
+          min-height: 280px;
+          display: flex; align-items: center; justify-content: center;
+          padding: 0 28px;
+        }
+        .cp-pc2-fade { position: absolute; left: 0; right: 0; height: 56px; z-index: 40; pointer-events: none; }
+        .cp-pc2-fade-top { top: 0; background: linear-gradient(180deg, var(--ac, #D97706), transparent); }
+        .cp-pc2-fade-bottom { bottom: 0; background: linear-gradient(0deg, var(--ac, #D97706), transparent); }
+        .cp-pc2-wheel { position: relative; width: 100%; height: 100%; min-height: inherit; display: flex; align-items: center; justify-content: center; z-index: 20; }
+        .cp-pc2-chip-slot {
+          position: absolute; display: flex; align-items: center; justify-content: flex-start;
+          transition: transform 650ms cubic-bezier(0.25, 1, 0.35, 1), opacity 650ms ease;
+          will-change: transform;
+        }
+        .cp-pc2-chip {
+          display: flex; align-items: center; gap: 12px;
+          padding: 12px 22px; border-radius: 999px; cursor: pointer;
+          font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase;
+          white-space: nowrap; font-weight: 500; font-family: inherit;
+          background: transparent; color: rgba(255,255,255,0.6);
+          border: 1px solid rgba(255,255,255,0.25);
+          transition: background 600ms ease, color 600ms ease, border-color 600ms ease;
+        }
+        .cp-pc2-chip:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
+        .cp-pc2-chip.is-active { background: #fff; color: var(--ac, #D97706); border-color: #fff; }
+        /* --- derecha --- */
+        .cp-pc2-right {
+          flex: 1; position: relative; overflow: hidden;
+          background: color-mix(in srgb, var(--tx, #2D2418) 92%, var(--bg, #FBF7F2));
+          display: flex; align-items: center; justify-content: center;
+          padding: 44px 24px;
+          border-top: 1px solid var(--line, #E8DFD2);
+        }
+        .cp-pc2-stage { position: relative; width: 100%; max-width: 340px; aspect-ratio: 4 / 5; }
+        .cp-pc2-card {
+          position: absolute; inset: 0; overflow: hidden;
+          border-radius: 2rem; border: 5px solid var(--bg, #FBF7F2);
+          background: var(--bg, #FBF7F2); transform-origin: center;
+          transition: transform 600ms cubic-bezier(0.25, 1, 0.35, 1), opacity 600ms ease;
+          will-change: transform;
+        }
+        .cp-pc2-img { width: 100%; height: 100%; object-fit: cover; transition: filter 700ms ease; }
+        .cp-pc2-caption {
+          position: absolute; left: 0; right: 0; bottom: 0;
+          padding: 96px 26px 26px;
+          background: linear-gradient(0deg, rgba(0,0,0,0.9), rgba(0,0,0,0.4) 55%, transparent);
+          display: flex; flex-direction: column; align-items: flex-start;
+          transition: opacity 400ms ease, transform 400ms ease;
+        }
+        .cp-pc2-badge {
+          background: var(--bg, #FBF7F2); color: var(--tx, #2D2418);
+          padding: 5px 14px; border-radius: 999px;
+          font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em;
+          margin-bottom: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+        }
+        .cp-pc2-desc {
+          color: #fff; font-size: 19px; line-height: 1.3; margin: 0;
+          letter-spacing: -0.01em; text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .cp-pc2-cta {
+          margin-top: 12px; padding: 9px 18px; border-radius: 999px; border: none;
+          background: #fff; color: #1a1611; font-size: 13px; font-weight: 700;
+          cursor: pointer; font-family: inherit;
+        }
+        /* --- desktop: split 40/60 como el original --- */
+        @media (min-width: 900px) {
+          .cp-pc2-wrap { flex-direction: row; border-radius: 4rem; min-height: 520px; }
+          .cp-pc2-left { width: 40%; min-height: 520px; justify-content: flex-start; padding-left: 56px; }
+          .cp-pc2-wheel { justify-content: flex-start; }
+          .cp-pc2-right { border-top: none; border-left: 1px solid var(--line, #E8DFD2); padding: 56px 40px; }
+          .cp-pc2-stage { max-width: 400px; }
+          .cp-pc2-desc { font-size: 22px; }
+        }
         @keyframes cp-promo-fade { from { opacity: 0; } to { opacity: 1; } }
         @keyframes cp-promo-pop { from { opacity: 0; transform: scale(0.9) translateY(14px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         @media (prefers-reduced-motion: reduce) {
+          .cp-pc2-chip-slot, .cp-pc2-card, .cp-pc2-img, .cp-pc2-caption { transition: none !important; }
           [style*="cp-promo"] { animation: none !important; }
         }
       `}</style>

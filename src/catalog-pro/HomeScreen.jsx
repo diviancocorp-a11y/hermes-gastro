@@ -560,7 +560,7 @@ export default function HomeScreen({
       </div>
 
       {/* ===== PROMOS (carrusel: ranking semanal, cumple, programados) ===== */}
-      {!searchQuery && <PromoCarousel onOpenAccount={onOpenAccount} />}
+      {!searchQuery && <PromoCarousel onOpenAccount={onOpenAccount} products={products} />}
 
       {/* ===== STICKY CART + FOOTER ===== */}
       {cartCount > 0 && <StickyCart count={cartCount} total={cartTotal} onClick={onOpenCart} />}
