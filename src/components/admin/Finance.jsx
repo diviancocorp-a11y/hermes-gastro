@@ -1278,32 +1278,53 @@ function Purchase({ ingredients, setIngredients, setExpenses, settings, onClose,
       if (it.unitCost > 0) await upsertIngredient({ id: it.ingredient_id, cost: it.unitCost });
     }
     if (tot > 0) {
-      // Items estructurados (jsonb) para mostrar en el expand
-      const itemsJson = v.map(it => {
+      // Desglose por categoria de alimento (Sprint post-4, fix doble conteo):
+      // un expense POR categoria con usar_category food_* correcto. Esto:
+      //  1. Alimenta el Detector de fugas (Teorico vs Real) con datos reales.
+      //  2. Permite que Resultado Operativo y P&L USAR excluyan estos gastos
+      //     del bucket de gastos (la comida ya vive en costo de produccion).
+      const USAR_BY_FOOD_CAT = {
+        protein: 'food_protein', dairy: 'food_dairy', vegetable: 'food_vegetable',
+        dry: 'food_dry', beverage: 'food_beverage', packaging: 'packaging',
+      };
+      const FOOD_CAT_LABEL = {
+        protein: 'Proteínas', dairy: 'Lácteos', vegetable: 'Vegetales',
+        dry: 'Secos', beverage: 'Bebidas', packaging: 'Packaging',
+      };
+      const groups = {};
+      v.forEach(it => {
         const ig = ingredients.find(x => x.id === it.ingredient_id);
-        return {
+        const fc = ig?.food_category || 'dry';
+        if (!groups[fc]) groups[fc] = [];
+        groups[fc].push({
           name: ig?.name || '?',
           qty: it.qty || 0,
           unit: ig?.unit || '',
           unit_cost: it.unitCost || 0,
           subtotal: (it.qty || 0) * (it.unitCost || 0),
-        };
+        });
       });
-      const saved = await createExpense({
-        date,
-        description: 'Compra materia prima',
-        notes: '', // ya no se usa para items, va en `items` jsonb
-        items: itemsJson,
-        amount: tot,
-        category: "Materia Prima",
-        supplier: supName,
-        supplier_id: supId || null,
-        payment_method: paymentMethod,
-        receipt_url: receiptUrl || '',
-        no_receipt: noReceipt,
-        created_by: user?.id || null,
-      });
-      if (saved) setExpenses(p => [saved, ...p]);
+      for (const [fc, groupItems] of Object.entries(groups)) {
+        const groupTotal = groupItems.reduce((s, x) => s + x.subtotal, 0);
+        if (groupTotal <= 0) continue;
+        const saved = await createExpense({
+          date,
+          description: `Compra materia prima — ${FOOD_CAT_LABEL[fc] || fc}`,
+          notes: '',
+          items: groupItems,
+          amount: groupTotal,
+          category: "Materia Prima",
+          usar_category: USAR_BY_FOOD_CAT[fc] || 'food_dry',
+          expense_type: 'variable',
+          supplier: supName,
+          supplier_id: supId || null,
+          payment_method: paymentMethod,
+          receipt_url: receiptUrl || '',
+          no_receipt: noReceipt,
+          created_by: user?.id || null,
+        });
+        if (saved) setExpenses(p => [saved, ...p]);
+      }
     }
     await loadAll();
     showToast("Compra registrada ✓");

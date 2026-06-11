@@ -73,34 +73,35 @@
       ]
     },
     "expenses": {
+      "$comment": "Bug Zod-strip #6: usar_category/expense_type/receipt/items estaban en serverOnly pero el form los envia -> se perdian. TODO campo que el form de Gastos o Compras envia DEBE estar en columns.",
       "schema": "ExpenseInputSchema",
       "columns": [
         "date",
         "description",
         "amount",
         "category",
-        "supplier"
-      ],
-      "serverOnly": [
-        "id",
-        "created_at",
-        "created_by",
+        "supplier",
         "expense_type",
+        "usar_category",
         "supplier_id",
         "receipt_url",
         "no_receipt",
         "payment_method",
-        "installment_current",
-        "installment_total",
         "items",
         "notes",
+        "created_by",
+        "installment_current",
+        "installment_total"
+      ],
+      "serverOnly": [
+        "id",
+        "created_at",
         "voided_at",
         "voided_by",
         "voids_expense_id",
         "voided_reason",
         "delivery_channel",
-        "platform_commission_amt",
-        "usar_category"
+        "platform_commission_amt"
       ]
     },
     "sales": {

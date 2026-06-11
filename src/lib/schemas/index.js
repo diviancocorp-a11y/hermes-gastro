@@ -153,6 +153,26 @@ export const ExpenseInputSchema = z.object({
   amount: z.number().positive('El monto debe ser mayor a 0'),
   category: requiredText(100),
   supplier: optionalText(200),
+  // BUG Zod-strip #6 (jun 2026): el form SIEMPRE mando estos campos pero el
+  // schema no los declaraba -> se descartaban en silencio. Resultado: todos
+  // los gastos caian en usar_category default 'other_opex' y expense_type
+  // default 'variable' (el P&L USAR nunca recibio datos clasificados).
+  // Enums espejados de los CHECK constraints de la tabla expenses.
+  expense_type: z.enum(['variable', 'fixed', 'installment']).optional(),
+  usar_category: z.enum([
+    'food_protein', 'food_dairy', 'food_vegetable', 'food_dry', 'food_beverage',
+    'packaging', 'labor_boh', 'marketing', 'commission_delivery',
+    'rent', 'utilities', 'other_opex',
+  ]).optional(),
+  supplier_id: optionalUuid,
+  receipt_url: optionalText(2000),
+  no_receipt: z.boolean().optional(),
+  payment_method: optionalText(40),
+  items: z.json().nullable().optional(),
+  notes: optionalText(1000),
+  created_by: optionalUuid,
+  installment_current: z.number().int().min(1).optional(),
+  installment_total: z.number().int().min(1).optional(),
 });
 
 

@@ -131,6 +131,21 @@ describe('useFinancials', () => {
       // e1: 500 + e2: 300 = 800 (e3 is March)
       expect(result.current.monthExpenses).toBe(800);
     });
+
+    it('excluye gastos de comida/packaging (ya viven en costo de produccion — regresion doble conteo)', () => {
+      const { result } = renderFinancials({
+        exps: [
+          ...monthExpenses,
+          // Compras de materia prima: NO deben sumar al bucket de gastos
+          { id: 'e4', date: '2026-04-09', amount: 9999, description: 'Compra materia prima — Proteínas', expense_type: 'variable', usar_category: 'food_protein' },
+          { id: 'e5', date: '2026-04-09', amount: 5000, description: 'Compra packaging', expense_type: 'variable', usar_category: 'packaging' },
+          // Gasto operativo normal con usar_category: SI suma
+          { id: 'e6', date: '2026-04-09', amount: 200, description: 'Publicidad', expense_type: 'variable', usar_category: 'marketing' },
+        ],
+      });
+      // 800 (fijos) + 200 (marketing) — los 14999 de comida/packaging quedan fuera
+      expect(result.current.monthExpenses).toBe(1000);
+    });
   });
 
   describe('monthProductionCost', () => {

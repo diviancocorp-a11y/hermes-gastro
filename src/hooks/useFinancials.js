@@ -110,12 +110,21 @@ export default function useFinancials({ ings, recs, sales, exps, orders, waste, 
     [waste, ings, monthStart]
   );
 
-  // Gastos del mes separados por tipo
+  // Gastos de COMIDA/envases (compras de materia prima) NO van al bucket de
+  // gastos: ya estan reflejados en el costo de produccion (calculado de recetas).
+  // Sumarlos aca era DOBLE CONTEO (fix jun 2026 — la ganancia mostrada quedaba
+  // menor a la real). Se identifican por usar_category food_* / packaging.
+  const isFoodExpense = (e) =>
+    typeof e.usar_category === 'string' &&
+    (e.usar_category.startsWith('food_') || e.usar_category === 'packaging');
+
+  // Gastos del mes separados por tipo (excluyendo comida, ver arriba)
   const monthExpensesByType = useMemo(() => {
-    const fixed = exps.filter(e => e.date >= monthStart && e.expense_type === 'fixed').reduce((a, e) => a + (e.amount || 0), 0);
+    const opEx = exps.filter(e => e.date >= monthStart && !isFoodExpense(e));
+    const fixed = opEx.filter(e => e.expense_type === 'fixed').reduce((a, e) => a + (e.amount || 0), 0);
     // Explícito: solo cuenta 'variable'. Si el gasto tiene null/undefined no se suma a ningún bucket
     // (la migration auto-clasificó los existentes; los nuevos siempre tienen valor por el form).
-    const variable = exps.filter(e => e.date >= monthStart && e.expense_type === 'variable').reduce((a, e) => a + (e.amount || 0), 0);
+    const variable = opEx.filter(e => e.expense_type === 'variable').reduce((a, e) => a + (e.amount || 0), 0);
     return { fixed, variable, total: fixed + variable };
   }, [exps, monthStart]);
 
@@ -146,7 +155,8 @@ export default function useFinancials({ ings, recs, sales, exps, orders, waste, 
   );
 
   const prevMonthExpenses = useMemo(
-    () => exps.filter(e => inPrevMonth(e.date)).reduce((a, e) => a + (Number(e.amount) || 0), 0),
+    // Mismo criterio que el mes actual: comida/packaging fuera (vive en costo de produccion)
+    () => exps.filter(e => inPrevMonth(e.date) && !isFoodExpense(e)).reduce((a, e) => a + (Number(e.amount) || 0), 0),
     [exps, prevMonthStart, prevMonthEnd]
   );
 
