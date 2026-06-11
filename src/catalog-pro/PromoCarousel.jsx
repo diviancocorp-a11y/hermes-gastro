@@ -445,6 +445,10 @@ export default function PromoCarousel({ onOpenAccount }) {
           /* isolation: los z-index internos (badge, burbujas, CTA) quedan
              contenidos en el card y nunca superan al header sticky del home */
           isolation: isolate; z-index: 0;
+          /* No pintar/animar fuera de pantalla: los blobs con blur son caros
+             en el WebView de Instagram (jank de scroll) */
+          content-visibility: auto;
+          contain-intrinsic-size: 440px 640px;
           /* min-height fijo: el leaderboard (podio + 4 filas + CTA + burbujas)
              necesita ~600px de alto sin importar el ancho del telefono */
           aspect-ratio: 4 / 5; min-height: 610px;

@@ -192,6 +192,9 @@ export default function SuperCombos({ combos = [], onSelectProduct, onAddToCart 
           padding: 26px 22px;
           display: flex; flex-direction: column; gap: 22px;
           isolation: isolate;
+          /* No pintar/animar fuera de pantalla (WebView de Instagram) */
+          content-visibility: auto;
+          contain-intrinsic-size: auto 560px;
         }
         .cp-sc-menu { z-index: 2; }
         .cp-sc-name {

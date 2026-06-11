@@ -71,7 +71,16 @@
         } catch (e) { /* sin storage: tema default */ }
       })();
     </script>
-    <div id="root"></div>
+    <!-- Loader instantaneo (HTML/CSS puro, CERO JS): se ve mientras el bundle
+         de React descarga y parsea — clave en el WebView de Instagram, que es
+         lento y sin cache. React lo reemplaza al montar. -->
+    <div id="root">
+      <div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:system-ui,sans-serif;">
+        <div style="width:38px;height:38px;border-radius:50%;border:3px solid rgba(128,128,128,0.25);border-top-color:#D97706;animation:hg-boot-spin 800ms linear infinite;"></div>
+        <div style="font-size:13px;color:#8A7A66;letter-spacing:0.04em;">Abriendo la tienda…</div>
+      </div>
+      <style>@keyframes hg-boot-spin{to{transform:rotate(360deg)}}</style>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap');
+/* Fuentes: las carga index.html (preconnect+preload). El @import duplicado se elimino (doble descarga + bloqueo del CSS bundle). */
 
 :root {
   --bg: #FBF7F2; --b2: #F3EDE4; --b3: #FFF; --tx: #2D1B0E; --t2: #6B5744; --t3: #9C8B7A;
