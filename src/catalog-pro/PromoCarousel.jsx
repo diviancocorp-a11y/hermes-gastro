@@ -279,7 +279,6 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
   }, [incoming]);
 
   const next = useCallback(() => goTo((base + 1) % len), [base, len, goTo]);
-  const prev = useCallback(() => goTo((base - 1 + len) % len), [base, len, goTo]);
   // Toco algo = esta mirando/analizando → pausa larga, renovable con cada toque
   const holdAutoplay = () => { pauseUntil.current = Date.now() + TOUCH_HOLD_MS; };
   const userGo = (fn) => { holdAutoplay(); fn(); };
@@ -408,12 +407,6 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
           })}
         </div>
 
-        <button onClick={() => !busy && userGo(prev)} disabled={busy} aria-label="Anterior" className="cp-pcg-arrow" style={{ left: 12 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
-        </button>
-        <button onClick={() => !busy && userGo(next)} disabled={busy} aria-label="Siguiente" className="cp-pcg-arrow" style={{ right: 12 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
-        </button>
       </div>
 
       {showHelp && <HowItWorksModal onClose={() => setShowHelp(false)} />}
@@ -421,24 +414,15 @@ export default function PromoCarousel({ onOpenAccount, products = [] }) {
       <style>{`
         .cp-pcg-card {
           position: relative; width: 100%; max-width: 440px;
-          aspect-ratio: 4 / 5; overflow: hidden; border-radius: 20px;
+          /* min-height fijo: el leaderboard (podio + 4 filas + CTA + burbujas)
+             necesita ~600px de alto sin importar el ancho del telefono */
+          aspect-ratio: 4 / 5; min-height: 610px;
+          overflow: hidden; border-radius: 20px;
           background: #1a1611;
           box-shadow: 0 2.8px 2.2px rgba(0,0,0,0.02), 0 6.7px 5.3px rgba(0,0,0,0.028),
             0 12.5px 10px rgba(0,0,0,0.035), 0 22.3px 17.9px rgba(0,0,0,0.042),
             0 41.8px 33.4px rgba(0,0,0,0.05), 0 100px 80px rgba(0,0,0,0.07);
         }
-        .cp-pcg-arrow {
-          position: absolute; top: 50%; transform: translateY(-50%); z-index: 30;
-          width: 42px; height: 42px; border-radius: 999px;
-          display: flex; align-items: center; justify-content: center;
-          background: rgba(255,255,255,0.92); color: #1a1611;
-          border: 2px solid rgba(255,255,255,0.3); cursor: pointer;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-          transition: transform 250ms ease, opacity 250ms ease;
-        }
-        .cp-pcg-arrow:hover { transform: translateY(-50%) scale(1.1); }
-        .cp-pcg-arrow:active { transform: translateY(-50%) scale(0.94); }
-        .cp-pcg-arrow:disabled { opacity: 0.4; cursor: default; }
         @keyframes cp-pcg-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes cp-promo-fade { from { opacity: 0; } to { opacity: 1; } }
         @keyframes cp-promo-pop { from { opacity: 0; transform: scale(0.9) translateY(14px); } to { opacity: 1; transform: scale(1) translateY(0); } }
