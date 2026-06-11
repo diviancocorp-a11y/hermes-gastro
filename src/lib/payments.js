@@ -29,13 +29,8 @@ export function enabledPaymentMethods(settings) {
   return Array.isArray(list) && list.length > 0 ? list : DEFAULT_PAYMENT_METHODS;
 }
 
-// Devuelve el subset de medios visibles en el catálogo público.
-// Se intersecta con la lista master (payment_methods) por si la master cambió
-// y el catálogo quedó referenciando un método que ya no existe.
-// Default cuando settings.catalog_payment_methods es undefined: TODOS los del master.
-export function catalogPaymentMethods(settings) {
-  const master = enabledPaymentMethods(settings);
-  const catalogList = settings?.catalog_payment_methods;
-  if (!Array.isArray(catalogList)) return master; // default: todos
-  return catalogList.filter(m => master.includes(m));
-}
+// catalogPaymentMethods() ELIMINADA (unificacion de pagos, jun 2026):
+// el checkout deriva todo de settings.payment_accounts (efectivo implicito +
+// MP + cuentas con scope checkout/ambos). settings.catalog_payment_methods y
+// settings.payment_methods quedaron deprecados; enabledPaymentMethods() solo
+// sobrevive para el form de pedido manual del admin y data historica.

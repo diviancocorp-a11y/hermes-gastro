@@ -8,7 +8,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { getGuestUser } from "../lib/guestUser.js";
 import business, { waLink } from "@business";
-import { catalogPaymentMethods, paymentLabel, paymentIcon } from "../lib/payments";
+import { paymentLabel, paymentIcon } from "../lib/payments";
 
 // ── Extracted components ──
 import WelcomeSplash from "../catalog-pro/WelcomeSplash";
@@ -768,7 +768,6 @@ export default function Catalog() {
         STORE_LNG={STORE_LNG}
         calcDeliveryCost={calcDeliveryCost}
         mpConnected={mpConnected}
-        payments={catalogPaymentMethods(sett)}
         paymentIcon={paymentIcon}
         paymentLabel={paymentLabel}
         receiptFile={receiptFile}

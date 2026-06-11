@@ -50,7 +50,8 @@ Deno.serve(async (req) => {
     let paymentAccountId = null;
     let paymentAccountSnapshot = null;
     if (body.payment_account_id) {
-      const acc = paymentAccounts.find((a) => a.id === body.payment_account_id && a.active !== false);
+      // Scope: las cuentas solo-proveedores no son validas para el checkout
+      const acc = paymentAccounts.find((a) => a.id === body.payment_account_id && a.active !== false && (a.scope ?? "ambos") !== "proveedores");
       if (!acc) return jsonRes({ error: "Cuenta de pago no válida" }, 400);
       payment = "transferencia"; // bucket legacy; el detalle exacto va en el snapshot
       paymentAccountId = acc.id;

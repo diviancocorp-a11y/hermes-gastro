@@ -168,6 +168,8 @@ export const ExpenseInputSchema = z.object({
     'rent', 'utilities', 'other_opex',
   ]).optional(),
   supplier_id: optionalUuid,
+  // Cuenta de pago (id del jsonb settings.payment_accounts). NULL = efectivo
+  payment_account_id: optionalText(60),
   receipt_url: optionalText(2000),
   no_receipt: z.boolean().optional(),
   payment_method: optionalText(40),

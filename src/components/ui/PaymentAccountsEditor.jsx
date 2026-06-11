@@ -14,8 +14,16 @@ import { useState } from "react";
 import { updateSettings } from "../../services/settings";
 
 function emptyAccount() {
-  return { id: "", label: "", banco: "", titular: "", alias: "", cbu: "", active: true, sort: 0 };
+  return { id: "", label: "", banco: "", titular: "", alias: "", cbu: "", active: true, sort: 0, scope: "ambos" };
 }
+
+// Donde se usa cada cuenta. Sin scope (cuentas viejas) = "ambos" (compat).
+const SCOPES = [
+  { id: "checkout",    label: "Checkout",    hint: "La ven los clientes al pagar" },
+  { id: "proveedores", label: "Proveedores", hint: "Solo para registrar gastos y compras" },
+  { id: "ambos",       label: "Ambos",       hint: "Checkout y gastos/compras" },
+];
+const scopeLabel = (s) => SCOPES.find(x => x.id === (s || "ambos"))?.label || "Ambos";
 
 export default function PaymentAccountsEditor({ settings, setSettings, showToast }) {
   const confirmSlide = useConfirm();
@@ -109,10 +117,33 @@ export default function PaymentAccountsEditor({ settings, setSettings, showToast
           placeholder="22 dígitos"
           disabled={saving} style={{ marginBottom: 16, width: "100%" }} />
 
+        {/* Scope: donde se usa la cuenta (checkout / proveedores / ambos) */}
+        <label className="ag-field-lbl">¿Para qué se usa?</label>
+        <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+          {SCOPES.map(sc => {
+            const on = (e.scope || "ambos") === sc.id;
+            return (
+              <button key={sc.id} type="button" onClick={() => setField("scope", sc.id)} disabled={saving}
+                style={{
+                  flex: 1, padding: "9px 4px", borderRadius: 10,
+                  border: on ? "2px solid var(--ag-c-terra)" : "1px solid var(--ag-line)",
+                  background: on ? "rgba(245,158,11,0.08)" : "var(--ag-bg)",
+                  color: on ? "var(--ag-c-terra)" : "var(--ag-ink-2)",
+                  fontSize: 12, fontWeight: 700, fontFamily: "inherit", cursor: "pointer",
+                }}>
+                {sc.label}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 11, color: "var(--ag-ink-3)", marginBottom: 14 }}>
+          {SCOPES.find(x => x.id === (e.scope || "ambos"))?.hint}
+        </div>
+
         <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18, cursor: "pointer" }}>
           <input type="checkbox" checked={e.active}
             onChange={ev => setField("active", ev.target.checked)} disabled={saving} />
-          <span style={{ fontSize: 13, color: "var(--ag-ink-2)" }}>Activa (visible en el checkout)</span>
+          <span style={{ fontSize: 13, color: "var(--ag-ink-2)" }}>Activa</span>
         </label>
 
         <div style={{ display: "flex", gap: 8 }}>
@@ -153,7 +184,9 @@ export default function PaymentAccountsEditor({ settings, setSettings, showToast
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ag-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {acc.banco || "(sin nombre)"}{acc.label ? <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ag-ink-3)" }}> · {acc.label}</span> : null}
                   </div>
-                  {detail && <div style={{ fontSize: 11.5, color: "var(--ag-ink-3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{detail}</div>}
+                  <div style={{ fontSize: 11.5, color: "var(--ag-ink-3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {detail}{detail ? " · " : ""}<span style={{ fontWeight: 700 }}>{scopeLabel(acc.scope)}</span>
+                  </div>
                 </div>
                 <button type="button" onClick={() => toggleActive(acc)} disabled={saving}
                   style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999, border: "1px solid var(--ag-line)", background: acc.active ? "rgba(42,157,110,0.12)" : "var(--ag-bg)", color: acc.active ? "var(--ag-c-ok, #2A9D6E)" : "var(--ag-ink-3)", cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>

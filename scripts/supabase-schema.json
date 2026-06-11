@@ -80,7 +80,8 @@
       "voided_at",
       "voided_by",
       "voids_expense_id",
-      "voided_reason"
+      "voided_reason",
+      "payment_account_id"
     ],
     "favorites": [
       "id",

@@ -73,7 +73,7 @@ export default function CheckoutScreen(props) {
 
   // Cuentas de pago (settings.payment_accounts) = unica fuente. Efectivo implicito.
   const paymentAccounts = (Array.isArray(settings?.payment_accounts) ? settings.payment_accounts : [])
-    .filter(a => a && a.active !== false)
+    .filter(a => a && a.active !== false && (a.scope ?? "ambos") !== "proveedores")
     .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
   const selectedAccount = form.payment_account_id
     ? (paymentAccounts.find(a => a.id === form.payment_account_id) || null)

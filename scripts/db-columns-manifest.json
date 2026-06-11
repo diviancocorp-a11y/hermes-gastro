@@ -88,6 +88,7 @@
         "receipt_url",
         "no_receipt",
         "payment_method",
+        "payment_account_id",
         "items",
         "notes",
         "created_by",

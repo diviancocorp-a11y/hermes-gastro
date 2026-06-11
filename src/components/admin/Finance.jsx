@@ -24,7 +24,8 @@ import { fetchSuppliers } from "../../services/suppliers";
 import { voidExpense } from "../../services/finance";
 import SlideToConfirm from "../SlideToConfirm";
 import DecimalInput from "../ui/DecimalInput";
-import { paymentLabel, paymentIcon, enabledPaymentMethods } from "../../lib/payments";
+import { paymentLabel, paymentIcon } from "../../lib/payments";
+import PaymentAccountsEditor from "../ui/PaymentAccountsEditor";
 import { Avatar } from "../../lib/avatars.jsx";
 import { USAR_EXPENSE_CATEGORIES, getUsarExpense } from "../../constants/usar";
 
@@ -55,36 +56,50 @@ const CAT_COLORS_ROTATE = [
   { fg: "var(--ag-c-stock)",   bg: "var(--ag-c-stock-soft)" },
   { fg: "var(--ag-c-crm)",     bg: "var(--ag-c-crm-soft)" },
 ];
-/* Chips de selección de medio de pago. Lee de settings.payment_methods (custom + presets). */
-function PaymentMethodChips({ value, onChange, settings }) {
-  const enabled = enabledPaymentMethods(settings);
+/* Chips de medio de pago = Efectivo + CUENTAS de Finanzas (unica verdad).
+   Solo cuentas con scope proveedores/ambos. onChange(method, accountId):
+   efectivo → ("efectivo", null); cuenta → ("transferencia", acc.id) — el
+   bucket "transferencia" mantiene compatibles los reportes legacy. */
+function PaymentMethodChips({ value, accountId, onChange, settings }) {
+  const accounts = (Array.isArray(settings?.payment_accounts) ? settings.payment_accounts : [])
+    .filter(a => a && a.active !== false && (a.scope ?? "ambos") !== "checkout");
+  const chipStyle = (on) => ({
+    display: "inline-flex", alignItems: "center", gap: 6,
+    padding: "8px 12px", borderRadius: 999,
+    border: on ? "2px solid var(--ag-c-terra)" : "1px solid var(--ag-line)",
+    background: on ? "rgba(245,158,11,0.08)" : "var(--ag-bg)",
+    color: on ? "var(--ag-c-terra)" : "var(--ag-ink-2)",
+    fontFamily: "inherit", fontSize: 12, fontWeight: 700, cursor: "pointer",
+  });
+  const cashOn = !accountId && value === "efectivo";
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-      {enabled.map(pm => {
-        const on = value === pm;
+      <button type="button" onClick={() => onChange("efectivo", null)} style={chipStyle(cashOn)}>
+        💵 Efectivo
+      </button>
+      {accounts.map(acc => {
+        const on = accountId === acc.id;
         return (
           <button
-            key={pm}
+            key={acc.id}
             type="button"
-            onClick={() => onChange(pm)}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "8px 12px",
-              borderRadius: 999,
-              border: on ? "2px solid var(--ag-c-terra)" : "1px solid var(--ag-line)",
-              background: on ? "rgba(245,158,11,0.08)" : "var(--ag-bg)",
-              color: on ? "var(--ag-c-terra)" : "var(--ag-ink-2)",
-              fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-              cursor: "pointer",
-            }}
+            onClick={() => onChange("transferencia", acc.id)}
+            style={chipStyle(on)}
           >
-            <span style={{ fontSize: 14 }}>{paymentIcon(pm)}</span>
-            {paymentLabel(pm)}
+            <span style={{ fontSize: 14 }}>🏦</span>
+            {acc.banco || acc.label || "Cuenta"}{acc.label && acc.banco ? ` · ${acc.label}` : ""}
           </button>
         );
       })}
     </div>
   );
+}
+
+/* Label de una cuenta por id (para mostrar en filas de gastos/compras) */
+function accountLabel(settings, accountId) {
+  if (!accountId) return null;
+  const acc = (settings?.payment_accounts || []).find(a => a.id === accountId);
+  return acc ? (acc.banco || acc.label || "Cuenta") : null;
 }
 
 /* Formato compacto para la pill: 3450 → $3K, 312000 → $312K, 1450000 → $1.5M */
@@ -139,6 +154,7 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
   }, {});
   const [showForm, setShowForm] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showAccounts, setShowAccounts] = useState(false); // editor de cuentas (mudado de Configuracion)
   const [filterCat, setFilterCat] = useState(null);   // categoría activa para filtrar la lista
   const [expanded, setExpanded] = useState(null);     // id del gasto expandido
   const [voidTarget, setVoidTarget] = useState(null);
@@ -264,6 +280,25 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
           }}>Gastos</h1>
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          {/* Cuentas de pago: UNICA verdad (se mudo de Configuracion) */}
+          <button
+            type="button"
+            onClick={() => setShowAccounts(true)}
+            aria-label="Cuentas de pago"
+            title="Cuentas de pago"
+            style={{
+              height: 36, padding: "0 12px", borderRadius: 999,
+              background: "var(--ag-bg-card)",
+              border: "1.5px solid var(--ag-line)",
+              color: "var(--ag-ink-2)",
+              cursor: "pointer", fontFamily: "inherit",
+              fontSize: 12, fontWeight: 700,
+              display: "flex", alignItems: "center", gap: 6,
+              flexShrink: 0, boxShadow: "var(--ag-sh-sm)",
+            }}
+          >
+            🏦 Cuentas
+          </button>
           <button
             type="button"
             onClick={() => setShowExport(true)}
@@ -510,7 +545,7 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
                               )}
                               <span style={{ color: cc.fg, fontWeight: 700 }}>{e.category || "Otros"}</span>
                               {e.payment_method && (
-                                <span>· {paymentIcon(e.payment_method)} {paymentLabel(e.payment_method)}</span>
+                                <span>· {paymentIcon(e.payment_method)} {accountLabel(settings, e.payment_account_id) || paymentLabel(e.payment_method)}</span>
                               )}
                               {e.receipt_url && <span title="Con comprobante">📎</span>}
                               {e.no_receipt && <span title="Sin recibo" style={{ color: "var(--ag-c-stock)", fontWeight: 700 }}>SIN REC.</span>}
@@ -550,7 +585,7 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
                               {e.payment_method && (
                                 <div>
                                   <div style={{ fontSize: 10, fontWeight: 700, color: "var(--ag-ink-3)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Medio de pago</div>
-                                  <div style={{ color: "var(--ag-ink)", marginTop: 2 }}>{paymentIcon(e.payment_method)} {paymentLabel(e.payment_method)}</div>
+                                  <div style={{ color: "var(--ag-ink)", marginTop: 2 }}>{paymentIcon(e.payment_method)} {accountLabel(settings, e.payment_account_id) || paymentLabel(e.payment_method)}</div>
                                 </div>
                               )}
                             </div>
@@ -744,6 +779,24 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
           onClose={() => setShowExport(false)}
           showToast={showToast}
         />
+      )}
+
+      {/* Cuentas de pago: unica verdad de pagos (checkout + proveedores) */}
+      {showAccounts && (
+        <div className="ag-page-over">
+          <div className="ag-page-over-head">
+            <button type="button" className="ag-subpage-back" onClick={() => setShowAccounts(false)} aria-label="Atrás">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              <span>Atrás</span>
+            </button>
+            <h2 className="ag-page-over-title">Cuentas de pago</h2>
+          </div>
+          <div className="ag-page-over-body">
+            <PaymentAccountsEditor settings={settings} setSettings={setSettings} showToast={showToast} />
+          </div>
+        </div>
       )}
 
       {showForm && (
@@ -1019,6 +1072,7 @@ function ExpForm({ onClose, onSave, settings, user }) {
     usar_category: "other_opex",
     installment_current: 1, installment_total: 12,
     payment_method: "efectivo",
+    payment_account_id: null,
   });
   const [err, setErr] = useState("");
   const s = (k, v) => {
@@ -1182,7 +1236,8 @@ function ExpForm({ onClose, onSave, settings, user }) {
         />
 
         <label className="ag-field-lbl" style={{ marginTop: 14 }}>Medio de pago</label>
-        <PaymentMethodChips value={f.payment_method} onChange={v => s("payment_method", v)} settings={settings} />
+        <PaymentMethodChips value={f.payment_method} accountId={f.payment_account_id}
+          onChange={(m, accId) => { s("payment_method", m); s("payment_account_id", accId ?? null); }} settings={settings} />
 
         {err && (
           <div style={{
@@ -1225,6 +1280,7 @@ function Purchase({ ingredients, setIngredients, setExpenses, settings, onClose,
   const [noReceipt, setNoReceipt] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("efectivo");
+  const [paymentAccountId, setPaymentAccountId] = useState(null);
 
   // Cargar proveedores activos al abrir
   useEffect(() => { fetchSuppliers().then(setSuppliers); }, []);
@@ -1320,6 +1376,7 @@ function Purchase({ ingredients, setIngredients, setExpenses, settings, onClose,
           supplier: supName,
           supplier_id: supId || null,
           payment_method: paymentMethod,
+          payment_account_id: paymentAccountId || null,
           receipt_url: receiptUrl || '',
           no_receipt: noReceipt,
           created_by: user?.id || null,
@@ -1388,7 +1445,8 @@ function Purchase({ ingredients, setIngredients, setExpenses, settings, onClose,
         {/* Medio de pago */}
         <div style={{ marginBottom: 14 }}>
           <label className="ag-field-lbl">Medio de pago</label>
-          <PaymentMethodChips value={paymentMethod} onChange={setPaymentMethod} settings={settings} />
+          <PaymentMethodChips value={paymentMethod} accountId={paymentAccountId}
+            onChange={(m, accId) => { setPaymentMethod(m); setPaymentAccountId(accId ?? null); }} settings={settings} />
         </div>
 
         {/* Comprobante · uno de los dos es obligatorio (foto o "sin recibo") */}

@@ -171,7 +171,9 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   amount numeric NOT NULL,
   category text NOT NULL,
   supplier text,
-  expense_type text DEFAULT 'variable'::text CHECK (expense_type IN ('variable','fixed'))
+  expense_type text DEFAULT 'variable'::text CHECK (expense_type IN ('variable','fixed')),
+  -- Cuenta de pago (id del jsonb settings.payment_accounts). NULL = efectivo/data vieja
+  payment_account_id text
 );
 
 CREATE TABLE IF NOT EXISTS public.customers (

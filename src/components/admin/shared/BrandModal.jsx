@@ -126,24 +126,11 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
     { id: 'qrs',      label: 'QRs' },
   ];
 
-  // ─── catalog_payment_methods: subset de payment_methods visible en el catálogo público.
-  //
-  // La lista MASTER se administra en Configuración → Finanzas → Medios de pago
-  // (campo settings.payment_methods). Acá solo se elige qué subset de esa lista se
-  // ofrece a los clientes en el catálogo.
-  //
-  // Default (catalog_payment_methods undefined o vacío): todos los del master están on.
-  const toggleCatalogPayment = (method) => setS(p => {
-    const master = p.payment_methods || ['efectivo', 'transferencia', 'mercadopago'];
-    const cur = p.catalog_payment_methods ?? master;  // default: todos enabled
-    const next = cur.includes(method) ? cur.filter(x => x !== method) : [...cur, method];
-    return { ...p, catalog_payment_methods: next };
-  });
-  const isCatalogPaymentOn = (method) => {
-    const master = s.payment_methods || ['efectivo', 'transferencia', 'mercadopago'];
-    const cur = s.catalog_payment_methods ?? master;
-    return cur.includes(method);
-  };
+  // Metodos de pago del catalogo: ELIMINADO de aca. Las cuentas de pago
+  // (Finanzas → Cuentas) son la unica verdad; el checkout deriva de ellas
+  // (efectivo implicito + MP + cuentas con scope checkout/ambos).
+  // settings.catalog_payment_methods y settings.payment_methods quedaron
+  // deprecados (sin UI).
 
   return (
     <>
@@ -568,71 +555,9 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                 </div>
               </div>
 
-              {/* Métodos de pago aceptados en el catálogo
-                  Solo TOGGLEA cuáles de los métodos creados en Configuración
-                  se muestran a los clientes. Para crear/eliminar, ir a Configuración. */}
-              <div className="ag-catalog-group">
-                <div className="ag-catalog-group-title">Métodos de pago aceptados en el catálogo</div>
-
-                {(() => {
-                  const PRESET_META = {
-                    efectivo:      { label: 'Efectivo',     icon: '💵' },
-                    transferencia: { label: 'Transferencia',icon: '🏦' },
-                    mercadopago:   { label: 'MercadoPago',  icon: '💳' },
-                    tarjeta:       { label: 'Tarjeta',      icon: '💳' },
-                  };
-                  const master = s.payment_methods || ['efectivo', 'transferencia', 'mercadopago'];
-
-                  if (master.length === 0) {
-                    return (
-                      <div style={{
-                        padding: '12px 14px',
-                        background: 'var(--ag-bg-card)',
-                        border: '1px solid var(--ag-line)',
-                        borderRadius: 10,
-                        fontSize: 12.5, color: 'var(--ag-ink-3)', textAlign: 'center',
-                      }}>
-                        Sin medios de pago configurados.<br />
-                        Andá a <strong>Configuración → Finanzas → Medios de pago</strong> para crearlos.
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                        {master.map(key => {
-                          const meta = PRESET_META[key];
-                          const label = meta?.label || (key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '));
-                          const icon = meta?.icon || '🏷️';
-                          const on = isCatalogPaymentOn(key);
-                          return (
-                            <button
-                              key={key}
-                              type="button"
-                              onClick={() => toggleCatalogPayment(key)}
-                              className={`ag-pm-chip ${on ? 'on' : ''}`}
-                            >
-                              <span style={{ fontSize: 16 }}>{icon}</span>
-                              <span style={{ flex: 1, textAlign: 'left', textTransform: meta ? 'none' : 'capitalize' }}>{label}</span>
-                              {on && <span style={{ fontSize: 14 }}>✓</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <div style={{
-                        marginTop: 10, padding: '8px 12px',
-                        background: 'var(--ag-bg-soft)',
-                        borderRadius: 8,
-                        fontSize: 11.5, color: 'var(--ag-ink-3)', lineHeight: 1.5,
-                      }}>
-                        Estos son los medios habilitados para tus clientes. Para <strong>crear o eliminar</strong> medios de pago, andá a <strong>Configuración → Finanzas → Medios de pago</strong>.
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
+              {/* Metodos de pago: ELIMINADO de Personalizacion. Las cuentas
+                  de Finanzas (Gastos → 🏦 Cuentas) son la unica verdad y el
+                  checkout deriva de ellas. */}
 
               {/* Favicon */}
               <div className="ag-catalog-group">

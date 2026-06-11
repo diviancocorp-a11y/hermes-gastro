@@ -28,7 +28,6 @@ import SettingsRow from "./shared/forms/SettingsRow";
 import ToggleSwitch from "./shared/forms/ToggleSwitch";
 import CatChipsEditor from "../ui/CatChipsEditor";
 import DecimalInput from "../ui/DecimalInput";
-import PaymentAccountsEditor from "../ui/PaymentAccountsEditor";
 
 function Icon({ d, viewBox = "0 0 24 24" }) {
   return (
@@ -141,13 +140,8 @@ function Settings({ settings, setSettings, showToast, theme = 'light', onThemeCh
               hint="Objetivos % Food/Labor/EBITDA"
               onClick={() => goTo('usarTargets')}
             />
-            <SettingsRow
-              state="prep"
-              icon={<Icon d="M2 7h20v10H2z M2 11h20" />}
-              label="Medios de pago"
-              hint="Efectivo, Transferencia, MercadoPago…"
-              onClick={() => goTo('payments')}
-            />
+            {/* "Medios de pago" se mudo a Finanzas → Gastos → 🏦 Cuentas
+                (unica verdad de cuentas para checkout y proveedores) */}
             <SettingsRow
               state="orders"
               icon={<Icon d="M3 3v18h18 M7 14l4-4 4 4 5-5" />}
@@ -262,13 +256,6 @@ function Settings({ settings, setSettings, showToast, theme = 'light', onThemeCh
         showToast={showToast}
         onBack={goBack}
       />
-      <PaymentsSubPage
-        open={page === 'payments'}
-        settings={settings}
-        setSettings={setSettings}
-        showToast={showToast}
-        onBack={goBack}
-      />
       <CostsSubPage
         open={page === 'costs'}
         settings={s}
@@ -325,18 +312,8 @@ function CatsSubPage({ open, title, intro, field, label, icon, settings, setSett
   );
 }
 
-function PaymentsSubPage({ open, settings, setSettings, showToast, onBack }) {
-  return (
-    <SubPage open={open} title="Medios de pago" onBack={onBack}>
-      <p className="ag-subpage-intro">Cargá las cuentas (banco o billetera) donde te pagan. Son la única fuente: aparecen en el checkout y quedan registradas en cada pedido.</p>
-      <PaymentAccountsEditor
-        settings={settings}
-        setSettings={setSettings}
-        showToast={showToast}
-      />
-    </SubPage>
-  );
-}
+// PaymentsSubPage ELIMINADA: el editor de cuentas vive en Finanzas → Gastos
+// → 🏦 Cuentas (unica verdad para checkout y pago a proveedores).
 
 /* ─── CostsSubPage: % merma + % gastos proyectados ─────────
  * Ambos se SUMAN al costo del producto al calcular rentabilidad.
