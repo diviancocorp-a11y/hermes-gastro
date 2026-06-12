@@ -841,3 +841,19 @@ body:has(.ag-page-over) .ag-bottom-nav {
 @media (prefers-reduced-motion: reduce) {
   .ag-drawer.open .ag-drawer-mi { animation: none; }
 }
+
+/* ─── Personalizacion como pagina (12/jun) ───
+   BrandModal con asPage: mismo header/tabs/body del modal pero
+   renderizado estatico dentro del main del admin (no overlay). */
+.ag-brand-page {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0 24px;
+}
+.ag-brand-page .ag-modal-body {
+  max-height: none;
+  overflow-y: visible;
+}

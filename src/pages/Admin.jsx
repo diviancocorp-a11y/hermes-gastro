@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { OrderStatus } from "../lib/utils";
 import useFeature from "../hooks/useFeature";
 
@@ -32,6 +31,8 @@ import CategoryEditor from "../components/admin/CategoryEditor";
 import MonthSummary from "../components/admin/MonthSummary";
 import Suppliers from "../components/admin/Suppliers";
 import Users from "../components/admin/Users";
+import BrandModal from "../components/admin/shared/BrandModal";
+import InfoPagesAdmin from "./admin/InfoPages";
 import { CancelDlg, StockWarningDlg, NewOrderOverlay } from "../components/admin/Dialogs";
 
 // Estilos del sistema visual v2
@@ -44,7 +45,6 @@ import "../styles/admin-orders.css";
 import "../styles/admin-shared.css";
 
 export default function Admin() {
-  const navigate = useNavigate();
   const [tab, setTab] = useState("home");
   const [ov, setOv] = useState(null);
   const [toast, setToast] = useState("");
@@ -171,9 +171,9 @@ export default function Admin() {
       icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>,
     }] : []),
     {
-      key: 'exports', state: 'crm', label: 'Exportar datos', hint: 'Ventas, gastos, stock, pedidos',
-      onClick: () => setOv({ type: 'exports' }),
-      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+      key: 'paginas', state: 'crm', label: 'Páginas informativas', hint: 'Contenido para QRs y links',
+      onClick: () => setTab('paginas'),
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
     },
   ];
 
@@ -197,7 +197,7 @@ export default function Admin() {
         onToggleTheme={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
         email={session?.user?.email || ''}
         userId={session?.user?.id || null}
-        onPersonalizacion={() => navigate("/admin/personalizacion", { state: { from: "admin" } })}
+        onPersonalizacion={() => setTab("personalizacion")}
         onOpenSection={(key) => setTab(key)}
         onLogout={doLogout}
       />
@@ -223,9 +223,21 @@ export default function Admin() {
             showToast={msg}
             section={tab.replace("cfg-", "")}
             onBack={() => setTab("home")}
-            exportData={{ sales, expenses: exps, ingredients: ings, orders, recipes: recs, sett }}
           />
         )}
+        {/* Personalización como página (antes modal/ruta aparte) */}
+        {tab === "personalizacion" && (
+          <BrandModal
+            asPage
+            open={true}
+            settings={sett}
+            setSettings={setSett}
+            onClose={() => setTab("home")}
+            showToast={msg}
+          />
+        )}
+        {/* Gestión de páginas informativas (separada de Personalización) */}
+        {tab === "paginas" && <InfoPagesAdmin embedded onBack={() => setTab("home")} />}
       </main>
 
       {/* Overlays (sin cambios) */}

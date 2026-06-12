@@ -1,8 +1,9 @@
 /**
- * Settings — panel de configuración dentro del drawer hamburguesa.
+ * Settings — configuración del admin. Se renderiza como página por sección
+ * (Operación · Finanzas · Zona de riesgo) desde el dropdown de perfil.
  *
  * Patrón estilo iOS Settings:
- *  · Página raíz con grupos (Operación · Datos · Zona de riesgo)
+ *  · Página raíz con grupos
  *  · Items complejos abren sub-páginas con flecha atrás (no expand inline)
  *  · Autosave debounced (sin botón "Guardar")
  *
@@ -11,23 +12,17 @@
  *   showToast             · feedback
  *   section               · 'operacion' | 'finanzas' | 'riesgo' | null (todo)
  *                           (el toggle de modo oscuro vive ahora en el topbar)
- *   onExport              · handler de export embed (provee sales/expenses/etc.)
- *   exportData            · { sales, expenses, ingredients, orders, recipes, sett }
- *                           para la sub-página de exportar
+ *
+ * "Exportar datos" se eliminó (12/jun): el export mensual vive en
+ * Resumen del mes → Exportar.
  */
 import { useConfirm } from "../ConfirmSlideProvider";
 import { useEffect, useRef, useState } from "react";
 import { updateSettings, resetHistoricalData } from "../../lib/adminService";
-import {
-  downloadCSV, downloadXLSX, printAsPDF,
-  prepareSalesExport, prepareExpensesExport,
-  prepareInventoryExport, prepareOrdersExport,
-} from "../../lib/exports";
-import { todayISO } from "../../lib/utils";
-import business from "@business";
 import SettingsRow from "./shared/forms/SettingsRow";
 import CatChipsEditor from "../ui/CatChipsEditor";
 import DecimalInput from "../ui/DecimalInput";
+import DynamicQrs from "./DynamicQrs";
 
 function Icon({ d, viewBox = "0 0 24 24" }) {
   return (
@@ -53,10 +48,11 @@ const SECTION_TITLES = {
   riesgo: "Zona de riesgo",
 };
 
-function Settings({ settings, setSettings, showToast, exportData, section = null, onBack }) {
+function Settings({ settings, setSettings, showToast, section = null, onBack }) {
   const confirmSlide = useConfirm();
   const [s, setS] = useState({ ...settings });
-  const [page, setPage] = useState('root'); // 'root' | 'hours' | 'expCats' | 'ingCats' | 'payments' | 'exports' | 'reset'
+  const [page, setPage] = useState('root'); // 'root' | 'hours' | 'expCats' | 'ingCats' | 'costs' | 'gateways' | 'channels' | 'usarTargets' | 'reset'
+  const [qrsOpen, setQrsOpen] = useState(false); // overlay QRs dinamicos (vive en Operacion)
   const show = (g) => !section || section === g;
 
   // ─── Autosave debounced ───
@@ -133,6 +129,14 @@ function Settings({ settings, setSettings, showToast, exportData, section = null
               hint="Días y franjas de apertura"
               onClick={() => goTo('hours')}
             />
+            {/* QRs dinamicos: mudado desde Personalizacion (12/jun) */}
+            <SettingsRow
+              state="crm"
+              icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z M20 14h1 M14 20h1 M20 20h1"/></svg>}
+              label="QRs dinámicos"
+              hint="QRs impresos que cambian de destino sin reimprimir"
+              onClick={() => setQrsOpen(true)}
+            />
           </div>
           </>
           )}
@@ -174,22 +178,6 @@ function Settings({ settings, setSettings, showToast, exportData, section = null
             />
           </div>
           </>
-          )}
-
-          {/* ─── DATOS (vive con Operación) ─── */}
-          {exportData && show('operacion') && (
-            <>
-              <div className="ag-settings-group-title">Datos</div>
-              <div className="ag-settings-group">
-                <SettingsRow
-                  state="crm"
-                  icon={<Icon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3" />}
-                  label="Exportar datos"
-                  hint="Ventas, gastos, stock, pedidos"
-                  onClick={() => goTo('exports')}
-                />
-              </div>
-            </>
           )}
 
           {/* ─── ZONA DE RIESGO ─── */}
@@ -301,19 +289,14 @@ function Settings({ settings, setSettings, showToast, exportData, section = null
         showToast={showToast}
         onBack={goBack}
       />
-      {exportData && (
-        <ExportsPage
-          open={page === 'exports'}
-          data={exportData}
-          showToast={showToast}
-          onBack={goBack}
-        />
-      )}
       <ResetPage
         open={page === 'reset'}
         showToast={showToast}
         onBack={goBack}
       />
+
+      {/* Overlay de QRs dinamicos (componente autonomo a pantalla completa) */}
+      {qrsOpen && <DynamicQrs onClose={() => setQrsOpen(false)} showToast={showToast} />}
     </div>
   );
 }
@@ -492,133 +475,6 @@ function HoursPage({ open, hours, onChange, onBack }) {
           </div>
         );
       })}
-    </SubPage>
-  );
-}
-
-const EXPORT_TYPES = [
-  { key: 'sales',     label: 'Ventas',     icon: '💰', desc: 'Ventas registradas',  state: 'sales' },
-  { key: 'expenses',  label: 'Gastos',     icon: '📋', desc: 'Gastos y compras',    state: 'orders' },
-  { key: 'inventory', label: 'Inventario', icon: '📦', desc: 'Stock ingredientes',  state: 'stock' },
-  { key: 'orders',    label: 'Pedidos',    icon: '🛒', desc: 'Historial pedidos',   state: 'prep' },
-];
-const FORMAT_OPTIONS = [
-  { key: 'xlsx', label: 'Excel' },
-  { key: 'csv',  label: 'CSV' },
-  { key: 'pdf',  label: 'PDF' },
-];
-
-function ExportsPage({ open, data, showToast, onBack }) {
-  const [selected, setSelected] = useState('sales');
-  const [format, setFormat] = useState('xlsx');
-  const [loading, setLoading] = useState(false);
-
-  const { sales = [], expenses = [], ingredients = [], orders = [], recipes = [], sett = {} } = data || {};
-
-  const counts = {
-    sales: sales.length,
-    expenses: expenses.length,
-    inventory: ingredients.length,
-    orders: orders.length,
-  };
-
-  const doExport = () => {
-    setLoading(true);
-    try {
-      let headers, rows;
-      const date = todayISO();
-      const bizName = sett?.biz_name || business.name;
-
-      switch (selected) {
-        case 'sales':     ({ headers, rows } = prepareSalesExport(sales, recipes));     break;
-        case 'expenses':  ({ headers, rows } = prepareExpensesExport(expenses));        break;
-        case 'inventory': ({ headers, rows } = prepareInventoryExport(ingredients));    break;
-        case 'orders':    ({ headers, rows } = prepareOrdersExport(orders, recipes));   break;
-        default: setLoading(false); return;
-      }
-
-      const label = EXPORT_TYPES.find(t => t.key === selected)?.label || selected;
-      const filename = `${label.toLowerCase()}_${date}`;
-      switch (format) {
-        case 'csv':  downloadCSV(`${filename}.csv`, headers, rows); break;
-        case 'xlsx': downloadXLSX(`${filename}.xlsx`, headers, rows, label); break;
-        case 'pdf':  printAsPDF(`Reporte de ${label}`, headers, rows, { bizName, subtitle: `Exportado el ${date}` }); break;
-      }
-      showToast(`${label} exportado ✓`);
-    } catch (err) {
-      console.error('Export error:', err);
-      showToast('Error al exportar');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <SubPage open={open} title="Exportar" onBack={onBack}>
-      <label className="ag-field-lbl">¿Qué datos exportar?</label>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
-        {EXPORT_TYPES.map(t => {
-          const isActive = selected === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setSelected(t.key)}
-              className={`ag-card ag-st-${t.state}`}
-              style={{
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-                padding: "14px 8px",
-                border: isActive ? "2px solid var(--c-state)" : "0",
-                cursor: "pointer", fontFamily: "inherit",
-                background: "var(--ag-bg-card)",
-              }}
-            >
-              <span style={{ fontSize: 22 }}>{t.icon}</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: isActive ? "var(--c-state)" : "var(--ag-ink)" }}>{t.label}</span>
-              <span style={{ fontSize: 10.5, color: "var(--ag-ink-3)", textAlign: "center" }}>{t.desc}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <label className="ag-field-lbl">Formato</label>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        {FORMAT_OPTIONS.map(f => {
-          const isActive = format === f.key;
-          return (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => setFormat(f.key)}
-              style={{
-                flex: 1, padding: "10px 8px",
-                borderRadius: 10,
-                border: isActive ? "2px solid var(--ag-c-terra)" : "1px solid var(--ag-line)",
-                background: isActive ? "rgba(245,158,11,0.08)" : "transparent",
-                color: isActive ? "var(--ag-c-terra)" : "var(--ag-ink-2)",
-                cursor: "pointer", fontSize: 13, fontWeight: 600,
-                fontFamily: "inherit",
-              }}
-            >{f.label}</button>
-          );
-        })}
-      </div>
-
-      <div style={{
-        padding: "10px 12px", background: "var(--ag-bg-soft)",
-        borderRadius: 10, marginBottom: 14,
-        fontSize: 12, color: "var(--ag-ink-2)",
-      }}>
-        {counts[selected] || 0} {selected === 'inventory' ? 'ingredientes' : selected === 'sales' ? 'ventas' : selected === 'expenses' ? 'gastos' : 'pedidos'} a exportar
-      </div>
-
-      <button
-        type="button"
-        className="ag-btn-primary"
-        onClick={doExport}
-        disabled={loading}
-        style={{ width: "100%", padding: "12px 14px", fontSize: 14 }}
-      >{loading ? "Exportando..." : `Exportar ${EXPORT_TYPES.find(t => t.key === selected)?.label || ''}`}</button>
     </SubPage>
   );
 }

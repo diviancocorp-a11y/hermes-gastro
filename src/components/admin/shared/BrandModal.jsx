@@ -22,7 +22,6 @@ import {
   uploadCoverImage,
   uploadLogoImage,
 } from "../../../lib/adminService";
-import DynamicQrs from "../DynamicQrs";
 import { useConfirm } from "../../ConfirmSlideProvider";
 import ToggleSwitch from "./forms/ToggleSwitch";
 import DecimalInput from "../../ui/DecimalInput";
@@ -35,11 +34,10 @@ const COLORS = [
   { h: "#2D1B0E", l: "Negro" },
 ];
 
-function BrandModal({ open, onClose, settings, setSettings, showToast }) {
+function BrandModal({ open, onClose, settings, setSettings, showToast, asPage = false }) {
   const [s, setS] = useState({ ...settings });
   const confirmSlide = useConfirm();
-  const [section, setSection] = useState('identity'); // 'identity' | 'cover' | 'qrs'
-  const [qrsOpen, setQrsOpen] = useState(false); // sub-página: DynamicQrs
+  const [section, setSection] = useState('identity'); // 'identity' | 'catalog'
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
@@ -120,10 +118,11 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
     if (result) { set("favicon_url", result); showToast("Favicon cargado ✓"); } else { showToast("Error al subir"); }
   };
 
+  // QRs: mudado a Operacion (dropdown de perfil → Operacion → QRs dinamicos).
+  // Paginas informativas: ahora seccion propia (menu hamburguesa → Paginas).
   const TABS = [
     { id: 'identity', label: 'Identidad' },
     { id: 'catalog',  label: 'Catálogo' },
-    { id: 'qrs',      label: 'QRs' },
   ];
 
   // Metodos de pago del catalogo: ELIMINADO de aca. Las cuentas de pago
@@ -134,28 +133,45 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
 
   return (
     <>
+      {!asPage && (
+        <div
+          className={`ag-modal-backdrop ${open ? 'open' : ''}`}
+          onClick={onClose}
+          aria-hidden={!open}
+        />
+      )}
       <div
-        className={`ag-modal-backdrop ${open ? 'open' : ''}`}
-        onClick={onClose}
-        aria-hidden={!open}
-      />
-      <div
-        className={`ag-modal-sheet ${open ? 'open' : ''}`}
-        role="dialog"
+        className={asPage ? 'ag-brand-page' : `ag-modal-sheet ${open ? 'open' : ''}`}
+        role={asPage ? undefined : 'dialog'}
         aria-label="Personalización"
-        aria-hidden={!open}
+        aria-hidden={asPage ? undefined : !open}
       >
         <header className="ag-modal-header">
-          <div>
-            <h3>Personalización</h3>
-            <p>Marca e imágenes · autosave</p>
+          <div style={asPage ? { display: 'flex', alignItems: 'center', gap: 10 } : undefined}>
+            {asPage && (
+              <button type="button" onClick={onClose} aria-label="Volver" style={{
+                width: 34, height: 34, borderRadius: 10, border: '1px solid var(--ag-line)',
+                background: 'var(--ag-bg-card)', color: 'var(--ag-ink)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+            )}
+            <div>
+              <h3>Personalización</h3>
+              <p>Marca e imágenes · autosave</p>
+            </div>
           </div>
-          <button type="button" className="ag-modal-close" onClick={onClose} aria-label="Cerrar">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="18" y1="6"  x2="6"  y2="18"/>
-              <line x1="6"  y1="6"  x2="18" y2="18"/>
-            </svg>
-          </button>
+          {!asPage && (
+            <button type="button" className="ag-modal-close" onClick={onClose} aria-label="Cerrar">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="18" y1="6"  x2="6"  y2="18"/>
+                <line x1="6"  y1="6"  x2="18" y2="18"/>
+              </svg>
+            </button>
+          )}
         </header>
 
         <div className="ag-modal-tabs">
@@ -170,9 +186,6 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
         </div>
 
         <div className="ag-modal-body">
-          {qrsOpen && (
-            <DynamicQrs onClose={() => setQrsOpen(false)} showToast={showToast} />
-          )}
           <>
 
 
@@ -358,26 +371,6 @@ function BrandModal({ open, onClose, settings, setSettings, showToast }) {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* ── QRS DINÁMICOS (tab propio) ── */}
-          {section === 'qrs' && (
-            <div className="ag-catalog-group">
-              <div style={{ fontSize: 13, color: 'var(--ag-ink-3)', marginBottom: 14, lineHeight: 1.5 }}>
-                Crea un QR con un slug fijo para imprimir. Cambia a donde redirige sin reimprimir nada.
-              </div>
-              <button type="button" onClick={() => setQrsOpen(true)}
-                style={{ width: '100%', padding: '14px', background: 'var(--ag-bg-card)', border: '1.5px solid var(--ag-c-terra)', color: 'var(--ag-c-terra)', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 12 }}>
-                Gestionar QRs dinámicos →
-              </button>
-              <div style={{ fontSize: 13, color: 'var(--ag-ink-3)', marginBottom: 14, lineHeight: 1.5 }}>
-                Páginas informativas (ej: instrucciones de un producto). El QR puede apuntar a una de estas páginas.
-              </div>
-              <button type="button" onClick={() => { window.location.href = '/admin/paginas'; }}
-                style={{ width: '100%', padding: '14px', background: 'var(--ag-bg-card)', border: '1.5px solid var(--ag-c-terra)', color: 'var(--ag-c-terra)', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                Gestionar páginas informativas →
-              </button>
             </div>
           )}
 
