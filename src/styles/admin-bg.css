@@ -1,8 +1,9 @@
 /* ────────────────────────────────────────────────────────
- * Hermes Admin — Background layer (jun 2026)
- * "Paths flotantes": curvas que fluyen con stroke-dash animado
- * sobre un lienzo que cambia con el tema. Adaptado del patrón
- * "background paths" (framer-motion) a CSS plano.
+ * Hermes Admin — Background layer (jun 2026, v3)
+ * Grilla fina + resplandores ámbar que derivan lento.
+ * Adaptado del patrón "background snippets" a CSS plano.
+ * Solo transform/opacity animados → compositor, costo ~0
+ * en cualquier dispositivo.
  * ──────────────────────────────────────────────────────── */
 
 .ag-bg-layer {
@@ -13,65 +14,65 @@
   overflow: hidden;
 }
 
-.ag-fp-svg {
+/* — Grilla (estática) — */
+.ag-bg-grid {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  will-change: transform, opacity;
-  /* Drift BARATO (solo transform/opacity → compositor, no repinta):
-     es la unica animacion que corre en telefonos. Animar el dash de
-     48 trazos a pantalla completa rasteriza el SVG en cada frame y
-     ahogaba el GPU de los celulares (pantalla parpadeando sin cargar). */
-  animation: ag-fp-drift 26s ease-in-out infinite alternate;
-}
-.ag-fp-svg:nth-child(2) {
-  animation-duration: 34s;
-  animation-delay: -9s;
-}
-@keyframes ag-fp-drift {
-  from { transform: translateY(-1.5%) scale(1.02); opacity: 0.8; }
-  to   { transform: translateY(1.5%) scale(1.07); opacity: 1; }
+  background-size: 6rem 4rem;
 }
 
-.ag-fp {
-  stroke-dasharray: 0.7 0.45;
+/* — Resplandores ámbar (deriva lenta por transform) — */
+.ag-bg-glow {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  will-change: transform;
 }
-
-/* Flujo del trazo SOLO en desktop (mouse fino = hardware con GPU de sobra):
-   con pathLength="1", el patron dash (0.7 + 0.45 = 1.15) se desplaza un
-   ciclo completo → loop continuo sin saltos. El pulso de opacidad se
-   multiplica con el stroke-opacity propio de cada path. */
-@media (hover: hover) and (pointer: fine) {
-  .ag-fp {
-    animation:
-      ag-fp-flow var(--fp-d, 26s) linear infinite,
-      ag-fp-pulse calc(var(--fp-d, 26s) / 2) ease-in-out infinite;
-  }
+.ag-bg-glow.g1 {
+  top: -22vmax;
+  right: -22vmax;
+  animation: ag-glow-drift-1 38s ease-in-out infinite alternate;
 }
-@keyframes ag-fp-flow {
-  to { stroke-dashoffset: -1.15; }
+.ag-bg-glow.g2 {
+  bottom: -30vmax;
+  left: -24vmax;
+  width: 60vmax;
+  height: 60vmax;
+  animation: ag-glow-drift-2 46s ease-in-out infinite alternate;
 }
-@keyframes ag-fp-pulse {
-  0%, 100% { opacity: 0.45; }
-  50%      { opacity: 1; }
+@keyframes ag-glow-drift-1 {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(-9vmax, 11vmax) scale(1.18); }
+}
+@keyframes ag-glow-drift-2 {
+  from { transform: translate(0, 0) scale(1.12); }
+  to   { transform: translate(10vmax, -9vmax) scale(0.94); }
 }
 
 /* — Theming — */
 
-/* Light · lienzo crema cálido, trazos tinta */
-.ag-theme-light .ag-bg-layer {
-  background: linear-gradient(40deg, #FDFAF4, #F6EFE2);
+/* Light · lienzo blanco cálido, grilla gris suave, glow ámbar */
+.ag-theme-light .ag-bg-layer { background: #FDFCFA; }
+.ag-theme-light .ag-bg-grid {
+  background-image:
+    linear-gradient(to right, #F0EDE6 1px, transparent 1px),
+    linear-gradient(to bottom, #F0EDE6 1px, transparent 1px);
 }
-.ag-theme-light .ag-fp-svg { color: #57534E; }
+.ag-theme-light .ag-bg-glow.g1 { background: radial-gradient(circle at center, rgba(245, 158, 11, 0.20), transparent 62%); }
+.ag-theme-light .ag-bg-glow.g2 { background: radial-gradient(circle at center, rgba(253, 230, 138, 0.30), transparent 62%); }
 
-/* Dark · lienzo carbón cálido, trazos ámbar (marca Hermes) */
-.ag-theme-dark .ag-bg-layer {
-  background: linear-gradient(40deg, #141210, #1A150C);
+/* Dark · lienzo carbón cálido, grilla apenas visible, glow ámbar */
+.ag-theme-dark .ag-bg-layer { background: #131110; }
+.ag-theme-dark .ag-bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
 }
-.ag-theme-dark .ag-fp-svg { color: #E8B947; }
+.ag-theme-dark .ag-bg-glow.g1 { background: radial-gradient(circle at center, rgba(245, 158, 11, 0.17), transparent 62%); }
+.ag-theme-dark .ag-bg-glow.g2 { background: radial-gradient(circle at center, rgba(217, 119, 6, 0.13), transparent 62%); }
 
 /* — Reduce motion respect — */
 @media (prefers-reduced-motion: reduce) {
-  .ag-fp, .ag-fp-svg { animation: none; }
+  .ag-bg-glow { animation: none; }
 }
