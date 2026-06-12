@@ -273,3 +273,16 @@
   background: var(--c-state-soft);
   color: var(--c-state);
 }
+
+/* ─── ActivityChartCard: entrada escalonada de barras + pop del menu ─── */
+@keyframes ag-act-bar {
+  from { transform: scaleY(0); opacity: 0; }
+  to   { transform: scaleY(1); opacity: 1; }
+}
+@keyframes ag-act-pop {
+  from { transform: scale(0.94) translateY(-4px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ag-card [style*="ag-act-bar"] { animation: none; }
+}

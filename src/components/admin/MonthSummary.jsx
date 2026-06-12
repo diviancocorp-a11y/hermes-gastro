@@ -19,6 +19,7 @@ import UsarPnL from "./UsarPnL";
 import MenuEngineering from "./MenuEngineering";
 import TheoreticalFoodCost from "./TheoreticalFoodCost";
 import AnimatedStatCard from "./shared/cards/AnimatedStatCard";
+import UsarTrendCard from "./shared/cards/UsarTrendCard";
 
 // Gastos de comida/packaging NO cuentan como gasto operativo: ya viven en el
 // costo de mercaderia (mismo criterio que useFinancials, fix doble conteo jun 2026)
@@ -370,6 +371,12 @@ export default function MonthSummary({
             Generado localmente con reglas determinísticas. Cuando integremos un proveedor de IA, este análisis se hace más profundo.
           </p>
         </AnaCard>
+      </div>
+
+      {/* Tendencia USAR: ventas vs gastos por dia + margen acumulado.
+          Movimiento de reveal al hover/touch (distinto al de resaltado). */}
+      <div style={{ marginBottom: 14 }}>
+        <UsarTrendCard sales={ms} expenses={me} year={year} month={month} />
       </div>
 
       {/* P&L USAR (Dark Kitchen) ─────────────────────────────── */}

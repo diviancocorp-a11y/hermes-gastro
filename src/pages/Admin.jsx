@@ -13,7 +13,6 @@ import AdminBackdrop from "../components/admin/shared/AdminBackdrop";
 import AdminTopbar from "../components/admin/shared/AdminTopbar";
 import BottomNav from "../components/admin/shared/BottomNav";
 import AdminDrawer from "../components/admin/shared/AdminDrawer";
-import AdminMore from "../components/admin/shared/AdminMore";
 import ConfirmSlideProvider from "../components/ConfirmSlideProvider";
 
 // Pantallas (todavía visuales viejos — se adaptan en próximos pasos)
@@ -123,36 +122,60 @@ export default function Admin() {
   const themeClass = theme === 'dark' ? 'ag-theme-dark' : 'ag-theme-light';
   const newOrdersCount = orders.filter(o => o.status === OrderStatus.NEW).length;
 
-  /* ─── Bottom nav: 5 secciones (Inicio · Pedidos · Compras · Gastos · Más) ─── */
+  /* ─── Bottom nav: 5 secciones (Inicio · Pedidos · Recetas · Stock · Ventas).
+     Compras/Gastos/Más se mudaron al menú hamburguesa (jun 2026). ─── */
   const handleNavChange = (nextTab) => {
-    // home, orders, purchase, expenses, more son TODOS tabs reales
-    // (purchase y expenses ya no son overlays, así no tapan la bottom nav)
     setTab(nextTab);
   };
 
-  /* ─── Hub "Más": abre sub-pantallas ─── */
-  const handleOpenMore = (key) => {
-    switch (key) {
-      case 'stock':     setTab('stock'); break;
-      case 'recipes':   setTab('recipes'); break;
-      case 'sales':     setTab('sales'); break;
-      case 'crm':       setTab('crm'); break;
-      case 'waste':     setTab('waste'); break;
-      case 'suppliers': setTab('suppliers'); break;
-      case 'settings':  setTab('settings'); break;
-      case 'users':     setTab('users'); break;
-      case 'invoicing': setOv({ type: 'invoicing' }); break;
-      case 'exports':   setOv({ type: 'exports' }); break;
-      default: break;
-    }
-  };
+  /* Tab activo → item resaltado. Las pantallas que viven en el menú
+     hamburguesa o en el dropdown de perfil no resaltan ningún item. */
+  const NAV_TABS = ['home', 'orders', 'recipes', 'stock', 'sales'];
+  const activeNav = NAV_TABS.includes(tab) ? tab : null;
 
-  /* Mapeo del tab activo al item resaltado en el bottom nav.
-     Si estamos en una sub-pantalla del hub Más (stock, recipes, sales, crm, waste,
-     suppliers, settings, summary), el item "Más" queda activo. */
-  const activeNav =
-    tab === 'home' || tab === 'orders' || tab === 'purchase' || tab === 'expenses' ? tab :
-    'more';
+  /* ─── Menú hamburguesa: todo lo que salió del bottom nav ─── */
+  const drawerItems = [
+    {
+      key: 'purchase', state: 'prep', label: 'Compras', hint: 'Ingreso de mercadería',
+      onClick: () => setTab('purchase'),
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
+    },
+    {
+      key: 'expenses', state: 'orders', label: 'Gastos', hint: 'Registro y categorías',
+      onClick: () => setTab('expenses'),
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10 M15 9.5c0-1.1-1.34-2-3-2s-3 .9-3 2 1.34 2 3 2 3 .9 3 2-1.34 2-3 2-3-.9-3-2"/></svg>,
+    },
+    {
+      key: 'crm', state: 'crm', label: 'CRM', hint: 'Clientes y fidelización',
+      onClick: () => setTab('crm'),
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    },
+    {
+      key: 'waste', state: 'orders', label: 'Merma', hint: 'Pérdidas y ajustes',
+      onClick: () => setTab('waste'),
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>,
+    },
+    {
+      key: 'suppliers', state: 'prep', label: 'Proveedores', hint: 'Carniceros, verdulería, etc.',
+      onClick: () => setTab('suppliers'),
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    },
+    {
+      key: 'users', state: 'crm', label: 'Usuarios', hint: 'Acceso y roles del equipo',
+      onClick: () => setTab('users'),
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>,
+    },
+    ...(ffInvoice ? [{
+      key: 'invoicing', state: 'prep', label: 'Facturación', hint: 'AFIP · electrónica',
+      onClick: () => setOv({ type: 'invoicing' }),
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>,
+    }] : []),
+    {
+      key: 'exports', state: 'crm', label: 'Exportar datos', hint: 'Ventas, gastos, stock, pedidos',
+      onClick: () => setOv({ type: 'exports' }),
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+    },
+  ];
 
   const businessName = sett.biz_name || DEF.biz_name;
   const avatarLetter = (sett.logo_letter || DEF.logo_letter || businessName.charAt(0) || 'A').toUpperCase();
@@ -168,8 +191,15 @@ export default function Admin() {
         title={businessName}
         avatarText={avatarLetter}
         avatarImage={sett.logo_url || null}
-        onMenu={() => setDrawerOpen(true)}
-        onAvatar={() => navigate("/admin/personalizacion", { state: { from: "admin" } })}
+        menuOpen={drawerOpen}
+        onMenu={() => setDrawerOpen(o => !o)}
+        theme={theme}
+        onToggleTheme={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
+        email={session?.user?.email || ''}
+        userId={session?.user?.id || null}
+        onPersonalizacion={() => navigate("/admin/personalizacion", { state: { from: "admin" } })}
+        onOpenSection={(key) => setTab(key)}
+        onLogout={doLogout}
       />
 
       <main style={{ position: 'relative', zIndex: 2, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, paddingBottom: 'var(--ag-bottom-nav-h, 76px)' }}>
@@ -182,11 +212,20 @@ export default function Admin() {
         {tab === "crm"      && <CRM orders={orders} recipes={recs} ingredients={ings} showToast={msg} />}
         {tab === "waste"    && <Waste waste={waste} orders={orders} recipes={recs} ingredients={ings} setIngredients={setIngs} showToast={msg} loadAll={loadAll} />}
         {tab === "suppliers" && <Suppliers onBack={() => setTab("home")} showToast={msg} />}
-        {tab === "users"    && <Users showToast={msg} onBack={() => setTab("more")} currentUserId={session?.user?.id} />}
+        {tab === "users"    && <Users showToast={msg} onBack={() => setTab("home")} currentUserId={session?.user?.id} />}
         {tab === "purchase"  && <Purchase ingredients={ings} setIngredients={setIngs} expenses={exps} setExpenses={setExps} settings={sett} onClose={() => setTab("home")} showToast={msg} loadAll={loadAll} user={session?.user} />}
         {tab === "expenses"  && <Expenses expenses={exps} setExpenses={setExps} settings={sett} setSettings={setSett} showToast={msg} onClose={() => setTab("home")} user={session?.user} />}
-        {tab === "settings" && <Settings settings={sett} setSettings={setSett} showToast={msg} theme={theme} onThemeChange={handleThemeChange} exportData={{ sales, expenses: exps, ingredients: ings, orders, recipes: recs, sett }} />}
-        {tab === "more"     && <AdminMore onOpen={handleOpenMore} ffInvoice={ffInvoice} />}
+        {/* Páginas de configuración (desde el dropdown de perfil del topbar) */}
+        {(tab === "cfg-operacion" || tab === "cfg-finanzas" || tab === "cfg-riesgo") && (
+          <Settings
+            settings={sett}
+            setSettings={setSett}
+            showToast={msg}
+            section={tab.replace("cfg-", "")}
+            onBack={() => setTab("home")}
+            exportData={{ sales, expenses: exps, ingredients: ings, orders, recipes: recs, sett }}
+          />
+        )}
       </main>
 
       {/* Overlays (sin cambios) */}
@@ -211,17 +250,9 @@ export default function Admin() {
         onClose={() => setDrawerOpen(false)}
         businessName={businessName}
         userEmail={session?.user?.email || ''}
+        items={drawerItems}
         onLogout={() => { setDrawerOpen(false); doLogout(); }}
-      >
-        <Settings
-          settings={sett}
-          setSettings={setSett}
-          showToast={msg}
-          theme={theme}
-          onThemeChange={handleThemeChange}
-          exportData={{ sales, expenses: exps, ingredients: ings, orders, recipes: recs, sett }}
-        />
-      </AdminDrawer>
+      />
 
       {/* Personalizacion migrada a /admin/personalizacion (#95).
           BrandModal sigue siendo el componente reusado por esa ruta.

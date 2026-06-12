@@ -786,3 +786,58 @@ body:has(.ag-page-over) .ag-bottom-nav {
   10%  { background-color: rgba(245, 158, 11, 0.28); box-shadow: 0 0 0 3px rgba(245,158,11,0.25); }
   100% { background-color: rgba(245, 158, 11, 0.0); box-shadow: 0 0 0 0 rgba(245,158,11,0); }
 }
+
+/* ─── Menu de navegacion del drawer (jun 2026) ───
+   El drawer dejo de alojar Configuracion (ahora en el dropdown de perfil)
+   y paso a ser menu: Compras, Gastos, CRM, Merma, Proveedores, etc. */
+.ag-drawer-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 2px;
+}
+.ag-drawer-mi {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 11px 12px;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: var(--ag-ink);
+  transition: background var(--ag-t-fast) var(--ag-ease), border-color var(--ag-t-fast) var(--ag-ease), transform var(--ag-t-fast) var(--ag-ease);
+}
+.ag-drawer.open .ag-drawer-mi { animation: ag-drawer-mi-in 320ms var(--ag-ease) backwards; }
+@keyframes ag-drawer-mi-in {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.ag-drawer-mi:hover  { background: var(--ag-bg-soft); border-color: var(--ag-line); }
+.ag-drawer-mi:active { transform: scale(0.985); }
+.ag-drawer-mi-icon {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--c-state-soft, var(--ag-bg-soft));
+  color: var(--c-state, var(--ag-ink-2));
+}
+.ag-drawer-mi-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ag-drawer-mi-label { font-size: 13.5px; font-weight: 700; line-height: 1.25; }
+.ag-drawer-mi-hint {
+  font-size: 11px; color: var(--ag-ink-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ag-drawer-mi-badge {
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ag-c-orders);
+  color: #fff;
+  font-size: 10px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ag-drawer.open .ag-drawer-mi { animation: none; }
+}

@@ -6,6 +6,7 @@ import KpiCard from "./shared/cards/KpiCard";
 import AnaCard from "./shared/cards/AnaCard";
 import AlertRow from "./shared/cards/AlertRow";
 import AnimateNumber from "./shared/AnimateNumber";
+import ActivityChartCard from "./shared/cards/ActivityChartCard";
 
 const Analytics = lazy(() => import("./Analytics"));
 
@@ -152,6 +153,11 @@ function Home({
           delta={nw.length > 0 ? `${nw.length} nuevo${nw.length > 1 ? 's' : ''}` : "vs mes anterior"}
           onClick={onOrders}
         />
+      </div>
+
+      {/* ─── Actividad: pedidos de hoy por hora / ventas por día ─── */}
+      <div style={{ marginBottom: 14 }}>
+        <ActivityChartCard orders={orders} sales={sales} />
       </div>
 
       {/* ─── Mermas del mes ─── */}

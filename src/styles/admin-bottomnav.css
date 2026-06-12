@@ -160,66 +160,70 @@
   100% { transform: translateY(-6px); opacity: 0; }
 }
 
-/* Purchase · ruedas del camión rotan + estela de humo */
-.ag-nav-item.active[data-section="purchase"] .ag-nav-wheel {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: ag-purchase-roll 1.6s linear infinite;
+/* Recipes · las líneas de la ficha se "escriben" en secuencia */
+.ag-nav-item .ag-nav-rl {
+  stroke-dasharray: 10;
+  stroke-dashoffset: 0;
 }
-@keyframes ag-purchase-roll {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+.ag-nav-item.active[data-section="recipes"] .ag-nav-rl {
+  animation: ag-recipes-write 2.2s ease-in-out infinite;
 }
-.ag-nav-item[data-section="purchase"] .ag-nav-smoke { opacity: 0; }
-.ag-nav-item.active[data-section="purchase"] .ag-nav-smoke {
-  animation: ag-purchase-smoke 1.4s ease-out infinite;
-}
-.ag-nav-item.active[data-section="purchase"] .ag-nav-smoke.s1 { animation-delay: 0s;    }
-.ag-nav-item.active[data-section="purchase"] .ag-nav-smoke.s2 { animation-delay: 0.35s; }
-.ag-nav-item.active[data-section="purchase"] .ag-nav-smoke.s3 { animation-delay: 0.7s;  }
-@keyframes ag-purchase-smoke {
-  0%   { opacity: 0; transform: translateX(4px); }
-  25%  { opacity: 0.9; }
-  100% { opacity: 0; transform: translateX(-3px); }
+.ag-nav-item.active[data-section="recipes"] .ag-nav-rl.r2 { animation-delay: 0.35s; }
+@keyframes ag-recipes-write {
+  0%       { stroke-dashoffset: 10; opacity: 0.2; }
+  45%, 80% { stroke-dashoffset: 0;  opacity: 1; }
+  100%     { stroke-dashoffset: 0;  opacity: 1; }
 }
 
-/* Expenses · moneda con $ que gira */
-.ag-nav-item[data-section="expenses"] .ag-nav-coin {
+/* Stock · la caja da un saltito y la tapa "respira" */
+.ag-nav-item .ag-nav-box {
   transform-box: fill-box;
-  transform-origin: center;
+  transform-origin: center bottom;
 }
-.ag-nav-item.active[data-section="expenses"] .ag-nav-coin {
-  animation: ag-expenses-coin-spin 2.4s ease-in-out infinite;
+.ag-nav-item.active[data-section="stock"] .ag-nav-box {
+  animation: ag-stock-hop 2s ease-in-out infinite;
 }
-@keyframes ag-expenses-coin-spin {
-  0%   { transform: scaleX(1); }
-  50%  { transform: scaleX(-1); }
-  100% { transform: scaleX(1); }
+@keyframes ag-stock-hop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  12%      { transform: translateY(-2.4px) scale(1.02); }
+  24%      { transform: translateY(0) scale(1); }
+  32%      { transform: translateY(-1px); }
+  40%      { transform: translateY(0); }
+}
+.ag-nav-item.active[data-section="stock"] .ag-nav-boxlid {
+  animation: ag-stock-lid 2s ease-in-out infinite;
+}
+@keyframes ag-stock-lid {
+  0%, 100% { opacity: 1; }
+  18%      { opacity: 0.35; }
 }
 
-/* More · 3 puntos pulsando en secuencia */
-.ag-nav-item.active[data-section="more"] .ag-nav-ddot {
-  animation: ag-more-pulse 1.6s ease-in-out infinite;
-  transform-origin: center;
+/* Sales · las barras crecen en ola */
+.ag-nav-item .ag-nav-bar {
+  transform-box: fill-box;
+  transform-origin: center bottom;
 }
-.ag-nav-item.active[data-section="more"] .ag-nav-ddot:nth-child(1) { animation-delay: 0s; }
-.ag-nav-item.active[data-section="more"] .ag-nav-ddot:nth-child(2) { animation-delay: 0.2s; }
-.ag-nav-item.active[data-section="more"] .ag-nav-ddot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes ag-more-pulse {
-  0%, 100% { transform: scale(1);   opacity: 0.7; }
-  50%      { transform: scale(1.4); opacity: 1; }
+.ag-nav-item.active[data-section="sales"] .ag-nav-bar {
+  animation: ag-sales-grow 1.8s ease-in-out infinite;
+}
+.ag-nav-item.active[data-section="sales"] .ag-nav-bar.b1 { animation-delay: 0s; }
+.ag-nav-item.active[data-section="sales"] .ag-nav-bar.b2 { animation-delay: 0.18s; }
+.ag-nav-item.active[data-section="sales"] .ag-nav-bar.b3 { animation-delay: 0.36s; }
+@keyframes ag-sales-grow {
+  0%, 100% { transform: scaleY(1); }
+  35%      { transform: scaleY(0.45); }
+  65%      { transform: scaleY(1.08); }
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .ag-nav-steam path,
-  .ag-nav-item.active[data-section="purchase"] .ag-nav-wheel,
-  .ag-nav-item.active[data-section="purchase"] .ag-nav-smoke,
-  .ag-nav-item.active[data-section="expenses"] .ag-nav-coin,
-  .ag-nav-item.active[data-section="more"] .ag-nav-ddot,
+  .ag-nav-item.active[data-section="recipes"] .ag-nav-rl,
+  .ag-nav-item.active[data-section="stock"] .ag-nav-box,
+  .ag-nav-item.active[data-section="stock"] .ag-nav-boxlid,
+  .ag-nav-item.active[data-section="sales"] .ag-nav-bar,
   .ag-nav-item.active .ag-nav-icon,
   .ag-nav-item.active .ag-nav-label::after {
     animation: none;
   }
-  .ag-nav-item[data-section="purchase"] .ag-nav-smoke { opacity: 0.6; }
 }

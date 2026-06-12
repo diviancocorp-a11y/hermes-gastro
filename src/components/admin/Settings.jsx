@@ -9,7 +9,8 @@
  * Props:
  *   settings, setSettings · estado en Admin.jsx (sincroniza con DB)
  *   showToast             · feedback
- *   theme, onThemeChange  · controla el toggle de modo oscuro (vive en Operación)
+ *   section               · 'operacion' | 'finanzas' | 'riesgo' | null (todo)
+ *                           (el toggle de modo oscuro vive ahora en el topbar)
  *   onExport              · handler de export embed (provee sales/expenses/etc.)
  *   exportData            · { sales, expenses, ingredients, orders, recipes, sett }
  *                           para la sub-página de exportar
@@ -25,7 +26,6 @@ import {
 import { todayISO } from "../../lib/utils";
 import business from "@business";
 import SettingsRow from "./shared/forms/SettingsRow";
-import ToggleSwitch from "./shared/forms/ToggleSwitch";
 import CatChipsEditor from "../ui/CatChipsEditor";
 import DecimalInput from "../ui/DecimalInput";
 
@@ -45,10 +45,19 @@ function BackChevron() {
   );
 }
 
-function Settings({ settings, setSettings, showToast, theme = 'light', onThemeChange, exportData }) {
+// Titulos cuando Settings se renderiza como pagina de UNA seccion
+// (abierta desde el dropdown de perfil del topbar)
+const SECTION_TITLES = {
+  operacion: "Operación",
+  finanzas: "Finanzas",
+  riesgo: "Zona de riesgo",
+};
+
+function Settings({ settings, setSettings, showToast, exportData, section = null, onBack }) {
   const confirmSlide = useConfirm();
   const [s, setS] = useState({ ...settings });
   const [page, setPage] = useState('root'); // 'root' | 'hours' | 'expCats' | 'ingCats' | 'payments' | 'exports' | 'reset'
+  const show = (g) => !section || section === g;
 
   // ─── Autosave debounced ───
   const skipFirst = useRef(true);
@@ -72,7 +81,6 @@ function Settings({ settings, setSettings, showToast, theme = 'light', onThemeCh
   const set = (k, v) => setS(p => ({ ...p, [k]: v }));
 
   const storeOpen = s.store_open !== false;
-  const isDark = theme === 'dark';
 
   const goTo = (p) => setPage(p);
   const goBack = () => setPage('root');
@@ -83,37 +91,41 @@ function Settings({ settings, setSettings, showToast, theme = 'light', onThemeCh
       {/* ── ROOT ── */}
       <div className={`ag-subpage is-root ${page !== 'root' ? 'has-child' : ''}`}>
         <div className="ag-subpage-body" style={{ paddingTop: 6 }}>
-          <div style={{ padding: "0 4px 14px" }}>
-            <h2 style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontWeight: 800,
-              fontSize: 20,
-              margin: 0,
-              color: "var(--ag-ink)",
-              letterSpacing: "-0.01em",
-            }}>Configuración</h2>
-            <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--ag-ink-3)" }}>Cambios se guardan automáticamente</p>
+          <div style={{ padding: "0 4px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label="Volver"
+                style={{
+                  width: 34, height: 34, borderRadius: 10, border: "1px solid var(--ag-line)",
+                  background: "var(--ag-bg-card)", color: "var(--ag-ink)", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}
+              >
+                <BackChevron />
+              </button>
+            )}
+            <div>
+              <h2 style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 800,
+                fontSize: 20,
+                margin: 0,
+                color: section === "riesgo" ? "var(--ag-c-orders)" : "var(--ag-ink)",
+                letterSpacing: "-0.01em",
+              }}>{SECTION_TITLES[section] || "Configuración"}</h2>
+              <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--ag-ink-3)" }}>Cambios se guardan automáticamente</p>
+            </div>
           </div>
 
-          {/* ─── OPERACIÓN ─── */}
-          <div className="ag-settings-group-title">Operación</div>
+          {/* ─── OPERACIÓN ───
+              El toggle de modo oscuro se mudo al topbar (sol/luna junto a
+              la burbuja de perfil) — aca queda lo operativo. */}
+          {show('operacion') && (
+          <>
+          {!section && <div className="ag-settings-group-title">Operación</div>}
           <div className="ag-settings-group">
-            <SettingsRow
-              state="prep"
-              icon={isDark
-                ? <Icon d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.11-1.36A6 6 0 0 1 12 3z" />
-                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              }
-              label="Modo oscuro"
-              hint={isDark ? "Activado" : "Desactivado"}
-              right={
-                <ToggleSwitch
-                  checked={isDark}
-                  onChange={v => onThemeChange?.(v ? 'dark' : 'light')}
-                  label="Modo oscuro"
-                />
-              }
-            />
             <SettingsRow
               state="stock"
               icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>}
@@ -122,9 +134,13 @@ function Settings({ settings, setSettings, showToast, theme = 'light', onThemeCh
               onClick={() => goTo('hours')}
             />
           </div>
+          </>
+          )}
 
           {/* ─── FINANZAS ─── */}
-          <div className="ag-settings-group-title">Finanzas</div>
+          {show('finanzas') && (
+          <>
+          {!section && <div className="ag-settings-group-title">Finanzas</div>}
           <div className="ag-settings-group">
             <SettingsRow
               state="prep"
@@ -157,9 +173,11 @@ function Settings({ settings, setSettings, showToast, theme = 'light', onThemeCh
               onClick={() => goTo('gateways')}
             />
           </div>
+          </>
+          )}
 
-          {/* ─── DATOS ─── */}
-          {exportData && (
+          {/* ─── DATOS (vive con Operación) ─── */}
+          {exportData && show('operacion') && (
             <>
               <div className="ag-settings-group-title">Datos</div>
               <div className="ag-settings-group">
@@ -175,7 +193,9 @@ function Settings({ settings, setSettings, showToast, theme = 'light', onThemeCh
           )}
 
           {/* ─── ZONA DE RIESGO ─── */}
-          <div className="ag-settings-group-title" style={{ color: "var(--ag-c-orders)" }}>Zona de riesgo</div>
+          {show('riesgo') && (
+          <>
+          {!section && <div className="ag-settings-group-title" style={{ color: "var(--ag-c-orders)" }}>Zona de riesgo</div>}
           <div className="ag-settings-group">
             {/* Cierre de emergencia: bloquea los pedidos del catálogo */}
             <SettingsRow
@@ -218,6 +238,8 @@ function Settings({ settings, setSettings, showToast, theme = 'light', onThemeCh
               onClick={() => goTo('reset')}
             />
           </div>
+          </>
+          )}
 
           <p style={{ textAlign: "center", color: "var(--ag-ink-3)", fontSize: 11, margin: "18px 0 0" }}>
             Hermes Gastro

@@ -1,27 +1,28 @@
 /**
- * BottomNav — navegación inferior fija con 5 secciones.
+ * BottomNav — navegación inferior fija con 5 secciones (jun 2026).
  * Cada item activo dispara una micro-animación distintiva.
  *
- * Secciones (producción real):
+ * Secciones (reorganizadas: Compras/Gastos/Más se mudaron al menú
+ * hamburguesa; el nav queda con lo de uso diario):
  *   home     · Inicio
  *   orders   · Pedidos (con badge de pedidos NEW)
- *   purchase · Compras (abre overlay de compras)
- *   expenses · Gastos (abre overlay de gastos)
- *   more     · Más (hub a pantalla completa)
+ *   recipes  · Recetas
+ *   stock    · Stock
+ *   sales    · Ventas
  *
  * Props:
- *   active:   'home' | 'orders' | 'purchase' | 'expenses' | 'more'
+ *   active:   'home' | 'orders' | 'recipes' | 'stock' | 'sales' | null
  *   onChange: (sectionId) => void
  *   badges:   { [id]: number }  ─ contadores opcionales (ej. orders: 3)
  */
 import { memo } from 'react'
 
 const SECTIONS = [
-  { id: 'home',     label: 'Inicio',  Icon: HomeIcon },
-  { id: 'orders',   label: 'Pedidos', Icon: OrdersIcon },
-  { id: 'purchase', label: 'Compras', Icon: PurchaseIcon },
-  { id: 'expenses', label: 'Gastos',  Icon: ExpensesIcon },
-  { id: 'more',     label: 'Más',     Icon: MoreIcon },
+  { id: 'home',    label: 'Inicio',  Icon: HomeIcon },
+  { id: 'orders',  label: 'Pedidos', Icon: OrdersIcon },
+  { id: 'recipes', label: 'Recetas', Icon: RecipesIcon },
+  { id: 'stock',   label: 'Stock',   Icon: StockIcon },
+  { id: 'sales',   label: 'Ventas',  Icon: SalesIcon },
 ]
 
 function BottomNav({ active = 'home', onChange, badges = {} }) {
@@ -75,48 +76,38 @@ function OrdersIcon() {
     </svg>
   )
 }
-function PurchaseIcon() {
-  /* Camión con estela de humo saliendo del escape detrás
-     Las líneas .ag-nav-smoke se animan cuando active=purchase. */
+function RecipesIcon() {
+  /* Ficha de receta: las líneas de texto se "escriben" (dash draw)
+     en secuencia cuando active=recipes. */
   return (
     <svg className="ag-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {/* Estela de escape (3 segmentos de línea detrás del camión) */}
-      <line className="ag-nav-smoke s1" x1="-4"  y1="11"   x2="2"   y2="11" />
-      <line className="ag-nav-smoke s2" x1="-5"  y1="13.5" x2="1.5" y2="13.5" />
-      <line className="ag-nav-smoke s3" x1="-5.5" y1="9"   x2="0.5" y2="9" />
-      {/* Cuerpo del camión */}
-      <rect x="2" y="7" width="11" height="9" rx="1" />
-      <path d="M13 10h4l3 3v3h-7" />
-      <circle className="ag-nav-wheel" cx="7"  cy="18" r="2" />
-      <circle className="ag-nav-wheel" cx="17" cy="18" r="2" />
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line className="ag-nav-rl r1" x1="8" y1="13" x2="16" y2="13" />
+      <line className="ag-nav-rl r2" x1="8" y1="17" x2="14" y2="17" />
     </svg>
   )
 }
-function ExpensesIcon() {
-  /* Moneda con símbolo $ que gira sobre su eje vertical (efecto flip de moneda)
-     cuando active=expenses. */
+function StockIcon() {
+  /* Caja 3D: la tapa (diagonales superiores) "respira" y la caja
+     da un saltito cuando active=stock. */
   return (
-    <svg className="ag-nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <g className="ag-nav-coin">
-        <circle cx="12" cy="12" r="9" fill="currentColor" />
-        <text
-          x="12" y="15.4"
-          textAnchor="middle"
-          fontSize="11"
-          fontWeight="900"
-          fontFamily="system-ui, -apple-system, sans-serif"
-          fill="var(--ag-bg, #fff)"
-        >$</text>
+    <svg className="ag-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <g className="ag-nav-box">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        <polyline className="ag-nav-boxlid" points="3.27 6.96 12 12.01 20.73 6.96" />
+        <line x1="12" y1="22.08" x2="12" y2="12" />
       </g>
     </svg>
   )
 }
-function MoreIcon() {
+function SalesIcon() {
+  /* Gráfico de barras: las 3 barras crecen en ola cuando active=sales. */
   return (
-    <svg className="ag-nav-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <circle className="ag-nav-ddot" cx="5"  cy="12" r="2" />
-      <circle className="ag-nav-ddot" cx="12" cy="12" r="2" />
-      <circle className="ag-nav-ddot" cx="19" cy="12" r="2" />
+    <svg className="ag-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line className="ag-nav-bar b1" x1="6"  y1="20" x2="6"  y2="14" />
+      <line className="ag-nav-bar b2" x1="12" y1="20" x2="12" y2="9" />
+      <line className="ag-nav-bar b3" x1="18" y1="20" x2="18" y2="4" />
     </svg>
   )
 }
