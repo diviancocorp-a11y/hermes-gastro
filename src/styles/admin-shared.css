@@ -809,7 +809,8 @@ body:has(.ag-page-over) .ag-bottom-nav {
   color: var(--ag-ink);
   transition: background var(--ag-t-fast) var(--ag-ease), border-color var(--ag-t-fast) var(--ag-ease), transform var(--ag-t-fast) var(--ag-ease);
 }
-.ag-drawer.open .ag-drawer-mi { animation: ag-drawer-mi-in 320ms var(--ag-ease) backwards; }
+.ag-drawer.open .ag-drawer-mi,
+.ag-menu-panel.open .ag-drawer-mi { animation: ag-drawer-mi-in 320ms var(--ag-ease) backwards; }
 @keyframes ag-drawer-mi-in {
   from { opacity: 0; transform: translateX(-14px); }
   to   { opacity: 1; transform: translateX(0); }
@@ -839,7 +840,9 @@ body:has(.ag-page-over) .ag-bottom-nav {
   flex-shrink: 0;
 }
 @media (prefers-reduced-motion: reduce) {
-  .ag-drawer.open .ag-drawer-mi { animation: none; }
+  .ag-drawer.open .ag-drawer-mi,
+  .ag-menu-panel.open .ag-drawer-mi { animation: none; }
+  .ag-menu-panel { transition: none; }
 }
 
 /* ─── Personalizacion como pagina (12/jun) ───
@@ -856,4 +859,54 @@ body:has(.ag-page-over) .ag-bottom-nav {
 .ag-brand-page .ag-modal-body {
   max-height: none;
   overflow-y: visible;
+}
+
+/* ─── Menu hamburguesa v2 (12/jun): desplegable que NACE del boton ───
+   Reemplaza al drawer lateral (tapaba el morph del boton). El panel
+   escala desde la esquina superior izquierda, anclado bajo el boton.
+   Sin logout ni correo: eso vive en la burbuja de perfil. */
+.ag-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 29;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+.ag-menu-backdrop.open { opacity: 1; pointer-events: auto; }
+
+.ag-menu-panel {
+  position: fixed;
+  top: 66px;
+  left: 12px;
+  z-index: 30;
+  width: min(330px, calc(100vw - 24px));
+  max-height: calc(100vh - 160px);
+  max-height: calc(100dvh - 160px);
+  overflow-y: auto;
+  padding: 10px 8px;
+  border-radius: 18px;
+  background: var(--ag-bg-card);
+  border: 1px solid var(--ag-line);
+  box-shadow: var(--ag-sh-lg);
+  /* nace del boton: origen arriba-izquierda, apuntando al morph */
+  transform-origin: 14px -10px;
+  transform: scale(0.55) translateY(-8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 260ms var(--ag-ease), opacity 200ms var(--ag-ease);
+}
+.ag-menu-panel.open {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ag-menu-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ag-ink-3);
+  padding: 4px 12px 8px;
 }

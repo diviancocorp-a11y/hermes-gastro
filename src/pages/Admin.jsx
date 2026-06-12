@@ -247,13 +247,13 @@ export default function Admin() {
         badges={{ orders: newOrdersCount }}
       />
 
+      {/* Menú hamburguesa: desplegable que nace del botón morph del topbar.
+          Logout y correo viven en la burbuja de perfil. */}
       <AdminDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         businessName={businessName}
-        userEmail={session?.user?.email || ''}
         items={drawerItems}
-        onLogout={() => { setDrawerOpen(false); doLogout(); }}
       />
 
       {/* Personalizacion migrada a /admin/personalizacion (#95).
