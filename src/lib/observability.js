@@ -117,6 +117,19 @@ export function captureException(error, context = {}) {
   if (!sentryEndpoint) return;
   if (isNoise(error)) return; // ruido de WebViews/browser: no reportar
 
+  // Si el SDK completo ya cargo (sentryFull.js, diferido post-load), delegar:
+  // asi el Session Replay queda adjunto al error y no se reporta duplicado
+  if (window.__SENTRY_FULL__) {
+    try {
+      window.__SENTRY_FULL__.captureException(error, {
+        tags: { ..._tenant ? { tenant: _tenant.code, tenant_name: _tenant.name } : {}, ...(context.tags || {}) },
+        extra: context.extra || {},
+        user: context.user || _user || undefined,
+      });
+      return;
+    } catch { /* si falla, cae al envelope manual de abajo */ }
+  }
+
   try {
     const envelope = buildSentryEnvelope(error, context);
     // Use sendBeacon for fire-and-forget (works even on page unload)
@@ -188,8 +201,11 @@ export function trackEvent(name, props = {}) {
  * Install global error handlers. Call once at app startup.
  */
 export function initObservability() {
-  // Catch unhandled errors
+  // Catch unhandled errors.
+  // Si el SDK completo ya cargo, EL instala sus propios handlers globales —
+  // los nuestros se apagan para no reportar duplicado.
   window.addEventListener('error', (event) => {
+    if (window.__SENTRY_FULL__) return;
     captureException(event.error || new Error(event.message), {
       tags: { source: 'window.onerror' },
       extra: { filename: event.filename, lineno: event.lineno },
@@ -198,6 +214,7 @@ export function initObservability() {
 
   // Catch unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
+    if (window.__SENTRY_FULL__) return;
     const error = event.reason instanceof Error
       ? event.reason
       : new Error(String(event.reason));

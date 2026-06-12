@@ -12,6 +12,13 @@ import './lib/i18n.js' // Initialize i18next (must be before App render)
 
 // Initialize error tracking & analytics (no-op if env vars not set)
 initObservability()
+// SDK completo de Sentry (Session Replay solo-en-error + tags de contexto):
+// DIFERIDO post-load para no afectar el arranque en webviews lentos (Instagram)
+if (import.meta.env.VITE_SENTRY_DSN) {
+  window.addEventListener('load', () => {
+    setTimeout(() => import('./lib/sentryFull.js').catch(() => {}), 1500)
+  })
+}
 // Tenant context: cada error reportado a Sentry incluye qué cliente lo disparó
 setTenantContext({ code: __CLIENT__, name: business.name })
 // Core Web Vitals (LCP, CLS, INP, FCP, TTFB) → console + analytics endpoint

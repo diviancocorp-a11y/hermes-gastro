@@ -91,6 +91,13 @@ export default function CheckoutScreen(props) {
   const goNext = () => onStepChange(Math.min(step + 1, 2));
   const goBack = () => { if (step === 0) onClose(); else onStepChange(step - 1); };
 
+  // Tag de contexto para Sentry: en que paso del checkout estaba el cliente
+  // cuando exploto algo (sentryFull.js lo lee en beforeSend)
+  useEffect(() => {
+    window.__HG_CHECKOUT_STEP = "checkout-paso-" + (step + 1);
+    return () => { window.__HG_CHECKOUT_STEP = null; };
+  }, [step]);
+
   // Boton de ayuda (header): abre WhatsApp del negocio con mensaje pre-llenado.
   const bizWhatsapp = (settings?.whatsapp || "").replace(/\D/g, "");
   const helpHref = bizWhatsapp

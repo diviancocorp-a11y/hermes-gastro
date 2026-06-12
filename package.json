@@ -20,6 +20,7 @@
     "check:schema": "node scripts/check-schema-sync.mjs"
   },
   "dependencies": {
+    "@sentry/react": "^10.57.0",
     "@supabase/supabase-js": "^2.100.1",
     "@tanstack/react-query": "^5.75.0",
     "i18next": "^25.1.0",
