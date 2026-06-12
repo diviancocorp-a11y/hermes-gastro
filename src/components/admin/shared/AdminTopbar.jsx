@@ -9,13 +9,11 @@
  *
  * Props:
  *   title         · string mostrado al centro
- *   avatarText    · inicial mostrada si no hay imagen
- *   avatarImage   · URL opcional (logo del negocio)
  *   menuOpen      · estado del drawer (anima el boton de menu)
  *   onMenu        · handler del boton hamburguesa
  *   theme         · 'light' | 'dark'
  *   onToggleTheme · () => void
- *   email, userId · operador logueado (dropdown de perfil)
+ *   email, name, userId · operador logueado (dropdown de perfil)
  *   onPersonalizacion, onOpenSection, onLogout · acciones del dropdown
  */
 import { memo } from 'react'
@@ -23,13 +21,12 @@ import AdminProfileMenu from './AdminProfileMenu'
 
 function AdminTopbar({
   title = '',
-  avatarText = 'A',
-  avatarImage = null,
   menuOpen = false,
   onMenu,
   theme = 'light',
   onToggleTheme,
   email = '',
+  name = '',
   userId = null,
   onPersonalizacion,
   onOpenSection,
@@ -85,9 +82,8 @@ function AdminTopbar({
 
         <AdminProfileMenu
           email={email}
+          name={name}
           userId={userId}
-          avatarImage={avatarImage}
-          avatarText={avatarText}
           onPersonalizacion={onPersonalizacion}
           onOpenSection={onOpenSection}
           onLogout={onLogout}

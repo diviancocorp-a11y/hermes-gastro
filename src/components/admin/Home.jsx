@@ -12,12 +12,6 @@ const Analytics = lazy(() => import("./Analytics"));
 
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-function getUserSubtitle(user) {
-  if (!user) return '';
-  const meta = user.user_metadata || {};
-  return meta.full_name || meta.name || meta.display_name || user.email || '';
-}
-
 function Home({
   user, lowStockIngredients, monthSales, monthExpenses, monthProfit, profitMargin,
   prevMonthSales = 0, prevMonthExpenses = 0, prevMonthProfit = 0, prevMonthOrdersCount = 0,
@@ -30,7 +24,6 @@ function Home({
   const nw = activeOrders.filter(o => o.status === OrderStatus.NEW);
   const monthStart = todayISO().slice(0, 7) + "-01";
   const currentMonth = MONTH_NAMES[new Date().getMonth()];
-  const userSubtitle = getUserSubtitle(user);
 
   // Pedidos creados en el mes actual (no solo activos)
   const monthOrdersCount = useMemo(
@@ -59,16 +52,7 @@ function Home({
             letterSpacing: '-0.01em',
             lineHeight: 1.15,
           }}>Resumen de {currentMonth}</h1>
-          {userSubtitle && (
-            <p style={{
-              margin: '4px 0 0',
-              fontSize: 11.5,
-              color: 'var(--ag-ink-3)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}>{userSubtitle}</p>
-          )}
+          {/* El operador (nombre/email) ya se muestra en la burbuja de perfil */}
         </div>
         <button
           type="button"

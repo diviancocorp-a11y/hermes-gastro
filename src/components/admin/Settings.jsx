@@ -23,6 +23,7 @@ import SettingsRow from "./shared/forms/SettingsRow";
 import CatChipsEditor from "../ui/CatChipsEditor";
 import DecimalInput from "../ui/DecimalInput";
 import DynamicQrs from "./DynamicQrs";
+import InfoPagesAdmin from "../../pages/admin/InfoPages";
 
 function Icon({ d, viewBox = "0 0 24 24" }) {
   return (
@@ -53,6 +54,7 @@ function Settings({ settings, setSettings, showToast, section = null, onBack }) 
   const [s, setS] = useState({ ...settings });
   const [page, setPage] = useState('root'); // 'root' | 'hours' | 'expCats' | 'ingCats' | 'costs' | 'gateways' | 'channels' | 'usarTargets' | 'reset'
   const [qrsOpen, setQrsOpen] = useState(false); // overlay QRs dinamicos (vive en Operacion)
+  const [pagesOpen, setPagesOpen] = useState(false); // overlay Paginas informativas (debajo de QRs)
   const show = (g) => !section || section === g;
 
   // ─── Autosave debounced ───
@@ -136,6 +138,14 @@ function Settings({ settings, setSettings, showToast, section = null, onBack }) 
               label="QRs dinámicos"
               hint="QRs impresos que cambian de destino sin reimprimir"
               onClick={() => setQrsOpen(true)}
+            />
+            {/* Paginas informativas: contenido al que apuntan los QRs */}
+            <SettingsRow
+              state="recipes"
+              icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>}
+              label="Páginas informativas"
+              hint="Contenido para tus QRs y links · /info/..."
+              onClick={() => setPagesOpen(true)}
             />
           </div>
           </>
@@ -297,6 +307,13 @@ function Settings({ settings, setSettings, showToast, section = null, onBack }) 
 
       {/* Overlay de QRs dinamicos (componente autonomo a pantalla completa) */}
       {qrsOpen && <DynamicQrs onClose={() => setQrsOpen(false)} showToast={showToast} />}
+
+      {/* Overlay de Paginas informativas (gestion completa con editor de bloques) */}
+      {pagesOpen && (
+        <div className="ag-page-over" style={{ overflowY: "auto" }}>
+          <InfoPagesAdmin embedded onBack={() => setPagesOpen(false)} />
+        </div>
+      )}
     </div>
   );
 }

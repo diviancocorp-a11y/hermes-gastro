@@ -56,21 +56,21 @@
 .ag-theme-light .ag-bg-layer { background: #FDFCFA; }
 .ag-theme-light .ag-bg-grid {
   background-image:
-    linear-gradient(to right, #F0EDE6 1px, transparent 1px),
-    linear-gradient(to bottom, #F0EDE6 1px, transparent 1px);
+    linear-gradient(to right, #ECE7DC 1px, transparent 1px),
+    linear-gradient(to bottom, #ECE7DC 1px, transparent 1px);
 }
-.ag-theme-light .ag-bg-glow.g1 { background: radial-gradient(circle at center, rgba(245, 158, 11, 0.20), transparent 62%); }
-.ag-theme-light .ag-bg-glow.g2 { background: radial-gradient(circle at center, rgba(253, 230, 138, 0.30), transparent 62%); }
+.ag-theme-light .ag-bg-glow.g1 { background: radial-gradient(circle at center, rgba(245, 158, 11, 0.38), transparent 65%); }
+.ag-theme-light .ag-bg-glow.g2 { background: radial-gradient(circle at center, rgba(250, 204, 21, 0.45), transparent 65%); }
 
-/* Dark · lienzo carbón cálido, grilla apenas visible, glow ámbar */
+/* Dark · lienzo carbón cálido, grilla sutil, glow ámbar bien presente */
 .ag-theme-dark .ag-bg-layer { background: #131110; }
 .ag-theme-dark .ag-bg-grid {
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
 }
-.ag-theme-dark .ag-bg-glow.g1 { background: radial-gradient(circle at center, rgba(245, 158, 11, 0.17), transparent 62%); }
-.ag-theme-dark .ag-bg-glow.g2 { background: radial-gradient(circle at center, rgba(217, 119, 6, 0.13), transparent 62%); }
+.ag-theme-dark .ag-bg-glow.g1 { background: radial-gradient(circle at center, rgba(245, 158, 11, 0.34), transparent 65%); }
+.ag-theme-dark .ag-bg-glow.g2 { background: radial-gradient(circle at center, rgba(217, 119, 6, 0.26), transparent 65%); }
 
 /* — Reduce motion respect — */
 @media (prefers-reduced-motion: reduce) {

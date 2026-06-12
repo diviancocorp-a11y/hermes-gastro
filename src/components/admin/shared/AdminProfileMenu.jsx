@@ -3,21 +3,25 @@
  * Diseno adaptado del patron "profile dropdown" (kokonut) al stack propio:
  * CSS plano con tokens del admin, sin radix/Tailwind/next.
  *
- * Muestra: email del operador + su rol real (admin_users: owner/staff),
- * accesos a Personalizacion y a las paginas de configuracion
- * (Operacion · Finanzas · Zona de riesgo) y el logout.
+ * Muestra: avatar ELEGIBLE por el operador (los 10 ilustrados de la marca,
+ * no el logo del negocio), nombre + email + rol real (admin_users), accesos
+ * a Personalizacion y a las paginas de configuracion (Operacion · Finanzas ·
+ * Zona de riesgo) y el logout.
+ *
+ * El avatar elegido se guarda por dispositivo (localStorage ag_avatar_key),
+ * mismo patron que el avatar del cliente en el catalogo.
  *
  * Props:
- *   email           — email del operador logueado
+ *   email, name     — operador logueado (name desde user_metadata.full_name)
  *   userId          — auth.uid() para buscar el rol en admin_users
- *   avatarImage     — logo del negocio (opcional)
- *   avatarText      — inicial fallback
  *   onPersonalizacion, onOpenSection(key), onLogout
  */
 import { memo, useEffect, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
+import { Avatar, AVATAR_KEYS, avatarKeyFor } from '../../../lib/avatars'
 
 const ROLE_LABEL = { owner: 'Dueño', staff: 'Staff' }
+const AVATAR_LS_KEY = 'ag_avatar_key'
 
 // Cache de rol por sesion (evita re-consultar al re-montar el topbar)
 let _roleCache = { userId: null, role: null }
@@ -37,7 +41,7 @@ const ITEMS = [
   {
     key: 'cfg-operacion',
     label: 'Operación',
-    hint: 'Horarios y datos',
+    hint: 'Horarios, QRs y páginas',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
@@ -71,9 +75,13 @@ const ITEMS = [
   },
 ]
 
-function AdminProfileMenu({ email = '', userId = null, avatarImage = null, avatarText = 'A', onPersonalizacion, onOpenSection, onLogout }) {
+function AdminProfileMenu({ email = '', name = '', userId = null, onPersonalizacion, onOpenSection, onLogout }) {
   const [open, setOpen] = useState(false)
+  const [picking, setPicking] = useState(false) // selector de avatar desplegado
   const [role, setRole] = useState(_roleCache.userId === userId ? _roleCache.role : null)
+  const [avatarKey, setAvatarKey] = useState(() => {
+    try { return localStorage.getItem(AVATAR_LS_KEY) || avatarKeyFor(name || email) } catch { return avatarKeyFor(name || email) }
+  })
   const rootRef = useRef(null)
 
   // Rol real del operador (admin_users es legible por cualquier admin)
@@ -93,8 +101,8 @@ function AdminProfileMenu({ email = '', userId = null, avatarImage = null, avata
   // Cerrar al tocar fuera o con Escape
   useEffect(() => {
     if (!open) return
-    const onDown = (e) => { if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false) }
-    const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
+    const onDown = (e) => { if (rootRef.current && !rootRef.current.contains(e.target)) { setOpen(false); setPicking(false) } }
+    const onKey = (e) => { if (e.key === 'Escape') { setOpen(false); setPicking(false) } }
     document.addEventListener('pointerdown', onDown)
     document.addEventListener('keydown', onKey)
     return () => {
@@ -103,9 +111,14 @@ function AdminProfileMenu({ email = '', userId = null, avatarImage = null, avata
     }
   }, [open])
 
-  const initial = (avatarText || 'A').charAt(0).toUpperCase()
+  const pickAvatar = (key) => {
+    setAvatarKey(key)
+    try { localStorage.setItem(AVATAR_LS_KEY, key) } catch { /* sin storage */ }
+  }
+
   const pick = (key) => {
     setOpen(false)
+    setPicking(false)
     if (key === 'personalizacion') onPersonalizacion?.()
     else onOpenSection?.(key)
   }
@@ -120,25 +133,56 @@ function AdminProfileMenu({ email = '', userId = null, avatarImage = null, avata
         aria-expanded={open}
         aria-label="Cuenta"
       >
-        <span className="ag-pm-avatar">
-          {avatarImage ? <img src={avatarImage} alt="" /> : initial}
+        {/* Pastilla con identidad visible (nombre + correo) + avatar */}
+        <span className="ag-pm-trigger-id">
+          <span className="ag-pm-trigger-name">{name || 'Operador'}</span>
+          <span className="ag-pm-trigger-email">{email}</span>
+        </span>
+        <span className="ag-pm-trigger-ring">
+          <Avatar avatarKey={avatarKey} name={name || email} size={30} />
         </span>
       </button>
 
       {open && (
         <div className="ag-pm-panel" role="menu">
-          {/* Header: quien esta operando + su rol */}
+          {/* Header: quien esta operando + su rol. Tocar el avatar abre el selector */}
           <div className="ag-pm-head">
-            <span className="ag-pm-avatar lg">
-              {avatarImage ? <img src={avatarImage} alt="" /> : initial}
-            </span>
+            <button
+              type="button"
+              className={`ag-pm-avatar-btn ${picking ? 'picking' : ''}`}
+              onClick={() => setPicking(p => !p)}
+              aria-label="Cambiar avatar"
+              title="Cambiar avatar"
+            >
+              <Avatar avatarKey={avatarKey} name={name || email} size={40} />
+              <span className="ag-pm-avatar-edit" aria-hidden="true">✎</span>
+            </button>
             <div className="ag-pm-id">
+              {name && <div className="ag-pm-name" title={name}>{name}</div>}
               <div className="ag-pm-email" title={email}>{email}</div>
               <div className="ag-pm-rolewrap">
                 <span className="ag-pm-role">{ROLE_LABEL[role] || 'Operador'}</span>
               </div>
             </div>
           </div>
+
+          {/* Selector de avatar (los 10 ilustrados de la marca) */}
+          {picking && (
+            <div className="ag-pm-avatars" role="group" aria-label="Elegir avatar">
+              {AVATAR_KEYS.map(k => (
+                <button
+                  key={k}
+                  type="button"
+                  className={`ag-pm-avatar-opt ${k === avatarKey ? 'active' : ''}`}
+                  onClick={() => pickAvatar(k)}
+                  aria-label={`Avatar ${k}`}
+                  aria-pressed={k === avatarKey}
+                >
+                  <Avatar avatarKey={k} size={34} />
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="ag-pm-items">
             {ITEMS.map(it => (

@@ -33,6 +33,9 @@ if (dsn) {
       /Java object is gone/i,
       /iabjs:\/\//i,
       /ResizeObserver loop (limit exceeded|completed with undelivered notifications)/i,
+      // Chunk viejo tras deploy — lazyReload lo auto-recupera (ver observability.js)
+      /Importing a module script failed/i,
+      /dynamically imported module/i,
     ],
     beforeSend(event) {
       event.tags = {

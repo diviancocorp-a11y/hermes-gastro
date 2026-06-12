@@ -104,6 +104,13 @@ const IGNORE_PATTERNS = [
   /Java object is gone/i,
   /iabjs:\/\//i,
   /ResizeObserver loop (limit exceeded|completed with undelivered notifications)/i,
+  // Chunk viejo tras deploy (12/jun): el usuario tenia la app abierta de antes
+  // y el import dinamico fallo. lazyReload (App.jsx) lo recupera solo
+  // recargando — reportarlo es ruido en cada deploy. Wording por browser:
+  // Safari "Importing a module script failed" / Chrome "Failed to fetch
+  // dynamically imported module" / Firefox "error loading dynamically...".
+  /Importing a module script failed/i,
+  /dynamically imported module/i,
 ];
 function isNoise(error) {
   const text = `${error?.message || error || ''} ${error?.stack || ''}`;
