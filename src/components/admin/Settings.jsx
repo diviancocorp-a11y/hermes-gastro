@@ -20,6 +20,7 @@ import { useConfirm } from "../ConfirmSlideProvider";
 import { useEffect, useRef, useState } from "react";
 import { updateSettings, resetHistoricalData } from "../../lib/adminService";
 import SettingsRow from "./shared/forms/SettingsRow";
+import TimePicker from "./shared/forms/TimePicker";
 import CatChipsEditor from "../ui/CatChipsEditor";
 import DecimalInput from "../ui/DecimalInput";
 import DynamicQrs from "./DynamicQrs";
@@ -471,11 +472,11 @@ function HoursPage({ open, hours, onChange, onBack }) {
                 : d.h24
                   ? <div style={{ flex: 1, fontSize: 12, color: "var(--ag-c-sales)", fontWeight: 600 }}>● 24 horas</div>
                   : <>
-                      <input type="time" value={d.open || ""} onChange={e => set(i, "open", e.target.value)}
-                        style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: "1px solid var(--ag-line)", fontSize: 13, background: "var(--ag-bg)", color: "var(--ag-ink)" }} />
+                      {/* Desplegable de hora/minuto (12/jun) — antes input type=time
+                          que en desktop selecciona el texto para escribir */}
+                      <TimePicker value={d.open || ""} onChange={v => set(i, "open", v)} ariaLabel={`Apertura del ${day}`} />
                       <span style={{ fontSize: 11, color: "var(--ag-ink-3)" }}>a</span>
-                      <input type="time" value={d.close || ""} onChange={e => set(i, "close", e.target.value)}
-                        style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: "1px solid var(--ag-line)", fontSize: 13, background: "var(--ag-bg)", color: "var(--ag-ink)" }} />
+                      <TimePicker value={d.close || ""} onChange={v => set(i, "close", v)} ariaLabel={`Cierre del ${day}`} />
                     </>
               }
               <button type="button" onClick={() => set(i, "closed", !d.closed)}
