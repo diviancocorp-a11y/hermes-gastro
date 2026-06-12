@@ -181,12 +181,19 @@ export default function InfoPagesAdmin({ embedded = false, onBack }) {
       visible: draft.visible,
       updated_at: new Date().toISOString(),
     };
+    // .select('id') para detectar el guardado SILENCIOSO: si RLS bloquea,
+    // Supabase devuelve 0 filas SIN error (paso el 12/jun — faltaban las
+    // policies de escritura y el editor "guardaba" nada).
     const res = editing === "new"
-      ? await supabase.from("info_pages").insert(payload)
-      : await supabase.from("info_pages").update(payload).eq("id", editing);
+      ? await supabase.from("info_pages").insert(payload).select("id")
+      : await supabase.from("info_pages").update(payload).eq("id", editing).select("id");
     setSaving(false);
     if (res.error) {
       setError(res.error.code === "23505" ? "Ya existe una página con esa dirección." : "Error al guardar.");
+      return;
+    }
+    if (!res.data || res.data.length === 0) {
+      setError("No se guardó: tu usuario no tiene permiso de edición. Avisale al dueño.");
       return;
     }
     setEditing(null);
