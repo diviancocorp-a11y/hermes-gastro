@@ -10,6 +10,7 @@ import { upsertCustomer } from "../../services/phoneAuth";
 import { setGuestUser, getGuestUser } from "../../lib/guestUser";
 import OrderStatusCard from "../../catalog-pro/OrderStatusCard";
 import { cancelOwnOrder, useRegretCountdown } from "../../catalog-pro/regretOrder";
+import PushOptInBanner from "../../catalog-pro/PushOptInBanner";
 
 const GREEN = "#16A34A";
 
@@ -103,6 +104,15 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
                 fontSize: 14, color: "var(--tx)", fontWeight: 600,
               }}>
                 ✓ Pedido cancelado — no se te cobró nada. Podés volver a la carta y pedir de nuevo.
+              </div>
+            )}
+
+            {/* Opt-in de push EN EL MOMENTO JUSTO (12/jun): recien hizo el
+                pedido y quiere saber cuando esta listo. Antes el banner solo
+                vivia en Mi Cuenta y nadie lo veia (0-2 suscriptores). */}
+            {!cancelled && (
+              <div style={{ maxWidth: 420, margin: "0 auto" }}>
+                <PushOptInBanner session={{ phone: form?.phone || getGuestUser()?.phone || null }} />
               </div>
             )}
 

@@ -7,6 +7,7 @@ import AnaCard from "./shared/cards/AnaCard";
 import AlertRow from "./shared/cards/AlertRow";
 import AnimateNumber from "./shared/AnimateNumber";
 import ActivityChartCard from "./shared/cards/ActivityChartCard";
+import AdminPushBanner from "./shared/AdminPushBanner";
 
 const Analytics = lazy(() => import("./Analytics"));
 
@@ -70,6 +71,9 @@ function Home({
           <span>{currentMonth}</span>
         </button>
       </div>
+
+      {/* ─── Avisos de pedidos nuevos en esta tablet (si no esta suscripta) ─── */}
+      <AdminPushBanner onShowToast={onShowToast} />
 
       {/* ─── Alertas (siempre 2 cards lado a lado: pedidos + stock) ─── */}
       <div className="ag-alerts" style={{ marginBottom: 14 }}>
