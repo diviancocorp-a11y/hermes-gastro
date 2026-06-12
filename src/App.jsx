@@ -15,13 +15,36 @@ import { useEffect } from 'react'
 import { fetchSettings } from './services/settings'
 import { supabase } from './lib/supabase'
 
-const Admin = lazy(() => import('./pages/Admin'))
-const Personalizacion = lazy(() => import('./pages/Personalizacion'))
-const InfoPagesAdmin = lazy(() => import('./pages/admin/InfoPages'))
-const OrderTracker = lazy(() => import('./pages/OrderTracker'))
-const MyAccount = lazy(() => import('./pages/MyAccount'))
-const MpCallback = lazy(() => import('./pages/MpCallback'))
-const MpStatus = lazy(() => import('./pages/MpStatus'))
+// lazy con auto-recuperacion (fix HERMES-GASTRO-8, 11/jun): si el usuario
+// tiene la app abierta de ANTES de un deploy, el chunk viejo ya no existe y
+// el import dinamico falla ("Failed to fetch dynamically imported module").
+// Solucion: recargar la pagina UNA vez (trae el HTML nuevo con hashes nuevos).
+// El guard en sessionStorage evita loops si el error es otro.
+function lazyReload(importer) {
+  return lazy(() =>
+    importer().catch((err) => {
+      try {
+        // Maximo 1 recarga cada 60s: recupera tras cada deploy nuevo pero
+        // nunca entra en loop si el fallo es persistente
+        const last = Number(sessionStorage.getItem('hg_chunk_reload') || 0)
+        if (Date.now() - last > 60000) {
+          sessionStorage.setItem('hg_chunk_reload', String(Date.now()))
+          window.location.reload()
+          return new Promise(() => {}) // la recarga interrumpe; no renderizar nada
+        }
+      } catch { /* sin storage: dejar que el error suba al ErrorBoundary */ }
+      throw err
+    }),
+  )
+}
+
+const Admin = lazyReload(() => import('./pages/Admin'))
+const Personalizacion = lazyReload(() => import('./pages/Personalizacion'))
+const InfoPagesAdmin = lazyReload(() => import('./pages/admin/InfoPages'))
+const OrderTracker = lazyReload(() => import('./pages/OrderTracker'))
+const MyAccount = lazyReload(() => import('./pages/MyAccount'))
+const MpCallback = lazyReload(() => import('./pages/MpCallback'))
+const MpStatus = lazyReload(() => import('./pages/MpStatus'))
 
 const Loading = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>

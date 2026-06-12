@@ -95,11 +95,27 @@ function parseStack(stack) {
  * Report an error to Sentry (if configured).
  * Safe to call even without a DSN — it's a no-op.
  */
+// ─── Filtro anti-ruido ───────────────────────────────────
+// Errores que NO son nuestros y solo ensucian Sentry/Telegram:
+//  - "Java object is gone" / iabjs://  → JS que inyecta el WebView in-app de
+//    Instagram/Facebook en Android (HERMES-GASTRO-C/D/E, 11/jun). Falla solo.
+//  - ResizeObserver loop → warning benigno de Chrome, no rompe nada.
+const IGNORE_PATTERNS = [
+  /Java object is gone/i,
+  /iabjs:\/\//i,
+  /ResizeObserver loop (limit exceeded|completed with undelivered notifications)/i,
+];
+function isNoise(error) {
+  const text = `${error?.message || error || ''} ${error?.stack || ''}`;
+  return IGNORE_PATTERNS.some((re) => re.test(text));
+}
+
 export function captureException(error, context = {}) {
   // Always log locally
   console.error('[observability]', error);
 
   if (!sentryEndpoint) return;
+  if (isNoise(error)) return; // ruido de WebViews/browser: no reportar
 
   try {
     const envelope = buildSentryEnvelope(error, context);
