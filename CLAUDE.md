@@ -37,7 +37,7 @@ Cada tenant = 1 proyecto Supabase + 1 proyecto Vercel + 1 dominio. Mismo codigo,
 - **Si agregas una columna a DB y la usas en `set(...)` desde la UI pero olvidas agregarla al Zod → el upsert NO la persiste y NO da error**
 - Bug recurrente: paso ya 4 veces (#54, #56, #96, ultimo). Ahora hay pre-commit que lo agarra
 - Manifest: `scripts/db-columns-manifest.json` lista las cols que el Zod DEBE conocer. Pre-commit corre `scripts/check-schema-sync.mjs`
-- **Para agregar col nueva:** 1) ALTER TABLE en 3 tenants, 2) agregar al Zod schema, 3) agregar al manifest, 4) actualizar `scripts/supabase-schema.json` con `npm run schema:sync`
+- **Para agregar col nueva:** 1) ALTER TABLE en 3 tenants (MCP apply_migration) + archivo en supabase/migrations/, 2) agregar al Zod schema, 3) agregar al manifest, 4) actualizar `scripts/supabase-schema.json` A MANO si la tabla esta en el snapshot (`npm run schema:sync` NO existe)
 
 ### Phone-only auth (guestUser)
 - Catalogo permite hacer pedidos sin signup via `localStorage.guestUser` + RPCs SECURITY DEFINER
@@ -48,7 +48,14 @@ Cada tenant = 1 proyecto Supabase + 1 proyecto Vercel + 1 dominio. Mismo codigo,
 ### Catalog vs Admin
 - `/` y `/info/:slug` = catalogo publico (catalog-pro)
 - `/admin/*` = panel interno. Lazy-loaded como chunk `Admin-*.js`
-- BrandModal en `src/components/admin/shared/` es la configuracion general del tenant
+- Navegacion del admin (rediseno 12/jun): bottom nav = Inicio · Pedidos ·
+  Recetas · Stock · Ventas. Menu hamburguesa (desplegable del boton morph) =
+  Compras, Gastos, CRM, Merma, Proveedores, Push, Usuarios. Burbuja de perfil
+  (avatar elegible) = Personalizacion (BrandModal asPage), paginas de config
+  Operacion/Finanzas/Zona de riesgo (Settings con prop `section`) y logout.
+- Cuentas de pago: UNICA verdad en config Finanzas → "Cuentas y medios de pago"
+- En Settings: NO usar dynamic imports de servicios (HERMES-GASTRO-G: chunk
+  viejo tras deploy → "e is not a function"). Imports estaticos.
 
 ### Multi-tenant gotchas
 - `__CLIENT__` se reemplaza en build, NO en runtime. Si ves el literal `__CLIENT__` en algun lado, el build esta mal
@@ -57,15 +64,18 @@ Cada tenant = 1 proyecto Supabase + 1 proyecto Vercel + 1 dominio. Mismo codigo,
 
 ## Bugs recurrentes (workarounds documentados)
 
-### 1. Truncamiento Cowork↔Linux mount
-**Sintoma:** archivos JSX se cortan al final despues de varios Edit. Pre-commit detecta con `scripts/check-file-integrity.mjs`.
+### 1. Corrupcion Cowork↔Linux mount (REGLA DURA)
+**Sintoma:** archivos que se truncan o quedan con bloques insertados al medio
+despues de escribir POR EL MOUNT. Paso 3 veces el 12/jun (python sobre
+Settings.jsx, `cat >>` sobre admin-topbar.css).
 
-**Fix:** restaurar desde HEAD:
-```bash
-head -n N file > /tmp/x
-git show HEAD:file | sed -n 'M,$p' >> /tmp/x
-mv /tmp/x file
-```
+**REGLA:** NUNCA escribir/append via el mount Linux (`cat >>`, `sed -i`,
+python sobre /sessions/...). Editar SOLO con Edit/Write tools (lado Windows)
+o scripts node/python ejecutados EN WINDOWS via Desktop Commander. El mount
+es SOLO LECTURA en la practica — y aun leyendo puede mostrar contenido viejo
+o "binary file matches": verificar siempre del lado Windows.
+
+**Fix si paso:** `git checkout -- <file>` y rehacer con herramientas Windows.
 
 ### 2. UTF-8 cortado a mitad de caracter multi-byte
 **Sintoma:** Vercel build falla con `[UNLOADABLE_DEPENDENCY] stream did not contain valid UTF-8`. Hoy paso con CheckoutScreen.jsx (commit 30aa94c).
@@ -110,9 +120,10 @@ python3 -c "open('FILE','rb').read().decode('utf-8','strict')"
 ## Comandos utiles
 
 ```bash
-npm run schema:sync          # regenera scripts/supabase-schema.json desde DB
-CLIENT=la-nona-pato vite build  # build de un tenant especifico
+CLIENT=la-nona-pato vite build  # build de un tenant (Windows: set CLIENT=x&& npx vite build)
+set NODE_ENV=test&& npm test    # suite completa en la maquina de Ricky
 ```
+(`npm run schema:sync` NO existe — el snapshot scripts/supabase-schema.json se mantiene a mano)
 
 ## MCPs conectados
 
@@ -126,14 +137,16 @@ CLIENT=la-nona-pato vite build  # build de un tenant especifico
 
 Sprint 1 (seguridad) aplicado en los 3 tenants:
 - **Roles admin**: tabla `admin_users` (owner/staff) + `is_admin()`/`is_owner()`. TODAS las policies "cualquier authenticated" ahora exigen is_admin(). Solo usuarios en admin_users entran al panel. Bootstrap de tenant nuevo: ver seccion ROLES en 000_initial_schema.sql
-- **UI Usuarios**: Mas > Usuarios (src/components/admin/Users.jsx) + edge function `admin-users` (solo owners gestionan)
+- **UI Usuarios**: menu ☰ > Usuarios (src/components/admin/Users.jsx) + edge function `admin-users` (solo owners gestionan)
 - `adjust_stock` con guard is_admin + revoke anon; `send-push` exige service role o JWT admin; `push_subscriptions` solo via RPCs por endpoint (upsert/delete/count_push_subscription[s])
 - INSERT publico directo de orders/order_items eliminado (submit-order usa service role)
 - Pendiente manual de Ricky: habilitar leaked password protection en el dashboard de los 3 proyectos (Auth > Settings, 1 click)
 
 Proximos: Sprint 2 (multi-tenant: scheduled-export, CatalogFooter, delivery a settings) → Sprint 3 (limpieza) → Sprint 4 (vendible).
 
-Pendientes heredados (ahora en Sprint 4/5 del plan): Sentry sourcemaps + Seer, refactor check-schema-sync para leer supabase-schema.json directo, pre-commit UTF-8 strict.
+Pendientes heredados (ahora en Sprint 4/5 del plan): refactor check-schema-sync para leer supabase-schema.json directo, pre-commit UTF-8 strict. (Sentry sourcemaps + Seer: HECHO 12/jun — sourcemaps via Vercel env, MCP conectado, Replay solo-en-error, filtro anti-ruido.)
+
+Auditoria DB↔repo (12/jun): TODAS las tablas de los 3 tenants estan ahora versionadas en supabase/migrations/ (info_pages, dynamic_qrs y push_subscriptions se crearon a mano en su momento y se versionaron ese dia — info_pages ademas NO tenia policies de escritura y el editor guardaba 0 filas sin error).
 
 ## Preferencias del usuario (Ricky)
 
@@ -144,4 +157,7 @@ Pendientes heredados (ahora en Sprint 4/5 del plan): Sentry sourcemaps + Seer, r
 
 ## Estado actual
 
-Branch: `main`. Ultimo commit: `cce766a Fix UTF-8 corruption + reaplicar desglose propina/total en step 2`. **Pendiente: `git push` desde la terminal del user.**
+Branch: `main`, sincronizada con origin (cada commit se pushea al toque y
+Vercel auto-deploya los 3 tenants). Mala Miga abrio el 11/jun. P&L del mes
+usa costos REALES (fix doble conteo de merma/gastos proyectados, 12/jun);
+los % proyectados quedan solo para pricing por receta.

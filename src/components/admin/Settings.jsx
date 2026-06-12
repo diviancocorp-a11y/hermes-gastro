@@ -26,6 +26,12 @@ import DecimalInput from "../ui/DecimalInput";
 import DynamicQrs from "./DynamicQrs";
 import InfoPagesAdmin from "../../pages/admin/InfoPages";
 import PaymentAccountsEditor from "../ui/PaymentAccountsEditor";
+// Imports ESTATICOS (fix HERMES-GASTRO-G): antes eran dynamic imports y
+// tras un deploy el chunk viejo resolvia un modulo roto → "e is not a
+// function" y la subpagina quedaba en "Cargando..." eterno. Son modulos
+// chicos: van al chunk de Admin y listo.
+import { fetchActiveIntegration, connectMercadoPagoManual, disconnectIntegration } from "../../services/paymentIntegrations";
+import { fetchDeliveryChannels, upsertDeliveryChannel } from "../../services/deliveryChannels";
 
 function Icon({ d, viewBox = "0 0 24 24" }) {
   return (
@@ -626,7 +632,6 @@ function GatewaysSubPage({ open, showToast, onBack }) {
     let mounted = true;
     (async () => {
       try {
-        const { fetchActiveIntegration } = await import("../../services/paymentIntegrations");
         const it = await fetchActiveIntegration("mercadopago");
         if (mounted) setMpIntegration(it);
       } catch (e) {
@@ -646,7 +651,6 @@ function GatewaysSubPage({ open, showToast, onBack }) {
     }
     setConnecting(true);
     setConnectError("");
-    const { connectMercadoPagoManual, fetchActiveIntegration } = await import("../../services/paymentIntegrations");
     const res = await connectMercadoPagoManual({ accessToken, publicKey });
     setConnecting(false);
     if (res?.ok) {
@@ -666,7 +670,6 @@ function GatewaysSubPage({ open, showToast, onBack }) {
     const okConfirm = await confirmSlide({ title: "Desconectar MercadoPago", body: "Los pedidos pagados anteriormente se conservan. Los nuevos no podrán cobrarse por MP hasta reconectar.", label: "Deslizá para desconectar" });
     if (!okConfirm) return;
     setDisconnecting(true);
-    const { disconnectIntegration } = await import("../../services/paymentIntegrations");
     const ok = await disconnectIntegration("mercadopago");
     setDisconnecting(false);
     if (ok) {
@@ -822,7 +825,6 @@ function ChannelsSubPage({ open, showToast, onBack }) {
     let mounted = true;
     (async () => {
       try {
-        const { fetchDeliveryChannels } = await import("../../services/deliveryChannels");
         const list = await fetchDeliveryChannels({ activeOnly: false });
         if (mounted) setChannels(list);
       } catch (e) {
@@ -838,7 +840,6 @@ function ChannelsSubPage({ open, showToast, onBack }) {
   const save = async () => {
     if (!editing) return;
     setSaving(true);
-    const { upsertDeliveryChannel, fetchDeliveryChannels } = await import("../../services/deliveryChannels");
     const ok = await upsertDeliveryChannel({
       id: editing.id,
       slug: editing.slug,

@@ -4,17 +4,15 @@ import { todayISO, OrderStatus } from "../lib/utils";
 /**
  * useFinancials — Métricas financieras del dashboard admin.
  *
- * Modelo de costos:
- *  - Costo Materia Prima Bruto: Σ (precio_ingrediente × cantidad_usada)
- *  - Costo Real con Merma     : Costo Bruto × (1 + waste_pct/100)
- *  - Gastos Fijos             : alquiler, servicios, sueldos, seguros (expense_type='fixed')
- *  - Gastos Variables Otros   : packaging, transporte, comisiones (expense_type='variable')
- *  - Margen Bruto             : Ventas − Costo Real
- *  - Resultado Operativo      : Margen Bruto − Gastos Fijos − Gastos Variables Otros − Merma Cargada
- *
- * El waste_pct es una proyección estándar (5% default). Si la merma
- * cargada manualmente excede esa proyección, indica que el % está bajo
- * (sugerir ajustarlo en settings).
+ * Modelo de costos (fix doble conteo 12/jun):
+ *  - PRICING por receta (calculateRecipeCost): costo bruto × (1 + merma% + gastos%).
+ *    Los % proyectados (Costos proyectados en config Finanzas) son un colchón
+ *    para que el margen por producto no mienta al fijar precios.
+ *  - P&L del MES: solo datos REALES —
+ *      Margen Bruto        = Ventas − Costo materia prima bruto
+ *      Resultado Operativo = Margen Bruto − Gastos Fijos − Gastos Variables − Merma Cargada
+ *    (antes el costo del mes también llevaba los % proyectados → la merma y
+ *    los gastos se contaban DOS veces y la ganancia quedaba subestimada)
  */
 export default function useFinancials({ ings, recs, sales, exps, orders, waste, settings }) {
   // % merma proyectada (default 5%, validado entre 0-100)
@@ -95,11 +93,12 @@ export default function useFinancials({ ings, recs, sales, exps, orders, waste, 
     [sales, recs, calculateRecipeRawCost, monthStart]
   );
 
-  // Costo de producción REAL del mes (con merma + gastos proyectados)
-  const monthProductionCost = useMemo(
-    () => monthProductionCostRaw * costFactor,
-    [monthProductionCostRaw, costFactor]
-  );
+  // Costo de producción del mes — REAL, sin proyecciones (fix 12/jun).
+  // El costFactor (merma % + gastos %) es un colchón de PRICING por receta:
+  // aplicarlo aca Y ademas restar la merma cargada y los gastos reales era
+  // DOBLE CONTEO — la ganancia del mes quedaba subestimada. El P&L mensual
+  // usa solo datos reales: materia prima cruda + merma cargada + gastos.
+  const monthProductionCost = monthProductionCostRaw;
 
   // Costo de la merma cargada manualmente en stock (vencimientos, roturas, derrames)
   const monthWasteCost = useMemo(
@@ -169,7 +168,8 @@ export default function useFinancials({ ings, recs, sales, exps, orders, waste, 
     [sales, recs, calculateRecipeRawCost, prevMonthStart, prevMonthEnd]
   );
 
-  const prevMonthProductionCost = prevMonthProductionCostRaw * costFactor;
+  // Mismo criterio que el mes actual: costo real sin proyecciones (fix 12/jun)
+  const prevMonthProductionCost = prevMonthProductionCostRaw;
   const prevMonthWasteCost = useMemo(
     () => waste.filter(w => inPrevMonth(w.date)).reduce((a, w) => {
       const ig = ings.find(i => i.id === w.ingredient_id);

@@ -225,64 +225,9 @@
 }
 
 /* ─── Drawer (hamburguesa) ─── */
-/* Anclado al viewport (fixed) — no al contenedor de la página.
-   Así el footer con "Cerrar sesión" queda siempre visible aunque la
-   página debajo (informe, etc.) tenga scroll largo. */
-.ag-drawer-backdrop {
-  position: fixed; inset: 0;
-  background: rgba(20, 18, 16, 0.45);
-  z-index: 950;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 220ms var(--ag-ease);
-}
-.ag-drawer-backdrop.open {
-  opacity: 1;
-  pointer-events: auto;
-}
-.ag-drawer {
-  position: fixed; top: 0; left: 0;
-  height: 100vh; height: 100dvh; /* dvh para mobile con barra dinámica */
-  width: 92%; max-width: 420px;
-  background: var(--ag-bg);
-  z-index: 951;
-  display: flex; flex-direction: column;
-  transform: translateX(-105%);
-  transition: transform 260ms var(--ag-ease);
-  box-shadow: 8px 0 30px rgba(0, 0, 0, 0.18);
-  overflow: hidden;
-}
-.ag-drawer.open { transform: translateX(0); }
-.ag-drawer-header {
-  padding: 22px 18px 16px;
-  background: linear-gradient(135deg, var(--ag-c-terra) 0%, #a14d33 100%);
-  color: #fff;
-}
-.ag-drawer-header h3 {
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 800;
-  font-size: 18px;
-  margin: 0 0 4px;
-  letter-spacing: -0.01em;
-}
-.ag-drawer-header p {
-  font-size: 11.5px;
-  opacity: 0.85;
-  margin: 0;
-}
-.ag-drawer-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px 12px 16px;
-  min-height: 0; /* permite que flex-1 + overflow funcionen correcto */
-}
-.ag-drawer-footer {
-  padding: 8px 8px 14px;
-  border-top: 1px solid var(--ag-line);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+/* Drawer lateral viejo ELIMINADO (limpieza 12/jun): el menu hamburguesa
+   es ahora el desplegable .ag-menu-panel que nace del boton morph.
+   Las clases .ag-drawer-mi (items) siguen vivas mas abajo. */
 
 /* ─── Sub-páginas dentro del drawer (estilo iOS Settings) ─── */
 .ag-subpage-stack {
@@ -345,92 +290,8 @@
   line-height: 1.5;
   margin: 0 0 14px;
 }
-.ag-drawer-action {
-  display: flex; align-items: center; gap: 12px;
-  padding: 11px 12px;
-  background: transparent;
-  border: 0;
-  border-radius: 10px;
-  font-family: inherit; font-size: 14px; font-weight: 600;
-  color: var(--ag-ink);
-  cursor: pointer;
-  text-align: left;
-  transition: background var(--ag-t-fast) var(--ag-ease);
-}
-.ag-drawer-action:hover { background: var(--ag-bg-soft); }
-.ag-drawer-action-icon {
-  width: 28px; height: 28px;
-  border-radius: 8px;
-  background: var(--ag-bg-soft);
-  color: var(--ag-ink-2);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.ag-drawer-action.danger {
-  color: var(--ag-c-orders);
-}
-.ag-drawer-action.danger .ag-drawer-action-icon {
-  background: var(--ag-c-orders-soft);
-  color: var(--ag-c-orders);
-}
-
-/* ─── Hub cards (Más → menú) ─── */
-.ag-hub-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 4px 0 110px;
-}
-.ag-hub-card {
-  background: var(--ag-bg-card);
-  border-radius: var(--ag-r-md);
-  padding: 16px 14px;
-  box-shadow: var(--ag-sh-sm);
-  border: 0; cursor: pointer;
-  font-family: inherit; text-align: left;
-  display: flex; flex-direction: column; gap: 10px;
-  position: relative; overflow: hidden;
-  transition: transform var(--ag-t-fast) var(--ag-ease), box-shadow var(--ag-t-fast) var(--ag-ease);
-}
-.ag-theme-dark .ag-hub-card { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-.ag-hub-card:hover  { transform: translateY(-2px); box-shadow: var(--ag-sh-md); }
-.ag-hub-card:active { transform: scale(0.98); }
-.ag-hub-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--c-state, var(--ag-c-terra));
-}
-.ag-hub-icon {
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  background: var(--c-state-soft, var(--ag-bg-soft));
-  color: var(--c-state, var(--ag-ink-2));
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.ag-hub-label {
-  font-weight: 700; font-size: 14px;
-  color: var(--ag-ink);
-  line-height: 1.2;
-}
-.ag-hub-hint {
-  font-size: 11.5px;
-  color: var(--ag-ink-3);
-  line-height: 1.3;
-}
-.ag-hub-badge {
-  position: absolute;
-  top: 10px; right: 10px;
-  font-size: 9.5px; font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: var(--ag-c-orders);
-  color: #fff;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
+/* .ag-drawer-action y .ag-hub-* ELIMINADOS (limpieza 12/jun):
+   eran del footer del drawer viejo y del hub "Más" — ya no existen. */
 
 /* ─── Modal sheet (BrandModal, etc.) ─── */
 .ag-modal-backdrop {

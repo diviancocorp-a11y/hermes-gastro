@@ -24,10 +24,8 @@ import { Expenses, Purchase, SalesView } from "../components/admin/Finance";
 import CRM from "../components/admin/CRM";
 import Waste from "../components/admin/Waste";
 import Settings from "../components/admin/Settings";
-import Exports from "../components/admin/Exports";
 import Invoicing from "../components/admin/Invoicing";
 import PushNotifications from "../components/admin/PushNotifications";
-import CategoryEditor from "../components/admin/CategoryEditor";
 import MonthSummary from "../components/admin/MonthSummary";
 import Suppliers from "../components/admin/Suppliers";
 import Users from "../components/admin/Users";
@@ -160,6 +158,11 @@ export default function Admin() {
       icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
     },
     {
+      key: 'push', state: 'crm', label: 'Notificaciones push', hint: 'Avisos al celular de tus clientes',
+      onClick: () => setOv({ type: 'push' }),
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+    },
+    {
       key: 'users', state: 'crm', label: 'Usuarios', hint: 'Acceso y roles del equipo',
       onClick: () => setTab('users'),
       icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>,
@@ -233,10 +236,11 @@ export default function Admin() {
       {/* Overlays (sin cambios) */}
       {ov?.type === "cancel"       && <CancelDlg order={ov.order} recs={recs} ings={ings} onClose={() => setOv(null)} onConfirm={ret => confirmCancel(ov.orderId, ret)} />}
       {ov?.type === "stockWarning" && <StockWarningDlg deficits={ov.deficits} onClose={() => setOv(null)} onForce={async () => { setOv(null); await moveOrd(ov.orderId, OrderStatus.PREPARING, true); }} />}
-      {ov?.type === "exports"      && <Exports sales={sales} expenses={exps} ingredients={ings} orders={orders} recipes={recs} sett={sett} msg={msg} onClose={() => setOv(null)} />}
+      {/* Limpieza 12/jun: overlays "exports" y "categories" eliminados —
+          el export vive en Resumen del mes y el editor de categorias en
+          Recetas (boton 🏷️). Push recupero entrada en el menu hamburguesa. */}
       {ov?.type === "invoicing"    && <Invoicing orders={orders} recipes={recs} sett={sett} msg={msg} onClose={() => setOv(null)} />}
       {ov?.type === "push"         && <PushNotifications msg={msg} onClose={() => setOv(null)} />}
-      {ov?.type === "categories"   && <CategoryEditor msg={msg} onClose={() => setOv(null)} />}
 
       {/* New order alert overlay */}
       {newAlertCount > 0 && <NewOrderOverlay count={newAlertCount} onAck={() => { ackOrders(); setTab('orders'); }} />}

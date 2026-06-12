@@ -31,11 +31,8 @@
 
 ### Cuando puedas
 
-- [ ] **Secrets de Telegram en Mala Miga y Cochi** (11/jun): el informe diario
-  a Telegram (hermes-daily-report, 09:00 AR) ya funciona en La Nona Pato pero
-  MM y Cochi devuelven "Missing Telegram credentials". En el dashboard de cada
-  proyecto: Settings → Edge Functions → Secrets, agregar TELEGRAM_BOT_TOKEN y
-  TELEGRAM_CHAT_ID (copialos del proyecto de La Nona Pato). 2 minutos por tenant.
+- [x] ~~**Secrets de Telegram en Mala Miga y Cochi**~~ — HECHO 12/jun
+  (en Supabase Edge Functions Secrets, verificado 200 ok en los 3 tenants).
 
 - [ ] **Iconos PWA** para la-nona-pato y mala-miga (solo cochi tiene set completo).
   Patron: `public/clients/<slug>/` con icon-192.png, icon-512.png, favicon.
@@ -43,10 +40,9 @@
   Puede caerse y es legalmente gris para un SaaS comercial. Hay fallback automatico
   a emoji si no carga, pero antes de vender conviene reemplazarlo por un asset
   propio o con licencia (ej: LottieFiles / IconScout).
-- [ ] **Sentry sourcemaps**: crear token en Sentry → Settings → Auth Tokens
-  (scope `project:releases`) y agregar a las env de Vercel de los 3 proyectos:
-  `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`. El build ya esta preparado —
-  con el token, los errores llegan con stack trace legible y Seer sirve de verdad.
+- [x] ~~**Sentry sourcemaps**~~ — HECHO 12/jun (vars en Vercel ×3 con token
+  Sensitive, stack traces legibles verificados, MCP conectado, Session Replay
+  solo-en-error + tags de contexto activos).
 - [ ] Los 4 `.docx` ya no estan en GitHub pero siguen en la carpeta del repo
   (gitignoreados). Si queres, movelos a Documentos para tener el repo limpio.
 
