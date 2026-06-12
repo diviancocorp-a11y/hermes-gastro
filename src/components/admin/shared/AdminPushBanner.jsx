@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { isPushSupported, getPushPermission, isSubscribed, subscribeToPush } from "../../../services/push";
 
 const DISMISS_KEY = "ag_push_dismiss_until";
+const DONE_KEY = "ag_push_subscribed"; // flag local: este dispositivo YA activo
 const DISMISS_DAYS = 7;
 
 export default function AdminPushBanner({ onShowToast }) {
@@ -23,10 +24,18 @@ export default function AdminPushBanner({ onShowToast }) {
   useEffect(() => {
     let alive = true;
     (async () => {
+      // Flag local primero: en algunas PWA Android getSubscription() tarda
+      // o devuelve null al arranque y el banner reaparecia aunque el
+      // dispositivo YA estaba suscripto (reporte 12/jun). El flag corta eso.
+      try { if (localStorage.getItem(DONE_KEY)) return; } catch { /* sigue */ }
       if (!isPushSupported()) return;
       const perm = await getPushPermission();
       if (perm === "denied") return;
-      if (await isSubscribed()) return;
+      if (await isSubscribed()) {
+        // Suscripto sin flag (ej: activado desde el apartado Push) → anotar
+        try { localStorage.setItem(DONE_KEY, "1"); } catch { /* ok */ }
+        return;
+      }
       try {
         const until = Number(localStorage.getItem(DISMISS_KEY) || 0);
         if (Date.now() < until) return;
@@ -41,6 +50,7 @@ export default function AdminPushBanner({ onShowToast }) {
     try {
       const sub = await subscribeToPush({ role: "admin" });
       if (sub) {
+        try { localStorage.setItem(DONE_KEY, "1"); } catch { /* ok */ }
         setShow(false);
         onShowToast?.("🔔 Esta tablet va a sonar con cada pedido nuevo ✓");
       } else {

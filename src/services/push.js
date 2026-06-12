@@ -105,10 +105,13 @@ export async function sendPushNotification({ title, body, url, icon, target = { 
 
 // Helper para mapear order.status -> push payload listo para sendPushNotification.
 // Solo dispara para los 3 status que el cliente quiere saber.
+// OJO: las keys deben ser los valores REALES de OrderStatus (lib/utils.jsx):
+// preparing / active / completed. Antes decia ready/done (status inexistentes)
+// y al cliente solo le llegaba el push de "cocina" — fix 12/jun.
 const ORDER_STATUS_PUSH = {
-  preparing: { title: 'Estamos preparando tu pedido', body: 'Cocina arranco. Te avisamos cuando salga.' },
-  ready:     { title: 'Tu pedido esta listo',         body: 'Sale en camino o pasalo a buscar.' },
-  done:      { title: 'Pedido entregado',             body: 'Gracias por elegirnos.' },
+  preparing: { title: 'Estamos preparando tu pedido 👩‍🍳', body: 'La cocina arrancó. Te avisamos cuando esté listo.' },
+  active:    { title: '¡Tu pedido está listo! 🛵',          body: 'Sale en camino o ya podés pasar a buscarlo.' },
+  completed: { title: 'Pedido entregado 💛',                body: 'Gracias por elegirnos. ¡Hasta la próxima!' },
 };
 
 /**

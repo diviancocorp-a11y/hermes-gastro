@@ -42,7 +42,15 @@ import "../styles/admin-orders.css";
 import "../styles/admin-shared.css";
 
 export default function Admin() {
-  const [tab, setTab] = useState("home");
+  // Tab inicial desde query param (?tab=orders): lo usa el push de "pedido
+  // nuevo" para aterrizar directo en Pedidos (fix 12/jun — antes el push
+  // apuntaba a /admin/orders, ruta inexistente, y terminaba en el catalogo)
+  const [tab, setTab] = useState(() => {
+    try {
+      const t = new URLSearchParams(window.location.search).get("tab");
+      return ["orders", "recipes", "stock", "sales"].includes(t) ? t : "home";
+    } catch { return "home"; }
+  });
   const [ov, setOv] = useState(null);
   const [toast, setToast] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);

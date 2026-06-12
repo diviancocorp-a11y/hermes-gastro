@@ -2,7 +2,9 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Zoom bloqueado (12/jun): la PWA abria con un zoom residual que
+         descentraba la animacion de ingreso. App-like = sin pinch-zoom. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title><!-- __BIZ_TITLE__ --></title>
     <meta name="description" content="<!-- __BIZ_DESCRIPTION__ -->" />
     <meta name="theme-color" content="<!-- __BIZ_THEME_LIGHT__ -->" media="(prefers-color-scheme: light)" />

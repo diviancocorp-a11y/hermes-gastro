@@ -138,16 +138,23 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const url = event.notification.data?.url || '/';
+  // Si el destino es del admin, navegar/enfocar una ventana del ADMIN.
+  // Antes se navegaba la PRIMERA ventana del origen (tipicamente el
+  // catalogo abierto en otra pestania) y el push de "pedido nuevo"
+  // terminaba abriendo el catalogo — fix 12/jun.
+  const wantsAdmin = url.startsWith('/admin');
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-            // Focus existing tab if open
-      for (const client of windowClients) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.navigate(url);
-          return client.focus();
-        }
+      const sameOrigin = windowClients.filter(c => c.url.includes(self.location.origin) && 'focus' in c);
+      const preferred = wantsAdmin
+        ? sameOrigin.find(c => c.url.includes('/admin'))
+        : sameOrigin.find(c => !c.url.includes('/admin'));
+      const client = preferred || (wantsAdmin ? null : sameOrigin[0]);
+      if (client) {
+        client.navigate(url);
+        return client.focus();
       }
-      // Otherwise open new tab
+      // Sin ventana adecuada: abrir una nueva en el destino correcto
       return clients.openWindow(url);
     })
   );

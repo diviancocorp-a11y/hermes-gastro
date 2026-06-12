@@ -26,8 +26,11 @@ export default function CartScreen({
   form = {}, sf = () => {}, ffGift = false,
 }) {
   const count = items.reduce((s, it) => s + it.qty, 0);
-  const cartIds = new Set(items.map(it => it.id));
-  const upsell = (topProducts || []).filter(p => !cartIds.has(p.id)).slice(0, 6);
+  // Upsell: NO se filtra lo que ya esta en el carrito (fix 12/jun) — antes
+  // el producto desaparecia al agregar 1 unidad y no dejaba sumar mas.
+  // Ahora queda visible con su contador para seguir agregando.
+  const upsell = (topProducts || []).slice(0, 6);
+  const qtyInCart = (id) => items.find(it => it.id === id)?.qty || 0;
   // Progreso al minimo de pedido.
   const minOk = minOrder === 0 || subtotal >= minOrder;
   const minPct = minOrder > 0 ? Math.min(100, Math.round((subtotal / minOrder) * 100)) : 100;
@@ -208,13 +211,32 @@ export default function CartScreen({
                   <div style={{ fontFamily: "var(--font-heading)", fontSize: 13, color: "var(--tx)", lineHeight: 1.2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 32 }}>{p.name}</div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
                     <span style={{ fontSize: 13, fontWeight: 600, color: "var(--tx)" }}>{fmtAR(p.sale_price)}</span>
-                    <button type="button" onClick={() => onAddProduct?.(p)} style={{
-                      width: 28, height: 28, borderRadius: 999, border: 0,
-                      background: "var(--ac)", color: "#fff", cursor: "pointer",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }} aria-label="Agregar">
-                      <Icon name="plus" size={14} />
-                    </button>
+                    {qtyInCart(p.id) > 0 ? (
+                      /* Ya en el carrito: mini stepper para sumar/restar sin salir */
+                      <div style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--ac)", borderRadius: 999, overflow: "hidden" }}>
+                        <button type="button" onClick={() => onUpdateQty?.(p.id, qtyInCart(p.id) - 1)} style={{
+                          width: 24, height: 24, border: 0, background: "transparent", color: "var(--ac)",
+                          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                        }} aria-label="Quitar uno">
+                          <Icon name="minus" size={12} />
+                        </button>
+                        <span style={{ minWidth: 16, textAlign: "center", fontWeight: 700, fontSize: 12, color: "var(--ac)" }}>{qtyInCart(p.id)}</span>
+                        <button type="button" onClick={() => onUpdateQty?.(p.id, qtyInCart(p.id) + 1)} style={{
+                          width: 24, height: 24, border: 0, background: "transparent", color: "var(--ac)",
+                          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                        }} aria-label="Agregar uno">
+                          <Icon name="plus" size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => onAddProduct?.(p)} style={{
+                        width: 28, height: 28, borderRadius: 999, border: 0,
+                        background: "var(--ac)", color: "#fff", cursor: "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }} aria-label="Agregar">
+                        <Icon name="plus" size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

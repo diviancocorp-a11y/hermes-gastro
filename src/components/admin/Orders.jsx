@@ -4,6 +4,7 @@ import { verifyReceipt, getReceiptUrl } from "../../lib/adminService";
 import { paymentLabel, paymentIcon, enabledPaymentMethods } from "../../lib/payments";
 import OrderCard from "./shared/orders/OrderCard";
 import DecimalInput from "../ui/DecimalInput";
+import { useConfirm } from "../ConfirmSlideProvider";
 import { fetchDeliveryChannels, calcCommission } from "../../services/deliveryChannels";
 
 // Mapeo status DB → status visual de OrderCard
@@ -37,8 +38,13 @@ function toCardProps(o, recipes = []) {
   });
 
   // Tiempo desde creado. Si no hay fecha válida, default 0 min.
+  // PROGRAMADOS (delivery_date): el reloj corre desde la HORA PACTADA,
+  // no desde la creación — un pedido para las 18:00 no "lleva 4 horas
+  // esperando" a las 14:00 (fix 12/jun). Si la hora no llegó, queda en 0.
   let minutes = 0;
-  const tsRaw = o.created_at || (o.date ? `${o.date}T12:00:00` : null);
+  const tsRaw = o.delivery_date
+    ? `${o.delivery_date}T${(o.delivery_time || "00:00").slice(0, 5)}:00`
+    : (o.created_at || (o.date ? `${o.date}T12:00:00` : null));
   if (tsRaw) {
     const created = new Date(tsRaw);
     if (!isNaN(created.getTime())) {
@@ -84,7 +90,30 @@ function DeliveryBadge({date}){
 }
 
 function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,showToast,settings,onUpdateOrder}){
+  const confirmSlide=useConfirm();
   const [fil,setFil]=useState(OrderStatus.NEW);const [showH,setShowH]=useState(false);const [showSched,setShowSched]=useState(false);const t=todayISO();
+
+  /* Avance de estado con guard de PROGRAMADOS (12/jun): si el pedido es
+     para mas adelante (fecha/hora futura) y lo van a mandar a cocina,
+     pedimos confirmacion deslizable — no bloquea empezarlo antes, pero
+     evita arrancarlo por error. */
+  const advance = async (o, next, cardId) => {
+    if (next === OrderStatus.PREPARING && o.delivery_date) {
+      const sched = new Date(`${o.delivery_date}T${(o.delivery_time || "00:00").slice(0, 5)}:00`);
+      if (!isNaN(sched.getTime()) && sched.getTime() > Date.now() + 5 * 60000) {
+        const fecha = new Date(o.delivery_date + "T12:00:00").toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
+        const when = o.delivery_time ? `el ${fecha} a las ${o.delivery_time.slice(0, 5)}` : `el ${fecha}`;
+        const ok = await confirmSlide({
+          title: "Pedido programado",
+          body: `Este pedido es para ${when}. ¿Confirmás que lo vas a empezar AHORA?`,
+          label: "Deslizá para empezar ahora",
+        });
+        if (!ok) return;
+      }
+    }
+    moveOrderStatus(o.id, next);
+    showToast(`Pedido ${cardId} → ${OrderStatusLabels[next] || next}`);
+  };
   const [histPage,setHistPage]=useState(1);const HIST_PER_PAGE=20;
   const [viewReceipt,setViewReceipt]=useState(null); // order object to view receipt
   // Reloj vivo de las tarjetas (fix jun 2026): `minutes` se calcula en render
@@ -279,10 +308,7 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
             <OrderCard
               key={o.id}
               order={cardProps}
-              onPrimary={next ? () => {
-                moveOrderStatus(o.id, next);
-                showToast(`Pedido ${cardProps.id} → ${OrderStatusLabels[next] || next}`);
-              } : undefined}
+              onPrimary={next ? () => advance(o, next, cardProps.id) : undefined}
               onCancel={() => setOverlay({ type: 'cancel', orderId: o.id, order: o })}
               onGhost={() => onUpdateOrder?.(o.id, { _showDetail: true })}
             />
@@ -329,10 +355,7 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
           <OrderCard
             key={o.id}
             order={cardProps}
-            onPrimary={next ? () => {
-              moveOrderStatus(o.id, next);
-              showToast(`Pedido ${cardProps.id} → ${OrderStatusLabels[next] || next}`);
-            } : undefined}
+            onPrimary={next ? () => advance(o, next, cardProps.id) : undefined}
             onCancel={() => setOverlay({ type: 'cancel', orderId: o.id, order: o })}
             onGhost={() => onUpdateOrder?.(o.id, { _showDetail: true })}
           />

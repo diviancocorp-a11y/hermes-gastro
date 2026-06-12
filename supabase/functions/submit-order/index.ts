@@ -134,7 +134,9 @@ Deno.serve(async (req) => {
         body: {
           title: "Nuevo pedido",
           body: `${customer || "Cliente"} - $${finalTotal}`,
-          url: "/admin/orders",
+          // /admin?tab=orders: ruta real del panel (fix 12/jun — /admin/orders
+          // no existia y el click del push terminaba en el catalogo)
+          url: "/admin?tab=orders",
           target: { role: "admin" },
         },
       });
