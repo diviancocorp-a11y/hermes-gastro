@@ -86,7 +86,7 @@ function HeroBlock({ emoji, title, body }) {
     <div style={{ marginBottom: 28 }}>
       {emoji && <div style={{ fontSize: 32, marginBottom: 8 }}>{emoji}</div>}
       <h2 style={{ fontFamily: "var(--font-heading, 'DM Serif Display', serif)", fontSize: 22, margin: "0 0 12px", color: "var(--tx)", lineHeight: 1.25 }}>{title}</h2>
-      <p style={{ fontSize: 15, color: "var(--t2)", lineHeight: 1.6, margin: 0 }}>{body}</p>
+      <p style={{ fontSize: 15, color: "var(--t2)", lineHeight: 1.6, margin: 0, whiteSpace: "pre-line" }}>{body}</p>
     </div>
   );
 }
@@ -99,7 +99,7 @@ function RuleBlock({ emoji, tag, title, body, items, callout }) {
         {tag && <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--ac)", background: "var(--bg)", padding: "4px 9px", borderRadius: 999 }}>{tag}</span>}
       </div>
       <h3 style={{ fontFamily: "var(--font-heading, 'DM Serif Display', serif)", fontSize: 19, margin: "0 0 10px", color: "var(--tx)", lineHeight: 1.25 }}>{title}</h3>
-      {body && <p style={{ fontSize: 14.5, color: "var(--t2)", lineHeight: 1.6, margin: "0 0 14px" }}>{body}</p>}
+      {body && <p style={{ fontSize: 14.5, color: "var(--t2)", lineHeight: 1.6, margin: "0 0 14px", whiteSpace: "pre-line" }}>{body}</p>}
       {Array.isArray(items) && items.length > 0 && (
         <ul style={{ listStyle: "none", padding: 0, margin: "12px 0 0", display: "grid", gap: 12 }}>
           {items.map((it, i) => (

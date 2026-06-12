@@ -1,14 +1,23 @@
 // src/pages/admin/InfoPages.jsx
-// Gestion de paginas informativas (12/jun 2026).
+// Gestion de paginas informativas (12/jun 2026, v2 simplificada).
 //
-// Antes: CRUD con textarea de JSON crudo (solo apto desarrolladores).
-// Ahora: editor de BLOQUES amigable — el operador arma la pagina con
-// "Encabezado", "Seccion" y "Nota legal" llenando campos simples.
-// El resultado se guarda en el mismo formato blocks[] que ya renderiza
-// InfoPage.jsx (hero / rule / footer_legal) — cero migracion.
+// Pensado para usuarios BASICOS: el caso real es "le pedi el texto a una
+// IA y lo pego". Por eso el editor es: titulo + UN solo cuadro de texto.
+// Sin bloques visibles, sin campos de emoji (si quieren emojis los
+// escriben en el texto y listo).
+//
+// El texto pegado se convierte automaticamente al formato blocks[] que ya
+// renderiza InfoPage.jsx (hero / rule / footer_legal — cero migracion):
+//   · Lineas "## Titulo" (o "# ") → nueva seccion con titulo
+//   · Lineas "- punto" o "* punto" o "1. punto" → lista de puntos
+//   · Lineas "> nota" → recuadro destacado
+//   · Lineas "--- texto" → nota legal al pie
+//   · Todo lo demas → parrafos
+// Las IA ya devuelven ese formato (markdown), asi que pegar "tal cual"
+// funciona sin que el usuario sepa que existen las convenciones.
 //
 // Se usa de dos formas:
-//   · Tab del admin (menu hamburguesa → Paginas informativas): embedded
+//   · Operacion → Paginas informativas (overlay): embedded
 //   · Ruta /admin/paginas (compat con links viejos): standalone
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -26,162 +35,95 @@ function slugify(text) {
     .slice(0, 60);
 }
 
-const BLOCK_LABELS = {
-  hero: "Encabezado",
-  rule: "Sección",
-  footer_legal: "Nota legal (al pie)",
-};
+// ── Texto plano ↔ blocks[] ───────────────────────────────
 
-function emptyBlock(type) {
-  if (type === "hero") return { type, emoji: "", title: "", body: "" };
-  if (type === "rule") return { type, emoji: "", tag: "", title: "", body: "", items: [], callout: "" };
-  return { type, body: "" }; // footer_legal
-}
+// Texto pegado → blocks (formato que renderiza InfoPage.jsx)
+function parseText(text) {
+  const lines = (text || "").replace(/\r/g, "").split("\n");
+  const blocks = [];
+  let cur = null;
 
-// Limpia campos vacios antes de guardar (el render ya tolera ausentes,
-// pero asi el JSON en DB queda prolijo)
-function cleanBlock(b) {
-  const out = { type: b.type };
-  for (const k of ["emoji", "tag", "title", "body", "callout"]) {
-    if (b[k] && String(b[k]).trim()) out[k] = String(b[k]).trim();
-  }
-  if (Array.isArray(b.items)) {
-    const items = b.items
-      .map(it => ({ title: (it.title || "").trim(), body: (it.body || "").trim() }))
-      .filter(it => it.title || it.body);
-    if (items.length > 0) out.items = items;
-  }
-  return out;
-}
-
-// ── Campos compartidos del editor ────────────────────────
-function Field({ label, hint, children }) {
-  return (
-    <div style={{ marginBottom: 10 }}>
-      <label className="ag-field-lbl">{label}</label>
-      {children}
-      {hint && <div style={{ fontSize: 10.5, color: "var(--ag-ink-3)", marginTop: 3 }}>{hint}</div>}
-    </div>
-  );
-}
-
-function TextInput({ value, onChange, placeholder, maxLength, width }) {
-  return (
-    <input
-      className="ag-field-input"
-      value={value || ""}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder}
-      maxLength={maxLength}
-      style={width ? { width } : undefined}
-    />
-  );
-}
-
-function TextArea({ value, onChange, placeholder, rows = 3 }) {
-  return (
-    <textarea
-      className="ag-field-input"
-      value={value || ""}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      style={{ resize: "vertical", lineHeight: 1.5 }}
-    />
-  );
-}
-
-// ── Editor de UN bloque ──────────────────────────────────
-function BlockEditor({ block, index, total, onChange, onMove, onRemove }) {
-  const set = (k, v) => onChange({ ...block, [k]: v });
-  const setItem = (i, k, v) => {
-    const items = (block.items || []).map((it, j) => j === i ? { ...it, [k]: v } : it);
-    onChange({ ...block, items });
+  const flush = () => {
+    if (!cur) return;
+    const hasContent = (cur.title || cur.body || (cur.items && cur.items.length) || cur.callout);
+    if (hasContent) {
+      // limpiar campos vacios para que el JSON quede prolijo
+      const b = { type: cur.type };
+      if (cur.tag) b.tag = cur.tag;
+      if (cur.title) b.title = cur.title;
+      if (cur.body) b.body = cur.body.trim();
+      if (cur.items && cur.items.length) b.items = cur.items;
+      if (cur.callout) b.callout = cur.callout;
+      blocks.push(b);
+    }
+    cur = null;
+  };
+  const ensure = () => {
+    if (!cur) cur = { type: blocks.length === 0 ? "hero" : "rule", title: "", body: "", items: [], callout: "" };
+    return cur;
   };
 
-  return (
-    <div style={{
-      border: "1px solid var(--ag-line)", borderRadius: 14,
-      background: "var(--ag-bg-card)", padding: "12px 14px", marginBottom: 10,
-    }}>
-      {/* Cabecera del bloque: tipo + mover + borrar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <span style={{
-          fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em",
-          padding: "3px 8px", borderRadius: 6,
-          background: "rgba(245, 158, 11, 0.14)", color: "var(--ag-c-terra)",
-        }}>{BLOCK_LABELS[block.type] || block.type}</span>
-        <div style={{ flex: 1 }} />
-        <button type="button" className="ag-btn-ghost" disabled={index === 0}
-          onClick={() => onMove(-1)} aria-label="Subir bloque"
-          style={{ padding: "4px 9px", opacity: index === 0 ? 0.35 : 1 }}>↑</button>
-        <button type="button" className="ag-btn-ghost" disabled={index === total - 1}
-          onClick={() => onMove(1)} aria-label="Bajar bloque"
-          style={{ padding: "4px 9px", opacity: index === total - 1 ? 0.35 : 1 }}>↓</button>
-        <button type="button" className="ag-btn-ghost" onClick={onRemove} aria-label="Quitar bloque"
-          style={{ padding: "4px 9px", color: "var(--ag-c-orders)" }}>✕</button>
-      </div>
+  for (const raw of lines) {
+    const line = raw.trim();
 
-      {block.type === "footer_legal" ? (
-        <Field label="Texto legal" hint="Letra chica centrada al final de la página.">
-          <TextArea value={block.body} onChange={v => set("body", v)} rows={2}
-            placeholder="Ej: Producto para mayores de 18 años. Consumir con responsabilidad." />
-        </Field>
-      ) : (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: 10 }}>
-            <Field label="Emoji">
-              <TextInput value={block.emoji} onChange={v => set("emoji", v)} placeholder="🍪" maxLength={4} />
-            </Field>
-            <Field label="Título">
-              <TextInput value={block.title} onChange={v => set("title", v)} maxLength={120}
-                placeholder={block.type === "hero" ? "Ej: Bienvenido a Crazy Cookie" : "Ej: ¿Cómo se consume?"} />
-            </Field>
-          </div>
-          {block.type === "rule" && (
-            <Field label="Etiqueta (opcional)" hint="Pildorita arriba del título. Ej: PASO 1, IMPORTANTE.">
-              <TextInput value={block.tag} onChange={v => set("tag", v)} placeholder="PASO 1" maxLength={24} width={160} />
-            </Field>
-          )}
-          <Field label="Texto">
-            <TextArea value={block.body} onChange={v => set("body", v)}
-              placeholder="Contá en lenguaje simple lo que el cliente tiene que saber." />
-          </Field>
+    // "--- texto" → nota legal al pie
+    const legal = line.match(/^-{3,}\s+(.+)$/);
+    if (legal) { flush(); blocks.push({ type: "footer_legal", body: legal[1] }); continue; }
 
-          {block.type === "rule" && (
-            <>
-              {/* Lista de puntos (items) */}
-              <label className="ag-field-lbl">Lista de puntos (opcional)</label>
-              {(block.items || []).map((it, i) => (
-                <div key={i} style={{
-                  display: "grid", gridTemplateColumns: "1fr auto", gap: 8,
-                  padding: "8px 10px", border: "1px dashed var(--ag-line)", borderRadius: 10, marginBottom: 6,
-                }}>
-                  <div>
-                    <TextInput value={it.title} onChange={v => setItem(i, "title", v)} placeholder="Título del punto" maxLength={80} />
-                    <div style={{ height: 6 }} />
-                    <TextInput value={it.body} onChange={v => setItem(i, "body", v)} placeholder="Detalle del punto" maxLength={200} />
-                  </div>
-                  <button type="button" className="ag-btn-ghost" aria-label="Quitar punto"
-                    onClick={() => onChange({ ...block, items: block.items.filter((_, j) => j !== i) })}
-                    style={{ color: "var(--ag-c-orders)", alignSelf: "start", padding: "4px 9px" }}>✕</button>
-                </div>
-              ))}
-              <button type="button" className="ag-btn-ghost" style={{ marginBottom: 10 }}
-                onClick={() => onChange({ ...block, items: [...(block.items || []), { title: "", body: "" }] })}>
-                + Agregar punto
-              </button>
+    // "## Titulo" (1-3 #) → nueva seccion. "[ETIQUETA] Titulo" preserva el tag.
+    const heading = line.match(/^#{1,3}\s+(.+)$/);
+    if (heading) {
+      flush();
+      cur = { type: blocks.length === 0 ? "hero" : "rule", title: heading[1], body: "", items: [], callout: "" };
+      const tagged = cur.title.match(/^\[([^\]]+)\]\s*(.+)$/);
+      if (tagged) { cur.tag = tagged[1]; cur.title = tagged[2]; }
+      // los titulos en negrita markdown (**x**) quedan limpios
+      cur.title = cur.title.replace(/\*\*/g, "");
+      continue;
+    }
 
-              <Field label="Nota destacada (opcional)" hint="Recuadro amarillo de advertencia/consejo.">
-                <TextInput value={block.callout} onChange={v => set("callout", v)} maxLength={200}
-                  placeholder="Ej: Esperá 60-90 min el efecto antes de repetir." />
-              </Field>
-            </>
-          )}
-        </>
-      )}
-    </div>
-  );
+    // "- punto" / "* punto" / "• punto" / "1. punto" → item de lista
+    const item = line.match(/^(?:[-*•]|\d+[.)])\s+(.+)$/);
+    if (item) {
+      const it = item[1].replace(/\*\*/g, "");
+      const split = it.match(/^([^:]{1,60}):\s+(.+)$/);
+      ensure().items.push(split ? { title: split[1], body: split[2] } : { title: it, body: "" });
+      continue;
+    }
+
+    // "> nota" → recuadro destacado
+    const callout = line.match(/^>\s+(.+)$/);
+    if (callout) {
+      const c = ensure();
+      c.callout = c.callout ? `${c.callout} ${callout[1]}` : callout[1];
+      continue;
+    }
+
+    // Parrafos (linea en blanco = separacion)
+    if (!line) {
+      if (cur && cur.body && !cur.body.endsWith("\n\n")) cur.body += "\n\n";
+      continue;
+    }
+    const c = ensure();
+    c.body += (c.body && !c.body.endsWith("\n\n") ? "\n" : "") + line.replace(/\*\*/g, "");
+  }
+  flush();
+  return blocks;
+}
+
+// blocks → texto plano (para re-editar paginas existentes)
+function blocksToText(blocks) {
+  return (blocks || []).map((b) => {
+    if (b.type === "footer_legal") return `--- ${b.body || ""}`;
+    const out = [];
+    const emoji = b.emoji ? `${b.emoji} ` : ""; // paginas viejas: el emoji pasa al titulo
+    const tag = b.tag ? `[${b.tag}] ` : "";
+    if (b.title) out.push(`${b.type === "hero" ? "#" : "##"} ${tag}${emoji}${b.title}`);
+    if (b.body) out.push(b.body);
+    (b.items || []).forEach((it) => out.push(`- ${it.title}${it.body ? `: ${it.body}` : ""}`));
+    if (b.callout) out.push(`> ${b.callout}`);
+    return out.join("\n");
+  }).join("\n\n");
 }
 
 // ── Pantalla principal ───────────────────────────────────
@@ -209,7 +151,7 @@ export default function InfoPagesAdmin({ embedded = false, onBack }) {
     setEditing("new");
     setSlugTouched(false);
     setError("");
-    setDraft({ slug: "", title: "", blocks: [emptyBlock("hero")], requires_age_gate: false, visible: true });
+    setDraft({ slug: "", title: "", text: "", requires_age_gate: false, visible: true });
   };
 
   const openEdit = (p) => {
@@ -219,7 +161,7 @@ export default function InfoPagesAdmin({ embedded = false, onBack }) {
     setDraft({
       slug: p.slug,
       title: p.title,
-      blocks: (p.blocks || []).map(b => ({ items: [], ...b })),
+      text: blocksToText(p.blocks),
       requires_age_gate: p.requires_age_gate,
       visible: p.visible,
     });
@@ -228,16 +170,13 @@ export default function InfoPagesAdmin({ embedded = false, onBack }) {
   const save = async () => {
     const slug = slugify(draft.slug);
     if (!draft.title.trim()) { setError("Poné un título."); return; }
-    if (!slug) { setError("Poné una dirección (slug) válida."); return; }
-    const blocks = draft.blocks.map(cleanBlock).filter(b =>
-      b.title || b.body || (b.items && b.items.length > 0)
-    );
+    if (!slug) { setError("Poné una dirección (link) válida."); return; }
     setSaving(true);
     setError("");
     const payload = {
       slug,
       title: draft.title.trim(),
-      blocks,
+      blocks: parseText(draft.text),
       requires_age_gate: draft.requires_age_gate,
       visible: draft.visible,
       updated_at: new Date().toISOString(),
@@ -262,15 +201,6 @@ export default function InfoPagesAdmin({ embedded = false, onBack }) {
   };
 
   const setD = (k, v) => setDraft(d => ({ ...d, [k]: v }));
-  const moveBlock = (i, dir) => {
-    setDraft(d => {
-      const blocks = [...d.blocks];
-      const j = i + dir;
-      if (j < 0 || j >= blocks.length) return d;
-      [blocks[i], blocks[j]] = [blocks[j], blocks[i]];
-      return { ...d, blocks };
-    });
-  };
 
   const body = (
     <div style={{ padding: "12px 16px 28px", maxWidth: 640, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
@@ -290,7 +220,7 @@ export default function InfoPagesAdmin({ embedded = false, onBack }) {
             Páginas informativas
           </h1>
           <p style={{ margin: "2px 0 0", fontSize: 11.5, color: "var(--ag-ink-3)" }}>
-            Contenido al que pueden apuntar tus QRs y links · /info/...
+            Contenido al que pueden apuntar tus QRs y links
           </p>
         </div>
         <button type="button" className="ag-cta" onClick={openNew} style={{ padding: "8px 14px", fontSize: 12, flexShrink: 0 }}>
@@ -328,7 +258,7 @@ export default function InfoPagesAdmin({ embedded = false, onBack }) {
         </div>
       ))}
 
-      {/* ── Editor (overlay a pantalla completa, sin JSON) ── */}
+      {/* ── Editor: titulo + UN cuadro de texto ── */}
       {editing && draft && (
         <div className="ag-page-over">
           <div className="ag-page-over-head">
@@ -342,27 +272,44 @@ export default function InfoPagesAdmin({ embedded = false, onBack }) {
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 100px", maxWidth: 640, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
-            <Field label="Título de la página">
-              <TextInput
-                value={draft.title}
-                onChange={v => {
-                  setD("title", v);
-                  if (!slugTouched) setD("slug", slugify(v));
-                }}
-                placeholder="Ej: Cómo consumir Crazy Cookie"
-                maxLength={120}
-              />
-            </Field>
-            <Field label="Dirección (link)" hint={`Tu página va a vivir en /info/${slugify(draft.slug) || "..."} — es lo que apunta el QR.`}>
-              <TextInput
-                value={draft.slug}
-                onChange={v => { setSlugTouched(true); setD("slug", slugify(v)); }}
-                placeholder="crazy-cookie"
-                maxLength={60}
-              />
-            </Field>
+            <label className="ag-field-lbl">Título de la página</label>
+            <input
+              className="ag-field-input"
+              value={draft.title}
+              onChange={e => {
+                setD("title", e.target.value);
+                if (!slugTouched) setD("slug", slugify(e.target.value));
+              }}
+              placeholder="Ej: Cómo consumir Crazy Cookie"
+              maxLength={120}
+            />
 
-            <div style={{ display: "flex", gap: 18, margin: "4px 0 16px" }}>
+            <label className="ag-field-lbl" style={{ marginTop: 12 }}>Dirección (link)</label>
+            <input
+              className="ag-field-input"
+              value={draft.slug}
+              onChange={e => { setSlugTouched(true); setD("slug", slugify(e.target.value)); }}
+              placeholder="crazy-cookie"
+              maxLength={60}
+            />
+            <div style={{ fontSize: 10.5, color: "var(--ag-ink-3)", marginTop: 3 }}>
+              Tu página va a vivir en /info/{slugify(draft.slug) || "..."} — es a donde apunta el QR.
+            </div>
+
+            <label className="ag-field-lbl" style={{ marginTop: 14 }}>Contenido</label>
+            <textarea
+              className="ag-field-input"
+              value={draft.text}
+              onChange={e => setD("text", e.target.value)}
+              rows={16}
+              placeholder={"Escribí o pegá acá el texto completo de la página.\n\nTip: podés pedírselo a una IA (ChatGPT, Claude) y pegarlo tal cual — los títulos y las listas se formatean solos."}
+              style={{ resize: "vertical", lineHeight: 1.55, fontSize: 13.5 }}
+            />
+            <div style={{ fontSize: 10.5, color: "var(--ag-ink-3)", marginTop: 4, lineHeight: 1.5 }}>
+              Se formatea solo: <b>## Texto</b> arma un título, <b>- texto</b> arma una lista, <b>&gt; texto</b> arma una nota destacada.
+            </div>
+
+            <div style={{ display: "flex", gap: 18, margin: "14px 0 4px" }}>
               <label style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 13, color: "var(--ag-ink)", cursor: "pointer" }}>
                 <input type="checkbox" checked={draft.visible} onChange={e => setD("visible", e.target.checked)} />
                 Visible
@@ -371,30 +318,6 @@ export default function InfoPagesAdmin({ embedded = false, onBack }) {
                 <input type="checkbox" checked={draft.requires_age_gate} onChange={e => setD("requires_age_gate", e.target.checked)} />
                 Pedir +18 para entrar
               </label>
-            </div>
-
-            <div className="ag-settings-group-title" style={{ marginBottom: 8 }}>Contenido</div>
-            {draft.blocks.length === 0 && (
-              <div style={{ padding: 16, textAlign: "center", color: "var(--ag-ink-3)", border: "1px dashed var(--ag-line)", borderRadius: 12, marginBottom: 10, fontSize: 12.5 }}>
-                Agregá bloques con los botones de abajo.
-              </div>
-            )}
-            {draft.blocks.map((b, i) => (
-              <BlockEditor
-                key={i}
-                block={b}
-                index={i}
-                total={draft.blocks.length}
-                onChange={nb => setD("blocks", draft.blocks.map((x, j) => j === i ? nb : x))}
-                onMove={dir => moveBlock(i, dir)}
-                onRemove={() => setD("blocks", draft.blocks.filter((_, j) => j !== i))}
-              />
-            ))}
-
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-              <button type="button" className="ag-btn-ghost" onClick={() => setD("blocks", [...draft.blocks, emptyBlock("hero")])}>+ Encabezado</button>
-              <button type="button" className="ag-btn-ghost" onClick={() => setD("blocks", [...draft.blocks, emptyBlock("rule")])}>+ Sección</button>
-              <button type="button" className="ag-btn-ghost" onClick={() => setD("blocks", [...draft.blocks, emptyBlock("footer_legal")])}>+ Nota legal</button>
             </div>
 
             {error && <div style={{ color: "var(--ag-c-orders)", fontSize: 12.5, fontWeight: 700, marginTop: 12 }}>{error}</div>}
