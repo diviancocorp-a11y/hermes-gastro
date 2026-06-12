@@ -18,17 +18,36 @@
   inset: 0;
   width: 100%;
   height: 100%;
+  will-change: transform, opacity;
+  /* Drift BARATO (solo transform/opacity → compositor, no repinta):
+     es la unica animacion que corre en telefonos. Animar el dash de
+     48 trazos a pantalla completa rasteriza el SVG en cada frame y
+     ahogaba el GPU de los celulares (pantalla parpadeando sin cargar). */
+  animation: ag-fp-drift 26s ease-in-out infinite alternate;
+}
+.ag-fp-svg:nth-child(2) {
+  animation-duration: 34s;
+  animation-delay: -9s;
+}
+@keyframes ag-fp-drift {
+  from { transform: translateY(-1.5%) scale(1.02); opacity: 0.8; }
+  to   { transform: translateY(1.5%) scale(1.07); opacity: 1; }
 }
 
-/* Flujo del trazo: con pathLength="1", el patrón dash (0.7 + 0.45 = 1.15)
-   se desplaza un ciclo completo → loop continuo sin saltos.
-   El pulso de opacidad va aparte y se multiplica con el stroke-opacity
-   propio de cada path (más opacos los de abajo, como el original). */
 .ag-fp {
   stroke-dasharray: 0.7 0.45;
-  animation:
-    ag-fp-flow var(--fp-d, 26s) linear infinite,
-    ag-fp-pulse calc(var(--fp-d, 26s) / 2) ease-in-out infinite;
+}
+
+/* Flujo del trazo SOLO en desktop (mouse fino = hardware con GPU de sobra):
+   con pathLength="1", el patron dash (0.7 + 0.45 = 1.15) se desplaza un
+   ciclo completo → loop continuo sin saltos. El pulso de opacidad se
+   multiplica con el stroke-opacity propio de cada path. */
+@media (hover: hover) and (pointer: fine) {
+  .ag-fp {
+    animation:
+      ag-fp-flow var(--fp-d, 26s) linear infinite,
+      ag-fp-pulse calc(var(--fp-d, 26s) / 2) ease-in-out infinite;
+  }
 }
 @keyframes ag-fp-flow {
   to { stroke-dashoffset: -1.15; }
@@ -54,5 +73,5 @@
 
 /* — Reduce motion respect — */
 @media (prefers-reduced-motion: reduce) {
-  .ag-fp { animation: none; stroke-dasharray: none; }
+  .ag-fp, .ag-fp-svg { animation: none; }
 }
