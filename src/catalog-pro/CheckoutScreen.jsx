@@ -433,8 +433,8 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
         </div>
       </div>
 
-      {/* Detalles efectivo */}
-      {!form.payment_account_id && (
+      {/* Detalles efectivo (solo si NO eligio la pasarela MP) */}
+      {!form.payment_account_id && !(form.payment === "mercadopago" && mpConnected) && (
         <div style={detailBox}>
           <div style={labelStyle}>¿Con cuanto pagas?</div>
           <div style={{ display: "flex", gap: 10 }}>

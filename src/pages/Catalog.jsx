@@ -87,6 +87,11 @@ export default function Catalog() {
   // MP Checkout Pro: si hay integración activa, redirigimos al init_point.
   // Si no, fallback al flujo manual (alias + comprobante).
   const [mpConnected, setMpConnected] = useState(false);
+  // Orden ya creada esperando pago MP: si la preference fallo, reintentamos
+  // con el mismo orderId para no duplicar pedidos.
+  const [mpPendingOrderId, setMpPendingOrderId] = useState(null);
+  // Si el carrito cambia, la orden pendiente queda obsoleta (totales distintos)
+  useEffect(() => { setMpPendingOrderId(null); }, [cart]);
   const [orderErr, setOrderErr] = useState("");
   const [form, setForm] = useState({ ...DEFAULT_FORM });
   const [sentForm, setSentForm] = useState(null); // snapshot del form al confirmar (el form vivo se resetea)
@@ -562,6 +567,21 @@ export default function Catalog() {
   // Enviar pedido a Supabase
   const send = async () => {
     setSending(true); setOrderErr("");
+
+    // Reintento MP: la orden ya existe de un intento anterior que no llego a
+    // redirigir. Reusamos el orderId en vez de crear un pedido duplicado.
+    if (mpPendingOrderId && form.payment === "mercadopago" && mpConnected) {
+      try {
+        const pref = await createMpPreference(mpPendingOrderId);
+        const target = pref?.init_point || pref?.sandbox_init_point;
+        if (target) { window.location.href = target; return; }
+      } catch (e) {
+        console.warn("Reintento MP fallo:", e);
+      }
+      setSending(false);
+      setOrderErr("No pudimos iniciar el pago en MercadoPago. Probá de nuevo o elegí otro medio de pago.");
+      return;
+    }
     // Construir dirección completa con piso y notas de referencia
     let fullAddress = form.address || "";
     if (form.delivery === "envio") {
@@ -645,11 +665,15 @@ export default function Catalog() {
             window.location.href = target;
             return;
           }
-          // Si no obtuvimos init_point, caemos al flujo normal (sin redirect)
-          console.warn("createMpPreference: sin init_point, fallback manual");
+          console.warn("createMpPreference: sin init_point");
         } catch (e) {
-          console.warn("createMpPreference falló, fallback manual:", e);
+          console.warn("createMpPreference falló:", e);
         }
+        // El pago online es obligatorio: NO mostramos "pedido enviado" si no
+        // pudimos redirigir a MP. Guardamos el orderId para reintentar.
+        setMpPendingOrderId(result.orderId);
+        setOrderErr("No pudimos iniciar el pago en MercadoPago. Probá de nuevo o elegí otro medio de pago.");
+        return;
       }
 
       const isDigital = form.payment === "transferencia" || form.payment === "mercadopago";
