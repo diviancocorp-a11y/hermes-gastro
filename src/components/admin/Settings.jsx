@@ -25,6 +25,7 @@ import CatChipsEditor from "../ui/CatChipsEditor";
 import DecimalInput from "../ui/DecimalInput";
 import DynamicQrs from "./DynamicQrs";
 import InfoPagesAdmin from "../../pages/admin/InfoPages";
+import PaymentAccountsEditor from "../ui/PaymentAccountsEditor";
 
 function Icon({ d, viewBox = "0 0 24 24" }) {
   return (
@@ -56,6 +57,7 @@ function Settings({ settings, setSettings, showToast, section = null, onBack }) 
   const [page, setPage] = useState('root'); // 'root' | 'hours' | 'expCats' | 'ingCats' | 'costs' | 'gateways' | 'channels' | 'usarTargets' | 'reset'
   const [qrsOpen, setQrsOpen] = useState(false); // overlay QRs dinamicos (vive en Operacion)
   const [pagesOpen, setPagesOpen] = useState(false); // overlay Paginas informativas (debajo de QRs)
+  const [accountsOpen, setAccountsOpen] = useState(false); // overlay Cuentas de pago (atajo en Finanzas)
   const show = (g) => !section || section === g;
 
   // ─── Autosave debounced ───
@@ -157,18 +159,27 @@ function Settings({ settings, setSettings, showToast, section = null, onBack }) 
           <>
           {!section && <div className="ag-settings-group-title">Finanzas</div>}
           <div className="ag-settings-group">
+            {/* Cuentas de pago: atajo a la unica verdad (vive en Gastos).
+                Pedido 12/jun: "no veo los medios de pago" — estaba escondido. */}
+            <SettingsRow
+              state="sales"
+              icon={<Icon d="M3 21h18 M5 21V7l7-4 7 4v14 M9 9h1 M9 13h1 M14 9h1 M14 13h1" />}
+              label="Cuentas y medios de pago"
+              hint="Efectivo, transferencias, billeteras — checkout y proveedores"
+              onClick={() => setAccountsOpen(true)}
+            />
             <SettingsRow
               state="prep"
               icon={<Icon d="M3 6h18 M3 12h18 M3 18h18" />}
               label="Canales de venta"
-              hint="Rappi, PedidosYa, WhatsApp… con comisión por canal"
+              hint="Por dónde entran los pedidos y qué comisión te cobra cada uno"
               onClick={() => goTo('channels')}
             />
             <SettingsRow
               state="sales"
               icon={<Icon d="M3 3v18h18 M7 14l4-4 4 4 5-5" />}
-              label="Targets USAR"
-              hint="Objetivos % Food/Labor/EBITDA"
+              label="Objetivos del negocio"
+              hint="Límites de gasto y piso de ganancia (semáforos del P&L)"
               onClick={() => goTo('usarTargets')}
             />
             {/* "Medios de pago" se mudo a Finanzas → Gastos → 🏦 Cuentas
@@ -177,7 +188,7 @@ function Settings({ settings, setSettings, showToast, section = null, onBack }) 
               state="orders"
               icon={<Icon d="M3 3v18h18 M7 14l4-4 4 4 5-5" />}
               label="Costos proyectados"
-              hint="Porcentajes aplicables al costo"
+              hint="Colchón de merma y gastos que se suma al costo de cada receta"
               onClick={() => goTo('costs')}
             />
             <SettingsRow
@@ -313,6 +324,25 @@ function Settings({ settings, setSettings, showToast, section = null, onBack }) 
       {pagesOpen && (
         <div className="ag-page-over" style={{ overflowY: "auto" }}>
           <InfoPagesAdmin embedded onBack={() => setPagesOpen(false)} />
+        </div>
+      )}
+
+      {/* Overlay de Cuentas de pago: misma unica verdad que Finanzas → Gastos
+          → 🏦 Cuentas, accesible tambien desde la pagina de configuracion */}
+      {accountsOpen && (
+        <div className="ag-page-over">
+          <div className="ag-page-over-head">
+            <button type="button" className="ag-subpage-back" onClick={() => setAccountsOpen(false)} aria-label="Cerrar">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              <span>Atrás</span>
+            </button>
+            <h2 className="ag-page-over-title">Cuentas de pago</h2>
+          </div>
+          <div className="ag-page-over-body">
+            <PaymentAccountsEditor settings={settings} setSettings={setSettings} showToast={showToast} />
+          </div>
         </div>
       )}
     </div>
@@ -588,15 +618,22 @@ function GatewaysSubPage({ open, showToast, onBack }) {
   const [connecting, setConnecting] = useState(false);
   const [connectError, setConnectError] = useState("");
 
+  // try/catch (12/jun): si el import dinamico falla (chunk viejo tras un
+  // deploy) la promesa rechazaba y "Cargando…" quedaba eterno. Ahora cae
+  // a estado desconectado con aviso, y un refresh lo cura.
   useEffect(() => {
     if (!open) return;
     let mounted = true;
     (async () => {
-      const { fetchActiveIntegration } = await import("../../services/paymentIntegrations");
-      const it = await fetchActiveIntegration("mercadopago");
-      if (mounted) {
-        setMpIntegration(it);
-        setLoading(false);
+      try {
+        const { fetchActiveIntegration } = await import("../../services/paymentIntegrations");
+        const it = await fetchActiveIntegration("mercadopago");
+        if (mounted) setMpIntegration(it);
+      } catch (e) {
+        console.error("GatewaysSubPage load:", e);
+        if (mounted) showToast?.("No se pudo cargar el estado de MercadoPago — recargá la página");
+      } finally {
+        if (mounted) setLoading(false);
       }
     })();
     return () => { mounted = false; };
@@ -784,9 +821,16 @@ function ChannelsSubPage({ open, showToast, onBack }) {
     if (!open) return;
     let mounted = true;
     (async () => {
-      const { fetchDeliveryChannels } = await import("../../services/deliveryChannels");
-      const list = await fetchDeliveryChannels({ activeOnly: false });
-      if (mounted) { setChannels(list); setLoading(false); }
+      try {
+        const { fetchDeliveryChannels } = await import("../../services/deliveryChannels");
+        const list = await fetchDeliveryChannels({ activeOnly: false });
+        if (mounted) setChannels(list);
+      } catch (e) {
+        console.error("ChannelsSubPage load:", e);
+        if (mounted) showToast?.("No se pudieron cargar los canales — recargá la página");
+      } finally {
+        if (mounted) setLoading(false);
+      }
     })();
     return () => { mounted = false; };
   }, [open]);
@@ -816,7 +860,10 @@ function ChannelsSubPage({ open, showToast, onBack }) {
   return (
     <SubPage open={open} title="Canales de venta" onBack={onBack}>
       <p className="ag-subpage-intro">
-        Canales por los que recibís pedidos. Cada uno con su % de comisión. Los pedidos del canal "Mostrador" / "WhatsApp" no cobran comisión.
+        Por dónde te entran los pedidos. <strong>¿Dónde se ve?</strong> Los pedidos del catálogo
+        se marcan solos como "Web propia"; al cargar un pedido manual (Pedidos → +) elegís el canal.
+        Con eso, el Resumen del mes desglosa tus ingresos por canal y descuenta la comisión
+        de cada plataforma para mostrarte el ingreso real.
       </p>
 
       {loading ? (
@@ -894,23 +941,50 @@ function ChannelsSubPage({ open, showToast, onBack }) {
   );
 }
 
-/* ─── UsarTargetsSubPage: editar % objetivo USAR ─────── */
+/* ─── UsarTargetsSubPage: editar % objetivo USAR ───────
+ * En español + guia (12/jun): cada % es un TECHO (o piso, EBITDA)
+ * independiente sobre el ingreso del mes — NO tienen que sumar 100. */
 function UsarTargetsSubPage({ open, settings, setS, showToast, onBack }) {
   const t = settings?.usar_targets || {};
   const set = (k, v) => setS({ ...settings, usar_targets: { ...t, [k]: Math.max(0, Math.min(100, Number(v) || 0)) } });
   const rows = [
-    { key: "food_cost_pct",    label: "Food Cost (objetivo ≤)", hint: "Standard dark kitchen: 30%" },
-    { key: "packaging_pct",    label: "Packaging (objetivo ≤)", hint: "Standard: 5%" },
-    { key: "labor_pct",        label: "Labor BOH (objetivo ≤)", hint: "Standard: 20%" },
-    { key: "marketing_pct",    label: "Marketing (objetivo ≤)", hint: "Standard: 3-7%" },
-    { key: "target_ebitda_pct",label: "EBITDA (objetivo ≥)",   hint: "Standard sano: 10-20%" },
+    {
+      key: "food_cost_pct", label: "Costo de comida (máx.)",
+      hint: "De cada $100 que vendés, cuánto puede irse en ingredientes. Lo normal en una dark kitchen: 30%.",
+    },
+    {
+      key: "packaging_pct", label: "Packaging (máx.)",
+      hint: "Cajas, bolsas, stickers, cubiertos. Lo normal: 5%.",
+    },
+    {
+      key: "labor_pct", label: "Mano de obra de cocina (máx.)",
+      hint: "Sueldos del equipo que cocina y arma pedidos. Lo normal: 20%.",
+    },
+    {
+      key: "marketing_pct", label: "Publicidad (máx.)",
+      hint: "Pauta en redes, promos, influencers. Lo normal: 3 a 7%.",
+    },
+    {
+      key: "target_ebitda_pct", label: "Ganancia operativa (mín.)",
+      hint: "Lo que tiene que quedarte ANTES de impuestos. Un negocio sano deja 10 a 20%. Este es el único que es un piso: más es mejor.",
+    },
   ];
 
   return (
-    <SubPage open={open} title="Targets USAR" onBack={onBack}>
+    <SubPage open={open} title="Objetivos del negocio" onBack={onBack}>
       <p className="ag-subpage-intro">
-        Porcentajes objetivo sobre <strong>ingreso bruto</strong>. Se usan para colorear (verde/rojo) las métricas del reporte P&L.
+        Cada porcentaje es un <strong>límite que te ponés a vos mismo</strong> sobre lo que facturás en el mes.
+        En el Resumen del mes, cada métrica se pinta <span style={{ color: "var(--ag-c-sales)", fontWeight: 700 }}>verde</span> si
+        la cumpliste o <span style={{ color: "var(--ag-c-orders)", fontWeight: 700 }}>roja</span> si te pasaste.
       </p>
+      <div style={{
+        padding: "10px 12px", borderRadius: 10, marginBottom: 16,
+        background: "rgba(245, 158, 11, 0.10)", border: "1px solid rgba(245, 158, 11, 0.25)",
+        fontSize: 11.5, lineHeight: 1.55, color: "var(--ag-ink-2)",
+      }}>
+        💡 <strong>No tienen que sumar 100%</strong> — son límites independientes, no un reparto de la torta.
+        Ejemplo: si vendés $1.000.000 y el objetivo de comida es 30%, gastar más de $300.000 en ingredientes pinta esa línea en rojo.
+      </div>
 
       {rows.map(r => (
         <div key={r.key} style={{ marginBottom: 14 }}>
@@ -925,7 +999,7 @@ function UsarTargetsSubPage({ open, settings, setS, showToast, onBack }) {
             />
             <span style={{ fontSize: 14, fontWeight: 700, color: "var(--ag-ink-2)" }}>%</span>
           </div>
-          <p style={{ fontSize: 11, color: "var(--ag-ink-3)", margin: "4px 0 0 2px" }}>{r.hint}</p>
+          <p style={{ fontSize: 11, color: "var(--ag-ink-3)", margin: "4px 0 0 2px", lineHeight: 1.5 }}>{r.hint}</p>
         </div>
       ))}
     </SubPage>

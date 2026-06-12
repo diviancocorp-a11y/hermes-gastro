@@ -119,7 +119,9 @@ export default function UsarPnL({
   const byChannel = useMemo(() => {
     const map = {};
     orders.filter(o => o.status !== "cancelled").forEach(o => {
-      const ch = o.delivery_channel || "mostrador";
+      // Sin canal = pedido del catalogo (los manuales siempre mandan canal).
+      // Desde el 12/jun la columna tiene default 'web_own' + backfill.
+      const ch = o.delivery_channel || "web_own";
       if (!map[ch]) map[ch] = { gross: 0, commission: 0, count: 0 };
       map[ch].gross += Number(o.total) || 0;
       map[ch].commission += Number(o.platform_commission_amt) || 0;
