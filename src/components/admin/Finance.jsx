@@ -20,12 +20,14 @@ import {
   upsertIngredient, updateIngredientStock,
   uploadLogoImage, // reusado como uploader genérico de assets
 } from "../../lib/adminService";
-import { fetchSuppliers } from "../../services/suppliers";
+import { fetchSuppliers, upsertSupplier } from "../../services/suppliers";
+import { SupplierForm } from "./Suppliers";
 import { voidExpense } from "../../services/finance";
 import SlideToConfirm from "../SlideToConfirm";
 import DecimalInput from "../ui/DecimalInput";
 import { paymentLabel, paymentIcon } from "../../lib/payments";
-import PaymentAccountsEditor from "../ui/PaymentAccountsEditor";
+// PaymentAccountsEditor: se mudo a la pagina de configuracion Finanzas
+// (burbuja de perfil → Finanzas → Cuentas y medios de pago) — unica verdad.
 import { Avatar } from "../../lib/avatars.jsx";
 import { USAR_EXPENSE_CATEGORIES, getUsarExpense } from "../../constants/usar";
 
@@ -154,7 +156,6 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
   }, {});
   const [showForm, setShowForm] = useState(false);
   const [showExport, setShowExport] = useState(false);
-  const [showAccounts, setShowAccounts] = useState(false); // editor de cuentas (mudado de Configuracion)
   const [filterCat, setFilterCat] = useState(null);   // categoría activa para filtrar la lista
   const [expanded, setExpanded] = useState(null);     // id del gasto expandido
   const [voidTarget, setVoidTarget] = useState(null);
@@ -280,25 +281,8 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
           }}>Gastos</h1>
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          {/* Cuentas de pago: UNICA verdad (se mudo de Configuracion) */}
-          <button
-            type="button"
-            onClick={() => setShowAccounts(true)}
-            aria-label="Cuentas de pago"
-            title="Cuentas de pago"
-            style={{
-              height: 36, padding: "0 12px", borderRadius: 999,
-              background: "var(--ag-bg-card)",
-              border: "1.5px solid var(--ag-line)",
-              color: "var(--ag-ink-2)",
-              cursor: "pointer", fontFamily: "inherit",
-              fontSize: 12, fontWeight: 700,
-              display: "flex", alignItems: "center", gap: 6,
-              flexShrink: 0, boxShadow: "var(--ag-sh-sm)",
-            }}
-          >
-            🏦 Cuentas
-          </button>
+          {/* Cuentas de pago: viven en perfil → Finanzas → Cuentas y medios
+              de pago (unica verdad, 12/jun) */}
           <button
             type="button"
             onClick={() => setShowExport(true)}
@@ -781,28 +765,11 @@ function Expenses({ expenses, setExpenses, settings, setSettings, showToast, onC
         />
       )}
 
-      {/* Cuentas de pago: unica verdad de pagos (checkout + proveedores) */}
-      {showAccounts && (
-        <div className="ag-page-over">
-          <div className="ag-page-over-head">
-            <button type="button" className="ag-subpage-back" onClick={() => setShowAccounts(false)} aria-label="Atrás">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              <span>Atrás</span>
-            </button>
-            <h2 className="ag-page-over-title">Cuentas de pago</h2>
-          </div>
-          <div className="ag-page-over-body">
-            <PaymentAccountsEditor settings={settings} setSettings={setSettings} showToast={showToast} />
-          </div>
-        </div>
-      )}
-
       {showForm && (
         <ExpForm
           settings={settings}
           user={user}
+          showToast={showToast}
           onClose={() => setShowForm(false)}
           onSave={async (e) => {
             const saved = await createExpense(e);
@@ -1058,7 +1025,7 @@ function ExpensesExportModal({ expenses, settings, onClose, showToast }) {
   );
 }
 
-function ExpForm({ onClose, onSave, settings, user }) {
+function ExpForm({ onClose, onSave, settings, user, showToast }) {
   // "Materia Prima" y "Packaging" se EXCLUYEN acá: ambos son insumos físicos
   // que se registran via Compras para mantener stock + items + proveedor.
   const CATS_PURCHASE_ONLY = ["Materia Prima", "Packaging"];
@@ -1068,13 +1035,17 @@ function ExpForm({ onClose, onSave, settings, user }) {
 
   const [f, setF] = useState({
     date: todayISO(), description: "", amount: 0,
-    category: defaultCat, supplier: "", expense_type: "variable",
+    category: defaultCat, supplier: "", supplier_id: null, expense_type: "variable",
     usar_category: "other_opex",
     installment_current: 1, installment_total: 12,
     payment_method: "efectivo",
     payment_account_id: null,
   });
   const [err, setErr] = useState("");
+  // Proveedores ACTIVOS (los pausados no aparecen) + alta sin salir del gasto
+  const [sups, setSups] = useState([]);
+  const [newSup, setNewSup] = useState(false);
+  useEffect(() => { fetchSuppliers().then(setSups); }, []);
   const s = (k, v) => {
     setErr("");
     setF(p => {
@@ -1228,12 +1199,27 @@ function ExpForm({ onClose, onSave, settings, user }) {
         )}
 
         <label className="ag-field-lbl">Proveedor</label>
-        <input
+        {/* Desplegable de proveedores activos + alta inline (12/jun).
+            Antes era texto libre — generaba nombres duplicados. */}
+        <select
           className="ag-field-input"
-          value={f.supplier}
-          onChange={e => s("supplier", e.target.value)}
-          placeholder="Opcional"
-        />
+          value={f.supplier_id || ""}
+          onChange={e => {
+            const v = e.target.value;
+            if (v === "__new__") { setNewSup(true); return; }
+            const found = sups.find(x => x.id === v);
+            s("supplier_id", v || null);
+            s("supplier", found?.name || "");
+          }}
+        >
+          <option value="">— Sin proveedor —</option>
+          {sups.map(sp => (
+            <option key={sp.id} value={sp.id}>
+              {sp.name}{sp.category ? ` · ${sp.category}` : ""}
+            </option>
+          ))}
+          <option value="__new__">➕ Cargar nuevo proveedor…</option>
+        </select>
 
         <label className="ag-field-lbl" style={{ marginTop: 14 }}>Medio de pago</label>
         <PaymentMethodChips value={f.payment_method} accountId={f.payment_account_id}
@@ -1261,6 +1247,23 @@ function ExpForm({ onClose, onSave, settings, user }) {
           <button type="button" className="ag-btn-ghost" onClick={onClose}>← Volver</button>
         </div>
       </div>
+
+      {/* Alta de proveedor sin salir del gasto */}
+      {newSup && (
+        <SupplierForm
+          supplier={{ name: "", phone: "", email: "", category: "", notes: "", cuit: "", can_invoice: false, location: "" }}
+          onClose={() => setNewSup(false)}
+          onSave={async (data) => {
+            const saved = await upsertSupplier(data);
+            if (saved?.__error) { showToast?.("Error: " + saved.__error); return; }
+            setSups(p => [...p, saved].sort((a, b) => a.name.localeCompare(b.name)));
+            s("supplier_id", saved.id);
+            s("supplier", saved.name);
+            setNewSup(false);
+            showToast?.("Proveedor creado ✓");
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1272,6 +1275,7 @@ function Purchase({ ingredients, setIngredients, setExpenses, settings, onClose,
   const [supId, setSupId] = useState("");
   const [supName, setSupName] = useState("");
   const [suppliers, setSuppliers] = useState([]);
+  const [newSup, setNewSup] = useState(false); // alta de proveedor inline
   const [date, setDate] = useState(todayISO());
   const [items, setItems] = useState([]);
   const [sn, setSn] = useState(false);
@@ -1406,34 +1410,28 @@ function Purchase({ ingredients, setIngredients, setExpenses, settings, onClose,
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10, marginBottom: 14 }}>
           <div>
             <label className="ag-field-lbl">Proveedor</label>
-            {suppliers.length === 0 ? (
-              <input
-                className="ag-field-input"
-                value={supName}
-                onChange={e => setSupName(e.target.value)}
-                placeholder="Nombre libre"
-              />
-            ) : (
-              <select
-                className="ag-field-input"
-                value={supId}
-                onChange={e => {
-                  setSupId(e.target.value);
-                  if (!e.target.value) setSupName("");
-                }}
-              >
-                <option value="">— sin especificar —</option>
-                {suppliers.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}{s.category ? ` · ${s.category}` : ""}
-                  </option>
-                ))}
-              </select>
-            )}
+            <select
+              className="ag-field-input"
+              value={supId}
+              onChange={e => {
+                const v = e.target.value;
+                if (v === "__new__") { setNewSup(true); return; }
+                setSupId(v);
+                if (!v) setSupName("");
+              }}
+            >
+              <option value="">— sin especificar —</option>
+              {suppliers.map(s => (
+                <option key={s.id} value={s.id}>
+                  {s.name}{s.category ? ` · ${s.category}` : ""}
+                </option>
+              ))}
+              <option value="__new__">➕ Cargar nuevo proveedor…</option>
+            </select>
             <div style={{ fontSize: 10.5, color: "var(--ag-ink-3)", marginTop: 3 }}>
               {suppliers.length === 0
-                ? "Tip: agregá proveedores desde Más → Proveedores para tenerlos como dropdown."
-                : `${suppliers.length} en catálogo · gestionar en Más → Proveedores`}
+                ? "Tu primer proveedor se crea acá mismo con ➕."
+                : `${suppliers.length} en catálogo · gestionar en menú ☰ → Proveedores`}
             </div>
           </div>
           <div>
@@ -1739,6 +1737,23 @@ function Purchase({ ingredients, setIngredients, setExpenses, settings, onClose,
           );
         })()}
       </div>
+
+      {/* Alta de proveedor sin salir de la compra */}
+      {newSup && (
+        <SupplierForm
+          supplier={{ name: "", phone: "", email: "", category: "", notes: "", cuit: "", can_invoice: false, location: "" }}
+          onClose={() => setNewSup(false)}
+          onSave={async (data) => {
+            const saved = await upsertSupplier(data);
+            if (saved?.__error) { showToast?.("Error: " + saved.__error); return; }
+            setSuppliers(p => [...p, saved].sort((a, b) => a.name.localeCompare(b.name)));
+            setSupId(saved.id);
+            setSupName(saved.name);
+            setNewSup(false);
+            showToast?.("Proveedor creado ✓");
+          }}
+        />
+      )}
     </div>
   );
 }

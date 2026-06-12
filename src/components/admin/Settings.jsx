@@ -169,6 +169,13 @@ function Settings({ settings, setSettings, showToast, section = null, onBack }) 
               onClick={() => setAccountsOpen(true)}
             />
             <SettingsRow
+              state="sales"
+              icon={<Icon d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z M1 10h22" />}
+              label="Pasarelas de pago"
+              hint="Conectar MercadoPago para cobrar online"
+              onClick={() => goTo('gateways')}
+            />
+            <SettingsRow
               state="prep"
               icon={<Icon d="M3 6h18 M3 12h18 M3 18h18" />}
               label="Canales de venta"
@@ -190,13 +197,6 @@ function Settings({ settings, setSettings, showToast, section = null, onBack }) 
               label="Costos proyectados"
               hint="Colchón de merma y gastos que se suma al costo de cada receta"
               onClick={() => goTo('costs')}
-            />
-            <SettingsRow
-              state="sales"
-              icon={<Icon d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z M1 10h22" />}
-              label="Pasarelas de pago"
-              hint="Conectar MercadoPago para cobrar online"
-              onClick={() => goTo('gateways')}
             />
           </div>
           </>
