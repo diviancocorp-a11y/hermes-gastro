@@ -14,11 +14,13 @@ import PushOptInBanner from "../../catalog-pro/PushOptInBanner";
 
 const GREEN = "#16A34A";
 
-export default function OrderSentView({ orderId, form, receiptFile, onReset, settings = {} }) {
+export default function OrderSentView({ orderId, form, receiptFile, onReset, settings = {}, paymentConfirmed = false }) {
   const [copiedCode, setCopiedCode] = useState(false);
-  // Arrepentimiento: el pedido se acaba de crear, ventana de 60s desde ahora
+  // Arrepentimiento: el pedido se acaba de crear, ventana de 60s desde ahora.
+  // Si venimos de un pago YA confirmado (retorno de MercadoPago) NO ofrecemos
+  // cancelar: el pedido esta pago.
   const [placedAt] = useState(() => Date.now());
-  const regretLeft = useRegretCountdown(orderId ? placedAt : null);
+  const regretLeft = useRegretCountdown(orderId && !paymentConfirmed ? placedAt : null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const onRegret = async () => {
@@ -69,7 +71,9 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
         </h2>
 
         <p style={{ fontSize: 14, color: "var(--t2)", lineHeight: 1.6, margin: "0 0 24px" }}>
-          {wasPaidDigital && receiptFile
+          {paymentConfirmed
+            ? "¡Recibimos tu pago! Estamos preparando todo con mucho amor."
+            : wasPaidDigital && receiptFile
             ? "Tu comprobante fue recibido. Lo estamos verificando y tu pedido pasará a preparación en breve."
             : wasPaidDigital
             ? "Recordá subir el comprobante de pago para que procesemos tu pedido más rápido."

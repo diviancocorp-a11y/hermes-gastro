@@ -515,7 +515,8 @@ END $$;
 DROP FUNCTION IF EXISTS public.get_order_tracker(uuid);
 CREATE FUNCTION public.get_order_tracker(p_order_id uuid)
 RETURNS TABLE(
-  id uuid, status text, total numeric, discount numeric,
+  id uuid, status text, payment_status text, paid_at timestamptz,
+  total numeric, discount numeric,
   delivery text, payment text, is_gift boolean,
   created_at timestamptz, date date, delivery_date date,
   customer text, customer_first_name text, note text,
@@ -524,7 +525,7 @@ RETURNS TABLE(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 BEGIN
   RETURN QUERY
-  SELECT o.id, o.status, o.total, o.discount,
+  SELECT o.id, o.status, o.payment_status, o.paid_at, o.total, o.discount,
     o.delivery, o.payment, o.is_gift,
     o.created_at, o.date, o.delivery_date,
     o.customer,
