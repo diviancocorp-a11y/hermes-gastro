@@ -36,6 +36,13 @@ if (dsn) {
       // Chunk viejo tras deploy — lazyReload lo auto-recupera (ver observability.js)
       /Importing a module script failed/i,
       /dynamically imported module/i,
+      // Errores de red transitorios del cliente (Safari "Load failed" / Chrome
+      // "Failed to fetch" / Firefox "NetworkError" / "AbortError"). Ruido, no
+      // bugs nuestros — HERMES-GASTRO-J (16/jun). Mismo filtro que observability.js.
+      /Load failed/i,
+      /Failed to fetch/i,
+      /NetworkError/i,
+      /AbortError/i,
     ],
     beforeSend(event) {
       event.tags = {

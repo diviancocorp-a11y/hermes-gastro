@@ -111,6 +111,17 @@ const IGNORE_PATTERNS = [
   // dynamically imported module" / Firefox "error loading dynamically...".
   /Importing a module script failed/i,
   /dynamically imported module/i,
+  // Errores de red transitorios del lado del cliente: conexion caida, request
+  // abortada al navegar/cerrar, hipo de conectividad. fetch() (y supabase-js)
+  // fallan con wording por browser: Safari "Load failed" / Chrome "Failed to
+  // fetch" / Firefox "NetworkError" / abortos "AbortError". No son bugs nuestros
+  // y la UI ya los maneja (HERMES-GASTRO-J, 16/jun: get_my_ranking desde VE).
+  // NOTA: esto tambien silencia una eventual caida del backend vista desde el
+  // cliente — el monitoreo de outages va por el lado del server, no por aca.
+  /Load failed/i,
+  /Failed to fetch/i,
+  /NetworkError/i,
+  /AbortError/i,
 ];
 function isNoise(error) {
   const text = `${error?.message || error || ''} ${error?.stack || ''}`;
