@@ -875,10 +875,33 @@ export default function Catalog() {
     return `${today.open} a ${today.close}`;
   })();
 
+  // Cuando esta CERRADO: a que hora abrimos (proxima apertura) para que el
+  // cliente sepa cuando volver. Busca el proximo dia con horario (hoy si aun
+  // no abrio, sino manana o el dia que corresponda).
+  const nextOpenHint = (() => {
+    const hrs = sett?.store_hours;
+    if (!hrs) return null;
+    const now = serverNow || new Date();
+    const dayNames = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
+    const idxToday = (now.getDay() + 6) % 7;
+    const curMin = now.getHours() * 60 + now.getMinutes();
+    const toMin = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + (m || 0); };
+    for (let d = 0; d < 8; d++) {
+      const idx = (idxToday + d) % 7;
+      const day = hrs[idx];
+      if (!day || day.closed || !day.open) continue;
+      if (d === 0 && curMin >= toMin(day.open)) continue; // hoy ya paso la apertura
+      const when = d === 0 ? "hoy" : d === 1 ? "mañana" : `el ${dayNames[idx]}`;
+      return `abrimos ${when} ${day.open}`;
+    }
+    return null;
+  })();
+
   const storeForHome = {
     name: sett.biz_name || fallbackSettings.biz_name,
     isOpen,
     hours: todayHours,
+    openHint: nextOpenHint,
     logoLetter: sett.logo_letter || fallbackSettings.logo_letter,
     logoColor: sett.logo_color || fallbackSettings.logo_color,
     logoUrl: sett.logo_url || null,

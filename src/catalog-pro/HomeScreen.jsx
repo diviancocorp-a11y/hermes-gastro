@@ -193,11 +193,14 @@ export default function HomeScreen({
               <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, color: "var(--tx)", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {firstName ? `${greeting}, ${firstName} 👋` : (store.name || "Tienda")}
               </div>
-              <div className="body-s" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2, fontSize: 12 }}>
-                <span style={{ width: 6, height: 6, borderRadius: 999, background: store.isOpen ? "var(--ok)" : "var(--err)" }} />
-                {firstName
-                  ? `${store.name || "Tienda"} · ${store.isOpen ? "Abierto" : "Cerrado"}${store.isOpen && store.hours ? ` · ${store.hours}` : ""}`
-                  : (store.isOpen ? `Abierto${store.hours ? ` · ${store.hours}` : ""}` : "Cerrado · pedidos programados")}
+              <div className="body-s" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span style={{ width: 6, height: 6, borderRadius: 999, background: store.isOpen ? "var(--ok)" : "var(--err)", flexShrink: 0 }} />
+                {/* Abierto → horarios de hoy · Cerrado → a que hora abrimos (asi el
+                    cliente sabe cuando volver). El nombre del negocio ya vive en el
+                    saludo/nombre de arriba, no lo repetimos aca. */}
+                {store.isOpen
+                  ? `Abierto${store.hours ? ` · ${store.hours}` : ""}`
+                  : `Cerrado · ${store.openHint || "pedidos programados"}`}
               </div>
               {settings?.slogan && (
                 <div style={{
