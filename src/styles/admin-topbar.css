@@ -130,6 +130,19 @@
 @media (max-width: 460px) {
   .ag-pm-trigger-id { max-width: 96px; }
 }
+/* Mobile: la burbuja se colapsa a SOLO el avatar (circulo) para que entre
+   siempre dentro del marco y sea 100% tappable. Con el zoom bloqueado, si el
+   nombre+correo empujaban la burbuja fuera del borde, no habia forma de
+   alcanzarla. El nombre/correo/rol ya viven dentro del dropdown. */
+@media (max-width: 480px) {
+  .ag-pm-trigger-id { display: none; }
+  .ag-pm-trigger {
+    padding: 4px;
+    gap: 0;
+    width: 40px;
+    justify-content: center;
+  }
+}
 
 /* Anillo de gradiente ámbar alrededor del avatar */
 .ag-pm-trigger-ring {
