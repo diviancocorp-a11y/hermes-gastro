@@ -146,7 +146,7 @@ export default function CategoryScreen({
                 )}
                 {p.deal && (
                   <div style={{ position: "absolute", top: 8, right: 8 }}>
-                    <BadgeTag compact label={p.dealLabel} tone={p.dealTone}>{p.dealShort}</BadgeTag>
+                    <BadgeTag compact label={p.dealLabel} tone={p.dealTone} childBg="#000" childColor="#fff">{p.dealShort}</BadgeTag>
                   </div>
                 )}
                 <div style={{ position: "absolute", bottom: -10, right: 8 }}>

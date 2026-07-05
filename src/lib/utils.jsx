@@ -45,6 +45,17 @@ export const Icon = {
 // ─── CONSTANTS & HELPERS ────────────────────────────────────────────
 export const formatMoney = (n) => typeof n === "number" ? n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00";
 export const formatInt = (n) => typeof n === "number" ? n.toLocaleString("es-AR") : "0";
+// Cantidades de receta (kg/lt/uni): recorta el ruido de float (ej: la
+// calculadora por tanda genera 0.0072499999999999995 al dividir) y limita a
+// pocos decimales para no contaminar la vista. Mas decimales para cantidades
+// chicas, menos para grandes.
+export const formatQty = (n) => {
+  const num = Number(n);
+  if (!Number.isFinite(num) || num === 0) return "0";
+  const abs = Math.abs(num);
+  const dp = abs >= 1 ? 2 : abs >= 0.1 ? 3 : 5;
+  return num.toLocaleString("es-AR", { maximumFractionDigits: dp });
+};
 export const todayISO = () => new Date().toISOString().split("T")[0];
 export const generateId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 // Código corto unificado para pedidos y recibos: #XXXXXX (últimos 6 chars del ID sin guiones)

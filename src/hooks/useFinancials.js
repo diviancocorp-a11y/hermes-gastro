@@ -34,14 +34,46 @@ export default function useFinancials({ ings, recs, sales, exps, orders, waste, 
   // Ej: merma 5% + gastos 12% → factor 1.17 (costo real = base × 1.17)
   const costFactor = 1 + (wastePct + expensePct) / 100;
 
-  // Costo materia prima del producto SIN ajustes (interno, para referencia)
-  const calculateRecipeRawCost = useCallback(rec => {
+  // Indice id -> receta, para resolver sub-recetas de combos sin O(n) por lookup
+  const recipeById = useMemo(() => {
+    const m = new Map();
+    (recs || []).forEach(r => { if (r?.id != null) m.set(r.id, r); });
+    return m;
+  }, [recs]);
+
+  // Costo materia prima de una receta NORMAL (solo ingredientes propios)
+  const ingredientCost = useCallback(rec => {
     if (!rec?.ingredients) return 0;
     return rec.ingredients.reduce((sum, ri) => {
       const ig = ings.find(i => i.id === ri.ingredient_id);
       return sum + (ig ? (ig.cost || 0) * (ri.quantity || 0) : 0);
     }, 0);
   }, [ings]);
+
+  // Costo materia prima del producto SIN ajustes (interno, para referencia).
+  // Combos: no tienen ingredientes propios; su costo es la suma de las
+  // sub-recetas que agrupan × la cantidad que trae el combo (costeo
+  // simplificado — cada sub-receta ya costea su propia unidad). Antes esto
+  // daba 0 porque solo se miraban rec.ingredients.
+  const calculateRecipeRawCost = useCallback(rec => {
+    if (!rec) return 0;
+    if (rec.is_combo) {
+      const items = rec.comboItems || [];
+      return items.reduce((sum, ci) => {
+        const sub = recipeById.get(ci.sub_recipe_id);
+        if (!sub) return sum;
+        // Sub-receta que a su vez es combo: 1 nivel de recursion controlada
+        const subCost = sub.is_combo
+          ? (sub.comboItems || []).reduce((s, x) => {
+              const inner = recipeById.get(x.sub_recipe_id);
+              return s + (inner && !inner.is_combo ? ingredientCost(inner) * (x.qty || 0) : 0);
+            }, 0)
+          : ingredientCost(sub);
+        return sum + subCost * (ci.qty || 0);
+      }, 0);
+    }
+    return ingredientCost(rec);
+  }, [ingredientCost, recipeById]);
 
   // Costo real CON merma + gastos — lo que usan los componentes para
   // mostrar costo/margen real al usuario.

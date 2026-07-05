@@ -93,14 +93,6 @@ export default function ProductDetailScreen({
 
       {/* Info */}
       <div style={{ padding: "0 22px", marginTop: -36, position: "relative", zIndex: 2 }}>
-        {p.badge && (
-          <span style={{
-            display: "inline-block", marginBottom: 12,
-            background: "var(--ac)", color: "#fff",
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
-            padding: "4px 9px", borderRadius: 4,
-          }}>{p.badge}</span>
-        )}
         {soldOut && (
           <div style={{ marginBottom: 10 }}>
             <SoldOutBadge />

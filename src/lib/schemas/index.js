@@ -111,6 +111,9 @@ export const RecipeInputSchema = z.object({
   // ingredientes se ingresaron pensando en la tanda y se dividieron por
   // este número antes de persistir.
   batch_yield: z.number().int().positive().nullable().optional(),
+  // Override manual de disponibilidad en catalogo (play/pause).
+  // NULL = auto (respeta stock) · true = forzar disponible · false = forzar agotado.
+  sold_out_override: z.boolean().nullable().optional(),
   // Tamaños/presentaciones de venta (migration recipes_add_sizes).
   // NULL = vende solo por unidad (sale_price). Si tiene items: el cliente
   // elige uno en el detail del catalogo y el precio sale del tamaño.

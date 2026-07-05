@@ -18,7 +18,8 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import { useConfirm } from "../ConfirmSlideProvider";
 import DecimalInput from "../ui/DecimalInput";
-import { formatInt, formatMoney } from "../../lib/utils";
+import { formatInt, formatMoney, formatQty } from "../../lib/utils";
+import { computeAvailability } from "../../lib/stockAvailability";
 import {
   fetchRecipeIngredients,
   saveRecipeIngredients,
@@ -26,6 +27,7 @@ import {
   saveComboItems,
   upsertRecipe,
   toggleRecipeVisibility,
+  setRecipeOverride,
   archiveRecipe,
   unarchiveRecipe,
   uploadRecipeImage,
@@ -65,6 +67,30 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
       return mB - mA; // desc
     });
   }, [base, search, calculateRecipeCost]);
+
+  // Recetas agotadas SOLO por stock de ingredientes (ignora el override manual).
+  // Es el indicador "sin stock" que se muestra en el detalle: el owner lo ve sin
+  // tener que abrir el catalogo. El override play/pause NO afecta este set.
+  const stockSoldOutIds = useMemo(() => {
+    const recipeIngredients = [];
+    const comboItems = [];
+    (recipes || []).forEach(r => {
+      (r.ingredients || []).forEach(ri =>
+        recipeIngredients.push({ recipe_id: r.id, ingredient_id: ri.ingredient_id, qty: ri.qty ?? ri.quantity ?? 0 }));
+      (r.comboItems || []).forEach(ci =>
+        comboItems.push({ recipe_id: r.id, sub_recipe_id: ci.sub_recipe_id, qty: ci.qty ?? 0 }));
+    });
+    return computeAvailability({ recipes, recipeIngredients, ingredients, comboItems, ignoreOverride: true });
+  }, [recipes, ingredients]);
+
+  // Forzar disponibilidad (play/pause) sin entrar a editar — igual que el ojo.
+  const handleOverride = async (id, value) => {
+    const ok = await setRecipeOverride(id, value);
+    if (ok) {
+      setRecipes(p => p.map(x => x.id === id ? { ...x, sold_out_override: value } : x));
+      showToast(value === true ? "Forzado disponible ✓" : value === false ? "Forzado agotado" : "Disponibilidad automática ✓");
+    } else { showToast("Error al cambiar disponibilidad"); }
+  };
 
   return (
     <>
@@ -196,6 +222,30 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
                       <span style={{ fontWeight: 700, fontSize: 14.5, color: "var(--ag-ink)" }}>{r.name}</span>
+                      {stockSoldOutIds.has(r.id) && r.sold_out_override !== true && (
+                        <span style={{
+                          fontSize: 9.5, fontWeight: 800,
+                          padding: "1px 6px", borderRadius: 6,
+                          background: "var(--ag-c-orders-soft)", color: "var(--ag-c-orders)",
+                          letterSpacing: "0.04em",
+                        }}>SIN STOCK</span>
+                      )}
+                      {r.sold_out_override === true && (
+                        <span style={{
+                          fontSize: 9.5, fontWeight: 800,
+                          padding: "1px 6px", borderRadius: 6,
+                          background: "var(--ag-c-sales-soft)", color: "var(--ag-c-sales)",
+                          letterSpacing: "0.04em",
+                        }}>▶ FORZADA</span>
+                      )}
+                      {r.sold_out_override === false && (
+                        <span style={{
+                          fontSize: 9.5, fontWeight: 800,
+                          padding: "1px 6px", borderRadius: 6,
+                          background: "var(--ag-c-orders-soft)", color: "var(--ag-c-orders)",
+                          letterSpacing: "0.04em",
+                        }}>❚❚ PAUSA</span>
+                      )}
                       {r.requires_age_gate && (
                         <span style={{
                           fontSize: 9.5, fontWeight: 800,
@@ -287,7 +337,10 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
         <RecDet
           r={overlay.data}
           ingredients={ingredients}
+          recipes={recipes}
           calculateRecipeCost={calculateRecipeCost}
+          stockSoldOut={stockSoldOutIds.has(overlay.data?.id)}
+          onOverride={handleOverride}
           settings={settings}
           onClose={() => setOverlay(null)}
           onEdit={async () => {
@@ -382,7 +435,7 @@ function Recipes({ recipes, setRecipes, ingredients, calculateRecipeCost, overla
 }
 
 /* ─── RecDet: ver receta ────────────────────────────────────── */
-function RecDet({ r, ingredients, calculateRecipeCost, settings, onClose, onEdit, onArchive, onUnarchive }) {
+function RecDet({ r, ingredients, recipes, calculateRecipeCost, stockSoldOut, onOverride, settings, onClose, onEdit, onArchive, onUnarchive }) {
   const wastePct = Number(settings?.waste_pct ?? 5);
   const expensePct = Number(settings?.expense_pct ?? 0);
   // Derivo el costo base sin ajustes a partir del costo total con ajustes,
@@ -419,6 +472,13 @@ function RecDet({ r, ingredients, calculateRecipeCost, settings, onClose, onEdit
             }}>
               {visible ? "VISIBLE" : "OCULTA"}
             </span>
+            {stockSoldOut && (
+              <span style={{
+                padding: "3px 10px", borderRadius: 999,
+                background: "var(--ag-c-orders-soft)", color: "var(--ag-c-orders)",
+                fontSize: 10.5, fontWeight: 800, letterSpacing: "0.04em",
+              }}>⚠ SIN STOCK</span>
+            )}
             {r.is_combo && (
               <span style={{
                 padding: "3px 10px", borderRadius: 999,
@@ -500,36 +560,79 @@ function RecDet({ r, ingredients, calculateRecipeCost, settings, onClose, onEdit
           );
         })()}
 
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-ink-2)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
-          Ingredientes ({(r.ingredients || []).length})
-        </div>
-        <div className="ag-card" style={{ padding: 0, overflow: "hidden", marginBottom: 14 }}>
-          {(r.ingredients || []).length === 0 ? (
-            <div style={{ padding: 20, textAlign: "center", color: "var(--ag-ink-3)", fontSize: 12 }}>
-              Sin ingredientes configurados
+        {/* Disponibilidad en catalogo: play/pause manual sobre la regla de stock */}
+        <AvailabilityControl r={r} stockSoldOut={stockSoldOut} onOverride={onOverride} />
+
+        {r.is_combo ? (
+          <>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-ink-2)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+              Sub-recetas ({(r.comboItems || []).length})
             </div>
-          ) : (
-            <>
-              {(r.ingredients || []).map((ri, i) => {
-                const ig = ingredients.find(x => x.id === ri.ingredient_id);
-                if (!ig) return null;
-                return (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderTop: i === 0 ? "none" : "1px solid var(--ag-line)" }}>
-                    <div style={{ flex: 1, fontSize: 13, color: "var(--ag-ink)", fontWeight: 600 }}>{ig.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--ag-ink-2)" }}>{ri.quantity} {ig.unit}</div>
-                    <div style={{ fontSize: 13, color: "var(--ag-ink)", fontWeight: 700, minWidth: 60, textAlign: "right" }}>
-                      ${formatMoney((ig.cost || 0) * ri.quantity)}
-                    </div>
+            <div className="ag-card" style={{ padding: 0, overflow: "hidden", marginBottom: 14 }}>
+              {(r.comboItems || []).length === 0 ? (
+                <div style={{ padding: 20, textAlign: "center", color: "var(--ag-ink-3)", fontSize: 12 }}>
+                  Sin sub-recetas configuradas
+                </div>
+              ) : (
+                <>
+                  {(r.comboItems || []).map((ci, i) => {
+                    const sub = (recipes || []).find(x => x.id === ci.sub_recipe_id);
+                    const unit = sub ? calculateRecipeCost(sub) : 0;
+                    const qty = Number(ci.qty) || 0;
+                    return (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderTop: i === 0 ? "none" : "1px solid var(--ag-line)" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, color: "var(--ag-ink)", fontWeight: 600 }}>{sub?.name || "Sub-receta eliminada"}</div>
+                          <div style={{ fontSize: 11, color: "var(--ag-ink-3)" }}>{formatQty(qty)} u × ${formatMoney(unit)}</div>
+                        </div>
+                        <div style={{ fontSize: 13, color: "var(--ag-ink)", fontWeight: 700, minWidth: 60, textAlign: "right" }}>
+                          ${formatMoney(unit * qty)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div style={{ display: "flex", alignItems: "center", padding: "10px 14px", borderTop: "2px solid var(--ag-c-terra)", background: "var(--ag-bg-soft)" }}>
+                    <div style={{ flex: 1, fontSize: 12, fontWeight: 800, color: "var(--ag-ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Total</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ag-c-terra)" }}>${formatMoney(c)}</div>
                   </div>
-                );
-              })}
-              <div style={{ display: "flex", alignItems: "center", padding: "10px 14px", borderTop: "2px solid var(--ag-c-terra)", background: "var(--ag-bg-soft)" }}>
-                <div style={{ flex: 1, fontSize: 12, fontWeight: 800, color: "var(--ag-ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Total</div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ag-c-terra)" }}>${formatMoney(c)}</div>
-              </div>
-            </>
-          )}
-        </div>
+                </>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-ink-2)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+              Ingredientes ({(r.ingredients || []).length})
+            </div>
+            <div className="ag-card" style={{ padding: 0, overflow: "hidden", marginBottom: 14 }}>
+              {(r.ingredients || []).length === 0 ? (
+                <div style={{ padding: 20, textAlign: "center", color: "var(--ag-ink-3)", fontSize: 12 }}>
+                  Sin ingredientes configurados
+                </div>
+              ) : (
+                <>
+                  {(r.ingredients || []).map((ri, i) => {
+                    const ig = ingredients.find(x => x.id === ri.ingredient_id);
+                    if (!ig) return null;
+                    return (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderTop: i === 0 ? "none" : "1px solid var(--ag-line)" }}>
+                        <div style={{ flex: 1, fontSize: 13, color: "var(--ag-ink)", fontWeight: 600 }}>{ig.name}</div>
+                        <div style={{ fontSize: 12, color: "var(--ag-ink-2)" }}>{formatQty(ri.quantity)} {ig.unit}</div>
+                        <div style={{ fontSize: 13, color: "var(--ag-ink)", fontWeight: 700, minWidth: 60, textAlign: "right" }}>
+                          ${formatMoney((ig.cost || 0) * ri.quantity)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div style={{ display: "flex", alignItems: "center", padding: "10px 14px", borderTop: "2px solid var(--ag-c-terra)", background: "var(--ag-bg-soft)" }}>
+                    <div style={{ flex: 1, fontSize: 12, fontWeight: 800, color: "var(--ag-ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Total</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ag-c-terra)" }}>${formatMoney(c)}</div>
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Tamaños / presentaciones de venta */}
         {Array.isArray(r.sizes) && r.sizes.length > 0 && (
@@ -853,7 +956,7 @@ function RecForm({ data, ingredients, recipes, settings, onClose, onSave }) {
                           return (
                             <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderTop: i === 0 ? "none" : "1px solid var(--ag-line)" }}>
                               <div style={{ flex: 1, fontSize: 13, color: "var(--ag-ink)", fontWeight: 600 }}>{ig?.name || "?"}</div>
-                              <div style={{ fontSize: 12, color: "var(--ag-ink-2)" }}>{ri.quantity} {ig?.unit || ""}</div>
+                              <div style={{ fontSize: 12, color: "var(--ag-ink-2)" }}>{formatQty(ri.quantity)} {ig?.unit || ""}</div>
                               <button type="button" onClick={() => s("ingredients", f.ingredients.filter((_, j) => j !== i))} aria-label="Quitar"
                                 style={{ width: 28, height: 28, borderRadius: 8, background: "var(--ag-c-orders-soft)", color: "var(--ag-c-orders)", border: 0, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -947,6 +1050,51 @@ function RecForm({ data, ingredients, recipes, settings, onClose, onSave }) {
         <button type="button" className="ag-btn-ghost" onClick={onClose}
           style={{ marginTop: 10, width: "100%", padding: "12px", fontSize: 13 }}>← Volver</button>
       </div>
+    </div>
+  );
+}
+
+// Control de disponibilidad en catalogo (play/pause manual sobre la regla de stock).
+//   Auto       → sold_out_override = null  (respeta stock: si falta, agotado)
+//   Disponible → sold_out_override = true  (forzar activo aunque falte stock)
+//   Agotado    → sold_out_override = false (forzar pausa: visible pero no pedible)
+function AvailabilityControl({ r, stockSoldOut, onOverride }) {
+  const ov = r.sold_out_override;
+  const state = ov === true ? "on" : ov === false ? "off" : "auto";
+  const opts = [
+    { key: "auto", value: null, label: "Auto" },
+    { key: "on", value: true, label: "Disponible" },
+    { key: "off", value: false, label: "Agotado" },
+  ];
+  const hint =
+    state === "on" ? "Forzada disponible: se vende aunque falte materia prima."
+    : state === "off" ? "Forzada agotado: visible en el catálogo pero no se puede pedir."
+    : stockSoldOut ? "⚠ Sin stock: hoy aparece agotado. Tocá \"Disponible\" para venderla igual."
+    : "Automático: si falta materia prima, aparece agotada sola.";
+  return (
+    <div className="ag-card" style={{ padding: "12px 14px", marginBottom: 14 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-ink-2)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+        Disponibilidad en catálogo
+      </div>
+      <div style={{ display: "flex", gap: 6 }}>
+        {opts.map(o => {
+          const active = state === o.key;
+          const isOff = o.key === "off";
+          const fg = active ? (isOff ? "var(--ag-c-orders)" : "var(--ag-c-sales)") : "var(--ag-ink-2)";
+          const bg = active ? (isOff ? "var(--ag-c-orders-soft)" : "var(--ag-c-sales-soft)") : "var(--ag-bg-card)";
+          return (
+            <button key={o.key} type="button" onClick={() => onOverride(r.id, o.value)}
+              style={{
+                flex: 1, padding: "9px 6px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+                border: "1.5px solid " + (active ? fg : "var(--ag-line)"),
+                background: bg, color: fg, fontSize: 12, fontWeight: 700,
+              }}>
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 11, color: "var(--ag-ink-3)", marginTop: 8, lineHeight: 1.5 }}>{hint}</div>
     </div>
   );
 }

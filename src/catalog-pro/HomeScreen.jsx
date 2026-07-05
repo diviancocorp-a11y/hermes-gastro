@@ -485,14 +485,9 @@ export default function HomeScreen({
                   <SoldOutBadge />
                 </div>
               )}
-              {!p.soldOut && p.badge && (
-                <div style={{ position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", color: "#fff", fontSize: 10, fontWeight: 600, letterSpacing: "0.04em", padding: "3px 7px", borderRadius: 4 }}>
-                  {p.badge}
-                </div>
-              )}
               {p.deal && (
                 <div style={{ position: "absolute", top: 8, right: 8 }}>
-                  <BadgeTag compact label={p.dealLabel} tone={p.dealTone}>{p.dealShort}</BadgeTag>
+                  <BadgeTag compact label={p.dealLabel} tone={p.dealTone} childBg="#000" childColor="#fff">{p.dealShort}</BadgeTag>
                 </div>
               )}
               {p._raw?.requires_age_gate && (

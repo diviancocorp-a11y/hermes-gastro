@@ -40,9 +40,14 @@ export default function BatchCalculator({ ingredients, recipeIngredients = [], o
     setBatchYield(next);
   };
 
+  // Redondea a 6 decimales para matar el ruido de float (0.29/40 =>
+  // 0.0072499999999999995). 6 decimales alcanza para gramos/ml por unidad.
+  const cleanPerUnit = (batchQty, safeYield) =>
+    Math.round(((Number(batchQty) || 0) / safeYield) * 1e6) / 1e6;
+
   const updateBatchQty = (i, batchQty) => {
     const safeYield = yieldN > 0 ? yieldN : 1;
-    const perUnit = (Number(batchQty) || 0) / safeYield;
+    const perUnit = cleanPerUnit(batchQty, safeYield);
     onChange(recipeIngredients.map((ri, j) =>
       j === i ? { ...ri, qty: perUnit, quantity: perUnit } : ri
     ));
@@ -51,7 +56,7 @@ export default function BatchCalculator({ ingredients, recipeIngredients = [], o
   const addIngredient = () => {
     if (!si || !sq) return;
     const safeYield = yieldN > 0 ? yieldN : 1;
-    const perUnit = (Number(sq) || 0) / safeYield;
+    const perUnit = cleanPerUnit(sq, safeYield);
     onChange([...recipeIngredients, { ingredient_id: si, qty: perUnit, quantity: perUnit }]);
     setSi(""); setSq(""); setAd(false);
   };

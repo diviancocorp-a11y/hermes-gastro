@@ -91,6 +91,60 @@ describe('computeAvailability', () => {
     expect(computeAvailability().size).toBe(0);
   });
 
+  it('override true fuerza disponible aunque falte stock', () => {
+    const soldOut = computeAvailability({
+      recipes: [{ id: 'r-cookie', sold_out_override: true }],
+      recipeIngredients: [
+        { recipe_id: 'r-cookie', ingredient_id: 'ing-queso', qty: 1 }, // stock 0
+      ],
+      ingredients: [ING_QUESO],
+      comboItems: [],
+    });
+    expect(soldOut.has('r-cookie')).toBe(false);
+  });
+
+  it('override false fuerza agotado aunque haya stock', () => {
+    const soldOut = computeAvailability({
+      recipes: [{ id: 'r-pan', sold_out_override: false }],
+      recipeIngredients: [
+        { recipe_id: 'r-pan', ingredient_id: 'ing-harina', qty: 1 }, // alcanza
+      ],
+      ingredients: [ING_HARINA],
+      comboItems: [],
+    });
+    expect(soldOut.has('r-pan')).toBe(true);
+  });
+
+  it('ignoreOverride:true ignora el override (estado real de stock para el admin)', () => {
+    const base = {
+      recipes: [{ id: 'r-cookie', sold_out_override: true }],
+      recipeIngredients: [
+        { recipe_id: 'r-cookie', ingredient_id: 'ing-queso', qty: 1 }, // stock 0
+      ],
+      ingredients: [ING_QUESO],
+      comboItems: [],
+    };
+    expect(computeAvailability(base).has('r-cookie')).toBe(false);         // catalogo: forzado ok
+    expect(computeAvailability({ ...base, ignoreOverride: true }).has('r-cookie')).toBe(true); // admin: sin stock real
+  });
+
+  it('componente forzado disponible no agota al combo', () => {
+    const soldOut = computeAvailability({
+      recipes: [
+        { id: 'r-pizza', sold_out_override: true },
+        { id: 'r-combo' },
+      ],
+      recipeIngredients: [
+        { recipe_id: 'r-pizza', ingredient_id: 'ing-queso', qty: 1 }, // sin stock, pero forzada
+      ],
+      ingredients: [ING_QUESO],
+      comboItems: [
+        { recipe_id: 'r-combo', sub_recipe_id: 'r-pizza', qty: 1 },
+      ],
+    });
+    expect(soldOut.has('r-combo')).toBe(false);
+  });
+
   it('limita el resultado a los recipe ids visibles si se pasan recipes', () => {
     const soldOut = computeAvailability({
       recipes: [{ id: 'r-visible' }],

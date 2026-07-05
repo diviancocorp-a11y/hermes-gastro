@@ -5,7 +5,7 @@ import { queryKeys } from "../lib/queryClient";
 import { getSession, logout } from "../services/auth";
 import { captureException } from "../lib/observability.js";
 import {
-  useRecipes, useRecipeIngredients, useIngredients,
+  useRecipes, useRecipeIngredients, useComboItems, useIngredients,
   useActiveOrders, useSales, useExpenses, useSettings, useWasteLog,
 } from "./useQueryHooks";
 import { useRealtimeInvalidation } from "./useRealtimeInvalidation";
@@ -43,21 +43,29 @@ export default function useAdminData() {
   const { data: ings = [], refetch: refetchIngs } = useIngredients();
   const { data: rawRecs = [] } = useRecipes();
   const { data: rawRI = [] } = useRecipeIngredients();
+  const { data: rawCombo = [] } = useComboItems();
   const { data: sales = [] } = useSales();
   const { data: exps = [] } = useExpenses();
   const { data: activeOrders = [] } = useActiveOrders();
   const { data: sett } = useSettings();
   const { data: waste = [] } = useWasteLog();
 
-  // ─── Merge recipe ingredients into recipes (same shape as before) ──
+  // ─── Merge recipe ingredients + combo items into recipes ──────────
+  // comboItems se adjuntan igual que ingredients: los combos costean sus
+  // sub-recetas (calculateRecipeCost) sin tener que abrir cada receta.
   const recs = useMemo(() => {
     const riMap = {};
     rawRI.forEach(r => {
       if (!riMap[r.recipe_id]) riMap[r.recipe_id] = [];
       riMap[r.recipe_id].push({ ...r, quantity: r.qty || r.quantity || 0, qty: r.qty || r.quantity || 0 });
     });
-    return rawRecs.map(r => ({ ...r, ingredients: riMap[r.id] || [] }));
-  }, [rawRecs, rawRI]);
+    const ciMap = {};
+    rawCombo.forEach(c => {
+      if (!ciMap[c.recipe_id]) ciMap[c.recipe_id] = [];
+      ciMap[c.recipe_id].push({ sub_recipe_id: c.sub_recipe_id, qty: Number(c.qty) || 0 });
+    });
+    return rawRecs.map(r => ({ ...r, ingredients: riMap[r.id] || [], comboItems: ciMap[r.id] || [] }));
+  }, [rawRecs, rawRI, rawCombo]);
 
   // ─── Orders (active + history combined for backward compatibility) ─
   const [historyOrders, setHistoryOrders] = useState([]);

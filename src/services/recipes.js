@@ -32,6 +32,17 @@ export async function toggleRecipeVisibility(id, visible) {
   return true;
 }
 
+// Override manual de disponibilidad en catalogo (play/pause).
+//   null  = auto (respeta la regla de stock)
+//   true  = forzar disponible (se vende aunque falte materia prima)
+//   false = forzar agotado (visible pero no se puede pedir)
+// Usa update (no upsert) para no chocar con columnas NOT NULL.
+export async function setRecipeOverride(id, value) {
+  const { error } = await supabase.from('recipes').update({ sold_out_override: value }).eq('id', id);
+  if (error) { console.error('setRecipeOverride:', error.message); return false; }
+  return true;
+}
+
 export async function deleteRecipe(id) {
   const { error } = await supabase.from('recipes').delete().eq('id', id);
   return !error;
@@ -79,6 +90,15 @@ export async function fetchComboItems(recipeId) {
     .select('*, recipes!combo_items_sub_recipe_id_fkey(id, name, sale_price)')
     .eq('recipe_id', recipeId);
   if (error) { console.error('fetchComboItems:', error.message); return []; }
+  return data || [];
+}
+
+// Todos los combo_items de todos los combos — para costeo/disponibilidad global.
+// Espejo de fetchAllRecipeIngredients: el admin y el catalogo necesitan los
+// items de todos los combos sin abrir cada receta.
+export async function fetchAllComboItems() {
+  const { data, error } = await supabase.from('combo_items').select('recipe_id, sub_recipe_id, qty');
+  if (error) { console.error('fetchAllComboItems:', error.message); return []; }
   return data || [];
 }
 

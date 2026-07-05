@@ -74,6 +74,8 @@ export default function BadgeTag({
   compact = false,
   onClick,
   style = {},
+  childBg = null,    // fondo del texto (ej "#000" para que resalte sobre cualquier foto)
+  childColor = null, // color del texto cuando hay childBg
   ...rest
 }) {
   const t = TONES[tone] || TONES.neutral;
@@ -125,7 +127,12 @@ export default function BadgeTag({
         {icon && <span aria-hidden="true">{icon}</span>}
         {label}
       </span>
-      <span style={{ paddingRight: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+      <span style={{
+        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+        ...(childBg
+          ? { background: childBg, color: childColor || "#fff", padding: compact ? "3px 8px" : "4px 10px", borderRadius: 999, fontWeight: 800 }
+          : { paddingRight: 2 }),
+      }}>
         {children}
       </span>
     </Component>

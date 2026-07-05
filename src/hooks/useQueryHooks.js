@@ -4,7 +4,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys, STALE_TIMES } from '../lib/queryClient';
 import {
-  fetchAllRecipes, fetchAllRecipeIngredients,
+  fetchAllRecipes, fetchAllRecipeIngredients, fetchAllComboItems,
 } from '../services/recipes';
 import { fetchActiveOrders } from '../services/orders';
 import { fetchIngredients, fetchWasteLog } from '../services/inventory';
@@ -25,6 +25,14 @@ export function useRecipeIngredients() {
   return useQuery({
     queryKey: ['recipeIngredients'],
     queryFn: fetchAllRecipeIngredients,
+    staleTime: STALE_TIMES.products,
+  });
+}
+
+export function useComboItems() {
+  return useQuery({
+    queryKey: ['comboItems'],
+    queryFn: fetchAllComboItems,
     staleTime: STALE_TIMES.products,
   });
 }

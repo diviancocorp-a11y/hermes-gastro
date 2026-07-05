@@ -12,6 +12,7 @@ const TABLE_KEYS = {
   recipes:             [queryKeys.recipes.all, ['catalog']],
   ingredients:         [queryKeys.ingredients.all],
   recipe_ingredients:  [['recipeIngredients'], queryKeys.recipes.all],
+  combo_items:         [['comboItems'], queryKeys.recipes.all],
   sales:               [queryKeys.sales.all, queryKeys.dashboard.stats],
   expenses:            [queryKeys.expenses.all, queryKeys.dashboard.stats],
   purchases:           [queryKeys.purchases.all],
