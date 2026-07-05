@@ -175,8 +175,8 @@ export default function HomeScreen({
         padding: "16px 16px 8px 22px", background: "var(--bg)",
         position: "sticky", top: 0, zIndex: 20,
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
             <div style={{
               width: 36, height: 36, borderRadius: 999,
               background: store.logoColor || "linear-gradient(135deg, var(--ac), var(--ac2))",
@@ -190,7 +190,7 @@ export default function HomeScreen({
               ) : logoLetter}
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, color: "var(--tx)", lineHeight: 1 }}>
+              <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, color: "var(--tx)", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {firstName ? `${greeting}, ${firstName} 👋` : (store.name || "Tienda")}
               </div>
               <div className="body-s" style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2, fontSize: 12 }}>
@@ -224,7 +224,7 @@ export default function HomeScreen({
               )}
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
             <CatalogMusicToggle />
             <AccountMenu
               session={session}
