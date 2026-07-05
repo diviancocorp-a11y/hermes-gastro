@@ -26,6 +26,7 @@ import CartScreenPro from "../catalog-pro/CartScreen";
 import CheckoutScreenPro from "../catalog-pro/CheckoutScreen";
 import OrdersScreenPro from "../catalog-pro/OrdersScreen";
 import { useToast } from "../hooks/useToast";
+import useAndroidBack from "../hooks/useAndroidBack";
 import ConfirmationAnimation from "../components/catalog/ConfirmationAnimation";
 import OrderSentView from "../components/catalog/OrderSentView";
 
@@ -752,6 +753,24 @@ export default function Catalog() {
   // Sobre tokens del tema (no mas sombras grises).
 
   // --- VISTA: ANIMACIÓN DE CONFIRMACIÓN ---
+  // ── Boton atras del telefono = un paso atras DENTRO de la app ──
+  // Pila de capas navegables (la de mas abajo primero, la superior al final).
+  // El back del sistema cierra la superior en vez de salir del catalogo.
+  const backLayers = [];
+  if (cpScreen) backLayers.push(() => setCpScreen(null));
+  if (cpDetail) backLayers.push(() => setCpDetail(null));
+  if (showCart) backLayers.push(() => setShowCart(false));
+  if (showCk) {
+    backLayers.push(() => { setShowCk(false); setCkStep(0); });
+    for (let i = 0; i < ckStep; i++) backLayers.push(() => setCkStep(s => Math.max(0, s - 1)));
+  }
+  if (sent) backLayers.push(() => { setSent(false); setOrderId(null); setShowCk(false); });
+  if (upsell) backLayers.push(() => setUpsell(null));
+  if (ageGatePending) backLayers.push(() => setAgeGatePending(null));
+  if (showMenu) backLayers.push(() => setShowMenu(false));
+  if (showTrackerInput) backLayers.push(() => setShowTrackerInput(false));
+  useAndroidBack(backLayers.length, backLayers[backLayers.length - 1]);
+
   if (confirmAnim) return <ConfirmationAnimation />;
 
   // --- VISTA: PEDIDO ENVIADO ---
@@ -941,6 +960,9 @@ export default function Catalog() {
         <ProductDetailScreenPro
           product={cpDetail}
           soldOutIds={soldOutIds}
+          hasDeal={hasDeal}
+          dealPrice={getPrice}
+          prepDefault={sett.prep_time_min}
           related={(cpDetail.related_ids || [])
             .map(id => products.find(x => x.id === id))
             .filter(Boolean)
