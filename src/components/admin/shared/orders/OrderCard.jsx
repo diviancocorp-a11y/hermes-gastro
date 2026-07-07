@@ -91,6 +91,12 @@ const DEFAULT_ACTIONS = {
   done:  (h) => [
     { label: 'Ver detalle',  variant: 'ghost',   onClick: h.onGhost  },
   ],
+  // cancelled: sin accion primaria ni cancelar — solo consulta. Sin esta
+  // entrada, DEFAULT_ACTIONS[status] era undefined y el buscador del panel
+  // crasheaba al renderizar un pedido cancelado (HERMES-GASTRO-H).
+  cancelled: (h) => [
+    { label: 'Ver detalle',  variant: 'ghost',   onClick: h.onGhost  },
+  ],
 }
 
 const SWIPE_LIMIT = 180     // px máximo de drag
@@ -217,8 +223,9 @@ function OrderCard({ order, actions, onPrimary, onCancel, onGhost, onContact }) 
     }
   }
 
-  // Acciones del menú expandido
-  const acts = actions || DEFAULT_ACTIONS[status]({ onPrimary, onCancel: cancelFn, onGhost })
+  // Acciones del menú expandido. Fallback defensivo: un status desconocido
+  // no puede tirar abajo el listado entero (ErrorBoundary) nunca mas.
+  const acts = actions || (DEFAULT_ACTIONS[status] || DEFAULT_ACTIONS.done)({ onPrimary, onCancel: cancelFn, onGhost })
 
   // Opacidades del reveal
   const revealLeftOpacity  = canSwipeRight && dragX > 0  ? Math.min(dragX / SWIPE_THRESHOLD, 1) : 0
