@@ -79,28 +79,69 @@ export default function useOrderWorkflow({
       return;
     }
 
-    // New → Preparing (deduct stock)
-    if (nextStatus === OrderStatus.PREPARING && o.status === OrderStatus.NEW) {
+    // New → Preparing: verificar stock ANTES (modal si falta). El descuento
+    // efectivo se hace DESPUES de persistir el status (fix 7/jul: el descuento
+    // corria primero y un crash a mitad de flujo — chunk viejo tras deploy —
+    // dejaba el stock descontado con el pedido clavado en 'new').
+    const willDeductStock = nextStatus === OrderStatus.PREPARING && o.status === OrderStatus.NEW;
+    if (willDeductStock && !force) {
       const items = o.order_items || o.items || [];
-      if (!force) {
-        const deficits = [];
-        for (const it of items) {
-          const r = recs.find(x => x.id === it.recipe_id);
-          if (!r || r.is_combo) continue;
-          const qty = it.quantity || it.qty || 1;
-          for (const ri of (r.ingredients || [])) {
-            const ing = ings.find(x => x.id === ri.ingredient_id);
-            if (!ing) continue;
-            const after = (ing.stock || 0) - (ri.quantity * qty);
-            if (after < 0) deficits.push({ name: ing.name, current: formatInt(ing.stock || 0), needed: formatInt(ri.quantity * qty), unit: ing.unit, after: formatInt(after) });
-          }
-        }
-        if (deficits.length > 0) {
-          setOv({ type: "stockWarning", orderId: id, order: o, deficits });
-          return;
+      const deficits = [];
+      for (const it of items) {
+        const r = recs.find(x => x.id === it.recipe_id);
+        if (!r || r.is_combo) continue;
+        const qty = it.quantity || it.qty || 1;
+        for (const ri of (r.ingredients || [])) {
+          const ing = ings.find(x => x.id === ri.ingredient_id);
+          if (!ing) continue;
+          const after = (ing.stock || 0) - (ri.quantity * qty);
+          if (after < 0) deficits.push({ name: ing.name, current: formatInt(ing.stock || 0), needed: formatInt(ri.quantity * qty), unit: ing.unit, after: formatInt(after) });
         }
       }
-      // Deduct stock
+      if (deficits.length > 0) {
+        setOv({ type: "stockWarning", orderId: id, order: o, deficits });
+        return;
+      }
+    }
+
+    // Done → Register sales
+    if (nextStatus === OrderStatus.COMPLETED) {
+      const items = o.order_items || o.items || [];
+      for (const it of items) {
+        await createSale({ date: todayISO(), recipe_id: it.recipe_id, qty: it.quantity || it.qty || 1, unit_price: it.unit_price || 0, unit_cost: it.unit_cost || 0, total: (it.quantity || it.qty || 1) * (it.unit_price || 0) });
+      }
+      setSales(prev => {
+        const nw = [...prev];
+        items.forEach(it => {
+          nw.push({ id: generateId(), date: todayISO(), recipe_id: it.recipe_id, qty: it.quantity || it.qty || 1, unit_price: it.unit_price || 0, total: (it.quantity || it.qty || 1) * (it.unit_price || 0) });
+        });
+        return nw;
+      });
+      if (o.email) {
+        // % configurable por tenant (settings.coupon_default_pct, Sprint 2)
+        const couponPct = Number(sett?.coupon_default_pct) > 0 ? Number(sett.coupon_default_pct) : 10;
+        const coupon = await createCouponForOrder(o.id, o.email, couponPct);
+        if (coupon) msg(`✅ Completado · Cupón ${coupon.code} enviado a ${o.email}`);
+        else msg("Completado · Venta registrada");
+      } else {
+        msg("Completado · Venta registrada");
+      }
+    }
+
+    if (nextStatus === OrderStatus.ACTIVE) msg("Activo · Listo para entrega");
+
+    // Escritura critica PRIMERO. Si falla (RLS, red, sesion vencida), avisar
+    // y NO aplicar el cambio optimista — antes fallaba en silencio y la UI
+    // mentia hasta el proximo refetch (fix 7/jul).
+    const ok = await updateOrderStatus(id, nextStatus);
+    if (!ok) {
+      msg("⚠️ No se pudo guardar el cambio de estado. Recargá y volvé a intentar.");
+      return;
+    }
+
+    // Descuento de stock recien con el status persistido.
+    if (willDeductStock) {
+      const items = o.order_items || o.items || [];
       const ingMap = {};
       ings.forEach(i => { ingMap[i.id] = i; });
       const riMap = {};
@@ -132,33 +173,6 @@ export default function useOrderWorkflow({
       msg("En preparación · Stock actualizado");
     }
 
-    // Done → Register sales
-    if (nextStatus === OrderStatus.COMPLETED) {
-      const items = o.order_items || o.items || [];
-      for (const it of items) {
-        await createSale({ date: todayISO(), recipe_id: it.recipe_id, qty: it.quantity || it.qty || 1, unit_price: it.unit_price || 0, unit_cost: it.unit_cost || 0, total: (it.quantity || it.qty || 1) * (it.unit_price || 0) });
-      }
-      setSales(prev => {
-        const nw = [...prev];
-        items.forEach(it => {
-          nw.push({ id: generateId(), date: todayISO(), recipe_id: it.recipe_id, qty: it.quantity || it.qty || 1, unit_price: it.unit_price || 0, total: (it.quantity || it.qty || 1) * (it.unit_price || 0) });
-        });
-        return nw;
-      });
-      if (o.email) {
-        // % configurable por tenant (settings.coupon_default_pct, Sprint 2)
-        const couponPct = Number(sett?.coupon_default_pct) > 0 ? Number(sett.coupon_default_pct) : 10;
-        const coupon = await createCouponForOrder(o.id, o.email, couponPct);
-        if (coupon) msg(`✅ Completado · Cupón ${coupon.code} enviado a ${o.email}`);
-        else msg("Completado · Venta registrada");
-      } else {
-        msg("Completado · Venta registrada");
-      }
-    }
-
-    if (nextStatus === OrderStatus.ACTIVE) msg("Activo · Listo para entrega");
-
-    await updateOrderStatus(id, nextStatus);
     setOrders(p => p.map(x => x.id === id ? { ...x, status: nextStatus, ...(nextStatus === OrderStatus.COMPLETED ? { completedAt: new Date().toISOString() } : {}) } : x));
   }, [orders, recs, ings, setOrders, setIngs, setSales, setOv, msg]);
 
