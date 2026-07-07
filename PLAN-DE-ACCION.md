@@ -68,6 +68,7 @@
 | 4.8 | Mensajes de error utiles en checkout: propagar el mensaje del server (429, producto no disponible) en vez del generico | 1 |
 | 4.9 | Set completo de iconos PWA para LNP y mala-miga | 7 |
 | 4.10 | **Script `deploy-functions.mjs`**: deploya supabase/functions/ identico a los 3 tenants (una sola fuente de verdad, evita drift tipo verify_jwt). Detectado en Sprint 0: LNP tenia el fix de create-payment-preference y Cochi/MM no | S0 |
+| 4.11 | **`/pago/exitoso` con verificacion activa del pago**: si el webhook tarda, consultar el pago directo a la API de MP (GET /v1/payments con external_reference / merchant_order) en vez de solo esperar el webhook, y promover la orden si ya esta approved. Cierra el caso "pague pero el webhook nunca llego" (caida de IPN). Hoy MpStatus solo lee el estado de la orden via get_order_tracker y auto-poll ~36s; si el webhook nunca aterriza, queda en "verificando" hasta el autocancel a 30 min | 14/jun |
 
 ## Sprint 5 — Escala (cuando haya cliente #4 en puerta)
 
