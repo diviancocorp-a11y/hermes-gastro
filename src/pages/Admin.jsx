@@ -6,6 +6,8 @@ import useFeature from "../hooks/useFeature";
 import useAdminData from "../hooks/useAdminData";
 import useOrderWorkflow from "../hooks/useOrderWorkflow";
 import useFinancials from "../hooks/useFinancials";
+import useAdminGate from "../hooks/useAdminGate";
+import AccessDenied from "../components/admin/AccessDenied";
 
 // Componentes nuevos · chrome del Admin (sistema visual v2)
 import AdminBackdrop from "../components/admin/shared/AdminBackdrop";
@@ -119,9 +121,15 @@ export default function Admin() {
     orders, setOrders, recs, ings, setIngs, sett, loaded, setSales, setOv, msg,
   });
 
+  // Gate de rol: solo usuarios en admin_users entran al panel. Un cliente
+  // del catalogo tiene sesion pero NO fila en admin_users -> AccessDenied.
+  const gate = useAdminGate(session?.user?.id || null);
+
   // Loading / Login gates
   if (checking) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "var(--ag-ink-3)" }}>Cargando...</div>;
   if (!session) return <LoginScreen onLogin={doLogin} />;
+  if (gate.status === "checking") return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "var(--ag-ink-3)" }}>Cargando...</div>;
+  if (gate.status === "denied") return <AccessDenied email={session?.user?.email || ""} />;
 
   const DEF = DEFAULT_SETTINGS;
   const themeClass = theme === 'dark' ? 'ag-theme-dark' : 'ag-theme-light';

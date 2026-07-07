@@ -22,6 +22,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import useAdminGate from "../../hooks/useAdminGate";
+import AccessDenied from "../../components/admin/AccessDenied";
 
 // ── Helpers ──────────────────────────────────────────────
 function slugify(text) {
@@ -136,6 +138,18 @@ export default function InfoPagesAdmin({ embedded = false, onBack }) {
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Gate (solo standalone /admin/paginas; embedded ya esta detras del gate
+  // del Admin). Cliente de catalogo con sesion -> AccessDenied.
+  const [authUser, setAuthUser] = useState(undefined);
+  useEffect(() => {
+    if (embedded) { setAuthUser(false); return; } // false = no aplica
+    supabase.auth.getSession().then(({ data }) => setAuthUser(data?.session?.user || null));
+  }, [embedded]);
+  const gate = useAdminGate(!embedded && authUser ? authUser.id : null);
+  useEffect(() => {
+    if (!embedded && authUser === null) navigate("/admin", { replace: true });
+  }, [embedded, authUser, navigate]);
 
   const goBack = onBack || (() => navigate("/admin"));
 
@@ -340,6 +354,11 @@ export default function InfoPagesAdmin({ embedded = false, onBack }) {
       )}
     </div>
   );
+
+  // Acceso standalone: cliente de catalogo logueado sin rol -> denied.
+  if (!embedded && authUser && gate.status === "denied") {
+    return <AccessDenied email={authUser?.email || ""} />;
+  }
 
   // Standalone (ruta /admin/paginas): envolver con el tema del admin para
   // que los tokens ag-* existan fuera del ag-root de Admin.jsx

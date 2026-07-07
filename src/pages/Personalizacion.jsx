@@ -11,6 +11,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import BrandModal from "../components/admin/shared/BrandModal";
 import { fetchSettings, updateSettings } from "../services/settings";
 import ConfirmSlideProvider from "../components/ConfirmSlideProvider";
+import { supabase } from "../lib/supabase";
+import useAdminGate from "../hooks/useAdminGate";
+import AccessDenied from "../components/admin/AccessDenied";
 
 export default function Personalizacion() {
   const navigate = useNavigate();
@@ -18,9 +21,21 @@ export default function Personalizacion() {
   const [sett, setSett] = useState(null);
   const [toast, setToast] = useState("");
 
+  // Gate: esta ruta es deep-linkeable -> mismo control que /admin.
+  const [authUser, setAuthUser] = useState(undefined); // undefined = cargando
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setAuthUser(data?.session?.user || null));
+  }, []);
+  const gate = useAdminGate(authUser?.id || null);
+
   useEffect(() => {
     fetchSettings().then(s => setSett(s || {}));
   }, []);
+
+  // Sin sesion -> al admin (muestra login). Sin rol -> denied.
+  useEffect(() => {
+    if (authUser === null) navigate("/admin", { replace: true });
+  }, [authUser, navigate]);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -34,8 +49,13 @@ export default function Personalizacion() {
     else navigate("/admin");
   };
 
-  // Loading state mientras carga settings
-  if (!sett) {
+  // Acceso: cliente de catalogo logueado pero sin fila en admin_users.
+  if (authUser && gate.status === "denied") {
+    return <AccessDenied email={authUser?.email || ""} />;
+  }
+
+  // Loading state mientras carga settings (o la sesion/rol)
+  if (!sett || authUser === undefined || (authUser && gate.status === "checking")) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ag-ink-3, #9C8B7A)" }}>
         Cargando...
