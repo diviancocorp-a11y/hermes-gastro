@@ -59,6 +59,10 @@ Deno.serve(async (req) => {
     } else if (["efectivo", "transferencia", "mercadopago", "tarjeta"].includes(body.payment)) {
       payment = body.payment; // compat clientes viejos (sin account_id)
     }
+    // MercadoPago entra al panel recien con el pago aprobado: la orden nace
+    // como pending_payment y mp-webhook la pasa a 'new' al aprobar (auto-cancel
+    // a los 30 min si el cliente abandona). El admin nunca ve pedidos sin plata.
+    const isMP = payment === "mercadopago";
     const note = body.note ? body.note.trim().slice(0, 500) : null;
     const isGift = body.is_gift === true;
     const giftNote = body.gift_note ? body.gift_note.trim().slice(0, 300) : "";
@@ -117,7 +121,7 @@ Deno.serve(async (req) => {
     const tipAmount = Math.round(serverTotal * tipPct / 100);
     const finalTotal = Math.max(0, serverTotal - validDiscount) + tipAmount + deliveryCost;
     if (email) await supabase.from("customers").upsert({ email, name: customer, phone, last_order_at: new Date().toISOString() }, { onConflict: "email" });
-    const { data: order, error: orderError } = await supabase.from("orders").insert({ status: "new", date: new Date().toISOString().split("T")[0], customer, phone, email, delivery, payment, payment_account_id: paymentAccountId, payment_account_snapshot: paymentAccountSnapshot, note, total: finalTotal, is_gift: isGift, gift_note: giftNote, coupon_id: validCouponId, discount: validDiscount, tip_pct: tipPct, tip_amount: tipAmount, delivery_date: deliveryDate, user_id: userId, delivery_address: address, delivery_cost: deliveryCost }).select("id").single();
+    const { data: order, error: orderError } = await supabase.from("orders").insert({ status: isMP ? "pending_payment" : "new", date: new Date().toISOString().split("T")[0], customer, phone, email, delivery, payment, payment_account_id: paymentAccountId, payment_account_snapshot: paymentAccountSnapshot, note, total: finalTotal, is_gift: isGift, gift_note: giftNote, coupon_id: validCouponId, discount: validDiscount, tip_pct: tipPct, tip_amount: tipAmount, delivery_date: deliveryDate, user_id: userId, delivery_address: address, delivery_cost: deliveryCost }).select("id").single();
     if (orderError || !order) { console.error("Error creando pedido:", orderError); return jsonRes({ error: "Error al crear el pedido" }, 500); }
     if (validCouponId) await supabase.from("coupons").update({ used: true, used_at: new Date().toISOString() }).eq("id", validCouponId);
     const costMap = {};
@@ -128,20 +132,24 @@ Deno.serve(async (req) => {
     const orderItems = validatedItems.map((item) => ({ order_id: order.id, recipe_id: item.recipeId, qty: item.qty, unit_price: item.unitPrice, unit_cost: costMap[item.recipeId] || 0, subtotal: item.subtotal }));
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
     if (itemsError) { console.error("Error creando items:", itemsError); await supabase.from("orders").delete().eq("id", order.id); return jsonRes({ error: "Error al crear los items" }, 500); }
-    // Push al admin (fire-and-forget, no bloquea el response al cliente)
-    try {
-      await supabase.functions.invoke("send-push", {
-        body: {
-          title: "Nuevo pedido",
-          body: `${customer || "Cliente"} - $${finalTotal}`,
-          // /admin?tab=orders: ruta real del panel (fix 12/jun — /admin/orders
-          // no existia y el click del push terminaba en el catalogo)
-          url: "/admin?tab=orders",
-          target: { role: "admin" },
-        },
-      });
-    } catch (e) {
-      console.warn("send-push admin (non-blocking):", e?.message);
+    // Push al admin SOLO para ordenes que entran al panel (status 'new').
+    // Las de MercadoPago entran como pending_payment: el aviso se dispara
+    // desde mp-webhook recien cuando el pago se aprueba. Fire-and-forget.
+    if (!isMP) {
+      try {
+        await supabase.functions.invoke("send-push", {
+          body: {
+            title: "Nuevo pedido",
+            body: `${customer || "Cliente"} - $${finalTotal}`,
+            // /admin?tab=orders: ruta real del panel (fix 12/jun — /admin/orders
+            // no existia y el click del push terminaba en el catalogo)
+            url: "/admin?tab=orders",
+            target: { role: "admin" },
+          },
+        });
+      } catch (e) {
+        console.warn("send-push admin (non-blocking):", e?.message);
+      }
     }
     return jsonRes({ ok: true, orderId: order.id, total: finalTotal, discount: validDiscount, tip: tipAmount, delivery_cost: deliveryCost });
   } catch (err) {

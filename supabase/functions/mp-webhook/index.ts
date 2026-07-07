@@ -1,18 +1,23 @@
 // supabase/functions/mp-webhook/index.ts
-// Recibe notificaciones IPN/Webhook de MercadoPago cuando cambia el estado
-// de un pago. Actualiza order.payment_status + order.paid_at.
+// Recibe notificaciones IPN/Webhook de MercadoPago cuando cambia el estado de
+// un pago. Concilia el pago con la orden (external_reference = order.id).
 //
-// MP envía POST con body { action, type, data: { id } }.
-// Para type='payment', `data.id` es el payment ID. Consultamos MP API para
-// obtener el detalle (status, external_reference, etc.) y actualizamos la order.
+// MP envia POST con body { action, type, data: { id } } (moderno) o
+// { topic, resource } (legacy). Tambien puede venir el id por query string.
 //
-// IMPORTANTE: MP puede reintentar el webhook varias veces — la operación
-// debe ser IDEMPOTENTE. Por eso solo escribimos `paid_at` cuando pasa de
-// pending → approved.
+// FLUJO pending_payment (jun/2026):
+//   - submit-order crea las ordenes de MercadoPago como `pending_payment`
+//     (invisibles en el panel del admin: todavia no hay plata).
+//   - Cuando el pago se APRUEBA, este webhook promueve la orden a `new`
+//     (entra al panel), setea paid_at y dispara el push "Nuevo pedido".
+//   - Si el cliente nunca paga, un cron la auto-cancela a los 30 min.
 //
-// Env vars:
-//   - SUPABASE_URL
-//   - SUPABASE_SERVICE_ROLE_KEY
+// IDEMPOTENCIA: MP reintenta el webhook varias veces. Solo promovemos y
+// pusheamos cuando la orden todavia esta en pending_payment (o fue
+// auto-cancelada sin pagar). Una segunda notificacion aprobada no repite el
+// push ni vuelve a tocar el estado.
+//
+// Env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -26,7 +31,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
 
     // MP soporta varios formatos. El moderno es { action, type, data: { id } }.
-    // También llega { topic, resource } en el legacy. Soportamos ambos.
+    // Tambien llega { topic, resource } en el legacy. Soportamos ambos.
     let paymentId: string | null = null;
 
     if (body?.type === 'payment' && body?.data?.id) {
@@ -37,7 +42,7 @@ Deno.serve(async (req) => {
       if (match) paymentId = match[1];
     }
 
-    // También puede venir el id en query string ?id=...&topic=payment
+    // Tambien puede venir el id en query string ?id=...&topic=payment
     if (!paymentId) {
       const url = new URL(req.url);
       const idParam = url.searchParams.get('id') || url.searchParams.get('data.id');
@@ -83,27 +88,35 @@ Deno.serve(async (req) => {
     const payment = await paymentRes.json();
     // payment.status: 'approved' | 'pending' | 'in_process' | 'rejected' | 'refunded' | 'cancelled'
     // payment.external_reference: el order.id que pusimos al crear la preference
-
     const orderId = payment.external_reference;
     if (!orderId) {
       console.warn('mp-webhook: payment without external_reference', paymentId);
       return new Response('OK', { status: 200 });
     }
 
-    // Solo escribimos paid_at en el primer aprobado (idempotencia)
+    // Estado actual de la orden (para idempotencia + promocion + datos del push)
+    const { data: current } = await supabase
+      .from('orders')
+      .select('status, paid_at, customer, total')
+      .eq('id', orderId)
+      .single();
+
     const updates: any = {
       payment_external_id: String(payment.id),
       payment_status: payment.status,
     };
+
+    // Promover a 'new' (entra al panel) SOLO si la orden todavia esperaba el
+    // pago, o si el cron la auto-cancelo sin que hubiera pagado (pago tardio).
+    // Una orden ya promovida/avanzada por el admin no se vuelve a tocar -> el
+    // push de "Nuevo pedido" sale una sola vez (idempotente ante reintentos).
+    let promote = false;
     if (payment.status === 'approved') {
-      // Solo setear paid_at si todavía no estaba
-      const { data: current } = await supabase
-        .from('orders')
-        .select('paid_at')
-        .eq('id', orderId)
-        .single();
-      if (!current?.paid_at) {
-        updates.paid_at = new Date().toISOString();
+      if (!current?.paid_at) updates.paid_at = new Date().toISOString();
+      const st = current?.status;
+      if (st === 'pending_payment' || (st === 'cancelled' && !current?.paid_at)) {
+        updates.status = 'new';
+        promote = true;
       }
     }
 
@@ -115,6 +128,23 @@ Deno.serve(async (req) => {
     if (updErr) {
       console.error('mp-webhook: order update failed', updErr);
       return new Response('Update failed', { status: 500 });
+    }
+
+    // Recien ahora (pago confirmado) avisamos al admin — mismo push que las
+    // ordenes en efectivo/transferencia disparan al crearse.
+    if (promote) {
+      try {
+        await supabase.functions.invoke('send-push', {
+          body: {
+            title: 'Nuevo pedido',
+            body: `${current?.customer || 'Cliente'} - $${current?.total ?? ''} (pagado)`,
+            url: '/admin?tab=orders',
+            target: { role: 'admin' },
+          },
+        });
+      } catch (e) {
+        console.warn('mp-webhook: send-push admin (non-blocking):', e?.message);
+      }
     }
 
     return new Response('OK', { status: 200 });
