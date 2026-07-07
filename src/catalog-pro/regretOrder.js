@@ -9,6 +9,14 @@ export const REGRET_WINDOW_MS = 60 * 1000;
 
 /** Cancela el pedido (server-side valida ventana y estado). true = cancelado */
 export async function cancelOwnOrder(orderId) {
+  // Via principal: edge function cancel-order — cancela con autoria 'customer'
+  // y AVISA AL ADMIN por push (caso Ornela 5/jul: cancelacion silenciosa).
+  try {
+    const { data, error } = await supabase.functions.invoke("cancel-order", { body: { order_id: orderId } });
+    if (!error && data?.ok === true) { removeActiveOrder(orderId); return true; }
+    if (!error && data?.ok === false) return false; // ventana cerrada: el RPC diria lo mismo
+  } catch { /* function caida o chunk desfasado: probamos el RPC */ }
+  // Fallback (compat): mismo efecto server-side, sin push al admin.
   try {
     const { data, error } = await supabase.rpc("cancel_own_order", { p_order_id: orderId });
     if (error) return false;

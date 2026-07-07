@@ -149,7 +149,9 @@
       "tip_pct",
       "tip_amount",
       "payment_account_id",
-      "payment_account_snapshot"
+      "payment_account_snapshot",
+      "cancelled_at",
+      "cancelled_by"
     ],
     "profiles": [
       "id",

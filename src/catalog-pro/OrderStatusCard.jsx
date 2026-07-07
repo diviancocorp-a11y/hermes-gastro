@@ -73,6 +73,10 @@ export default function OrderStatusCard({ href, compact = false, title, descript
   const regretLeft = useRegretCountdown(compact && status === "new" ? createdAt : null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelled, setCancelled] = useState(false);
+  // Doble tap para cancelar (6/jul): un solo tap accidental alcanzaba para
+  // cancelar sin confirmacion (caso Ornela 5/jul). El primer tap arma el
+  // boton 4 segundos; el segundo confirma.
+  const [confirmStep, setConfirmStep] = useState(false);
 
   if (compact && !alive && !cancelled) return null;
 
@@ -80,6 +84,12 @@ export default function OrderStatusCard({ href, compact = false, title, descript
     e.preventDefault();
     e.stopPropagation();
     if (cancelling) return;
+    if (!confirmStep) {
+      setConfirmStep(true);
+      setTimeout(() => setConfirmStep(false), 4000);
+      return;
+    }
+    setConfirmStep(false);
     setCancelling(true);
     const ok = await cancelOwnOrder(orderId);
     setCancelling(false);
@@ -133,7 +143,7 @@ export default function OrderStatusCard({ href, compact = false, title, descript
               color: "var(--err, #C62828)", fontSize: 11, fontWeight: 700,
               cursor: "pointer", fontFamily: "inherit",
             }}>
-              {cancelling ? "Cancelando…" : `✕ ¿Te equivocaste? Cancelar (${regretLeft}s)`}
+              {cancelling ? "Cancelando…" : confirmStep ? "¿Seguro? Tocá de nuevo para cancelar" : `✕ ¿Te equivocaste? Cancelar (${regretLeft}s)`}
             </button>
           )}
         </span>
