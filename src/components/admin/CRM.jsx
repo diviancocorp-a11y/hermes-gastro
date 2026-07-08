@@ -6,7 +6,7 @@
  *   - PromoFidelidadModal: solo CUPÓN (% / 2x1 / otro) + medio + envío vía bot
  */
 import { useState, useEffect, useMemo } from "react";
-import { formatInt, todayISO } from "../../lib/utils";
+import { formatInt, todayISO, waLink } from "../../lib/utils";
 import { fetchCustomerStats } from "../../lib/adminService";
 import { paymentLabel, paymentIcon } from "../../lib/payments";
 import { fetchCoupons, createCustomerCoupon, describeCoupon } from "../../services/coupons";
@@ -228,7 +228,7 @@ function CRM({ orders, showToast }) {
                 : c._trend === "down"
                 ? { color: "var(--ag-c-orders)", bg: "var(--ag-c-orders-soft)", icon: "▼" }
                 : { color: "var(--ag-ink-3)", bg: "var(--ag-bg-soft)", icon: "▬" };
-              const phoneDigits = (c.phone || "").replace(/\D/g, "");
+              const waHref = waLink(c.phone);
               return (
                 <div key={c._key + "-" + i} onClick={() => toggleSelect(c._key)}
                   style={{
@@ -273,10 +273,10 @@ function CRM({ orders, showToast }) {
                             style={{ color: "var(--ag-c-prep)", textDecoration: "none", fontWeight: 600 }}>
                             📱 {c.phone}
                           </a>
-                          <a href={"https://wa.me/" + phoneDigits} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} title="WhatsApp"
+                          {waHref && <a href={waHref} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} title="WhatsApp"
                             style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 999, background: "var(--ag-c-sales)", color: "#fff", textDecoration: "none", flexShrink: 0 }}>
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4a7.94 7.94 0 0 0-6.88 11.89L4 20l4.22-1.11a7.93 7.93 0 0 0 3.83.98h.01a7.94 7.94 0 0 0 7.94-7.94 7.9 7.9 0 0 0-2.4-5.6zm-5.56 12.2a6.6 6.6 0 0 1-3.36-.92l-.24-.14-2.5.66.67-2.44-.16-.25a6.6 6.6 0 1 1 12.25-3.51 6.6 6.6 0 0 1-6.66 6.6zm3.62-4.94c-.2-.1-1.17-.58-1.35-.64-.18-.07-.31-.1-.45.1-.13.2-.51.64-.62.77-.12.13-.23.15-.43.05-.2-.1-.84-.31-1.6-.99-.59-.53-.99-1.18-1.1-1.38-.12-.2-.01-.31.09-.41.09-.09.2-.23.3-.35.1-.12.13-.2.2-.33.07-.13.03-.25-.02-.35-.05-.1-.45-1.08-.62-1.48-.16-.39-.33-.34-.45-.34l-.39-.01c-.13 0-.35.05-.53.25-.18.2-.7.69-.7 1.67 0 .99.72 1.94.82 2.07.1.13 1.42 2.17 3.44 3.04.48.21.86.33 1.15.42.48.15.92.13 1.27.08.39-.06 1.17-.48 1.34-.94.17-.46.17-.86.12-.94-.05-.08-.18-.13-.38-.23z"/></svg>
-                          </a>
+                          </a>}
                         </>
                       )}
                       {c.email && (

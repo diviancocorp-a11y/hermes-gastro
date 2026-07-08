@@ -19,6 +19,7 @@
  *   actions: override opcional de los botones del menu expandido
  */
 import { memo, useRef, useState } from 'react'
+import { waLink } from '../../../../lib/utils'
 
 function ContactIcon({ size = 16 }) {
   return (
@@ -217,10 +218,8 @@ function OrderCard({ order, actions, onPrimary, onCancel, onGhost, onContact }) 
   // Contact fallback
   const handleContact = () => {
     if (onContact) return onContact(order)
-    if (order.phone) {
-      const phone = String(order.phone).replace(/\D/g, '')
-      window.open(`https://wa.me/${phone}`, '_blank', 'noopener,noreferrer')
-    }
+    const link = waLink(order.phone)
+    if (link) window.open(link, '_blank', 'noopener,noreferrer')
   }
 
   // Acciones del menú expandido. Fallback defensivo: un status desconocido

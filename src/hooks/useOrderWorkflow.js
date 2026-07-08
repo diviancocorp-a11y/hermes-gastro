@@ -4,7 +4,7 @@ import {
   updateOrderStatus, createSale, updateIngredientStock,
   deductComboStock, createCouponForOrder,
 } from "../lib/adminService";
-import { formatInt, todayISO, generateId, OrderStatus, playNotificationSound } from "../lib/utils";
+import { formatInt, todayISO, OrderStatus, playNotificationSound } from "../lib/utils";
 
 /**
  * useOrderWorkflow — Handles order status transitions, stock deductions,
@@ -104,19 +104,31 @@ export default function useOrderWorkflow({
       }
     }
 
-    // Done → Register sales
+    // Escritura critica PRIMERO. Si falla (RLS, red, sesion vencida), avisar
+    // y NO aplicar ningun efecto (venta, cupon, stock) ni el cambio optimista.
+    // Antes: la venta se registraba ANTES de persistir el status; si el update
+    // fallaba quedaba una venta fantasma con el pedido sin completar (misma
+    // familia de riesgo que el descuento de stock — fix jul).
+    const ok = await updateOrderStatus(id, nextStatus);
+    if (!ok) {
+      msg("⚠️ No se pudo guardar el cambio de estado. Recargá y volvé a intentar.");
+      return;
+    }
+
+    // ─── Efectos DESPUES de persistir el status ───
+
+    // Completado → registrar ventas (recien con el status guardado). Usamos las
+    // filas reales que devuelve createSale: si el insert falla no metemos venta
+    // fantasma en la UI y el estado local no diverge de la DB.
     if (nextStatus === OrderStatus.COMPLETED) {
       const items = o.order_items || o.items || [];
+      const persisted = [];
       for (const it of items) {
-        await createSale({ date: todayISO(), recipe_id: it.recipe_id, qty: it.quantity || it.qty || 1, unit_price: it.unit_price || 0, unit_cost: it.unit_cost || 0, total: (it.quantity || it.qty || 1) * (it.unit_price || 0) });
+        const qty = it.quantity || it.qty || 1;
+        const sale = await createSale({ date: todayISO(), recipe_id: it.recipe_id, qty, unit_price: it.unit_price || 0, unit_cost: it.unit_cost || 0, total: qty * (it.unit_price || 0) });
+        if (sale) persisted.push(sale);
       }
-      setSales(prev => {
-        const nw = [...prev];
-        items.forEach(it => {
-          nw.push({ id: generateId(), date: todayISO(), recipe_id: it.recipe_id, qty: it.quantity || it.qty || 1, unit_price: it.unit_price || 0, total: (it.quantity || it.qty || 1) * (it.unit_price || 0) });
-        });
-        return nw;
-      });
+      if (persisted.length) setSales(prev => [...prev, ...persisted]);
       if (o.email) {
         // % configurable por tenant (settings.coupon_default_pct, Sprint 2)
         const couponPct = Number(sett?.coupon_default_pct) > 0 ? Number(sett.coupon_default_pct) : 10;
@@ -129,15 +141,6 @@ export default function useOrderWorkflow({
     }
 
     if (nextStatus === OrderStatus.ACTIVE) msg("Activo · Listo para entrega");
-
-    // Escritura critica PRIMERO. Si falla (RLS, red, sesion vencida), avisar
-    // y NO aplicar el cambio optimista — antes fallaba en silencio y la UI
-    // mentia hasta el proximo refetch (fix 7/jul).
-    const ok = await updateOrderStatus(id, nextStatus);
-    if (!ok) {
-      msg("⚠️ No se pudo guardar el cambio de estado. Recargá y volvé a intentar.");
-      return;
-    }
 
     // Descuento de stock recien con el status persistido.
     if (willDeductStock) {
@@ -174,7 +177,7 @@ export default function useOrderWorkflow({
     }
 
     setOrders(p => p.map(x => x.id === id ? { ...x, status: nextStatus, ...(nextStatus === OrderStatus.COMPLETED ? { completedAt: new Date().toISOString() } : {}) } : x));
-  }, [orders, recs, ings, setOrders, setIngs, setSales, setOv, msg]);
+  }, [orders, recs, ings, sett, setOrders, setIngs, setSales, setOv, msg]);
 
   // ═══ Confirm cancellation (with optional stock return) ═══
   const confirmCancel = useCallback(async (id, returnStock) => {

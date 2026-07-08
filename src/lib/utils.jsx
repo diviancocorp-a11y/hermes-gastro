@@ -61,6 +61,29 @@ export const generateId = () => Date.now().toString(36) + Math.random().toString
 // Código corto unificado para pedidos y recibos: #XXXXXX (últimos 6 chars del ID sin guiones)
 export const formatOrderCode = (id) => { const s = String(id || "").replace(/-/g, ""); return "#" + s.slice(-6).toUpperCase(); };
 
+// ─── Telefono → E.164 Argentina para WhatsApp ───────────────────────
+// Bug: el cliente carga su numero sin codigo de pais (ej "3814123456") y al
+// hacer solo replace(/\D/g,'') el link wa.me quedaba sin 54 → WhatsApp lo
+// interpretaba como US (+1) y "no existe". Esto normaliza a 549 + numero.
+// Devuelve solo digitos (sin +), o null si no hay nada usable.
+export function waPhoneAr(raw) {
+  let d = String(raw ?? "").replace(/\D/g, "");
+  if (!d) return null;
+  if (d.startsWith("00")) d = d.slice(2);          // prefijo internacional
+  if (d.startsWith("54")) {                        // ya trae codigo de pais AR
+    let rest = d.slice(2);
+    if (rest.startsWith("0")) rest = rest.slice(1);
+    if (!rest.startsWith("9")) rest = "9" + rest;  // 9 de movil que suele faltar
+    return "54" + rest;
+  }
+  if (d.startsWith("0")) d = d.slice(1);           // 0 de larga distancia nacional
+  if (d.startsWith("9") && d.length >= 11) return "54" + d; // ya trae el 9 de movil
+  return "549" + d;
+}
+
+// Link wa.me listo para abrir. null si no hay telefono.
+export const waLink = (raw) => { const p = waPhoneAr(raw); return p ? `https://wa.me/${p}` : null; };
+
 // ─── Supabase Storage image transform ───────────────────────────────
 // Convierte una URL pública de Supabase Storage a la variante con resize.
 // Ej: .../object/public/bucket/path → .../render/image/public/bucket/path?width=300&quality=75
