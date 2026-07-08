@@ -23,7 +23,7 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
-      globals: { ...globals.browser, __CLIENT__: 'readonly' },
+      globals: { ...globals.browser, __CLIENT__: 'readonly', __BUILD_ID__: 'readonly' },
       parserOptions: {
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },

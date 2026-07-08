@@ -8,6 +8,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import SkipToContent from './components/ui/SkipToContent'
 import OfflineBanner from './components/ui/OfflineBanner'
+import UpdateBanner from './components/ui/UpdateBanner'
 import useTheme from './hooks/useTheme'
 import Catalog from './pages/Catalog'
 import NotFound from './pages/NotFound'
@@ -141,6 +142,7 @@ export default function App() {
         </AuthProvider>
       </QueryClientProvider>
       <OfflineBanner />
+      <UpdateBanner />
     </ErrorBoundary>
   )
 }

@@ -7,6 +7,11 @@ import { pathToFileURL } from 'url'
 
 const CLIENT = process.env.CLIENT || 'la-nona-pato'
 
+// Build id unico por deploy. En Vercel usa el SHA del commit; local, un timestamp.
+// Se bakea en el bundle (__BUILD_ID__) y se emite en /version.json — el runtime
+// compara ambos y avisa "hay actualizacion" cuando difieren (chunk viejo tras deploy).
+const BUILD_ID = (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 8) || String(Date.now())
+
 function loadClientEnv() {
   const envFile = path.resolve(__dirname, `.env.${CLIENT}`)
   if (!fs.existsSync(envFile)) return
@@ -83,6 +88,27 @@ function businessHtmlPlugin() {
   }
 }
 
+// ── /version.json (deteccion de version nueva en runtime) ───────────────────
+// Emite un JSON estable (no hasheado) con el build id. El hook useAppUpdate lo
+// pollea (cache: no-store) y lo compara con __BUILD_ID__ bakeado en el bundle.
+function versionJsonPlugin() {
+  const body = JSON.stringify({ buildId: BUILD_ID })
+  return {
+    name: 'hermes-version-json',
+    configureServer(server) {
+      server.middlewares.use('/version.json', (req, res, next) => {
+        if (req.method !== 'GET') return next()
+        res.setHeader('Content-Type', 'application/json')
+        res.setHeader('Cache-Control', 'no-store')
+        res.end(body)
+      })
+    },
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: body })
+    },
+  }
+}
+
 // ── Sentry sourcemaps (Sprint 4.7) ──────────────────────────────────────────
 // Solo se activa si hay SENTRY_AUTH_TOKEN en el entorno de build (Vercel env o
 // local). Sin token: build normal sin sourcemaps, cero impacto.
@@ -107,7 +133,7 @@ async function sentryPlugins() {
 }
 
 export default defineConfig(async () => ({
-  plugins: [businessHtmlPlugin(), tailwindcss(), react(), ...(await sentryPlugins())],
+  plugins: [businessHtmlPlugin(), versionJsonPlugin(), tailwindcss(), react(), ...(await sentryPlugins())],
   resolve: {
     alias: {
       '@business': path.resolve(__dirname, `clients/${CLIENT}/business.js`),
@@ -116,6 +142,7 @@ export default defineConfig(async () => ({
   },
   define: {
     __CLIENT__: JSON.stringify(CLIENT),
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
   },
   test: {
     environment: 'jsdom',
