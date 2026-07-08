@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { formatMoney, formatInt, todayISO, generateId, formatOrderCode, optimizeImage, originalImageUrl, disableImageTransforms, resetImageTransforms } from '@hermes/core/lib/utils.jsx';
+import { formatMoney, formatInt, todayISO, generateId, formatOrderCode, optimizeImage, originalImageUrl, disableImageTransforms, resetImageTransforms, waPhoneAr, waLink } from '@hermes/core/lib/utils.jsx';
 
 describe('fm (format money)', () => {
   it('formats number with 2 decimals AR locale', () => {
@@ -103,5 +103,44 @@ describe('originalImageUrl', () => {
   it('handles null/undefined gracefully', () => {
     expect(originalImageUrl(null)).toBeNull();
     expect(originalImageUrl(undefined)).toBeUndefined();
+  });
+});
+
+describe('waPhoneAr (normalizacion telefono AR)', () => {
+  it('prepende 549 a un numero local sin codigo de pais', () => {
+    expect(waPhoneAr('3814123456')).toBe('5493814123456');
+  });
+
+  it('saca el 0 de larga distancia', () => {
+    expect(waPhoneAr('03814123456')).toBe('5493814123456');
+  });
+
+  it('deja intacto un E.164 movil ya normalizado', () => {
+    expect(waPhoneAr('5493814123456')).toBe('5493814123456');
+    expect(waPhoneAr('+54 9 381 412-3456')).toBe('5493814123456');
+  });
+
+  it('inserta el 9 de movil cuando el pais viene sin el', () => {
+    expect(waPhoneAr('54 381 4123456')).toBe('5493814123456');
+    expect(waPhoneAr('+54 11 5412 3456')).toBe('5491154123456');
+  });
+
+  it('crudo, 549 y formateado normalizan al mismo valor (matching estable)', () => {
+    const a = waPhoneAr('1155443322');
+    const b = waPhoneAr('5491155443322');
+    const c = waPhoneAr('+54 9 11 5544-3322');
+    expect(a).toBe(b);
+    expect(b).toBe(c);
+  });
+
+  it('devuelve null si no hay digitos', () => {
+    expect(waPhoneAr('')).toBeNull();
+    expect(waPhoneAr(null)).toBeNull();
+    expect(waPhoneAr('  --  ')).toBeNull();
+  });
+
+  it('waLink arma el wa.me o null', () => {
+    expect(waLink('3814123456')).toBe('https://wa.me/5493814123456');
+    expect(waLink('')).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Icon, formatInt, optimizeImage, originalImageUrl, disableImageTransforms, probeImageTransforms } from "../lib/utils";
+import { Icon, formatInt, optimizeImage, originalImageUrl, disableImageTransforms, probeImageTransforms, waPhoneAr } from "../lib/utils";
 import { preloadImages } from "../lib/preloadImages";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 import { fetchMpStatusPublic, createMpPreference } from "../services/paymentIntegrations";
@@ -602,9 +602,16 @@ export default function Catalog() {
       finalNote = finalNote ? `${changeTag} ${finalNote}` : changeTag;
     }
 
+    // Telefono normalizado a E.164 AR (549...) en ORIGEN: guardamos el dato
+    // limpio en la DB en vez de depender de normalizar al mostrar. El matching
+    // por sufijo (phone_key en las RPCs) tolera datos viejos en crudo, asi que
+    // esto no fragmenta nada. Si viene vacio/invalido, cae al valor crudo y que
+    // la validacion (phoneNumber) lo rechace.
+    const normalizedPhone = waPhoneAr(form.phone) || form.phone;
+
     const orderData = {
       customer: form.name,
-      phone: form.phone,
+      phone: normalizedPhone,
       email: user ? user.email : form.email,
       delivery: form.delivery,
       payment: form.payment,
@@ -644,7 +651,7 @@ export default function Catalog() {
             {
               email: customerEmail,
               name: form.name || null,
-              phone: form.phone || null,
+              phone: normalizedPhone || null,
               birth_date: form.birth_date,
             },
             { onConflict: "email" }
