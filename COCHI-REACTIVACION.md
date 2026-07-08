@@ -41,6 +41,34 @@ WHERE table_name='recipes' AND column_name='sold_out_override';
 
 ---
 
+### 2) 2026-07-08 — matching de telefono por sufijo (`phone_key` + RPCs)
+**Por que:** las RPCs `lookup_customer_by_phone` y `get_phone_customer_orders` matcheaban
+el telefono de forma **exacta** y sobre `orders.customer_phone` (columna **vacia** — el
+dato real esta en `orders.phone`). Resultado: el historial guest y el `order_count`
+devolvian vacio, y un numero guardado en crudo (`3814123456`) no matcheaba con `549...`.
+El fix agrega `phone_key()` (ultimos 10 digitos normalizados) y matchea por sufijo sobre
+`COALESCE(orders.phone, orders.customer_phone)`. **Sin backfill.** LNP y mala-miga ya
+quedaron aplicadas el 8/jul. Ademas el checkout ya guarda el telefono normalizado (549)
+en origen — eso viaja en el codigo (push), pero el matching de cochi necesita esta
+migracion para no fragmentar historial.
+
+Archivo: `supabase/migrations/20260708_phone_match_by_suffix.sql`
+
+Aplicar con MCP (correr el contenido completo del archivo):
+`apply_migration(project_id="nzrzfknvlnddpexghynq", name="phone_match_by_suffix", query=<sql del archivo>)`
+
+Verificar:
+```sql
+-- 1) el helper normaliza igual crudo/549/formateado
+SELECT public.phone_key('3814123456') = public.phone_key('+54 9 381 412-3456') AS ok_norm; -- true
+-- 2) las 3 funciones existen
+SELECT proname FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+WHERE n.nspname='public' AND proname IN ('phone_key','lookup_customer_by_phone','get_phone_customer_orders');
+-- debe devolver 3 filas
+```
+
+---
+
 ## Lo que NO necesita accion por-tenant (ya viaja en el codigo)
 Todo esto se deploya solo con el push a `main` (Vercel auto-deploy). No toca DB de cochi:
 
@@ -60,5 +88,6 @@ Todo esto se deploya solo con el push a `main` (Vercel auto-deploy). No toca DB 
 ## Checklist rapido post-reactivacion cochi
 - [ ] Proyecto en `ACTIVE_HEALTHY`
 - [ ] Migracion `recipes_sold_out_override` aplicada y verificada
+- [ ] Migracion `phone_match_by_suffix` aplicada y verificada (3 funciones, `phone_key` normaliza)
 - [ ] Catalogo carga con combos/descuentos/+18 (no cayo al select minimo)
 - [ ] En admin: una receta sin stock muestra "SIN STOCK" y el boton Disponible la fuerza
