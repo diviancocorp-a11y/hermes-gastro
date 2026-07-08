@@ -13,31 +13,23 @@ import { formatInt, todayISO, OrderStatus, playNotificationSound } from "../lib/
 export default function useOrderWorkflow({
   orders, setOrders, recs, ings, setIngs, sett, loaded, setSales, setOv, msg,
 }) {
-  // ═══ Promote scheduled orders for today ═══
-  const promotedRef = useRef(new Set());
-  useEffect(() => {
-    if (!loaded || !orders.length) return;
-    const today = todayISO();
-    const storeOpen = sett.store_open !== false;
-    if (!storeOpen) return;
-    const toPromote = orders.filter(
-      o => o.delivery_date && o.delivery_date <= today && o.status === OrderStatus.NEW && !promotedRef.current.has(o.id)
-    );
-    if (toPromote.length === 0) return;
-    toPromote.forEach(o => promotedRef.current.add(o.id));
-    (async () => {
-      for (const o of toPromote) {
-        await supabase.from('orders').update({ delivery_date: null }).eq('id', o.id);
-      }
-      setOrders(p => p.map(o => {
-        if (toPromote.find(tp => tp.id === o.id)) return { ...o, delivery_date: null };
-        return o;
-      }));
-      msg(`📅 ${toPromote.length} pedido${toPromote.length > 1 ? 's' : ''} programado${toPromote.length > 1 ? 's' : ''} activado${toPromote.length > 1 ? 's' : ''}`);
-    })();
-  }, [loaded, orders, sett.store_open, msg, setOrders]);
+  // ═══ Pedidos programados: NO se "promueven" nulificando delivery_date ═══
+  // Antes: al abrir el local, un pedido con delivery_date <= hoy se pasaba a
+  // pedido normal con `update({ delivery_date: null })`. Eso rompia dos cosas:
+  //   1) el barredor de abajo lo veia sin delivery_date y con `date` de un dia
+  //      anterior (dia en que se cargo) -> lo cancelaba al instante. Un pedido
+  //      real programado desaparecia solo al abrir (caso Ornela, mie).
+  //   2) el reloj de la tarjeta perdia el ancla a la hora pactada y contaba
+  //      desde la creacion -> "9 horas activo" falso.
+  // Ahora delivery_date se conserva SIEMPRE. Los programados de hoy aparecen en
+  // "Nuevos" via el filtro de Orders.jsx (delivery_date <= hoy), el barredor los
+  // respeta (solo barre delivery_date < hoy) y el reloj arranca a la hora pactada.
 
   // ═══ Auto-cancel stale orders from previous days ═══
+  // Un pedido programado esta PROTEGIDO mientras su dia no paso: si delivery_date
+  // es hoy o futuro, (delivery_date < today) es false -> nunca se barre. Solo se
+  // cancela cuando su dia ya paso (delivery_date < hoy) o cuando es un pedido sin
+  // programar cargado un dia anterior (o.date < hoy y sin delivery_date).
   const cleanedRef = useRef(new Set());
   useEffect(() => {
     if (!loaded || !orders.length) return;

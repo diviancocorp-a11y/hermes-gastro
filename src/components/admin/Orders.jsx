@@ -24,6 +24,29 @@ const NEXT_STATUS = {
 
 const AV_COLORS = ['#E85A4A', '#6B5BD6', '#3A8B9F', '#D4894A', '#2A9D6E', '#E8A53A'];
 
+// Hora pactada de un pedido programado. No existe columna delivery_time: el
+// checkout la guarda dentro de `note` como "[Hora programada: HH:MM]" (ver
+// Catalog.jsx). La extraemos de ahi para anclar el reloj a la hora real.
+// Devuelve "HH:MM" o null. (o.delivery_time se contempla por si algun dia se
+// promueve a columna.)
+function scheduledTime(o) {
+  if (o?.delivery_time) return String(o.delivery_time).slice(0, 5);
+  const m = String(o?.note || "").match(/\[Hora programada:\s*(\d{1,2}:\d{2})\]/i);
+  if (!m) return null;
+  const [h, mm] = m[1].split(":");
+  return `${h.padStart(2, "0")}:${mm}`;
+}
+
+// Bucket "Nuevos": pedidos de hoy sin programar + programados cuyo dia ya llego
+// (delivery_date <= hoy). Asi el programado aparece en Nuevos cuando llega el
+// dia, conservando delivery_date (el reloj sigue anclado a la hora pactada y el
+// barredor lo respeta). `t` = todayISO().
+function isNewBucket(o, t) {
+  if (o.status !== OrderStatus.NEW) return false;
+  if (o.delivery_date) return o.delivery_date <= t; // programado: aparece cuando llega su dia
+  return o.date === t;                              // sin programar: solo los de hoy
+}
+
 // Helper: mapea un order de DB a las props que espera OrderCard. Defensivo:
 // - Tolera created_at/date faltantes (usa epoch / ahora)
 // - Tolera id null
@@ -38,13 +61,19 @@ function toCardProps(o, recipes = []) {
   });
 
   // Tiempo desde creado. Si no hay fecha válida, default 0 min.
-  // PROGRAMADOS (delivery_date): el reloj corre desde la HORA PACTADA,
-  // no desde la creación — un pedido para las 18:00 no "lleva 4 horas
-  // esperando" a las 14:00 (fix 12/jun). Si la hora no llegó, queda en 0.
+  // PROGRAMADOS (delivery_date): el reloj corre desde la HORA PACTADA, no desde
+  // la creación — un pedido para las 18:00 no "lleva 4 horas esperando" a las
+  // 14:00. La hora sale del note ([Hora programada: HH:MM]). Sin hora conocida
+  // NO anclamos a medianoche (daba "9 horas activo" falso al abrir): queda en 0
+  // hasta que se trabaje. Si la hora aún no llegó, Math.max lo deja en 0.
   let minutes = 0;
-  const tsRaw = o.delivery_date
-    ? `${o.delivery_date}T${(o.delivery_time || "00:00").slice(0, 5)}:00`
-    : (o.created_at || (o.date ? `${o.date}T12:00:00` : null));
+  let tsRaw;
+  if (o.delivery_date) {
+    const hhmm = scheduledTime(o);
+    tsRaw = hhmm ? `${o.delivery_date}T${hhmm}:00` : null;
+  } else {
+    tsRaw = o.created_at || (o.date ? `${o.date}T12:00:00` : null);
+  }
   if (tsRaw) {
     const created = new Date(tsRaw);
     if (!isNaN(created.getTime())) {
@@ -99,10 +128,11 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
      evita arrancarlo por error. */
   const advance = async (o, next, cardId) => {
     if (next === OrderStatus.PREPARING && o.delivery_date) {
-      const sched = new Date(`${o.delivery_date}T${(o.delivery_time || "00:00").slice(0, 5)}:00`);
+      const hhmm = scheduledTime(o);
+      const sched = new Date(`${o.delivery_date}T${(hhmm || "00:00")}:00`);
       if (!isNaN(sched.getTime()) && sched.getTime() > Date.now() + 5 * 60000) {
         const fecha = new Date(o.delivery_date + "T12:00:00").toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
-        const when = o.delivery_time ? `el ${fecha} a las ${o.delivery_time.slice(0, 5)}` : `el ${fecha}`;
+        const when = hhmm ? `el ${fecha} a las ${hhmm}` : `el ${fecha}`;
         const ok = await confirmSlide({
           title: "Pedido programado",
           body: `Este pedido es para ${when}. ¿Confirmás que lo vas a empezar AHORA?`,
@@ -159,16 +189,16 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
   // Programados futuros (para referencia)
   const scheduledFuture=useMemo(()=>orders.filter(o=>o.delivery_date&&o.status!==OrderStatus.COMPLETED&&o.status!==OrderStatus.CANCELLED&&o.delivery_date>t).sort((a,b)=>(a.delivery_date||"").localeCompare(b.delivery_date||"")),[orders,t]);
 
-  // Counts: para "new" solo contar pedidos de hoy sin delivery_date
+  // Counts
   const cts=useMemo(()=>{const c={};Object.values(OrderStatus).forEach(s=>{
-    if(s===OrderStatus.NEW)c[s]=orders.filter(o=>o.status===s&&o.date===t&&!o.delivery_date).length;
+    if(s===OrderStatus.NEW)c[s]=orders.filter(o=>isNewBucket(o,t)).length;
     else if(s===OrderStatus.COMPLETED||s===OrderStatus.CANCELLED)c[s]=orders.filter(o=>o.status===s&&o.date===t).length;
     else c[s]=orders.filter(o=>o.status===s).length;
   });return c;},[orders,t]);
 
-  // Filtrado: NEW = solo hoy sin delivery_date; COMPLETED/CANCELLED = solo hoy; resto = todos
+  // Filtrado: NEW = hoy sin programar + programados de hoy; COMPLETED/CANCELLED = solo hoy; resto = todos
   const filt=useMemo(()=>orders.filter(o=>{
-    if(fil===OrderStatus.NEW)return o.status===fil&&o.date===t&&!o.delivery_date;
+    if(fil===OrderStatus.NEW)return isNewBucket(o,t);
     if(fil===OrderStatus.COMPLETED||fil===OrderStatus.CANCELLED)return o.status===fil&&o.date===t;
     return o.status===fil;
   }).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||"")),[orders,fil,t]);
@@ -406,7 +436,7 @@ function Orders({orders,recipes,moveOrderStatus,addOrder,overlay,setOverlay,show
           {!storeIsOpen && scheduled.length > 0 && (
             <div className="ag-card" style={{ padding: '10px 12px', marginBottom: 14, background: 'var(--ag-c-stock-soft)' }}>
               <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ag-c-stock)' }}>
-                ⚠ Local cerrado · los programados de hoy se activan al abrir
+                ⚠ Local cerrado · los pedidos programados de hoy ya aparecen en Nuevos
               </div>
             </div>
           )}
