@@ -6,11 +6,10 @@
  *
  * ─────────────────── LA REGLA QUE ORDENA TODO ───────────────────
  *
- * Una intervencion nace de algo que el usuario ACABA DE HACER, nunca de una
- * lectura del estado al entrar. La diferencia no es sutil: "hay cero productos
- * visibles" es cierto todo el tiempo en una cuenta vacia, asi que dispararlo
- * por estado sacaria al personaje encima del workspace en cada login y en cada
- * re-render. Por eso la firma recibe un EVENTO, no un estado a secas.
+ * Una intervencion normalmente nace de algo que el usuario acaba de hacer.
+ * Hay una excepcion operativa deliberada: cuando comienza la ventana del local
+ * y Caja sigue cerrada, el reloj produce un evento porque no se puede iniciar
+ * el turno sin registrarla.
  *
  * La auditoria (platform/DICO-PHYSICAL-EVENT-CONTRACT.md) encontro que casi
  * todas las seniales del runtime ya tienen a Dico encima —el aviso 2D, las
@@ -20,7 +19,9 @@
  */
 
 /** Los unicos casos implementados. Agregar uno es una decision de producto. */
-export const INTERVENCIONES = Object.freeze(['catalogo-vacio', 'nada-visible']);
+export const INTERVENCIONES = Object.freeze([
+  'catalogo-vacio', 'nada-visible', 'caja-cerrada-al-abrir', 'impulso-enviado:*',
+]);
 
 /**
  * Donde se para Dico. Dos, semanticos: no hay coordenadas libres.
@@ -45,6 +46,8 @@ function intervencion({ id, pose, mensaje, cta = null, anclaje = 'presence' }) {
  * @param {object} evento  lo que acaba de pasar
  *   { tipo: 'entro-al-catalogo', productos: number }
  *   { tipo: 'cambio-visibilidad', visiblesAntes: number, visiblesAhora: number }
+ *   { tipo: 'local-abierto-sin-caja' }
+ *   { tipo: 'impulsar-producto', productoId, producto, audiencia }
  * @param {object} contexto
  *   { vistas: string[]  ids ya mostrados en esta sesion
  *     terminologia: { singular, nuevo } }
@@ -54,6 +57,34 @@ export function intervencionDe(evento, contexto = {}) {
   const { vistas = [], terminologia: t = { singular: 'producto', nuevo: '+ Agregar producto' } } = contexto;
 
   if (!evento || typeof evento.tipo !== 'string') return null;
+
+  // ── Orden inmediata de venta ───────────────────────────────────────────
+  // El encargado ya tomo la decision al tocar Impulsar. No hay confirmacion,
+  // selector de canal ni armado de brief: Dico resuelve el destino antes de
+  // llegar aca y confirma que la directriz salio.
+  if (evento.tipo === 'impulsar-producto') {
+    if (!evento.productoId || !evento.producto || !evento.audiencia) return null;
+    return intervencion({
+      id: `impulso-enviado:${evento.productoId}`,
+      pose: 'celebrate',
+      mensaje: `Listo. ${evento.audiencia} ya sabe que hoy impulsamos ${evento.producto}.`,
+      anclaje: 'presence',
+    });
+  }
+
+  // ── 0. Abre el local sin Caja ───────────────────────────────────────────
+  // Excepcion de sistema: el productor espera a que horario y Caja hayan
+  // cargado. Se muestra una vez por sesion y espera la apertura real de Caja.
+  if (evento.tipo === 'local-abierto-sin-caja') {
+    if (vistas.includes('caja-cerrada-al-abrir')) return null;
+    return intervencion({
+      id: 'caja-cerrada-al-abrir',
+      pose: 'worried',
+      mensaje: 'El local ya abrió y Caja sigue cerrada. Abrila antes de empezar el turno.',
+      cta: { texto: 'Abrir Caja', accion: 'abrir-caja' },
+      anclaje: 'presence',
+    });
+  }
 
   // ── 1. Catalogo vacio ────────────────────────────────────────────────────
   // Se dispara al ENTRAR al catalogo, que es una accion del usuario, y una
@@ -102,8 +133,10 @@ export function intervencionDe(evento, contexto = {}) {
  */
 export function sigueVigente(intervencionActiva, estado = {}) {
   if (!intervencionActiva) return false;
-  const { productos = 0, visibles = 0 } = estado;
+  const { productos = 0, visibles = 0, operativo = false, cajaAbierta = false } = estado;
   if (intervencionActiva.id === 'catalogo-vacio') return productos === 0;
   if (intervencionActiva.id === 'nada-visible') return visibles === 0;
+  if (intervencionActiva.id === 'caja-cerrada-al-abrir') return operativo && !cajaAbierta;
+  if (intervencionActiva.id.startsWith('impulso-enviado:')) return true;
   return false;
 }

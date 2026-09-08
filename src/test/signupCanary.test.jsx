@@ -22,6 +22,9 @@ async function completeSignup() {
   fireEvent.change(screen.getByLabelText('¿En qué país?'), {
     target: { value: 'UY' },
   });
+  fireEvent.change(screen.getByLabelText('Tu nombre'), {
+    target: { value: 'Ana Pérez' },
+  });
   fireEvent.change(screen.getByLabelText('Tu email'), {
     target: { value: 'hola@cafeuno.com' },
   });
@@ -77,6 +80,7 @@ describe('Phase 2A /registro visual canary', () => {
     expect(screen.getByLabelText('¿Cómo se llama tu negocio?')).toBeInTheDocument();
     expect(screen.getByLabelText('¿En qué país?')).toHaveValue('AR');
     expect(screen.getByLabelText('La dirección de tu local')).toBeInTheDocument();
+    expect(screen.getByLabelText('Tu nombre')).toBeInTheDocument();
     expect(screen.getByLabelText('Tu email')).toBeInTheDocument();
     expect(screen.getByLabelText('Contraseña')).toBeInTheDocument();
 
@@ -105,6 +109,7 @@ describe('Phase 2A /registro visual canary', () => {
         bizName: 'Café Uno',
         vertical: 'barber',
         slug: 'cafe-uno',
+        fullName: 'Ana Pérez',
         operationMode: 'virtual',
         country: 'UY',
         currency: 'UYU',

@@ -5,7 +5,7 @@
 // a nadie — "Buenos días undefined" es peor que no saludar.
 
 import { describe, it, expect } from 'vitest';
-import { saludoDe, nombreDe } from '../modules/saludo';
+import { fraseDe, saludoDe, nombreDe } from '../modules/saludo';
 
 const aLas = (h) => new Date(2026, 8, 5, h, 30, 0);
 
@@ -28,6 +28,22 @@ describe('la franja del dia', () => {
   it('la madrugada tambien es "buenas noches", como en la calle', () => {
     expect(saludoDe(aLas(1))).toBe('Buenas noches');
     expect(saludoDe(aLas(5))).toBe('Buenas noches');
+  });
+
+  it('usa la hora del local y no la de la computadora', () => {
+    const fecha = new Date('2026-09-07T15:00:00Z');
+    expect(saludoDe(fecha, 'America/Argentina/Buenos_Aires')).toBe('Buenos días');
+    expect(saludoDe(fecha, 'Asia/Tokyo')).toBe('Buenas noches');
+  });
+});
+
+describe('frase del fondo', () => {
+  const fecha = new Date('2026-09-07T15:00:00Z');
+
+  it('se mantiene durante el dia y depende de la pantalla', () => {
+    const productos = fraseDe('products', fecha, 'America/Argentina/Buenos_Aires');
+    expect(fraseDe('products', fecha, 'America/Argentina/Buenos_Aires')).toBe(productos);
+    expect(fraseDe('stock', fecha, 'America/Argentina/Buenos_Aires')).not.toBe(productos);
   });
 });
 

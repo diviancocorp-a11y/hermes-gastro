@@ -91,6 +91,7 @@ export default function Signup() {
   const [vertical, setVertical] = useState('gastro');
   const [modo, setModo] = useState('fisico');
   const [country, setCountry] = useState(PAIS_POR_DEFECTO);
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -123,6 +124,7 @@ export default function Signup() {
 
   const puedeEnviar =
     bizName.trim().length >= 2 &&
+    fullName.trim().length >= 2 &&
     validacionLocal.ok && dispo === true &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
     password.length >= 8 &&
@@ -133,7 +135,7 @@ export default function Signup() {
     if (!puedeEnviar) return;
     setEnviando(true); setError(null);
     const r = await registrarNegocio({
-      email, password, bizName, vertical, slug,
+      email, password, bizName, vertical, slug, fullName,
       operationMode: modo,
       country,
       currency: monedaDe(country),
@@ -143,7 +145,7 @@ export default function Signup() {
     setEnviando(false);
     if (!r.ok) { setError(r.error); return; }
     setListo(true);
-  }, [puedeEnviar, email, password, bizName, vertical, slug, modo, country]);
+  }, [puedeEnviar, email, password, bizName, vertical, slug, fullName, modo, country]);
 
   if (listo) {
     return (
@@ -305,6 +307,18 @@ export default function Signup() {
               <span>02</span>
               <h3 id="signup-access-heading">Tu acceso</h3>
             </header>
+            <Campo label="Tu nombre" htmlFor="signup-full-name">
+              <input
+                id="signup-full-name"
+                className="signup-control"
+                type="text"
+                value={fullName}
+                autoComplete="name"
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Cómo te llamás"
+                required
+              />
+            </Campo>
             <div className="signup-access-grid">
               <Campo label="Tu email" htmlFor="signup-email">
                 <input

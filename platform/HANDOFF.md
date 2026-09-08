@@ -8,6 +8,385 @@
 
 ---
 
+## 6/sep/2026 — Ronda en curso: topbar y cuenta (Codex)
+
+Octavo incremento del 8/sep en Productos. El subtitulo `Categorias` sube de
+15 a 20px y gana aire vertical para diferenciarse con claridad de los nombres
+de cada categoria plegable.
+
+Durante el gate de publicacion se corrigio el tipado del costo congelado en
+`platform/functions/submit-order`: la relacion `ingredients` acepta tanto la
+forma objeto como la forma array inferida por Supabase. El calculo conserva el
+mismo fallback seguro a costo cero.
+
+El E2E de sidebar tambien se alineo con el componente vigente: al abrir Dico
+comprueba la tarjeta `.dico-avisos-mensaje`, no la vieja burbuja eliminada en
+la ronda visual.
+
+Septimo incremento del 8/sep en Productos. La columna izquierda suma el titulo
+semantico `Categorias` dentro de la card, arriba de los desplegables. El `h1`
+del shell sigue siendo `Productos`; el nuevo `h2` ordena la lista sin duplicar
+el nombre de pantalla.
+
+Sexto incremento del 8/sep en Productos. La burbuja `Agregar producto` deja el
+fondo oscuro con borde oro y pasa a laton dorado: gradiente metalico de bandas
+anchas, canto oscuro, doble luz interior y texto Zinc 950. El reflejo solo se
+desplaza al hover; no tiene halo ni animacion autonoma, para conservar la regla
+de accion dorada sin convertirla en neon.
+
+Quinto incremento del 8/sep en `DICO ANALIZA`. El control de informacion se
+redujo visualmente de 22 a 18px y conserva un area tactil ampliada invisible.
+La nota desplegada tambien es mas compacta y deja de repetir la explicacion de
+los cuadrantes. Ahora cuenta el origen: Michael L. Kasavana y Donald I. Smith,
+Michigan State University, su publicacion de 1982 y la adaptacion de una matriz
+de cartera para tomar decisiones de menu con ventas y margen.
+
+Cuarto incremento del 8/sep en Productos. Las categorias del listado nacen
+plegadas y toda la cabecera funciona como disclosure con cantidad y chevron;
+una busqueda abre solamente las categorias con coincidencias y al limpiarla
+vuelve a plegar la lista. Se eliminaron del encabezado `3 en curso` y la frase
+redundante `21 productos en 5 categorias`. `Agregar producto` paso al primer
+lugar de la tira de indicadores y usa la misma geometria de burbuja, con borde
+dorado de accion. El contador de pedidos se conserva donde aporta valor: en la
+navegacion de Pedidos.
+
+Tercer incremento del 8/sep sobre `Resumen Dico`: se retiro el rotulo pequeno
+`DICO ANALIZA`, se centro la identidad y solo la palabra `Dico` queda en Butler
+dorado. El cuerpo completo usa Overused y escribe primero las metricas del menu
+y despues la lectura priorizada con el tipeo compartido de Dico; tocar cualquier
+punto completa el texto y movimiento reducido lo salta. Los accesos `IR DIRECTO
+A` desaparecieron. Los Enigmas ahora generan microacciones por producto para el
+proximo brief, con la directriz exacta que recibira el equipo, por ejemplo
+`Ofrezcan Risotto durante el proximo turno`. El boton agrega a un borrador local
+y lo declara asi en UI/toast; persistencia y distribucion real siguen pendientes.
+
+Segundo incremento del ranking vivo el 8/sep. El panorama de `DICO ANALIZA`
+deja los acordeones y pasa a cuatro bloques: Estrellas, Caballos, Enigmas y
+Perros, con definicion, cantidad y entrada al ranking. Cada cuadrante reemplaza
+el cuerpo de la misma card, muestra sus totales y agrupa rankings independientes
+por categoria comercial. Producto conserva el tercer nivel estadistico y su
+boton volver.
+
+Las flechas de fila representan proximidad al limite mas cercano y nombran el
+cuadrante posible; no se presentan como tendencia hasta tener snapshots. La
+lectura fija desaparecio y ahora `Resumen Dico` abre una vista humana con Dico
+2D dentro de la card y accesos directos a las prioridades. Mientras esa vista
+esta activa, la presencia 2D se retira de topbar/sidebar y vuelve al cerrarla.
+Butler se usa en la voz del resumen; metricas y controles conservan tipografia
+de interfaz. Las microacciones con efectos siguen bloqueadas hasta tener
+persistencia. El fixture local carga 12 transacciones, 40 unidades y ocho
+recetas repartidas entre Bebidas y Principales; cada cuadrante permite comprobar
+dos rankings que reinician en `#1`.
+
+Primer incremento funcional del ranking vivo implementado el 8/sep. Se saco el
+selector temporal y la lectura actual queda fija a 28 dias, con pulso de ventas
+de 7 dias. Kasavana calcula popularidad y margen ponderado dentro de cada
+categoria comercial; los cuadrantes son acordeones y ordenan por contribucion
+total. Al elegir un producto, la misma card muestra su perfil, referencias de
+categoria, distancia a mejora y recomendacion directa; volver restaura el
+ranking y el scroll. Mobile nace con cuadrantes cerrados y desktop abre la
+prioridad mas urgente.
+
+Esta primera capa usa los pedidos y costos ya disponibles en cliente. No tiene
+todavia snapshots persistidos, oportunidades/exposicion, historial de stock ni
+acciones guardadas; por eso la trayectoria se marca como pendiente y no se
+ofrecen microacciones ficticias. El siguiente incremento debe mover el agregado
+y los snapshots al backend antes de habilitar brief y seguimiento.
+
+Decision funcional del 8/sep para la siguiente iteracion de `DICO ANALIZA`.
+Antes de implementar se fijo el contrato en
+`platform/DICO-MENU-ENGINEERING-RULES.md`: ranking vigente de 28 dias
+operativos, pulso de 7, snapshots eternos por cierre, comparacion dentro de la
+categoria y estado `En observacion` para productos sin exposicion suficiente.
+El perfil estadistico no abre pagina: reemplaza el cuerpo de la misma card y
+volver restaura cuadrante y scroll. Se definieron elegibilidad, exclusiones,
+formulas, estabilidad de cambios, orden, microacciones y medicion de resultado.
+El contrato tiene una implementacion parcial de interfaz y calculo vigente; la
+persistencia y elegibilidad siguen pendientes.
+
+Decimocuarto ajuste de Productos. Kasavana deja la matriz visual 2x2 y pasa a
+cuatro filas apiladas: Estrellas, Caballos, Enigmas y Perros, cada una con un
+emoji identificador, criterio, productos, unidades y contribucion. En desktop
+el panel tiene sticky real y altura maxima de viewport con scroll propio: con
+21 productos de revision se midio de 468px iniciales a 12px del borde al bajar,
+sin superar 552px de alto en un viewport de 600px. En mobile conserva el
+disclosure voluntario; nace plegado y no acompana el scroll como panel fijo.
+
+La lectura deja de describir cantidades abstractas y emite decisiones con
+nombre: mantener Estrellas, revisar costo o precio de Caballos, promocionar
+Enigmas y considerar reformular o sacar Perros. Un control `i` junto a
+`Ingenieria de menu` explica el cruce popularidad/margen, cada cuadrante y el
+corte temporal. La propuesta cristal se descarto y el titulo vuelve a la
+opcion 1: tipografia Overused grande y linea oro respirando, sin halo neon.
+El fixture local suma ahora 17 productos de volumen para juzgar el sticky.
+
+Decimotercer ajuste de Productos. Ricardo aprobo el encastre topbar/sidebar.
+Las leyendas pequenas de Dico vuelven a la autoridad anterior: kicker y label
+en mono, lectura en Overused; Butler se veia extrano a esa escala. La flecha
+mobile deja de representar abierto/cerrado del negocio: representa el estado
+de la card en ambos modos, con chevron fino hacia abajo plegada y hacia arriba
+desplegada. Se cargo un fixture local de revision con un turno cerrado, seis
+transacciones, veinte unidades, cuatro recetas y los cuatro cuadrantes de
+Kasavana; es reversible con `cargar-gestion-productos-demo.mjs --limpiar`.
+
+La propuesta de titulo grande con linea oro respirando queda registrada como
+opcion 1. La opcion 2 activa ahora una textura cristal estatica dentro de las
+letras, construida con Zinc y sin halo, neon ni blur; una linea mineral fina
+reemplaza el pulso. Vista Analiza mobile comprobada con los datos locales.
+Validacion: 88/88 tests enfocados y build Vite verdes; ESLint sin errores.
+Todo sigue local, sin commit ni deploy.
+
+Duodecimo ajuste de Productos. En desktop la topbar ahora acompana la
+expansion lateral del sidebar: arranca junto al riel y se desplaza y reduce
+con el mismo movimiento cuando el riel abre, por lo que ambas piezas conservan
+un solo borde visual. El gate de sidebar mide este contrato en 1440, 1280,
+1024 y 900 px, ademas de comprobar el cambio a navegacion inferior en 768 y
+390 px; paso sin overflow, con riel 64 px y sidebar abierta 224 px.
+
+En estado cerrado, `DICO ANALIZA`, `LECTURA DE DICO` y su lectura usan Butler.
+Debajo de `Ingenieria de menu` aparece la fecha del ultimo turno cerrado y un
+selector a la derecha para analizar ultimo turno, 3 dias, 1 semana, 2 semanas
+o 30 dias. La seleccion modifica de verdad el intervalo de pedidos que alimenta
+Kasavana, usando como corte el cierre del ultimo turno gestionado. En mobile la
+cabecera conserva todo su ancho como target: muestra `⌄` en Dico Recomienda y
+`⌃` en Dico Analiza; el badge queda al lado del nombre solo cuando existen
+recomendaciones y no aparece en Analiza. Los titulos de pantalla crecieron y
+recibieron una linea oro inferior que respira, respetando movimiento reducido.
+
+Validacion de este ajuste: 88/88 tests enfocados verdes, gate Playwright de
+sidebar/topbar verde en los seis anchos, ESLint sin errores y build Vite verde.
+Todo sigue local, sin commit ni deploy.
+
+Undecimo ajuste a partir de captura real. La barra vuelve a `Sistema operativo`
+abierto y conserva `Sistema en reposo` cerrado. El panel elimina por completo
+el indicador redundante `Local abierto`. Su identidad es `DICO RECOMIENDA · EN
+VIVO` con linea Volt durante la operacion; cerrado cambia a `DICO ANALIZA`,
+linea y nombre oro, y el titulo pasa a `Ingenieria de menu`.
+
+La antiguedad de Caja ya no define el reloj: producia `18 d 9 h` cuando el
+fixture conservaba una cash_session vieja. `ventanaOperativa()` expone los
+minutos transcurridos desde la apertura de la ventana actual y el panel los
+muestra en mono como `HH:MM operando`, junto a las transacciones completadas
+del dia. Cerrado no muestra ese reloj. En mobile desaparecio la burbuja `+/-`:
+toda la cabecera es el target plegable y el unico elemento visible a la derecha
+es el badge Volt cuando existen impulsos pendientes. El sidebar abre por hover
+sin depender de `(pointer: fine)`, porque el navegador interno reportaba mouse
+como puntero coarse. Verificacion visual mobile hecha en el dev autenticado;
+tests enfocados verdes.
+
+Decimo ajuste, Productos mobile y estado operativo. Se corrigio la apertura
+del sidebar desktop: una regla condicionada a la burbuja abierta de Dico lo
+forzaba al ancho cerrado y ya no bloquea hover ni foco de teclado. En mobile,
+el panel `DICO · EN VIVO` se ordena arriba de la lista, nace plegado, conserva
+una cabecera tactil de 44px y muestra un badge Volt solo cuando hay impulsos
+pendientes. Su linea superior tiene el barrido de pulso; con movimiento
+reducido queda estatica. Desktop conserva el panel abierto a la derecha.
+
+El alcance del panel abierto reemplaza la hora inicial por duracion desde
+`turno.opened_at` y cantidad de pedidos completados del dia local. El reloj y
+los pedidos se refrescan cada 30 segundos; el polling silencioso tambien trae
+pedidos ingresados desde otro dispositivo sin poner la pantalla en loading.
+La barra operativa ahora dice `Sistema operando` mientras abre y `Sistema en
+reposo` al cerrar, sin duplicar el estado. Tests enfocados: 61/61 verdes y
+build verde. Sigue todo local, sin commit ni deploy.
+
+Noveno ajuste funcional sobre Productos: `Impulsar` ya no arma ni espera un
+brief y tampoco ofrece elegir push/canal. El toque representa una decision
+inmediata del encargado: Dico resuelve el destino por area y confirma en su
+intervencion 3D que la directriz salio. En este prototipo las seniales de
+bebidas van al equipo de barra y el resto a camareros y recepcion; la heuristica
+por nombre/categoria debe reemplazarse por un `service_area` explicito cuando
+se implemente la entrega persistida a los dispositivos de cada rol. El brief
+inicial queda como un flujo separado, preparado antes del turno y entregado al
+equipo cuando llega. La UI, reglas de destino e intervencion estan en dev;
+la entrega cross-user/realtime todavia requiere modelo de directrices y no se
+simula como push. Tests enfocados: 46/46 verdes, incluido el click real sobre
+`Impulsar` y su confirmacion de destino. Build verde.
+
+Octavo ajuste visual, Productos como centro de decision por turno. En desktop
+la zona inferior se divide: la lista de productos queda compacta y vertical a
+la izquierda, sin mosaico de cards de alturas desparejas; a la derecha nace el
+panel contextual de Dico. Si el local esta abierto muestra acciones explicables
+por prioridad (faltante confirmado, stock bajo y oportunidad de rotacion), con
+accesos a Stock, pausa real del producto y una accion inmediata para impulsar.
+
+Con el local cerrado, el mismo lugar cambia a Matriz Kasavana. Usa solo pedidos
+completados con detalle y productos con receta/costo: popularidad contra margen
+de contribucion unitario, en Estrellas, Caballos, Enigmas y Perros. Si falta
+venta o receta lo dice y no inventa una clasificacion. El alcance toma el turno
+abierto o el ultimo cerrado cuando existen; cae a los pedidos disponibles en
+un negocio sin historial de Caja. En mobile las dos columnas se apilan.
+
+Se agregaron `GestionProductosPanel.jsx`, el calculo puro
+`gestionProductos.js` y tres pruebas de ventas, cuadrantes y prioridad. Build
+verde y 23/23 tests enfocados verdes. Se generaron capturas controladas en
+`.qa-lite/artifacts/gestion-productos/` para los estados abierto y cerrado; los
+datos temporales se restauraron al terminar. El gate Phase 4 genero las diez
+capturas de anchos/temas y llego al final, pero vencio su timeout global de 60s
+al volver a abrir el panel para restaurar visibilidad; no fallo por layout.
+No hubo commit, deploy ni cambios persistentes de base.
+
+Septimo ajuste visual de Ricardo. La luz Volt no va dentro de la card madre ni
+como linea externa: vuelve a vivir debajo de `.ag-main`, en `.ag-workspace-stage`,
+y la card tapa el centro. Se conserva la vuelta completa en 12s, pero el efecto
+buscado es luminiscencia que pasa por abajo siguiendo el contorno, visible y
+sutil. Ajuste posterior: se redujo el tamano del halo con menos blur y una
+franja mas angosta; el color base usa Volt profundo (`--ms-volt`) para que no
+lea celeste. Cuando la burbuja de Dico esta abierta o Physical aparece, la
+luminiscencia pasa a oro Dico (`--ms-gold`) por CSS `:has()`. Ajuste siguiente:
+se subio a un punto medio de presencia (blur 18px, opacidad .39 y franja apenas
+mas ancha) porque la version reducida quedo demasiado baja. La frase inspiradora
+debajo de la card madre paso a Butler (`--ag-font-display`), con tracking cero.
+El nombre de la persona tambien pasa a Butler: aplica al saludo fuera de la card,
+al nombre visible en la burbuja de cuenta y al encabezado de identidad del menu.
+Nuevo ajuste: en mobile el halo de luz vuelve a estar activo detras de la card
+madre. Para que se vea, `.ag-main` recupera un gutter minimo de 6px y radio en
+mobile; el halo baja blur/opacidad respecto de desktop para no comerse espacio.
+El nombre visible de la persona en la topbar deja Butler y pasa a Overused,
+mayusculas, 14px y el mismo peso del nombre del local. El nombre dentro del menu
+de cuenta conserva Butler.
+
+Sexto ajuste visual de Ricardo. La luz Volt ya no cruza solo el borde superior:
+un arco conico enmascarado recorre los cuatro lados de la card madre en 12s,
+solo en desktop. El pulso de la linea operativa dejo de variar la opacidad de
+todo el tramo y ahora es un destello que barre de izquierda a derecha.
+
+Sistema y Caja comparten tamano, peso y separacion. Caja tiene punto verde fijo
+si esta abierta, rojo si esta cerrada con el local operativo y zinc apagado si
+ambos estan cerrados. Todo el texto de Caja queda gris como Sistema. Caja sigue
+visible con el local en reposo para no perder el
+estado. La barra bajo de 84 a 58px en desktop y de 82 a 62px en mobile; se
+elimino el aire que quedaba bajo la linea. Evidencia abierta en
+`.qa-lite/artifacts/phase4-golden/perimetro-despues/` y cerrada en
+`compacta-cerrada-despues/`; ambos gates pasaron 2 temas x 5 anchos. El video
+adjunto no pudo abrirse por la politica del navegador para archivos locales;
+se implemento la direccion izquierda→derecha indicada por Ricardo.
+
+Quinto ajuste visual de Ricardo, implementado localmente. El reloj salio de la
+barra operativa y ocupa el extremo derecho de la banda de saludo. La frase
+diaria paso debajo de la card madre, centrada y en oro. El nombre del local se
+renderiza siempre en mayusculas.
+
+La barra ahora sigue al horario, no a la antiguedad de Caja. Abierto: muestra
+Sistema operativo con pulso, Caja abierta en oro o Caja cerrada en rojo; a la
+derecha, Cierre de turno y la cuenta regresiva mono. La linea Volt se carga
+hacia el cierre y respira. Cerrado: Local cerrado / Sistema en reposo queda
+apagado; Apertura y la cuenta regresiva son el unico Volt, mientras la linea
+conserva el progreso en zinc sin pulso. Se agrego textura Zinc al chasis y se
+subio de .32 a .46 la intensidad de la luz detras de la card.
+
+Dico 2D recalcula el horario cada 30 segundos y recomienda abrir Caja durante
+los cinco minutos previos. Dico 3D registra una intervencion si la ventana ya
+abrio sin Caja, con CTA Abrir Caja, y se guarda al abrirla o cerrar el local.
+En mobile no sale Physical para este caso porque su burbuja no entra en el
+Slot; el estado rojo de la barra permanece visible. Evidencia del caso 3D en
+`.qa-lite/artifacts/phase4-golden/caja-cerrada-despues/`.
+
+Validacion: 83 tests enfocados, 28/28 QA Lite unitarios y build completos
+verdes. El gate visual normal paso en abierto y cerrado, 2 temas x 5 anchos;
+capturas en `barra-despues/` y `barra-cerrada-final-despues/`. La corrida
+diagnostica con Caja cerrada genero las 10 capturas, pero su paso posterior
+para abrir manualmente Dico 2D vencio el timeout porque la nueva intervencion
+3D lo habia abierto y desmontado; el fixture normal conserva Caja abierta y el
+gate oficial pasa. Horario y Caja locales fueron restaurados al finalizar.
+
+Cuarto grupo visual de Ricardo, implementado localmente: el lienzo bajo la
+superficie madre ahora es hormigón frío con grano irregular generado en CSS,
+en claro y oscuro. Fuera de la card aparece el saludo por hora local con el
+primer nombre en oro y una frase determinista que cambia por día y pantalla.
+La card tiene una luz Volt tenue que recorre su borde por detrás sólo en
+desktop; mobile no monta esa animación. El movimiento está declarado en el
+inventario de QA para congelarlo en capturas.
+
+La cabecera operativa ahora contrasta con la card usando chasis oscuro. Lee el
+horario real y muestra una barra azul que avanza hacia el cierre o se descarga
+hacia la próxima apertura. Si hay caja abierta prioriza el turno; si supera
+24 horas lo señala como «Turno sin cerrar» con acceso conceptual a Caja. El
+fixture local reveló uno de 16 días, y se muestra como dato accionable. El
+título de pantalla dejó Butler y usa Overused Grotesk. Precios, márgenes,
+contadores chicos, reloj y datos operativos usan JetBrains Mono.
+
+Regla de identidad: toda cuenta nueva exige nombre. Se aplicó al registro del
+dueño, al alta de equipo del edificio y al admin legacy, tanto en UI/servicio
+como en `tenant-users` y `admin-users`. Auth guarda `full_name`; las listas de
+equipo ya devuelven y muestran nombre con email secundario. No hubo deploy de
+Edge Functions en esta ronda.
+
+Evidencia visual: `grupo2-desktop.png`, `grupo2-desktop-dark.png`,
+`grupo2-mobile.png` y `grupo2-mobile-320.png`. Sin overflow horizontal a 320;
+la luz Volt no existe en mobile. 67 tests enfocados verdes antes del build
+final, incluidos ventana operativa, saludo/frases, signup y nombre obligatorio
+en Equipo.
+
+Tercer ajuste visual de Ricardo: se descartó el saludo. La topbar global queda
+con el nombre del local a la izquierda y la cuenta con nombre del usuario a la
+derecha. La superficie madre contiene el estado y el reloj. En desktop tiene
+margen, borde y radio; en mobile ocupa todo el ancho. El nombre visible del
+local usa `settings.biz_name` y cae al nombre del tenant. Corrección posterior:
+en mobile Dico va inmediatamente a la izquierda del nombre del local dentro de
+la topbar; debajo se veía fuera de lugar.
+
+Verificación de este ajuste: capturas nuevas
+`topbar-local-workspace-desktop.png`, `topbar-local-workspace-mobile.png`,
+`topbar-local-workspace-cuenta-mobile.png` y
+`topbar-local-workspace-320.png`. A 1440×900 y 375×812 el layout quedó dentro
+del viewport; a 320 px `scrollWidth === innerWidth`, Dico conserva 4 px con el
+estado y el usuario del fixture entra completo. El menú mobile muestra
+Configuración, Tema y Salir. Build verde y 49 tests enfocados verdes.
+
+Pedido de Ricardo: indicador azul «Sistema operativo», reloj y nombre del
+usuario logueado; burbuja sin foto. Tema y salir pasan a esa burbuja en ambos
+chasis. En desktop solo Configuración queda al pie del riel; en mobile va en
+la burbuja. La captura adjunta es referencia visual; no se agregó «Caja
+conectada» porque esta ronda no implementa una señal real de conexión.
+
+Implementado en `ControlesDeSesion.jsx`, `PlatformAdmin.jsx`, `NavLateral.jsx`
+y `admin-topbar.css`, `admin-shell.css`, `admin-sidebar.css`. Reloj aislado para
+no renderizar el panel cada segundo. Iniciales y nombre desde la sesión, con
+correo como fallback. Menú con identidad, cierre afuera/Escape, retorno de
+foco y navegación con flechas/Home/End. En mobile angosto la hora queda debajo
+del indicador y el nombre se trunca; completo dentro del menú.
+
+Segundo pedido de la ronda: en mobile Dico queda a la izquierda del estado,
+separado por 4px. El estado ya no es decorativo: `estadoOperativo.js` lee
+`store_open` y `store_hours`, usa la zona de la sucursal (o la del tenant), y
+cambia entre «Sistema operativo» y «Sistema en reposo». La luz Volt pulsa sólo
+cuando está abierto; en reposo queda gris y sin animación. Durante la carga
+dice «Verificando sistema» con la luz apagada. Soporta los dos formatos de
+horarios que existen en los datos y jornadas que cruzan medianoche. La hora de
+la topbar ahora usa la misma zona horaria que el cálculo.
+
+Verificado en el dev server local existente, `http://127.0.0.1:5273/admin`:
+cuenta QA local, captura desktop claro, cambio de tema a oscuro, captura
+mobile 375×812 con menú dentro del viewport y sin desborde horizontal.
+Desktop solo Configuración en el pie; mobile Configuración/Tema/Salir.
+Teclado End enfoca Salir; Escape devuelve foco a la cuenta.
+49 tests de estadoOperativo/navLateral/platformAdmin/platformAdminScope verdes;
+ESLint 0 errores (16 warnings previos), typecheck y `npm run build` verdes.
+UTF-8 estricto y sin NULL en los 8 archivos tocados por esta parte. En navegador
+real: reposo a 375x812, luz gris y `animation:none`; operativo forzado sólo en
+la base local, luz `#60A5FA` y `ag-sistema-pulso` corriendo; 0px de overflow a
+375 y 320. El horario del fixture fue restaurado y se recargó para comprobar
+otra vez «Sistema en reposo». El inventario de motion declara este pulso
+infinito porque fue pedido explícitamente y lo congela para capturas estables.
+No hubo cambios persistentes de base ni deploy.
+
+Trabajo local vivo: los archivos de la topbar, `platformAdmin.js`, el nuevo
+`estadoOperativo.js`, su test, el registro de motion y este HANDOFF siguen sin commit en
+`feat/dico-panorama-v1` (HEAD al comenzar `e04f164`). Ronda abierta para revisión
+visual y siguientes cambios de Ricardo, no cierre de sesión. `output/` ya
+existía sin seguimiento; se agregaron allí capturas `topbar-*.png` de evidencia,
+incluidas `topbar-reposo-mobile.png` y `topbar-operativo-mobile.png`.
+`DICO_SINTRA_EXPORT/` y su ZIP eran preexistentes y no se tocaron.
+
+Próximo propuesto, todavía SIN implementar: «Mis datos» (nombre/contacto) y
+«Seguridad» (contraseña/sesiones). No hay botones vacíos para esas opciones.
+Continuar con el feedback de Ricardo. No requiere ninguna acción externa
+para seguir editando; publicación y migraciones pendientes conservan el
+estado de la sección anterior.
+
+---
+
 ## 6/sep/2026 — LIVE BUILD MODE: dos lotes visuales y el logo DIC en el riel
 
 Sesión de trabajo visual directo sobre el panel del dueño (gastro), con

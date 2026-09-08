@@ -308,7 +308,10 @@ Deno.serve(async (req) => {
         .eq("tenant_id", tenantId)
         .in("product_id", productIds);
       for (const line of (recipeLines || [])) {
-        const cost = Number((line.ingredients as Record<string, unknown>)?.cost) || 0;
+        const ingredient = Array.isArray(line.ingredients)
+          ? line.ingredients[0]
+          : line.ingredients;
+        const cost = Number((ingredient as { cost?: unknown } | null)?.cost) || 0;
         const pid = line.product_id as string;
         unitCostByProduct[pid] = (unitCostByProduct[pid] || 0) + (Number(line.qty) || 0) * cost;
       }

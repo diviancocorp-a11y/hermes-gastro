@@ -15,6 +15,7 @@ import { categoriesFrom } from '../../../services/platformAdmin';
 import { margen, indexarInsumos } from '../../../services/platformRecipes';
 import { terminologia } from '../../../modules/registry';
 import DicoCoreEscena from '../../dico/DicoCoreEscena';
+import GestionProductosPanel from './GestionProductosPanel';
 
 function money(n) {
   return `$${Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
@@ -31,10 +32,14 @@ export default function ProductsPanel({
   intervencionActiva = false,
   anclaDico,
   ingredientes = [], recetas = null, settings = null, onSubirImagen = null,
+  orders = [], itemsPorPedido = null, operativo = false, turno = null, minutosOperando = null,
+  turnosPrevios = [], timezone = null, onImpulsar = null, onIr = null,
+  onDicoResumenChange = null,
 }) {
   const confirmSlide = useConfirm();
   const [editing, setEditing] = useState(null); // objeto producto | 'new' | null
   const [search, setSearch] = useState('');
+  const [categoriasAbiertas, setCategoriasAbiertas] = useState(() => new Set());
 
   // Como se llama lo que vende este negocio. Un corte de pelo no es un
   // "producto": la palabra cambia toda la pantalla.
@@ -83,6 +88,28 @@ export default function ProductsPanel({
     }
     return [...map.entries()];
   }, [filtered]);
+
+  const toggleCategoria = (categoria) => {
+    setCategoriasAbiertas((actual) => {
+      const siguiente = new Set(actual);
+      if (siguiente.has(categoria)) siguiente.delete(categoria);
+      else siguiente.add(categoria);
+      return siguiente;
+    });
+  };
+
+  const actualizarBusqueda = (valor) => {
+    setSearch(valor);
+    const consulta = valor.trim().toLowerCase();
+    if (!consulta) {
+      setCategoriasAbiertas(new Set());
+      return;
+    }
+    setCategoriasAbiertas(new Set(products.filter(producto => (
+      producto.name.toLowerCase().includes(consulta)
+      || (producto.category || '').toLowerCase().includes(consulta)
+    )).map(producto => producto.category || 'Sin categoría')));
+  };
 
   // La receta se guarda DESPUES del producto y no antes: un producto nuevo
   // todavia no tiene id, y las lineas de receta lo necesitan.
@@ -156,29 +183,21 @@ export default function ProductsPanel({
           mano el de aca. Era el sintoma mas visible de "mezcla de eras" y el
           unico lugar de la pantalla que forzaba una familia tipografica. */}
 
-      {/* ── A · Header ─────────────────────────────────────────────────
-          El titulo de seccion lo pone el shell; aca va el contexto que ese
-          titulo no puede dar —cuantos hay y de que— mas la accion primaria. */}
-      <div className="ag-productos-header">
-        <div className="ag-productos-header-texto">
-          <p className="ag-productos-contexto">
-            {products.length === 0
-              ? `Todavia no cargaste ningun ${t.singular}.`
-              : `${products.length} ${products.length === 1 ? t.singular : t.plural.toLowerCase()} en ${resumen.categorias} ${resumen.categorias === 1 ? 'categoría' : 'categorías'}.`}
-          </p>
-        </div>
-        {(loading || products.length > 0) && (
-          <button type="button" className="ag-cta" onClick={() => setEditing('new')}>
-            + Agregar {t.singular}
-          </button>
-        )}
-      </div>
-
-      {/* ── B · Resumen ────────────────────────────────────────────────
-          Se cuenta, no se estima. El de stock solo sale si hay stock cargado
-          (ver `resumen`). */}
+      {/* La accion principal entra en la misma tira de indicadores y ocupa el
+          primer lugar. El titulo ya da contexto suficiente; repetir aca la
+          cantidad total y las categorias agregaba una tercera lectura del
+          mismo dato. */}
       {products.length > 0 && (
         <div className="ag-productos-resumen">
+          <button
+            type="button"
+            className="ag-kpi ag-kpi-accion"
+            aria-label={`+ Agregar ${t.singular}`}
+            onClick={() => setEditing('new')}
+          >
+            <span className="ag-kpi-accion-simbolo" aria-hidden="true">+</span>
+            <span className="ag-kpi-pie">Agregar {t.singular}</span>
+          </button>
           <div className="ag-kpi">
             <span className="ag-kpi-valor">{resumen.visibles}</span>
             <span className="ag-kpi-pie">en el catálogo</span>
@@ -209,7 +228,7 @@ export default function ProductsPanel({
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input
-              type="text" value={search} onChange={e => setSearch(e.target.value)}
+              type="text" value={search} onChange={e => actualizarBusqueda(e.target.value)}
               placeholder={t.buscar}
               aria-label={t.buscar}
             />
@@ -259,17 +278,31 @@ export default function ProductsPanel({
           Una card POR CATEGORIA con filas compactas adentro, no una card
           gigante por producto. Con 21 productos lo anterior era una tira de
           21 tarjetas de 60px de alto: nada agrupaba y nada terminaba. */}
-      <div className="ag-productos-categorias">
-      {groups.map(([cat, items]) => (
-          <section key={cat} className="ag-categoria">
+      {!loading && products.length > 0 && (
+      <div className="ag-productos-cuerpo">
+        <div className="ag-productos-categorias">
+        <h2 className="ag-productos-categorias-titulo">Categorías</h2>
+        {groups.map(([cat, items]) => {
+          const abierta = categoriasAbiertas.has(cat);
+          return (
+          <section key={cat} className={`ag-categoria${abierta ? ' esta-abierta' : ''}`}>
             <header className="ag-categoria-head">
-              <h3 className="ag-categoria-nombre">{cat}</h3>
-              <span className="ag-categoria-cuenta">
-                {items.length} {items.length === 1 ? t.singular : t.plural.toLowerCase()}
-              </span>
+              <button
+                type="button"
+                className="ag-categoria-toggle"
+                aria-expanded={abierta}
+                aria-label={`${abierta ? 'Cerrar' : 'Abrir'} categoría ${cat}`}
+                onClick={() => toggleCategoria(cat)}
+              >
+                <h3 className="ag-categoria-nombre">{cat}</h3>
+                <span className="ag-categoria-cuenta">
+                  {items.length} {items.length === 1 ? t.singular : t.plural.toLowerCase()}
+                </span>
+                <i className="ag-categoria-flecha" aria-hidden="true" />
+              </button>
             </header>
 
-            <div className="ag-categoria-filas">
+            {abierta && <div className="ag-categoria-filas">
               {items.map(p => {
                 // null cuando no hay receta cargada: sin insumos el costo da 0
                 // y el margen daria 100%, que es una mentira comoda.
@@ -327,10 +360,33 @@ export default function ProductsPanel({
                 </div>
                 );
               })}
-            </div>
+            </div>}
           </section>
-      ))}
+          );
+        })}
+        </div>
+
+        <GestionProductosPanel
+          key={turno?.id || (operativo ? 'operativo-sin-caja' : 'cerrado')}
+          products={products}
+          orders={orders}
+          itemsPorPedido={itemsPorPedido}
+          recetas={recetas}
+          ingredientes={ingredientes}
+          settings={settings}
+          operativo={operativo}
+          minutosOperando={minutosOperando}
+          turno={turno}
+          turnosPrevios={turnosPrevios}
+          timezone={timezone}
+          onToggleActive={onToggleActive}
+          onImpulsar={onImpulsar}
+          onIr={onIr}
+          showToast={showToast}
+          onDicoResumenChange={onDicoResumenChange}
+        />
       </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // tenant-users — el equipo de UN negocio del edificio.
 //
-// Body: { tenant_slug, action: 'list'|'create'|'set_role'|'remove', ... }
+// Body: { tenant_slug, action: 'list'|'create'|'set_role'|'remove', name, ... }
 //
 // ── 6f: roles[] y sucursal ──
 // `tenant_members` paso a (tenant_id, user_id, branch_id, roles[]): una fila
@@ -132,6 +132,7 @@ Deno.serve(async (req) => {
         users.push({
           ...u0,
           email: u?.user?.email || "(sin email)",
+          name: String(u?.user?.user_metadata?.full_name || "").trim(),
           last_sign_in_at: u?.user?.last_sign_in_at || null,
         });
       }
@@ -140,10 +141,12 @@ Deno.serve(async (req) => {
 
     /* ────────────────────────── create ────────────────────────── */
     if (action === "create") {
+      const fullName = String(body.name || "").trim().replace(/\s+/g, " ");
       const email = String(body.email || "").trim().toLowerCase();
       const password = String(body.password || "");
       const roles = ROLES(body);
       const branchId = BRANCH(body.branch_id);
+      if (fullName.length < 2) return json({ error: "El nombre de la persona es obligatorio" }, 400);
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: "Ese email no parece válido" }, 400);
 
       // O(1) por indice. El legacy trae las primeras 200 cuentas y busca en
@@ -158,11 +161,20 @@ Deno.serve(async (req) => {
         if (password.length < 8) return json({ error: "La contraseña necesita al menos 8 caracteres" }, 400);
         const { data: created, error: createErr } = await supabase.auth.admin.createUser({
           email, password, email_confirm: true,
+          user_metadata: { full_name: fullName },
         });
         if (createErr || !created?.user) {
           return json({ error: createErr?.message || "No se pudo crear la cuenta" }, 500);
         }
         userId = created.user.id;
+      } else {
+        const { data: existente } = await supabase.auth.admin.getUserById(userId);
+        const metadata = existente?.user?.user_metadata || {};
+        if (!String(metadata.full_name || "").trim()) {
+          await supabase.auth.admin.updateUserById(userId, {
+            user_metadata: { ...metadata, full_name: fullName },
+          });
+        }
       }
       // Si ya existia NO se toca su contrasena: ver la nota de arriba.
 
@@ -173,7 +185,7 @@ Deno.serve(async (req) => {
       if (upsertErr) throw upsertErr;
 
       return json({
-        ok: true, user_id: userId, email, roles, branch_id: branchId, reused,
+        ok: true, user_id: userId, email, name: fullName, roles, branch_id: branchId, reused,
         message: reused
           ? "Esa persona ya tenía cuenta: entra con la contraseña que ya usaba."
           : undefined,

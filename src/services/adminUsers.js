@@ -46,8 +46,8 @@ export async function listAdminUsers() {
  * al equipo SIN tocarle la contrasena — entra con la que ya usaba. La
  * respuesta trae `reused: true` y un mensaje para avisarlo.
  */
-export async function createAdminUser(email, password, role = 'staff') {
-  return call('create', { email, password, role });
+export async function createAdminUser(name, email, password, role = 'staff') {
+  return call('create', { name, email, password, role });
 }
 
 /** Cambia el rol owner/staff. Solo legacy: el edificio usa `setMemberRoles`. */
@@ -62,9 +62,9 @@ export async function setAdminRole(userId, role) {
  * porque el legacy no tiene ese modelo: alla el rol es uno solo y global.
  */
 
-/** Suma a alguien al equipo con sus roles. `branchId` null = todas. */
-export async function addMember(email, password, roles, branchId = null) {
-  return call('create', { email, password, roles, branch_id: branchId });
+/** Suma a alguien al equipo con nombre y roles. `branchId` null = todas. */
+export async function addMember(name, email, password, roles, branchId = null) {
+  return call('create', { name, email, password, roles, branch_id: branchId });
 }
 
 /** Cambia los roles de un miembro. */

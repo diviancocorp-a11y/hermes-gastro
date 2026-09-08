@@ -3,7 +3,7 @@
 //
 // Body: { action: 'list' | 'create' | 'set_role' | 'remove', ... }
 //   list:     {}                                -> [{ user_id, email, role, created_at, last_sign_in_at }]
-//   create:   { email, password, role }        -> crea auth user (o reusa existente por email) + lo agrega a admin_users
+//   create:   { name, email, password, role }  -> crea auth user (o reusa existente por email) + lo agrega a admin_users
 //   set_role: { user_id, role }                -> cambia owner/staff (protege al ultimo owner)
 //   remove:   { user_id }                      -> saca de admin_users (NO borra el auth user; protege al ultimo owner)
 //
@@ -54,6 +54,7 @@ Deno.serve(async (req) => {
           role: r.role,
           created_at: r.created_at,
           email: u?.user?.email || "(sin email)",
+          name: String(u?.user?.user_metadata?.full_name || "").trim(),
           last_sign_in_at: u?.user?.last_sign_in_at || null,
         });
       }
@@ -61,9 +62,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "create") {
+      const fullName = String(body.name || "").trim().replace(/\s+/g, " ");
       const email = String(body.email || "").trim().toLowerCase();
       const password = String(body.password || "");
       const role = body.role === "owner" ? "owner" : "staff";
+      if (fullName.length < 2) return json({ error: "Nombre requerido" }, 400);
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: "Email invalido" }, 400);
       if (password.length < 8) return json({ error: "Password minimo 8 caracteres" }, 400);
 
@@ -74,10 +77,14 @@ Deno.serve(async (req) => {
       if (existing) {
         userId = existing.id;
         // actualizar password para que pueda entrar al admin
-        await supabase.auth.admin.updateUserById(userId, { password });
+        await supabase.auth.admin.updateUserById(userId, {
+          password,
+          user_metadata: { ...(existing.user_metadata || {}), full_name: fullName },
+        });
       } else {
         const { data: created, error: createErr } = await supabase.auth.admin.createUser({
           email, password, email_confirm: true,
+          user_metadata: { full_name: fullName },
         });
         if (createErr || !created?.user) return json({ error: createErr?.message || "No se pudo crear el usuario" }, 500);
         userId = created.user.id;
@@ -88,7 +95,7 @@ Deno.serve(async (req) => {
         { onConflict: "user_id" },
       );
       if (upsertErr) throw upsertErr;
-      return json({ ok: true, user_id: userId, email, role, reused: !!existing });
+      return json({ ok: true, user_id: userId, email, name: fullName, role, reused: !!existing });
     }
 
     if (action === "set_role" || action === "remove") {

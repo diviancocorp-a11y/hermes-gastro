@@ -83,11 +83,9 @@
     --ag-dic-col: 0px;
 
     position: fixed;
-    /* ARRANCA DEBAJO DE LA BARRA. Antes ocupaba desde el borde de arriba y,
-       al compartir capa con la topbar, la tapaba: expandida se comia el
-       saludo. Ahora la barra es el chrome de todo el ancho y el riel cuelga
-       de ella; de paso, Dico deja de pelear por esos primeros pixeles. */
-    inset: var(--ag-topbar-alto) auto 0 0;
+    /* El riel ocupa toda la altura. La topbar arranca a su derecha y acompana
+       la expansion; asi marca, navegacion y barra siguen siendo una pieza. */
+    inset: 0 auto 0 0;
     z-index: var(--ag-z-nav);
     display: flex;
     flex-direction: column;
@@ -167,31 +165,13 @@
     }
   }
 
-  /* ── MIENTRAS DICO HABLA, EL RIEL NO SE MUEVE ────────────────────────
-   * Tocar a Dico deja el puntero sobre la sidebar, asi que se expandia; al
-   * ir hacia el mensaje el puntero salia y se colapsaba, y con ella se
-   * corria el mensaje, que cuelga de su ancho. Volver a rozarla lo empujaba
-   * de nuevo. Leer algo que se mueve mientras lo leiste es el defecto.
-   *
-   * Con el mensaje abierto el riel queda quieto y colapsado hasta que el
-   * usuario toque la accion o lo cierre. Va DESPUES de las reglas de hover y
-   * foco para ganarles por orden con la misma especificidad.
-   *
-   * ESTO REVIERTE UNA REGLA ANTERIOR —"Dico nunca le saca capacidades a la
-   * navegacion"— y es una decision explicita de Ricardo (6/9/2026). La
-   * navegacion no se pierde: los iconos siguen ahi y siguen siendo
-   * clickeables; lo que no aparece son los rotulos, mientras hay un mensaje
-   * abierto y solo hasta que se cierre. */
-  .ag-sidebar:has(.dico-avisos--abierto),
-  .ag-sidebar:has(.dico-avisos--abierto):hover,
-  .ag-sidebar:has(.dico-avisos--abierto):has(:focus-visible) {
-    --ag-sidebar-ancho: var(--ag-sidebar-riel);
-    --ag-dic-col: 0px;
-    box-shadow: none;
-  }
-
-  .ag-sidebar:has(.dico-avisos--abierto) .ag-sidebar-label {
-    opacity: 0;
+  /* El in-app browser puede informar `pointer: coarse` aunque el usuario
+     este trabajando con mouse. La apertura pertenece al hover real del
+     elemento y no debe depender de esa deteccion del navegador. */
+  .ag-sidebar:hover {
+    --ag-sidebar-ancho: var(--ag-sidebar-abierta);
+    --ag-dic-col: var(--ag-dic-ancho);
+    box-shadow: 0 0 32px rgba(0, 0, 0, .32);
   }
 
   /* El workspace se corre SOLO el riel, nunca el ancho expandido.
@@ -204,13 +184,18 @@
     padding-left: var(--ag-sidebar-riel);
   }
 
-  /* LA BARRA CRUZA DE PUNTA A PUNTA. El padding de arriba corre TODO el
-     shell, tambien la barra, que quedaba cortada a la altura del riel como
-     si fuera una pieza mas del workspace. Se le devuelve el ancho completo:
-     la barra es el chrome de toda la pantalla y el riel cuelga debajo. */
+  /* La barra acompana el ancho real de la sidebar. Cerrada empieza despues
+     del riel; abierta se desplaza sin quedar atravesada detras de la marca. */
   .ag-root--con-sidebar > .ag-topbar {
-    margin-left: calc(-1 * var(--ag-sidebar-riel));
-    width: calc(100% + var(--ag-sidebar-riel));
+    margin-left: 0;
+    width: 100%;
+    transition: margin-left .18s var(--ag-ease), width .18s var(--ag-ease);
+  }
+
+  .ag-root--con-sidebar:has(.ag-sidebar:hover) > .ag-topbar,
+  .ag-root--con-sidebar:has(.ag-sidebar :focus-visible) > .ag-topbar {
+    margin-left: calc(var(--ag-sidebar-abierta) - var(--ag-sidebar-riel));
+    width: calc(100% - (var(--ag-sidebar-abierta) - var(--ag-sidebar-riel)));
   }
 
   /* Arriba del todo: DIC + Dico, que juntos leen DICO.
@@ -276,6 +261,7 @@
   @media (hover: hover) and (pointer: fine) {
     .ag-sidebar:hover .ag-sidebar-dic { opacity: 1; }
   }
+  .ag-sidebar:hover .ag-sidebar-dic { opacity: 1; }
 
 
 
@@ -525,6 +511,10 @@
       transform: none;
     }
   }
+  .ag-sidebar:hover .ag-sidebar-label {
+    opacity: 1;
+    transform: none;
+  }
 
   /* El estado activo se ve COLAPSADA: un rail de oro sobre el borde
      izquierdo, no un rotulo. Es el mismo lenguaje que la nav inferior. */
@@ -560,24 +550,7 @@
     line-height: 1;
   }
 
-  /* Mientras Dico habla el riel queda colapsado, asi que el logo tampoco
-     entra: si no, quedaria a medio salir del recorte de 64px.
-     VA DESPUES de las reglas de hover y foco —y repitiendolas— porque a
-     igual especificidad gana la ultima: sin los tres selectores, pasar el
-     mouse con un mensaje abierto volvia a dibujar el DIC cortado detras del
-     personaje. Medido en pantalla. */
-  .ag-sidebar:has(.dico-avisos--abierto) .ag-sidebar-dic,
-  .ag-sidebar:has(.dico-avisos--abierto):hover .ag-sidebar-dic,
-  .ag-sidebar:has(.dico-avisos--abierto):has(:focus-visible) .ag-sidebar-dic {
-    opacity: 0;
-  }
-
-  /* ── El pie: configuracion, tema y salir ─────────────────────────────
-   * No es navegacion —no llevan a una pantalla de trabajo—, asi que va
-   * separado de la lista y pegado abajo. Reusa `.ag-sidebar-item`, que ya
-   * trae la grilla de dos columnas, el target de 44 y el comportamiento del
-   * rotulo: si esto tuviera estilo propio, el pie y la nav se irian
-   * separando con cada cambio. */
+  /* Configuracion del negocio, separada de la navegacion y pegada al pie. */
   .ag-sidebar-pie {
     margin-top: auto;
     padding: 8px 0 10px;
@@ -586,16 +559,6 @@
   }
 
   .ag-theme-light .ag-sidebar-pie { border-top-color: var(--ag-line); }
-
-  /* LOS TRES ICONOS SE VEN SIEMPRE.
-   *
-   * El primer intento escondia tema y salir en el riel colapsado y los sacaba
-   * recien al expandirse. No funciona: el item sigue ocupando su fila, asi
-   * que abajo del engranaje quedaban dos huecos vacios —el espacio se ve
-   * igual—, y ademas dos controles invisibles que aparecen de la nada al
-   * rozar el borde. Se ve el icono siempre, como en la navegacion de arriba;
-   * lo que aparece al expandir es el ROTULO que lo explica, que es
-   * exactamente lo que hace el resto del riel. */
 
   /* Un solo chasis a la vez. La nav inferior no se elimina: se oculta donde
      la sidebar la sustituye —y solo ahi—. */
@@ -609,6 +572,7 @@
    ancho, sin transicion. */
 @media (prefers-reduced-motion: reduce) {
   .ag-sidebar,
+  .ag-root--con-sidebar > .ag-topbar,
   .ag-sidebar-marca,
   .ag-sidebar-dic,
   .ag-sidebar-label,
