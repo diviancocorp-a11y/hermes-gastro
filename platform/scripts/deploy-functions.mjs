@@ -4,12 +4,8 @@
 // Deploya las edge functions del EDIFICIO (platform/functions/) al proyecto
 // hermes-platform.
 //
-// POR QUE NO SIRVE scripts/deploy-functions.mjs
-// Aquel deploya `supabase/functions/` a los 3 tenants LEGACY. Y hay nombres
-// repetidos en las dos carpetas —`submit-order` existe en las dos, con codigo
-// distinto—, asi que apuntar el script viejo al edificio subiria el codigo
-// legacy encima del bueno. Es un error silencioso y caro: el checkout seguiria
-// respondiendo, con la logica del otro modelo de datos.
+// `scripts/deploy-functions.mjs` es una entrada de compatibilidad que delega en
+// este archivo. Los proyectos legacy no forman parte del deploy.
 //
 // POR QUE UN WORKDIR TEMPORAL
 // El CLI de Supabase busca las functions en `<workdir>/supabase/functions/`.

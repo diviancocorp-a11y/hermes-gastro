@@ -8,6 +8,76 @@
 
 ---
 
+## 8/sep/2026 — Cierre: panorama de Productos publicado y legacy retirado (Codex)
+
+### Hecho
+
+- El panorama de Productos y Dico de esta ronda quedo integrado en `main` en
+  `f9b0362` y publicado en `https://divianco.app`. El deploy de Vercel quedo
+  `READY`; `/version.json` devolvio `f9b03628` y `/admin` respondio 200.
+- El trabajo siguiente queda en `feat/dico-panorama-v2`, basado exactamente en
+  `f9b0362`. QA Lite sigue levantado en `http://127.0.0.1:5273/admin` con el
+  fixture de 21 productos y cinco categorias; no se reseteo la base local.
+- Se retiro el flujo de deploy a los tres Supabase legacy. El comando historico
+  `node scripts/deploy-functions.mjs` ahora delega en
+  `platform/scripts/deploy-functions.mjs`; no contiene project refs legacy ni
+  puede aceptar `--tenant` o `--project-ref`. `npm run deploy:functions` apunta
+  solo al edificio `wwwzdgprsooyjgkuyoav`.
+- Se retiro el onboarding standalone: `npm run create-client` queda como guard
+  que falla con una explicacion y no escribe archivos. La unica alta vigente es
+  `npm run create-owner`, que ejecuta `platform/scripts/create-owner.mjs` y crea
+  un tenant dentro del edificio. Se actualizaron `AGENTS.md`, `ONBOARDING.md`,
+  `README.md`, `SCHEMA.md`, `TAREAS-MANUALES.md` y `docs/RUNBOOKS.md`.
+- Los proyectos Supabase legacy de la-nona-pato, cochi y mala-miga siguen
+  `INACTIVE`. No deben restaurarse ni recibir deploys: Ricky confirmo que seran
+  dados de baja y que esos negocios viven en el edificio.
+
+### Verificado
+
+- Suite completa previa a publicar el panorama: 90 archivos, 1240 tests; QA
+  unitario: 28 tests; build Vite, typecheck de ocho Edge Functions y pre-commit
+  completos. El E2E de sidebar paso en seis anchos responsivos.
+- Vercel produccion: `hermes-platform` deploy
+  `dpl_729vzYSsyL2RiLzvuXkra2TNF3oY`, estado `READY`, alias
+  `https://divianco.app`; los cuatro proyectos no mostraron errores runtime en
+  la ventana revisada.
+- Edge Functions del edificio `submit-order` y `tenant-users` fueron publicadas
+  correctamente. No se publico `admin-users`: pertenece al legacy retirado.
+- Ambos comandos de functions, el historico y `npm run deploy:functions`, se
+  probaron con `--dry-run`: enumeran las mismas ocho functions de
+  `platform/functions/` y unicamente el ref del edificio. `--tenant` queda
+  rechazado. `npm run create-client` termina con codigo 1 antes de mutar nada.
+- QA Lite responde HTTP 200 y el panel se verifico cargado en navegador con las
+  cinco categorias plegadas y el fixture intacto. El archivo local de acceso
+  `.qa-lite/revision-phase4.txt` existe y sigue ignorado por Git.
+
+### Pendiente inmediato
+
+1. En el proximo chat, abrir primero `http://127.0.0.1:5273/admin` y darle a
+   Ricky las credenciales QA leyendo `.qa-lite/revision-phase4.txt`. No copiar
+   la password al repo: el archivo es local, ignorado y puede cambiar al
+   reiniciar el harness.
+2. Continuar los cambios visuales sobre `feat/dico-panorama-v2`, usando el
+   fixture actual para revisar en vivo. No resetear QA Lite salvo pedido
+   explicito.
+3. Cuando la nueva ronda quede aprobada, integrar y publicar desde esta rama con
+   el mismo gate completo usado en el cierre anterior.
+
+### Bloqueado por Ricky
+
+- Nada para continuar el trabajo visual en QA Lite.
+
+### Trabajo local vivo
+
+- Los cambios de retiro y este handoff quedan listos para commit y push en
+  `feat/dico-panorama-v2`; no hay implementacion a medias.
+- `.qa-lite/revision-phase4.txt` contiene el acceso local solicitado para el
+  proximo inicio. No versionarlo ni mostrarlo fuera del QA local.
+- `DICO_SINTRA_EXPORT/`, `DICO_SINTRA_EXPORT_2026-09-04.zip` y `output/` son
+  artefactos locales preservados e ignorados; no agregarlos al commit.
+
+---
+
 ## 6/sep/2026 — Ronda en curso: topbar y cuenta (Codex)
 
 Octavo incremento del 8/sep en Productos. El subtitulo `Categorias` sube de

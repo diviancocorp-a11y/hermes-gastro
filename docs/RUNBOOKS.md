@@ -145,7 +145,7 @@ Procedimientos para los problemas más comunes. Cada runbook tiene síntoma → 
 8. **Branding**: crear `clients/<slug>/business.js` + `.env.<slug>` en el repo
 9. **Settings iniciales**: login en el admin nuevo → cargar logo, dirección, horarios
 
-Script automatizado: `npm run create-client` — guía interactiva los pasos 8 y muestra los manuales.
+El script `npm run create-client` está retirado y bloquea el flujo legacy. Para dar de alta un tenant en el edificio usar `npm run create-owner`; ver `platform/scripts/README.md`.
 
 ---
 

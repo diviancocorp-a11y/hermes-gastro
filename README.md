@@ -44,5 +44,6 @@ src/catalog-pro/             screens del catalogo
 src/components/admin/        panel interno (/admin)
 supabase/functions/          edge functions Deno
 supabase/migrations/000_initial_schema.sql   source of truth del schema
-scripts/create-client.mjs    generador de cliente nuevo
+scripts/create-client.mjs    guard del onboarding legacy retirado
+platform/scripts/create-owner.mjs  alta de tenant nuevo en el edificio
 ```

@@ -142,13 +142,13 @@ legacy estan pausados: ese lado hay que despausarlo y aplicarle la funcion
 
 ## MCPs conectados
 
-- **Supabase** (`mcp__6897d04b-fbfc-4725-8cd7-781371d4b8d5__*`) — los 3 proyectos via list_projects
+- **Supabase** — edificio `hermes-platform` (`wwwzdgprsooyjgkuyoav`); los 3 proyectos legacy estan pausados y fuera del flujo de deploy
 - **Vercel** (`mcp__ac4fffd9-1da6-4512-8868-9dc6b8907e90__*`) — team_E5ATCc0AjW66Ej0axz7l5SSg
 - **GitHub** repo: `diviancocorp-a11y/hermes-gastro` (publico)
 
 ## Tareas pendientes
 
-**El backlog vivo esta en PLAN-DE-ACCION.md** (Sprints 0 a 4 completados el 9-10/jun/2026; queda Sprint 5/escala). Onboarding de cliente nuevo: ver ONBOARDING.md. Deploy de functions: `node scripts/deploy-functions.mjs --all`. Tareas manuales de Ricky: TAREAS-MANUALES.md.
+**El backlog vivo esta en PLAN-DE-ACCION.md** (Sprints 0 a 4 completados el 9-10/jun/2026; queda Sprint 5/escala). Onboarding de cliente nuevo: ver `platform/scripts/README.md`. Deploy de functions del edificio: `npm run deploy:functions`. Tareas manuales de Ricky: TAREAS-MANUALES.md.
 
 Sprint 1 (seguridad) aplicado en los 3 tenants:
 - **Roles admin**: tabla `admin_users` (owner/staff) + `is_admin()`/`is_owner()`. TODAS las policies "cualquier authenticated" ahora exigen is_admin(). Solo usuarios en admin_users entran al panel. Bootstrap de tenant nuevo: ver seccion ROLES en 000_initial_schema.sql

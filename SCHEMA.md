@@ -195,7 +195,7 @@ Defined in section 3 of the SQL. Optimized for the hottest admin queries:
 3. Verify: `SELECT count(*) FROM information_schema.tables WHERE table_schema='public';` should be **22**.
 4. Update `settings` row with the client's `store_name`, `app_url`, `cat_groups`, `daily_deals` (if any).
 5. Deploy the 5 edge functions from a sibling project: `supabase functions deploy submit-order validate-coupon admin-reset notify-whatsapp notify-new-customer --project-ref <new-project-ref>`.
-6. Run `npm run create-client` from the repo root to generate `clients/<slug>/business.js` and `.env.<slug>`.
+6. El flujo legacy `npm run create-client` está retirado. Para un tenant nuevo del edificio usar `npm run create-owner`; ver `platform/scripts/README.md`.
 7. Create a new Vercel project pointing at this repo with env vars `CLIENT=<slug>`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
 
 That's it. The client should not inherit any data from previous clients.

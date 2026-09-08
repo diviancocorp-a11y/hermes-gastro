@@ -10,9 +10,9 @@
 
 ### Urgente — seguridad (10 min)
 
-- [ ] **Leaked password protection** en los 3 proyectos Supabase:
+- [ ] **Leaked password protection** en el edificio Supabase `hermes-platform`:
   Dashboard → Authentication → Settings → "Leaked password protection" → ON.
-  la-nona-pato (`rewzotanfurutjolghkf`) · cochi (`nzrzfknvlnddpexghynq`) · mala-miga (`tszcksppdglktcmzgepd`).
+  Los tres proyectos legacy estan pausados y fuera de servicio.
 - [ ] **Sacar `NODE_ENV=production` de las variables de entorno de Windows**:
   Configuracion → Sistema → Variables de entorno → eliminar NODE_ENV.
   Rompe `npm install` (omite devDeps) y hace fallar los tests. Mientras exista:
@@ -27,7 +27,7 @@
   perdieron acceso al panel (Sprint 1). Si alguno era empleado real, re-agregalo
   desde Mas → Usuarios (2 clicks).
 - [ ] **`npx supabase login`** en tu maquina (una sola vez) para poder usar
-  `node scripts/deploy-functions.mjs --all`.
+  `npm run deploy:functions`.
 
 ### Cuando puedas
 

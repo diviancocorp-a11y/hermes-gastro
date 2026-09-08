@@ -1,4 +1,8 @@
-# Onboarding de cliente nuevo — runbook
+# Onboarding legacy retirado — runbook
+
+> **No usar este procedimiento para clientes nuevos.** Los proyectos Supabase
+> separados fueron retirados. El alta vigente crea un tenant dentro del edificio
+> con `npm run create-owner`; ver `platform/scripts/README.md`.
 
 > Meta: cliente operativo en menos de 30 minutos. Segui los pasos EN ORDEN.
 > Todo lo que es copy-paste te lo imprime `npm run create-client` al final.
