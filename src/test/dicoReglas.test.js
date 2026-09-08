@@ -12,6 +12,7 @@ const ing = (over = {}) => ({ id: 'i1', name: 'Harina', cost: 100, stock: 10, mi
 const receta = (pares) => new Map(pares);
 
 const ids = (avisos) => avisos.map(a => a.id);
+const TZ = 'America/Argentina/Buenos_Aires';
 
 // Contexto sano: un negocio sin nada para reclamar.
 const sano = {
@@ -86,6 +87,39 @@ describe('catalogo', () => {
   it('un producto apagado sin precio no molesta: no se puede pedir', () => {
     const avisos = avisosDe({ ...sano, productos: [prod({ price: 0, active: false })] });
     expect(ids(avisos)).not.toContain('sin-precio');
+  });
+});
+
+describe('Caja antes de abrir', () => {
+  const horario = Object.fromEntries(Array.from({ length: 7 }, (_, i) => [
+    i, { open: '09:00', close: '23:00', closed: false },
+  ]));
+
+  it('Dico 2D recomienda abrir Caja en los cinco minutos previos', () => {
+    const avisos = avisosDe({
+      ...sano,
+      settings: { ...sano.settings, store_hours: horario },
+      timezone: TZ,
+      hoy: new Date('2026-09-07T11:56:00Z'),
+      turno: null,
+    });
+    expect(avisos.find(a => a.id === 'caja-por-abrir')).toMatchObject({
+      nivel: 'aviso',
+      titulo: 'El local abre en 4 m',
+      ir: { tab: 'caja', texto: 'Abrir Caja' },
+    });
+  });
+
+  it('no avisa antes de tiempo ni cuando Caja ya esta abierta', () => {
+    const base = {
+      ...sano,
+      settings: { ...sano.settings, store_hours: horario },
+      timezone: TZ,
+    };
+    expect(ids(avisosDe({ ...base, hoy: new Date('2026-09-07T11:54:00Z') })))
+      .not.toContain('caja-por-abrir');
+    expect(ids(avisosDe({ ...base, hoy: new Date('2026-09-07T11:56:00Z'), turno: { id: 't1' } })))
+      .not.toContain('caja-por-abrir');
   });
 });
 

@@ -95,6 +95,9 @@ test('la sidebar desktop se sostiene en los seis anchos', async ({ page }) => {
         iconos: sel('.ag-sidebar-icono'),
         itemsNav: sel('.ag-nav-item'),
         ancho: document.querySelector('.ag-sidebar')?.getBoundingClientRect().width || 0,
+        topbar: document.querySelector('.ag-topbar')
+          ? caja(document.querySelector('.ag-topbar') as Element)
+          : null,
       }
     })
 
@@ -114,6 +117,9 @@ test('la sidebar desktop se sostiene en los seis anchos', async ({ page }) => {
       ))
       expect(movidos, `${w}px: ${movidos.length} iconos se movieron al expandir`).toEqual([])
       expect(despues.ancho, `${w}px no expandio`).toBeGreaterThan(antes.ancho)
+      expect(antes.topbar?.x, `${w}px: la topbar no arranca junto al riel`).toBeCloseTo(antes.ancho, 0)
+      expect(despues.topbar?.x, `${w}px: la topbar no acompano la sidebar`).toBeCloseTo(despues.ancho, 0)
+      expect((despues.topbar?.w || 0) + despues.ancho, `${w}px: sidebar y topbar no completan el ancho`).toBeCloseTo(w, 0)
 
       await page.screenshot({ path: join(SALIDA, `${w}-expandida.png`), caret: 'hide' })
       await page.mouse.move(w - 40, h - 40)

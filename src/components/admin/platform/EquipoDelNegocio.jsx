@@ -72,6 +72,7 @@ export default function EquipoDelNegocio({
 }) {
   const [miembros, setMiembros] = useState(null);
   const [abriendoAlta, setAbriendoAlta] = useState(false);
+  const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rolesNuevos, setRolesNuevos] = useState(['attendant']);
@@ -101,17 +102,17 @@ export default function EquipoDelNegocio({
   };
 
   const sumar = async () => {
-    if (!email.trim()) return;
+    if (!nombre.trim() || !email.trim()) return;
     setGuardando(true);
     const r = await addMember(
-      email.trim(), password, rolesNuevos, sucursalNueva || null,
+      nombre.trim(), email.trim(), password, rolesNuevos, sucursalNueva || null,
     );
     setGuardando(false);
     if (!r.ok) { showToast?.(r.error || 'No se pudo sumar'); return; }
     showToast?.(r.reused
       ? 'Ya tenía cuenta: entra con la contraseña que ya usaba.'
       : 'Listo, ya puede entrar');
-    setEmail(''); setPassword(''); setRolesNuevos(['attendant']);
+    setNombre(''); setEmail(''); setPassword(''); setRolesNuevos(['attendant']);
     setSucursalNueva(''); setAbriendoAlta(false);
     cargar();
   };
@@ -169,14 +170,19 @@ export default function EquipoDelNegocio({
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{
-                    fontSize: 14, color: 'var(--ag-ink)', overflow: 'hidden',
+                    fontSize: 14, fontWeight: 650, color: 'var(--ag-ink)', overflow: 'hidden',
                     textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
-                    {m.email}
+                    {m.name || m.email}
                     {m.user_id === currentUserId && (
                       <span style={{ fontSize: 12, color: 'var(--ag-ink-3)' }}> · vos</span>
                     )}
                   </div>
+                  {m.name && (
+                    <div style={{ fontSize: 12, color: 'var(--ag-ink-3)', marginTop: 2 }}>
+                      {m.email}
+                    </div>
+                  )}
                   <div style={{ fontSize: 12.5, color: 'var(--ag-ink-3)', marginTop: 3 }}>
                     {suyos.map(r => etiquetaDeRol(r, terminos)).join(' · ') || 'Sin permisos'}
                     {/* Una fila sin sucursal vale por todas: no se dice nada,
@@ -272,7 +278,13 @@ export default function EquipoDelNegocio({
           <strong style={{ fontSize: 14 }}>Sumar a alguien</strong>
 
           <input
-            style={campo} value={email} autoFocus type="email"
+            style={campo} value={nombre} autoFocus required
+            onChange={(e) => setNombre(e.target.value)}
+            placeholder="Nombre de la persona"
+            autoComplete="name"
+          />
+          <input
+            style={campo} value={email} required type="email"
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Su email"
           />
@@ -331,7 +343,7 @@ export default function EquipoDelNegocio({
             </button>
             <button
               type="button" className="ag-btn-primary" style={{ flex: 1 }}
-              disabled={!email.trim() || guardando}
+              disabled={!nombre.trim() || !email.trim() || guardando}
               onClick={sumar}
             >
               {guardando ? 'Sumando…' : 'Sumar al equipo'}
