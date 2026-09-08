@@ -17,7 +17,7 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   PLATFORM_CLIENT, ReleaseError, VERCEL_CLI_VERSION, VERCEL_SCOPE,
-  assertAuthorizedProject, assertCleanWorktree, assertHeadPublished, auditOutput,
+  assertAuthorizedProject, assertCleanWorktree, assertEnvUsable, assertHeadPublished, auditOutput,
   defaultRun, releaseEnv, resolveHead, sentryRelease, shortId,
 } from './release-lib.mjs';
 
@@ -61,6 +61,13 @@ export async function deployWeb({
   log(`→ 5/11 vercel pull (CLI ${VERCEL_CLI_VERSION})...`);
   const pull = vercel(['pull', '--yes', '--environment=production', `--scope=${VERCEL_SCOPE}`]);
   if (pull.status !== 0) throw new ReleaseError(`vercel pull fallo (exit ${pull.status}).`);
+
+  log('     el entorno pulleado sirve para construir...');
+  // ANTES del build y no despues: una variable censurada horneada en el bundle
+  // no rompe la pantalla que la usa, rompe la app entera al importar el modulo.
+  // Ver `VALOR_CENSURADO` en release-lib.
+  assertEnvUsable(cwd);
+  log('     ✓ ninguna VITE_* llego censurada ni vacia');
 
   log('→ 6/11 identidad explicita para el build...');
   const env = releaseEnv(sha);
