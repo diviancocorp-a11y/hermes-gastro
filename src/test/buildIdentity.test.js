@@ -218,6 +218,10 @@ describe('wrapper de deploy', () => {
       orgId: 'team_E5ATCc0AjW66Ej0axz7l5SSg',
       projectName: 'hermes-platform',
     }));
+    writeFileSync(join(cwd, '.vercel', '.env.production.local'), [
+      'VITE_SUPABASE_URL="https://example.supabase.co"',
+      'VITE_SUPABASE_ANON_KEY="public-test-key"',
+    ].join('\n'));
     const salida = join(cwd, '.vercel', 'output', 'static');
     mkdirSync(join(salida, 'assets'), { recursive: true });
     writeFileSync(join(salida, 'version.json'), JSON.stringify({ buildId: CORTO }));
