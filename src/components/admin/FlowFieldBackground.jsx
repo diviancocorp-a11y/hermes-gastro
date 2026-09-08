@@ -4,15 +4,32 @@
 //
 // Props:
 //   color         — color de las partículas (default ámbar #f59e0b)
+//   accentColor   — color de una minoría de partículas (default: ninguno)
+//   accentRatio   — qué fracción lleva el acento (0..1, default 0)
 //   trailOpacity  — opacidad del rastro: bajo = trail largo (default 0.1)
 //   particleCount — cantidad (default 600)
 //   speed         — multiplicador de velocidad (default 0.8)
 //   bgColor       — color del canvas en cada frame para crear trails (default #0a0a0a)
+//
+// ─────────────────────── POR QUÉ HAY DOS COLORES ───────────────────────
+//
+// El flujo es UNO solo —una masa de partículas con el mismo campo— pero no
+// todas dicen lo mismo. El color base es Volt, que en el sistema significa
+// "actividad interna, nunca protagonista": esto es, literalmente, la máquina
+// trabajando de fondo. El acento es oro, que significa presencia, y por eso
+// es una MINORÍA: un flujo dorado entero sería un fondo decorativo, y el oro
+// dejaría de querer decir algo.
+//
+// El color se fija al CREAR la partícula y no en cada frame: sorteado por
+// frame, la misma chispa parpadearía entre azul y oro treinta veces por
+// segundo.
 
 import { useEffect, useRef } from "react";
 
 export default function FlowFieldBackground({
   color = "#f59e0b",
+  accentColor = null,
+  accentRatio = 0,
   trailOpacity = 0.1,
   particleCount = 600,
   speed = 0.8,
@@ -36,6 +53,8 @@ export default function FlowFieldBackground({
     let animationFrameId;
     const mouse = { x: -1000, y: -1000 };
 
+    const conAcento = Boolean(accentColor) && accentRatio > 0;
+
     class Particle {
       constructor() {
         this.x = Math.random() * width;
@@ -44,6 +63,8 @@ export default function FlowFieldBackground({
         this.vy = 0;
         this.age = 0;
         this.life = Math.random() * 200 + 100;
+        // Se decide UNA vez, al nacer: ver la cabecera.
+        this.color = conAcento && Math.random() < accentRatio ? accentColor : color;
       }
       update() {
         const angle = (Math.cos(this.x * 0.005) + Math.sin(this.y * 0.005)) * Math.PI;
@@ -76,12 +97,17 @@ export default function FlowFieldBackground({
         this.vy = 0;
         this.age = 0;
         this.life = Math.random() * 200 + 100;
+        // El color NO se re-sortea: si cambiara al reciclarse, la proporcion
+        // de oro se movería sola y el fondo respiraría de color.
       }
       draw(c) {
-        c.fillStyle = color;
+        c.fillStyle = this.color;
         const alpha = 1 - Math.abs(this.age / this.life - 0.5) * 2;
         c.globalAlpha = alpha;
-        c.fillRect(this.x, this.y, 1.5, 1.5);
+        // La chispa de oro va apenas mas gruesa: sobre negro, el azul rinde
+        // mas que el oro al mismo tamanio y el acento se perdia.
+        const lado = this.color === color ? 1.5 : 1.9;
+        c.fillRect(this.x, this.y, lado, lado);
       }
     }
 
@@ -133,7 +159,7 @@ export default function FlowFieldBackground({
       container.removeEventListener("mouseleave", handleMouseLeave);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [color, trailOpacity, particleCount, speed, bgColor]);
+  }, [color, accentColor, accentRatio, trailOpacity, particleCount, speed, bgColor]);
 
   return (
     <div
