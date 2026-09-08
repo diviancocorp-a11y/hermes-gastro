@@ -37,6 +37,7 @@ function Users({ showToast, onBack, currentUserId }) {
 
   // Form de alta
   const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('staff');
@@ -55,10 +56,11 @@ function Users({ showToast, onBack, currentUserId }) {
   const handleCreate = async (e) => {
     e?.preventDefault?.();
     setFormError('');
+    if (!name.trim()) { setFormError('Nombre requerido'); return; }
     if (!email.trim()) { setFormError('Email requerido'); return; }
     if (password.length < 8) { setFormError('Password minimo 8 caracteres'); return; }
     setBusy(true);
-    const res = await createAdminUser(email.trim(), password, role);
+    const res = await createAdminUser(name.trim(), email.trim(), password, role);
     setBusy(false);
     if (res.ok) {
       // El mensaje lo manda el server: en el edificio una cuenta que ya
@@ -66,7 +68,7 @@ function Users({ showToast, onBack, currentUserId }) {
       // texto tiene que decir la verdad de lo que paso.
       showToast?.(res.message
         || (res.reused ? 'Ya tenía cuenta: le dimos acceso' : 'Usuario creado con acceso al panel'));
-      setEmail(''); setPassword(''); setRole('staff'); setShowForm(false);
+      setName(''); setEmail(''); setPassword(''); setRole('staff'); setShowForm(false);
       load();
     } else {
       setFormError(res.error);
@@ -115,7 +117,12 @@ function Users({ showToast, onBack, currentUserId }) {
           <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 14, borderRadius: 14, background: 'var(--ag-bg-soft, rgba(127,127,127,0.08))' }}>
             <div style={{ fontWeight: 700, fontSize: 14 }}>Nuevo usuario</div>
             <input
-              type="email" placeholder="email@ejemplo.com" value={email} autoComplete="off"
+              type="text" placeholder="Nombre de la persona" value={name} autoComplete="name" required
+              onChange={e => setName(e.target.value)}
+              style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--ag-line, rgba(127,127,127,0.25))', background: 'transparent', color: 'inherit' }}
+            />
+            <input
+              type="email" placeholder="email@ejemplo.com" value={email} autoComplete="off" required
               onChange={e => setEmail(e.target.value)}
               style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--ag-line, rgba(127,127,127,0.25))', background: 'transparent', color: 'inherit' }}
             />
@@ -152,8 +159,9 @@ function Users({ showToast, onBack, currentUserId }) {
           }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 600, fontSize: 14, overflowWrap: 'anywhere' }}>
-                {u.email} {u.user_id === currentUserId && <span style={{ fontSize: 11, color: 'var(--ag-ink-3)' }}>(vos)</span>}
+                {u.name || u.email} {u.user_id === currentUserId && <span style={{ fontSize: 11, color: 'var(--ag-ink-3)' }}>(vos)</span>}
               </div>
+              {u.name && <div style={{ fontSize: 12, color: 'var(--ag-ink-3)', marginTop: 2 }}>{u.email}</div>}
               <div style={{ fontSize: 12, color: 'var(--ag-ink-3)', marginTop: 2 }}>
                 Ultimo ingreso: {fmtDate(u.last_sign_in_at)}
               </div>

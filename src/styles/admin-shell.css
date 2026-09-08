@@ -34,23 +34,304 @@
   letter-spacing: -0.01em;
 }
 
-/* ── El saludo ──────────────────────────────────────────────────────────
- * Es el segundo lugar del shell donde habla Butler, y por la misma razon que
- * el encabezado de seccion: es lo unico editorial de la barra. Escala
- * contenida —16px, no un titulo— porque comparte fila con los controles.
- *
- * El nombre lleva el oro. Es la regla de la marca aplicada tal cual: el oro
- * es presencia, y de todo lo que hay en la barra la unica presencia es la
- * persona que esta del otro lado. */
-.ag-root .ag-topbar-title.ag-saludo {
-  font-family: var(--ag-font-display);
-  font-weight: 500;
-  font-size: 16px;
-  letter-spacing: 0;
+.ag-topbar-identidad {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.ag-topbar-local {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ag-chassis-ink);
+  font-family: var(--ag-font);
+  font-size: 14px;
+  font-weight: var(--ms-w-nav);
+  letter-spacing: -0.01em;
 }
 
-.ag-root .ag-saludo-nombre {
-  color: var(--ag-c-terra);
+/* Banda de contexto sobre el hormigon, fuera de la superficie madre. */
+.ag-precard {
+  position: relative;
+  z-index: var(--ag-z-content);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 24px 4px;
+}
+.ag-precard-saludo,
+.ag-precard .ag-sesion-hora { margin: 0; }
+.ag-precard-saludo {
+  color: var(--ag-ink);
+  font: 600 16px/1.25 var(--ag-font);
+}
+.ag-precard-saludo strong {
+  color: var(--ms-gold-ink);
+  font-family: var(--ag-font-display);
+  font-weight: 500;
+}
+.ag-theme-dark .ag-precard-saludo strong { color: var(--ms-gold); }
+.ag-precard .ag-sesion-hora {
+  color: var(--ag-ink-2);
+  font: 500 12px/1.2 var(--ag-font-mono);
+  letter-spacing: .06em;
+}
+.ag-postcard-frase {
+  position: relative;
+  z-index: var(--ag-z-content);
+  align-self: center;
+  margin: 0;
+  padding: 3px 24px 12px;
+  color: var(--ms-gold-ink);
+  font: 500 14px/1.35 var(--ag-font-display);
+  letter-spacing: 0;
+  text-align: center;
+}
+.ag-theme-dark .ag-postcard-frase {
+  color: var(--ms-gold);
+}
+
+.ag-workspace-stage {
+  --ag-card-luz: var(--ms-volt);
+  position: relative;
+  z-index: var(--ag-z-content);
+  isolation: isolate;
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+@property --ag-volt-vuelta {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Un destello Volt gira debajo de la tarjeta madre siguiendo su contorno. La
+   tarjeta tapa el centro: solo queda la luminiscencia filtrada por debajo. */
+.ag-workspace-stage::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 9px;
+  border-radius: calc(var(--ag-r-lg) + 7px);
+  background:
+    conic-gradient(from var(--ag-volt-vuelta) at 50% 50%,
+      transparent 0 59%,
+      color-mix(in srgb, var(--ag-card-luz) 12%, transparent) 66%,
+      color-mix(in srgb, var(--ag-card-luz) 66%, transparent) 73%,
+      color-mix(in srgb, var(--ag-card-luz) 20%, transparent) 82%,
+      transparent 90% 100%);
+  filter: blur(18px);
+  opacity: .39;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: ag-volt-detras 12s linear infinite;
+}
+.ag-root:has(.dico-avisos--abierto) .ag-workspace-stage,
+.ag-root:has(.dico-physical) .ag-workspace-stage {
+  --ag-card-luz: var(--ms-gold);
+}
+@keyframes ag-volt-detras {
+  to { --ag-volt-vuelta: 360deg; }
+}
+
+/* El main es la tarjeta madre: agrupa el contexto operativo y la pantalla
+   activa como una sola superficie dentro del chasis. */
+.ag-root .ag-main {
+  margin: 12px;
+  background: var(--ag-surface);
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-lg);
+  box-shadow: var(--ag-sh-sm);
+  backdrop-filter: saturate(1.08);
+}
+
+.ag-workspace-head {
+  position: relative;
+  z-index: var(--ag-z-sticky);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 58px;
+  padding: 0 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ag-volt) 20%, var(--ms-zinc-800));
+  border-radius: var(--ag-r-lg) var(--ag-r-lg) 0 0;
+  background-color: var(--ag-chassis);
+  background-image:
+    linear-gradient(112deg, rgba(255,255,255,.025), transparent 24%, rgba(255,255,255,.018) 48%, transparent 70%),
+    repeating-linear-gradient(164deg, transparent 0 5px, rgba(255,255,255,.012) 6px, transparent 7px 12px),
+    radial-gradient(ellipse at 82% 18%, rgba(148,163,184,.055), transparent 34%);
+}
+
+.ag-operativa {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  padding: 7px 0 6px;
+}
+.ag-operativa-fila {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+.ag-operativa-estado {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  min-width: 0;
+  padding-top: 2px;
+}
+.ag-operativa-reposo {
+  flex-basis: 100%;
+  padding-left: 16px;
+  color: var(--ms-zinc-600);
+  font: 500 9px/1.2 var(--ag-font-mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.ag-operativa-caja {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--ag-chassis-ink-2);
+  font: 500 13px/1.2 var(--ag-font);
+  white-space: nowrap;
+}
+.ag-operativa-caja strong {
+  font-weight: 650;
+}
+.ag-caja-indicador {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ms-zinc-700);
+}
+.ag-operativa-caja[data-estado="abierta"] .ag-caja-indicador {
+  background: #34d399;
+  box-shadow: 0 0 6px rgba(52, 211, 153, .28);
+}
+.ag-operativa-caja[data-estado="alerta"] .ag-caja-indicador {
+  background: #f87171;
+  box-shadow: 0 0 6px rgba(248, 113, 113, .34);
+}
+.ag-operativa-dato {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  min-width: 0;
+}
+.ag-operativa-etiqueta {
+  color: var(--ms-volt-dark);
+  font: 600 9px/1 var(--ag-font-mono);
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+.ag-operativa-valor {
+  color: var(--ag-chassis-ink);
+  font: 500 12px/1.2 var(--ag-font-mono);
+  white-space: nowrap;
+}
+.ag-operativa-progreso {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  background: var(--ms-zinc-800);
+}
+.ag-operativa-progreso::before,
+.ag-operativa-progreso::after {
+  content: '';
+  position: absolute;
+  z-index: var(--ag-z-content);
+  top: -3px;
+  width: 1px;
+  height: 9px;
+  background: var(--ms-zinc-600);
+}
+.ag-operativa-progreso::before { left: 0; }
+.ag-operativa-progreso::after { right: 0; }
+.ag-operativa-progreso > span {
+  display: block;
+  height: 100%;
+  background: var(--ms-volt-dark);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ag-volt) 55%, transparent);
+  transition: width 500ms var(--ag-ease);
+}
+.ag-operativa[data-operativo="true"] .ag-operativa-progreso > span {
+  background-image: linear-gradient(90deg,
+    var(--ms-volt-dark) 0 38%,
+    #bfdbfe 49%,
+    var(--ms-volt-dark) 60% 100%);
+  background-size: 220% 100%;
+  animation: ag-operativa-carga 1.8s linear infinite;
+}
+.ag-operativa[data-operativo="false"] .ag-operativa-progreso > span {
+  background: var(--ms-zinc-700);
+  box-shadow: none;
+}
+@keyframes ag-operativa-carga {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+.ag-workspace-head .ag-sistema-operativo { color: var(--ag-chassis-ink-2); }
+.ag-operativa[data-operativo="false"] .ag-sistema-operativo { color: var(--ms-zinc-500); }
+.ag-operativa[data-operativo="false"] .ag-operativa-etiqueta,
+.ag-operativa[data-operativo="false"] .ag-operativa-valor { color: var(--ms-volt-dark); }
+
+/* El horario del local enciende la luz. La animacion vive solo en el estado
+   operativo; en reposo queda fisicamente apagada. */
+.ag-sistema-operativo { display: flex; align-items: center; gap: 9px; min-width: 0; color: var(--ag-ink-2); font-size: 13px; white-space: nowrap; }
+.ag-sistema-indicador { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: var(--ms-zinc-700); }
+.ag-sistema-operativo[data-operativo="true"] .ag-sistema-indicador {
+  background: var(--ms-volt-dark);
+  box-shadow: 0 0 0 0 rgba(96, 165, 250, .55);
+  animation: ag-sistema-pulso 1.6s ease-out infinite;
+}
+@keyframes ag-sistema-pulso {
+  0%, 45% { opacity: 1; box-shadow: 0 0 0 0 rgba(96, 165, 250, .5); }
+  75%, 100% { opacity: .45; box-shadow: 0 0 0 5px rgba(96, 165, 250, 0); }
+}
+.ag-root .ag-topbar-right { display: flex; align-items: center; gap: 16px; }
+.ag-root .ag-topbar { min-height: var(--ag-topbar-alto); padding-top: 6px; padding-bottom: 6px; gap: 12px; }
+@media (max-width: 768px) {
+  .ag-precard {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px 6px;
+  }
+  .ag-precard-saludo { font-size: 14px; }
+  .ag-precard .ag-sesion-hora { margin-left: auto; font-size: 10px; white-space: nowrap; }
+  .ag-postcard-frase { padding: 6px 14px calc(var(--ag-bottom-nav-h, 76px) + 8px); font-size: 12px; }
+  .ag-workspace-stage::before {
+    inset: 4px;
+    border-radius: calc(var(--ag-r-lg) + 2px);
+    filter: blur(14px);
+    opacity: .32;
+  }
+  .ag-root .ag-main {
+    margin: 0 6px;
+    border-radius: var(--ag-r-lg);
+    box-shadow: none;
+  }
+  .ag-root .ag-topbar-right { gap: 8px; }
+  .ag-workspace-head { min-height: 62px; padding: 0 10px; border-radius: 0; gap: 10px; }
+  .ag-operativa-fila { gap: 8px; }
+  .ag-operativa-estado { gap: 4px 7px; }
+  .ag-operativa-reposo { padding-left: 14px; font-size: 7.5px; }
+  .ag-operativa-caja { gap: 7px; font-size: 12px; }
+  .ag-operativa-etiqueta { font-size: 8px; letter-spacing: .1em; }
+  .ag-operativa-valor { font-size: 10px; }
+  .ag-operativa-detalle { font-size: 8.5px; }
+  .ag-sistema-operativo { gap: 7px; font-size: 12px; }
 }
 
 /* Controles de la topbar: estructurales, no pastillas translucidas. */
@@ -80,19 +361,37 @@
   display: flex;
   align-items: baseline;
   gap: 12px;
-  padding: 18px 18px 10px;
+  padding: 20px 18px 12px;
 }
 .ag-section-title {
+  position: relative;
   margin: 0;
-  font-family: var(--ag-font-display);
-  font-weight: 500;
-  font-size: 24px;
+  padding-bottom: 10px;
+  font-family: var(--ag-font);
+  font-weight: 650;
+  font-size: clamp(28px, 2.4vw, 36px);
   line-height: 1.15;
   letter-spacing: -0.005em;
   color: var(--ag-ink);
 }
+.ag-section-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 72px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--ms-gold);
+  transform-origin: left center;
+  animation: ag-titulo-respira 2.8s ease-in-out infinite;
+}
+@keyframes ag-titulo-respira {
+  0%, 100% { opacity: .55; transform: scaleX(.72); }
+  50% { opacity: 1; transform: scaleX(1); }
+}
 .ag-section-meta {
-  font-family: var(--ag-font);
+  font-family: var(--ag-font-mono);
   font-weight: var(--ms-w-body);
   font-size: 13px;
   color: var(--ag-ink-3);
@@ -257,8 +556,12 @@
 .ag-slot > * { margin-bottom: 12px; }
 
 @media (prefers-reduced-motion: reduce) {
+  .ag-section-title::after { animation: none; }
   .ag-root .ag-topbar .ag-theme-toggle,
   .ag-root .ag-topbar .ag-btn-mini { transition: none; }
+  .ag-sistema-operativo[data-operativo="true"] .ag-sistema-indicador { animation: none; }
+  .ag-workspace-stage::before { animation: none; opacity: .1; }
+  .ag-operativa-progreso > span { transition: none; animation: none !important; }
 }
 
 /* Dico Presence stack: Slot arriba, Native debajo. Oportunidades y contenido
@@ -297,15 +600,10 @@
 
 /* PASS 1 — Dico en la topbar (mobile) y la burbuja colgando de el.
  *
- * La presencia Native ya no vive en el stack: se monta en `.ag-topbar-right`.
+ * La presencia Native ya no vive en el stack: se monta antes del nombre del
+ * local y queda fija al cambiar de pantalla.
  * El globo la sigue, y sale HACIA ABAJO Y A LA IZQUIERDA desde la cara —no
- * debajo del personaje ni centrado en la pantalla—, anclado al viewport para
- * que no lo recorte el `overflow` de la barra.
- *
- * El pedido era "arriba a la derecha, desde la altura de la cara". Con Dico
- * arriba a la derecha de la barra, lo que queda arriba de el es el borde de la
- * pantalla: el globo cuelga inmediatamente debajo de la barra y su cola apunta
- * al personaje, que es lo que hace legible "Dico tiene algo que decir". */
+ * debajo del personaje ni centrado en la pantalla—. */
 /* ABRIR UN AVISO NO MUEVE LA PANTALLA. NUNCA.
  *
  * Aca habia lo contrario: con un mensaje de Dico abierto, `.ag-main` recibia
@@ -323,8 +621,7 @@
  * (Decision de Ricardo, 6/9/2026: "el fondo debe estar inmovil, es
  * innegociable".) */
 
-/* El hueco en la barra. Reserva su lugar aunque Native todavia no haya
-   montado, para que los controles de la derecha no salten. */
+/* El hueco reserva su lugar aunque Native todavia no haya montado. */
 .ag-topbar-dico {
   display: inline-flex;
   align-items: center;
@@ -337,20 +634,15 @@
   position: static;
 }
 
-/* En la barra el personaje no cambia de tamanio: no hay estado abierto que
-   seguir. 44 y no 40 porque desde PASS 4 el contador vive en su esquina y no
-   al lado — se recuperan los 44px que ocupaba el segundo control, asi que la
-   cara puede crecer y la barra igual queda mas angosta que antes. */
+/* La cara mide lo mismo que las iniciales del usuario; el control conserva el
+   target tactil de 44px y la topbar mantiene su alto contractual de 57px. */
 .ag-topbar .dico-avisos-presencia {
-  --dico-cara: 44px;
+  --dico-cara: 32px;
 }
 
 .ag-topbar { position: relative; }
 
-/* Dico ocupa lugar en la barra —eran 84px con el contador aparte, ahora 56—
-   y a 768 el documento llegaba a 777 de scrollWidth: 9px de desborde. El que
-   tiene que ceder es el NOMBRE del negocio, que se trunca y se sigue
-   entendiendo, y no el layout. */
+/* Los nombres del local y del usuario ceden antes que el layout. */
 .ag-root .ag-topbar-title {
   min-width: 0;
   overflow: hidden;
@@ -360,12 +652,7 @@
 
 .ag-root .ag-topbar-right { min-width: 0; }
 
-/* Anclado al BORDE REAL de la barra, no a un token con su alto.
-   Se probo con `--ag-topbar-h: 57px` y la barra mide 65: el globo salia 2px
-   por encima de su borde inferior y el contrato de `dico-native-message`
-   —"la burbuja nunca invade la topbar"— fallaba por esos 2px. `top: 100%`
-   sobre el contexto de la barra no puede desincronizarse: no hay numero que
-   mantener al dia. */
+/* Anclado al borde real de la topbar: no depende de un alto duplicado. */
 .ag-topbar .dico-avisos-mensaje {
   position: absolute;
   top: calc(100% + 6px);
@@ -374,8 +661,8 @@
      ningun elemento tuviera `right` fuera del viewport, porque lo que sale es
      un pseudo-elemento y esos no aparecen en un querySelectorAll. El margen
      los contiene sin recortar la cola. */
-  right: 20px;
-  left: auto;
+  right: auto;
+  left: 10px;
   width: min(340px, calc(100vw - 40px));
   margin: 0;
   transform: none;

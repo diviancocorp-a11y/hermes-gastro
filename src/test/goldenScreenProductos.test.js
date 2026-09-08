@@ -175,7 +175,11 @@ describe('Phase 4 · G2 — la pantalla no usa var() con fallback', () => {
     // El unico `fontFamily` de la pantalla era el DM Sans del titulo que se
     // eliminó. La familia la deciden los tokens, no el componente.
     expect(PANEL_CODIGO).not.toMatch(/fontFamily/);
-    expect(CSS_PANTALLA_CODIGO).not.toMatch(/font-family:\s*(?!inherit)['"a-zA-Z]/);
+    // `inherit` y `var(--ag-font-*)` siguen el sistema. Lo prohibido es una
+    // familia literal que se independice de los tokens del panel.
+    const familias = [...CSS_PANTALLA_CODIGO.matchAll(/font-family:\s*([^;]+)/g)]
+      .map(m => m[1].trim());
+    expect(familias.every(valor => valor === 'inherit' || valor.startsWith('var('))).toBe(true);
   });
 
   it('el CSS de la pantalla no trae px sueltos de espaciado', () => {

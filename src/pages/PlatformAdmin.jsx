@@ -25,7 +25,10 @@ import DicoPresence from '../components/dico/DicoPresence';
 import AdminPushBanner from '../components/admin/shared/AdminPushBanner';
 import NavInferior from '../components/admin/platform/NavInferior';
 import NavLateral from '../components/admin/platform/NavLateral';
-import { controlesDeSesion, PieDeSesion, MenuDeSesion } from '../components/admin/platform/ControlesDeSesion';
+import {
+  BarraOperativa, ContextoDeTrabajo, controlesDeSesion, FraseDeTrabajo,
+  PieDeSesion, MenuDeSesion,
+} from '../components/admin/platform/ControlesDeSesion';
 import useMediaQuery from '../lib/useMediaQuery';
 import { intervencionDe, sigueVigente } from '../modules/dico/intervenciones';
 import {
@@ -67,7 +70,6 @@ import {
   modulosDe, terminologia, tieneModulo, usaContabilidadUsar,
 } from '../modules/registry';
 import { puedeVer, pantallaInicial, puedeAbrirDestino } from '../modules/roles';
-import { saludoDe, nombreDe } from '../modules/saludo';
 
 // Settings es el componente del admin legacy, reusado tal cual: la unica
 // diferencia es que se le inyecta con que guardar y que zonas apagar. Va lazy
@@ -163,6 +165,9 @@ export default function PlatformAdmin() {
   const [branch, setBranch] = useState(null);
   const [recursos, setRecursos] = useState([]);
   const [turno, setTurno] = useState(null);
+  const [cajaCargada, setCajaCargada] = useState(false);
+  const [sistemaOperativo, setSistemaOperativo] = useState(false);
+  const [minutosOperando, setMinutosOperando] = useState(null);
   const [turnosPrevios, setTurnosPrevios] = useState([]);
   const [esperado, setEsperado] = useState(0);
   const [equipo, setEquipo] = useState([]);
@@ -304,14 +309,19 @@ export default function PlatformAdmin() {
      cajero compara contra la plata que tiene en la mano. */
   const loadCaja = useCallback(async () => {
     if (!tenantId) return;
-    const b = await fetchDefaultBranch(tenantId);
-    const [abierto, previos] = await Promise.all([
-      fetchTurnoAbierto(tenantId, b?.id),
-      fetchTurnos(tenantId, b?.id, { limit: 10 }),
-    ]);
-    setTurno(abierto);
-    setTurnosPrevios((previos || []).filter(t => t.status === 'closed'));
-    setEsperado(abierto ? await esperadoEnCaja(abierto.id) : 0);
+    setCajaCargada(false);
+    try {
+      const b = await fetchDefaultBranch(tenantId);
+      const [abierto, previos] = await Promise.all([
+        fetchTurnoAbierto(tenantId, b?.id),
+        fetchTurnos(tenantId, b?.id, { limit: 10 }),
+      ]);
+      setTurno(abierto);
+      setTurnosPrevios((previos || []).filter(t => t.status === 'closed'));
+      setEsperado(abierto ? await esperadoEnCaja(abierto.id) : 0);
+    } finally {
+      setCajaCargada(true);
+    }
   }, [tenantId]);
 
   /* ── Lo que mira Dico para las oportunidades (6g) ──
@@ -430,6 +440,21 @@ export default function PlatformAdmin() {
     loadOportunidades();
   }, [ready, tenantId, loadProducts, loadOrders, loadSettings, loadIngs, loadRecetas, loadGastos, loadVentas, loadItemsPedidos, loadMerma, loadSalon, loadCaja, loadEquipo, loadOportunidades]);
 
+  // La cuenta de transacciones del turno no puede quedar congelada con la
+  // carga inicial. Se refresca mientras el panel esta abierto, incluido un
+  // pedido que entro desde catalogo o comandera en otro dispositivo.
+  useEffect(() => {
+    if (!ready || !tenantId) return undefined;
+    const timer = setInterval(async () => {
+      const [pedidosActualizados, itemsActualizados] = await Promise.all([
+        fetchOrders(tenantId), fetchOrderItemsByOrder(tenantId),
+      ]);
+      setOrders(pedidosActualizados);
+      setItemsPorPedido(itemsActualizados);
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [ready, tenantId]);
+
   // Contrato que espera Stock.jsx: recibe el insumo entero, devuelve el
   // guardado o un {__error}.
   const guardarIngrediente = useCallback(
@@ -517,7 +542,7 @@ export default function PlatformAdmin() {
     if (!ok) {
       setProducts(list => list.map(x => (x.id === p.id ? { ...x, active: p.active } : x)));
       msg('No se pudo cambiar la visibilidad');
-      return;
+      return false;
     }
     // La transicion la reporta el HANDLER, no un efecto sobre el estado: es la
     // unica forma de distinguir "el usuario apago el ultimo" de "esta cuenta ya
@@ -527,6 +552,7 @@ export default function PlatformAdmin() {
       visiblesAntes,
       visiblesAhora: visiblesAntes + (p.active === false ? 1 : -1),
     });
+    return true;
   }, [msg, products, proponerIntervencion]);
 
   const handleDeleteProduct = useCallback(async (id) => {
@@ -534,6 +560,22 @@ export default function PlatformAdmin() {
     if (res === true) await loadProducts();
     return res;
   }, [loadProducts]);
+
+  const handleImpulsarProducto = useCallback(({ accion, destino }) => {
+    proponerIntervencion({
+      tipo: 'impulsar-producto',
+      productoId: accion.producto.id,
+      producto: accion.producto.name,
+      audiencia: destino.etiqueta,
+    });
+    msg(`Dico avisó a ${destino.etiqueta}`);
+    return true;
+  }, [msg, proponerIntervencion]);
+
+  const handleEstadoOperativo = useCallback((operativo, minutosTranscurridos) => {
+    setSistemaOperativo(operativo);
+    setMinutosOperando(operativo ? minutosTranscurridos ?? 0 : null);
+  }, []);
 
   // ── Acciones de pedidos ──
   // Completar NO es un cambio de estado mas: asienta las ventas del pedido, y
@@ -615,9 +657,19 @@ export default function PlatformAdmin() {
     const vigente = sigueVigente(intervencion, {
       productos: products.length,
       visibles: products.filter(x => x.active !== false).length,
+      operativo: sistemaOperativo,
+      cajaAbierta: !!turno,
     });
     if (!vigente) setIntervencion(null);
-  }, [intervencion, products]);
+  }, [intervencion, products, sistemaOperativo, turno]);
+
+  // Esta excepcion nace del reloj: al abrir el local, Caja tiene que estar
+  // lista antes de iniciar el turno. `cajaCargada` evita el falso aviso de los
+  // primeros milisegundos, cuando la consulta todavia no respondio.
+  useEffect(() => {
+    if (!cajaCargada || !sistemaOperativo || turno) return;
+    proponerIntervencion({ tipo: 'local-abierto-sin-caja' });
+  }, [cajaCargada, sistemaOperativo, turno, proponerIntervencion]);
 
   // Donde cae cada uno al entrar (6f). El duenio abre en su negocio, el cajero
   // en su caja, el mozo en sus mesas. Y si el tab en el que esta deja de estar
@@ -649,6 +701,7 @@ export default function PlatformAdmin() {
   // no un ref crudo porque el portal necesita que el nodo YA exista: un ref no
   // dispara re-render cuando se llena.
   const [huecoDico, setHuecoDico] = useState(null);
+  const [resumenDicoActivo, setResumenDicoActivo] = useState(false);
 
   if (status === 'checking') return <Centered>Cargando...</Centered>;
   if (status === 'anon') return <LoginScreen onLogin={doLogin} />;
@@ -677,8 +730,7 @@ export default function PlatformAdmin() {
     );
   }
 
-  // Configuracion, tema y salir. UNA fuente para los dos chasis: al pie del
-  // riel en desktop, adentro de un solo boton en mobile.
+  // Cuenta en la topbar. Solo configuracion queda en el riel desktop.
   const controles = controlesDeSesion({
     tema: theme,
     onTema: toggleTheme,
@@ -689,10 +741,10 @@ export default function PlatformAdmin() {
     salirTitulo: `${session?.user?.email || ''}${role ? ` · ${role === 'owner' ? 'Dueño' : 'Staff'}` : ''}`,
   });
 
-  const saludo = saludoDe();
-  const saludoNombre = nombreDe(session);
   const openCount = orders.filter(o => OPEN_ORDER_STATUSES.includes(o.status)).length;
   const themeClass = theme === 'dark' ? 'ag-theme-dark' : 'ag-theme-light';
+  const timezone = branch?.timezone || tenant?.timezone;
+  const nombreLocal = (sett?.biz_name?.trim() || tenant?.name || 'Dico').toLocaleUpperCase('es-AR');
 
   // Que secciones ve este negocio segun su rubro. modulosDe() ya descarta las
   // que todavia no estan implementadas, asi que declarar "agenda" para
@@ -711,6 +763,12 @@ export default function PlatformAdmin() {
   // —ancla en `presence`, no depende de un CTA ajeno— y sigue saliendo en
   // cualquier ancho.
   const catalogoVacioAngosto = intervencion?.id === 'catalogo-vacio' && !esDesktop;
+  // La advertencia de Caja tampoco tiene aire para Physical en mobile: la
+  // burbuja quedaria cortada por el ancho del Slot. El estado rojo de la barra
+  // permanece visible y Dico 3D conserva la intervencion para desktop.
+  const intervencionFisicaAngosta = !esDesktop && [
+    'catalogo-vacio', 'caja-cerrada-al-abrir',
+  ].includes(intervencion?.id);
 
   // Una sola instancia, montada en un lugar o en el otro. El elemento se arma
   // aca —no en cada rama— para que sea literalmente el mismo nodo de React.
@@ -723,6 +781,8 @@ export default function PlatformAdmin() {
       recetas={recetas}
       gastos={gastos}
       settings={sett}
+      turno={turno}
+      timezone={timezone}
       // PASS 2 — las oportunidades entran por el canal de Dico, no por una
       // tarjeta aparte. Son los MISMOS datos que consumia DicoOportunidades.
       ventas={ventas}
@@ -734,11 +794,12 @@ export default function PlatformAdmin() {
       onIr={setTab}
       anclaje={esDesktop ? 'lateral' : 'arriba'}
       contenedorAvisos={esDesktop ? null : huecoDico}
-      intervencion={catalogoVacioAngosto ? null : intervencion}
+      intervencion={intervencionFisicaAngosta ? null : intervencion}
       objetivo={anclaDico}
       onIntervencionCta={(i) => {
         // El CTA de la intervencion hace lo mismo que haria el usuario a mano.
         if (i.cta?.accion === 'crear-producto') setTab('products');
+        if (i.cta?.accion === 'abrir-caja') setTab('caja');
         setIntervencion(null);
       }}
       onIntervencionCerrada={() => setIntervencion(null)}
@@ -757,42 +818,39 @@ export default function PlatformAdmin() {
         {toast && <div className="toast" style={{ zIndex: 1000 }}>{toast}</div>}
 
         <header className="ag-topbar ms-trace">
-          {/* SALUDO, NO ROTULO. Ahi decia el nombre del negocio: un dato que
-              el duenio ya sabe, porque esta parado adentro. El saludo sigue a
-              la hora y el nombre va en el acento de la marca — es lo unico
-              que ese lugar puede decir que el usuario no sepa ya.
-              Si no hay nombre no se inventa uno: cae al nombre del negocio,
-              que es lo que habia antes. */}
-          <div className="ag-topbar-title ag-saludo" style={{ flex: 1, textAlign: 'left' }}>
-            {saludoNombre
-              ? <>{saludo} <span className="ag-saludo-nombre">{saludoNombre}</span></>
-              : tenant?.name}
-          </div>
-          <div className="ag-topbar-right" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {/* PASS 1 — Dico 2D vive en la BARRA en mobile.
-                Antes se montaba en `.ag-dico-stack`, en el flujo del main: a
-                390px quedaba flotando a media altura entre el titulo y el
-                contenido, sin pertenecer a ninguna de las dos cosas.
-                Esto es solo el HUECO: `DicoPresence` sigue montado abajo y le
-                manda Native por portal. Mover el componente entero se probo y
-                arrastraba el Slot a la barra, que a 390 comprimia la burbuja
-                de intervencion a 95px. */}
+          <div className="ag-topbar-identidad">
             {!esDesktop && <div className="ag-topbar-dico" ref={setHuecoDico} />}
-            {/* En desktop los tres controles viven al pie del riel; aca solo
-                quedan en mobile, donde no hay riel, y en un boton unico. */}
-            {!esDesktop && <MenuDeSesion controles={controles} />}
+            <strong className="ag-topbar-local" title={nombreLocal}>{nombreLocal}</strong>
+          </div>
+          <div className="ag-topbar-right">
+            <MenuDeSesion
+              session={session}
+              controles={controles.filter(c => !esDesktop || c.id !== 'config')}
+            />
           </div>
         </header>
 
-        {/* `ag-main` no pinta nada: es el limite entre la PANTALLA y el shell.
-            Phase 4 mide contraste y targets de la Golden Screen, y sin un
-            ancla la medicion se llevaba puesto el topbar, la nav y Dico —
-            deuda real, pero de otras fases—. */}
-        <main className="ag-main" style={{
-          position: 'relative', zIndex: 2, flex: 1,
-          display: 'flex', flexDirection: 'column', minHeight: 0,
-          paddingBottom: 'var(--ag-bottom-nav-h, 76px)',
-        }}>
+        <ContextoDeTrabajo session={session} timezone={timezone} />
+
+        <div className="ag-workspace-stage">
+          {/* `ag-main` es la superficie madre del trabajo. Phase 4 sigue usando
+              este limite para medir la Golden Screen sin llevarse puesto el
+              topbar, la navegacion ni Dico. */}
+          <main className="ag-main" style={{
+            position: 'relative', zIndex: 2, flex: 1,
+            display: 'flex', flexDirection: 'column', minHeight: 0,
+            paddingBottom: 'var(--ag-bottom-nav-h, 76px)',
+          }}>
+          {/* Estado y hora describen la operacion del local dentro de esta
+              superficie. Dico forma parte de la identidad en la topbar. */}
+          <div className="ag-workspace-head">
+            <BarraOperativa
+              settings={sett}
+              timezone={timezone}
+              turno={turno}
+              onOperativoChange={handleEstadoOperativo}
+            />
+          </div>
           {/* Encabezado de seccion (Phase 3B). Unico lugar del shell donde
               habla Butler, y con escala contenida: una pantalla de trabajo no
               es una landing. El nombre sale de `tabs`, la misma fuente que la
@@ -801,7 +859,7 @@ export default function PlatformAdmin() {
             <h1 className="ag-section-title">
               {(tabs.find(t => t.id === tab) || {}).label || tenant?.name || 'Panel'}
             </h1>
-            {openCount > 0 && tab !== 'orders' && (
+            {openCount > 0 && tab !== 'orders' && tab !== 'products' && (
               <span className="ag-section-meta">{openCount} en curso</span>
             )}
           </div>
@@ -830,19 +888,29 @@ export default function PlatformAdmin() {
                 flag en localStorage y el segundo ya nacia sin ella, que es lo
                 que rompio `dico-native-message` bajo 769px. Se espera un frame
                 y se monta una sola vez, en su lugar definitivo. */}
-            {!esDesktop && huecoDico && presenciaDico}
+            {!esDesktop && !resumenDicoActivo && huecoDico && presenciaDico}
           </div>
           </div>
           {tab === 'products' && (
             <ProductsPanel
               products={products}
+              orders={orders}
+              itemsPorPedido={itemsPorPedido}
               vertical={tenant?.vertical}
               loading={loadingProducts}
               ingredientes={ings}
               recetas={recetas}
               settings={sett}
+              operativo={sistemaOperativo}
+              minutosOperando={minutosOperando}
+              turno={turno}
+              turnosPrevios={turnosPrevios}
+              timezone={timezone}
+              onIr={setTab}
               onSave={handleSaveProduct}
               onToggleActive={handleToggleActive}
+              onImpulsar={handleImpulsarProducto}
+              onDicoResumenChange={setResumenDicoActivo}
               onDelete={handleDeleteProduct}
               onSubirImagen={subirImagenProducto}
               showToast={msg}
@@ -1012,7 +1080,10 @@ export default function PlatformAdmin() {
               )
               : <div style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando configuración...</div>
           )}
-        </main>
+          </main>
+        </div>
+
+        <FraseDeTrabajo pantalla={tab} timezone={timezone} />
 
         {/* DOS CHASIS, UNA FUENTE. Las dos navegaciones reciben el MISMO
             `tabs` —rubro, modulos y permisos ya cruzados— y cual se ve lo
@@ -1025,8 +1096,8 @@ export default function PlatformAdmin() {
           tab={tab}
           onTab={setTab}
           openCount={openCount}
-          presencia={esDesktop ? presenciaDico : null}
-          pie={esDesktop ? <PieDeSesion controles={controles} /> : null}
+          presencia={esDesktop && !resumenDicoActivo ? presenciaDico : null}
+          pie={esDesktop ? <PieDeSesion controles={controles.filter(c => c.id === 'config')} /> : null}
         />
         <NavInferior tabs={tabs} tab={tab} onTab={setTab} openCount={openCount} />
       </div>

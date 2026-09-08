@@ -4,8 +4,10 @@ import { ANCLAJES, INTERVENCIONES, intervencionDe, sigueVigente } from '../modul
 const t = { singular: 'plato', nuevo: '+ Agregar plato' };
 
 describe('intervenciones — el contrato', () => {
-  it('declara exactamente los dos casos autorizados', () => {
-    expect([...INTERVENCIONES]).toEqual(['catalogo-vacio', 'nada-visible']);
+  it('declara exactamente los casos autorizados', () => {
+    expect([...INTERVENCIONES]).toEqual([
+      'catalogo-vacio', 'nada-visible', 'caja-cerrada-al-abrir', 'impulso-enviado:*',
+    ]);
     expect([...ANCLAJES]).toEqual(['presence', 'target']);
   });
 
@@ -19,8 +21,12 @@ describe('intervenciones — el contrato', () => {
     const salidas = [
       intervencionDe({ tipo: 'entro-al-catalogo', productos: 0 }, { terminologia: t }),
       intervencionDe({ tipo: 'cambio-visibilidad', visiblesAntes: 3, visiblesAhora: 0 }, { terminologia: t }),
+      intervencionDe({ tipo: 'local-abierto-sin-caja' }, { terminologia: t }),
+      intervencionDe({
+        tipo: 'impulsar-producto', productoId: 'p1', producto: 'Negroni', audiencia: 'equipo de barra',
+      }),
     ];
-    expect(salidas.map((i) => i.pose)).toEqual(['pointDown', 'worried']);
+    expect(salidas.map((i) => i.pose)).toEqual(['pointDown', 'worried', 'worried', 'celebrate']);
     // Las que el lote NO autoriza no pueden aparecer por ningun camino.
     for (const prohibida of ['idle', 'explain', 'pointUp', 'thinking', 'success', 'error']) {
       expect(salidas.map((i) => i.pose)).not.toContain(prohibida);
@@ -36,6 +42,48 @@ describe('intervenciones — el contrato', () => {
       { tipo: 'cambio-visibilidad', visiblesAntes: 1, visiblesAhora: 0 }, { terminologia: t },
     );
     expect(conPresence.anclaje).toBe('presence');
+  });
+});
+
+describe('intervenciones — impulso inmediato', () => {
+  it('confirma la directriz al equipo que resolvio Dico', () => {
+    const i = intervencionDe({
+      tipo: 'impulsar-producto', productoId: 'p1', producto: 'Negroni', audiencia: 'equipo de barra',
+    });
+    expect(i).toMatchObject({
+      id: 'impulso-enviado:p1',
+      pose: 'celebrate',
+      mensaje: 'Listo. equipo de barra ya sabe que hoy impulsamos Negroni.',
+      cta: null,
+      anclaje: 'presence',
+    });
+    expect(sigueVigente(i)).toBe(true);
+  });
+
+  it('rechaza una orden incompleta', () => {
+    expect(intervencionDe({ tipo: 'impulsar-producto', productoId: 'p1' })).toBeNull();
+  });
+});
+
+describe('intervenciones — apertura sin Caja', () => {
+  it('Dico 3D pide abrir Caja una vez por sesion', () => {
+    const i = intervencionDe({ tipo: 'local-abierto-sin-caja' }, { vistas: [] });
+    expect(i).toMatchObject({
+      id: 'caja-cerrada-al-abrir',
+      pose: 'worried',
+      cta: { texto: 'Abrir Caja', accion: 'abrir-caja' },
+      anclaje: 'presence',
+    });
+    expect(intervencionDe(
+      { tipo: 'local-abierto-sin-caja' }, { vistas: ['caja-cerrada-al-abrir'] },
+    )).toBeNull();
+  });
+
+  it('sigue visible solo mientras el local opera con Caja cerrada', () => {
+    const i = intervencionDe({ tipo: 'local-abierto-sin-caja' });
+    expect(sigueVigente(i, { operativo: true, cajaAbierta: false })).toBe(true);
+    expect(sigueVigente(i, { operativo: true, cajaAbierta: true })).toBe(false);
+    expect(sigueVigente(i, { operativo: false, cajaAbierta: false })).toBe(false);
   });
 });
 

@@ -20,6 +20,7 @@
 //   4. Hablan el idioma del rubro: lo dice el registry, no un if por vertical.
 
 import { terminologia, usaReceta, usaContabilidadUsar } from '../registry';
+import { duracionCorta, ventanaOperativa } from '../estadoOperativo';
 import { indexarInsumos, costoReceta } from '../../services/platformRecipes';
 
 /* Gravedad. El numero solo existe para ordenar. */
@@ -52,6 +53,20 @@ const plural = (n, singular, plural_) => `${n} ${n === 1 ? singular : plural_}`;
 // aca y nada mas: el orden final lo decide la gravedad, no la posicion.
 
 const REGLAS = [
+  /* ── Caja: prepararla cinco minutos antes de abrir ── */
+  function prepararCaja({ settings, turno, hoy, timezone }) {
+    if (!settings || turno) return null;
+    const ventana = ventanaOperativa(settings, hoy, timezone);
+    const faltan = ventana.minutosRestantes;
+    if (ventana.operativo || faltan == null || faltan <= 0 || faltan > 5) return null;
+    return crear(
+      'aviso', 'caja-por-abrir',
+      `El local abre en ${duracionCorta(faltan)}`,
+      'Conviene abrir Caja ahora para empezar el turno con los cobros registrados.',
+      { tab: 'caja', texto: 'Abrir Caja' },
+    );
+  },
+
   /* ── Catalogo vacio: el caso del tenant recien creado ── */
   function catalogoVacio({ productos, vertical }) {
     if (productos.length > 0) return null;
@@ -215,12 +230,14 @@ export function avisosDe({
   recetas = null,
   gastos = [],
   settings = null,
+  turno = null,
+  timezone,
   hoy = new Date(),
   listo = true,
 } = {}) {
   if (!listo) return [];
 
-  const ctx = { vertical, productos, insumos, recetas, gastos, settings, hoy };
+  const ctx = { vertical, productos, insumos, recetas, gastos, settings, turno, timezone, hoy };
 
   return REGLAS
     .map(regla => {
@@ -233,7 +250,12 @@ export function avisosDe({
       }
     })
     .filter(Boolean)
-    .sort((a, b) => PESO_NIVEL[b.nivel] - PESO_NIVEL[a.nivel])
+    // La preparacion de Caja vence en minutos: conserva el tono de aviso,
+    // pero no puede quedar afuera por el corte de cuatro mensajes.
+    .sort((a, b) => {
+      const peso = aviso => aviso.id === 'caja-por-abrir' ? 4 : PESO_NIVEL[aviso.nivel];
+      return peso(b) - peso(a);
+    })
     .slice(0, MAX_AVISOS);
 }
 
