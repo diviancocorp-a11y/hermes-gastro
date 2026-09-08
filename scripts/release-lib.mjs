@@ -201,6 +201,15 @@ export function auditOutput(outDir, expectedShort, { expectTitle = 'Cochi' } = {
     }
     const mapas = readdirSync(assetsDir).filter((f) => f.endsWith('.map'));
     if (mapas.length > 0) problemas.push(`El output trae ${mapas.length} sourcemap(s): ${mapas.slice(0, 3).join(', ')}`);
+    // La red de atras: aunque el env se haya colado, el literal censurado NO
+    // puede terminar dentro de un bundle. Ver `VALOR_CENSURADO`.
+    const censurados = js.filter((f) => readFileSync(join(assetsDir, f), 'utf8').includes(VALOR_CENSURADO));
+    if (censurados.length > 0) {
+      problemas.push(
+        `${censurados.length} bundle(s) traen el literal ${VALOR_CENSURADO} horneado `
+        + `(${censurados.slice(0, 3).join(', ')}): una variable Sensitive viajo censurada.`,
+      );
+    }
   }
 
   // index.html + manifest: que sea el tenant del edificio y no otro.
@@ -231,6 +240,69 @@ export function auditOutput(outDir, expectedShort, { expectTitle = 'Cochi' } = {
     problemas,
     sentryRelease: sentryRelease(expectedShort),
   };
+}
+
+/**
+ * El valor que Vercel escribe en vez de una variable marcada como Sensitive.
+ *
+ * `vercel pull` NO puede leer esas variables: baja el literal de abajo. Un
+ * `vercel build` local no se entera y lo hornea en el bundle como si fuera el
+ * valor. Paso el 8/9/2026 con VITE_SUPABASE_URL: `createClient` recibio
+ * "[SENSITIVE]", tiro "Invalid supabaseUrl" al importar el modulo y se cayo
+ * TODA la app en divianco.app —no solo la pantalla que dependia de eso—.
+ *
+ * Los deploys por integracion de GitHub no sufren esto porque los construye
+ * Vercel en su servidor, donde los valores reales si existen. El riesgo es
+ * exclusivo del camino prebuilt, que es el que usa este script.
+ */
+export const VALOR_CENSURADO = '[SENSITIVE]';
+
+/**
+ * Que las variables que el build va a hornear hayan llegado VIVAS.
+ *
+ * Se corre despues del `vercel pull` y ANTES del build: fallar aca cuesta
+ * treinta segundos, fallar despues cuesta una produccion caida.
+ *
+ * Solo mira las `VITE_*`, que son las unicas que Vite embebe en el bundle y
+ * por lo tanto las unicas que pueden viajar rotas hasta el navegador. NO
+ * imprime ningun valor: solo el nombre de la variable que vino mal.
+ */
+export function envUsable(texto) {
+  const rotas = [];
+  for (const linea of String(texto || '').split(/\r?\n/)) {
+    const m = linea.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+    if (!m) continue;
+    const [, nombre, crudo] = m;
+    if (!nombre.startsWith('VITE_')) continue;
+    const valor = crudo.trim().replace(/^"(.*)"$/, '$1');
+    if (valor === VALOR_CENSURADO) rotas.push({ nombre, motivo: 'censurada (marcada Sensitive en Vercel)' });
+    else if (valor === '') rotas.push({ nombre, motivo: 'vacia' });
+  }
+  return { ok: rotas.length === 0, rotas };
+}
+
+/** Igual que `envUsable` pero contra el archivo que dejo `vercel pull`. */
+export function assertEnvUsable(cwd) {
+  const ruta = join(cwd, '.vercel', '.env.production.local');
+  if (!existsSync(ruta)) {
+    throw new ReleaseError(`No existe ${ruta}: el vercel pull no dejo el entorno de produccion.`);
+  }
+  const { ok, rotas } = envUsable(readFileSync(ruta, 'utf8'));
+  if (!ok) {
+    throw new ReleaseError([
+      'El entorno que bajo `vercel pull` no sirve para construir:',
+      ...rotas.map((r) => `  - ${r.nombre}: ${r.motivo}`),
+      '',
+      'Vercel no entrega el valor de una variable marcada como Sensitive, asi que un',
+      'build LOCAL la hornearia rota en el bundle. Dos salidas:',
+      '  1. desmarcar Sensitive esa variable en el proyecto —son claves publicas que',
+      '     igual viajan al navegador dentro del bundle—, o',
+      '  2. dejar que construya Vercel: pushear a la rama conectada y que la',
+      '     integracion de GitHub haga el deploy.',
+      'No se construye nada.',
+    ].join('\n'));
+  }
+  return true;
 }
 
 /** El entorno que recibe un build de release. */

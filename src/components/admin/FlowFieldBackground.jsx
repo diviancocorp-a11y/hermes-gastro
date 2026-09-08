@@ -4,15 +4,43 @@
 //
 // Props:
 //   color         — color de las partículas (default ámbar #f59e0b)
+//   pulseColor    — color del pulso que recorre el flujo (default: ninguno)
+//   pulseSize     — cuántas partículas lo forman (default 46)
+//   pulseLife     — cuántos frames dura cada pulso (default 260)
+//   pulseGap      — frames de silencio entre un pulso y el siguiente (default 150)
 //   trailOpacity  — opacidad del rastro: bajo = trail largo (default 0.1)
 //   particleCount — cantidad (default 600)
 //   speed         — multiplicador de velocidad (default 0.8)
 //   bgColor       — color del canvas en cada frame para crear trails (default #0a0a0a)
+//
+// ─────────────── LAS VENAS Y EL PULSO QUE LAS RECORRE ───────────────
+//
+// Son DOS cosas distintas y por eso se dibujan distinto.
+//
+// LAS VENAS son todas las partículas, todas del mismo color —Volt, que en el
+// sistema significa "actividad interna, nunca protagonista"—. Es la máquina
+// trabajando: constante, sin acentos, sin nadie mirándola.
+//
+// EL PULSO es un GRUPO que viaja JUNTO, en oro. No son partículas doradas
+// sueltas repartidas entre las otras —eso se probó y no dice nada: de lejos
+// es ruido de dos colores—. Nace en un borde, recorre el MISMO campo que las
+// venas —así que va por donde van ellas— y se apaga; después de un silencio,
+// vuelve a nacer. Eso es lo que lo hace leer como un latido atravesando el
+// sistema y no como decoración.
+//
+// LO QUE LO MANTIENE JUNTO es una fuerza hacia el centro del propio grupo. El
+// campo solo no alcanza: dos partículas que arrancan a diez píxeles una de
+// otra terminan en ramas distintas del flujo y el bloque se deshace.
 
 import { useEffect, useRef } from "react";
+import { crearPulso } from "./pulsoDeFlujo";
 
 export default function FlowFieldBackground({
   color = "#f59e0b",
+  pulseColor = null,
+  pulseSize = 90,
+  pulseLife = 300,
+  pulseGap = 50,
   trailOpacity = 0.1,
   particleCount = 600,
   speed = 0.8,
@@ -85,6 +113,38 @@ export default function FlowFieldBackground({
       }
     }
 
+    /* El pulso: un grupo que viaja junto por el mismo campo.
+     *
+     * La logica vive en `pulsoDeFlujo.js` y no aca adentro por una razon
+     * practica: el navegador congela `requestAnimationFrame` cuando la
+     * pestania no se dibuja, asi que un pulso metido en el loop de render no
+     * se puede medir. Afuera es una funcion de estado a estado y se le pueden
+     * pedir cuatrocientos cuadros para comprobar que el grupo sigue junto.
+     * Aca queda SOLO como se pinta. */
+    const pulso = pulseColor
+      ? crearPulso({ ancho: width, alto: height, tamanio: pulseSize, vida: pulseLife, silencio: pulseGap, velocidad: speed })
+      : null;
+
+    const dibujarPulso = (c) => {
+      if (!pulso) return;
+      pulso.mover();
+      const alpha = pulso.opacidad();
+      if (alpha <= 0) return;
+      c.globalAlpha = alpha;
+      c.fillStyle = pulseColor;
+      // El resplandor lo separa del fondo sin agrandarlo: el oro sobre negro
+      // rinde menos que el azul al mismo tamanio.
+      c.shadowColor = pulseColor;
+      c.shadowBlur = 7;
+      // EL MISMO GROSOR QUE UNA VENA (1,5px). El pulso no se distingue por
+      // ser mas gordo sino por ser un CUERPO y por el color: engrosarlo lo
+      // convertia en otra cosa que pasa por arriba, no en la misma sustancia
+      // del flujo moviendose junta. El resplandor alcanza para que no se
+      // pierda contra el fondo.
+      for (const p of pulso.estado.puntos) c.fillRect(p.x, p.y, 1.5, 1.5);
+      c.shadowBlur = 0;
+    };
+
     const init = () => {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = width * dpr;
@@ -103,6 +163,8 @@ export default function FlowFieldBackground({
         p.update();
         p.draw(ctx);
       });
+      // El pulso va DESPUES: pasa por encima de las venas, no entre ellas.
+      dibujarPulso(ctx);
       animationFrameId = requestAnimationFrame(animate);
     };
 
@@ -133,7 +195,7 @@ export default function FlowFieldBackground({
       container.removeEventListener("mouseleave", handleMouseLeave);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [color, trailOpacity, particleCount, speed, bgColor]);
+  }, [color, pulseColor, pulseSize, pulseLife, pulseGap, trailOpacity, particleCount, speed, bgColor]);
 
   return (
     <div
