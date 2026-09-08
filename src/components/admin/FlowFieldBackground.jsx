@@ -38,9 +38,9 @@ import { crearPulso } from "./pulsoDeFlujo";
 export default function FlowFieldBackground({
   color = "#f59e0b",
   pulseColor = null,
-  pulseSize = 130,
+  pulseSize = 90,
   pulseLife = 300,
-  pulseGap = 140,
+  pulseGap = 50,
   trailOpacity = 0.1,
   particleCount = 600,
   speed = 0.8,
@@ -135,9 +135,13 @@ export default function FlowFieldBackground({
       // El resplandor lo separa del fondo sin agrandarlo: el oro sobre negro
       // rinde menos que el azul al mismo tamanio.
       c.shadowColor = pulseColor;
-      c.shadowBlur = 9;
-      // 3px y no 2: el pulso tiene que pesar mas que una vena, no igual.
-      for (const p of pulso.estado.puntos) c.fillRect(p.x, p.y, 3, 3);
+      c.shadowBlur = 7;
+      // EL MISMO GROSOR QUE UNA VENA (1,5px). El pulso no se distingue por
+      // ser mas gordo sino por ser un CUERPO y por el color: engrosarlo lo
+      // convertia en otra cosa que pasa por arriba, no en la misma sustancia
+      // del flujo moviendose junta. El resplandor alcanza para que no se
+      // pierda contra el fondo.
+      for (const p of pulso.estado.puntos) c.fillRect(p.x, p.y, 1.5, 1.5);
       c.shadowBlur = 0;
     };
 

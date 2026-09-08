@@ -137,9 +137,9 @@ export default function LoginScreen({ onLogin }) {
       <FlowFieldBackground
         color={VOLT}
         pulseColor={GOLD}
-        pulseSize={130}
+        pulseSize={90}
         pulseLife={300}
-        pulseGap={140}
+        pulseGap={50}
         trailOpacity={0.08}
         particleCount={500}
         speed={0.7}

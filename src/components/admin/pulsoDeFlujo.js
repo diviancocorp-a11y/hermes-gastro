@@ -42,12 +42,16 @@ export function anguloDelCampo(x, y) {
 export const PULSO_POR_DEFECTO = {
   /* El tamanio es lo que lo vuelve un HECHO y no un detalle. Con 46
      particulas en 28px de radio era una chispa que pasaba: se veia, pero no
-     pesaba. 130 en 70px ocupan lo que ocupa un puño en la pantalla — sigue
-     siendo una minoria del flujo (500 particulas de fondo) y ahora se siente
-     pasar. */
-  tamanio: 130,     // cuántas partículas lo forman
+     pesaba. 90 en 70px ocupan lo que ocupa un puño en la pantalla — sigue
+     siendo una minoria del flujo (500 particulas de fondo) y se siente pasar.
+     El grosor lo pone quien dibuja, y es el MISMO de una vena: el pulso se
+     distingue por ser un cuerpo y por el color, no por ser mas gordo. */
+  tamanio: 90,      // cuántas partículas lo forman
   vida: 300,        // cuadros que dura encendido
-  silencio: 140,    // cuadros entre un pulso y el siguiente
+  /* Corto a proposito: el latido tiene que volver seguido. Con 140 cuadros de
+     silencio pasaba uno cada siete segundos y la pantalla quedaba en calma
+     demasiado tiempo; con 50 el sistema late sin parar de trabajar. */
+  silencio: 50,     // cuadros entre un pulso y el siguiente
   radio: 70,        // cuán apretado nace
   /* La fuerza del resorte que lleva a cada particula a SU distancia del
      centro (ver la cabecera). Mas alta, el cuerpo queda rigido y se lee como
