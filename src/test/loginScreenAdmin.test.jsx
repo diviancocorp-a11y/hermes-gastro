@@ -27,7 +27,7 @@ vi.mock('../lib/supabase', () => ({
 // El canvas de partículas no aporta nada a estos contratos y en jsdom no hay
 // contexto 2D: se reemplaza por un div para no llenar la salida de ruido.
 vi.mock('../components/admin/FlowFieldBackground', () => ({
-  default: (props) => <div data-flow="" data-color={props.color} data-accent={props.accentColor} />,
+  default: (props) => <div data-flow="" data-color={props.color} data-pulso={props.pulseColor} data-pulso-n={String(props.pulseSize)} />,
 }));
 
 beforeEach(() => {
@@ -47,11 +47,15 @@ describe('LoginScreen — la marca', () => {
     expect(logo.getAttribute('height')).toBe('452');
   });
 
-  it('el flujo del fondo es volt con acento oro, no ambar', () => {
+  it('las venas son volt y el pulso que las recorre es oro', () => {
+    // Las particulas NO llevan acento: son todas del mismo color. El oro es
+    // el pulso, que es un grupo aparte y viaja junto — ver la cabecera de
+    // `FlowFieldBackground`.
     const { container } = render(<LoginScreen onLogin={() => {}} />);
     const flujo = container.querySelector('[data-flow]');
     expect(flujo.getAttribute('data-color')).toBe('#60A5FA');
-    expect(flujo.getAttribute('data-accent')).toBe('#E8B947');
+    expect(flujo.getAttribute('data-pulso')).toBe('#E8B947');
+    expect(Number(flujo.getAttribute('data-pulso-n'))).toBeGreaterThan(1);
   });
 
   it('sin logo del negocio, en la placa esta DICO y no una inicial', () => {

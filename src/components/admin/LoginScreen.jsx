@@ -132,11 +132,14 @@ export default function LoginScreen({ onLogin }) {
 
   return (
     <div style={{ position:"fixed", inset:0, fontFamily:"system-ui,-apple-system,sans-serif", color:"#fff", overflow:"hidden" }}>
-      {/* El flujo de la máquina: volt, con unas pocas chispas de oro. */}
+      {/* Las venas del sistema, todas volt; y cada tanto un pulso dorado que
+          las recorre en bloque. Ver la cabecera de `FlowFieldBackground`. */}
       <FlowFieldBackground
         color={VOLT}
-        accentColor={GOLD}
-        accentRatio={0.12}
+        pulseColor={GOLD}
+        pulseSize={130}
+        pulseLife={300}
+        pulseGap={140}
         trailOpacity={0.08}
         particleCount={500}
         speed={0.7}
