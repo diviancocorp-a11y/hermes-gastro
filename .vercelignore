@@ -1,0 +1,17 @@
+.git
+.agents
+.claude
+.qa-lite
+.vercel
+coverage
+dist
+node_modules
+output
+test-results
+DICO_SINTRA_EXPORT
+DICO_SINTRA_EXPORT_*.zip
+
+.env
+.env.*
+*.local
+*.log

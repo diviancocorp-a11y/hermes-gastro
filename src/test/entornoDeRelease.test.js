@@ -9,6 +9,7 @@
 // La auditoria de entonces miraba buildId, release de Sentry y sourcemaps:
 // tres cosas ciertas sobre un artefacto que no arrancaba.
 
+import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { envUsable, VALOR_CENSURADO } from '../../scripts/release-lib.mjs';
 
@@ -46,5 +47,24 @@ describe('envUsable', () => {
     // arreglo de deploy se convertiria en una fuga.
     const { rotas } = envUsable('VITE_SUPABASE_ANON_KEY="clave-secreta-de-verdad"\nVITE_X=""');
     expect(JSON.stringify(rotas)).not.toContain('clave-secreta-de-verdad');
+  });
+});
+
+describe('paquete de fuente para Vercel', () => {
+  it('excluye runtimes locales y archivos de entorno', () => {
+    const ignorados = readFileSync('.vercelignore', 'utf8')
+      .split(/\r?\n/)
+      .map((linea) => linea.trim())
+      .filter(Boolean);
+
+    expect(ignorados).toEqual(expect.arrayContaining([
+      '.qa-lite',
+      '.vercel',
+      'dist',
+      'node_modules',
+      'output',
+      '.env',
+      '.env.*',
+    ]));
   });
 });
