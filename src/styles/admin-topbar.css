@@ -342,43 +342,79 @@
   .ag-mt, .ag-mt-top, .ag-theme-toggle-inner, .ag-pm-panel, .ag-pm-avatars { animation: none; transition: none; }
 }
 
-/* ── El menu de sesion en mobile (6/9/2026) ─────────────────────────────
- * Los tres controles —configuracion, tema y salir— se fueron al pie del riel
- * en desktop. A 375px no hay riel, y los tres sueltos en la barra peleaban
- * por la fila con el saludo y con Dico: el saludo se cortaba en "Buenas
- * noches O…". Queda UN boton, el engranaje, y los tres adentro.
- */
-.ag-sesion {
-  position: relative;
+/* Cuenta compartida por desktop y mobile. Sin foto ni avatar elegible. */
+.ag-sesion { position: relative; display: flex; align-items: center; min-width: 0; }
+.ag-sesion-perfil {
   display: flex;
   align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ag-chassis-ink);
+  font: 500 13px var(--ag-font);
+  cursor: pointer;
 }
-
-.ag-sesion .ag-nav-icon {
-  width: 18px;
-  height: 18px;
-  display: block;
+.ag-sesion-perfil:hover, .ag-sesion-perfil[aria-expanded="true"] {
+  background: var(--ms-zinc-800);
 }
-
-.ag-sesion-menu {
+.ag-sesion-iniciales {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid var(--ms-zinc-700);
+  border-radius: 50%;
+  font: 500 10px var(--ag-font);
+  color: var(--ag-chassis-ink-2);
+}
+.ag-sesion-nombre {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--ag-font);
+  font-size: 14px;
+  font-weight: var(--ms-w-nav);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+.ag-sesion-hora {
+  flex-shrink: 0;
+  color: var(--ag-chassis-ink-2);
+  font-family: var(--ag-font-mono, monospace);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.ag-sesion-desplegable {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
   z-index: var(--ag-z-popover);
-  min-width: 208px;
+  width: min(280px, calc(100vw - 28px));
   padding: 6px;
   background: var(--ag-bg-card);
   border: 1px solid var(--ag-line);
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(9, 9, 11, .06), 0 16px 40px rgba(9, 9, 11, .26);
 }
-
+.ag-sesion-identidad { display: grid; gap: 4px; padding: 12px 10px; border-bottom: 1px solid var(--ag-line); margin-bottom: 6px; overflow-wrap: anywhere; }
+.ag-sesion-identidad strong {
+  color: var(--ag-ink);
+  font-family: var(--ag-font-display);
+  font-size: 16px;
+  font-weight: 500;
+}
+.ag-sesion-identidad span { color: var(--ag-ink-2); font-size: 12px; }
 .ag-sesion-item {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  /* 44 de alto: es el minimo tactil y esto se usa con el pulgar. */
   min-height: 44px;
   padding: 0 10px;
   background: transparent;
@@ -391,17 +427,20 @@
   text-align: left;
   cursor: pointer;
 }
-
 .ag-sesion-item:hover { background: var(--ag-bg-soft); }
-
-.ag-sesion-item:focus-visible {
+.ag-sesion-perfil:focus-visible, .ag-sesion-item:focus-visible {
   outline: 2px solid var(--ds-focus-ring, #e0ac3c);
   outline-offset: -2px;
 }
-
-.ag-sesion-item .ag-nav-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  color: var(--ag-ink-2);
+.ag-sesion-item .ag-nav-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--ag-ink-2); }
+.ag-sesion-item--salir { border-top: 1px solid var(--ag-line); border-radius: 0 0 9px 9px; margin-top: 6px; }
+@media (max-width: 768px) {
+  .ag-sesion-perfil { gap: 5px; }
+  .ag-sesion-nombre { max-width: 80px; }
+}
+@media (max-width: 480px) {
+  .ag-sesion-nombre { max-width: 112px; }
+  .ag-root .ag-topbar { padding-left: 10px; padding-right: 10px; }
+  .ag-root .ag-sistema-operativo { font-size: 11px; }
+  .ag-workspace-head .ag-sesion-hora { font-size: 10px; }
 }

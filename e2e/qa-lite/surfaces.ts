@@ -212,7 +212,9 @@ export const ADMIN_CONTINUOUS_DECORATIVE_MOTION = [
   // 38s; al 6-7% de alfa no se ve moverse, pero el fondo nunca terminaba de
   // asentarse y eso se notaba justo cuando algo se abria encima. Regla y
   // keyframes eliminados, no apagados: este inventario describe lo que existe.
-  // Con esto el shell no tiene NINGUNA animacion infinita.
+  // El fondo de hormigon sigue quieto. La unica deriva ambiental nueva vive
+  // detras de la tarjeta madre y fue pedida de forma explicita; se registra
+  // mas abajo para congelarla en las capturas.
   // El segundo resplandor se ELIMINO en Phase 4 · PASS 1 (nodo, regla y
   // keyframes). El fondo del shell dejo de ser ambar: dos glows al 34-45% de
   // alfa tapaban el contenido operativo. Este inventario describe lo que
@@ -260,6 +262,38 @@ export const ADMIN_CONTINUOUS_DECORATIVE_MOTION = [
     // quieto. Aceptar "cero animaciones" a secas dejaria pasar un pulso que
     // dejo de funcionar.
     whenActivity: 'active',
+  },
+  {
+    // Pedido explicito de Ricardo (6/9): una luz Volt tenue recorre por detras
+    // de la tarjeta madre solo en desktop. Se congela al inicio para que las
+    // capturas comparen el material y no el momento de la orbita.
+    selector: '.ag-workspace-stage',
+    expectedName: 'ag-volt-detras',
+    duration: 12000,
+    iterations: Infinity,
+    freezeAt: 0,
+    expectedCount: 1,
+  },
+  {
+    // Pedido explicito de Ricardo (6/9): la luz de "Sistema operativo" late
+    // mientras el local esta dentro de su horario. En reposo el mismo nodo
+    // queda apagado y no anima. Se congela encendida para las capturas.
+    selector: '.ag-sistema-operativo[data-operativo="true"] .ag-sistema-indicador',
+    expectedName: 'ag-sistema-pulso',
+    duration: 1600,
+    iterations: Infinity,
+    freezeAt: 0,
+    expectedCount: 1,
+  },
+  {
+    // La linea de la ventana operativa respira mientras avanza al cierre. En
+    // reposo conserva el progreso hacia la apertura, pero queda quieta.
+    selector: '.ag-operativa[data-operativo="true"] .ag-operativa-progreso > span',
+    expectedName: 'ag-operativa-carga',
+    duration: 1800,
+    iterations: Infinity,
+    freezeAt: 900,
+    expectedCount: 1,
   },
 ] as const
 

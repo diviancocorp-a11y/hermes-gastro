@@ -15,6 +15,7 @@ import { categoriesFrom } from '../../../services/platformAdmin';
 import { margen, indexarInsumos } from '../../../services/platformRecipes';
 import { terminologia } from '../../../modules/registry';
 import DicoCoreEscena from '../../dico/DicoCoreEscena';
+import GestionProductosPanel from './GestionProductosPanel';
 
 function money(n) {
   return `$${Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
@@ -31,6 +32,8 @@ export default function ProductsPanel({
   intervencionActiva = false,
   anclaDico,
   ingredientes = [], recetas = null, settings = null, onSubirImagen = null,
+  orders = [], itemsPorPedido = null, operativo = false, turno = null, minutosOperando = null,
+  turnosPrevios = [], timezone = null, onImpulsar = null, onIr = null,
 }) {
   const confirmSlide = useConfirm();
   const [editing, setEditing] = useState(null); // objeto producto | 'new' | null
@@ -259,8 +262,10 @@ export default function ProductsPanel({
           Una card POR CATEGORIA con filas compactas adentro, no una card
           gigante por producto. Con 21 productos lo anterior era una tira de
           21 tarjetas de 60px de alto: nada agrupaba y nada terminaba. */}
-      <div className="ag-productos-categorias">
-      {groups.map(([cat, items]) => (
+      {!loading && products.length > 0 && (
+      <div className="ag-productos-cuerpo">
+        <div className="ag-productos-categorias">
+        {groups.map(([cat, items]) => (
           <section key={cat} className="ag-categoria">
             <header className="ag-categoria-head">
               <h3 className="ag-categoria-nombre">{cat}</h3>
@@ -329,8 +334,29 @@ export default function ProductsPanel({
               })}
             </div>
           </section>
-      ))}
+        ))}
+        </div>
+
+        <GestionProductosPanel
+          key={turno?.id || (operativo ? 'operativo-sin-caja' : 'cerrado')}
+          products={products}
+          orders={orders}
+          itemsPorPedido={itemsPorPedido}
+          recetas={recetas}
+          ingredientes={ingredientes}
+          settings={settings}
+          operativo={operativo}
+          minutosOperando={minutosOperando}
+          turno={turno}
+          turnosPrevios={turnosPrevios}
+          timezone={timezone}
+          onToggleActive={onToggleActive}
+          onImpulsar={onImpulsar}
+          onIr={onIr}
+          showToast={showToast}
+        />
       </div>
+      )}
     </div>
   );
 }

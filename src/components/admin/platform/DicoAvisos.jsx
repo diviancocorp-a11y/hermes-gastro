@@ -80,6 +80,14 @@ export default function DicoAvisos({
   omitir = [],
   ...datos
 }) {
+  // El aviso previo a la apertura nace del horario. Este reloj local permite
+  // que aparezca aunque el resto del panel no haya cambiado en ese minuto.
+  const [ahora, setAhora] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setAhora(new Date()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+  const datosActuales = { ...datos, hoy: ahora };
   const idsOmitidos = new Set(omitir);
   /* PASS 2 — LAS DOS CAPAS ENTRAN POR EL MISMO CANAL.
    *
@@ -95,8 +103,8 @@ export default function DicoAvisos({
    * ordena la cola.
    */
   const avisos = [
-    ...avisosDe(datos),
-    ...(conOportunidades ? oportunidadesDe(datos).map(o => ({
+    ...avisosDe(datosActuales),
+    ...(conOportunidades ? oportunidadesDe(datosActuales).map(o => ({
       id: `oportunidad:${o.id}`,
       nivel: 'sugerencia',
       titulo: o.titulo,
@@ -122,7 +130,7 @@ export default function DicoAvisos({
 
   // EJE 2 — la actividad. Solo la dicta el sistema; nunca la cara.
   // `attention` es finito por disenio: llama una vez y se queda quieto.
-  const actividad = datos.listo === false
+  const actividad = datosActuales.listo === false
     ? 'processing'
     : abierto
       ? 'active'

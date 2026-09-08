@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 vi.mock('../lib/supabase', () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
 // El confirm de borrado abre un provider con animaciones; para estos tests
@@ -129,4 +129,121 @@ describe('terminología por rubro en las pestañas', () => {
       expect(screen.queryByRole('heading', { level: 2 })).toBeNull();
     });
   }
+});
+
+describe('acciones en vivo de Productos', () => {
+  it('Impulsar emite una orden directa y muestra el destino resuelto', () => {
+    const onImpulsar = vi.fn(() => true);
+    render(<ProductsPanel
+      products={[{
+        id: 'p1', name: 'Negroni', price: 5000, stock: 10, active: true, category: 'Cócteles',
+      }]}
+      vertical="gastro"
+      loading={false}
+      operativo
+      orders={[]}
+      itemsPorPedido={new Map()}
+      recetas={new Map()}
+      ingredientes={[]}
+      onImpulsar={onImpulsar}
+      onSave={vi.fn()}
+      onToggleActive={vi.fn()}
+      onDelete={vi.fn()}
+      showToast={vi.fn()}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Impulsar' }));
+
+    expect(onImpulsar).toHaveBeenCalledWith(expect.objectContaining({
+      destino: { area: 'barra', etiqueta: 'equipo de barra' },
+    }));
+    expect(screen.getByText('Dico avisó a equipo de barra')).toBeTruthy();
+    expect(screen.queryByText(/brief activo/i)).toBeNull();
+  });
+
+  it('en mobile nace plegado arriba y avisa cuantos impulsos esperan', () => {
+    const matchMediaOriginal = window.matchMedia;
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    });
+    const ahora = Date.now();
+    try {
+      const { container } = render(<ProductsPanel
+        products={[{
+          id: 'p1', name: 'Negroni', price: 5000, stock: 10, active: true, category: 'Cócteles',
+        }]}
+        vertical="gastro"
+        loading={false}
+        operativo
+        minutosOperando={65}
+        turno={{ opened_at: new Date(ahora - 65 * 60000).toISOString() }}
+        orders={[{
+          id: 'o1', status: 'completed', created_at: new Date(ahora - 10 * 60000).toISOString(),
+        }]}
+        itemsPorPedido={new Map()}
+        recetas={new Map()}
+        ingredientes={[]}
+        onImpulsar={vi.fn(() => true)}
+        onSave={vi.fn()}
+        onToggleActive={vi.fn()}
+        onDelete={vi.fn()}
+        showToast={vi.fn()}
+      />);
+
+      const cuerpo = container.querySelector('.ag-productos-cuerpo');
+      expect(cuerpo.firstElementChild).toHaveClass('ag-productos-categorias');
+      expect(container.querySelector('.ag-gestion-productos')).toHaveClass('esta-operativo');
+      expect(screen.getByLabelText('1 impulsos pendientes')).toBeTruthy();
+      expect(screen.queryByText('+')).toBeNull();
+      expect(screen.queryByText('−')).toBeNull();
+      expect(screen.queryByText(/transacciones hoy/)).toBeNull();
+      expect(container.querySelector('.ag-gestion-flecha')).not.toHaveClass('esta-abierta');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Abrir acciones de Dico' }));
+      expect(container.querySelector('.ag-gestion-flecha')).toHaveClass('esta-abierta');
+      expect(container.querySelector('.ag-gestion-alcance').textContent)
+        .toBe('01:05 operando · 1 transacción hoy');
+    } finally {
+      window.matchMedia = matchMediaOriginal;
+    }
+  });
+
+  it('cerrado presenta el último análisis y permite cambiar el período', () => {
+    const matchMediaOriginal = window.matchMedia;
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    });
+    try {
+      const { container } = render(<ProductsPanel
+        products={[{ id: 'p1', name: 'Uno', price: 100, active: true, category: 'Cat' }]}
+        vertical="gastro"
+        loading={false}
+        operativo={false}
+        orders={[]}
+        itemsPorPedido={new Map()}
+        recetas={new Map()}
+        ingredientes={[]}
+        turnosPrevios={[{
+          id: 't1', status: 'closed', business_day: '2026-09-06',
+          opened_at: '2026-09-06T17:00:00Z', closed_at: '2026-09-07T02:00:00Z',
+        }]}
+        onSave={vi.fn()}
+        onToggleActive={vi.fn()}
+        onDelete={vi.fn()}
+        showToast={vi.fn()}
+      />);
+
+      expect(screen.getByText('DICO ANALIZA')).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Ingeniería de menú' })).toBeTruthy();
+      expect(container.querySelector('.ag-gestion-flecha')).not.toHaveClass('esta-abierta');
+      fireEvent.click(screen.getByRole('button', { name: 'Abrir acciones de Dico' }));
+      expect(container.querySelector('.ag-gestion-flecha')).toHaveClass('esta-abierta');
+      expect(screen.getByText(/Último análisis/)).toBeTruthy();
+      expect(screen.getByRole('combobox', { name: 'Período del análisis' }).value).toBe('turno');
+      fireEvent.click(screen.getByRole('button', { name: 'Cómo funciona la matriz Kasavana' }));
+      expect(screen.getByRole('note').textContent).toMatch(/Estrellas se mantienen/);
+    } finally {
+      window.matchMedia = matchMediaOriginal;
+    }
+  });
 });

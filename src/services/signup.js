@@ -33,6 +33,10 @@ export async function registrarNegocio({
   email, password, bizName, vertical, slug, fullName,
   operationMode, country, currency, timezone, channels,
 }) {
+  const nombrePersona = String(fullName || '').trim().replace(/\s+/g, ' ');
+  if (nombrePersona.length < 2) {
+    return { ok: false, error: 'Tu nombre es obligatorio' };
+  }
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -41,7 +45,7 @@ export async function registrarNegocio({
         biz_name: bizName,
         vertical,
         slug: String(slug || '').toLowerCase(),
-        full_name: fullName || null,
+        full_name: nombrePersona,
         // Ejes del alta (6a). signup_tenant() los lee server-side y cae en
         // defaults usables si faltan — una cuenta creada antes de este deploy
         // sigue pudiendo crear su negocio.
