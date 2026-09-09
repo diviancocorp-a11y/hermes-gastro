@@ -113,7 +113,7 @@ function VistaCuadrante({ cuadrante, ventas7, onVolver, onProducto }) {
     <div className={`ag-vista-cuadrante es-${cuadrante.tipo}`}>
       <header className="ag-subvista-head">
         <button type="button" className="ag-perfil-volver" onClick={onVolver}>
-          <span aria-hidden="true">←</span> Ingeniería de menú
+          <span aria-hidden="true">←</span> Sistema Kasavana
         </button>
         <span className="ag-subvista-identidad">{cuadrante.icono} {cuadrante.titulo}</span>
         <h3>{cuadrante.ayuda}</h3>
@@ -204,7 +204,7 @@ function ResumenDico({
     <div className="ag-resumen-dico" onClickCapture={() => { if (!completo) saltear(); }}>
       <header className="ag-resumen-dico-head">
         <button type="button" className="ag-perfil-volver" onClick={onVolver}>
-          <span aria-hidden="true">←</span> Ingeniería de menú
+          <span aria-hidden="true">←</span> Sistema Kasavana
         </button>
         <div className="ag-resumen-dico-identidad">
           <DicoNative size={66} state="curious" activity="thinking" title="Dico resume la ingeniería de menú" />
@@ -264,7 +264,7 @@ function PerfilProducto({ seleccion, ventas7, kasavana, onVolver }) {
         </header>
         <div className="ag-gestion-sin-datos">
           <strong>Todavía no se puede clasificar</strong>
-          <p>Este producto necesita receta con costos y ventas registradas para entrar en Ingeniería de menú.</p>
+          <p>Este producto necesita receta con costos y ventas registradas para entrar en el Sistema Kasavana.</p>
         </div>
       </div>
     );
@@ -495,7 +495,7 @@ export default function GestionProductosPanel({
               )}
             </p>
             <div className="ag-gestion-titulo-fila">
-              <h3>{operativo ? 'Acciones del servicio' : 'Ingeniería de menú'}</h3>
+              <h3>{operativo ? 'Acciones del servicio' : 'Sistema Kasavana'}</h3>
               {!operativo && (
                 <button
                   type="button"
@@ -625,7 +625,6 @@ export default function GestionProductosPanel({
 
                   {kasavana.productosAnalizados > 0 ? (
                     <div className="ag-kasavana-matriz">
-                      <span className="ag-kasavana-eje-y">Margen ↑</span>
                       <div className="ag-kasavana">
                         {cuadrantesEnVista.map(cuadrante => (
                           <CuadranteResumen
@@ -636,7 +635,6 @@ export default function GestionProductosPanel({
                           />
                         ))}
                       </div>
-                      <span className="ag-kasavana-eje-x">Popularidad →</span>
                     </div>
                   ) : (
                     <div className="ag-gestion-sin-datos">

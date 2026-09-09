@@ -281,6 +281,17 @@
   border-radius: var(--ag-r-lg);
 }
 
+.ag-productos-cuerpo .ag-productos-categorias::before {
+  content: '';
+  display: block;
+  height: 2px;
+  background: var(--ms-gold);
+}
+
+.ag-productos-cuerpo .ag-productos-categorias.esta-operativo::before {
+  background: var(--ag-volt);
+}
+
 .ag-productos-categorias-titulo {
   display: flex;
   align-items: center;
@@ -615,19 +626,8 @@
 
 .ag-kasavana-matriz {
   position: relative;
-  margin: var(--ag-sp-3) var(--ag-sp-3) var(--ag-sp-5) var(--ag-sp-5);
+  margin: var(--ag-sp-3);
 }
-
-.ag-kasavana-eje-y,
-.ag-kasavana-eje-x {
-  position: absolute;
-  color: var(--ag-ink-3);
-  font: 700 8px/1 var(--ag-font-mono);
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
-.ag-kasavana-eje-y { right: calc(100% + var(--ag-sp-2)); top: 50%; transform: rotate(-90deg) translateX(50%); transform-origin: right center; }
-.ag-kasavana-eje-x { top: calc(100% + var(--ag-sp-3)); left: 50%; transform: translateX(-50%); }
 
 .ag-kasavana-cuadrante.es-estrella { --cuadrante-color: var(--ag-c-sales-ink); }
 .ag-kasavana-cuadrante.es-enigma { --cuadrante-color: #64748b; }
@@ -1294,7 +1294,7 @@
 
   .ag-kasavana-resumen-general { padding: 0 var(--ag-sp-3) var(--ag-sp-2); }
   .ag-kasavana { gap: var(--ag-sp-1); }
-  .ag-kasavana-matriz { margin: var(--ag-sp-2) var(--ag-sp-3) var(--ag-sp-5) var(--ag-sp-5); }
+  .ag-kasavana-matriz { margin: var(--ag-sp-2) var(--ag-sp-3) var(--ag-sp-3); }
   .ag-kasavana-cuadrante { min-height: 166px; padding: var(--ag-sp-2); }
   .ag-kasavana-cuadrante > p { font-size: 10px; }
   .ag-kasavana-producto {

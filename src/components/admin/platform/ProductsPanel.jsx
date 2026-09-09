@@ -45,7 +45,9 @@ const ProductsPanel = forwardRef(function ProductsPanel({
   const confirmSlide = useConfirm();
   const [editing, setEditing] = useState(null); // objeto producto | 'new' | null
   const [search, setSearch] = useState('');
-  const [categoriasAbiertas, setCategoriasAbiertas] = useState(() => new Set());
+  // `null` significa que todas nacen abiertas. Un Set aparece recien cuando
+  // la persona cierra una categoria o la busqueda acota el listado.
+  const [categoriasAbiertas, setCategoriasAbiertas] = useState(null);
   const [configAbierta, setConfigAbierta] = useState(false);
   const [minimoInput, setMinimoInput] = useState('30');
 
@@ -99,7 +101,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
 
   const toggleCategoria = (categoria) => {
     setCategoriasAbiertas((actual) => {
-      const siguiente = new Set(actual);
+      const siguiente = actual === null ? new Set(categories) : new Set(actual);
       if (siguiente.has(categoria)) siguiente.delete(categoria);
       else siguiente.add(categoria);
       return siguiente;
@@ -110,7 +112,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
     setSearch(valor);
     const consulta = valor.trim().toLowerCase();
     if (!consulta) {
-      setCategoriasAbiertas(new Set());
+      setCategoriasAbiertas(null);
       return;
     }
     setCategoriasAbiertas(new Set(products.filter(producto => (
@@ -265,7 +267,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
           21 tarjetas de 60px de alto: nada agrupaba y nada terminaba. */}
       {!loading && products.length > 0 && (
       <div className="ag-productos-cuerpo">
-        <div className="ag-productos-categorias">
+        <div className={`ag-productos-categorias${operativo ? ' esta-operativo' : ''}`}>
         <div className="ag-productos-categorias-titulo">
           <h2>Categorías</h2>
           <div className="ag-categorias-config">
@@ -307,7 +309,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
           </div>
         </div>
         {groups.map(([cat, items]) => {
-          const abierta = categoriasAbiertas.has(cat);
+          const abierta = categoriasAbiertas === null || categoriasAbiertas.has(cat);
           const bajoMinimo = items.filter((producto) => {
             const calculado = margenDe(producto);
             return calculado && calculado.pct < minimoMargenPct;

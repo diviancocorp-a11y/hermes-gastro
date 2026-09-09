@@ -140,14 +140,14 @@ describe('lista compacta de Productos', () => {
     { id: 'p2', name: 'Dos', price: 200, active: true, category: 'Principales' },
   ];
 
-  it('nace con las categorias plegadas y abre toda la cabecera', () => {
+  it('nace con las categorias abiertas y permite plegarlas desde toda la cabecera', () => {
     render(<ProductsPanel {...props} products={products} />);
 
     expect(screen.getByRole('heading', { level: 2, name: 'Categorías' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Editar Uno' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Abrir categoría Bebidas' }));
     expect(screen.getByRole('button', { name: 'Editar Uno' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Cerrar categoría Bebidas' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar categoría Bebidas' }));
+    expect(screen.queryByRole('button', { name: 'Editar Uno' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Abrir categoría Bebidas' })).toBeTruthy();
   });
 
   it('abre el grupo que contiene una coincidencia de busqueda', () => {
@@ -256,6 +256,7 @@ describe('acciones en vivo de Productos', () => {
 
       const cuerpo = container.querySelector('.ag-productos-cuerpo');
       expect(cuerpo.firstElementChild).toHaveClass('ag-productos-categorias');
+      expect(cuerpo.firstElementChild).toHaveClass('esta-operativo');
       expect(container.querySelector('.ag-gestion-productos')).toHaveClass('esta-operativo');
       expect(screen.getByLabelText('1 impulsos pendientes')).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Abrir acciones de Dico' }).textContent).toBe('');
@@ -299,12 +300,14 @@ describe('acciones en vivo de Productos', () => {
       />);
 
       expect(screen.getByText('DICO ANALIZA')).toBeTruthy();
-      expect(screen.getByRole('heading', { name: 'Ingeniería de menú' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Sistema Kasavana' })).toBeTruthy();
       expect(container.querySelector('.ag-gestion-flecha')).not.toHaveClass('esta-abierta');
       fireEvent.click(screen.getByRole('button', { name: 'Abrir acciones de Dico' }));
       expect(container.querySelector('.ag-gestion-flecha')).toHaveClass('esta-abierta');
       expect(screen.queryByRole('combobox')).toBeNull();
       expect(container.querySelector('.ag-kasavana-resumen-general').textContent).toContain('1 clasificados');
+      expect(screen.queryByText('Margen ↑')).toBeNull();
+      expect(screen.queryByText('Popularidad →')).toBeNull();
       fireEvent.click(screen.getByRole('button', { name: 'Cómo funciona la matriz Kasavana' }));
       expect(screen.getByRole('note').textContent).toMatch(/Michael L. Kasavana y Donald I. Smith/);
       expect(screen.getByRole('note').textContent).toMatch(/1982/);
@@ -317,15 +320,15 @@ describe('acciones en vivo de Productos', () => {
       expect(screen.getByText(/RECOMENDACIÓN DE DICO/)).toBeTruthy();
       fireEvent.click(screen.getByRole('button', { name: /Volver al ranking/ }));
       expect(screen.getByText(/Rentables · populares/)).toBeTruthy();
-      fireEvent.click(screen.getByRole('button', { name: /Ingeniería de menú/ }));
-      expect(screen.getByRole('heading', { name: 'Ingeniería de menú' })).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: /Sistema Kasavana/ }));
+      expect(screen.getByRole('heading', { name: 'Sistema Kasavana' })).toBeTruthy();
       fireEvent.click(screen.getByRole('button', { name: /Resumen Dico/ }));
       expect(screen.getByRole('heading', { name: 'Resumen Dico' })).toBeTruthy();
       expect(container.querySelector('.ag-gestion-contenido')).toBeVisible();
       expect(screen.queryByText('DICO ANALIZA')).toBeNull();
       expect(screen.queryByText('IR DIRECTO A')).toBeNull();
       expect(onDicoResumenChange).toHaveBeenLastCalledWith(true);
-      fireEvent.click(screen.getByRole('button', { name: /Ingeniería de menú/ }));
+      fireEvent.click(screen.getByRole('button', { name: /Sistema Kasavana/ }));
       expect(onDicoResumenChange).toHaveBeenLastCalledWith(false);
     } finally {
       window.matchMedia = matchMediaOriginal;
