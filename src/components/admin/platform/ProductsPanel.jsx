@@ -408,6 +408,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
           recetas={recetas}
           ingredientes={ingredientes}
           settings={settings}
+          busqueda={search}
           operativo={operativo}
           minutosOperando={minutosOperando}
           turno={turno}

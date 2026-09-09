@@ -294,7 +294,7 @@ function PerfilProducto({ seleccion, ventas7, kasavana, onVolver }) {
 export default function GestionProductosPanel({
   products, orders, itemsPorPedido, recetas, ingredientes, settings,
   operativo, turno, turnosPrevios, minutosOperando, onToggleActive, onImpulsar,
-  onIr, showToast, timezone, onDicoResumenChange,
+  onIr, showToast, timezone, onDicoResumenChange, busqueda = '',
 }) {
   const esMobile = useMediaQuery('(max-width: 768px)');
   const [impulsados, setImpulsados] = useState(() => new Set());
@@ -332,7 +332,30 @@ export default function GestionProductosPanel({
     { tipo: 'enigma', titulo: 'Enigmas', ayuda: 'Rentables · poca salida', descripcion: 'Tienen buen margen y necesitan más visibilidad o recomendación.', icono: '🧩', items: kasavana.cuadrantes.enigmas },
     { tipo: 'perro', titulo: 'Perros', ayuda: 'Poca salida · bajo margen', descripcion: 'Piden una decisión: reformular, reposicionar o considerar retiro.', icono: '🐕', items: kasavana.cuadrantes.perros },
   ]), [kasavana]);
-  const cuadranteActual = cuadrantes.find(c => c.tipo === cuadranteSeleccionado) || null;
+  const consulta = busqueda.trim().toLocaleLowerCase('es-AR');
+  const cuadrantesEnVista = useMemo(() => {
+    if (!consulta) return cuadrantes;
+    return cuadrantes.map(cuadrante => ({
+      ...cuadrante,
+      items: cuadrante.items.filter(item => (
+        item.producto.name.toLocaleLowerCase('es-AR').includes(consulta)
+        || (item.categoria || '').toLocaleLowerCase('es-AR').includes(consulta)
+      )),
+    }));
+  }, [consulta, cuadrantes]);
+  const productosBuscados = useMemo(() => {
+    if (!consulta) return [];
+    return products.filter(producto => (
+      producto.name.toLocaleLowerCase('es-AR').includes(consulta)
+      || (producto.category || '').toLocaleLowerCase('es-AR').includes(consulta)
+    )).map(producto => ({
+      producto,
+      cuadrante: cuadrantes.find(cuadrante => (
+        cuadrante.items.some(item => item.producto.id === producto.id)
+      )),
+    }));
+  }, [consulta, products, cuadrantes]);
+  const cuadranteActual = cuadrantesEnVista.find(c => c.tipo === cuadranteSeleccionado) || null;
 
   // El tiempo de turno y el contador cambian sin exigir otra navegacion.
   // Los pedidos entrantes actualizan `orders`; este reloj refresca la duracion.
@@ -368,7 +391,7 @@ export default function GestionProductosPanel({
   };
 
   const abrirProducto = (item, tipo, ranking) => {
-    const cuadrante = cuadrantes.find(c => c.tipo === tipo);
+    const cuadrante = cuadrantesEnVista.find(c => c.tipo === tipo);
     scrollAnterior.current = panelRef.current?.scrollTop || 0;
     setSeleccion({ item, tipo, ranking, titulo: cuadrante.titulo, icono: cuadrante.icono });
     llevarAlInicio();
@@ -477,6 +500,16 @@ export default function GestionProductosPanel({
             />
           ) : (
             <>
+              {consulta && (
+                <div className="ag-dico-busqueda" role="status">
+                  <span>RESULTADO DE BÚSQUEDA</span>
+                  {productosBuscados.length > 0 ? productosBuscados.map(({ producto, cuadrante }) => (
+                    <strong key={producto.id}>
+                      {producto.name} · {cuadrante ? `${cuadrante.icono} ${cuadrante.titulo}` : 'sin cuadrante'}
+                    </strong>
+                  )) : <p>No hay productos que coincidan con “{busqueda}”.</p>}
+                </div>
+              )}
               {!operativo && infoAbierta && (
                 <aside className="ag-kasavana-info" id="ag-kasavana-info" role="note">
                   El modelo nació en 1982 con Michael L. Kasavana y Donald I. Smith, profesores de la
@@ -540,7 +573,7 @@ export default function GestionProductosPanel({
 
                   {kasavana.productosAnalizados > 0 ? (
                     <div className="ag-kasavana">
-                      {cuadrantes.map(cuadrante => (
+                      {cuadrantesEnVista.map(cuadrante => (
                         <CuadranteResumen
                           key={cuadrante.tipo}
                           {...cuadrante}

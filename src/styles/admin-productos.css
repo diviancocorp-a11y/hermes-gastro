@@ -340,6 +340,22 @@
 }
 .ag-kasavana-info cite { color: var(--ag-ink); font-style: normal; font-weight: 650; }
 
+.ag-dico-busqueda {
+  display: grid;
+  gap: var(--ag-sp-1);
+  margin-bottom: var(--ag-sp-3);
+  padding: var(--ag-sp-2) var(--ag-sp-3);
+  border-left: 2px solid var(--ag-accent-border);
+  background: color-mix(in srgb, var(--ag-volt) 8%, var(--ag-bg-card));
+}
+.ag-dico-busqueda > span {
+  font: 700 9px/1.2 var(--ag-font-mono);
+  color: var(--ag-ink-3);
+  letter-spacing: .05em;
+}
+.ag-dico-busqueda strong { font-size: 12px; color: var(--ag-ink); }
+.ag-dico-busqueda p { margin: 0; font-size: 11px; color: var(--ag-ink-2); }
+
 .ag-gestion-estado {
   display: inline-flex;
   align-items: center;
