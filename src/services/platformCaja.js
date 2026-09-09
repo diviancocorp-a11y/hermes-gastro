@@ -28,6 +28,10 @@ const MENSAJES = {
   // caja cobro el saldo en el medio.
   monto_supera_el_saldo: 'No se puede cobrar más que lo que falta del pedido.',
   pedido_ya_saldado: 'Ese pedido ya está pago.',
+  hay_mesas_abiertas: 'Todavía hay mesas con cuenta abierta.',
+  hay_rendiciones_pendientes: 'Faltan revisar rendiciones del equipo.',
+  hay_incidencias_criticas: 'Hay incidencias críticas pendientes.',
+  faltan_comprobantes_verificados: 'Faltan verificar comprobantes de tarjeta.',
 };
 
 function traducir(msg) {
@@ -171,6 +175,68 @@ export async function fetchPagosDePedido(orderId) {
     return [];
   }
   return data || [];
+}
+
+/* -------------------- Rendiciones e incidencias ---------------------- */
+
+export async function fetchRendicionesCaja(tenantId, branchId, cashSessionId) {
+  let q = supabase.from('staff_cash_settlements').select(
+    'id, tenant_id, branch_id, cash_session_id, staff_id, status, expected_cash, declared_cash, difference, notes, submitted_at, review_notes, cash_received_at, staff(name)',
+  ).eq('tenant_id', tenantId).order('submitted_at', { ascending: false });
+  if (branchId) q = q.eq('branch_id', branchId);
+  if (cashSessionId) q = q.eq('cash_session_id', cashSessionId);
+  const { data, error } = await q;
+  if (error) {
+    console.error('fetchRendicionesCaja:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+export async function revisarRendicion(settlementId, decision, notes = null) {
+  const { data, error } = await supabase.rpc('review_staff_cash_settlement', {
+    p_settlement_id: settlementId,
+    p_decision: decision,
+    p_notes: notes,
+  });
+  if (error) return { __error: 'db', message: traducir(error.message) };
+  return { ok: true, rendicion: data };
+}
+
+export async function fetchIncidenciasCaja(tenantId, branchId, { abiertas = true } = {}) {
+  let q = supabase.from('cash_exceptions').select(
+    'id, tenant_id, branch_id, cash_session_id, settlement_id, order_id, payment_id, kind, severity, status, title, description, context, reported_by, assigned_to, resolution, created_at, resolved_at',
+  ).eq('tenant_id', tenantId).order('created_at', { ascending: false });
+  if (branchId) q = q.eq('branch_id', branchId);
+  if (abiertas) q = q.in('status', ['open', 'in_review']);
+  const { data, error } = await q;
+  if (error) {
+    console.error('fetchIncidenciasCaja:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+export async function resolverIncidencia(exceptionId, resolution, dismiss = false) {
+  const { data, error } = await supabase.rpc('resolve_cash_exception', {
+    p_exception_id: exceptionId,
+    p_resolution: resolution,
+    p_dismiss: dismiss,
+  });
+  if (error) return { __error: 'db', message: traducir(error.message) };
+  return { ok: true, incidencia: data };
+}
+
+export async function fetchBloqueosCaja(sessionId) {
+  if (!sessionId) return { open_tables: 0, pending_settlements: 0, critical_exceptions: 0 };
+  const { data, error } = await supabase.rpc('cash_session_blockers', {
+    p_session_id: sessionId,
+  });
+  if (error) {
+    console.error('fetchBloqueosCaja:', error.message);
+    return null;
+  }
+  return data;
 }
 
 /* ───────────────────────── Comanda de salon ─────────────────────────── */

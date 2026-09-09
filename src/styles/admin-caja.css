@@ -1,0 +1,154 @@
+.ag-caja-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 440px) minmax(360px, 1fr);
+  align-items: start;
+  gap: 20px;
+  width: min(100%, 1040px);
+}
+
+.ag-caja-arqueo,
+.ag-caja-supervision {
+  display: grid;
+  gap: 16px;
+}
+
+.ag-caja-supervision {
+  padding: 18px;
+  border: 1px solid var(--ag-line);
+  border-top: 2px solid var(--ag-accent);
+  border-radius: 6px;
+  background: var(--ag-surface);
+}
+
+.ag-caja-supervision > header,
+.ag-caja-fila-head,
+.ag-caja-subhead,
+.ag-caja-resolver,
+.ag-caja-acciones,
+.ag-caja-bloqueos {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ag-caja-supervision h2,
+.ag-caja-supervision h3,
+.ag-caja-supervision p {
+  margin: 0;
+}
+
+.ag-caja-supervision h2 { font-size: 20px; }
+.ag-caja-supervision h3 { font-size: 13px; }
+
+.ag-caja-kicker,
+.ag-caja-cuenta,
+.ag-caja-subhead > span,
+.ag-caja-fila-head > span,
+.ag-caja-bloqueos,
+.ag-caja-fiscal small {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.ag-caja-kicker { color: var(--ag-accent); }
+.ag-caja-cuenta,
+.ag-caja-subhead > span { color: var(--ag-ink-3); }
+
+.ag-caja-subhead {
+  padding-top: 14px;
+  border-top: 1px solid var(--ag-line);
+}
+
+.ag-caja-fila {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--ag-line);
+  border-radius: 5px;
+  background: var(--ag-bg-soft, var(--ag-surface-2));
+}
+
+.ag-caja-fila[data-severity="critical"] {
+  border-left: 2px solid var(--ag-bad);
+}
+
+.ag-caja-fila-head strong { font-size: 13px; }
+.ag-caja-fila-head > span[data-status="closed"] { color: var(--ag-ok); }
+.ag-caja-fila-head > span[data-status="observed"],
+.ag-caja-fila[data-severity="critical"] .ag-caja-fila-head > span { color: var(--ag-bad); }
+
+.ag-caja-numeros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  font-size: 10px;
+  color: var(--ag-ink-3);
+}
+
+.ag-caja-numeros b {
+  display: block;
+  margin-top: 3px;
+  color: var(--ag-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.ag-caja-fila input,
+.ag-caja-resolver input {
+  min-width: 0;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--ag-line);
+  border-radius: 4px;
+  background: var(--ag-surface);
+  color: var(--ag-ink);
+  font: inherit;
+  font-size: 12px;
+}
+
+.ag-caja-acciones { justify-content: flex-end; flex-wrap: wrap; }
+.ag-caja-acciones button,
+.ag-caja-resolver button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--ag-line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ag-ink);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ag-caja-acciones button.es-primaria {
+  border-color: var(--ag-accent);
+  background: var(--ag-accent);
+  color: #18120a;
+}
+
+.ag-caja-resolver button:disabled { cursor: not-allowed; opacity: 0.45; }
+.ag-caja-fila p,
+.ag-caja-vacio { color: var(--ag-ink-3); font-size: 12px; }
+
+.ag-caja-fiscal {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+.ag-caja-fiscal small { color: var(--ag-ink-3); }
+
+.ag-caja-bloqueos {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--ag-line);
+  color: var(--ag-ink-3);
+}
+
+@media (max-width: 760px) {
+  .ag-caja-layout { grid-template-columns: 1fr; }
+  .ag-caja-supervision { padding: 14px; }
+  .ag-caja-numeros { grid-template-columns: 1fr 1fr; }
+}

@@ -47,7 +47,12 @@ import {
 import { fetchDefaultBranch } from '../services/platformInventoryLedger';
 import {
   fetchTurnoAbierto, fetchTurnos, abrirTurno, cerrarTurno, esperadoEnCaja,
+  fetchRendicionesCaja, fetchIncidenciasCaja, fetchBloqueosCaja,
+  revisarRendicion, resolverIncidencia,
 } from '../services/platformCaja';
+import {
+  fetchPerfilFiscal, fetchDocumentosFiscales, encolarFactura, procesarFactura,
+} from '../services/platformFiscal';
 import {
   fetchPersonal, fetchFichajesAbiertos, ficharEntrada, ficharSalida,
   fetchCostoLaboral,
@@ -122,6 +127,7 @@ import '../styles/admin-shared.css';
 // Golden Screen de Phase 4. Va despues de admin-shared para poder ajustar
 // .ag-btn-mini y .ag-cta DENTRO de la pantalla sin tocarlos en el resto.
 import '../styles/admin-productos.css';
+import '../styles/admin-caja.css';
 // Machine Soul (Phase 3B): reemplaza la capa visual del shell. Va ultimo
 // a proposito, para pisar la de admin-topbar/bottomnav sin tocar su markup.
 import '../styles/admin-shell.css';
@@ -198,6 +204,11 @@ export default function PlatformAdmin() {
   const [minutosOperando, setMinutosOperando] = useState(null);
   const [turnosPrevios, setTurnosPrevios] = useState([]);
   const [esperado, setEsperado] = useState(0);
+  const [rendicionesCaja, setRendicionesCaja] = useState([]);
+  const [incidenciasCaja, setIncidenciasCaja] = useState([]);
+  const [bloqueosCaja, setBloqueosCaja] = useState(null);
+  const [perfilFiscal, setPerfilFiscal] = useState(null);
+  const [documentosFiscales, setDocumentosFiscales] = useState([]);
   const [equipo, setEquipo] = useState([]);
   const [fichajes, setFichajes] = useState([]);
   const [costoLaboral, setCostoLaboral] = useState(null);
@@ -340,13 +351,25 @@ export default function PlatformAdmin() {
     setCajaCargada(false);
     try {
       const b = await fetchDefaultBranch(tenantId);
-      const [abierto, previos] = await Promise.all([
+      const [abierto, previos, perfil, documentos] = await Promise.all([
         fetchTurnoAbierto(tenantId, b?.id),
         fetchTurnos(tenantId, b?.id, { limit: 10 }),
+        fetchPerfilFiscal(tenantId),
+        fetchDocumentosFiscales(tenantId, { limit: 20 }),
       ]);
       setTurno(abierto);
       setTurnosPrevios((previos || []).filter(t => t.status === 'closed'));
       setEsperado(abierto ? await esperadoEnCaja(abierto.id) : 0);
+      const [rendiciones, incidencias, bloqueos] = await Promise.all([
+        fetchRendicionesCaja(tenantId, b?.id, abierto?.id),
+        fetchIncidenciasCaja(tenantId, b?.id),
+        fetchBloqueosCaja(abierto?.id),
+      ]);
+      setRendicionesCaja(rendiciones);
+      setIncidenciasCaja(incidencias);
+      setBloqueosCaja(bloqueos);
+      setPerfilFiscal(perfil);
+      setDocumentosFiscales(documentos);
     } finally {
       setCajaCargada(true);
     }
@@ -390,7 +413,7 @@ export default function PlatformAdmin() {
     if (r.__error) { msg(r.message); return; }
     msg(estaAdentro ? 'Salida registrada' : 'Entrada registrada');
     loadEquipo();
-  }, [tenantId, loadEquipo]);
+  }, [tenantId, loadEquipo, msg]);
 
   const onAbrirCaja = useCallback(async (monto, notas) => {
     const b = await fetchDefaultBranch(tenantId);
@@ -398,7 +421,7 @@ export default function PlatformAdmin() {
     if (r.__error) { msg(r.message); return; }
     msg('Caja abierta');
     loadCaja();
-  }, [tenantId, loadCaja]);
+  }, [tenantId, loadCaja, msg]);
 
   const onCerrarCaja = useCallback(async (contado, notas) => {
     if (!turno) return;
@@ -409,7 +432,21 @@ export default function PlatformAdmin() {
     msg(d === 0 ? 'Caja cerrada, cerró justo'
       : `Caja cerrada · ${d < 0 ? 'faltan' : 'sobran'} ${Math.abs(d)}`);
     loadCaja();
-  }, [turno, loadCaja]);
+  }, [turno, loadCaja, msg]);
+
+  const onRevisarRendicion = useCallback(async (id, decision, notes) => {
+    const r = await revisarRendicion(id, decision, notes);
+    if (r.__error) { msg(r.message); return; }
+    msg(decision === 'approve' ? 'Rendición cerrada' : 'Rendición actualizada');
+    loadCaja();
+  }, [loadCaja, msg]);
+
+  const onResolverIncidencia = useCallback(async (id, resolution) => {
+    const r = await resolverIncidencia(id, resolution);
+    if (r.__error) { msg(r.message); return; }
+    msg('Incidencia resuelta');
+    loadCaja();
+  }, [loadCaja, msg]);
 
   /* ── Alta y edicion de mesas (6c) ──
      El borrador hereda forma y capacidad de la ultima cargada y propone el
@@ -433,14 +470,14 @@ export default function PlatformAdmin() {
     msg(datos.id ? 'Mesa guardada' : `${datos.name} agregada`);
     loadSalon();
     return r;
-  }, [tenantId, branch, loadSalon]);
+  }, [tenantId, branch, loadSalon, msg]);
 
   const archivarMesa = useCallback(async (id) => {
     const ok = await archiveResource(tenantId, id);
     msg(ok ? 'Mesa dada de baja' : 'No se pudo dar de baja');
     if (ok) loadSalon();
     return ok;
-  }, [tenantId, loadSalon]);
+  }, [tenantId, loadSalon, msg]);
 
   const moverRecurso = useCallback(async (id, pos) => {
     const ok = await moveResource(tenantId, id, pos);
@@ -449,7 +486,7 @@ export default function PlatformAdmin() {
     // solto mostraria un salon que no existe en la base.
     if (!ok) { msg('No se pudo guardar la posición'); loadSalon(); }
     return ok;
-  }, [tenantId, loadSalon]);
+  }, [tenantId, loadSalon, msg]);
 
   useEffect(() => {
     if (!ready || !tenantId) return;
@@ -616,12 +653,21 @@ export default function PlatformAdmin() {
       if (res?.__error) return res;
       setOrders(list => list.map(o => (o.id === id ? { ...o, status: next } : o)));
       if (res.sales?.length) setVentas(prev => [...res.sales, ...prev]);
+      if (perfilFiscal?.enabled && perfilFiscal.auto_issue) {
+        const queued = await encolarFactura(tenantId, id);
+        if (queued.__error) {
+          msg('Cuenta cerrada. No se pudo crear la solicitud fiscal.');
+        } else {
+          msg('Cuenta cerrada. Factura en proceso con ARCA.');
+          procesarFactura(queued.documento.id).then(() => loadCaja());
+        }
+      }
       return true;
     }
     const res = await setOrderStatus(id, next);
     if (res === true) setOrders(list => list.map(o => (o.id === id ? { ...o, status: next } : o)));
     return res;
-  }, []);
+  }, [loadCaja, msg, perfilFiscal, tenantId]);
 
   // ── Etapa 4: venta manual ──
   const crearVenta = useCallback((s) => createSale(tenantId, s), [tenantId]);
@@ -1091,8 +1137,15 @@ export default function PlatformAdmin() {
                 turno={turno}
                 esperado={esperado}
                 turnosPrevios={turnosPrevios}
+                rendiciones={rendicionesCaja}
+                incidencias={incidenciasCaja}
+                bloqueos={bloqueosCaja}
+                perfilFiscal={perfilFiscal}
+                documentosFiscales={documentosFiscales}
                 onAbrir={onAbrirCaja}
                 onCerrar={onCerrarCaja}
+                onRevisarRendicion={onRevisarRendicion}
+                onResolverIncidencia={onResolverIncidencia}
                 onRefrescarEsperado={loadCaja}
               />
             </Suspense>

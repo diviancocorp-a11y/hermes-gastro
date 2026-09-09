@@ -52,12 +52,143 @@ function Linea({ label, valor, fuerte, tono }) {
   );
 }
 
+const RENDICION_LABEL = {
+  submitted: 'Presentada', under_review: 'En revisión', observed: 'Observada',
+  approved: 'Aprobada', closed: 'Cerrada',
+};
+
+function Rendicion({ item, onRevisar }) {
+  const [notas, setNotas] = useState('');
+  const pendiente = item.status !== 'closed';
+  return (
+    <article className="ag-caja-fila">
+      <div className="ag-caja-fila-head">
+        <strong>{item.staff?.name || 'Integrante del equipo'}</strong>
+        <span data-status={item.status}>{RENDICION_LABEL[item.status] || item.status}</span>
+      </div>
+      <div className="ag-caja-numeros">
+        <span>Esperado <b>{money(item.expected_cash)}</b></span>
+        <span>Declarado <b>{money(item.declared_cash)}</b></span>
+        <span>Diferencia <b>{money(item.difference)}</b></span>
+      </div>
+      {pendiente && (
+        <>
+          <input
+            value={notas}
+            onChange={(event) => setNotas(event.target.value)}
+            placeholder="Nota de revisión"
+            aria-label={`Nota para ${item.staff?.name || 'la rendición'}`}
+          />
+          <div className="ag-caja-acciones">
+            {item.status === 'submitted' && (
+              <button type="button" onClick={() => onRevisar?.(item.id, 'review', notas)}>
+                Revisar
+              </button>
+            )}
+            <button type="button" onClick={() => onRevisar?.(item.id, 'observe', notas)}>
+              Observar
+            </button>
+            <button className="es-primaria" type="button"
+              onClick={() => onRevisar?.(item.id, 'approve', notas)}>
+              Recibir y cerrar
+            </button>
+          </div>
+        </>
+      )}
+    </article>
+  );
+}
+
+function Incidencia({ item, onResolver }) {
+  const [resolucion, setResolucion] = useState('');
+  return (
+    <article className="ag-caja-fila" data-severity={item.severity}>
+      <div className="ag-caja-fila-head">
+        <strong>{item.title}</strong>
+        <span>{item.severity === 'critical' ? 'Crítica' : 'Requiere revisión'}</span>
+      </div>
+      {item.description && <p>{item.description}</p>}
+      <div className="ag-caja-resolver">
+        <input value={resolucion} onChange={(event) => setResolucion(event.target.value)}
+          placeholder="Cómo se resolvió" aria-label={`Resolución de ${item.title}`} />
+        <button type="button" disabled={resolucion.trim().length < 4}
+          onClick={() => onResolver?.(item.id, resolucion)}>
+          Resolver
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function Supervision({
+  turno, rendiciones, incidencias, bloqueos, perfilFiscal, documentosFiscales,
+  onRevisarRendicion, onResolverIncidencia,
+}) {
+  const fiscalesPendientes = documentosFiscales.filter((item) =>
+    ['queued', 'processing', 'retry_required', 'rejected'].includes(item.status));
+  return (
+    <aside className="ag-caja-supervision" aria-label="Supervisión de caja">
+      <header>
+        <div>
+          <span className="ag-caja-kicker">CONTROL DE TURNO</span>
+          <h2>Rendiciones</h2>
+        </div>
+        <span className="ag-caja-cuenta">{rendiciones.filter(r => r.status !== 'closed').length} pendientes</span>
+      </header>
+
+      {!turno ? (
+        <p className="ag-caja-vacio">Las mini cajas aparecen cuando el turno está abierto.</p>
+      ) : rendiciones.length === 0 ? (
+        <p className="ag-caja-vacio">Todavía no se presentaron rendiciones.</p>
+      ) : rendiciones.map(item => (
+        <Rendicion key={item.id} item={item} onRevisar={onRevisarRendicion} />
+      ))}
+
+      <div className="ag-caja-subhead">
+        <h3>Incidencias</h3>
+        <span>{incidencias.length} abiertas</span>
+      </div>
+      {incidencias.length === 0
+        ? <p className="ag-caja-vacio">No hay puntos pendientes para el encargado.</p>
+        : incidencias.map(item => (
+          <Incidencia key={item.id} item={item} onResolver={onResolverIncidencia} />
+        ))}
+
+      <div className="ag-caja-subhead">
+        <h3>Facturación ARCA</h3>
+        <span>{perfilFiscal?.enabled ? 'Activa' : 'Sin configurar'}</span>
+      </div>
+      <div className="ag-caja-fiscal">
+        <span>{fiscalesPendientes.length} comprobantes requieren seguimiento</span>
+        {perfilFiscal?.enabled && (
+          <small>PV {String(perfilFiscal.point_of_sale).padStart(5, '0')} · {perfilFiscal.environment === 'production' ? 'Producción' : 'Homologación'}</small>
+        )}
+      </div>
+
+      {turno && bloqueos && (
+        <div className="ag-caja-bloqueos" aria-label="Bloqueos del cierre">
+          <span>{bloqueos.open_tables || 0} mesas abiertas</span>
+          <span>{bloqueos.pending_settlements || 0} rendiciones</span>
+          <span>{bloqueos.critical_exceptions || 0} críticas</span>
+        </div>
+      )}
+    </aside>
+  );
+}
+
 export default function CajaPanel({
   turno,               // la sesion abierta, o null
   esperado,            // numero: lo que deberia haber en el cajon
   turnosPrevios = [],
+  rendiciones = [],
+  incidencias = [],
+  bloqueos = null,
+  perfilFiscal = null,
+  documentosFiscales = [],
   onAbrir,             // (montoInicial, notas) -> Promise
   onCerrar,            // (montoContado, notas) -> Promise
+  onRevisarRendicion,
+  onResolverIncidencia,
   onRefrescarEsperado,
   cargando = false,
 }) {
@@ -88,7 +219,8 @@ export default function CajaPanel({
   /* ── Sin turno abierto: apertura ── */
   if (!turno) {
     return (
-      <section className="cp-root" style={{ display: 'grid', gap: 16, maxWidth: 460 }}>
+      <section className="cp-root ag-caja-layout">
+        <div className="ag-caja-arqueo">
         <div style={papel}>
           <div style={{ textAlign: 'center', letterSpacing: '0.14em', fontSize: 12, opacity: 0.6 }}>
             CAJA CERRADA
@@ -148,13 +280,22 @@ export default function CajaPanel({
             </div>
           </details>
         )}
+        </div>
+        <Supervision
+          turno={turno} rendiciones={rendiciones} incidencias={incidencias}
+          bloqueos={bloqueos} perfilFiscal={perfilFiscal}
+          documentosFiscales={documentosFiscales}
+          onRevisarRendicion={onRevisarRendicion}
+          onResolverIncidencia={onResolverIncidencia}
+        />
       </section>
     );
   }
 
   /* ── Turno abierto: arqueo y cierre ── */
   return (
-    <section className="cp-root" style={{ display: 'grid', gap: 16, maxWidth: 460 }}>
+    <section className="cp-root ag-caja-layout">
+      <div className="ag-caja-arqueo">
       <div style={papel}>
         <div style={{ textAlign: 'center', letterSpacing: '0.14em', fontSize: 12, opacity: 0.6 }}>
           TURNO ABIERTO
@@ -240,6 +381,14 @@ export default function CajaPanel({
           {confirmando ? '¿Seguro? Tocá de nuevo' : 'Cerrar caja'}
         </button>
       </div>
+      </div>
+      <Supervision
+        turno={turno} rendiciones={rendiciones} incidencias={incidencias}
+        bloqueos={bloqueos} perfilFiscal={perfilFiscal}
+        documentosFiscales={documentosFiscales}
+        onRevisarRendicion={onRevisarRendicion}
+        onResolverIncidencia={onResolverIncidencia}
+      />
     </section>
   );
 }
