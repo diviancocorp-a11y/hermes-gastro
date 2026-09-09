@@ -32,7 +32,7 @@ import {
 import useMediaQuery from '../lib/useMediaQuery';
 import { intervencionDe, sigueVigente } from '../modules/dico/intervenciones';
 import {
-  fetchProducts, upsertProduct, setProductActive, deleteProduct,
+  fetchProducts, upsertProduct, setProductActive, archiveProduct,
   fetchOrders, setOrderStatus, OPEN_ORDER_STATUSES, PlatformOrderStatus,
   fetchOrderItemsByOrder,
 } from '../services/platformAdmin';
@@ -152,6 +152,7 @@ function Centered({ children }) {
 }
 
 export default function PlatformAdmin() {
+  const productsPanelRef = useRef(null);
   const { session, tenant, role, roles, status, doLogin, doLogout } = usePlatformTenant();
 
   const [tab, setTab] = useState('products');
@@ -555,8 +556,8 @@ export default function PlatformAdmin() {
     return true;
   }, [msg, products, proponerIntervencion]);
 
-  const handleDeleteProduct = useCallback(async (id) => {
-    const res = await deleteProduct(id);
+  const handleArchiveProduct = useCallback(async (id) => {
+    const res = await archiveProduct(id);
     if (res === true) await loadProducts();
     return res;
   }, [loadProducts]);
@@ -859,6 +860,17 @@ export default function PlatformAdmin() {
             <h1 className="ag-section-title">
               {(tabs.find(t => t.id === tab) || {}).label || tenant?.name || 'Panel'}
             </h1>
+            {tab === 'products' && (
+              <button
+                type="button"
+                className="ag-productos-agregar"
+                aria-label="Agregar producto"
+                title="Agregar producto"
+                onClick={() => productsPanelRef.current?.nuevoProducto()}
+              >
+                +
+              </button>
+            )}
             {openCount > 0 && tab !== 'orders' && tab !== 'products' && (
               <span className="ag-section-meta">{openCount} en curso</span>
             )}
@@ -893,6 +905,7 @@ export default function PlatformAdmin() {
           </div>
           {tab === 'products' && (
             <ProductsPanel
+              ref={productsPanelRef}
               products={products}
               orders={orders}
               itemsPorPedido={itemsPorPedido}
@@ -911,7 +924,7 @@ export default function PlatformAdmin() {
               onToggleActive={handleToggleActive}
               onImpulsar={handleImpulsarProducto}
               onDicoResumenChange={setResumenDicoActivo}
-              onDelete={handleDeleteProduct}
+              onArchive={handleArchiveProduct}
               onSubirImagen={subirImagenProducto}
               showToast={msg}
               intervencionActiva={intervencion?.id === 'catalogo-vacio' && !catalogoVacioAngosto}

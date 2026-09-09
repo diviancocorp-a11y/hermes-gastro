@@ -8,7 +8,7 @@
  * combos: el edificio no tiene modelo de costos todavia. Un producto es
  * nombre + precio + categoria.
  */
-import { useState, useMemo } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useState } from 'react';
 import { useConfirm } from '../../ConfirmSlideProvider';
 import ProductEditor from './ProductEditor';
 import { categoriesFrom, normalizarCategoriaProducto } from '../../../services/platformAdmin';
@@ -21,8 +21,8 @@ function money(n) {
   return `$${Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
 }
 
-export default function ProductsPanel({
-  products, vertical, loading, onSave, onToggleActive, onDelete, showToast,
+const ProductsPanel = forwardRef(function ProductsPanel({
+  products, vertical, loading, onSave, onToggleActive, onArchive, showToast,
   /**
    * Cuando Dico Physical esta atendiendo el catalogo vacio, esta pantalla NO
    * monta su propia escena 2D: serian dos Dicos a la vez. Publica el nodo al
@@ -35,11 +35,15 @@ export default function ProductsPanel({
   orders = [], itemsPorPedido = null, operativo = false, turno = null, minutosOperando = null,
   turnosPrevios = [], timezone = null, onImpulsar = null, onIr = null,
   onDicoResumenChange = null,
-}) {
+}, ref) {
   const confirmSlide = useConfirm();
   const [editing, setEditing] = useState(null); // objeto producto | 'new' | null
   const [search, setSearch] = useState('');
   const [categoriasAbiertas, setCategoriasAbiertas] = useState(() => new Set());
+
+  useImperativeHandle(ref, () => ({
+    nuevoProducto: () => setEditing('new'),
+  }), []);
 
   // Como se llama lo que vende este negocio. Un corte de pelo no es un
   // "producto": la palabra cambia toda la pantalla.
@@ -81,6 +85,10 @@ export default function ProductsPanel({
   }, [products, categories]);
 
   // Agrupado por categoria, respetando el orden que ya trae el service.
+  const margenDe = useCallback((producto) => recetas
+    ? margen(producto, recetas.get(producto.id), insumosPorId, settings)
+    : null, [recetas, insumosPorId, settings]);
+
   const groups = useMemo(() => {
     const map = new Map();
     for (const p of filtered) {
@@ -88,8 +96,18 @@ export default function ProductsPanel({
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(p);
     }
-    return [...map.entries()];
-  }, [filtered, categories]);
+    return [...map.entries()]
+      .map(([key, items]) => [key, [...items].sort((a, b) => {
+        const margenA = margenDe(a)?.pct ?? -Infinity;
+        const margenB = margenDe(b)?.pct ?? -Infinity;
+        return margenB - margenA || a.name.localeCompare(b.name, 'es');
+      })])
+      .sort((a, b) => {
+        const mejorA = margenDe(a[1][0])?.pct ?? -Infinity;
+        const mejorB = margenDe(b[1][0])?.pct ?? -Infinity;
+        return mejorB - mejorA || a[0].localeCompare(b[0], 'es');
+      });
+  }, [filtered, categories, margenDe]);
 
   const toggleCategoria = (categoria) => {
     setCategoriasAbiertas((actual) => {
@@ -126,14 +144,14 @@ export default function ProductsPanel({
 
   const handleDelete = async (p) => {
     const ok = await confirmSlide({
-      title: `Eliminar ${p.name}`,
-      body: 'Se borra del catálogo para siempre. Si solo querés que deje de venderse, apagá "Visible" y listo.',
-      label: 'Deslizá para eliminar',
+      title: `Archivar ${p.name}`,
+      body: 'Sale del catálogo, pero conserva pedidos, receta e historial para siempre.',
+      label: 'Deslizá para archivar',
     });
     if (!ok) return;
-    const res = await onDelete(p.id);
+    const res = await onArchive(p.id);
     if (res?.__error) { showToast?.(res.message); return; }
-    showToast?.('Producto eliminado');
+    showToast?.('Producto archivado · historial conservado');
   };
 
   /* ── Formulario a pantalla completa ── */
@@ -194,15 +212,6 @@ export default function ProductsPanel({
           mismo dato. */}
       {products.length > 0 && (
         <div className="ag-productos-resumen">
-          <button
-            type="button"
-            className="ag-kpi ag-kpi-accion"
-            aria-label={`+ Agregar ${t.singular}`}
-            onClick={() => setEditing('new')}
-          >
-            <span className="ag-kpi-accion-simbolo" aria-hidden="true">+</span>
-            <span className="ag-kpi-pie">Agregar {t.singular}</span>
-          </button>
           <div className="ag-kpi">
             <span className="ag-kpi-valor">{resumen.visibles}</span>
             <span className="ag-kpi-pie">en el catálogo</span>
@@ -286,7 +295,9 @@ export default function ProductsPanel({
       {!loading && products.length > 0 && (
       <div className="ag-productos-cuerpo">
         <div className="ag-productos-categorias">
-        <h2 className="ag-productos-categorias-titulo">Categorías</h2>
+        <div className="ag-productos-categorias-titulo">
+          <h2>Categorías</h2>
+        </div>
         {groups.map(([cat, items]) => {
           const abierta = categoriasAbiertas.has(cat);
           return (
@@ -311,7 +322,8 @@ export default function ProductsPanel({
               {items.map(p => {
                 // null cuando no hay receta cargada: sin insumos el costo da 0
                 // y el margen daria 100%, que es una mentira comoda.
-                const m = recetas ? margen(p, recetas.get(p.id), insumosPorId, settings) : null;
+                const m = margenDe(p);
+                const margenPct = m ? Math.max(0, Math.min(100, m.pct)) : 0;
                 return (
                 <div key={p.id} className={`ag-fila${p.active ? '' : ' esta-oculta'}`}>
                   <span className="ag-fila-foto" aria-hidden="true">
@@ -339,8 +351,11 @@ export default function ProductsPanel({
                       {!p.active && <span className="ag-fila-oculto">oculto</span>}
                       {p.duration_min ? <span>{p.duration_min} min</span> : null}
                       {m && (
-                        <span className={`ag-fila-margen ${m.ganancia >= 0 ? 'gana' : 'pierde'}`}>
-                          deja {money(m.ganancia)} ({m.pct.toFixed(0)}%)
+                        <span className="ag-fila-margen" title={`Margen ${m.pct.toFixed(0)}%`}>
+                          <span className="ag-fila-margen-barra" aria-hidden="true">
+                            <span style={{ width: `${margenPct}%` }} />
+                          </span>
+                          <span>{m.pct.toFixed(0)}%</span>
                         </span>
                       )}
                     </span>
@@ -356,20 +371,23 @@ export default function ProductsPanel({
                       title={p.active ? 'Ocultar del catálogo' : 'Mostrar en el catálogo'}
                       aria-label={p.active ? `Ocultar ${p.name}` : `Mostrar ${p.name}`}
                     >
-                      {p.active ? 'Ocultar' : 'Mostrar'}
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                        <circle cx="12" cy="12" r="2.5" />
+                        {!p.active && <path d="m4 4 16 16" />}
+                      </svg>
                     </button>
 
                     <button
                       type="button"
-                      className="ag-producto-eliminar"
+                      className="ag-producto-archivar"
                       onClick={() => handleDelete(p)}
-                      title="Eliminar"
-                      aria-label={`Eliminar ${p.name}`}
+                      title="Archivar"
+                      aria-label={`Archivar ${p.name}`}
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                        <path d="M10 11v6" /><path d="M14 11v6" />
+                        <path d="M4 7h16v13H4z" />
+                        <path d="M3 7h18M8 7l1-3h6l1 3M8 11h8" />
                       </svg>
                     </button>
                   </div>
@@ -405,4 +423,6 @@ export default function ProductsPanel({
       )}
     </div>
   );
-}
+});
+
+export default ProductsPanel;

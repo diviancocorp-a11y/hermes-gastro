@@ -103,8 +103,8 @@ describe('terminología por rubro en las pestañas', () => {
   // <h2> con el plural, porque el shell (`.ag-section-title` en PlatformAdmin)
   // ya ponia ese mismo titulo con la misma terminologia — la pantalla decia
   // "Productos" dos veces, en dos tipografias. Aca se verifica el termino en
-  // los dos lugares del componente que siguen expresandolo: el CTA (singular)
-  // y el buscador (frase propia del rubro).
+  // el buscador (frase propia del rubro). El CTA vive en el shell, junto al
+  // titulo de la seccion, cuando se monta la pantalla completa.
   const casos = [
     { vertical: 'gastro', singular: 'producto', buscar: 'Buscar producto...' },
     { vertical: 'barber', singular: 'servicio', buscar: 'Buscar servicio...' },
@@ -117,7 +117,6 @@ describe('terminología por rubro en las pestañas', () => {
         products={[{ id: 'p1', name: 'Uno', price: 100, active: true, category: 'Cat' }]}
         vertical={vertical} loading={false}
         onSave={vi.fn()} onToggleActive={vi.fn()} onDelete={vi.fn()} showToast={vi.fn()} />);
-      expect(screen.getByRole('button', { name: `+ Agregar ${singular}` })).toBeTruthy();
       expect(screen.getByPlaceholderText(buscar)).toBeTruthy();
     });
 
@@ -159,12 +158,11 @@ describe('lista compacta de Productos', () => {
     expect(screen.queryByRole('button', { name: 'Editar Uno' })).toBeNull();
   });
 
-  it('pone Agregar primero en la tira y elimina el contexto repetido', () => {
+  it('mantiene la tira de resumen y elimina el contexto repetido', () => {
     const { container } = render(<ProductsPanel {...props} products={products} />);
     const resumen = container.querySelector('.ag-productos-resumen');
 
-    expect(resumen.firstElementChild).toHaveClass('ag-kpi-accion');
-    expect(screen.getByRole('button', { name: '+ Agregar producto' })).toBeTruthy();
+    expect(resumen.firstElementChild).toHaveClass('ag-kpi');
     expect(screen.queryByText('2 productos en 2 categorías.')).toBeNull();
   });
 });

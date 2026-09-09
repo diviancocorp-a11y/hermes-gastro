@@ -133,7 +133,7 @@ export async function fetchMyTenant() {
 
 /* ─────────────────────────── Productos ─────────────────────────── */
 
-const PRODUCT_COLS = 'id, type, name, price, active, category, description, image_url, requires_age_gate, duration_min, stock, created_at';
+const PRODUCT_COLS = 'id, type, name, price, active, is_archived, category, description, image_url, requires_age_gate, duration_min, stock, created_at';
 
 function compactarTexto(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');
@@ -183,6 +183,7 @@ export async function fetchProducts(tenantId) {
     .from('products')
     .select(PRODUCT_COLS)
     .eq('tenant_id', tenantId)
+    .eq('is_archived', false)
     .order('category', { nullsFirst: false })
     .order('name');
   if (error) { console.error('fetchProducts:', error.message); return []; }
@@ -225,6 +226,7 @@ function toRow(p, tenantId) {
     name: normalizarNombreProducto(p.name),
     price: Number(p.price) || 0,
     active: p.active !== false,
+    is_archived: !!p.is_archived,
     category: normalizarCategoriaProducto(p.category) || null,
     description: p.description?.trim() || null,
     image_url: p.image_url?.trim() || null,
@@ -257,14 +259,10 @@ export async function setProductActive(id, active) {
   return true;
 }
 
-export async function deleteProduct(id) {
-  const { error } = await supabase.from('products').delete().eq('id', id);
+export async function archiveProduct(id) {
+  const { error } = await supabase.from('products').update({ is_archived: true }).eq('id', id);
   if (error) {
-    console.error('deleteProduct:', error.message);
-    // FK desde order_items: el producto ya se vendio y no se puede borrar.
-    if (error.code === '23503') {
-      return { __error: 'fk', message: 'Ese producto ya tiene pedidos. Desactivalo en vez de borrarlo.' };
-    }
+    console.error('archiveProduct:', error.message);
     return { __error: 'db', message: error.message };
   }
   return true;
