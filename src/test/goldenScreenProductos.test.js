@@ -25,6 +25,19 @@ const MACHINE_SOUL = leer('src', 'styles', 'machine-soul.css');
 const PANEL = leer('src', 'components', 'admin', 'platform', 'ProductsPanel.jsx');
 const CSS_PANTALLA = leer('src', 'styles', 'admin-productos.css');
 
+describe('Phase 4 · filas de producto', () => {
+  it('usa en la fila la misma imagen del catalogo y conserva un fallback', () => {
+    expect(PANEL).toContain('className="ag-fila-foto"');
+    expect(PANEL).toContain('src={p.image_url}');
+    expect(PANEL).toContain('ag-fila-foto-inicial');
+  });
+
+  it('agrupa tambien las categorias viejas por su escritura canonica', () => {
+    expect(PANEL).toContain("normalizarCategoriaProducto(p.category, categories)");
+    expect(PANEL).toContain("normalizarCategoriaProducto(producto.category, categories)");
+  });
+});
+
 // Ver `sinComentarios` mas abajo: los tres se leen sin comentarios porque los
 // comentarios de estos mismos archivos rompen las dos busquedas.
 

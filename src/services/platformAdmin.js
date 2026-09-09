@@ -135,6 +135,44 @@ export async function fetchMyTenant() {
 
 const PRODUCT_COLS = 'id, type, name, price, active, category, description, image_url, requires_age_gate, duration_min, stock, created_at';
 
+function compactarTexto(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * Corrige los dos errores de carga mas comunes sin pisar marcas escritas con
+ * mayusculas intencionales, como iPhone o Coca-Cola.
+ */
+export function normalizarNombreProducto(value) {
+  const limpio = compactarTexto(value);
+  if (!limpio) return '';
+
+  const minusculas = limpio.toLocaleLowerCase('es-AR');
+  const mayusculas = limpio.toLocaleUpperCase('es-AR');
+  if (limpio !== minusculas && limpio !== mayusculas) return limpio;
+
+  return minusculas.replace(/\p{L}/u, letra => letra.toLocaleUpperCase('es-AR'));
+}
+
+/** Clave humana: ignora caja, tildes, signos y espacios repetidos. */
+export function claveNombreProducto(value) {
+  return compactarTexto(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es-AR')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/** Reutiliza la escritura de una categoria existente antes de crear otra. */
+export function normalizarCategoriaProducto(value, categories = []) {
+  const limpia = compactarTexto(value);
+  if (!limpia) return '';
+  const clave = claveNombreProducto(limpia);
+  return categories.find(category => claveNombreProducto(category) === clave)
+    || normalizarNombreProducto(limpia);
+}
+
 // El tipo por defecto segun el rubro vivia aca; se mudo a
 // src/modules/registry.js (tipoPorDefecto), que es donde vive todo lo que
 // depende del rubro.
@@ -156,10 +194,16 @@ export async function fetchProducts(tenantId) {
  * Se valida aca y no con Zod a proposito: los schemas de src/lib/schemas
  * describen el schema legacy y estan atados al manifest del pre-commit.
  */
-export function validateProduct(p) {
+export function validateProduct(p, products = []) {
   const errs = [];
   if (!p?.name?.trim()) errs.push('El nombre no puede estar vacio');
   if (p?.name && p.name.trim().length > 120) errs.push('El nombre es demasiado largo');
+  const clave = claveNombreProducto(p?.name);
+  if (clave && products.some(product => (
+    product.id !== p?.id && claveNombreProducto(product.name) === clave
+  ))) {
+    errs.push('Ya existe un producto con ese nombre');
+  }
   // Ojo con el vacio: Number('') es 0, asi que un precio en blanco pasaria
   // como gratis y el producto saldria publicado a $0 sin avisar.
   const raw = p?.price;
@@ -178,10 +222,10 @@ function toRow(p, tenantId) {
     ...(p.id ? { id: p.id } : {}),
     tenant_id: tenantId,
     type: p.type || 'simple',
-    name: p.name.trim(),
+    name: normalizarNombreProducto(p.name),
     price: Number(p.price) || 0,
     active: p.active !== false,
-    category: p.category?.trim() || null,
+    category: normalizarCategoriaProducto(p.category) || null,
     description: p.description?.trim() || null,
     image_url: p.image_url?.trim() || null,
     requires_age_gate: !!p.requires_age_gate,
@@ -228,7 +272,13 @@ export async function deleteProduct(id) {
 
 /** Categorias existentes, para sugerir en el formulario. */
 export function categoriesFrom(products) {
-  return [...new Set(products.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+  const categories = new Map();
+  for (const product of products) {
+    const category = normalizarCategoriaProducto(product.category);
+    const key = claveNombreProducto(category);
+    if (key && !categories.has(key)) categories.set(key, category);
+  }
+  return [...categories.values()].sort((a, b) => a.localeCompare(b, 'es'));
 }
 
 /* ──────────────────────────── Pedidos ──────────────────────────── */

@@ -11,7 +11,7 @@
 import { useState, useMemo } from 'react';
 import { useConfirm } from '../../ConfirmSlideProvider';
 import ProductEditor from './ProductEditor';
-import { categoriesFrom } from '../../../services/platformAdmin';
+import { categoriesFrom, normalizarCategoriaProducto } from '../../../services/platformAdmin';
 import { margen, indexarInsumos } from '../../../services/platformRecipes';
 import { terminologia } from '../../../modules/registry';
 import DicoCoreEscena from '../../dico/DicoCoreEscena';
@@ -73,21 +73,23 @@ export default function ProductsPanel({
     return {
       visibles,
       ocultos: products.length - visibles,
-      categorias: new Set(products.map(x => x.category || 'Sin categoría')).size,
+      categorias: new Set(products.map(x => (
+        normalizarCategoriaProducto(x.category, categories) || 'Sin categoría'
+      ))).size,
       sinStock: conStock.length > 0 ? conStock.filter(x => Number(x.stock) <= 0).length : null,
     };
-  }, [products]);
+  }, [products, categories]);
 
   // Agrupado por categoria, respetando el orden que ya trae el service.
   const groups = useMemo(() => {
     const map = new Map();
     for (const p of filtered) {
-      const key = p.category || 'Sin categoría';
+      const key = normalizarCategoriaProducto(p.category, categories) || 'Sin categoría';
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(p);
     }
     return [...map.entries()];
-  }, [filtered]);
+  }, [filtered, categories]);
 
   const toggleCategoria = (categoria) => {
     setCategoriasAbiertas((actual) => {
@@ -108,7 +110,9 @@ export default function ProductsPanel({
     setCategoriasAbiertas(new Set(products.filter(producto => (
       producto.name.toLowerCase().includes(consulta)
       || (producto.category || '').toLowerCase().includes(consulta)
-    )).map(producto => producto.category || 'Sin categoría')));
+    )).map(producto => (
+      normalizarCategoriaProducto(producto.category, categories) || 'Sin categoría'
+    ))));
   };
 
   // La receta se guarda DESPUES del producto y no antes: un producto nuevo
@@ -149,6 +153,7 @@ export default function ProductsPanel({
         <div className="ag-page-over-body">
           <ProductEditor
             product={isNew ? null : editing}
+            products={products}
             vertical={vertical}
             categories={categories}
             ingredientes={ingredientes}
@@ -309,6 +314,17 @@ export default function ProductsPanel({
                 const m = recetas ? margen(p, recetas.get(p.id), insumosPorId, settings) : null;
                 return (
                 <div key={p.id} className={`ag-fila${p.active ? '' : ' esta-oculta'}`}>
+                  <span className="ag-fila-foto" aria-hidden="true">
+                    <span className="ag-fila-foto-inicial">{p.name.trim().charAt(0).toLocaleUpperCase('es-AR') || '?'}</span>
+                    {p.image_url && (
+                      <img
+                        src={p.image_url}
+                        alt=""
+                        loading="lazy"
+                        onError={event => { event.currentTarget.hidden = true; }}
+                      />
+                    )}
+                  </span>
                   <button
                     type="button"
                     className="ag-fila-abrir"

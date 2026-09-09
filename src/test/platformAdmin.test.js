@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  validateProduct, categoriesFrom,
+  validateProduct, categoriesFrom, claveNombreProducto,
+  normalizarCategoriaProducto, normalizarNombreProducto,
   nextOrderStatus, PlatformOrderStatus, PLATFORM_ORDER_STATUSES, OPEN_ORDER_STATUSES,
 } from '../services/platformAdmin';
 
@@ -42,12 +43,40 @@ describe('validateProduct', () => {
   it('no explota con undefined', () => {
     expect(validateProduct(undefined).length).toBeGreaterThan(0);
   });
+
+  it('rechaza duplicados aunque cambien mayusculas, tildes o guiones', () => {
+    const products = [{ id: 'uno', name: 'Milanesa napolitana' }];
+    expect(validateProduct({ name: 'MILANESA-NAPOLITÁNA', price: 10 }, products))
+      .toContain('Ya existe un producto con ese nombre');
+    expect(validateProduct({ id: 'uno', name: 'MILANESA NAPOLITANA', price: 10 }, products))
+      .toEqual([]);
+  });
+});
+
+describe('normalizacion de nombres de producto', () => {
+  it('compacta espacios y estabiliza textos enteramente en alta o baja', () => {
+    expect(normalizarNombreProducto('  MILANESA   NAPOLITANA ')).toBe('Milanesa napolitana');
+    expect(normalizarNombreProducto('hamburguesa doble')).toBe('Hamburguesa doble');
+  });
+
+  it('preserva una marca con caja intencional', () => {
+    expect(normalizarNombreProducto('Coca-Cola Zero')).toBe('Coca-Cola Zero');
+  });
+
+  it('genera una clave estable para comparar errores humanos comunes', () => {
+    expect(claveNombreProducto('  MILANESA-NAPOLITÁNA ')).toBe('milanesa napolitana');
+  });
+
+  it('recupera la escritura canonica de una categoria existente', () => {
+    expect(normalizarCategoriaProducto(' bebidas ', ['Bebidas', 'Postres'])).toBe('Bebidas');
+    expect(normalizarCategoriaProducto('PROMOCIONES')).toBe('Promociones');
+  });
 });
 
 describe('categoriesFrom', () => {
   it('deduplica, saca vacios y ordena en español', () => {
     const products = [
-      { category: 'Postres' }, { category: 'Bebidas' }, { category: 'Postres' },
+      { category: 'Postres' }, { category: 'Bebidas' }, { category: 'postres' },
       { category: null }, { category: '' }, { category: 'Ñoquis' }, { category: 'Zapallo' },
     ];
     expect(categoriesFrom(products)).toEqual(['Bebidas', 'Ñoquis', 'Postres', 'Zapallo']);

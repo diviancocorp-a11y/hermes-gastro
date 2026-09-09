@@ -10,7 +10,11 @@ import { useState } from 'react';
 import ToggleSwitch from '../shared/forms/ToggleSwitch';
 import RecipeEditor from './RecipeEditor';
 import ImagePicker from './ImagePicker';
-import { validateProduct } from '../../../services/platformAdmin';
+import {
+  normalizarCategoriaProducto,
+  normalizarNombreProducto,
+  validateProduct,
+} from '../../../services/platformAdmin';
 import { validateLineas } from '../../../services/platformRecipes';
 import { usaCampo, terminologia, tipoPorDefecto, usaReceta } from '../../../modules/registry';
 
@@ -29,7 +33,7 @@ const input = {
 const row = { marginBottom: 14 };
 
 export default function ProductEditor({
-  product, vertical, categories = [], onSave, onCancel,
+  product, products = [], vertical, categories = [], onSave, onCancel,
   ingredientes = [], lineasReceta = [], settings = null,
   // Sin uploader, ImagePicker se cae al input de URL de siempre.
   onSubirImagen = null,
@@ -59,10 +63,16 @@ export default function ProductEditor({
 
   const submit = async (e) => {
     e.preventDefault();
+    const normalizado = {
+      ...form,
+      name: normalizarNombreProducto(form.name),
+      category: normalizarCategoriaProducto(form.category, categories),
+    };
     const problems = [
-      ...validateProduct(form),
+      ...validateProduct(normalizado, products),
       ...(conReceta ? validateLineas(lineas) : []),
     ];
+    setForm(normalizado);
     if (problems.length) { setErrs(problems); return; }
     setErrs([]);
     setSaving(true);
@@ -71,7 +81,7 @@ export default function ProductEditor({
     const tipo = conReceta && lineas.length > 0
       ? 'composite'
       : (product?.type || tipoPorDefecto(vertical));
-    await onSave({ ...form, type: tipo }, conReceta ? lineas : null);
+    await onSave({ ...normalizado, type: tipo }, conReceta ? lineas : null);
     setSaving(false);
   };
 
@@ -92,6 +102,7 @@ export default function ProductEditor({
         <input
           id="pe-name" style={input} type="text" value={form.name}
           onChange={e => set('name', e.target.value)}
+          onBlur={() => set('name', normalizarNombreProducto(form.name))}
           placeholder={t.ejemplo}
           autoFocus
         />
@@ -130,6 +141,7 @@ export default function ProductEditor({
         <input
           id="pe-cat" style={input} type="text" list="pe-cats" value={form.category}
           onChange={e => set('category', e.target.value)}
+          onBlur={() => set('category', normalizarCategoriaProducto(form.category, categories))}
           placeholder={t.ejemploCategoria}
         />
         <datalist id="pe-cats">
