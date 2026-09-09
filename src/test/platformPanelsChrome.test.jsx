@@ -144,10 +144,10 @@ describe('lista compacta de Productos', () => {
     render(<ProductsPanel {...props} products={products} />);
 
     expect(screen.getByRole('heading', { level: 2, name: 'Categorías' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Editar Uno' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Editar Dos' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Ocultar Uno' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Ocultar Dos' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar categoría Bebidas' }));
-    expect(screen.queryByRole('button', { name: 'Editar Uno' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ocultar Uno' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Abrir categoría Bebidas' })).toBeTruthy();
   });
 
@@ -165,16 +165,50 @@ describe('lista compacta de Productos', () => {
       ]}
     />);
 
-    expect(screen.queryByRole('button', { name: 'Editar Uno' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Editar Dos' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Ocultar Uno' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Ocultar Dos' })).toBeTruthy();
   });
 
   it('abre el grupo que contiene una coincidencia de busqueda', () => {
     render(<ProductsPanel {...props} products={products} />);
 
     fireEvent.change(screen.getByPlaceholderText('Buscar producto...'), { target: { value: 'Dos' } });
-    expect(screen.getByRole('button', { name: 'Editar Dos' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ocultar Dos' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Ocultar Uno' })).toBeNull();
+  });
+
+  it('deja solo visibilidad afuera y mueve editar y archivar al menu contextual', () => {
+    render(<ProductsPanel {...props} products={[products[0]]} />);
+
     expect(screen.queryByRole('button', { name: 'Editar Uno' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Archivar Uno' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Ocultar Uno' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones para Uno' }));
+    expect(screen.getByRole('menuitem', { name: 'Editar' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Archivar' })).toBeTruthy();
+  });
+
+  it('en mobile nace con categorias y metricas plegadas', () => {
+    const matchMediaOriginal = window.matchMedia;
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    });
+
+    try {
+      const { container } = render(<ProductsPanel {...props} products={[products[0]]} />);
+      expect(screen.getByRole('button', { name: 'Abrir categoría Bebidas' })).toBeTruthy();
+      expect(container.querySelector('.ag-fila')).toBeNull();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Abrir categoría Bebidas' }));
+      expect(screen.getByRole('button', { name: 'Uno' })).toBeTruthy();
+      expect(container.querySelector('.ag-fila-metricas')).toBeNull();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Uno' }));
+      expect(container.querySelector('.ag-fila-metricas')).toBeTruthy();
+    } finally {
+      window.matchMedia = matchMediaOriginal;
+    }
   });
 
   it('deja el resumen al encabezado del shell y elimina el contexto repetido', () => {

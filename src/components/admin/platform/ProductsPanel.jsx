@@ -8,7 +8,7 @@
  * combos: el edificio no tiene modelo de costos todavia. Un producto es
  * nombre + precio + categoria.
  */
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useConfirm } from '../../ConfirmSlideProvider';
 import ProductEditor from './ProductEditor';
 import { categoriesFrom, normalizarCategoriaProducto } from '../../../services/platformAdmin';
@@ -16,6 +16,7 @@ import { margen, indexarInsumos } from '../../../services/platformRecipes';
 import { terminologia } from '../../../modules/registry';
 import DicoCoreEscena from '../../dico/DicoCoreEscena';
 import GestionProductosPanel from './GestionProductosPanel';
+import useMediaQuery from '../../../lib/useMediaQuery';
 
 function money(n) {
   return `$${Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
@@ -50,6 +51,24 @@ const ProductsPanel = forwardRef(function ProductsPanel({
   const [categoriasAbiertas, setCategoriasAbiertas] = useState(null);
   const [configAbierta, setConfigAbierta] = useState(false);
   const [minimoInput, setMinimoInput] = useState('30');
+  const [menuProducto, setMenuProducto] = useState(null);
+  const [detalleProducto, setDetalleProducto] = useState(null);
+  const esMobile = useMediaQuery('(max-width: 768px)');
+
+  useEffect(() => {
+    if (!menuProducto) return undefined;
+    const cerrarMenu = (event) => {
+      if (event.key === 'Escape' || !event.target.closest?.('.ag-producto-menu')) {
+        setMenuProducto(null);
+      }
+    };
+    document.addEventListener('pointerdown', cerrarMenu);
+    document.addEventListener('keydown', cerrarMenu);
+    return () => {
+      document.removeEventListener('pointerdown', cerrarMenu);
+      document.removeEventListener('keydown', cerrarMenu);
+    };
+  }, [menuProducto]);
 
   useImperativeHandle(ref, () => ({
     nuevoProducto: () => setEditing('new'),
@@ -109,7 +128,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
   const toggleCategoria = (categoria) => {
     setCategoriasAbiertas((actual) => {
       const siguiente = actual === null
-        ? new Set(categoriaInicial ? [categoriaInicial] : [])
+        ? new Set(!esMobile && categoriaInicial ? [categoriaInicial] : [])
         : new Set(actual);
       if (siguiente.has(categoria)) siguiente.delete(categoria);
       else siguiente.add(categoria);
@@ -319,7 +338,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
         </div>
         {groups.map(([cat, items]) => {
           const abierta = categoriasAbiertas === null
-            ? cat === categoriaInicial
+            ? !esMobile && cat === categoriaInicial
             : categoriasAbiertas.has(cat);
           const bajoMinimo = items.filter((producto) => {
             const calculado = margenDe(producto);
@@ -354,8 +373,9 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                 const m = margenDe(p);
                 const margenOk = m ? m.pct >= minimoMargenPct : false;
                 const margenVisual = m ? Math.max(0, Math.min(100, m.pct)) : 0;
+                const detalleAbierto = !esMobile || detalleProducto === p.id;
                 return (
-                <div key={p.id} className={`ag-fila${p.active ? '' : ' esta-oculta'}${m && !margenOk ? ' tiene-alerta' : ''}`}>
+                <div key={p.id} className={`ag-fila${p.active ? '' : ' esta-oculta'}${m && !margenOk ? ' tiene-alerta' : ''}${detalleAbierto ? ' muestra-detalle' : ''}`}>
                   <span className="ag-fila-foto" aria-hidden="true">
                     <span className="ag-fila-foto-inicial">{p.name.trim().charAt(0).toLocaleUpperCase('es-AR') || '?'}</span>
                     {p.image_url && (
@@ -367,34 +387,47 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                       />
                     )}
                   </span>
-                  <button
-                    type="button"
-                    className="ag-fila-abrir"
-                    onClick={() => setEditing(p)}
-                    aria-label={`Editar ${p.name}`}
-                  >
-                    <span className="ag-fila-nombre">
-                      {p.name}
-                      {p.requires_age_gate && <span className="ag-fila-edad">+18</span>}
-                    </span>
-                    {!p.active && <span className="ag-fila-oculto">oculto</span>}
-                  </button>
-                  <span className="ag-fila-costo">{m ? numero(m.costo) : 'Sin receta'}</span>
-                  <span className="ag-fila-ganancia">{m ? numero(m.ganancia) : '—'}</span>
-                  <span className={`ag-fila-margen-celda${margenOk ? ' esta-ok' : ' esta-alerta'}`}>
-                    {m ? <>
-                      <strong>{m.pct.toFixed(0)}%</strong>
-                      <span className="ag-fila-margen-track" aria-label={`Mínimo ${minimoMargenPct}%`}>
-                        <i style={{ width: `${margenVisual}%` }} />
-                        <b style={{ left: `${minimoMargenPct}%` }} />
+                  <span className="ag-fila-info">
+                    {esMobile ? (
+                      <button
+                        type="button"
+                        className="ag-fila-detalle-toggle"
+                        aria-expanded={detalleAbierto}
+                        aria-controls={`ag-metricas-${p.id}`}
+                        onClick={() => setDetalleProducto(actual => actual === p.id ? null : p.id)}
+                      >
+                        <span className="ag-fila-nombre">
+                          {p.name}
+                          {p.requires_age_gate && <span className="ag-fila-edad">+18</span>}
+                        </span>
+                        <i aria-hidden="true" />
+                      </button>
+                    ) : (
+                      <span className="ag-fila-nombre">
+                        {p.name}
+                        {p.requires_age_gate && <span className="ag-fila-edad">+18</span>}
                       </span>
-                    </> : <small>Sin receta cargada</small>}
+                    )}
+                    {!p.active && <span className="ag-fila-oculto">oculto</span>}
                   </span>
+                  {detalleAbierto && <div className="ag-fila-metricas" id={`ag-metricas-${p.id}`}>
+                    <span className="ag-fila-costo" data-label="Costo">{m ? numero(m.costo) : 'Sin receta'}</span>
+                    <span className="ag-fila-ganancia" data-label="Ganancia">{m ? numero(m.ganancia) : '—'}</span>
+                    <span className={`ag-fila-margen-celda${margenOk ? ' esta-ok' : ' esta-alerta'}`} data-label="Margen">
+                      {m ? <>
+                        <strong>{m.pct.toFixed(0)}%</strong>
+                        <span className="ag-fila-margen-track" aria-label={`Mínimo ${minimoMargenPct}%`}>
+                          <i style={{ width: `${margenVisual}%` }} />
+                          <b style={{ left: `${minimoMargenPct}%` }} />
+                        </span>
+                      </> : <small>Sin receta cargada</small>}
+                    </span>
+                  </div>}
                   <span className="ag-fila-precio">{money(p.price)}</span>
                   <div className="ag-fila-acciones">
                     <button
                       type="button"
-                      className="ag-btn-mini"
+                      className="ag-btn-mini ag-fila-visibilidad"
                       onClick={() => onToggleActive(p)}
                       title={p.active ? 'Ocultar del catálogo' : 'Mostrar en el catálogo'}
                       aria-label={p.active ? `Ocultar ${p.name}` : `Mostrar ${p.name}`}
@@ -406,18 +439,39 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                       </svg>
                     </button>
 
-                    <button
-                      type="button"
-                      className="ag-producto-archivar"
-                      onClick={() => handleDelete(p)}
-                      title="Archivar"
-                      aria-label={`Archivar ${p.name}`}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M4 7h16v13H4z" />
-                        <path d="M3 7h18M8 7l1-3h6l1 3M8 11h8" />
-                      </svg>
-                    </button>
+                    <div className="ag-producto-menu">
+                      <button
+                        type="button"
+                        className="ag-producto-menu-trigger"
+                        aria-label={`Más acciones para ${p.name}`}
+                        aria-expanded={menuProducto === p.id}
+                        onClick={() => setMenuProducto(actual => actual === p.id ? null : p.id)}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <circle cx="5" cy="12" r="1.6" />
+                          <circle cx="12" cy="12" r="1.6" />
+                          <circle cx="19" cy="12" r="1.6" />
+                        </svg>
+                      </button>
+                      {menuProducto === p.id && (
+                        <div className="ag-producto-menu-popover" role="menu">
+                          <button type="button" role="menuitem" onClick={() => { setMenuProducto(null); setEditing(p); }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                            </svg>
+                            Editar
+                          </button>
+                          <button type="button" role="menuitem" className="es-alerta" onClick={() => { setMenuProducto(null); handleDelete(p); }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M4 7h16v13H4z" />
+                              <path d="M3 7h18M8 7l1-3h6l1 3M8 11h8" />
+                            </svg>
+                            Archivar
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 );

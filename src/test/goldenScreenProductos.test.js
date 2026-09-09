@@ -36,6 +36,12 @@ describe('Phase 4 · filas de producto', () => {
     expect(PANEL).toContain("normalizarCategoriaProducto(p.category, categories)");
     expect(PANEL).toContain("normalizarCategoriaProducto(producto.category, categories)");
   });
+
+  it('Dico Analiza acompaña el flujo de la pagina y no queda sticky', () => {
+    const panelDico = bloque(sinComentarios(CSS_PANTALLA), '.ag-gestion-productos');
+    expect(panelDico).not.toMatch(/position\s*:\s*sticky/);
+    expect(panelDico).not.toMatch(/max-height\s*:\s*calc\(100vh/);
+  });
 });
 
 // Ver `sinComentarios` mas abajo: los tres se leen sin comentarios porque los
