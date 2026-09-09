@@ -643,6 +643,23 @@ export default function PlatformAdmin() {
       Icon: ICONOS[m.id],
     })), [tenant?.vertical, roles]);
 
+  const resumenProductos = useMemo(() => {
+    const visibles = products.filter(producto => producto.active !== false).length;
+    const conStock = products.filter(producto => producto.stock !== null && producto.stock !== undefined);
+    const categorias = new Set(products.map(producto => (
+      String(producto.category || 'Sin categoria').trim().toLocaleLowerCase('es-AR')
+    ))).size;
+
+    return {
+      visibles,
+      ocultos: products.length - visibles,
+      categorias,
+      sinStock: conStock.length > 0
+        ? conStock.filter(producto => Number(producto.stock) <= 0).length
+        : null,
+    };
+  }, [products]);
+
   // Entrar al catalogo es una ACCION del usuario, y es el disparador del caso
   // 1. Se mira cuando cambia la pestania o cuando terminan de cargar los
   // productos —antes de eso `products` esta vacio por no haber vuelto la
@@ -747,6 +764,7 @@ export default function PlatformAdmin() {
   const themeClass = theme === 'dark' ? 'ag-theme-dark' : 'ag-theme-light';
   const timezone = branch?.timezone || tenant?.timezone;
   const nombreLocal = (sett?.biz_name?.trim() || tenant?.name || 'Dico').toLocaleUpperCase('es-AR');
+  const terminoCatalogo = terminologia(tenant?.vertical);
 
   // Que secciones ve este negocio segun su rubro. modulosDe() ya descarta las
   // que todavia no estan implementadas, asi que declarar "agenda" para
@@ -858,25 +876,67 @@ export default function PlatformAdmin() {
               habla Butler, y con escala contenida: una pantalla de trabajo no
               es una landing. El nombre sale de `tabs`, la misma fuente que la
               navegacion — no hay una segunda lista de rotulos. */}
-          <div className="ag-section-head">
-            <h1 className="ag-section-title">
-              {(tabs.find(t => t.id === tab) || {}).label || tenant?.name || 'Panel'}
-            </h1>
-            {tab === 'products' && (
-              <button
-                type="button"
-                className="ag-productos-agregar"
-                aria-label="Agregar producto"
-                title="Agregar producto"
-                onClick={() => productsPanelRef.current?.nuevoProducto()}
-              >
-                +
-              </button>
-            )}
-            {openCount > 0 && tab !== 'orders' && tab !== 'products' && (
-              <span className="ag-section-meta">{openCount} en curso</span>
-            )}
-          </div>
+          {tab === 'products' ? (
+            <section className="ag-section-head ag-productos-head" aria-labelledby="ag-productos-titulo">
+              <div className="ag-productos-head-superior">
+                <div>
+                  <span className="ag-productos-kicker">CATÁLOGO</span>
+                  <h1 id="ag-productos-titulo" className="ag-section-title">{terminoCatalogo.plural}</h1>
+                </div>
+                <button
+                  type="button"
+                  className="ag-productos-head-agregar"
+                  aria-label={`Agregar ${terminoCatalogo.singular}`}
+                  onClick={() => productsPanelRef.current?.nuevoProducto()}
+                >
+                  <span aria-hidden="true">+</span>
+                  <span className="ag-productos-head-agregar-texto">Agregar {terminoCatalogo.singular}</span>
+                </button>
+              </div>
+              <div className="ag-productos-head-resumen">
+                <div className="ag-productos-head-metricas" aria-label="Resumen del catálogo">
+                  <div className="ag-productos-head-metrica">
+                    <strong>{resumenProductos.visibles}</strong>
+                    <span className="ag-productos-head-etiqueta-completa">EN EL CATÁLOGO</span>
+                    <span className="ag-productos-head-etiqueta-corta">catálogo</span>
+                  </div>
+                  <div className="ag-productos-head-metrica">
+                    <strong>{resumenProductos.ocultos}</strong>
+                    <span>ocultos</span>
+                  </div>
+                  <div className="ag-productos-head-metrica">
+                    <strong>{resumenProductos.categorias}</strong>
+                    <span className="ag-productos-head-etiqueta-completa">CATEGORÍAS</span>
+                    <span className="ag-productos-head-etiqueta-corta">cat.</span>
+                  </div>
+                </div>
+                {resumenProductos.sinStock > 0 && (
+                  <button
+                    type="button"
+                    className="ag-productos-head-alerta"
+                    onClick={() => setTab('stock')}
+                    aria-label={`${resumenProductos.sinStock} ${terminoCatalogo.plural.toLocaleLowerCase('es-AR')} sin stock. Resolver ahora`}
+                  >
+                    <strong>{resumenProductos.sinStock}</strong>
+                    <span>SIN STOCK</span>
+                    <small>
+                      <span className="ag-productos-head-etiqueta-completa">Resolver ahora</span>
+                      <span className="ag-productos-head-etiqueta-corta">Resolver →</span>
+                    </small>
+                  </button>
+                )}
+              </div>
+            </section>
+          ) : (
+            <div className="ag-section-head">
+              <h1 className="ag-section-title">
+                {(tabs.find(t => t.id === tab) || {}).label || tenant?.name || 'Panel'}
+              </h1>
+              {openCount > 0 && tab !== 'orders' && (
+                <span className="ag-section-meta">{openCount} en curso</span>
+              )}
+            </div>
+          )}
           {/* Dico vive en la pestania de entrada, que es donde cae el que
               abre el panel. `listo` evita el peor error posible: decirle
               "todavia no cargaste ningun producto" a alguien que tiene

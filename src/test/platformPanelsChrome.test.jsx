@@ -158,11 +158,10 @@ describe('lista compacta de Productos', () => {
     expect(screen.queryByRole('button', { name: 'Editar Uno' })).toBeNull();
   });
 
-  it('mantiene la tira de resumen y elimina el contexto repetido', () => {
+  it('deja el resumen al encabezado del shell y elimina el contexto repetido', () => {
     const { container } = render(<ProductsPanel {...props} products={products} />);
-    const resumen = container.querySelector('.ag-productos-resumen');
 
-    expect(resumen.firstElementChild).toHaveClass('ag-kpi');
+    expect(container.querySelector('.ag-productos-resumen')).toBeNull();
     expect(screen.queryByText('2 productos en 2 categorías.')).toBeNull();
   });
 });

@@ -72,28 +72,6 @@ const ProductsPanel = forwardRef(function ProductsPanel({
     );
   }, [products, search]);
 
-  /* PASS 2 — la tira de resumen.
-   *
-   * SOLO datos que ya estan en esta pantalla y que se pueden verificar
-   * contando. Nada de "valor de inventario": el edificio no tiene modelo de
-   * costos —`unit_cost` va en 0— asi que ese numero seria una invencion con
-   * formato de dato. El de stock aparece unicamente si ALGUN producto lo
-   * tiene cargado; con la columna vacia, un "0 con stock bajo" diria que esta
-   * todo bien cuando en realidad no se sabe.
-   */
-  const resumen = useMemo(() => {
-    const visibles = products.filter(x => x.active !== false).length;
-    const conStock = products.filter(x => x.stock !== null && x.stock !== undefined);
-    return {
-      visibles,
-      ocultos: products.length - visibles,
-      categorias: new Set(products.map(x => (
-        normalizarCategoriaProducto(x.category, categories) || 'Sin categoría'
-      ))).size,
-      sinStock: conStock.length > 0 ? conStock.filter(x => Number(x.stock) <= 0).length : null,
-    };
-  }, [products, categories]);
-
   // Agrupado por categoria, respetando el orden que ya trae el service.
   const margenDe = useCallback((producto) => recetas
     ? margen(producto, recetas.get(producto.id), insumosPorId, settings)
@@ -225,33 +203,6 @@ const ProductsPanel = forwardRef(function ProductsPanel({
           en dos tipografias distintas: Butler el del shell, DM Sans clavado a
           mano el de aca. Era el sintoma mas visible de "mezcla de eras" y el
           unico lugar de la pantalla que forzaba una familia tipografica. */}
-
-      {/* La accion principal entra en la misma tira de indicadores y ocupa el
-          primer lugar. El titulo ya da contexto suficiente; repetir aca la
-          cantidad total y las categorias agregaba una tercera lectura del
-          mismo dato. */}
-      {products.length > 0 && (
-        <div className="ag-productos-resumen">
-          <div className="ag-kpi">
-            <span className="ag-kpi-valor">{resumen.visibles}</span>
-            <span className="ag-kpi-pie">en el catálogo</span>
-          </div>
-          <div className={`ag-kpi${resumen.ocultos > 0 ? ' es-aviso' : ''}`}>
-            <span className="ag-kpi-valor">{resumen.ocultos}</span>
-            <span className="ag-kpi-pie">ocultos</span>
-          </div>
-          <div className="ag-kpi">
-            <span className="ag-kpi-valor">{resumen.categorias}</span>
-            <span className="ag-kpi-pie">categorías</span>
-          </div>
-          {resumen.sinStock !== null && (
-            <div className={`ag-kpi${resumen.sinStock > 0 ? ' es-alerta' : ''}`}>
-              <span className="ag-kpi-valor">{resumen.sinStock}</span>
-              <span className="ag-kpi-pie">sin stock</span>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ── C · Toolbar ──────────────────────────────────────────────── */}
       {products.length > 0 && (
