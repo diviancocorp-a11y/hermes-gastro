@@ -21,6 +21,8 @@ function money(n) {
   return `$${Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
 }
 
+const MINIMO_MARGEN_PCT = 30;
+
 const ProductsPanel = forwardRef(function ProductsPanel({
   products, vertical, loading, onSave, onToggleActive, onArchive, showToast,
   /**
@@ -323,7 +325,8 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                 // null cuando no hay receta cargada: sin insumos el costo da 0
                 // y el margen daria 100%, que es una mentira comoda.
                 const m = margenDe(p);
-                const margenPct = m ? Math.max(0, Math.min(100, m.pct)) : 0;
+                const minimoMargenPct = Number(settings?.min_product_margin_pct) || MINIMO_MARGEN_PCT;
+                const margenOk = m ? m.pct >= minimoMargenPct : false;
                 return (
                 <div key={p.id} className={`ag-fila${p.active ? '' : ' esta-oculta'}`}>
                   <span className="ag-fila-foto" aria-hidden="true">
@@ -337,33 +340,20 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                       />
                     )}
                   </span>
-                  <button
-                    type="button"
-                    className="ag-fila-abrir"
-                    onClick={() => setEditing(p)}
-                    aria-label={`Editar ${p.name}`}
-                  >
-                    <span className="ag-fila-nombre">
-                      {p.name}
-                      {p.requires_age_gate && <span className="ag-fila-edad">+18</span>}
-                    </span>
-                    <span className="ag-fila-meta">
-                      {!p.active && <span className="ag-fila-oculto">oculto</span>}
-                      {p.duration_min ? <span>{p.duration_min} min</span> : null}
-                      {m && (
-                        <span className="ag-fila-margen" title={`Margen ${m.pct.toFixed(0)}%`}>
-                          <span className="ag-fila-margen-barra" aria-hidden="true">
-                            <span style={{ width: `${margenPct}%` }} />
-                          </span>
-                          <span>{m.pct.toFixed(0)}%</span>
-                        </span>
-                      )}
-                    </span>
-                  </button>
-
-                  <span className="ag-fila-precio">{money(p.price)}</span>
-
-                  <div className="ag-fila-acciones">
+                  <div className="ag-fila-superior">
+                    <button
+                      type="button"
+                      className="ag-fila-abrir"
+                      onClick={() => setEditing(p)}
+                      aria-label={`Editar ${p.name}`}
+                    >
+                      <span className="ag-fila-nombre">
+                        {p.name}
+                        {p.requires_age_gate && <span className="ag-fila-edad">+18</span>}
+                      </span>
+                    </button>
+                    <span className="ag-fila-precio">{money(p.price)}</span>
+                    <div className="ag-fila-acciones">
                     <button
                       type="button"
                       className="ag-btn-mini"
@@ -390,6 +380,26 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                         <path d="M3 7h18M8 7l1-3h6l1 3M8 11h8" />
                       </svg>
                     </button>
+                    </div>
+                  </div>
+
+                  <div className="ag-fila-inferior">
+                    {!p.active && <span className="ag-fila-oculto">oculto</span>}
+                    {m ? (
+                      <>
+                        <span>Costo <strong>{money(m.costo)}</strong></span>
+                        <span>Ganancia <strong>{money(m.ganancia)}</strong></span>
+                        <span className={`ag-fila-margen-estado ${margenOk ? 'esta-ok' : 'esta-alerta'}`} title={`Mínimo ${minimoMargenPct}%`}>
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d={margenOk ? 'M12 19V5m0 0-5 5m5-5 5 5' : 'M12 5v14m0 0-5-5m5 5 5-5'} />
+                          </svg>
+                          <strong>{m.pct.toFixed(0)}%</strong>
+                          <span>{margenOk ? 'OK' : `Debajo del mínimo (${minimoMargenPct}%)`}</span>
+                        </span>
+                      </>
+                    ) : (
+                      <span className="ag-fila-sin-datos">Costo y margen sin receta cargada</span>
+                    )}
                   </div>
                 </div>
                 );

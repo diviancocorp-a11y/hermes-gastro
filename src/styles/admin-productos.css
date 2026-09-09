@@ -60,8 +60,8 @@
    cosas distintas se senialaran igual. Volt es el sistema respondiendo, que es
    lo que un foco es. */
 .ag-productos-buscador:focus-within {
-  border-color: var(--ag-volt);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ag-volt) 18%, transparent);
+  border-color: var(--ag-line);
+  box-shadow: 0 0 0 3px color-mix(in srgb, #2563eb 24%, transparent);
 }
 
 .ag-productos-buscador svg { flex-shrink: 0; color: var(--ag-ink-3); }
@@ -232,13 +232,13 @@
 .ag-productos-agregar {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--ag-volt);
   border-radius: 50%;
   background: var(--ag-volt);
   color: var(--ag-bg);
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
 }
@@ -790,9 +790,10 @@
 .ag-categoria-filas { display: flex; flex-direction: column; }
 
 .ag-fila {
-  display: flex;
-  align-items: center;
-  gap: var(--ag-sp-2);
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: var(--ag-sp-2);
   padding: 0 var(--ag-sp-3);
   border-bottom: 1px solid var(--ag-line);
 }
@@ -805,6 +806,7 @@
   width: 44px;
   height: 44px;
   margin: var(--ag-sp-1) 0;
+  grid-row: 1 / span 2;
   overflow: hidden;
   border: 1px solid var(--ag-line);
   border-radius: var(--ag-r-sm);
@@ -850,11 +852,9 @@
 }
 
 .ag-fila-abrir {
-  flex: 1;
   min-width: 0;
-  display: grid;
-  gap: 1px;
-  min-height: 44px;
+  display: flex;
+  min-height: 32px;
   align-content: center;
   text-align: left;
   background: none;
@@ -882,36 +882,13 @@
 /* La segunda linea solo existe cuando hay algo que decir: sin margen, sin
    duracion y visible, la fila es una sola linea y la lista respira. */
 .ag-fila-meta {
-  display: flex;
-  gap: var(--ag-sp-2);
-  font-size: 11.5px;
-  color: var(--ag-ink-3);
+  display: none;
 }
 
 .ag-fila-meta:empty { display: none; }
 
 .ag-fila-margen {
   display: inline-flex;
-  align-items: center;
-  gap: var(--ag-sp-1);
-  color: var(--ag-ink-2);
-  font-variant-numeric: tabular-nums;
-}
-
-.ag-fila-margen-barra {
-  display: inline-block;
-  width: 58px;
-  height: 5px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--ag-line);
-}
-
-.ag-fila-margen-barra span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--ag-c-orders-ink), var(--ag-c-sales-ink));
 }
 
 /* Tabular: los precios se leen en columna y tienen que alinearse por la coma. */
@@ -922,6 +899,51 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+.ag-fila-superior {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: var(--ag-sp-2);
+  grid-column: 2;
+  min-height: 44px;
+}
+
+.ag-fila-superior .ag-fila-abrir { flex: 1; }
+
+.ag-fila-inferior {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ag-sp-3);
+  grid-column: 2;
+  padding: 0 0 var(--ag-sp-2);
+  color: var(--ag-ink-3);
+  font: 10px/1.25 var(--ag-font-mono);
+}
+
+.ag-fila-inferior strong { color: var(--ag-ink-2); }
+
+.ag-fila-margen-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ag-sp-1);
+  font-weight: 700;
+}
+
+.ag-fila-margen-estado svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.ag-fila-margen-estado.esta-ok { color: var(--ag-c-sales-ink); }
+.ag-fila-margen-estado.esta-alerta { color: var(--ag-c-orders-ink); }
+.ag-fila-sin-datos { color: var(--ag-ink-3); }
 
 .ag-fila-acciones {
   display: flex;

@@ -573,7 +573,7 @@ export default function GestionProductosPanel({
 
                   {kasavana.productosAnalizados > 0 ? (
                     <div className="ag-kasavana">
-                      {cuadrantesEnVista.map(cuadrante => (
+                      {cuadrantesEnVista.filter(cuadrante => !consulta || cuadrante.items.length > 0).map(cuadrante => (
                         <CuadranteResumen
                           key={cuadrante.tipo}
                           {...cuadrante}
