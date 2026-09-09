@@ -168,6 +168,35 @@ describe('lista compacta de Productos', () => {
 });
 
 describe('acciones en vivo de Productos', () => {
+  it('la busqueda reemplaza los cuadrantes por resultados que abren el perfil', () => {
+    render(<ProductsPanel
+      products={[{ id: 'p1', name: 'Dulce QA', price: 100, active: true, category: 'Bebidas' }]}
+      vertical="gastro"
+      loading={false}
+      operativo={false}
+      orders={[{ id: 'o1', status: 'completed', created_at: '2026-09-06T20:00:00Z' }]}
+      itemsPorPedido={new Map([['o1', [{ product_id: 'p1', qty: 1, subtotal: 100 }]]])}
+      recetas={new Map([['p1', [{ ingredient_id: 'i1', qty: 1 }]]])}
+      ingredientes={[{ id: 'i1', name: 'Base', cost: 20, stock: 10, min_stock: 1 }]}
+      turnosPrevios={[{
+        id: 't1', status: 'closed', business_day: '2026-09-06',
+        opened_at: '2026-09-06T17:00:00Z', closed_at: '2026-09-07T02:00:00Z',
+      }]}
+      onSave={vi.fn()}
+      onToggleActive={vi.fn()}
+      onDelete={vi.fn()}
+      showToast={vi.fn()}
+    />);
+
+    expect(screen.getByRole('button', { name: 'Abrir ranking de Estrellas' })).toBeTruthy();
+    fireEvent.change(screen.getByPlaceholderText('Buscar producto...'), { target: { value: 'dulce' } });
+    expect(screen.queryByRole('button', { name: 'Abrir ranking de Estrellas' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Dulce QA.*Estrellas/ }));
+    expect(screen.getByRole('heading', { name: 'Dulce QA' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Volver a resultados' })).toBeTruthy();
+  });
+
   it('Impulsar emite una orden directa y muestra el destino resuelto', () => {
     const onImpulsar = vi.fn(() => true);
     render(<ProductsPanel
@@ -214,7 +243,7 @@ describe('acciones en vivo de Productos', () => {
         minutosOperando={65}
         turno={{ opened_at: new Date(ahora - 65 * 60000).toISOString() }}
         orders={[{
-          id: 'o1', status: 'completed', created_at: new Date(ahora - 10 * 60000).toISOString(),
+          id: 'o1', status: 'completed', created_at: new Date(ahora).toISOString(),
         }]}
         itemsPorPedido={new Map()}
         recetas={new Map()}

@@ -21,10 +21,14 @@ function money(n) {
   return `$${Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
 }
 
+function numero(n) {
+  return Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 });
+}
+
 const MINIMO_MARGEN_PCT = 30;
 
 const ProductsPanel = forwardRef(function ProductsPanel({
-  products, vertical, loading, onSave, onToggleActive, onArchive, showToast,
+  products, vertical, loading, onSave, onToggleActive, onArchive, onSaveSettings, showToast,
   /**
    * Cuando Dico Physical esta atendiendo el catalogo vacio, esta pantalla NO
    * monta su propia escena 2D: serian dos Dicos a la vez. Publica el nodo al
@@ -42,6 +46,8 @@ const ProductsPanel = forwardRef(function ProductsPanel({
   const [editing, setEditing] = useState(null); // objeto producto | 'new' | null
   const [search, setSearch] = useState('');
   const [categoriasAbiertas, setCategoriasAbiertas] = useState(() => new Set());
+  const [configAbierta, setConfigAbierta] = useState(false);
+  const [minimoInput, setMinimoInput] = useState('30');
 
   useImperativeHandle(ref, () => ({
     nuevoProducto: () => setEditing('new'),
@@ -51,6 +57,8 @@ const ProductsPanel = forwardRef(function ProductsPanel({
   // "producto": la palabra cambia toda la pantalla.
   const t = terminologia(vertical);
   const categories = useMemo(() => categoriesFrom(products), [products]);
+  const minimoConfigurado = Number(settings?.min_product_margin_pct);
+  const minimoMargenPct = Number.isFinite(minimoConfigurado) ? minimoConfigurado : MINIMO_MARGEN_PCT;
 
   // Indice de insumos una sola vez: el margen se calcula para cada fila de la
   // lista, y rearmarlo por producto seria O(productos x insumos) por render.
@@ -154,6 +162,16 @@ const ProductsPanel = forwardRef(function ProductsPanel({
     const res = await onArchive(p.id);
     if (res?.__error) { showToast?.(res.message); return; }
     showToast?.('Producto archivado · historial conservado');
+  };
+
+  const guardarMinimoMargen = async (event) => {
+    event.preventDefault();
+    const valor = Math.max(0, Math.min(100, Number(minimoInput) || 0));
+    const saved = await onSaveSettings?.({ min_product_margin_pct: valor });
+    if (!saved) return;
+    setMinimoInput(String(valor));
+    setConfigAbierta(false);
+    showToast?.(`Alerta de margen configurada en ${valor}%`);
   };
 
   /* ── Formulario a pantalla completa ── */
@@ -299,9 +317,50 @@ const ProductsPanel = forwardRef(function ProductsPanel({
         <div className="ag-productos-categorias">
         <div className="ag-productos-categorias-titulo">
           <h2>Categorías</h2>
+          <div className="ag-categorias-config">
+            <button
+              type="button"
+              className="ag-categorias-menu"
+              aria-label="Configurar categorías"
+              aria-expanded={configAbierta}
+              onClick={() => {
+                setMinimoInput(String(minimoMargenPct));
+                setConfigAbierta(valor => !valor);
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="5" r="1.5" />
+                <circle cx="12" cy="12" r="1.5" />
+                <circle cx="12" cy="19" r="1.5" />
+              </svg>
+            </button>
+            {configAbierta && (
+              <form className="ag-categorias-popover" onSubmit={guardarMinimoMargen}>
+                <strong>Parámetros de categorías</strong>
+                <label htmlFor="ag-minimo-margen">Alertar debajo de</label>
+                <div>
+                  <input
+                    id="ag-minimo-margen"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={minimoInput}
+                    onChange={event => setMinimoInput(event.target.value)}
+                  />
+                  <span>% de margen</span>
+                </div>
+                <button type="submit">Guardar</button>
+              </form>
+            )}
+          </div>
         </div>
         {groups.map(([cat, items]) => {
           const abierta = categoriasAbiertas.has(cat);
+          const bajoMinimo = items.filter((producto) => {
+            const calculado = margenDe(producto);
+            return calculado && calculado.pct < minimoMargenPct;
+          }).length;
           return (
           <section key={cat} className={`ag-categoria${abierta ? ' esta-abierta' : ''}`}>
             <header className="ag-categoria-head">
@@ -315,20 +374,24 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                 <h3 className="ag-categoria-nombre">{cat}</h3>
                 <span className="ag-categoria-cuenta">
                   {items.length} {items.length === 1 ? t.singular : t.plural.toLowerCase()}
+                  {bajoMinimo > 0 && ` · ${bajoMinimo} bajo mínimo`}
                 </span>
                 <i className="ag-categoria-flecha" aria-hidden="true" />
               </button>
             </header>
 
             {abierta && <div className="ag-categoria-filas">
+              <div className="ag-fila-columnas" aria-hidden="true">
+                <span>Producto</span><span>Costo</span><span>Ganancia</span><span>Margen</span><span>Precio</span><span />
+              </div>
               {items.map(p => {
                 // null cuando no hay receta cargada: sin insumos el costo da 0
                 // y el margen daria 100%, que es una mentira comoda.
                 const m = margenDe(p);
-                const minimoMargenPct = Number(settings?.min_product_margin_pct) || MINIMO_MARGEN_PCT;
                 const margenOk = m ? m.pct >= minimoMargenPct : false;
+                const margenVisual = m ? Math.max(0, Math.min(100, m.pct)) : 0;
                 return (
-                <div key={p.id} className={`ag-fila${p.active ? '' : ' esta-oculta'}`}>
+                <div key={p.id} className={`ag-fila${p.active ? '' : ' esta-oculta'}${m && !margenOk ? ' tiene-alerta' : ''}`}>
                   <span className="ag-fila-foto" aria-hidden="true">
                     <span className="ag-fila-foto-inicial">{p.name.trim().charAt(0).toLocaleUpperCase('es-AR') || '?'}</span>
                     {p.image_url && (
@@ -340,20 +403,31 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                       />
                     )}
                   </span>
-                  <div className="ag-fila-superior">
-                    <button
-                      type="button"
-                      className="ag-fila-abrir"
-                      onClick={() => setEditing(p)}
-                      aria-label={`Editar ${p.name}`}
-                    >
-                      <span className="ag-fila-nombre">
-                        {p.name}
-                        {p.requires_age_gate && <span className="ag-fila-edad">+18</span>}
+                  <button
+                    type="button"
+                    className="ag-fila-abrir"
+                    onClick={() => setEditing(p)}
+                    aria-label={`Editar ${p.name}`}
+                  >
+                    <span className="ag-fila-nombre">
+                      {p.name}
+                      {p.requires_age_gate && <span className="ag-fila-edad">+18</span>}
+                    </span>
+                    {!p.active && <span className="ag-fila-oculto">oculto</span>}
+                  </button>
+                  <span className="ag-fila-costo">{m ? numero(m.costo) : 'Sin receta'}</span>
+                  <span className="ag-fila-ganancia">{m ? numero(m.ganancia) : '—'}</span>
+                  <span className={`ag-fila-margen-celda${margenOk ? ' esta-ok' : ' esta-alerta'}`}>
+                    {m ? <>
+                      <strong>{m.pct.toFixed(0)}%</strong>
+                      <span className="ag-fila-margen-track" aria-label={`Mínimo ${minimoMargenPct}%`}>
+                        <i style={{ width: `${margenVisual}%` }} />
+                        <b style={{ left: `${minimoMargenPct}%` }} />
                       </span>
-                    </button>
-                    <span className="ag-fila-precio">{money(p.price)}</span>
-                    <div className="ag-fila-acciones">
+                    </> : <small>Sin receta cargada</small>}
+                  </span>
+                  <span className="ag-fila-precio">{money(p.price)}</span>
+                  <div className="ag-fila-acciones">
                     <button
                       type="button"
                       className="ag-btn-mini"
@@ -380,26 +454,6 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                         <path d="M3 7h18M8 7l1-3h6l1 3M8 11h8" />
                       </svg>
                     </button>
-                    </div>
-                  </div>
-
-                  <div className="ag-fila-inferior">
-                    {!p.active && <span className="ag-fila-oculto">oculto</span>}
-                    {m ? (
-                      <>
-                        <span>Costo <strong>{money(m.costo)}</strong></span>
-                        <span>Ganancia <strong>{money(m.ganancia)}</strong></span>
-                        <span className={`ag-fila-margen-estado ${margenOk ? 'esta-ok' : 'esta-alerta'}`} title={`Mínimo ${minimoMargenPct}%`}>
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d={margenOk ? 'M12 19V5m0 0-5 5m5-5 5 5' : 'M12 5v14m0 0-5-5m5 5 5-5'} />
-                          </svg>
-                          <strong>{m.pct.toFixed(0)}%</strong>
-                          <span>{margenOk ? 'OK' : `Debajo del mínimo (${minimoMargenPct}%)`}</span>
-                        </span>
-                      </>
-                    ) : (
-                      <span className="ag-fila-sin-datos">Costo y margen sin receta cargada</span>
-                    )}
                   </div>
                 </div>
                 );

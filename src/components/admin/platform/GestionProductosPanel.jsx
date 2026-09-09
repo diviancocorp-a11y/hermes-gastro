@@ -59,22 +59,26 @@ function agruparPorCategoria(items = []) {
   return [...grupos.entries()].sort(([a], [b]) => a.localeCompare(b, 'es'));
 }
 
-function CuadranteResumen({ tipo, titulo, ayuda, descripcion, icono, items, onAbrir }) {
+function CuadranteResumen({ tipo, titulo, ayuda, descripcion, items, prioritario, onAbrir }) {
+  const primero = items[0] || null;
   return (
     <button
       type="button"
-      className={`ag-kasavana-cuadrante es-${tipo}`}
+      className={`ag-kasavana-cuadrante es-${tipo}${prioritario ? ' es-prioritario' : ''}`}
       aria-label={`Abrir ranking de ${titulo}`}
       onClick={onAbrir}
     >
       <span className="ag-kasavana-cuadrante-cabecera">
-        <span className="ag-kasavana-icono" aria-hidden="true">{icono}</span>
+        <span className="ag-kasavana-marca" aria-hidden="true"><i /><i /><i /><i /></span>
         <span className="ag-kasavana-cantidad">{items.length}</span>
       </span>
       <strong>{titulo}</strong>
       <small>{ayuda}</small>
       <p>{descripcion}</p>
-      <span className="ag-kasavana-abrir">Ver ranking <i aria-hidden="true">→</i></span>
+      <span className="ag-kasavana-abrir">
+        {primero ? `1° ${primero.producto.name}` : 'Sin productos'}
+        <i aria-hidden="true">→</i>
+      </span>
     </button>
   );
 }
@@ -248,6 +252,23 @@ function ResumenDico({
 
 function PerfilProducto({ seleccion, ventas7, kasavana, onVolver }) {
   const { item, tipo, ranking, titulo, icono } = seleccion;
+  if (seleccion.sinCuadrante) {
+    return (
+      <div className="ag-perfil-producto">
+        <header className="ag-perfil-producto-head">
+          <button type="button" className="ag-perfil-volver" onClick={onVolver}>
+            <span aria-hidden="true">←</span> Volver a resultados
+          </button>
+          <span className="ag-perfil-cuadrante">Sin cuadrante</span>
+          <h3>{seleccion.producto.name}</h3>
+        </header>
+        <div className="ag-gestion-sin-datos">
+          <strong>Todavía no se puede clasificar</strong>
+          <p>Este producto necesita receta con costos y ventas registradas para entrar en Ingeniería de menú.</p>
+        </div>
+      </div>
+    );
+  }
   const unidades7 = ventas7.get(item.producto.id)?.unidades || 0;
   const recomendacion = recomendacionProductoKasavana(tipo, item, kasavana);
   const popular = item.participacion >= item.cortePopularidad;
@@ -257,7 +278,7 @@ function PerfilProducto({ seleccion, ventas7, kasavana, onVolver }) {
     <div className="ag-perfil-producto">
       <header className="ag-perfil-producto-head">
         <button type="button" className="ag-perfil-volver" onClick={onVolver}>
-          <span aria-hidden="true">←</span> Volver al ranking
+          <span aria-hidden="true">←</span> {seleccion.desdeBusqueda ? 'Volver a resultados' : 'Volver al ranking'}
         </button>
         <span className={`ag-perfil-cuadrante es-${tipo}`}>{icono} {titulo} · #{ranking}</span>
         <h3>{item.producto.name}</h3>
@@ -327,11 +348,19 @@ export default function GestionProductosPanel({
     orders, itemsPorPedido, { desde: desdePulso, hasta },
   ), [orders, itemsPorPedido, desdePulso, hasta]);
   const cuadrantes = useMemo(() => ([
-    { tipo: 'estrella', titulo: 'Estrellas', ayuda: 'Rentables · populares', descripcion: 'Los productos que sostienen venta y margen. Hay que protegerlos.', icono: '⭐', items: kasavana.cuadrantes.estrellas },
-    { tipo: 'caballo', titulo: 'Caballos', ayuda: 'Populares · margen bajo', descripcion: 'Se venden bien, pero necesitan recuperar rentabilidad.', icono: '🐎', items: kasavana.cuadrantes.caballos },
-    { tipo: 'enigma', titulo: 'Enigmas', ayuda: 'Rentables · poca salida', descripcion: 'Tienen buen margen y necesitan más visibilidad o recomendación.', icono: '🧩', items: kasavana.cuadrantes.enigmas },
-    { tipo: 'perro', titulo: 'Perros', ayuda: 'Poca salida · bajo margen', descripcion: 'Piden una decisión: reformular, reposicionar o considerar retiro.', icono: '🐕', items: kasavana.cuadrantes.perros },
+    { tipo: 'enigma', titulo: 'Enigmas', ayuda: 'Rentables · poca salida', descripcion: 'Buen margen, les falta visibilidad.', icono: '', items: kasavana.cuadrantes.enigmas },
+    { tipo: 'estrella', titulo: 'Estrellas', ayuda: 'Rentables · populares', descripcion: 'Sostienen venta y margen. Protegerlos.', icono: '', items: kasavana.cuadrantes.estrellas },
+    { tipo: 'perro', titulo: 'Perros', ayuda: 'Poca salida · bajo margen', descripcion: 'Reformular, reposicionar o retirar.', icono: '', items: kasavana.cuadrantes.perros },
+    { tipo: 'caballo', titulo: 'Caballos', ayuda: 'Populares · margen bajo', descripcion: 'Se venden bien, falta rentabilidad.', icono: '', items: kasavana.cuadrantes.caballos },
   ]), [kasavana]);
+  const cuadrantePrioritario = useMemo(() => [...cuadrantes]
+    .filter(cuadrante => cuadrante.items.length > 0)
+    .sort((a, b) => {
+      const aporte = cuadrante => cuadrante.items.reduce((total, item) => (
+        total + item.unidades * item.contribucion
+      ), 0);
+      return aporte(b) - aporte(a);
+    })[0]?.tipo || null, [cuadrantes]);
   const consulta = busqueda.trim().toLocaleLowerCase('es-AR');
   const cuadrantesEnVista = useMemo(() => {
     if (!consulta) return cuadrantes;
@@ -348,12 +377,16 @@ export default function GestionProductosPanel({
     return products.filter(producto => (
       producto.name.toLocaleLowerCase('es-AR').includes(consulta)
       || (producto.category || '').toLocaleLowerCase('es-AR').includes(consulta)
-    )).map(producto => ({
-      producto,
-      cuadrante: cuadrantes.find(cuadrante => (
-        cuadrante.items.some(item => item.producto.id === producto.id)
-      )),
-    }));
+    )).map((producto) => {
+      const cuadrante = cuadrantes.find(candidato => (
+        candidato.items.some(item => item.producto.id === producto.id)
+      ));
+      const ranking = cuadrante
+        ? cuadrante.items.findIndex(item => item.producto.id === producto.id) + 1
+        : null;
+      const item = cuadrante?.items.find(candidato => candidato.producto.id === producto.id) || null;
+      return { producto, cuadrante, ranking, item };
+    });
   }, [consulta, products, cuadrantes]);
   const cuadranteActual = cuadrantesEnVista.find(c => c.tipo === cuadranteSeleccionado) || null;
 
@@ -394,6 +427,23 @@ export default function GestionProductosPanel({
     const cuadrante = cuadrantesEnVista.find(c => c.tipo === tipo);
     scrollAnterior.current = panelRef.current?.scrollTop || 0;
     setSeleccion({ item, tipo, ranking, titulo: cuadrante.titulo, icono: cuadrante.icono });
+    llevarAlInicio();
+  };
+
+  const abrirResultado = (resultado) => {
+    scrollAnterior.current = panelRef.current?.scrollTop || 0;
+    if (!resultado.cuadrante || !resultado.item) {
+      setSeleccion({ producto: resultado.producto, sinCuadrante: true });
+    } else {
+      setSeleccion({
+        item: resultado.item,
+        tipo: resultado.cuadrante.tipo,
+        ranking: resultado.ranking,
+        titulo: resultado.cuadrante.titulo,
+        icono: resultado.cuadrante.icono,
+        desdeBusqueda: true,
+      });
+    }
     llevarAlInicio();
   };
 
@@ -501,16 +551,18 @@ export default function GestionProductosPanel({
           ) : (
             <>
               {consulta && (
-                <div className="ag-dico-busqueda" role="status">
+                <div className="ag-dico-busqueda" aria-label="Resultados de Dico">
                   <span>RESULTADO DE BÚSQUEDA</span>
-                  {productosBuscados.length > 0 ? productosBuscados.map(({ producto, cuadrante }) => (
-                    <strong key={producto.id}>
-                      {producto.name} · {cuadrante ? `${cuadrante.icono} ${cuadrante.titulo}` : 'sin cuadrante'}
-                    </strong>
+                  {productosBuscados.length > 0 ? productosBuscados.map(resultado => (
+                    <button key={resultado.producto.id} type="button" onClick={() => abrirResultado(resultado)}>
+                      <strong>{resultado.producto.name}</strong>
+                      <span>{resultado.cuadrante?.titulo || 'Sin cuadrante'}</span>
+                      <i aria-hidden="true">→</i>
+                    </button>
                   )) : <p>No hay productos que coincidan con “{busqueda}”.</p>}
                 </div>
               )}
-              {!operativo && infoAbierta && (
+              {!consulta && !operativo && infoAbierta && (
                 <aside className="ag-kasavana-info" id="ag-kasavana-info" role="note">
                   El modelo nació en 1982 con Michael L. Kasavana y Donald I. Smith, profesores de la
                   Escuela de Hospitalidad de Michigan State University. En <cite>Menu Engineering: A Practical Guide
@@ -563,7 +615,7 @@ export default function GestionProductosPanel({
                     ))}
                   </div>
                 </>
-              ) : (
+              ) : consulta ? null : (
                 <>
                   <div className="ag-kasavana-resumen-general">
                     <span><strong>{products.filter(p => p.active !== false).length}</strong> activos</span>
@@ -572,14 +624,19 @@ export default function GestionProductosPanel({
                   </div>
 
                   {kasavana.productosAnalizados > 0 ? (
-                    <div className="ag-kasavana">
-                      {cuadrantesEnVista.filter(cuadrante => !consulta || cuadrante.items.length > 0).map(cuadrante => (
-                        <CuadranteResumen
-                          key={cuadrante.tipo}
-                          {...cuadrante}
-                          onAbrir={() => abrirCuadrante(cuadrante.tipo)}
-                        />
-                      ))}
+                    <div className="ag-kasavana-matriz">
+                      <span className="ag-kasavana-eje-y">Margen ↑</span>
+                      <div className="ag-kasavana">
+                        {cuadrantesEnVista.map(cuadrante => (
+                          <CuadranteResumen
+                            key={cuadrante.tipo}
+                            {...cuadrante}
+                            prioritario={cuadrante.tipo === cuadrantePrioritario}
+                            onAbrir={() => abrirCuadrante(cuadrante.tipo)}
+                          />
+                        ))}
+                      </div>
+                      <span className="ag-kasavana-eje-x">Popularidad →</span>
                     </div>
                   ) : (
                     <div className="ag-gestion-sin-datos">

@@ -489,6 +489,7 @@ export default function PlatformAdmin() {
   const guardarSettings = useCallback(async (valores) => {
     const r = await saveSettings(tenantId, valores);
     if (r?.__error) { msg(r.message || 'No se pudo guardar'); return null; }
+    setSett(r);
     return r;
   }, [tenantId, msg]);
 
@@ -847,6 +848,7 @@ export default function PlatformAdmin() {
           <div className="ag-workspace-head">
             <BarraOperativa
               settings={sett}
+              onSaveSettings={guardarSettings}
               timezone={timezone}
               turno={turno}
               onOperativoChange={handleEstadoOperativo}
