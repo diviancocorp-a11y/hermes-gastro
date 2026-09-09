@@ -140,14 +140,33 @@ describe('lista compacta de Productos', () => {
     { id: 'p2', name: 'Dos', price: 200, active: true, category: 'Principales' },
   ];
 
-  it('nace con las categorias abiertas y permite plegarlas desde toda la cabecera', () => {
+  it('abre solo la primera categoria y permite plegarla desde toda la cabecera', () => {
     render(<ProductsPanel {...props} products={products} />);
 
     expect(screen.getByRole('heading', { level: 2, name: 'Categorías' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Editar Uno' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Editar Dos' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar categoría Bebidas' }));
     expect(screen.queryByRole('button', { name: 'Editar Uno' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Abrir categoría Bebidas' })).toBeTruthy();
+  });
+
+  it('prioriza la categoria que tiene productos bajo el margen minimo', () => {
+    render(<ProductsPanel
+      {...props}
+      products={products}
+      recetas={new Map([
+        ['p1', [{ ingredient_id: 'i1', qty: 1 }]],
+        ['p2', [{ ingredient_id: 'i2', qty: 1 }]],
+      ])}
+      ingredientes={[
+        { id: 'i1', cost: 10 },
+        { id: 'i2', cost: 190 },
+      ]}
+    />);
+
+    expect(screen.queryByRole('button', { name: 'Editar Uno' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Editar Dos' })).toBeTruthy();
   });
 
   it('abre el grupo que contiene una coincidencia de busqueda', () => {
@@ -306,8 +325,8 @@ describe('acciones en vivo de Productos', () => {
       expect(container.querySelector('.ag-gestion-flecha')).toHaveClass('esta-abierta');
       expect(screen.queryByRole('combobox')).toBeNull();
       expect(container.querySelector('.ag-kasavana-resumen-general').textContent).toContain('1 clasificados');
-      expect(screen.queryByText('Margen ↑')).toBeNull();
-      expect(screen.queryByText('Popularidad →')).toBeNull();
+      expect(screen.getByText('MARGEN ↑')).toBeTruthy();
+      expect(screen.getByText('POPULARIDAD →')).toBeTruthy();
       fireEvent.click(screen.getByRole('button', { name: 'Cómo funciona la matriz Kasavana' }));
       expect(screen.getByRole('note').textContent).toMatch(/Michael L. Kasavana y Donald I. Smith/);
       expect(screen.getByRole('note').textContent).toMatch(/1982/);

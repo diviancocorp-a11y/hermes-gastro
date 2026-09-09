@@ -151,6 +151,33 @@ function Centered({ children }) {
   );
 }
 
+function ConteoBreve({ value, listo }) {
+  const objetivo = Math.max(0, Number(value) || 0);
+  const [actual, setActual] = useState(0);
+  const animacionHecha = useRef(false);
+
+  useEffect(() => {
+    if (!listo) return undefined;
+    let frame;
+    const reducirMovimiento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const inicio = performance.now();
+
+    const avanzar = (ahora) => {
+      const progreso = reducirMovimiento || animacionHecha.current
+        ? 1
+        : Math.min(1, (ahora - inicio) / 300);
+      setActual(Math.round(objetivo * progreso));
+      if (progreso < 1) frame = requestAnimationFrame(avanzar);
+      else animacionHecha.current = true;
+    };
+
+    frame = requestAnimationFrame(avanzar);
+    return () => cancelAnimationFrame(frame);
+  }, [listo, objetivo]);
+
+  return <strong aria-label={String(objetivo)}>{actual}</strong>;
+}
+
 export default function PlatformAdmin() {
   const productsPanelRef = useRef(null);
   const { session, tenant, role, roles, status, doLogin, doLogout } = usePlatformTenant();
@@ -896,16 +923,16 @@ export default function PlatformAdmin() {
               <div className="ag-productos-head-resumen">
                 <div className="ag-productos-head-metricas" aria-label="Resumen del catálogo">
                   <div className="ag-productos-head-metrica">
-                    <strong>{resumenProductos.visibles}</strong>
+                    <ConteoBreve value={resumenProductos.visibles} listo={!loadingProducts} />
                     <span className="ag-productos-head-etiqueta-completa">EN EL CATÁLOGO</span>
                     <span className="ag-productos-head-etiqueta-corta">catálogo</span>
                   </div>
                   <div className="ag-productos-head-metrica">
-                    <strong>{resumenProductos.ocultos}</strong>
+                    <ConteoBreve value={resumenProductos.ocultos} listo={!loadingProducts} />
                     <span>ocultos</span>
                   </div>
                   <div className="ag-productos-head-metrica">
-                    <strong>{resumenProductos.categorias}</strong>
+                    <ConteoBreve value={resumenProductos.categorias} listo={!loadingProducts} />
                     <span className="ag-productos-head-etiqueta-completa">CATEGORÍAS</span>
                     <span className="ag-productos-head-etiqueta-corta">cat.</span>
                   </div>
@@ -917,7 +944,7 @@ export default function PlatformAdmin() {
                     onClick={() => setTab('stock')}
                     aria-label={`${resumenProductos.sinStock} ${terminoCatalogo.plural.toLocaleLowerCase('es-AR')} sin stock. Resolver ahora`}
                   >
-                    <strong>{resumenProductos.sinStock}</strong>
+                    <ConteoBreve value={resumenProductos.sinStock} listo={!loadingProducts} />
                     <span>SIN STOCK</span>
                     <small>
                       <span className="ag-productos-head-etiqueta-completa">Resolver ahora</span>

@@ -383,12 +383,6 @@
   height: 2px;
   border-radius: 999px;
   background: var(--ms-gold);
-  transform-origin: left center;
-  animation: ag-titulo-respira 2.8s ease-in-out infinite;
-}
-@keyframes ag-titulo-respira {
-  0%, 100% { opacity: .55; transform: scaleX(.72); }
-  50% { opacity: 1; transform: scaleX(1); }
 }
 .ag-section-meta {
   font-family: var(--ag-font-mono);
@@ -556,7 +550,6 @@
 .ag-slot > * { margin-bottom: 12px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .ag-section-title::after { animation: none; }
   .ag-root .ag-topbar .ag-theme-toggle,
   .ag-root .ag-topbar .ag-btn-mini { transition: none; }
   .ag-sistema-operativo[data-operativo="true"] .ag-sistema-indicador { animation: none; }

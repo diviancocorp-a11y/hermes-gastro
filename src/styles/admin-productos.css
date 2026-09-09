@@ -461,7 +461,7 @@
   margin-bottom: var(--ag-sp-3);
   padding: var(--ag-sp-2) var(--ag-sp-3);
   border-left: 2px solid var(--ag-accent-border);
-  background: color-mix(in srgb, var(--ag-volt) 8%, var(--ag-bg-card));
+  background: var(--ag-bg-soft);
 }
 .ag-dico-busqueda > span {
   font: 700 9px/1.2 var(--ag-font-mono);
@@ -625,9 +625,19 @@
 }
 
 .ag-kasavana-matriz {
-  position: relative;
+  display: grid;
+  gap: var(--ag-sp-2);
   margin: var(--ag-sp-3);
 }
+
+.ag-kasavana-eje {
+  color: var(--ag-ink-3);
+  font: 700 9px/1 var(--ag-font-mono);
+  letter-spacing: 0;
+}
+
+.ag-kasavana-eje-y { justify-self: start; }
+.ag-kasavana-eje-x { justify-self: end; }
 
 .ag-kasavana-cuadrante.es-estrella { --cuadrante-color: var(--ag-c-sales-ink); }
 .ag-kasavana-cuadrante.es-enigma { --cuadrante-color: #64748b; }
@@ -652,7 +662,7 @@
   cursor: pointer;
 }
 
-.ag-kasavana-cuadrante:hover { border-color: var(--ag-accent-border); transform: translateY(-1px); }
+.ag-kasavana-cuadrante:hover { border-color: var(--ag-accent-border); }
 .ag-kasavana-cuadrante:focus-visible { outline: 2px solid var(--ag-accent-border); outline-offset: 2px; }
 .ag-kasavana-cuadrante-cabecera {
   display: flex;
@@ -680,7 +690,7 @@
   padding: var(--ag-sp-2) var(--ag-sp-3);
   border: 0;
   border-bottom: 1px solid var(--ag-line);
-  background: color-mix(in srgb, var(--ag-bg-card) 78%, transparent);
+  background: var(--ag-bg-soft);
   color: var(--ag-ink-3);
   text-align: left;
   cursor: pointer;
@@ -725,9 +735,9 @@
   width: calc(100% - (var(--ag-sp-3) * 2));
   margin: 0 var(--ag-sp-3) var(--ag-sp-3);
   padding: var(--ag-sp-3);
-  border: 1px solid color-mix(in srgb, var(--ms-gold) 55%, var(--ag-line));
+  border: 1px solid var(--ag-line);
   border-radius: var(--ag-r-md);
-  background: var(--ag-accent-soft);
+  background: transparent;
   color: var(--ag-ink);
   text-align: left;
   cursor: pointer;
@@ -913,9 +923,16 @@
 }
 
 .ag-categoria-cuenta {
+  display: inline-flex;
+  gap: var(--ag-sp-1);
   font-size: 11.5px;
   color: var(--ag-ink-3);
   white-space: nowrap;
+}
+
+.ag-categoria-cuenta b {
+  color: var(--ag-c-orders-ink);
+  font: inherit;
 }
 
 .ag-categoria-flecha {
@@ -1075,7 +1092,17 @@
   height: 3px;
   background: var(--ag-line);
 }
-.ag-fila-margen-track i { display: block; height: 100%; background: var(--ag-c-sales-ink); }
+.ag-fila-margen-track i {
+  display: block;
+  height: 100%;
+  background: var(--ag-c-sales-ink);
+  transform-origin: left center;
+  animation: ag-margen-entra 300ms var(--ag-ease) both;
+}
+@keyframes ag-margen-entra {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
 .ag-fila-margen-celda.esta-alerta .ag-fila-margen-track i { background: var(--ag-c-orders-ink); }
 .ag-fila-margen-track b {
   position: absolute;
@@ -1240,15 +1267,6 @@
 
   .ag-productos-cuerpo .ag-gestion-productos { order: -1; }
 
-  .ag-gestion-productos.esta-operativo::before {
-    background-image: linear-gradient(90deg,
-      var(--ag-volt) 0 36%,
-      #dbeafe 49%,
-      var(--ag-volt) 62% 100%);
-    background-size: 220% 100%;
-    animation: ag-gestion-pulso 1.8s linear infinite;
-  }
-
   .ag-gestion-head {
     align-items: center;
     padding: var(--ag-sp-3);
@@ -1320,14 +1338,9 @@
   .ag-perfil-metricas > div { padding: var(--ag-sp-3); }
 }
 
-@keyframes ag-gestion-pulso {
-  from { background-position: 100% 0; }
-  to { background-position: 0 0; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .ag-gestion-productos.esta-operativo::before { animation: none; }
   .ag-resumen-dico-cursor { animation: none; }
+  .ag-fila-margen-track i { animation: none; }
 }
 
 @media (max-width: 420px) {

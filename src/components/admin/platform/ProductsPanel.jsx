@@ -99,9 +99,18 @@ const ProductsPanel = forwardRef(function ProductsPanel({
       });
   }, [filtered, categories, margenDe]);
 
+  const categoriaInicial = useMemo(() => (
+    groups.find(([, items]) => items.some((producto) => {
+      const calculado = margenDe(producto);
+      return calculado && calculado.pct < minimoMargenPct;
+    }))?.[0] || groups[0]?.[0] || null
+  ), [groups, margenDe, minimoMargenPct]);
+
   const toggleCategoria = (categoria) => {
     setCategoriasAbiertas((actual) => {
-      const siguiente = actual === null ? new Set(categories) : new Set(actual);
+      const siguiente = actual === null
+        ? new Set(categoriaInicial ? [categoriaInicial] : [])
+        : new Set(actual);
       if (siguiente.has(categoria)) siguiente.delete(categoria);
       else siguiente.add(categoria);
       return siguiente;
@@ -309,7 +318,9 @@ const ProductsPanel = forwardRef(function ProductsPanel({
           </div>
         </div>
         {groups.map(([cat, items]) => {
-          const abierta = categoriasAbiertas === null || categoriasAbiertas.has(cat);
+          const abierta = categoriasAbiertas === null
+            ? cat === categoriaInicial
+            : categoriasAbiertas.has(cat);
           const bajoMinimo = items.filter((producto) => {
             const calculado = margenDe(producto);
             return calculado && calculado.pct < minimoMargenPct;
@@ -326,8 +337,8 @@ const ProductsPanel = forwardRef(function ProductsPanel({
               >
                 <h3 className="ag-categoria-nombre">{cat}</h3>
                 <span className="ag-categoria-cuenta">
-                  {items.length} {items.length === 1 ? t.singular : t.plural.toLowerCase()}
-                  {bajoMinimo > 0 && ` · ${bajoMinimo} bajo mínimo`}
+                  <span>{items.length} {items.length === 1 ? t.singular : t.plural.toLowerCase()}</span>
+                  {bajoMinimo > 0 && <b>· {bajoMinimo} bajo mínimo</b>}
                 </span>
                 <i className="ag-categoria-flecha" aria-hidden="true" />
               </button>

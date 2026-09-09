@@ -625,6 +625,7 @@ export default function GestionProductosPanel({
 
                   {kasavana.productosAnalizados > 0 ? (
                     <div className="ag-kasavana-matriz">
+                      <span className="ag-kasavana-eje ag-kasavana-eje-y">MARGEN ↑</span>
                       <div className="ag-kasavana">
                         {cuadrantesEnVista.map(cuadrante => (
                           <CuadranteResumen
@@ -635,6 +636,7 @@ export default function GestionProductosPanel({
                           />
                         ))}
                       </div>
+                      <span className="ag-kasavana-eje ag-kasavana-eje-x">POPULARIDAD →</span>
                     </div>
                   ) : (
                     <div className="ag-gestion-sin-datos">
