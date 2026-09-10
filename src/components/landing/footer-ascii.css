@@ -1,0 +1,18 @@
+/* La trama de puntos del cierre. Ver FooterAscii.jsx. */
+
+.fa-root {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: #0e1013;
+  /* Se funde con el pie en lugar de terminar en un canto duro: el efecto es
+     ambiente, y un borde recto lo convierte en una caja pegada. */
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, #000 72%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 22%, #000 72%, transparent 100%);
+}
+
+.fa-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

@@ -1,0 +1,654 @@
+/* ────────────────────────────────────────────────────────
+ * Landing de la plataforma (divianco.app).
+ *
+ * Vive fuera del admin y fuera del catalogo: es la unica pantalla que ve
+ * alguien que todavia no tiene negocio. Usa los tokens --ds-* y las dos
+ * fuentes de marca ya self-hosted (Butler para titulos, Overused Grotesk
+ * para el resto). No trae CDN: el manual de marca lo prohibe.
+ * ──────────────────────────────────────────────────────── */
+
+.pl-root {
+  --pl-bg: #08090b;              /* VOID  — manual 03 */
+  --pl-bg-2: #16141200;
+  --pl-carbon: #0e1013;          /* CARBON — manual 03 */
+  --pl-panel: rgba(255, 255, 255, 0.035);
+  --pl-panel-2: rgba(255, 255, 255, 0.055);
+  --pl-line: rgba(255, 255, 255, 0.09);
+  --pl-line-2: rgba(255, 255, 255, 0.16);
+  --pl-tx: var(--ds-color-neutral-50, #faf5ee);
+  --pl-t2: rgba(250, 245, 238, 0.68);
+  --pl-t3: rgba(250, 245, 238, 0.42);
+  --pl-gold: var(--ds-color-brand-gold-500, #e0ac3c);
+  --pl-gold-ink: #1a1206;
+  --pl-volt: var(--ds-color-intelligence-label, #93b4ff);
+  --pl-ok: var(--ds-color-status-success, #4fa87f);
+  --pl-warn: var(--ds-color-status-warning, #f0803c);
+  --pl-max: 1120px;
+
+  min-height: 100dvh;
+  background: var(--pl-bg);
+  color: var(--pl-tx);
+  font-family: var(--ds-font-ui, 'Overused Grotesk', system-ui, sans-serif);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.pl-root *,
+.pl-root *::before,
+.pl-root *::after {
+  box-sizing: border-box;
+}
+
+/* min-width:0 en todo lo que vive en grid o flex: sin esto una celda con
+   texto largo empuja la fila y la pagina scrollea de costado. */
+.pl-root .pl-grid > *,
+.pl-root .pl-row > * {
+  min-width: 0;
+}
+
+.pl-wrap {
+  width: 100%;
+  max-width: var(--pl-max);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.pl-serif {
+  font-family: var(--ds-font-soul, 'Butler', Georgia, serif);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+}
+
+.pl-mono {
+  font-family: var(--ds-font-technical, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ─────────────── Barra superior ─────────────── */
+
+.pl-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(15, 14, 13, 0.86);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--pl-line);
+}
+
+.pl-nav-in {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  min-height: 64px;
+}
+
+.pl-logo img {
+  display: block;
+  height: 26px;
+  width: auto;
+}
+
+.pl-nav-links {
+  display: flex;
+  gap: 22px;
+  margin-left: auto;
+}
+
+.pl-nav-links a {
+  color: var(--pl-t2);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.pl-nav-links a:hover {
+  color: var(--pl-tx);
+}
+
+.pl-nav-cta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+@media (max-width: 860px) {
+  .pl-nav-links { display: none; }
+  .pl-nav-cta { margin-left: auto; }
+}
+
+/* Debajo de 520px los dos botones y el logo no entran en una linea sin
+   partir el texto en tres renglones. Se achica el logo y se va el secundario:
+   quien ya tiene cuenta entra desde el pie, quien no es a quien le hablamos. */
+@media (max-width: 520px) {
+  .pl-nav-in { gap: 12px; }
+  .pl-logo img { height: 20px; }
+  .pl-nav-cta .pl-btn-ghost { display: none; }
+  .pl-nav-cta .pl-btn-sm { padding: 8px 13px; font-size: 13px; }
+}
+
+/* ─────────────── Botones ─────────────── */
+
+.pl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.pl-btn:active { transform: translateY(1px); }
+
+.pl-btn-gold {
+  background: var(--pl-gold);
+  color: var(--pl-gold-ink);
+}
+
+.pl-btn-gold:hover { background: var(--ds-color-brand-gold-300, #f0c868); }
+
+.pl-btn-ghost {
+  background: transparent;
+  border-color: var(--pl-line-2);
+  color: var(--pl-tx);
+}
+
+.pl-btn-ghost:hover { border-color: rgba(255, 255, 255, 0.34); }
+
+.pl-btn-sm { padding: 9px 16px; font-size: 14px; }
+
+.pl-btn-block { width: 100%; }
+
+/* ─────────────── Hero ─────────────── */
+
+.pl-hero {
+  padding: 88px 0 0;
+  text-align: center;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(240, 200, 104, 0.07), transparent 62%),
+    radial-gradient(90% 55% at 50% 8%, rgba(61, 107, 255, 0.06), transparent 70%);
+}
+
+.pl-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--pl-line);
+  background: var(--pl-panel);
+  color: var(--pl-t2);
+}
+
+.pl-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pl-ok);
+}
+
+.pl-titular {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin: 26px auto 0;
+  max-width: 18ch;
+  font-size: clamp(30px, 5.6vw, 56px);
+  line-height: 1.1;
+}
+
+/* El titular no es serif: la serif queda reservada para la palabra que Dico
+   escribe. Mezclar las dos en la misma linea es lo que le da el contraste. */
+.pl-titular-fijo {
+  font-family: var(--ds-font-ui, 'Overused Grotesk', system-ui, sans-serif);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.pl-titular-rota {
+  font-size: 1.12em;
+  line-height: 1.05;
+}
+
+.pl-hero-sub {
+  margin: 20px auto 0;
+  max-width: 56ch;
+  font-size: clamp(16px, 2.2vw, 19px);
+  color: var(--pl-t2);
+}
+
+.pl-hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.pl-hero-nota {
+  margin-top: 16px;
+  color: var(--pl-t3);
+}
+
+/* ─────────────── Mockup del panel ─────────────── */
+
+.pl-mock {
+  margin: 52px auto 0;
+  max-width: 940px;
+  border: 1px solid var(--pl-line);
+  border-radius: 16px 16px 0 0;
+  border-bottom: 0;
+  background: var(--pl-carbon, #0e1013);
+  text-align: left;
+  overflow: hidden;
+}
+
+.pl-mock-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--pl-line);
+  color: var(--pl-t3);
+}
+
+.pl-mock-luz {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.pl-mock-body {
+  display: grid;
+  grid-template-columns: minmax(min(300px, 100%), 1.35fr) minmax(min(260px, 100%), 1fr);
+  gap: 18px;
+  padding: 20px;
+}
+
+@media (max-width: 780px) {
+  .pl-mock-body { grid-template-columns: 1fr; }
+}
+
+.pl-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--pl-line);
+  border: 1px solid var(--pl-line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pl-kpi {
+  background: #16141200;
+  background-color: #121519;
+  padding: 14px 16px;
+}
+
+.pl-kpi-label { color: var(--pl-t3); }
+
+.pl-kpi-valor {
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.pl-kpi-delta { font-size: 12px; margin-top: 2px; }
+.pl-kpi-delta.sube { color: var(--pl-ok); }
+.pl-kpi-delta.baja { color: var(--pl-warn); }
+
+.pl-pend {
+  margin-top: 16px;
+  border: 1px solid var(--pl-line);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.pl-pend h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.pl-pend li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 13px;
+  color: var(--pl-t2);
+}
+
+.pl-pend ul { margin: 0; padding: 0; list-style: none; }
+
+.pl-tag {
+  flex: none;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid currentColor;
+  font-family: var(--ds-font-technical, monospace);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.pl-tag.alta { color: var(--pl-warn); }
+.pl-tag.media { color: var(--pl-t3); }
+
+.pl-dico-card {
+  align-self: start;
+  border: 1px solid var(--pl-line);
+  border-radius: 12px;
+  padding: 16px;
+  background: rgba(61, 107, 255, 0.05);
+}
+
+.pl-dico-firma {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--pl-volt);
+}
+
+.pl-dico-firma img {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+.pl-dico-dice {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--pl-t2);
+  line-height: 1.5;
+}
+
+.pl-dico-acciones {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* ─────────────── Tira de reemplazo ─────────────── */
+
+.pl-tira {
+  border-top: 1px solid var(--pl-line);
+  border-bottom: 1px solid var(--pl-line);
+  padding: 18px 0;
+}
+
+.pl-tira-in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 30px;
+  color: var(--pl-t3);
+}
+
+.pl-tira-in strong {
+  color: var(--pl-t3);
+  font-weight: 400;
+}
+
+/* ─────────────── Secciones ─────────────── */
+
+.pl-sec { padding: 84px 0; }
+
+.pl-sec + .pl-sec { border-top: 1px solid var(--pl-line); }
+
+.pl-sec-head { margin-bottom: 36px; }
+
+.pl-sec-head.pl-row {
+  display: grid;
+  grid-template-columns: minmax(min(300px, 100%), 1.6fr) minmax(min(260px, 100%), 1fr);
+  gap: 24px;
+  align-items: end;
+}
+
+@media (max-width: 780px) {
+  .pl-sec-head.pl-row { grid-template-columns: 1fr; align-items: start; }
+}
+
+.pl-sec-head h2 {
+  margin: 12px 0 0;
+  font-size: clamp(26px, 4vw, 38px);
+}
+
+.pl-sec-head p {
+  margin: 12px 0 0;
+  max-width: 62ch;
+  color: var(--pl-t2);
+}
+
+.pl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 16px;
+}
+
+.pl-card {
+  border: 1px solid var(--pl-line);
+  border-radius: 14px;
+  padding: 22px;
+  background: var(--pl-panel);
+}
+
+.pl-card h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.pl-card p {
+  margin: 10px 0 0;
+  color: var(--pl-t2);
+  font-size: 14px;
+}
+
+.pl-card ul {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pl-card li {
+  position: relative;
+  padding-left: 15px;
+  margin-top: 7px;
+  font-size: 14px;
+  color: var(--pl-t2);
+}
+
+.pl-card li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--pl-gold);
+}
+
+.pl-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* ─────────────── Integraciones ─────────────── */
+
+.pl-estado {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-family: var(--ds-font-technical, monospace);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+}
+
+.pl-estado.activo { color: var(--pl-ok); }
+.pl-estado.pruebas { color: var(--pl-gold); }
+.pl-estado.roadmap { color: var(--pl-volt); }
+
+/* ─────────────── Comparativa ─────────────── */
+
+.pl-tabla-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--pl-line);
+  border-radius: 14px;
+}
+
+.pl-tabla {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.pl-tabla th,
+.pl-tabla td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--pl-line);
+  vertical-align: top;
+}
+
+.pl-tabla tr:last-child th,
+.pl-tabla tr:last-child td { border-bottom: 0; }
+
+.pl-tabla thead th {
+  background: var(--pl-panel-2);
+  color: var(--pl-t3);
+  font-family: var(--ds-font-technical, monospace);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+.pl-tabla thead th.dico { color: var(--pl-gold); }
+
+.pl-tabla tbody th {
+  font-weight: 550;
+  color: var(--pl-tx);
+}
+
+.pl-tabla td { color: var(--pl-t2); }
+.pl-tabla td.dico { color: var(--pl-gold); }
+
+/* ─────────────── Precios ─────────────── */
+
+.pl-precios { text-align: center; }
+
+.pl-precio-card {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+.pl-precio-card.destacado {
+  border-color: rgba(240, 200, 104, 0.42);
+  background: rgba(240, 200, 104, 0.05);
+}
+
+.pl-precio-monto {
+  margin: 14px 0 0;
+  font-size: 32px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.pl-precio-monto span {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--pl-t3);
+  letter-spacing: 0;
+}
+
+.pl-precio-anual {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--pl-t3);
+}
+
+.pl-precio-card ul { flex: 1; margin-bottom: 20px; }
+
+.pl-precio-pie {
+  margin-top: 26px;
+  color: var(--pl-t3);
+  font-size: 14px;
+}
+
+/* ─────────────── Cierre ─────────────── */
+
+.pl-cierre {
+  padding: 96px 0;
+  text-align: center;
+  border-top: 1px solid var(--pl-line);
+  background: radial-gradient(90% 100% at 50% 100%, rgba(240, 200, 104, 0.07), transparent 65%);
+}
+
+.pl-cierre h2 {
+  margin: 0 auto;
+  max-width: 18ch;
+  font-size: clamp(28px, 4.6vw, 42px);
+}
+
+.pl-cierre p {
+  margin: 18px auto 0;
+  max-width: 52ch;
+  color: var(--pl-t2);
+}
+
+.pl-pie {
+  /* Sin borde: quien separa el pie del resto es la trama de puntos, que
+     termina difuminada. Una linea recta debajo se lee como un corte. */
+  background: var(--pl-carbon, #0e1013);
+}
+
+.pl-pie-in {
+  padding-block: 28px;
+}
+
+.pl-pie-in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 24px;
+}
+
+.pl-pie img { height: 20px; width: auto; display: block; }
+
+.pl-pie-legal { color: var(--pl-t3); font-size: 13px; }
+
+.pl-pie-links {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.pl-pie-links a {
+  color: var(--pl-t3);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.pl-pie-links a:hover { color: var(--pl-tx); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-root * { transition: none !important; animation: none !important; }
+}

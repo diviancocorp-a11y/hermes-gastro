@@ -58,5 +58,9 @@ export default defineConfig({
     // que lo toque explota en la vitrina.
     __CLIENT__: JSON.stringify('vitrina'),
   },
+  // Las pantallas piden sus imagenes por ruta absoluta (`/brand/dico/...`),
+  // que en produccion sale de `public/`. Con el root en tools/vitrina esas
+  // rutas daban 404 y el logo se veia roto: parecia un bug de la pantalla.
+  publicDir: path.join(repo, 'public'),
   server: { port: 5199, fs: { allow: [repo] } },
 });
