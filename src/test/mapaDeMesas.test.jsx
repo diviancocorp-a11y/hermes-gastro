@@ -57,12 +57,21 @@ describe('MapaDeMesas', () => {
     expect(onMover).not.toHaveBeenCalled();
   });
 
-  it('desde la cuenta se llega al editor de la mesa', () => {
+  it('el editor de la mesa vive en edicion, no en servicio', () => {
+    // Cambiarle el tamanio o la forma a una mesa no es algo que se haga con la
+    // mano puesta en cobrar. En servicio la mesa muestra su cuenta y nada mas.
     const onSeleccionar = vi.fn();
-    render(<MapaDeMesas recursos={[mesa()]} onSeleccionar={onSeleccionar} />);
+    render(<MapaDeMesas recursos={[mesa()]} onSeleccionar={onSeleccionar} onMover={vi.fn()} />);
 
     fireEvent.click(screen.getByLabelText(/Mesa 1/));
-    fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
+    expect(screen.queryByRole('button', { name: /Tamaño y forma/ })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Acomodar salón/i }));
+    // En edicion la mesa se toma con el puntero: el mismo gesto que la
+    // arrastra es el que la elige, y un click sin pointerdown no es ninguno.
+    fireEvent.pointerDown(screen.getByLabelText(/Mesa 1/));
+    fireEvent.pointerUp(window);
+    fireEvent.click(screen.getByRole('button', { name: /Tamaño y forma/ }));
     expect(onSeleccionar).toHaveBeenCalledWith(expect.objectContaining({ id: 'm1' }));
   });
 
@@ -81,9 +90,10 @@ describe('MapaDeMesas', () => {
 
     fireEvent.click(boton);
     expect(screen.getByText(/Arrastrá las mesas/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Listo' })).toHaveAttribute('aria-pressed', 'true');
+    const salir = screen.getByRole('button', { name: /Salir de edición/i });
+    expect(salir).toHaveAttribute('aria-pressed', 'true');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Listo' }));
+    fireEvent.click(salir);
     expect(screen.queryByText(/Arrastrá las mesas/i)).not.toBeInTheDocument();
   });
 
@@ -99,12 +109,11 @@ describe('MapaDeMesas', () => {
     );
     expect(screen.getByText(/Sin ubicar en el plano \(1\)/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Mesa nueva/ }));
-    // Se abre su cuenta igual que si estuviera en el plano, y desde ahi se la
-    // edita: lo no ubicado no es un ciudadano de segunda.
+    // Se abre su cuenta igual que si estuviera en el plano: lo no ubicado no
+    // es un ciudadano de segunda.
     const detalle = screen.getByLabelText('Detalle de la mesa');
     expect(within(detalle).getByRole('heading', { name: 'Mesa nueva' })).toBeInTheDocument();
-    fireEvent.click(within(detalle).getByRole('button', { name: 'Editar' }));
-    expect(onSeleccionar).toHaveBeenCalledWith(expect.objectContaining({ id: 'm9' }));
+    expect(onSeleccionar).not.toHaveBeenCalled();
   });
 
   it('sin nada ubicado explica que hacer, sin dejar el plano mudo', () => {
@@ -167,7 +176,7 @@ describe('MapaDeMesas', () => {
         onActualizarSolicitud={onActualizar}
       />
     );
-    expect(screen.getByLabelText('Solicitudes de las mesas')).toHaveTextContent('Mesa 1');
+    expect(screen.getByLabelText('Llamados de las mesas')).toHaveTextContent('Mesa 1');
     expect(screen.getByText('Piden la cuenta')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Tomar' }));
     expect(onActualizar).toHaveBeenCalledWith('s1', 'accepted');
