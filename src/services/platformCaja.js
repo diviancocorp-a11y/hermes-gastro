@@ -197,6 +197,48 @@ export async function fetchRendicionesCaja(tenantId, branchId, cashSessionId) {
   return data || [];
 }
 
+/**
+ * Lo que la mini caja de una persona TENDRIA que tener en efectivo.
+ *
+ * Sale de los pagos en efectivo que cobro esa persona en este turno, no de lo
+ * que vendio: una tarjeta no deja plata en el bolsillo.
+ */
+export async function esperadoDeMiMiniCaja(cashSessionId, staffId) {
+  const { data, error } = await supabase.rpc('staff_settlement_expected_cash', {
+    p_cash_session_id: cashSessionId,
+    p_staff_id: staffId,
+  });
+  if (error) {
+    console.error('esperadoDeMiMiniCaja:', error.message);
+    return null;
+  }
+  return Number(data) || 0;
+}
+
+/**
+ * Presentar el pre-cierre.
+ *
+ * Lo puede hacer la persona por si misma —la funcion lo permite sin rol, con
+ * `v_is_self`— y por eso el mozo no necesita permisos de caja del local. Es
+ * idempotente: el boton de presentar es de los que se tocan dos veces.
+ */
+export async function presentarRendicion(tenantId, cashSessionId, staffId, declarado, notas = null) {
+  const { data, error } = await supabase.rpc('submit_staff_cash_settlement', {
+    p_tenant_id: tenantId,
+    p_cash_session_id: cashSessionId,
+    p_staff_id: staffId,
+    p_declared_cash: Number(declarado),
+    p_notes: notas,
+    p_client_request_id: claveDeIdempotencia('rendicion', [cashSessionId, staffId]),
+  });
+  if (error) {
+    console.error('presentarRendicion:', error.message);
+    return { __error: 'db', message: traducir(error.message) };
+  }
+  reiniciarClave('rendicion');
+  return data;
+}
+
 export async function revisarRendicion(settlementId, decision, notes = null) {
   const { data, error } = await supabase.rpc('review_staff_cash_settlement', {
     p_settlement_id: settlementId,

@@ -48,6 +48,7 @@ import { fetchDefaultBranch } from '../services/platformInventoryLedger';
 import {
   fetchTurnoAbierto, fetchTurnos, abrirTurno, cerrarTurno, esperadoEnCaja,
   fetchRendicionesCaja, fetchIncidenciasCaja, fetchBloqueosCaja,
+  esperadoDeMiMiniCaja, presentarRendicion,
   revisarRendicion, resolverIncidencia,
 } from '../services/platformCaja';
 import {
@@ -55,7 +56,7 @@ import {
 } from '../services/platformFiscal';
 import {
   fetchPersonal, fetchFichajesAbiertos, ficharEntrada, ficharSalida,
-  fetchCostoLaboral,
+  fetchCostoLaboral, fetchMiFicha,
 } from '../services/platformPersonal';
 import {
   fetchServiceRequests, updateServiceRequest, subscribeToServiceRequests,
@@ -113,6 +114,10 @@ const PantallaDeCobro = lazy(() => import('../components/admin/platform/Pantalla
 const CobrosOnline = lazy(() => import('../components/admin/platform/CobrosOnline'));
 // Caja: el turno con su arqueo. Lazy por lo mismo que el salon.
 const CajaPanel = lazy(() => import('../components/admin/platform/CajaPanel'));
+// La caja del mozo es otra pantalla, no la misma con ifs adentro: el que
+// cobra las mesas declara lo suyo y no tiene nada que ver con el arqueo del
+// local, las incidencias del turno ni la cola fiscal.
+const MiMiniCaja = lazy(() => import('../components/admin/platform/MiMiniCaja'));
 // Equipo: quien esta trabajando y cuanto cuesta el turno (6e).
 const PersonalPanel = lazy(() => import('../components/admin/platform/PersonalPanel'));
 
@@ -228,6 +233,9 @@ export default function PlatformAdmin() {
   // adentro del mapa: la pantalla de cobro es un overlay de la pagina, igual
   // que el editor de mesa, y el mapa solo avisa que mesa se quiere cobrar.
   const [pedidoDeMesaACobrar, setPedidoDeMesaACobrar] = useState(null);
+  // Lo que YO cobre en efectivo este turno. Es otra cuenta que el esperado
+  // del local: ahi entra la plata de todos.
+  const [miEsperado, setMiEsperado] = useState(null);
   const [utilizacion, setUtilizacion] = useState(null);
   // La mesa que se esta creando o editando. Null = el editor esta cerrado.
   const [mesaEnEdicion, setMesaEnEdicion] = useState(null);
@@ -370,6 +378,31 @@ export default function PlatformAdmin() {
   /* ── Caja (6d) ──
      El esperado se recalcula al abrir la pantalla y a pedido: es lo que el
      cajero compara contra la plata que tiene en la mano. */
+  /* ── Quien cobra y quien certifica ──
+     El mozo cobra sus mesas y presenta su pre-cierre; el encargado certifica
+     cada uno y recien despues cierra el turno. Por eso la pestania de Caja
+     sirve DOS pantallas distintas segun quien mire, no una con secciones
+     escondidas. */
+  const supervisaCaja = useMemo(
+    () => roles.some(r => ['owner', 'manager', 'cashier'].includes(r)),
+    [roles]);
+
+  // Mi ficha del equipo. Los cobros se atribuyen a `staff`, no al usuario de
+  // Auth: sin ficha no hay a quien imputarle la plata.
+  //
+  // Se pide aparte y no se busca en `equipo`: esa lista es del encargado y un
+  // mozo no la carga, asi que buscarla ahi dejaba la mini caja diciendo "sin
+  // ficha" con la ficha creada.
+  const [yoEnElEquipo, setYoEnElEquipo] = useState(null);
+  useEffect(() => {
+    if (!tenantId) { setYoEnElEquipo(null); return; }
+    fetchMiFicha(tenantId).then(setYoEnElEquipo);
+  }, [tenantId]);
+
+  const miRendicion = useMemo(
+    () => rendicionesCaja.find(r => r.staff_id === yoEnElEquipo?.id) || null,
+    [rendicionesCaja, yoEnElEquipo]);
+
   const loadCaja = useCallback(async () => {
     if (!tenantId) return;
     setCajaCargada(false);
@@ -717,6 +750,20 @@ export default function PlatformAdmin() {
     if (res === true) setOrders(list => list.map(o => (o.id === id ? { ...o, status: next } : o)));
     return res;
   }, [loadCaja, msg, perfilFiscal, tenantId]);
+
+  useEffect(() => {
+    if (!turno?.id || !yoEnElEquipo?.id) { setMiEsperado(null); return; }
+    esperadoDeMiMiniCaja(turno.id, yoEnElEquipo.id).then(setMiEsperado);
+  }, [turno?.id, yoEnElEquipo?.id, rendicionesCaja]);
+
+  const onPresentarRendicion = useCallback(async (declarado, notas) => {
+    if (!turno?.id || !yoEnElEquipo?.id) return null;
+    const r = await presentarRendicion(tenantId, turno.id, yoEnElEquipo.id, declarado, notas);
+    if (r?.__error) { msg(r.message || 'No se pudo presentar el pre-cierre'); return r; }
+    msg('Pre-cierre presentado');
+    loadCaja();
+    return r;
+  }, [tenantId, turno, yoEnElEquipo, msg, loadCaja]);
 
   const handleReviewOrder = useCallback(async (id, decision, note = null) => {
     const res = await reviewTableOrder(id, decision, note);
@@ -1205,7 +1252,20 @@ export default function PlatformAdmin() {
               />
             </Suspense>
           )}
-          {tab === 'caja' && (
+          {tab === 'caja' && !supervisaCaja && (
+            <Suspense fallback={<div style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando...</div>}>
+              <MiMiniCaja
+                turno={turno}
+                yo={yoEnElEquipo}
+                esperado={miEsperado}
+                rendicion={miRendicion}
+                onPresentar={onPresentarRendicion}
+                onRefrescar={loadCaja}
+                cargando={!cajaCargada}
+              />
+            </Suspense>
+          )}
+          {tab === 'caja' && supervisaCaja && (
             <Suspense fallback={<div style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando...</div>}>
               <CajaPanel
                 turno={turno}

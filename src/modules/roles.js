@@ -109,6 +109,12 @@ const MATRIZ = {
   attendant: {
     products: LECTURA, orders: PROPIO, mesas: PROPIO, agenda: PROPIO,
     stock: LECTURA,
+    // SU mini caja, no la del local. En este negocio el que cobra es el mozo:
+    // cada uno maneja la plata de sus mesas y presenta su pre-cierre al final
+    // del turno. El encargado certifica cada pre-cierre y recien despues
+    // cierra el turno. `cashier` sigue existiendo para el local que tenga a
+    // alguien fijo en la caja, pero no es el camino por defecto.
+    caja: PROPIO,
     // Sus ventas, su comision y sus propinas. No el total del local.
     ventas: PROPIO, personal: PROPIO,
   },
