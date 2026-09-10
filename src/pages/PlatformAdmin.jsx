@@ -59,6 +59,7 @@ import {
 } from '../services/platformPersonal';
 import {
   fetchServiceRequests, updateServiceRequest, subscribeToServiceRequests,
+  fetchTableVisits,
 } from '../services/platformSalon';
 import { fetchSettings, saveSettings, fetchTenantBrand } from '../services/platformSettings';
 import { getTenantSlugSync } from '../lib/activeTenant';
@@ -103,6 +104,10 @@ const Users = lazy(() => import('../components/admin/platform/EquipoDelNegocio')
 const MapaDeMesas = lazy(() => import('../components/admin/platform/MapaDeMesas'));
 // El alta de mesas viaja con el salon: quien no tiene local no lo baja nunca.
 const EditorDeMesa = lazy(() => import('../components/admin/platform/EditorDeMesa'));
+// La pantalla de cobro se abre desde Pedidos y desde el plano del salon. Va
+// lazy como el resto de los paneles; OrdersPanel la importa de forma estatica,
+// asi que las dos rutas terminan compartiendo el mismo chunk.
+const PantallaDeCobro = lazy(() => import('../components/admin/platform/PantallaDeCobro'));
 // Cobros online: se abre una vez en la vida del negocio, asi que no tiene por
 // que estar en el chunk que se carga siempre.
 const CobrosOnline = lazy(() => import('../components/admin/platform/CobrosOnline'));
@@ -217,6 +222,12 @@ export default function PlatformAdmin() {
   const [costoLaboral, setCostoLaboral] = useState(null);
   const [reservasHoy, setReservasHoy] = useState([]);
   const [solicitudesSalon, setSolicitudesSalon] = useState([]);
+  // Las visitas abiertas: sin ellas el plano no sabe que mesa tiene gente.
+  const [visitasSalon, setVisitasSalon] = useState([]);
+  // El pedido que se esta cobrando desde el plano del salon. Vive aca y no
+  // adentro del mapa: la pantalla de cobro es un overlay de la pagina, igual
+  // que el editor de mesa, y el mapa solo avisa que mesa se quiere cobrar.
+  const [pedidoDeMesaACobrar, setPedidoDeMesaACobrar] = useState(null);
   const [utilizacion, setUtilizacion] = useState(null);
   // La mesa que se esta creando o editando. Null = el editor esta cerrado.
   const [mesaEnEdicion, setMesaEnEdicion] = useState(null);
@@ -335,18 +346,20 @@ export default function PlatformAdmin() {
     const hoy = new Date();
     const desde = new Date(hoy); desde.setHours(0, 0, 0, 0);
     const hasta = new Date(hoy); hasta.setHours(23, 59, 59, 999);
-    const [rs, aps, ut, solicitudes] = await Promise.all([
+    const [rs, aps, ut, solicitudes, vs] = await Promise.all([
       fetchResources(tenantId, b.id),
       fetchAppointments(tenantId, {
         branchId: b.id, desde: desde.toISOString(), hasta: hasta.toISOString(),
       }),
       fetchUtilization(b.id, hoy.toISOString().slice(0, 10)),
       fetchServiceRequests(tenantId, b.id),
+      fetchTableVisits(tenantId, b.id),
     ]);
     setRecursos(rs);
     setReservasHoy(aps);
     setUtilizacion(ut);
     setSolicitudesSalon(solicitudes);
+    setVisitasSalon(vs);
   }, [tenantId]);
 
   useEffect(() => {
@@ -498,6 +511,22 @@ export default function PlatformAdmin() {
     if (!ok) { msg('No se pudo guardar la posición'); loadSalon(); }
     return ok;
   }, [tenantId, loadSalon, msg]);
+
+  /**
+   * Cobrar desde el plano.
+   *
+   * Una mesa puede tener VARIOS pedidos abiertos (cada ronda es uno) y el cobro
+   * es por pedido: se abre el mas viejo, que es el que lleva mas tiempo sin
+   * cobrarse. Cerrada esa pantalla, la mesa muestra lo que queda. Cobrar los
+   * tres de una en un solo pago necesita un modelo de cuenta por visita que
+   * todavia no existe.
+   */
+  const cobrarMesa = useCallback((mesa) => {
+    const abiertos = [...(mesa?.ordenes || [])]
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    if (!abiertos.length) { msg('Esa mesa no tiene nada para cobrar'); return; }
+    setPedidoDeMesaACobrar(abiertos[0]);
+  }, [msg]);
 
   const actualizarSolicitudSalon = useCallback(async (id, status) => {
     const r = await updateServiceRequest(id, status);
@@ -1131,13 +1160,18 @@ export default function PlatformAdmin() {
               <MapaDeMesas
                 recursos={recursos}
                 reservas={reservasHoy}
-                utilizacion={utilizacion}
+                visitas={visitasSalon}
+                /* Los mismos pedidos que ve la pestania de Pedidos: el plano
+                   no vuelve a consultar para mostrar la cuenta de una mesa. */
+                ordenes={orders}
+                personal={equipo}
                 solicitudes={solicitudesSalon}
                 onActualizarSolicitud={actualizarSolicitudSalon}
                 onMover={moverRecurso}
                 terminologia={{ plural: 'Mesas', singular: 'mesa' }}
                 onSeleccionar={setMesaEnEdicion}
                 onNuevo={nuevaMesa}
+                onCobrarMesa={cobrarMesa}
               />
               {mesaEnEdicion && (
                 <EditorDeMesa
@@ -1147,6 +1181,16 @@ export default function PlatformAdmin() {
                   onGuardar={guardarMesa}
                   onArchivar={archivarMesa}
                   onCerrar={() => setMesaEnEdicion(null)}
+                />
+              )}
+              {pedidoDeMesaACobrar && (
+                <PantallaDeCobro
+                  tenantId={tenantId}
+                  pedido={pedidoDeMesaACobrar}
+                  hayTurnoAbierto={!!turno}
+                  onCerrar={() => setPedidoDeMesaACobrar(null)}
+                  onCobrado={() => { loadCaja(); loadOrders(); loadSalon(); }}
+                  onCompletar={(o) => handleSetOrderStatus(o.id, PlatformOrderStatus.COMPLETED)}
                 />
               )}
             </Suspense>

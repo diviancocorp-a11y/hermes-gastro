@@ -41,25 +41,38 @@ describe('MapaDeMesas', () => {
     expect(screen.getByLabelText(/Mesa 1.*Libre/)).toBeInTheDocument();
   });
 
-  it('en servicio, tocar una mesa la selecciona y NO la mueve', () => {
+  it('en servicio, tocar una mesa abre su cuenta y NO la mueve', () => {
     // El riesgo real: un toque torcido en un telefono moviendo el salon en
     // plena hora pico.
-    const onSeleccionar = vi.fn();
+    //
+    // Tocar ya no abre el editor de la mesa: abre su CUENTA en el panel de al
+    // lado, que es lo que se busca durante el servicio. Editarla quedo en un
+    // boton de ese panel, un gesto mas adentro y a proposito.
     const onMover = vi.fn();
-    render(<MapaDeMesas recursos={[mesa()]} onSeleccionar={onSeleccionar} onMover={onMover} />);
+    render(<MapaDeMesas recursos={[mesa()]} onMover={onMover} />);
 
     fireEvent.click(screen.getByLabelText(/Mesa 1/));
-    expect(onSeleccionar).toHaveBeenCalledTimes(1);
+    const detalle = screen.getByLabelText('Detalle de la mesa');
+    expect(within(detalle).getByRole('heading', { name: 'Mesa 1' })).toBeInTheDocument();
     expect(onMover).not.toHaveBeenCalled();
   });
 
-  it('en modo acomodar, tocar NO dispara la seleccion', () => {
+  it('desde la cuenta se llega al editor de la mesa', () => {
     const onSeleccionar = vi.fn();
-    render(<MapaDeMesas recursos={[mesa()]} onSeleccionar={onSeleccionar} onMover={vi.fn()} />);
+    render(<MapaDeMesas recursos={[mesa()]} onSeleccionar={onSeleccionar} />);
+
+    fireEvent.click(screen.getByLabelText(/Mesa 1/));
+    fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
+    expect(onSeleccionar).toHaveBeenCalledWith(expect.objectContaining({ id: 'm1' }));
+  });
+
+  it('en modo acomodar, tocar NO abre la cuenta', () => {
+    render(<MapaDeMesas recursos={[mesa()]} onMover={vi.fn()} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Acomodar salón/i }));
     fireEvent.click(screen.getByLabelText(/Mesa 1/));
-    expect(onSeleccionar).not.toHaveBeenCalled();
+    const detalle = screen.getByLabelText('Detalle de la mesa');
+    expect(within(detalle).queryByRole('heading', { name: 'Mesa 1' })).toBeNull();
   });
 
   it('el modo acomodar se avisa y se puede salir', () => {
@@ -86,6 +99,11 @@ describe('MapaDeMesas', () => {
     );
     expect(screen.getByText(/Sin ubicar en el plano \(1\)/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Mesa nueva/ }));
+    // Se abre su cuenta igual que si estuviera en el plano, y desde ahi se la
+    // edita: lo no ubicado no es un ciudadano de segunda.
+    const detalle = screen.getByLabelText('Detalle de la mesa');
+    expect(within(detalle).getByRole('heading', { name: 'Mesa nueva' })).toBeInTheDocument();
+    fireEvent.click(within(detalle).getByRole('button', { name: 'Editar' }));
     expect(onSeleccionar).toHaveBeenCalledWith(expect.objectContaining({ id: 'm9' }));
   });
 
@@ -104,14 +122,32 @@ describe('MapaDeMesas', () => {
     expect(screen.getByText(/Tocá donde va la primera mesa/i)).toBeInTheDocument();
   });
 
-  it('la utilizacion muestra lo que NO se vendio, no solo el porcentaje', () => {
-    // "Vendiste X" no le dice nada al dueño que no sepa. "Te quedaron 12 horas
-    // sin vender" si.
-    render(<MapaDeMesas recursos={[mesa()]} utilizacion={{
-      recursos: 4, horas_disponibles: 40, horas_vendidas: 28, utilizacion_pct: 70,
-    }} />);
-    expect(screen.getByText('70%')).toBeInTheDocument();
-    expect(screen.getByText(/12 h libres/)).toBeInTheDocument();
+  it('la capacidad se mide en lugares, no en horas', () => {
+    // El salon se mira por gente sentada. Las horas vendidas son de la agenda
+    // de una barberia, donde el recurso se vende por tiempo; en una mesa lo
+    // que se ve es cuanta gente entra y cuanta hay.
+    render(
+      <MapaDeMesas
+        recursos={[mesa(), mesa({ id: 'm2', name: 'Mesa 2', capacity: 6, pos_x: 60 })]}
+        visitas={[{ id: 'v1', resource_id: 'm2', status: 'open', party_size: 5, opened_at: new Date().toISOString() }]}
+      />
+    );
+    expect(screen.getByText('50%')).toBeInTheDocument();
+    expect(screen.getByText('5 de 10 lugares')).toBeInTheDocument();
+  });
+
+  it('el consumo abierto suma lo que ninguna mesa pago todavia', () => {
+    render(
+      <MapaDeMesas
+        recursos={[mesa(), mesa({ id: 'm2', name: 'Mesa 2', pos_x: 60 })]}
+        ordenes={[
+          { id: 'o1', resource_id: 'm1', total: 12500, status: 'new', created_at: new Date().toISOString() },
+          { id: 'o2', resource_id: 'm2', total: 8000, status: 'preparing', created_at: new Date().toISOString() },
+          { id: 'o3', resource_id: 'm2', total: 99000, status: 'completed', created_at: new Date().toISOString() },
+        ]}
+      />
+    );
+    expect(screen.getByText('$ 20.500')).toBeInTheDocument();
   });
 
   it('la referencia de colores no depende solo del color', () => {

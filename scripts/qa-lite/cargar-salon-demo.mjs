@@ -37,8 +37,11 @@ const MESAS = [2, 3, 4, 5].map((n) => ({
   name: `Mesa QA ${n}`,
   zone: n > 3 ? 'Patio' : 'Salon',
   capacity: n === 5 ? 8 : 4,
-  pos_x: 20 + n * 18,
-  pos_y: n > 3 ? 55 : 20,
+  // Repartidas dentro del lienzo y lejos de la mesa del seed, que esta en
+  // 20,20. Con `20 + n * 18` la quinta caia en 110%: fuera del plano,
+  // invisible y sin forma de agarrarla.
+  pos_x: [48, 74, 32, 64][n - 2],
+  pos_y: n > 3 ? 66 : 24,
   shape: n === 5 ? 'rect' : 'round',
 }));
 
@@ -188,6 +191,14 @@ async function cargar() {
       unit_price: 8500, unit_cost: 0, qty: 1, subtotal: 8500,
     },
   ], { onConflict: 'id' })).error);
+
+  // El seed deja un pedido abierto sobre la mesa 1 con fecha del 20/8. Visto
+  // desde hoy son tres semanas sentados, y esa mesa se lleva el indicador de
+  // "mas demorada" con 500 horas: el numero es correcto y la pantalla queda
+  // ilegible. Se lo trae al turno de hoy, que es lo que el fixture representa.
+  morir('pedido del seed al dia', (await db.from('orders')
+    .update({ created_at: haceMinutos(64) })
+    .eq('id', '40000000-0000-4000-8000-000000000003')).error);
 
   // La mini caja: el mozo declaro menos de lo que cobro y queda para revisar.
   morir('mini caja', (await db.from('staff_cash_settlements').upsert({

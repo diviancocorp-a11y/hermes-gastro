@@ -3,6 +3,26 @@ import { supabase } from '../lib/supabase';
 
 const REQUEST_COLS = 'id, tenant_id, branch_id, visit_id, resource_id, assigned_staff_id, kind, status, source, requested_at, accepted_at, resolved_at';
 
+const VISIT_COLS = 'id, tenant_id, branch_id, resource_id, responsible_staff_id, service_mode, source, party_size, status, opened_at, preclosed_at';
+
+/**
+ * Las visitas que estan pasando ahora.
+ *
+ * `preclosing` cuenta como abierta: la mesa sigue ocupada mientras se cobra, y
+ * sacarla del plano en ese momento la dibujaria libre con gente sentada.
+ */
+export async function fetchTableVisits(tenantId, branchId) {
+  const { data, error } = await supabase.from('table_visits').select(VISIT_COLS)
+    .eq('tenant_id', tenantId).eq('branch_id', branchId)
+    .in('status', ['open', 'preclosing'])
+    .order('opened_at');
+  if (error) {
+    console.error('fetchTableVisits:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
 export async function fetchServiceRequests(tenantId, branchId, { activeOnly = true } = {}) {
   let query = supabase.from('service_requests').select(REQUEST_COLS)
     .eq('tenant_id', tenantId).eq('branch_id', branchId)
