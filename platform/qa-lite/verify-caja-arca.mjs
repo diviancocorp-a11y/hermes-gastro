@@ -26,6 +26,15 @@ const client = createClient(status.apiUrl, status.anonKey, {
 ok(await client.auth.signInWithPassword({ email: owner.email, password: owner.password }), 'login');
 
 const userId = (await client.auth.getUser()).data.user.id;
+const previousOrders = ok(await admin.from('orders').select('id')
+  .eq('tenant_id', QA_TENANT_ID).eq('customer_name', 'Caja ARCA QA'), 'leer QA previo');
+const previousOrderIds = previousOrders.map((order) => order.id);
+if (previousOrderIds.length) {
+  ok(await admin.from('fiscal_documents').delete().in('order_id', previousOrderIds), 'limpiar facturas QA');
+  ok(await admin.from('cash_exceptions').delete().in('order_id', previousOrderIds), 'limpiar incidencias QA');
+  ok(await admin.from('payments').delete().in('order_id', previousOrderIds), 'limpiar cobros QA');
+  ok(await admin.from('orders').delete().in('id', previousOrderIds), 'limpiar pedidos QA');
+}
 let staff = ok(await admin.from('staff').select('id')
   .eq('tenant_id', QA_TENANT_ID).eq('user_id', userId).maybeSingle(), 'leer personal');
 if (!staff) {
@@ -34,6 +43,18 @@ if (!staff) {
     name: 'Responsable QA Caja', job: 'caja', active: true,
   }).select('id').single(), 'crear personal');
 }
+
+// La sonda corre sobre el fixture vivo y puede repetirse sin resetearlo. Solo
+// limpia una rendicion QA que una corrida interrumpida haya dejado abierta;
+// los cierres previos y los datos de revision se conservan.
+ok(await admin.from('staff_cash_settlements').delete()
+  .eq('cash_session_id', CASH_SESSION_ID).eq('staff_id', staff.id)
+  .neq('status', 'closed'), 'limpiar rendicion QA interrumpida');
+const cashBefore = ok(await admin.from('payments')
+  .select('amount, payment_methods!inner(kind)')
+  .eq('cash_session_id', CASH_SESSION_ID).eq('collector_staff_id', staff.id)
+  .eq('payment_methods.kind', 'cash'), 'leer efectivo previo');
+const expectedBefore = cashBefore.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
 
 const orderId = randomUUID();
 ok(await admin.from('orders').insert({
@@ -58,32 +79,45 @@ const cashPayment = ok(await client.rpc('register_payment', {
   p_amount: 100,
   p_client_request_id: randomUUID(),
 }), 'cobro efectivo');
+const invalidCard = await client.rpc('register_payment', {
+  p_tenant_id: QA_TENANT_ID,
+  p_order_id: orderId,
+  p_method_id: CARD_METHOD_ID,
+  p_amount: 50,
+  p_receipt_last_four: '12',
+  p_client_request_id: randomUUID(),
+});
+assert.match(invalidCard.error?.message || '', /ultimos_cuatro_requeridos/);
 const cardPayment = ok(await client.rpc('register_payment', {
   p_tenant_id: QA_TENANT_ID,
   p_order_id: orderId,
   p_method_id: CARD_METHOD_ID,
   p_amount: 50,
+  p_reference: 'QA-928177',
+  p_receipt_last_four: '4312',
   p_client_request_id: randomUUID(),
 }), 'cobro tarjeta');
 assert.equal(cashPayment.collector_staff_id, staff.id);
 assert.equal(cardPayment.verification_status, 'pending');
+assert.equal(cardPayment.receipt_last_four, '4312');
+assert.equal(cardPayment.reference, 'QA-928177');
 
 const requestId = randomUUID();
 const settlement = ok(await client.rpc('submit_staff_cash_settlement', {
   p_tenant_id: QA_TENANT_ID,
   p_cash_session_id: CASH_SESSION_ID,
   p_staff_id: staff.id,
-  p_declared_cash: 100,
+  p_declared_cash: expectedBefore + 100,
   p_notes: 'Conteo QA',
   p_client_request_id: requestId,
 }), 'pre-cierre');
-assert.equal(Number(settlement.expected_cash), 100);
+assert.equal(Number(settlement.expected_cash), expectedBefore + 100);
 assert.equal(settlement.difference, 0);
 const repeated = ok(await client.rpc('submit_staff_cash_settlement', {
   p_tenant_id: QA_TENANT_ID,
   p_cash_session_id: CASH_SESSION_ID,
   p_staff_id: staff.id,
-  p_declared_cash: 100,
+  p_declared_cash: expectedBefore + 100,
   p_client_request_id: requestId,
 }), 'pre-cierre idempotente');
 assert.equal(repeated.id, settlement.id);

@@ -1,7 +1,7 @@
 {
   "_comment": "Snapshot del schema del EDIFICIO (proyecto Supabase hermes-platform, wwwzdgprsooyjgkuyoav) para validar columnas en .select(). El otro snapshot, supabase-schema.json, describe el schema LEGACY de los 3 tenants gastro viejos: son bases distintas y varias tablas (orders, order_items, coupons, profiles) existen en las dos con columnas diferentes. Que archivo se valida contra cual lo decide PLATFORM_PATHS en check-supabase-columns.mjs. Regenerar con: npm run schema:sync",
   "_refreshed_at": "2026-09-09",
-  "_migrations_through": "0067",
+  "_migrations_through": "0069",
   "tables": {
     "addresses": [
       "id",
@@ -328,7 +328,13 @@
       "cash_session_id",
       "payment_external_id",
       "payment_status",
-      "paid_at"
+      "paid_at",
+      "visit_id",
+      "review_status",
+      "risk_flags",
+      "reviewed_by",
+      "reviewed_at",
+      "review_note"
     ],
     "organizations": [
       "id",
@@ -393,6 +399,7 @@
       "collected_by",
       "collector_staff_id",
       "reference",
+      "receipt_last_four",
       "verification_status"
     ],
     "plans": [
@@ -509,7 +516,8 @@
       "width",
       "height",
       "active",
-      "created_at"
+      "created_at",
+      "public_code"
     ],
     "sales": [
       "id",
@@ -535,6 +543,24 @@
       "comment",
       "created_at",
       "client_request_id"
+    ],
+    "service_requests": [
+      "id",
+      "tenant_id",
+      "branch_id",
+      "visit_id",
+      "resource_id",
+      "assigned_staff_id",
+      "kind",
+      "status",
+      "source",
+      "requested_at",
+      "accepted_by",
+      "accepted_at",
+      "resolved_by",
+      "resolved_at",
+      "client_request_id",
+      "created_at"
     ],
     "settings": [
       "tenant_id",
@@ -716,6 +742,37 @@
       "published_at",
       "swap_requested_by",
       "swap_taken_by",
+      "created_at"
+    ],
+    "table_coverages": [
+      "id",
+      "tenant_id",
+      "branch_id",
+      "resource_id",
+      "staff_id",
+      "staff_shift_id",
+      "starts_at",
+      "ends_at",
+      "active",
+      "created_by",
+      "created_at"
+    ],
+    "table_visits": [
+      "id",
+      "tenant_id",
+      "branch_id",
+      "resource_id",
+      "responsible_staff_id",
+      "coverage_id",
+      "service_mode",
+      "source",
+      "party_size",
+      "status",
+      "opened_by",
+      "opened_at",
+      "preclosed_at",
+      "closed_at",
+      "client_request_id",
       "created_at"
     ],
     "store_credits": [

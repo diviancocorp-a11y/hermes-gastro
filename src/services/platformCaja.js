@@ -32,6 +32,8 @@ const MENSAJES = {
   hay_rendiciones_pendientes: 'Faltan revisar rendiciones del equipo.',
   hay_incidencias_criticas: 'Hay incidencias críticas pendientes.',
   faltan_comprobantes_verificados: 'Faltan verificar comprobantes de tarjeta.',
+  medio_pago_invalido: 'Ese medio de pago ya no está disponible.',
+  ultimos_cuatro_requeridos: 'Ingresá los últimos cuatro números del comprobante.',
 };
 
 function traducir(msg) {
@@ -147,12 +149,14 @@ export async function saldoDelPedido(orderId) {
  *
  * Idempotente porque el boton de cobrar es el que mas se toca dos veces.
  */
-export async function cobrar(tenantId, orderId, methodId, monto) {
+export async function cobrar(tenantId, orderId, methodId, monto, datos = {}) {
   const { data, error } = await supabase.rpc('register_payment', {
     p_tenant_id: tenantId,
     p_order_id: orderId,
     p_method_id: methodId,
     p_amount: Number(monto),
+    p_reference: datos.reference?.trim() || null,
+    p_receipt_last_four: datos.lastFour?.trim() || null,
     p_client_request_id: claveDeIdempotencia('cobro', [tenantId, orderId, methodId, Number(monto)]),
   });
   if (error) {
@@ -168,7 +172,7 @@ export async function cobrar(tenantId, orderId, methodId, monto) {
 export async function fetchPagosDePedido(orderId) {
   const { data, error } = await supabase
     .from('payments')
-    .select('id, tenant_id, order_id, method_id, amount, paid_at')
+    .select('id, tenant_id, order_id, method_id, amount, paid_at, reference, receipt_last_four, verification_status')
     .eq('order_id', orderId).order('paid_at');
   if (error) {
     console.error('fetchPagosDePedido:', error.message);
