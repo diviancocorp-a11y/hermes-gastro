@@ -100,7 +100,7 @@ export async function fetchMyTenant() {
     // src/modules/suscripcion.js, que explica por que la lectura va primero.
     .select('id, slug, name, vertical, timezone, status, settings, '
       + 'plan_id, ciclo, paga_hasta, suspendido_at, '
-      + 'tenant_members(role, roles, branch_id)')
+      + 'tenant_members(user_id, role, roles, branch_id)')
     .eq('slug', slug)
     .maybeSingle();
 
@@ -111,7 +111,19 @@ export async function fetchMyTenant() {
   if (!data) return { tenant: null, role: null, roles: [], branchIds: [], reason: 'not-member' };
 
   const { tenant_members: members, ...tenant } = data;
-  const filas = members || [];
+
+  // SOLO LAS FILAS PROPIAS. La policy de `tenant_members` deja que un miembro
+  // lea a los demas miembros del negocio, asi que este embed trae al equipo
+  // entero, no a la persona. Unir todo eso daba los roles del local sumados:
+  // un mozo entraba con el riel del duenio —Caja, Gastos, Configuracion— y la
+  // unica razon por la que no podia hacer dano era RLS. Medido el 10/9/2026 en
+  // QA Lite: el mozo leia `[{roles:['owner']},{roles:['attendant']}]`.
+  const { data: sesion } = await supabase.auth.getUser();
+  const uid = sesion?.user?.id || null;
+  const propias = (members || []).filter(m => m.user_id === uid);
+  // Sin uid no hay a quien atribuirle roles: mejor sin permisos que con los
+  // de otro. La pantalla trata la lista vacia como "no es miembro".
+  const filas = uid ? propias : [];
 
   // Una persona puede tener varias filas: una por sucursal. Los roles se unen
   // —quien es cajero en una sucursal ve la caja— y el recorte fino por
