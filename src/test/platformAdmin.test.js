@@ -93,6 +93,7 @@ describe('ciclo de vida del pedido', () => {
     let s = PlatformOrderStatus.PENDING_PAYMENT;
     while (s) { camino.push(s); s = nextOrderStatus(s); }
     expect(camino).toEqual(['pending_payment', 'new', 'preparing', 'active', 'completed']);
+    expect(nextOrderStatus(PlatformOrderStatus.PENDING_REVIEW)).toBeNull();
   });
 
   it('los estados terminales no avanzan', () => {
@@ -115,12 +116,12 @@ describe('ciclo de vida del pedido', () => {
 // (JS y el CHECK de SQL) solo se mantiene sincronizado con un test que los
 // compare. Si divergen, el sintoma es un update que muere contra el CHECK
 // recien en produccion, con el pedido ya en pantalla.
-const MIGRACION = resolve(__dirname, '../../platform/migrations/0022_order_status_check.sql');
+const MIGRACION = resolve(__dirname, '../../platform/migrations/0069_salon_visitas_y_asistencia.sql');
 
 function estadosDelSql() {
   const sql = readFileSync(MIGRACION, 'utf-8').replace(/--[^\n]*/g, '');
   const m = sql.match(/constraint\s+orders_status_check[\s\S]*?\bin\s*\(([\s\S]*?)\)/i);
-  if (!m) throw new Error('No se encontro el IN (...) de orders_status_check en 0022');
+  if (!m) throw new Error('No se encontro el IN (...) final de orders_status_check en 0069');
   return [...m[1].matchAll(/'([^']+)'/g)].map(x => x[1]);
 }
 

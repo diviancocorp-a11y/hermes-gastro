@@ -122,6 +122,31 @@ describe('MapaDeMesas', () => {
     }
   });
 
+  it('muestra los llamados activos y permite tomarlos o resolverlos', () => {
+    const onActualizar = vi.fn();
+    const { rerender } = render(
+      <MapaDeMesas
+        recursos={[mesa()]}
+        solicitudes={[{ id: 's1', resource_id: 'm1', kind: 'bill', status: 'pending' }]}
+        onActualizarSolicitud={onActualizar}
+      />
+    );
+    expect(screen.getByLabelText('Solicitudes de las mesas')).toHaveTextContent('Mesa 1');
+    expect(screen.getByText('Piden la cuenta')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Tomar' }));
+    expect(onActualizar).toHaveBeenCalledWith('s1', 'accepted');
+
+    rerender(
+      <MapaDeMesas
+        recursos={[mesa()]}
+        solicitudes={[{ id: 's1', resource_id: 'm1', kind: 'bill', status: 'accepted' }]}
+        onActualizarSolicitud={onActualizar}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Resolver' }));
+    expect(onActualizar).toHaveBeenCalledWith('s1', 'resolved');
+  });
+
   it('usa la terminologia del rubro', () => {
     // Una barberia no tiene "mesas": tiene sillones.
     render(<MapaDeMesas recursos={[]} terminologia={{ plural: 'Sillones', singular: 'sillón' }} />);

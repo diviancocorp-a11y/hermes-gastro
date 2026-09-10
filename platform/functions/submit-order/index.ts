@@ -94,6 +94,17 @@ Deno.serve(async (req) => {
         ? rawKey.toLowerCase()
         : null;
 
+    // Un pedido con table_code viene del menu fisico. La visita se abre antes
+    // al elegir autogestion o atencion; sin visita activa no se acepta una
+    // comanda suelta que nadie tenga asignada.
+    const rawTableCode = String(body.table_code || "").trim().toLowerCase();
+    const tableCode =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawTableCode)
+        ? rawTableCode
+        : null;
+    if (body.table_code && !tableCode) return jsonRes({ error: "Codigo de mesa invalido" }, 400);
+    let tableVisit: Record<string, unknown> | null = null;
+
     if (clientRequestId) {
       const { data: yaExiste } = await supabase
         .from("orders")
@@ -106,6 +117,23 @@ Deno.serve(async (req) => {
         // "se creo" y "ya estaba", que es justamente lo que se busca.
         return jsonRes({ ok: true, orderId: yaExiste.id, deduplicated: true });
       }
+    }
+
+    if (tableCode) {
+      const { data: table } = await supabase.from("resources")
+        .select("id, branch_id")
+        .eq("tenant_id", tenantId).eq("public_code", tableCode)
+        .eq("kind", "table").eq("active", true).maybeSingle();
+      if (!table) return jsonRes({ error: "Mesa no encontrada" }, 404);
+
+      const { data: visit } = await supabase.from("table_visits")
+        .select("id, resource_id, responsible_staff_id, status")
+        .eq("tenant_id", tenantId).eq("resource_id", table.id)
+        .in("status", ["open", "preclosing"]).maybeSingle();
+      if (!visit || visit.status !== "open") {
+        return jsonRes({ error: "La mesa no tiene una visita abierta para pedir" }, 409);
+      }
+      tableVisit = visit;
     }
 
     // ── Deal del dia por categoria (misma logica que el legacy) ─────
@@ -190,7 +218,7 @@ Deno.serve(async (req) => {
     // El filtro por tenant_id es lo que impide pedir un producto de OTRO local.
     const { data: dbProducts, error: prodErr } = await supabase
       .from("products")
-      .select("id, name, price, category, active")
+      .select("id, name, price, category, active, requires_age_gate")
       .eq("tenant_id", tenantId)
       .in("id", productIds);
     if (prodErr || !dbProducts) return jsonRes({ error: "Error al obtener productos" }, 500);
@@ -239,12 +267,28 @@ Deno.serve(async (req) => {
     const tipAmount = Math.round(serverSubtotal * tipPct / 100);
     const finalTotal = Math.max(0, serverSubtotal - validDiscount) + tipAmount + deliveryCost;
 
+    // La revision es obligatoria para toda comanda autogestionada en mesa.
+    // Las senales solo priorizan la bandeja: nunca reemplazan al camarero.
+    const riskFlags: string[] = [];
+    if (tableVisit) {
+      const totalUnits = validatedItems.reduce((sum, item) => sum + item.qty, 0);
+      const maxItemUnits = Math.max(1, Number(cfg.table_order_max_item_units) || 6);
+      const maxTotalUnits = Math.max(maxItemUnits, Number(cfg.table_order_max_total_units) || 15);
+      const maxAmount = Number(cfg.table_order_max_amount) || null;
+      if (validatedItems.some((item) => item.qty >= maxItemUnits)) riskFlags.push("high_item_quantity");
+      if (totalUnits >= maxTotalUnits) riskFlags.push("high_total_quantity");
+      if (maxAmount && finalTotal >= maxAmount) riskFlags.push("high_amount");
+      if (validatedItems.some((item) => productMap[item.productId]?.requires_age_gate)) {
+        riskFlags.push("age_restricted");
+      }
+    }
+
     // ── Insert ──────────────────────────────────────────────────────
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
         tenant_id: tenantId,
-        status: isMP ? "pending_payment" : "new",
+        status: tableVisit ? "pending_review" : (isMP ? "pending_payment" : "new"),
         channel: "catalog",
         customer_name: customer,
         customer_phone: phone,
@@ -267,6 +311,11 @@ Deno.serve(async (req) => {
         coupon_id: validCouponId,
         user_id: userId,
         client_request_id: clientRequestId,
+        visit_id: tableVisit?.id || null,
+        resource_id: tableVisit?.resource_id || null,
+        staff_id: tableVisit?.responsible_staff_id || null,
+        review_status: tableVisit ? "pending" : "not_required",
+        risk_flags: riskFlags,
       })
       .select("id")
       .single();
@@ -341,15 +390,23 @@ Deno.serve(async (req) => {
     // Push al admin: best-effort. El tenant_id NO es opcional — sin el,
     // send-push no sabe a que negocio avisarle y corta con 400 (nunca manda
     // a todos, que seria notificarle a los clientes de otro local).
-    if (!isMP) {
+    if (!isMP || tableVisit) {
       try {
+        let assignedUserId: string | null = null;
+        if (tableVisit?.responsible_staff_id) {
+          const { data: assigned } = await supabase.from("staff").select("user_id")
+            .eq("id", tableVisit.responsible_staff_id).maybeSingle();
+          assignedUserId = assigned?.user_id || null;
+        }
         await supabase.functions.invoke("send-push", {
           body: {
             tenant_id: tenantId,
-            title: "Nuevo pedido",
-            body: `${customer || "Cliente"} - $${finalTotal}`,
+            title: tableVisit ? "Pedido por revisar" : "Nuevo pedido",
+            body: tableVisit
+              ? `${riskFlags.length ? "Revisar con atencion" : "Revision pendiente"} - $${finalTotal}`
+              : `${customer || "Cliente"} - $${finalTotal}`,
             url: "/admin?tab=orders",
-            target: { role: "admin" },
+            target: assignedUserId ? { user_id: assignedUserId } : { role: "admin" },
           },
         });
       } catch (e) {
@@ -364,6 +421,8 @@ Deno.serve(async (req) => {
       discount: validDiscount,
       tip: tipAmount,
       delivery_cost: deliveryCost,
+      review_status: tableVisit ? "pending" : "not_required",
+      risk_flags: riskFlags,
     });
   } catch (err) {
     console.error("submit-order error:", err);

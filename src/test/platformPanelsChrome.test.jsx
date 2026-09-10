@@ -8,6 +8,7 @@ vi.mock('../components/ConfirmSlideProvider', () => ({
   useConfirm: () => async () => false,
 }));
 
+import { supabase } from '../lib/supabase';
 import ProductsPanel from '../components/admin/platform/ProductsPanel';
 import OrdersPanel from '../components/admin/platform/OrdersPanel';
 import FinanzasPanel from '../components/admin/platform/FinanzasPanel';
@@ -94,6 +95,32 @@ describe('las pestañas principales no tapan el chrome del panel', () => {
       expect(container.querySelector('.ag-page-over')).not.toBeNull();
     });
     expect(screen.getByRole('button', { name: /Volver/i })).toBeTruthy();
+  });
+});
+
+describe('revision de comandas autogestionadas', () => {
+  it('prioriza el pedido y exige aprobacion antes de producir', async () => {
+    const onReview = vi.fn().mockResolvedValue(true);
+    supabase.from.mockReturnValue({
+      select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) }),
+    });
+    render(<OrdersPanel
+      loading={false}
+      onSetStatus={vi.fn()}
+      onReview={onReview}
+      showToast={vi.fn()}
+      orders={[{
+        id: 'o1', status: 'pending_review', review_status: 'pending',
+        customer_name: 'Cliente mesa', total: 12500, delivery: 'retiro',
+        created_at: '2026-09-09T20:00:00Z', risk_flags: ['high_total_quantity'],
+      }]}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Cliente mesa/ }));
+    expect(await screen.findByText('Cantidad total inusual')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Cobrar/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Aprobar comanda' }));
+    expect(onReview).toHaveBeenCalledWith('o1', 'approve');
   });
 });
 

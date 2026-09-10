@@ -100,6 +100,8 @@ export default function MapaDeMesas({
   onMover,          // (id, {pos_x, pos_y}) -> Promise<boolean>
   onSeleccionar,    // (recurso) -> void
   onNuevo,          // () -> void
+  solicitudes = [],
+  onActualizarSolicitud,
   terminologia = { plural: 'Mesas', singular: 'mesa' },
 }) {
   const [editando, setEditando] = useState(false);
@@ -200,9 +202,50 @@ export default function MapaDeMesas({
   }, [editando, onNuevo, zonaParaNueva]);
 
   const wrap = { display: 'grid', gap: 14 };
+  const nombresPorId = useMemo(
+    () => new Map(recursos.map(recurso => [recurso.id, recurso.name])),
+    [recursos]);
+  const etiquetasSolicitud = {
+    waiter: 'Llaman al camarero',
+    bill: 'Piden la cuenta',
+    manager: 'Llaman al encargado',
+  };
 
   return (
     <section style={wrap} className="cp-root">
+      {solicitudes.length > 0 && (
+        <div aria-label="Solicitudes de las mesas" style={{ display: 'grid', gap: 7 }}>
+          {solicitudes.map(solicitud => (
+            <article key={solicitud.id} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '10px 12px', borderLeft: '3px solid var(--ag-accent, #e8b947)',
+              background: 'var(--ag-bg-card)', borderTop: '1px solid var(--ag-line)',
+              borderRight: '1px solid var(--ag-line)', borderBottom: '1px solid var(--ag-line)',
+              borderRadius: 8,
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <strong style={{ display: 'block', fontSize: 13.5, color: 'var(--ag-ink)' }}>
+                  {nombresPorId.get(solicitud.resource_id) || 'Mesa'}
+                </strong>
+                <span style={{ fontSize: 12, color: 'var(--ag-ink-3)' }}>
+                  {etiquetasSolicitud[solicitud.kind] || 'Solicitan asistencia'}
+                </span>
+              </div>
+              <button
+                type="button"
+                className={solicitud.status === 'pending' ? 'ag-btn-primary' : 'ag-btn-ghost'}
+                onClick={() => onActualizarSolicitud?.(
+                  solicitud.id,
+                  solicitud.status === 'pending' ? 'accepted' : 'resolved',
+                )}
+              >
+                {solicitud.status === 'pending' ? 'Tomar' : 'Resolver'}
+              </button>
+            </article>
+          ))}
+        </div>
+      )}
+
       {/* ── Barra: utilizacion + modo ── */}
       <header style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         {utilizacion && (

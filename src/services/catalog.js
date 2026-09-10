@@ -132,6 +132,7 @@ function firmaDelPedido(p) {
     p.phone, p.delivery, p.payment, p.address,
     (p.items || []).map(i => [i.recipeId, i.qty]),
     p.coupon_code, p.tip_pct, p.delivery_cost,
+    p.table_code,
   ];
 }
 
@@ -187,6 +188,7 @@ export async function submitOrder(orderData) {
         address: validated.address || null,
         delivery_cost: validated.delivery_cost || 0,
         tip_pct: validated.tip_pct || 0,
+        table_code: validated.table_code || null,
         client_request_id: claveDeIdempotencia('checkout', firmaDelPedido(validated)),
       },
     });

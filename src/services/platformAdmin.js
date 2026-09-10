@@ -42,6 +42,7 @@ function exigirTenant(tenantId, quien) {
 // legacy: lo escribe submit-order cuando el pago va por MercadoPago y todavia
 // no volvio la confirmacion.
 export const PlatformOrderStatus = Object.freeze({
+  PENDING_REVIEW: 'pending_review',
   PENDING_PAYMENT: 'pending_payment',
   NEW: 'new',
   PREPARING: 'preparing',
@@ -54,6 +55,7 @@ export const PLATFORM_ORDER_STATUSES = Object.values(PlatformOrderStatus);
 
 // Estados que siguen "en juego" para el operador.
 export const OPEN_ORDER_STATUSES = [
+  PlatformOrderStatus.PENDING_REVIEW,
   PlatformOrderStatus.PENDING_PAYMENT,
   PlatformOrderStatus.NEW,
   PlatformOrderStatus.PREPARING,
@@ -62,6 +64,7 @@ export const OPEN_ORDER_STATUSES = [
 
 // Que boton de avance corresponde a cada estado. null = no avanza mas.
 const NEXT_STATUS = {
+  [PlatformOrderStatus.PENDING_REVIEW]: null,
   [PlatformOrderStatus.PENDING_PAYMENT]: PlatformOrderStatus.NEW,
   [PlatformOrderStatus.NEW]: PlatformOrderStatus.PREPARING,
   [PlatformOrderStatus.PREPARING]: PlatformOrderStatus.ACTIVE,
@@ -281,7 +284,7 @@ export function categoriesFrom(products) {
 
 /* ──────────────────────────── Pedidos ──────────────────────────── */
 
-const ORDER_COLS = 'id, created_at, status, channel, customer_name, customer_phone, customer_email, total, subtotal, discount, delivery, delivery_address, delivery_cost, delivery_date, payment, note, is_gift, gift_note, tip_amount';
+const ORDER_COLS = 'id, created_at, status, channel, customer_name, customer_phone, customer_email, total, subtotal, discount, delivery, delivery_address, delivery_cost, delivery_date, payment, note, is_gift, gift_note, tip_amount, resource_id, staff_id, visit_id, review_status, risk_flags, reviewed_at, review_note';
 
 export async function fetchOrders(tenantId, { limit = 100 } = {}) {
   exigirTenant(tenantId, 'fetchOrders');
@@ -335,4 +338,18 @@ export async function setOrderStatus(id, status) {
     return { __error: 'db', message: error.message };
   }
   return true;
+}
+
+/** Aprobar o rechazar una comanda autogestionada antes de que llegue a cocina. */
+export async function reviewTableOrder(id, decision, note = null) {
+  const { data, error } = await supabase.rpc('review_table_order', {
+    p_order_id: id,
+    p_decision: decision,
+    p_note: note,
+  });
+  if (error) {
+    console.error('reviewTableOrder:', error.message);
+    return { __error: 'db', message: error.message };
+  }
+  return data;
 }

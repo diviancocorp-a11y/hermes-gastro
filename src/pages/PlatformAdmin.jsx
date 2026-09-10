@@ -33,7 +33,7 @@ import useMediaQuery from '../lib/useMediaQuery';
 import { intervencionDe, sigueVigente } from '../modules/dico/intervenciones';
 import {
   fetchProducts, upsertProduct, setProductActive, archiveProduct,
-  fetchOrders, setOrderStatus, OPEN_ORDER_STATUSES, PlatformOrderStatus,
+  fetchOrders, setOrderStatus, reviewTableOrder, OPEN_ORDER_STATUSES, PlatformOrderStatus,
   fetchOrderItemsByOrder,
 } from '../services/platformAdmin';
 import { fetchSales, createSale, completeOrder } from '../services/platformSales';
@@ -57,6 +57,9 @@ import {
   fetchPersonal, fetchFichajesAbiertos, ficharEntrada, ficharSalida,
   fetchCostoLaboral,
 } from '../services/platformPersonal';
+import {
+  fetchServiceRequests, updateServiceRequest, subscribeToServiceRequests,
+} from '../services/platformSalon';
 import { fetchSettings, saveSettings, fetchTenantBrand } from '../services/platformSettings';
 import { getTenantSlugSync } from '../lib/activeTenant';
 import {
@@ -213,6 +216,7 @@ export default function PlatformAdmin() {
   const [fichajes, setFichajes] = useState([]);
   const [costoLaboral, setCostoLaboral] = useState(null);
   const [reservasHoy, setReservasHoy] = useState([]);
+  const [solicitudesSalon, setSolicitudesSalon] = useState([]);
   const [utilizacion, setUtilizacion] = useState(null);
   // La mesa que se esta creando o editando. Null = el editor esta cerrado.
   const [mesaEnEdicion, setMesaEnEdicion] = useState(null);
@@ -331,17 +335,24 @@ export default function PlatformAdmin() {
     const hoy = new Date();
     const desde = new Date(hoy); desde.setHours(0, 0, 0, 0);
     const hasta = new Date(hoy); hasta.setHours(23, 59, 59, 999);
-    const [rs, aps, ut] = await Promise.all([
+    const [rs, aps, ut, solicitudes] = await Promise.all([
       fetchResources(tenantId, b.id),
       fetchAppointments(tenantId, {
         branchId: b.id, desde: desde.toISOString(), hasta: hasta.toISOString(),
       }),
       fetchUtilization(b.id, hoy.toISOString().slice(0, 10)),
+      fetchServiceRequests(tenantId, b.id),
     ]);
     setRecursos(rs);
     setReservasHoy(aps);
     setUtilizacion(ut);
+    setSolicitudesSalon(solicitudes);
   }, [tenantId]);
+
+  useEffect(() => {
+    if (!tenantId) return undefined;
+    return subscribeToServiceRequests(tenantId, () => loadSalon());
+  }, [tenantId, loadSalon]);
 
   /* ── Caja (6d) ──
      El esperado se recalcula al abrir la pantalla y a pedido: es lo que el
@@ -487,6 +498,15 @@ export default function PlatformAdmin() {
     if (!ok) { msg('No se pudo guardar la posición'); loadSalon(); }
     return ok;
   }, [tenantId, loadSalon, msg]);
+
+  const actualizarSolicitudSalon = useCallback(async (id, status) => {
+    const r = await updateServiceRequest(id, status);
+    if (r?.__error) { msg(r.message || 'No se pudo actualizar el llamado'); return r; }
+    setSolicitudesSalon(list => list.map(item => (item.id === id ? { ...item, ...r } : item))
+      .filter(item => !['resolved', 'cancelled'].includes(item.status)));
+    msg(status === 'accepted' ? 'Llamado tomado' : 'Llamado resuelto');
+    return r;
+  }, [msg]);
 
   useEffect(() => {
     if (!ready || !tenantId) return;
@@ -668,6 +688,13 @@ export default function PlatformAdmin() {
     if (res === true) setOrders(list => list.map(o => (o.id === id ? { ...o, status: next } : o)));
     return res;
   }, [loadCaja, msg, perfilFiscal, tenantId]);
+
+  const handleReviewOrder = useCallback(async (id, decision, note = null) => {
+    const res = await reviewTableOrder(id, decision, note);
+    if (res?.__error) return res;
+    setOrders(list => list.map(o => (o.id === id ? { ...o, ...res } : o)));
+    return true;
+  }, []);
 
   // ── Etapa 4: venta manual ──
   const crearVenta = useCallback((s) => createSale(tenantId, s), [tenantId]);
@@ -1072,6 +1099,7 @@ export default function PlatformAdmin() {
               orders={orders}
               loading={loadingOrders}
               onSetStatus={handleSetOrderStatus}
+              onReview={handleReviewOrder}
               showToast={msg}
               tenantId={tenantId}
               roles={roles}
@@ -1104,6 +1132,8 @@ export default function PlatformAdmin() {
                 recursos={recursos}
                 reservas={reservasHoy}
                 utilizacion={utilizacion}
+                solicitudes={solicitudesSalon}
+                onActualizarSolicitud={actualizarSolicitudSalon}
                 onMover={moverRecurso}
                 terminologia={{ plural: 'Mesas', singular: 'mesa' }}
                 onSeleccionar={setMesaEnEdicion}
