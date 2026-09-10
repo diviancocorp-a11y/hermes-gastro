@@ -173,6 +173,15 @@ export default function App() {
                   nadie: ahi va la landing. Cualquier otro host —subdominio de
                   tenant, dominio propio, local— sigue entrando al catalogo. */}
               <Route path="/" element={isPlatformRoot(window.location.hostname) ? <PlatformLanding /> : <Catalog />} />
+              {/* La landing SOLO se ve en la raiz, y en local ningun host lo
+                  es: `127.0.0.1` clasifica como desconocido y cae al catalogo
+                  del tenant. Esta ruta existe para poder mirarla en QA Lite
+                  sin tocar la resolucion de hosts ni el archivo hosts de
+                  Windows. `import.meta.env.DEV` es constante en build, asi que
+                  el bundle de produccion no la incluye. */}
+              {import.meta.env.DEV && (
+                <Route path="/landing" element={<PlatformLanding />} />
+              )}
               {/* Alta self-service: solo tiene sentido en la raiz. En el
                   subdominio de un tenant el local ya es de alguien. */}
               <Route path="/registro" element={<Signup />} />
