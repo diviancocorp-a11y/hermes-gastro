@@ -8,51 +8,84 @@
 
 ---
 
-## 10/sep/2026 — La landing nueva de divianco.app entra a main (Claude)
+## 10/sep/2026 — Cierre: la landing nueva publicada en divianco.app (Claude)
 
 ### Hecho
 
-- La landing de siete secciones queda en `main`. Son dos cherry-picks de
-  `feat/dico-panorama-v2` y nada mas: `f887960` (la landing entera, con
-  `PalabraEscrita` y `FooterAscii`) y `2cd7b04` (la ruta `/landing`, que solo
-  existe en dev). `main` quedo en `419282a`. Salon, caja, productos y roles
-  siguen en la rama, sin publicar.
+- La landing de siete secciones esta **publicada en `https://divianco.app`**.
+  Llego a `main` por dos cherry-picks de `feat/dico-panorama-v2` y nada mas:
+  `f887960` (la landing entera, con `PalabraEscrita` y `FooterAscii`) y
+  `2cd7b04` (la ruta `/landing`, que solo existe en dev). Salon, caja,
+  productos y roles siguen en la rama, sin publicar: Ricky eligio publicar
+  solo la landing y no el release grande.
+- `main` quedo en `1668367`. El deployment de produccion es
+  `dpl_J8FefC8xYTCjufs19jbUZgWpc8uc`, `READY`, y `/version.json` devuelve
+  `16683673`.
+- **`hermes-platform` volvio a tener integracion de GitHub** y publica solo en
+  cada push a `main`, igual que los tres catalogos. Lo reconecto Ricky en esta
+  sesion. Ya no hace falta el deploy manual por CLI.
 - La URL vieja de la landing standalone, `http://localhost:5199/landing.html`,
   es del vitrina y sigue siendo valida en `main` porque el vitrina no fue
   retirado de este lado. Dentro de la app real se mira en `/landing`.
 
 ### Verificado
 
-- `npm run build` limpio con integridad y schema-sync. La landing revisada en
-  navegador a 800 px y a 375 px: las siete secciones cargan y no hay error
-  propio de la pagina en consola.
-- Los tres catalogos legacy redeployaron solos por el push y quedaron `READY`
-  en `419282a`. La ruta `/landing` no viaja al bundle de produccion, asi que
-  para ellos el cambio es nulo.
+- **En produccion, en Chrome real**: hero, rubros, modulos, integraciones, la
+  tabla comparativa, los tres planes de precios, el cierre y la moneda ASCII
+  del footer. Tema oscuro aplicado, ningun recurso en 404.
+- `npm run build` limpio con integridad y schema-sync; pre-commit completo
+  (typecheck, 87 smoke tests, columnas, frescura del snapshot) en verde.
+- Los tres catalogos legacy redeployaron solos por el push y quedaron `READY`.
+  La ruta `/landing` no viaja al bundle de produccion, asi que para ellos el
+  cambio es nulo.
 
 ### Lo que se aprendio en el camino
 
 - El push a `419282a` **no** produjo deployment en `hermes-platform`: el
-  proyecto habia quedado sin integracion de GitHub, y
-  `get_git_deployment_context` no lo listaba entre los linkeados mientras los
-  tres legacy si aparecian. La nota del 29/ago que dice que la integracion
-  existe era cierta cuando se escribio; se perdio en algun momento posterior.
-  Ricky la reconecto el 10/sep.
-- La via manual `npm run deploy:web` **no sirve hoy**: muere en el paso 5
+  proyecto estaba sin integracion de GitHub, y `get_git_deployment_context` no
+  lo listaba entre los linkeados mientras los tres legacy si aparecian. La
+  nota del 29/ago que dice que la integracion existe era cierta cuando se
+  escribio; se perdio en algun momento posterior. Moraleja: el campo `link` de
+  la API no alcanza como prueba en ninguna de las dos direcciones. Lo que
+  decide es si un push produjo o no un deployment.
+- La via manual `npm run deploy:web` **sigue trabada**: muere en el paso 5
   porque `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` estan marcadas
   Sensitive en el proyecto Vercel. Vercel no entrega el valor de una variable
   Sensitive, `vercel pull` baja `[SENSITIVE]` y `assertEnvUsable` corta antes
-  de construir para no hornear claves rotas en el bundle. Son claves publicas
-  que igual viajan al navegador: destildar Sensitive las devuelve al ruedo.
-- Moraleja para el proximo que audite esto: el campo `link` de la API no
-  alcanza como prueba en ninguna de las dos direcciones. Lo que decide es si
-  un push produjo o no un deployment.
+  de construir para no hornear claves rotas en el bundle. Con la integracion
+  de Git andando esto dejo de bloquear, pero el respaldo manual no existe
+  hasta que se destilde.
+- **El panel de preview interno no sirve para revisar esta landing.** Mostro
+  todas las secciones bajo el hero como un rectangulo crema, mientras las
+  propiedades computadas decian `opacity: 1` sobre `.pl-root` con fondo
+  `rgb(8,9,11)` cubriendo los 4983 px del documento. Es un artefacto de
+  composicion del panel, no del sitio: en Chrome real se ve bien. Para
+  verificar produccion, ir a Chrome directo.
 
-### Pendiente
+### Pendiente inmediato
 
-- `scripts/generar-trazos.mjs` no existe y `trazos.json` esta vacio, asi que
-  `PalabraEscrita` dibuja con la fuente real en vez de trazar los contornos.
-  Es el fallback previsto: no rompe nada, pero la animacion no es la buscada.
+1. `scripts/generar-trazos.mjs` no existe y `trazos.json` esta vacio, asi que
+   `PalabraEscrita` dibuja con la fuente real en vez de trazar los contornos.
+   Es el fallback previsto y no rompe nada, pero en la palabra que rota del
+   titular se nota como un parpadeo. Es lo unico visualmente a medias de la
+   landing publicada.
+2. Decidir que hacer con el resto de `feat/dico-panorama-v2` (salon, caja,
+   productos, roles): son 20 commits que quedaron sin publicar y la rama ya
+   divergio de `main`.
+3. La skill `/cerrardico` dice que se commitea en `platform/runtime-tenant` y
+   "nunca en `main`". Eso quedo viejo: desde el 8/sep el edificio se publica
+   desde `main`, y ahora ademas por integracion de Git. Conviene corregir el
+   texto de la skill antes de que induzca a error.
+
+### Bloqueado por Ricky
+
+- **Destildar Sensitive** en `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`
+  del proyecto Vercel `hermes-platform` (Settings > Environment Variables).
+  Son claves publicas que igual viajan al navegador dentro del bundle. Sin
+  eso, `npm run deploy:web` no existe como respaldo si la integracion de Git
+  se vuelve a caer. No es urgente mientras el push funcione.
+- Sigue pendiente de antes: **leaked password protection** en el Supabase del
+  edificio (ver `TAREAS-MANUALES.md`).
 
 ---
 
