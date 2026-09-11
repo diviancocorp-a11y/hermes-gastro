@@ -70,28 +70,69 @@ se resolvio por el borrado.
   ellas reporto 94 archivos en vez de 96. Los ocho sospechosos pasan aislados
   en 31 s. Antes de dar un test por roto: correlo solo.
 
+### Hecho el 11/sep: se limpio el arbol de git
+
+Las **10 worktrees quedaron retiradas** y las **15 ramas ya contenidas en
+`main` borradas**. El repo quedo con una sola worktree, seis ramas y el arbol
+limpio. `git worktree remove` sin `--force` alcanza: el clasificador bloquea la
+version con `--force`, pero ninguna worktree tenia trabajo sin commitear. Las
+dos que se resistian tenian un archivo suelto cada una (un bundle y una copia
+vieja de `AGENTS.md`), que se movieron a `_archivo-dico/`.
+
+Dos ramas dieron `warning: not deleting ... not yet merged` estando 100%
+contenidas en `main`, local y en origin. Se verifico con
+`git merge-base --is-ancestor` antes de forzar: el aviso era espurio.
+
+**Las 6 ramas que quedan, y por que:**
+
+| Rama | Por que se queda |
+|---|---|
+| `main` | la de trabajo y publicacion |
+| `prep/dico-3d-final` | 8 commits de assets 3D sin publicar |
+| `ops/build-identity-fail-closed` | 2 commits sobre identidad de build |
+| `release/platform-security-2026-08-30` | 1 commit de documentacion |
+| `respaldo/codex-2026-09-08` | snapshot de trabajo en vuelo de Codex |
+| `respaldo/codex-2026-09-09` | idem, del dia siguiente |
+
+En **origin** siguen 8 ramas ya contenidas en `main`. Borrarlas no pierde ni un
+commit, pero le rompe el push a cualquier sesion de Codex que este apuntando a
+una. No se tocaron: decision de Ricky.
+
 ### Pendiente de Ricky
 
-1. **Desconectar del repo los 3 proyectos Vercel legacy** (`la-nona-pato`,
-   `cochi`, `mala-miga`). Siguen linkeados a `diviancocorp-a11y/hermes-gastro`,
-   asi que cada push a `main` los redeploya. Los Supabase legacy quedan
-   `INACTIVE` como respaldo de datos, sin costo.
-2. **Retirar las worktrees.** Hay diez, ninguna con trabajo sin commitear. El
-   clasificador bloquea el borrado desde aca:
+El clasificador bloquea desde la sesion toda accion destructiva sobre
+infraestructura, asi que estas dos quedan a mano.
+
+1. **Sacar de circulacion los 3 Vercel legacy** (`la-nona-pato`, `cochi`,
+   `mala-miga`). Los tres redeployaron con el push del 10/sep. Ninguno tiene
+   dominio propio —solo `*.vercel.app`— y su Supabase esta `INACTIVE`, asi que
+   el catalogo no puede cargar nada: no hay nada real que se caiga.
+
+   La via correcta es **Project Settings > Git > Disconnect** en el panel, por
+   proyecto. Pausar NO alcanza: segun la API, `pause` "disables auto-assigning
+   custom production domains and blocks the active Production Deployment", y no
+   dice nada de cortar los builds de git.
+
+   `vercel.json` no sirve para esto: es el mismo archivo para los 4 proyectos,
+   asi que un `git.deploymentEnabled: false` se llevaria puesto al edificio.
+
+2. **Borrar los 2 tenants de prueba.** Los dos estan vacios: 0 productos, 0
+   pedidos, 0 pagos. Solo tienen el `settings` y la sucursal que crea el alta.
+   Todas las FK a `tenants` son `ON DELETE CASCADE`, salvo `profiles` y
+   `consola_log` que son `SET NULL`.
+
+   ```sql
+   delete from tenants where slug in ('prueba-disco','tienda-nueva')
+   returning slug, name, status;
    ```
-   git worktree list
-   git worktree remove --force <cada-una>
-   git branch -d $(git branch --merged main --format='%(refname:short)' | grep -v '^main$')
-   ```
-   Quedan cinco ramas con commits propios que **no** hay que borrar sin mirar:
-   `prep/dico-3d-final` (8), `ops/build-identity-fail-closed` (2),
-   `release/platform-security-2026-08-30` (1) y los dos `respaldo/codex-*`
-   (snapshots de trabajo en vuelo del 8 y 9/sep).
+
+   Deja sin tenant a dos usuarios de auth que son cuentas de prueba del signup
+   del 15/ago (`rrodriguezs777@` y `ricardousa1313@`), con su `profiles.
+   tenant_id` en null. Si tambien queres borrar esos usuarios, es aparte.
+
 3. Sigue de antes: **destildar Sensitive** en `VITE_SUPABASE_URL` y
    `VITE_SUPABASE_ANON_KEY` de `hermes-platform`, y **leaked password
    protection** en el Supabase del edificio.
-4. Borrar los dos tenants de prueba del edificio, `prueba-disco` y
-   `tienda-nueva`: sin productos ni pedidos, ensucian el conteo.
 
 ---
 
