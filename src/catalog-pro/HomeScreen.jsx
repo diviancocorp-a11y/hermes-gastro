@@ -23,7 +23,7 @@ import {
   abrible,
 } from "./atoms";
 import { mapProduct, buildStories, buildRecos } from "./homeHelpers";
-import HermesMark from "../components/HermesMark";
+import DicoMark from "../components/DicoMark";
 import CatalogFooter from "./CatalogFooter";
 import BadgeTag from "../components/BadgeTag";
 import TopPedidos from "./TopPedidos";
@@ -571,7 +571,7 @@ export default function HomeScreen({
 
       {/* ===== STICKY CART + FOOTER ===== */}
       {cartCount > 0 && <StickyCart count={cartCount} total={cartTotal} onClick={onOpenCart} />}
-      <CatalogFooter settings={settings} brand={<HermesMark size={18} />} />
+      <CatalogFooter settings={settings} brand={<DicoMark size={18} />} />
     </div>
   );
 }

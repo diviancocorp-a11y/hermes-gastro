@@ -17,7 +17,7 @@
 Archivos pedidos:
 
 - `src/styles/admin-tokens.css`
-- `src/styles/hermes-tokens.css`
+- `src/styles/dico-tokens.css`
 - `src/catalog-pro/tokens.css`
 - `src/pages/Signup.jsx`
 - `src/components/dico/DicoCara.jsx`
@@ -64,7 +64,7 @@ entrar con una lista base de deuda existente y fallar sólo ante deuda nueva.
 y conservar sólo aquello específico del panel, como identidad de módulos y
 modo oscuro.
 
-### `hermes-tokens.css`: buen lugar físico, poca adopción
+### `dico-tokens.css`: buen lugar físico, poca adopción
 
 - Se importa globalmente desde `src/index.css`.
 - No se encontraron consumidores reales de `--hg-*` ni de las clases `.hg-*`
@@ -187,7 +187,7 @@ los componentes visuales no deben ramificarse por rubro.
 
 ## 4. Autoridad y capas
 
-El núcleo vive en el archivo existente `src/styles/hermes-tokens.css` y usa el
+El núcleo vive en el archivo existente `src/styles/dico-tokens.css` y usa el
 prefijo `--ds-`. La dependencia siempre baja en esta dirección:
 
 ```text
@@ -426,7 +426,7 @@ semánticos en contextos opuestos.
 
 ## 9. Orden de implementación
 
-1. Reestructurar el archivo existente `hermes-tokens.css` en primitivas,
+1. Reestructurar el archivo existente `dico-tokens.css` en primitivas,
    semántica y contexto sin retirar aliases vivos.
 2. Mapear `@theme` hacia el núcleo; no agregar una quinta paleta.
 3. Rediseñar `/registro` con CSS scoped y pruebas de estados.
@@ -455,7 +455,7 @@ limpieza en una tendencia verificable sin exigir una reescritura riesgosa.
 
 La versión 0.1 no termina cuando existe este documento. Termina cuando:
 
-- el núcleo está en `hermes-tokens.css`;
+- el núcleo está en `dico-tokens.css`;
 - Registro y Caja consumen el mismo contrato;
 - el mapa de contraste está verificado;
 - Dico cumple los slots y estados definidos;

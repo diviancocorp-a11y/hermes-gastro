@@ -12,7 +12,7 @@ vi.mock('../lib/supabase', () => ({
 import {
   fetchIngredients, upsertIngredient, deleteIngredient,
   updateIngredientStock, fetchWasteLog, registerWaste,
-} from '@hermes/core/services/inventory';
+} from '@dico/core/services/inventory';
 
 import { chain } from './_chain.js';
 

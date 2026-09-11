@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const fontCss = readFileSync('src/styles/dico-fonts.css', 'utf8');
-const tokensCss = readFileSync('src/styles/hermes-tokens.css', 'utf8');
+const tokensCss = readFileSync('src/styles/dico-tokens.css', 'utf8');
 
 const assets = {
   'public/fonts/dico/overused-grotesk/OverusedGrotesk-VF.woff2':

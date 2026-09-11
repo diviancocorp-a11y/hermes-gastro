@@ -6,7 +6,7 @@ import {
   prepareExpensesExport,
   prepareInventoryExport,
   prepareOrdersExport,
-} from '@hermes/core/lib/exports';
+} from '@dico/core/lib/exports';
 
 describe('Export Utilities', () => {
   describe('generateCSV', () => {

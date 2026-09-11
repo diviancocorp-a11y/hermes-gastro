@@ -85,7 +85,7 @@ const ARCHIVO_CARA_LEGACY = [
 /* ───────────────────────── El grafo de imports ───────────────────────────── */
 
 const ALIAS = [
-  { prefijo: '@hermes/core/', destino: 'src/' },
+  { prefijo: '@dico/core/', destino: 'src/' },
   { prefijo: '@business', destino: 'clients/hermes-cochi/business.js', exacto: true },
 ];
 

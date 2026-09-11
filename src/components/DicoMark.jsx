@@ -1,5 +1,5 @@
-// src/components/HermesMark.jsx
-// Marca Hermes Gastro reutilizable. Renderiza el PNG de /brand/.
+// src/components/DicoMark.jsx
+// Marca Dico reutilizable. Renderiza el PNG de /brand/.
 // Si la imagen no carga (404), cae al placeholder (inicial del negocio).
 //
 // Props:
@@ -11,20 +11,20 @@
 import { useState } from "react";
 
 const SRC_DARK_BG = {
-  logo: "/brand/hermes-logo.png",        // contraste para fondos oscuros (página 5 ámbar)
-  wordmark: "/brand/hermes-wordmark.png",
+  logo: "/brand/dico-logo.png",        // contraste para fondos oscuros (página 5 ámbar)
+  wordmark: "/brand/dico-wordmark.png",
 };
 const SRC_LIGHT_BG = {
-  logo: "/brand/hermes-logo-on-light.png", // contraste para fondos claros (página 4 negro)
-  wordmark: "/brand/hermes-wordmark.png",  // mismo (runner ámbar funciona en ambos)
+  logo: "/brand/dico-logo-on-light.png", // contraste para fondos claros (página 4 negro)
+  wordmark: "/brand/dico-wordmark.png",  // mismo (runner ámbar funciona en ambos)
 };
 
-export default function HermesMark({
+export default function DicoMark({
   as = "logo",
   size,
   fallback = "H",
   color = "#F59E0B",
-  alt = "Hermes Gastro",
+  alt = "Dico",
   style = {},
   theme = "dark", // "dark" = fondo oscuro (default); "light" = fondo claro
 }) {

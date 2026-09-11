@@ -8,15 +8,15 @@
 //      de que es la plataforma, no el negocio.
 
 import { useState } from "react";
-import HermesMark from "../components/HermesMark";
+import DicoMark from "../components/DicoMark";
 
 // Datos de contacto de Dico (la plataforma). Mientras sean null, los botones
 // de contacto del modal "para tu negocio" NO se muestran — antes habia un
 // WhatsApp falso (5491100000000) en produccion. Ver docs/TAREAS-MANUALES.md.
-const HERMES = {
+const DICO = {
   whatsapp: null,   // ej: "5491122334455" (solo digitos, con 54 9)
-  email: null,      // ej: "hola@hermesgastro.com"
-  instagram: null,  // ej: "hermesgastro"
+  email: null,      // ej: "hola@dico.com"
+  instagram: null,  // ej: "dico"
 };
 
 const DEFENSA_CONSUMIDOR_AR = "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario";
@@ -91,7 +91,7 @@ La infraestructura técnica está provista por Divianco, que procesa los datos �
   };
 }
 
-const HERMES_BUSINESS_COPY = `Dico es la plataforma todo-en-uno para tu local gastronómico. Catálogo público, gestión de pedidos, stock, gastos, recetas, reportes USAR P&L y mucho más. Sin instalaciones, sin servidores, sin dolor de cabeza.
+const DICO_BUSINESS_COPY = `Dico es la plataforma todo-en-uno para tu local gastronómico. Catálogo público, gestión de pedidos, stock, gastos, recetas, reportes USAR P&L y mucho más. Sin instalaciones, sin servidores, sin dolor de cabeza.
 
 Escribinos por WhatsApp o email y agendamos una demo gratuita para tu negocio.`;
 
@@ -256,7 +256,7 @@ export default function CatalogFooter({ settings = {} }) {
           © {year} {bizName}. Todos los derechos reservados.
         </div>
 
-        {/* ─── BANDA HERMES (plataforma) ─── */}
+        {/* ─── BANDA DICO (plataforma) ─── */}
         <div
           onClick={() => open("forBusiness")}
           style={{
@@ -270,7 +270,7 @@ export default function CatalogFooter({ settings = {} }) {
         >
           {/* Logo de Dico a la izquierda, fondo claro */}
           <div style={{ flexShrink: 0 }}>
-            <HermesMark as="logo" size={56} fallback="H" theme="light" color="#000" />
+            <DicoMark as="logo" size={56} fallback="H" theme="light" color="#000" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx, #2D1B0E)", lineHeight: 1.3 }}>
@@ -292,11 +292,11 @@ export default function CatalogFooter({ settings = {} }) {
       {modal === "worksWithUs" && <Modal title="Trabajá con nosotros" onClose={close}>{copy.worksWithUs}</Modal>}
       {modal === "forBusiness" && (
         <Modal title="Dico para tu negocio" onClose={close}>
-          <div style={{ whiteSpace: "pre-line", marginBottom: 18 }}>{HERMES_BUSINESS_COPY}</div>
+          <div style={{ whiteSpace: "pre-line", marginBottom: 18 }}>{DICO_BUSINESS_COPY}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {HERMES.whatsapp && (
+            {DICO.whatsapp && (
               <a
-                href={`https://wa.me/${HERMES.whatsapp}?text=${encodeURIComponent("Hola! Tengo un local gastronómico y me interesa Dico.")}`}
+                href={`https://wa.me/${DICO.whatsapp}?text=${encodeURIComponent("Hola! Tengo un local gastronómico y me interesa Dico.")}`}
                 target="_blank" rel="noopener noreferrer"
                 style={{
                   padding: "12px 16px", background: "#25D366", color: "#fff",
@@ -305,9 +305,9 @@ export default function CatalogFooter({ settings = {} }) {
                 }}
               >📱 Hablar por WhatsApp</a>
             )}
-            {HERMES.email && (
+            {DICO.email && (
               <a
-                href={`mailto:${HERMES.email}?subject=${encodeURIComponent("Dico para mi negocio")}`}
+                href={`mailto:${DICO.email}?subject=${encodeURIComponent("Dico para mi negocio")}`}
                 style={{
                   padding: "12px 16px", background: "#F59E0B", color: "#000",
                   borderRadius: 12, textDecoration: "none", fontWeight: 700, fontSize: 14,
@@ -315,7 +315,7 @@ export default function CatalogFooter({ settings = {} }) {
                 }}
               >📧 Enviar email</a>
             )}
-            {!HERMES.whatsapp && !HERMES.email && (
+            {!DICO.whatsapp && !DICO.email && (
               <div style={{ fontSize: 13, opacity: 0.7, textAlign: "center" }}>
                 Datos de contacto disponibles próximamente.
               </div>

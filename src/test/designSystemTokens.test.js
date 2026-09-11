@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const tokensCss = readFileSync(resolve('src/styles/hermes-tokens.css'), 'utf8');
+const tokensCss = readFileSync(resolve('src/styles/dico-tokens.css'), 'utf8');
 const indexCss = readFileSync(resolve('src/index.css'), 'utf8');
 
 function escapeRegex(value) {

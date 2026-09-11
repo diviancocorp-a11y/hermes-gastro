@@ -8,7 +8,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
 .cp-root {
-  /* Colores — tema ambar (default, colores naturales de Hermes) */
+  /* Colores — tema ambar (default, colores naturales de Dico) */
   --bg:  #FFFFFF;
   --b2:  #F9FAFB;
   --b3:  #F3F4F6;
@@ -54,7 +54,7 @@ body[data-ui-owner="catalog"][data-cp-theme="ambar"]  { background: #FFFFFF !imp
 body[data-ui-owner="catalog"][data-cp-theme="noche"]  { background: #161412 !important; color: #F4EAD0; }
 body[data-ui-owner="catalog"][data-cp-theme="carbon"] { background: #FAF5EE !important; color: #1A1612; }
 
-/* ─── TEMA AMBAR (alias del default — colores naturales de Hermes) ─── */
+/* ─── TEMA AMBAR (alias del default — colores naturales de Dico) ─── */
 body[data-ui-owner="catalog"][data-cp-theme="ambar"] .cp-root {
   --bg:  #FFFFFF;
   --b2:  #F9FAFB;

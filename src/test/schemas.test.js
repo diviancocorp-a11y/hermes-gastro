@@ -13,7 +13,7 @@ import {
   PurchaseItemSchema, WasteInputSchema, NotifyWhatsAppSchema,
   AdminResetSchema, ComboItemSchema, RecipeIngredientSchema,
   validateInput,
-} from '@hermes/core/lib/schemas';
+} from '@dico/core/lib/schemas';
 
 // ─── Helper ──────────────────────────────────────────────
 const valid = (schema, data) => expect(schema.safeParse(data).success).toBe(true);

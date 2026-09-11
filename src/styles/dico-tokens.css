@@ -1,5 +1,5 @@
 /* ────────────────────────────────────────────────────────
- * DICO design foundation + Hermes compatibility layer.
+ * DICO design foundation + capa de compatibilidad con los --hg-* heredados.
  *
  * --ds-* is the canonical contract. Existing --hg-* names and .hg-* classes
  * remain adapters during the incremental migration. Compatibility values are
@@ -118,14 +118,14 @@
   --ds-compat-tailwind-shadow-elevated: 0 8px 24px rgba(45, 27, 14, 0.12);
   --ds-compat-tailwind-shadow-accent: 0 4px 15px rgba(196, 93, 62, 0.3);
 
-  /* Exact Hermes values that have no canonical equivalent yet. */
+  /* Valores heredados --hg-* that have no canonical equivalent yet. */
   --ds-compat-hg-radius-md: 14px;
   --ds-compat-hg-radius-lg: 22px;
   --ds-compat-hg-success: #4a6b3a;
   --ds-compat-hg-warning: #a87a2a;
   --ds-compat-hg-error: #9b3030;
 
-  /* Hermes aliases: temporary and pixel-identical. */
+  /* Alias heredados --hg-*: temporales and pixel-identical. */
   --hg-font-heading: var(--ds-font-compat-heading);
   --hg-font-body: var(--ds-font-compat-ui);
   --hg-font-mono: var(--ds-font-compat-technical);

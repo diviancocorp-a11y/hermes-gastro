@@ -157,7 +157,7 @@ export default defineConfig(async () => ({
   resolve: {
     alias: {
       '@business': path.resolve(__dirname, `clients/${CLIENT}/business.js`),
-      '@hermes/core': path.resolve(__dirname, 'src'),
+      '@dico/core': path.resolve(__dirname, 'src'),
     },
   },
   define: {

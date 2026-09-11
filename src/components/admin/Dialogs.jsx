@@ -249,7 +249,7 @@ function NewOrderOverlay({count,onAck}){
       opacity:closing?0:1,transition:"opacity 0.3s ease"
     }}>
       <style>{`@keyframes hg-no-rise{0%{transform:translateY(24px);opacity:0}100%{transform:translateY(0);opacity:1}}@keyframes hg-no-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}`}</style>
-      <img src="/brand/hermes-logo-on-light.png" alt="" aria-hidden="true" style={{
+      <img src="/brand/dico-logo-on-light.png" alt="" aria-hidden="true" style={{
         width:240,maxWidth:"72%",marginBottom:22,
         filter:"brightness(0) invert(1)",
         animation:"hg-no-rise 0.5s ease-out, hg-no-pulse 1.3s ease-in-out 0.5s infinite"
