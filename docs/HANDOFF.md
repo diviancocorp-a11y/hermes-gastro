@@ -8,6 +8,76 @@
 
 ---
 
+## 11/sep/2026 — Stock rehecho y dos herramientas para los proximos renders (Claude)
+
+### Hecho
+
+- **Stock habla el idioma de Salon y Caja.** Se rehizo entero contra el render
+  de Ricky: escritorio con cabecera, cuatro cintas, tabla con el nivel como
+  BARRA contra el minimo y ficha al costado que resuelve la fila; y el conteo
+  de deposito mobile con botones de 44 px, paso segun la unidad y guardado por
+  lote. Los dos en `src/components/admin/platform/`.
+- **Migracion 0071.** Reponer y ajustar **no existian como operacion**: habia
+  dos funciones en el repo, incompatibles entre si, y no las llamaba nadie.
+  Ahora `mover_stock_de_insumo` mueve `ingredients.stock` Y asienta en el
+  libro en la misma transaccion, como ya hacia `register_waste`.
+  `guardar_conteo_de_deposito` aplica el conteo entero o nada, y
+  `consumo_diario_de_insumos` da el "alcanza para N dias". Suma
+  `ingredients.supplier_id`.
+- **Dos herramientas nuevas**, porque vienen mas renders:
+  `npm run pantalla -- stock` arma la pantalla a los anchos que cambian su
+  layout, sin levantar la app. `npm run pantalla:acciones -- viejo nuevo`
+  compara lo que cada pantalla HACE. El orden completo esta en
+  `docs/plataforma/PORTAR-UNA-PANTALLA.md`.
+
+### El error que hay que no repetir
+
+**Se porto la lista de Stock y se olvido el alta y la edicion de insumos.**
+Quedo publicado asi entre dos commits. El build pasaba, los 1338 tests pasaban
+y la pantalla se veia igual al render: no habia NADA que lo delatara salvo
+intentar usarla. Se arreglo reusando `IngForm`, el mismo formulario del legacy,
+que ahora se exporta.
+
+Portar una pantalla es portar lo que HACE, no lo que muestra. De ahi sale
+`pantalla:acciones`: sobre el caso real marca el alta y el editor como
+faltantes, que era exactamente lo que se habia caido.
+
+### Lo que se aprendio
+
+- **Mirar los datos reales cambia el diseño.** El render mostraba la pantalla
+  llena. En el edificio hay 2 insumos y NINGUNO tiene minimo cargado, y toda
+  la pantalla se apoyaba en comparar contra el minimo. De ahi salio el estado
+  `sin-minimo`, que no estaba en el render: barra a rayas y la fila pidiendo
+  el numero, en vez de pintar de verde un dato que no existe.
+- **Tres defectos salieron solo de mirar la pantalla armada**, no de los tests:
+  un "180% del minimo" sin topear, la etiqueta del buscador saliendo como
+  titulo —la clase de este sistema es `ag-sr-only`, no `sr-only`— y un nombre
+  de insumo cortado en el conteo.
+- **Un test si agarro un bug de logica**: el panel envolvia la merma y
+  descartaba la cantidad y el motivo.
+- Para la vista previa, dos cosas que costaron tiempo: `machine-soul.css` va
+  primero y sin `@import` (concatenado en un `<style>`, un `@import` a mitad de
+  hoja es invalido, los `--ms-*` no cargan y la pantalla sale en blanco), y
+  cada ancho va en su propio iframe porque los media queries miran el viewport
+  y no el contenedor.
+
+### Estado
+
+`main` en `12de5dc`. Suite: 97 archivos, 1340 tests. La 0071 esta aplicada al
+edificio y reflejada en el snapshot.
+
+### Lo que sigue
+
+Ricky va a pasar mas renders para aplicar la identidad de Dico al resto de las
+pantallas. Para cada uno: leer `docs/plataforma/PORTAR-UNA-PANTALLA.md` y
+arrancar por el inventario de acciones de la pantalla vieja.
+
+Cuando una pantalla nueva se agregue a `scripts/pantalla/muestras.mjs`, la
+muestra tiene que incluir el caso vacio, el nombre largo y el numero que
+desborda. El caso que no esta en la muestra es el que no se mira.
+
+---
+
 ## 10/sep/2026 — Cierre: ordenar la realidad y renombrar a Dico (Claude)
 
 ### Por que Productos "habia vuelto atras"
