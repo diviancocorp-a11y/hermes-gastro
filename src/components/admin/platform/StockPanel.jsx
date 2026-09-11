@@ -355,8 +355,12 @@ export default function StockPanel({
   onEditarInsumo,
   onContarDeposito,
   showToast,
+  // Solo para la vista previa: deja la ficha abierta en un insumo. Sin esto,
+  // un render estatico siempre muestra la ficha vacia y la mitad de la
+  // pantalla queda sin poder revisarse.
+  seleccionadoInicial = null,
 }) {
-  const [seleccionadoId, setSeleccionadoId] = useState(null);
+  const [seleccionadoId, setSeleccionadoId] = useState(seleccionadoInicial);
   const [categoria, setCategoria] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
   const [consumos, setConsumos] = useState(() => new Map());

@@ -179,7 +179,14 @@ devDependencies. **Prefijar todo con `NODE_ENV=` vacio.**
 ```bash
 NODE_ENV= npm run build                      # build del edificio
 NODE_ENV=test npx vitest run --pool=threads  # suite completa
+npm run pantalla -- stock                    # mira una pantalla sin levantar la app
+npm run pantalla:acciones -- viejo.jsx nuevo.jsx   # que se perdio al portarla
 ```
+
+Las dos ultimas son para rehacer una pantalla desde un render. El orden
+completo esta en `docs/plataforma/PORTAR-UNA-PANTALLA.md`, y conviene leerlo
+antes de la primera linea: la primera vez se porto la lista de Stock y se
+olvido el alta de insumos, con el build y los 1338 tests en verde.
 
 **Siempre `--pool=threads`.** Con el pool `forks` vitest cuelga workers en
 Windows, no ejecuta archivos enteros y **sale exit 0 igual**. Si el numero de

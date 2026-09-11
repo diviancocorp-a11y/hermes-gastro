@@ -51,3 +51,6 @@ platform/qa-lite/supabase/seed.sql
 platform/qa-lite/supabase/.temp/
 platform/qa-lite/supabase/.branches/
 .qa-lite/
+
+# Vista previa de pantallas (scripts/pantalla): se regenera con `npm run pantalla`.
+.preview/
