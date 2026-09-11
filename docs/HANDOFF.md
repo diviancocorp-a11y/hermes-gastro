@@ -8,6 +8,93 @@
 
 ---
 
+## 10/sep/2026 — Cierre: ordenar la realidad y renombrar a Dico (Claude)
+
+### Por que Productos "habia vuelto atras"
+
+No volvio atras: **nunca se habia publicado**. Los 22 commits de
+`feat/dico-panorama-v2` seguian en la rama. El 10/sep se trajeron a `main` solo
+dos por cherry-pick, los de la landing, y el resto quedo ahi: nueve de
+Productos, cuatro de Caja, cuatro de Salon, uno de roles por persona y el
+retiro de la vitrina. Como QA Lite construye desde un ref de git y produccion
+se publica desde `main`, los dos mostraban el Productos del 8/sep. El archivo
+de estilos difiere en 703 lineas entre las dos versiones: eso era la ventana
+que faltaba.
+
+**Se mergeo la rama entera** (`9776b8c`). Unico conflicto:
+`tools/vitrina/vite.config.mjs`, borrado en la rama y modificado en `main`;
+se resolvio por el borrado.
+
+### Hecho
+
+- **`main` quedo en `149a421` y esta publicado.** `/version.json` devuelve
+  `149a421a`. Verificado ademas que las clases nuevas de Productos
+  (`ag-fila-margen-celda`, `ag-dico-busqueda`, `ag-categorias-popover`,
+  `ag-fila-detalle-toggle`) estan en el chunk `PlatformAdmin-BTw3q0Sw.css`
+  servido por produccion, y que el chunk de Salon responde 200.
+- **Una sola carpeta madre de documentos.** Los 71 markdown estaban repartidos
+  entre la raiz (19), `platform/` (31) y `docs/` (6). Ahora todo vive en
+  `docs/` con cuatro subcarpetas —`plataforma`, `marca`, `operacion`,
+  `historico`— y `docs/README.md` fija la regla de que gana cuando dos
+  documentos se contradicen. En la raiz quedan los tres que las herramientas
+  leen de ahi. `platform/HANDOFF.md` paso a ser `docs/HANDOFF.md`.
+- **El producto se llama Dico.** `HermesMark.jsx` -> `DicoMark.jsx`,
+  `hermes-tokens.css` -> `dico-tokens.css`, los PNG de marca, el paquete
+  (`hermes-gastro` -> `dico`), el alias de build (`@hermes/core` ->
+  `@dico/core`) y el `app.name` del locale, que era lo unico que decia Hermes
+  en pantalla. **No se toco** nada atado al nombre viejo: las claves de
+  storage (`hermes_guest_v1`, `hermes-auth`, `hermes-theme`, `hermes-lang`,
+  `hermes_phone_blocks_v1`), el prefijo de cache, los iconos del manifest PWA,
+  los ids `HERMES-GASTRO-*` de Sentry y los nombres de infra.
+- **`CLAUDE.md` y `AGENTS.md` describen el edificio.** Abrian con "multi-tenant
+  SaaS para 3 dark kitchens" y "cada tenant = 1 proyecto Supabase + 1 proyecto
+  Vercel". Ahora abren con la regla del edificio y mandan a `docs/`.
+- **Las skills dejaron de mentir.** `/dico` daba por huerfanos a los 7 tenants
+  y decia que nadie habia llegado al primer valor: las dos cosas son falsas
+  desde hace rato. `/cerrardico` mandaba a commitear en
+  `platform/runtime-tenant` y "nunca en `main`", justo al reves de como se
+  publica hoy. La copia de `.agents/` estaba atrasada y se sincronizo.
+- **110 MB fuera del repo**, a `C:/Users/ricar/Proyectos/_archivo-dico/`: los
+  cuatro bundles de git (redundantes, cada commit que traen vive en ramas),
+  `output/`, el export de Sintra y los cuatro `.docx`. Nada se borro.
+
+### Lo que se aprendio
+
+- **Un cherry-pick parcial deja la rama divergida y nadie se entera.** Publicar
+  dos commits de veintidos no deja rastro en produccion de los veinte que
+  faltan: la app anda, solo que con la version vieja de una pantalla. Si se
+  publica parcial, el HANDOFF tiene que decir **que quedo afuera**, no solo que
+  entro.
+- **La suite flakea distinto en cada corrida.** Tres corridas seguidas dieron
+  fallos en archivos distintos, todos `Test timed out in 15000ms`, y una de
+  ellas reporto 94 archivos en vez de 96. Los ocho sospechosos pasan aislados
+  en 31 s. Antes de dar un test por roto: correlo solo.
+
+### Pendiente de Ricky
+
+1. **Desconectar del repo los 3 proyectos Vercel legacy** (`la-nona-pato`,
+   `cochi`, `mala-miga`). Siguen linkeados a `diviancocorp-a11y/hermes-gastro`,
+   asi que cada push a `main` los redeploya. Los Supabase legacy quedan
+   `INACTIVE` como respaldo de datos, sin costo.
+2. **Retirar las worktrees.** Hay diez, ninguna con trabajo sin commitear. El
+   clasificador bloquea el borrado desde aca:
+   ```
+   git worktree list
+   git worktree remove --force <cada-una>
+   git branch -d $(git branch --merged main --format='%(refname:short)' | grep -v '^main$')
+   ```
+   Quedan cinco ramas con commits propios que **no** hay que borrar sin mirar:
+   `prep/dico-3d-final` (8), `ops/build-identity-fail-closed` (2),
+   `release/platform-security-2026-08-30` (1) y los dos `respaldo/codex-*`
+   (snapshots de trabajo en vuelo del 8 y 9/sep).
+3. Sigue de antes: **destildar Sensitive** en `VITE_SUPABASE_URL` y
+   `VITE_SUPABASE_ANON_KEY` de `hermes-platform`, y **leaked password
+   protection** en el Supabase del edificio.
+4. Borrar los dos tenants de prueba del edificio, `prueba-disco` y
+   `tienda-nueva`: sin productos ni pedidos, ensucian el conteo.
+
+---
+
 ## 10/sep/2026 — Cierre: la landing nueva publicada en divianco.app (Claude)
 
 ### Hecho
