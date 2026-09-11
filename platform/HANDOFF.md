@@ -8,6 +8,54 @@
 
 ---
 
+## 10/sep/2026 — La landing nueva de divianco.app entra a main (Claude)
+
+### Hecho
+
+- La landing de siete secciones queda en `main`. Son dos cherry-picks de
+  `feat/dico-panorama-v2` y nada mas: `f887960` (la landing entera, con
+  `PalabraEscrita` y `FooterAscii`) y `2cd7b04` (la ruta `/landing`, que solo
+  existe en dev). `main` quedo en `419282a`. Salon, caja, productos y roles
+  siguen en la rama, sin publicar.
+- La URL vieja de la landing standalone, `http://localhost:5199/landing.html`,
+  es del vitrina y sigue siendo valida en `main` porque el vitrina no fue
+  retirado de este lado. Dentro de la app real se mira en `/landing`.
+
+### Verificado
+
+- `npm run build` limpio con integridad y schema-sync. La landing revisada en
+  navegador a 800 px y a 375 px: las siete secciones cargan y no hay error
+  propio de la pagina en consola.
+- Los tres catalogos legacy redeployaron solos por el push y quedaron `READY`
+  en `419282a`. La ruta `/landing` no viaja al bundle de produccion, asi que
+  para ellos el cambio es nulo.
+
+### Lo que se aprendio en el camino
+
+- El push a `419282a` **no** produjo deployment en `hermes-platform`: el
+  proyecto habia quedado sin integracion de GitHub, y
+  `get_git_deployment_context` no lo listaba entre los linkeados mientras los
+  tres legacy si aparecian. La nota del 29/ago que dice que la integracion
+  existe era cierta cuando se escribio; se perdio en algun momento posterior.
+  Ricky la reconecto el 10/sep.
+- La via manual `npm run deploy:web` **no sirve hoy**: muere en el paso 5
+  porque `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` estan marcadas
+  Sensitive en el proyecto Vercel. Vercel no entrega el valor de una variable
+  Sensitive, `vercel pull` baja `[SENSITIVE]` y `assertEnvUsable` corta antes
+  de construir para no hornear claves rotas en el bundle. Son claves publicas
+  que igual viajan al navegador: destildar Sensitive las devuelve al ruedo.
+- Moraleja para el proximo que audite esto: el campo `link` de la API no
+  alcanza como prueba en ninguna de las dos direcciones. Lo que decide es si
+  un push produjo o no un deployment.
+
+### Pendiente
+
+- `scripts/generar-trazos.mjs` no existe y `trazos.json` esta vacio, asi que
+  `PalabraEscrita` dibuja con la fuente real en vez de trazar los contornos.
+  Es el fallback previsto: no rompe nada, pero la animacion no es la buscada.
+
+---
+
 ## 8/sep/2026 — Cierre: panorama de Productos publicado y legacy retirado (Codex)
 
 ### Hecho
