@@ -1,0 +1,829 @@
+/* Stock: la lista deja de ser una lista de nombres.
+ *
+ * LA DECISION
+ * Un numero suelto —"2.5 kg"— no dice nada. Para saber si hay que salir a
+ * comprar hace falta compararlo con el minimo, y esa comparacion la estaba
+ * haciendo el operador de memoria, insumo por insumo. Aca la hace la pantalla:
+ * cada fila muestra el nivel como BARRA contra su minimo, y el numero queda
+ * como dato de respaldo, no como la informacion principal.
+ *
+ * MISMO IDIOMA QUE SALON Y CAJA
+ * Superficie con borde, filete de acento arriba de lo que manda, numeros en
+ * tabular y el detalle de lo seleccionado a un costado en vez de en un modal.
+ * Las cintas de arriba son `ag-salon-dato` con otro nombre: mismo padding,
+ * mismo rotulo en versalitas, mismo valor de 26px.
+ *
+ * EL ORO NO PINTA ESTADOS. Marca la fila elegida y la accion principal. Los
+ * estados van con los tokens semanticos —`--ag-ok`, `--ag-warn`, `--ag-bad`—
+ * que ya tienen su version por tema con el contraste medido.
+ *
+ * EL CASO SIN MINIMO NO ES UN BORDE
+ * Hoy NINGUN insumo del edificio tiene minimo cargado. Una barra vacia en
+ * verde diria "todo bien" sobre un dato que no existe. Por eso hay un estado
+ * propio, `sin-minimo`: barra apagada a rayas y un boton en la misma fila que
+ * pide el numero. La pantalla se completa sola a medida que se usa.
+ */
+
+.ag-stock {
+  display: grid;
+  gap: var(--ag-sp-4);
+}
+
+/* ── Cabecera ──────────────────────────────────────────────────────── */
+
+.ag-stock-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ag-sp-4);
+  flex-wrap: wrap;
+}
+
+.ag-stock-titulo {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ag-sp-3);
+  flex-wrap: wrap;
+}
+
+.ag-stock-titulo h1 {
+  margin: 0;
+  font-family: var(--ag-font-display, inherit);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ag-ink);
+}
+
+/* El filete bajo el titulo es lo unico dorado de la cabecera: marca donde
+   estas parado sin competir con los botones. */
+.ag-stock-titulo h1::after {
+  content: '';
+  display: block;
+  width: 2.4ch;
+  height: 2px;
+  margin-top: 7px;
+  background: var(--ag-accent);
+}
+
+.ag-stock-resumen {
+  font-family: var(--ag-font-mono);
+  font-size: 12px;
+  color: var(--ag-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-stock-resumen b {
+  font-weight: 600;
+  color: var(--ag-bad);
+}
+
+.ag-stock-acciones {
+  display: flex;
+  gap: var(--ag-sp-2);
+  flex-wrap: wrap;
+}
+
+/* ── Cintas de resumen ─────────────────────────────────────────────── */
+
+.ag-stock-cintas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ag-sp-3);
+}
+
+.ag-stock-cinta {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 14px 16px;
+  border: 1px solid var(--ag-line);
+  border-top: 2px solid var(--ag-line-strong);
+  border-radius: var(--ag-r-md);
+  background: var(--ag-surface);
+}
+
+/* El que pide accion se distingue por el filete, no por fondo de color: un
+   fondo rojo en cuatro celdas grita mas de lo que informa. */
+.ag-stock-cinta[data-atencion='true'] { border-top-color: var(--ag-bad); }
+
+.ag-stock-cinta-rotulo {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-stock-cinta-valor {
+  font-size: 26px;
+  font-weight: 680;
+  line-height: 1.05;
+  color: var(--ag-ink);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--ag-font-mono);
+}
+
+.ag-stock-cinta-valor small {
+  font-size: 13px;
+  font-weight: 400;
+  font-family: var(--ag-font);
+  color: var(--ag-ink-3);
+  margin-left: 6px;
+}
+
+.ag-stock-cinta[data-atencion='true'] .ag-stock-cinta-valor { color: var(--ag-bad); }
+
+.ag-stock-cinta-pie {
+  font-size: 11.5px;
+  color: var(--ag-ink-3);
+}
+
+/* ── Cuerpo: tabla + ficha ─────────────────────────────────────────── */
+
+.ag-stock-cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--ag-sp-4);
+  align-items: start;
+}
+
+.ag-stock-lista {
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-md);
+  background: var(--ag-surface);
+  overflow: hidden;
+}
+
+.ag-stock-filtros {
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-2);
+  padding: var(--ag-sp-3);
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--ag-line);
+}
+
+.ag-stock-filtro {
+  padding: 7px 13px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-pill);
+  background: transparent;
+  color: var(--ag-ink-2);
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--ag-t-fast) var(--ag-ease),
+              color var(--ag-t-fast) var(--ag-ease);
+}
+
+.ag-stock-filtro:hover { border-color: var(--ag-line-strong); color: var(--ag-ink); }
+
+.ag-stock-filtro[aria-pressed='true'] {
+  background: var(--ag-surface-2);
+  border-color: var(--ag-line-strong);
+  color: var(--ag-ink);
+  font-weight: 600;
+}
+
+.ag-stock-buscador {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-2);
+  padding: 6px 13px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-pill);
+  min-width: 190px;
+}
+
+.ag-stock-buscador:focus-within { border-color: var(--ag-accent); }
+
+.ag-stock-buscador input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ag-ink);
+  font: inherit;
+  font-size: 12.5px;
+  outline: none;
+}
+
+.ag-stock-buscador input::placeholder { color: var(--ag-ink-3); }
+
+/* Las columnas viven en una sola variable para que encabezado y filas no se
+   puedan desalinear al tocar una sola de las dos. */
+.ag-stock-tabla { --ag-stock-cols: minmax(0, 1.5fr) 110px minmax(140px, 1.4fr) 110px; }
+
+.ag-stock-encabezado,
+.ag-stock-fila {
+  display: grid;
+  grid-template-columns: var(--ag-stock-cols);
+  gap: var(--ag-sp-3);
+  align-items: center;
+  padding: 11px var(--ag-sp-3);
+}
+
+.ag-stock-encabezado {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+  border-bottom: 1px solid var(--ag-line);
+}
+
+.ag-stock-encabezado > :last-child,
+.ag-stock-fila-valor { text-align: right; }
+
+.ag-stock-fila {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--ag-line);
+  border-left: 2px solid transparent;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ag-t-fast) var(--ag-ease);
+}
+
+.ag-stock-fila:last-child { border-bottom: 0; }
+.ag-stock-fila:hover { background: var(--ag-surface-2); }
+
+/* El oro marca la fila elegida. Es lo unico que hace. */
+.ag-stock-fila[aria-selected='true'] {
+  border-left-color: var(--ag-accent);
+  background: var(--ag-surface-2);
+}
+
+.ag-stock-fila:focus-visible { outline: 2px solid var(--ag-accent); outline-offset: -2px; }
+
+.ag-stock-fila-nombre {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ag-stock-fila-nombre strong {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ag-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ag-stock-fila-categoria {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-stock-fila-cantidad {
+  display: grid;
+  gap: 2px;
+  font-family: var(--ag-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-stock-fila-disponible { font-size: 15px; font-weight: 640; color: var(--ag-ink); }
+.ag-stock-fila-minimo     { font-size: 11px; color: var(--ag-ink-3); }
+
+.ag-stock-fila[data-estado='critico'] .ag-stock-fila-disponible { color: var(--ag-bad); }
+.ag-stock-fila[data-estado='bajo']    .ag-stock-fila-disponible { color: var(--ag-warn); }
+.ag-stock-fila[data-estado='ok']      .ag-stock-fila-disponible { color: var(--ag-ok); }
+
+.ag-stock-nivel { display: grid; gap: 5px; min-width: 0; }
+
+.ag-stock-barra {
+  height: 6px;
+  border-radius: var(--ag-r-pill);
+  background: var(--ag-surface-2);
+  overflow: hidden;
+}
+
+.ag-stock-barra > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ag-ok);
+  /* El nivel se mueve con el servicio, no salta. */
+  transition: width var(--ag-t-slow) var(--ag-ease);
+}
+
+.ag-stock-fila[data-estado='critico'] .ag-stock-barra > i { background: var(--ag-bad); }
+.ag-stock-fila[data-estado='bajo']    .ag-stock-barra > i { background: var(--ag-warn); }
+
+/* Sin minimo: rayas y nada de color de estado. La barra dice "no se puede
+   medir esto", que es distinto de "esto esta en cero". */
+.ag-stock-barra[data-sin-minimo='true'] {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--ag-surface-2) 0 5px,
+    transparent 5px 10px
+  );
+  border: 1px solid var(--ag-line);
+  height: 8px;
+}
+
+.ag-stock-nivel-pie {
+  font-size: 11px;
+  color: var(--ag-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-stock-pedir-minimo {
+  justify-self: start;
+  padding: 2px 9px;
+  border: 1px dashed var(--ag-line-strong);
+  border-radius: var(--ag-r-pill);
+  background: transparent;
+  color: var(--ag-ink-3);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ag-stock-pedir-minimo:hover { border-color: var(--ag-accent); color: var(--ag-ink); }
+
+.ag-stock-minimo-campo {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ag-stock-minimo-campo input {
+  width: 74px;
+  padding: 3px 7px;
+  border: 1px solid var(--ag-accent);
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-bg-card, var(--ag-surface));
+  color: var(--ag-ink);
+  font: inherit;
+  font-size: 12px;
+  font-family: var(--ag-font-mono);
+}
+
+.ag-stock-fila-valor {
+  font-family: var(--ag-font-mono);
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ag-ink-2);
+}
+
+.ag-stock-pie {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ag-sp-3);
+  padding: 11px var(--ag-sp-3);
+  border-top: 1px solid var(--ag-line);
+  font-size: 11.5px;
+  color: var(--ag-ink-3);
+}
+
+.ag-stock-vacio {
+  padding: var(--ag-sp-6) var(--ag-sp-4);
+  text-align: center;
+  color: var(--ag-ink-3);
+  font-size: 13px;
+}
+
+/* ── Ficha del insumo ──────────────────────────────────────────────── */
+
+.ag-stock-ficha {
+  position: sticky;
+  top: calc(var(--ag-topbar-alto, 0px) + var(--ag-sp-3));
+  display: grid;
+  gap: var(--ag-sp-3);
+  padding: var(--ag-sp-4);
+  border: 1px solid var(--ag-line);
+  border-top: 2px solid var(--ag-line-strong);
+  border-radius: var(--ag-r-md);
+  background: var(--ag-surface);
+}
+
+.ag-stock-ficha[data-estado='critico'],
+.ag-stock-ficha[data-estado='bajo'] { border-top-color: var(--ag-bad); }
+
+.ag-stock-ficha-estado {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-stock-ficha-estado i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ag-stock-ficha[data-estado='critico'] .ag-stock-ficha-estado,
+.ag-stock-ficha[data-estado='bajo']    .ag-stock-ficha-estado { color: var(--ag-bad); }
+.ag-stock-ficha[data-estado='ok']      .ag-stock-ficha-estado { color: var(--ag-ok); }
+
+.ag-stock-ficha h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 680;
+  line-height: 1.15;
+  color: var(--ag-ink);
+}
+
+.ag-stock-ficha-sub { font-size: 12px; color: var(--ag-ink-3); }
+
+.ag-stock-ficha-datos { display: grid; }
+
+.ag-stock-ficha-dato {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ag-sp-3);
+  padding: 9px 0;
+  border-top: 1px solid var(--ag-line);
+  font-size: 13px;
+}
+
+.ag-stock-ficha-dato > span  { color: var(--ag-ink-3); }
+.ag-stock-ficha-dato > strong {
+  font-weight: 620;
+  color: var(--ag-ink);
+  font-family: var(--ag-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-stock-ficha-dato[data-fuerte='true'] {
+  border-top-color: var(--ag-line-strong);
+  padding-top: 12px;
+}
+
+.ag-stock-ficha-dato[data-fuerte='true'] > span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ag-stock-ficha-dato[data-fuerte='true'] > strong { font-size: 19px; }
+
+/* El aviso de cobertura: el unico bloque con fondo de color de toda la
+   pantalla, porque es la frase que decide si hay que salir a comprar. */
+.ag-stock-aviso {
+  display: grid;
+  gap: 5px;
+  padding: 11px 13px;
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-bad-bg);
+  color: var(--ag-bad-ink, var(--ag-bad));
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.ag-stock-aviso[data-tono='warn'] { background: var(--ag-warn-bg); color: var(--ag-warn); }
+.ag-stock-aviso[data-tono='ok']   { background: var(--ag-ok-bg);   color: var(--ag-ok); }
+
+.ag-stock-aviso-rotulo {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.ag-stock-ficha-acciones { display: grid; gap: var(--ag-sp-2); }
+
+.ag-stock-ficha-secundarias {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ag-sp-2);
+}
+
+.ag-stock-ficha-vacia {
+  display: grid;
+  gap: 6px;
+  place-items: center;
+  padding: var(--ag-sp-6) var(--ag-sp-4);
+  text-align: center;
+  color: var(--ag-ink-3);
+  font-size: 13px;
+}
+
+/* ── Formulario de reponer / ajustar ───────────────────────────────── */
+
+.ag-stock-form {
+  display: grid;
+  gap: var(--ag-sp-2);
+  padding: var(--ag-sp-3);
+  border: 1px solid var(--ag-accent-border, var(--ag-accent));
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-surface-2);
+}
+
+.ag-stock-form label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-stock-form input,
+.ag-stock-form select {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-bg-card, var(--ag-surface));
+  color: var(--ag-ink);
+  font: inherit;
+  font-size: 13.5px;
+}
+
+.ag-stock-form input[type='number'] {
+  font-family: var(--ag-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-stock-form-botones { display: grid; grid-template-columns: 1fr auto; gap: var(--ag-sp-2); }
+
+.ag-stock-form-resultado {
+  font-size: 12px;
+  color: var(--ag-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-stock-error { font-size: 12px; color: var(--ag-bad); }
+
+/* ── Conteo de deposito (mobile 360) ───────────────────────────────── */
+
+/* Se cuenta PARADO EN EL DEPOSITO, con una mano y a veces con frio. Por eso
+   los botones son de 44px y no hay teclado: cada toque es un paso de la
+   unidad, y el numero grande al medio se lee sin acercar el telefono. */
+
+.ag-conteo {
+  display: grid;
+  gap: var(--ag-sp-3);
+  max-width: 460px;
+  margin: 0 auto;
+  padding: var(--ag-sp-3);
+}
+
+.ag-conteo-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ag-sp-3);
+}
+
+.ag-conteo-head h1 {
+  margin: 0;
+  font-family: var(--ag-font-display, inherit);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ag-ink);
+}
+
+.ag-conteo-kicker {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-conteo-kicker b { color: var(--ag-bad); }
+
+.ag-conteo-reloj {
+  text-align: right;
+  font-family: var(--ag-font-mono);
+  font-size: 12px;
+  color: var(--ag-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-conteo-solapas {
+  display: grid;
+  grid-auto-flow: column;
+  gap: var(--ag-sp-2);
+}
+
+.ag-conteo-solapa {
+  padding: 11px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-md);
+  background: transparent;
+  color: var(--ag-ink-3);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ag-conteo-solapa[aria-pressed='true'] {
+  background: var(--ag-surface-2);
+  border-color: var(--ag-line-strong);
+  color: var(--ag-ink);
+  font-weight: 640;
+}
+
+.ag-conteo-lista { display: grid; gap: var(--ag-sp-2); }
+
+.ag-conteo-item {
+  display: grid;
+  gap: 9px;
+  padding: 13px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-md);
+  background: var(--ag-surface);
+}
+
+.ag-conteo-item[data-tocado='true'] { border-color: var(--ag-accent); }
+
+.ag-conteo-item-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ag-sp-3);
+}
+
+.ag-conteo-item-nombre { display: grid; gap: 2px; min-width: 0; }
+
+/* El nombre envuelve en vez de truncarse: con los dos botones de 44px y el
+   valor al medio quedan ~160px, y "Carne picada especial" salia como "Carne
+   picada ...". Quien cuenta en el depósito necesita saber cuál de las dos
+   carnes tiene en la mano; una tarjeta un poco más alta es barato al lado de
+   contar el insumo equivocado. */
+.ag-conteo-item-nombre strong {
+  font-size: 14px;
+  font-weight: 620;
+  line-height: 1.25;
+  color: var(--ag-ink);
+  overflow-wrap: anywhere;
+}
+
+.ag-conteo-item-minimo {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-conteo-control {
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-2);
+  flex-shrink: 0;
+}
+
+/* 44px es el minimo tocable con guante. No bajar. */
+.ag-conteo-paso {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ag-line-strong);
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-surface-2);
+  color: var(--ag-ink);
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ag-conteo-paso:active { background: var(--ag-line); }
+.ag-conteo-paso:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.ag-conteo-valor {
+  min-width: 82px;
+  text-align: center;
+  font-family: var(--ag-font-mono);
+  font-size: 17px;
+  font-weight: 660;
+  font-variant-numeric: tabular-nums;
+  color: var(--ag-ink);
+}
+
+.ag-conteo-item[data-estado='critico'] .ag-conteo-valor { color: var(--ag-bad); }
+.ag-conteo-item[data-estado='bajo']    .ag-conteo-valor { color: var(--ag-warn); }
+.ag-conteo-item[data-estado='ok']      .ag-conteo-valor { color: var(--ag-ok); }
+
+.ag-conteo-barra {
+  height: 5px;
+  border-radius: var(--ag-r-pill);
+  background: var(--ag-surface-2);
+  overflow: hidden;
+}
+
+.ag-conteo-barra > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ag-ok);
+  transition: width var(--ag-t-med) var(--ag-ease);
+}
+
+.ag-conteo-item[data-estado='critico'] .ag-conteo-barra > i { background: var(--ag-bad); }
+.ag-conteo-item[data-estado='bajo']    .ag-conteo-barra > i { background: var(--ag-warn); }
+
+.ag-conteo-barra[data-sin-minimo='true'] {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--ag-surface-2) 0 5px,
+    transparent 5px 10px
+  );
+  border: 1px solid var(--ag-line);
+}
+
+/* La barra de guardar no se va de la pantalla: contar es un recorrido largo y
+   el boton tiene que estar donde termina la mano, no al final del scroll. */
+.ag-conteo-guardar {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: 9px;
+  padding: var(--ag-sp-3);
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-md);
+  background: var(--ag-surface);
+  box-shadow: var(--ag-sh-md);
+}
+
+.ag-conteo-cambios {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ag-sp-2);
+  font-size: 12px;
+  color: var(--ag-ink-3);
+}
+
+.ag-conteo-cambios b {
+  font-family: var(--ag-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ag-ink);
+}
+
+.ag-conteo-guardar-botones {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: var(--ag-sp-2);
+}
+
+/* ── Angosto ───────────────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .ag-stock-cuerpo { grid-template-columns: minmax(0, 1fr); }
+  .ag-stock-ficha  { position: static; }
+}
+
+@media (max-width: 900px) {
+  .ag-stock-cintas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Abajo de 720px la tabla deja de ser tabla: cuatro columnas en 360px dan
+   celdas de 80px y el nombre del insumo se corta en la segunda letra. Cada
+   fila pasa a ser una tarjeta con el nivel abajo, que es la misma lectura sin
+   pelear con el ancho. */
+@media (max-width: 720px) {
+  .ag-stock-encabezado { display: none; }
+
+  .ag-stock-fila {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'nombre cantidad'
+      'nivel  nivel'
+      'valor  valor';
+    gap: 7px var(--ag-sp-3);
+    padding: 13px var(--ag-sp-3);
+  }
+
+  .ag-stock-fila-nombre   { grid-area: nombre; }
+  .ag-stock-fila-cantidad { grid-area: cantidad; text-align: right; }
+  .ag-stock-nivel         { grid-area: nivel; }
+  .ag-stock-fila-valor    { grid-area: valor; text-align: left; font-size: 12px; }
+
+  .ag-stock-titulo h1 { font-size: 25px; }
+  .ag-stock-buscador  { margin-left: 0; width: 100%; }
+}
+
+@media (max-width: 520px) {
+  .ag-stock-cintas { grid-template-columns: minmax(0, 1fr); }
+  .ag-stock-acciones { width: 100%; }
+  .ag-stock-acciones > * { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ag-stock-barra > i,
+  .ag-conteo-barra > i { transition: none; }
+}

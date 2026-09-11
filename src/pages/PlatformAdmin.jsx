@@ -21,6 +21,8 @@ import AdminBackdrop from '../components/admin/shared/AdminBackdrop';
 import ConfirmSlideProvider from '../components/ConfirmSlideProvider';
 import ProductsPanel from '../components/admin/platform/ProductsPanel';
 import OrdersPanel from '../components/admin/platform/OrdersPanel';
+import StockPanel from '../components/admin/platform/StockPanel';
+import ConteoDeDeposito from '../components/admin/platform/ConteoDeDeposito';
 import DicoPresence from '../components/dico/DicoPresence';
 import AdminPushBanner from '../components/admin/shared/AdminPushBanner';
 import NavInferior from '../components/admin/platform/NavInferior';
@@ -141,6 +143,7 @@ import '../styles/admin-shared.css';
 // .ag-btn-mini y .ag-cta DENTRO de la pantalla sin tocarlos en el resto.
 import '../styles/admin-productos.css';
 import '../styles/admin-caja.css';
+import '../styles/admin-stock.css';
 // Machine Soul (Phase 3B): reemplaza la capa visual del shell. Va ultimo
 // a proposito, para pisar la de admin-topbar/bottomnav sin tocar su markup.
 import '../styles/admin-shell.css';
@@ -248,6 +251,10 @@ export default function PlatformAdmin() {
   const [orders, setOrders] = useState([]);
   const [sett, setSett] = useState(null);
   const [ings, setIngs] = useState([]);
+  // El conteo de deposito es una VISTA de la pestania Stock, no una ruta:
+  // se entra y se sale sin perder el filtro ni el insumo elegido.
+  const [contandoDeposito, setContandoDeposito] = useState(false);
+  const [proveedoresDeStock, setProveedoresDeStock] = useState([]);
   const [gastos, setGastos] = useState([]);
   const [ventas, setVentas] = useState([]);
   const [merma, setMerma] = useState([]);
@@ -305,6 +312,14 @@ export default function PlatformAdmin() {
   const loadSettings = useCallback(async () => {
     if (!tenantId) return;
     setSett(await fetchSettings(tenantId));
+  }, [tenantId]);
+
+  // Los proveedores solo se usan para poner el nombre en la ficha del
+  // insumo (columna supplier_id, migracion 0071). Es una lista corta y no
+  // cambia durante el servicio: se trae una vez con el resto.
+  const loadProveedoresDeStock = useCallback(async () => {
+    if (!tenantId) return;
+    setProveedoresDeStock(await fetchSuppliers(tenantId) || []);
   }, [tenantId]);
 
   const loadIngs = useCallback(async () => {
@@ -576,6 +591,7 @@ export default function PlatformAdmin() {
     loadOrders();
     loadSettings();
     loadIngs();
+    loadProveedoresDeStock();
     loadRecetas();
     loadGastos();
     loadVentas();
@@ -585,7 +601,7 @@ export default function PlatformAdmin() {
     loadCaja();
     loadEquipo();
     loadOportunidades();
-  }, [ready, tenantId, loadProducts, loadOrders, loadSettings, loadIngs, loadRecetas, loadGastos, loadVentas, loadItemsPedidos, loadMerma, loadSalon, loadCaja, loadEquipo, loadOportunidades]);
+  }, [ready, tenantId, loadProducts, loadOrders, loadSettings, loadIngs, loadProveedoresDeStock, loadRecetas, loadGastos, loadVentas, loadItemsPedidos, loadMerma, loadSalon, loadCaja, loadEquipo, loadOportunidades]);
 
   // La cuenta de transacciones del turno no puede quedar congelada con la
   // carga inicial. Se refresca mientras el panel esta abierto, incluido un
@@ -1186,21 +1202,26 @@ export default function PlatformAdmin() {
             />
           )}
           {tab === 'stock' && (
-            <Suspense fallback={<div style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando...</div>}>
-              <Stock
-                ingredients={ings}
-                setIngredients={setIngs}
-                recipes={[]}
-                overlay={ov}
-                setOverlay={setOv}
+            contandoDeposito ? (
+              <ConteoDeDeposito
+                tenantId={tenantId}
+                insumos={ings}
+                onGuardado={loadIngs}
+                onCerrar={() => setContandoDeposito(false)}
                 showToast={msg}
-                settings={sett || {}}
-                onUpsert={guardarIngrediente}
-                onArchive={archivarIngrediente}
-                permiteMerma
-                onRegistrarMerma={registrarMerma}
               />
-            </Suspense>
+            ) : (
+              <StockPanel
+                tenantId={tenantId}
+                insumos={ings}
+                proveedores={proveedoresDeStock}
+                onRecargar={loadIngs}
+                onGuardarInsumo={guardarIngrediente}
+                onRegistrarMerma={(ing, qty, motivo) => registrarMerma(ing.id, qty, motivo)}
+                onContarDeposito={() => setContandoDeposito(true)}
+                showToast={msg}
+              />
+            )
           )}
           {tab === 'mesas' && (
             <Suspense fallback={<div style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando...</div>}>
