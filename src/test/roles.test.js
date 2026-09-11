@@ -26,6 +26,13 @@ describe('la matriz respeta el plan', () => {
   it('quien atiende NO llega a la plata del local', () => {
     // Es el corte que justifica toda la etapa.
     expect(puedeVer(['attendant'], 'finanzas')).toBe(false);
+
+    // EL QUE COBRA ES EL MOZO. Cada uno maneja la plata de sus mesas y
+    // presenta su pre-cierre; el encargado certifica y cierra el turno. Por
+    // eso el mozo entra a Caja, pero a la SUYA: `propio`, no `completo`.
+    expect(puedeVer(['attendant'], 'caja')).toBe(true);
+    expect(accesoDe('attendant', 'caja')).toBe(ACCESO.PROPIO);
+    expect(accesoDe('manager', 'caja')).toBe(ACCESO.COMPLETO);
     expect(puedeVer(['kitchen'], 'finanzas')).toBe(false);
     expect(puedeVer(['kitchen'], 'ventas')).toBe(false);
     expect(puedeVer(['cashier'], 'finanzas')).toBe(false);

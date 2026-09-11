@@ -8,10 +8,10 @@
       "port": 5173
     },
     {
-      "name": "vitrina",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "vitrina"],
-      "port": 5199
+      "name": "qa-lite",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/qa-lite/revision-phase4.mjs"],
+      "port": 5273
     }
   ]
 }

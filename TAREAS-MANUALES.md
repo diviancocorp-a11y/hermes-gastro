@@ -20,6 +20,14 @@
 
 ### Esta semana (15 min)
 
+- [ ] **Homologar facturacion ARCA** antes de activar emision automatica:
+  generar el certificado WSAA del contribuyente, asociar el servicio `wsfe`,
+  crear un punto de venta exclusivo para Dico y cargar el certificado + clave
+  privada como secret `ARCA_CREDENTIALS_JSON` en Supabase. No guardar ni pegar
+  esas credenciales en Git, la base, el panel o un chat. Primero emitir y
+  consultar una Factura C de prueba en homologacion; produccion queda apagada
+  hasta validar el circuito con el contador.
+
 - [ ] **Smoke test en produccion de los 3 tenants** (checklist en ONBOARDING.md seccion 6):
   pedido guest con envio → verificar que la DIRECCION aparece en la tarjeta del admin.
   Hubo muchos cambios deployados hoy; ver con tus ojos antes que un cliente.
@@ -53,7 +61,7 @@
 | # | Decision | Contexto | Desbloquea |
 |---|----------|----------|------------|
 | 1 | **Datos de contacto de Hermes** (WhatsApp, email, Instagram) | El footer del catalogo tiene el boton "Hermes para tu negocio" sin contactos (los placeholder falsos se ocultaron) | Captacion de clientes desde los catalogos de tus propios tenants |
-| 2 | **AFIP / facturacion electronica**: ¿implementar WSAA real o eliminar el stub? | Requiere certificado AFIP del cliente + ~2-3 dias de dev. Flag E_INVOICE OFF, stub no deployado | Sprint facturacion |
+| 2 | ~~**ARCA / facturacion electronica**: implementar WSAA + WSFE real~~ | **DECIDIDO 9/sep:** adaptador ARCA implementado en el edificio. Falta homologacion manual y validacion contable antes de produccion | Homologacion ARCA |
 | 3 | **Roles finos staff vs owner**: ¿que NO puede ver un empleado? (propuesta: staff sin Finanzas, CRM export, Settings ni Usuarios) | La infraestructura ya esta (admin_users.role); falta gatear la UI y las policies finas | Sprint 5 |
 | 4 | **WhatsApp automatico al completar pedido**: ¿API de WhatsApp Business (paga, ~USD por conversacion) o seguir manual con wa.me? | Hoy el admin manda el mensaje a mano con un click | Sprint 5 |
 | 5 | **Stock server-side**: cuando un producto esta "Agotado", ¿submit-order RECHAZA el pedido o solo lo avisa al admin? | Hoy el catalogo bloquea en UI (fail-open); un cliente con la pagina abierta de antes podria pedirlo igual | Sprint 5 |

@@ -1,10 +1,11 @@
 /**
- * MapaDeMesas — el plano del salon (Etapa 6c).
+ * MapaDeMesas — el plano del salon.
  *
  * Dos modos sobre el MISMO plano, y esa es la decision de diseño:
  *
  *   servicio  lo que se usa todos los dias. Cada mesa muestra si esta libre,
- *             reservada u ocupada. Se toca y se opera.
+ *             reservada u ocupada, hace cuanto y cuanto lleva consumido. Se
+ *             toca y se opera desde el panel de al lado.
  *   editar    se arrastra para acomodar el salon. Se entra a proposito.
  *
  * Tener dos pantallas separadas obligaria a mantener dos dibujos iguales y a
@@ -12,7 +13,14 @@
  * activo haria que cualquier toque torcido en un telefono mueva una mesa en
  * medio del servicio.
  *
- * El plano es OPCIONAL: una mesa sin pos_x/pos_y existe igual y se reserva
+ * EL PLANO SE MANTIENE EN EL TELEFONO
+ * La version anterior de este rediseño convertia el plano en una lista debajo
+ * de los 860px. Se descarto: el mozo reconoce su salon por la FORMA, y una
+ * lista lo obliga a leer nombres para encontrar la mesa que tiene enfrente. En
+ * el telefono cambia el tamanio del lienzo y donde cae el detalle; no cambia
+ * el modo de leerlo.
+ *
+ * EL PLANO ES OPCIONAL: una mesa sin pos_x/pos_y existe igual y se reserva
  * igual. Aparece en una bandeja abajo para colocarla cuando el negocio quiera.
  * Obligar a dibujar el salon antes de tomar la primera reserva seria absurdo.
  *
@@ -31,82 +39,186 @@
  *
  * Las pestanias aparecen recien con dos zonas. Un bar de ocho mesas no tiene
  * por que enterarse de que las zonas existen.
+ *
+ * LAS CUENTAS NO VIVEN ACA: estado, consumo y demoras salen de
+ * `src/modules/salonDelDia.js`, que es donde se pueden probar.
  */
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { panoramaDelSalon, duracionCorta } from '../../../modules/salonDelDia';
+import '../../../styles/admin-salon.css';
 
-// Los estados que puede tener una mesa AHORA. El color es lo que se lee de
-// lejos; el texto esta igual porque el color solo no es accesible.
 // Las mesas que el negocio no asigno a ninguna zona necesitan un lugar donde
 // caer: sin esto desaparecerian del plano en cuanto exista una segunda zona.
 const SIN_ZONA = 'Sin zona';
 
-const ESTADOS = {
-  libre:     { label: 'Libre',     bg: 'var(--ag-ok-bg, #e8f5e9)',  fg: 'var(--ag-ok, #2e7d32)',  borde: '#4caf50' },
-  reservada: { label: 'Reservada', bg: 'var(--ag-warn-bg, #fff8e1)', fg: 'var(--ag-warn, #ef6c00)', borde: '#ffb300' },
-  ocupada:   { label: 'Ocupada',   bg: 'var(--ag-bad-bg, #ffebee)',  fg: 'var(--ag-bad, #c62828)',  borde: '#e53935' },
+const ETIQUETA_ESTADO = { libre: 'Libre', reservada: 'Reservada', ocupada: 'Ocupada' };
+
+const ETIQUETA_LLAMADO = {
+  waiter: 'Llaman al camarero',
+  bill: 'Piden la cuenta',
+  manager: 'Llaman al encargado',
 };
 
-/** En que esta esta mesa segun sus reservas de hoy. */
-function estadoDe(recurso, reservas) {
-  const suyas = reservas.filter(r => r.resource_id === recurso.id);
-  if (suyas.some(r => r.status === 'arrived' || r.status === 'in_service')) return 'ocupada';
-  if (suyas.some(r => r.status === 'booked' || r.status === 'confirmed')) return 'reservada';
-  return 'libre';
+/**
+ * Tres tamanios y ninguno mas.
+ *
+ * Un salon de ocho mesas y uno de cuarenta no entran en el mismo plano: con
+ * las mesas del primero, el segundo es una mancha. Dos controles separados
+ * —uno para el plano y otro para la mesa— serian cuatro combinaciones que
+ * nadie quiere elegir, asi que es UN control con tres pasos: cada paso mueve
+ * las dos cosas a la vez.
+ *
+ * `alto` es el aspecto del lienzo: cuanto mas chico el paso, mas superficie
+ * para repartir. `escala` multiplica el tamanio de cada mesa.
+ */
+const TAMANOS = {
+  holgado: { label: 'Holgado', escala: 1.15, aspecto: '16 / 9', hasta: 12 },
+  normal:  { label: 'Normal',  escala: 1,    aspecto: '16 / 10', hasta: 24 },
+  compacto:{ label: 'Compacto', escala: .62, aspecto: '4 / 3',  hasta: Infinity },
+};
+
+/** El tamanio que le corresponde a un salon por su cantidad de mesas. */
+export function tamanoSugerido(cantidad) {
+  const n = Number(cantidad) || 0;
+  return Object.keys(TAMANOS).find(k => n <= TAMANOS[k].hasta) || 'compacto';
 }
 
-function Mesa({ recurso, estado, editando, seleccionada, onPointerDown, onClick }) {
-  const e = ESTADOS[estado] || ESTADOS.libre;
+const CLAVE_TAMANO = 'dico.salon.tamano';
+
+const money = (n) => `$ ${Math.round(Number(n) || 0).toLocaleString('es-AR')}`;
+
+const horaCorta = (valor) => {
+  if (!valor) return null;
+  const d = new Date(valor);
+  return Number.isFinite(d.getTime())
+    ? d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+    : null;
+};
+
+/**
+ * Lo que la mesa dice de si misma EN EL PLANO.
+ *
+ * Un dato y no cuatro. Con cuarenta mesas, cada burbuja con tiempo y plata
+ * convierte el plano en una planilla y deja de leerse de un vistazo, que es lo
+ * unico que un plano hace mejor que una lista. Las estadisticas de la mesa se
+ * abren al tocarla, en el panel de al lado.
+ *
+ * Lo que SI se queda es cuantos lugares tiene libres: es lo que se mira para
+ * sentar gente, y es la decision que se toma mirando el salon.
+ */
+function pieDeMesa(m) {
+  const capacidad = Number(m.recurso.capacity) || 0;
+  if (m.estado === 'ocupada') {
+    const libres = Math.max(0, capacidad - m.ocupantes);
+    return libres > 0 ? `${libres} ${libres === 1 ? 'libre' : 'libres'}` : 'completa';
+  }
+  if (m.estado === 'reservada') return horaCorta(m.proximaReserva?.starts_at) || `${capacidad} lug.`;
+  return `${capacidad} ${capacidad === 1 ? 'lugar' : 'lugares'}`;
+}
+
+function Mesa({ mesa, editando, seleccionada, onPointerDown, onClick }) {
+  const { recurso, estado } = mesa;
   const redonda = recurso.shape === 'round';
+  const pie = pieDeMesa(mesa);
   return (
     <button
       type="button"
+      className="ag-salon-mesa"
+      data-estado={estado}
+      data-redonda={redonda ? 'true' : 'false'}
+      data-editando={editando ? 'true' : 'false'}
+      aria-pressed={seleccionada}
       onPointerDown={editando ? onPointerDown : undefined}
       onClick={onClick}
-      aria-label={`${recurso.name}, ${recurso.capacity} lugares, ${e.label}`}
+      aria-label={`${recurso.name}, ${ETIQUETA_ESTADO[estado]}, ${pie}`}
+      // El tamanio entra como variable para que la hoja pueda escalarlo con el
+      // control de tamanio y con el ancho de pantalla. Como estilo inline
+      // ganaba siempre y las mesas se pisaban.
       style={{
-        position: 'absolute',
-        left: `${recurso.pos_x}%`,
-        top: `${recurso.pos_y}%`,
-        transform: 'translate(-50%, -50%)',
-        width: recurso.width || 74,
-        height: recurso.height || (redonda ? 74 : 56),
-        borderRadius: redonda ? '50%' : 10,
-        background: e.bg,
-        color: e.fg,
-        border: `2px solid ${seleccionada ? 'var(--ag-ink, #111)' : e.borde}`,
-        boxShadow: seleccionada ? '0 0 0 3px rgba(0,0,0,0.12)' : 'none',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: 1,
-        font: 'inherit', fontWeight: 650, fontSize: 13,
-        cursor: editando ? 'grab' : 'pointer',
-        // Sin esto, arrastrar en un telefono scrollea la pagina en vez de
-        // mover la mesa.
-        touchAction: editando ? 'none' : 'auto',
-        userSelect: 'none',
+        '--mesa-ancho': `${recurso.width || 84}px`,
+        '--mesa-alto': `${recurso.height || (redonda ? 84 : 62)}px`,
       }}
     >
-      <span>{recurso.name}</span>
-      <span style={{ fontSize: 11, opacity: 0.75, fontWeight: 500 }}>
-        {recurso.capacity} {recurso.capacity === 1 ? 'lugar' : 'lugares'}
-      </span>
+      <span className="ag-salon-mesa-nombre">{recurso.name}</span>
+      <span className="ag-salon-mesa-pie">{pie}</span>
     </button>
+  );
+}
+
+/** Una celda del tablero. `atencion` sube el filete a oro. */
+function Dato({ rotulo, valor, pie, atencion = false, barra = null }) {
+  return (
+    <article className="ag-salon-dato" data-atencion={atencion ? 'true' : 'false'}>
+      <span className="ag-salon-dato-rotulo">{rotulo}</span>
+      <strong className="ag-salon-dato-valor">{valor}</strong>
+      {barra !== null && (
+        <div className="ag-salon-barra" role="presentation">
+          <i style={{ width: `${Math.min(100, Math.max(0, barra))}%` }} />
+        </div>
+      )}
+      {pie && <span className="ag-salon-dato-pie">{pie}</span>}
+    </article>
   );
 }
 
 export default function MapaDeMesas({
   recursos = [],
   reservas = [],
-  utilizacion = null,
-  onMover,          // (id, {pos_x, pos_y}) -> Promise<boolean>
-  onSeleccionar,    // (recurso) -> void
-  onNuevo,          // () -> void
+  // Las visitas y los pedidos abiertos son lo que convierte el plano en una
+  // pantalla de servicio: sin ellos las mesas son cajas con un nombre.
+  visitas = [],
+  ordenes = [],
+  itemsPorOrden = null,   // Map(order_id -> items[]), opcional
+  personal = [],          // para poner nombre al mozo responsable
+  onMover,                // (id, {pos_x, pos_y}) -> Promise<boolean>
+  onSeleccionar,          // (recurso) -> void
+  onNuevo,                // () -> void
+  onCobrarMesa,           // (mesa) -> void
+  solicitudes = [],
+  onActualizarSolicitud,
   terminologia = { plural: 'Mesas', singular: 'mesa' },
 }) {
   const [editando, setEditando] = useState(false);
   const [seleccionada, setSeleccionada] = useState(null);
   const [zonaActiva, setZonaActiva] = useState(null);
+  // Una zona recien nombrada todavia no tiene ninguna mesa, asi que no existe
+  // en `recursos`. Vive aca hasta que se cree la primera mesa adentro.
+  const [zonaNueva, setZonaNueva] = useState(null);
+  const [nombreZona, setNombreZona] = useState('');
   const lienzo = useRef(null);
   const arrastre = useRef(null);
+
+  // El tamanio del plano es una preferencia de quien mira, no del negocio:
+  // el encargado en el monitor del mostrador y el mozo en el telefono no
+  // quieren el mismo. Por eso va al navegador y no a `settings`, que ademas
+  // pediria columna, Zod y manifiesto para un ajuste de zoom.
+  const [tamano, setTamano] = useState(() => {
+    try {
+      const guardado = localStorage.getItem(CLAVE_TAMANO);
+      if (guardado && TAMANOS[guardado]) return guardado;
+    } catch { /* sin storage: se usa el sugerido */ }
+    return null;
+  });
+
+  // El reloj del salon. Las demoras se leen en minutos, asi que alcanza con
+  // un tick por minuto: mas seguido repinta el plano sin que cambie un numero.
+  const [ahora, setAhora] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setAhora(Date.now()), 60000);
+    return () => clearInterval(t);
+  }, []);
+
+  const panorama = useMemo(
+    () => panoramaDelSalon(recursos, { visitas, ordenes, reservas }, ahora),
+    [recursos, visitas, ordenes, reservas, ahora]);
+
+  const porMesa = useMemo(
+    () => new Map(panorama.mesas.map(m => [m.recurso.id, m])),
+    [panorama]);
+
+  const nombreDeStaff = useMemo(
+    () => new Map(personal.map(p => [p.id, p.name])),
+    [personal]);
 
   // Las zonas salen de TODOS los recursos, no solo de los que estan en el
   // plano: una mesa recien creada todavia no tiene posicion y su zona tiene
@@ -117,9 +229,13 @@ export default function MapaDeMesas({
     [recursos]);
 
   const haySinZona = useMemo(() => recursos.some(r => !r.zone), [recursos]);
+  // La zona recien nombrada entra a la lista aunque no tenga mesas: si no, se
+  // la nombra y no pasa nada visible hasta crear la primera, que es el momento
+  // en que uno cree que el boton no anduvo.
+  const todas = zonaNueva && !zonas.includes(zonaNueva) ? [...zonas, zonaNueva] : zonas;
   // Con una sola zona no hay nada que elegir, y las pestanias solo estorban.
-  const pestanias = zonas.length + (haySinZona ? 1 : 0) > 1
-    ? [...zonas, ...(haySinZona ? [SIN_ZONA] : [])]
+  const pestanias = todas.length + (haySinZona ? 1 : 0) > 1
+    ? [...todas, ...(haySinZona ? [SIN_ZONA] : [])]
     : [];
 
   // La zona elegida deja de existir cuando se renombra o se vacia la ultima
@@ -133,7 +249,16 @@ export default function MapaDeMesas({
   // ahi le crearia al negocio una pestania "Sin zona" con la mesa que acaba de
   // cargar, que es justo lo que las zonas venian a evitar.
   const zonaParaNueva = zonaVigente === SIN_ZONA ? null
-    : (zonaVigente ?? (zonas.length === 1 ? zonas[0] : null));
+    : (zonaVigente ?? (todas.length === 1 ? todas[0] : null));
+
+  // Sin eleccion guardada, el tamanio sale de cuantas mesas hay: un salon de
+  // cuarenta arranca compacto solo, sin que nadie tenga que descubrir el
+  // control. Elegir a mano lo fija.
+  const tamanoVigente = tamano || tamanoSugerido(recursos.length);
+  const elegirTamano = useCallback((clave) => {
+    setTamano(clave);
+    try { localStorage.setItem(CLAVE_TAMANO, clave); } catch { /* sin storage */ }
+  }, []);
 
   const { colocados, sinColocar } = useMemo(() => {
     const deLaZona = zonaVigente === null
@@ -199,173 +324,343 @@ export default function MapaDeMesas({
     });
   }, [editando, onNuevo, zonaParaNueva]);
 
-  const wrap = { display: 'grid', gap: 14 };
+  // Crear una zona es NOMBRARLA. No hay tabla de zonas: una zona es el texto
+  // que llevan las mesas que estan adentro (`resources.zone`), asi que existe
+  // de verdad recien cuando se crea la primera. Hasta entonces vive en estado
+  // y ya se puede elegir, que es lo que hace que el gesto se sienta completo.
+  const crearZona = useCallback((ev) => {
+    ev.preventDefault();
+    const nombre = nombreZona.trim();
+    if (!nombre) return;
+    setZonaNueva(nombre);
+    setZonaActiva(nombre);
+    setNombreZona('');
+    setSeleccionada(null);
+  }, [nombreZona]);
+
+  const elegida = seleccionada ? porMesa.get(seleccionada) : null;
+
+  // El detalle muestra lo que hay EN la mesa: los renglones de sus pedidos
+  // abiertos. Sin el mapa de items, el consumo se muestra igual por pedido.
+  const renglones = useMemo(() => {
+    if (!elegida) return [];
+    if (!itemsPorOrden) {
+      return elegida.ordenes.map(o => ({
+        id: o.id,
+        texto: `Pedido de ${horaCorta(o.created_at) || 'hoy'}`,
+        importe: Number(o.total) || 0,
+      }));
+    }
+    return elegida.ordenes.flatMap(o => (itemsPorOrden.get(o.id) || []).map(it => ({
+      id: it.id,
+      texto: `${it.qty}· ${it.name_snapshot}`,
+      importe: Number(it.subtotal) || 0,
+    })));
+  }, [elegida, itemsPorOrden]);
+
+  const proxima = panorama.proximaReserva;
+  const demorada = panorama.demorada;
 
   return (
-    <section style={wrap} className="cp-root">
-      {/* ── Barra: utilizacion + modo ── */}
-      <header style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        {utilizacion && (
-          <div style={{
-            display: 'flex', gap: 14, alignItems: 'baseline',
-            padding: '8px 12px', borderRadius: 10,
-            background: 'var(--ag-surface-2, rgba(0,0,0,0.04))',
-          }}>
-            <strong style={{ fontSize: 20 }}>{utilizacion.utilizacion_pct ?? 0}%</strong>
-            <span style={{ fontSize: 12.5, color: 'var(--ag-ink-3, #666)' }}>
-              {/* Lo que importa no es lo vendido: es lo que quedo sin vender. */}
-              de tu capacidad usada · {Math.max(0,
-                (Number(utilizacion.horas_disponibles) || 0) -
-                (Number(utilizacion.horas_vendidas) || 0)).toFixed(0)} h libres
-            </span>
-          </div>
-        )}
-        <div style={{ flex: 1 }} />
-        <button
-          type="button"
-          // Sin posicion: cae en la bandeja. Es el camino para cargar las mesas
-          // sin dibujar el plano, que sigue siendo valido.
-          onClick={() => onNuevo?.({ zone: zonaParaNueva })}
-          style={{
-            padding: '8px 13px', borderRadius: 9, cursor: 'pointer', font: 'inherit',
-            border: '1px solid var(--ag-line, rgba(0,0,0,0.15))',
-            background: 'transparent', color: 'inherit',
-          }}
-        >
-          + Nueva {terminologia.singular}
-        </button>
-        <button
-          type="button" onClick={() => { setEditando(v => !v); setSeleccionada(null); }}
-          aria-pressed={editando}
-          style={{
-            padding: '8px 13px', borderRadius: 9, cursor: 'pointer', font: 'inherit',
-            border: `1px solid ${editando ? 'transparent' : 'var(--ag-line, rgba(0,0,0,0.15))'}`,
-            background: editando ? 'var(--ag-accent, #e8b947)' : 'transparent',
-            color: editando ? '#1a1a1a' : 'inherit', fontWeight: editando ? 650 : 400,
-          }}
-        >
-          {editando ? 'Listo' : 'Acomodar salón'}
-        </button>
-      </header>
-
-      {pestanias.length > 0 && (
-        <div
-          role="tablist" aria-label="Zonas del local"
-          style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}
-        >
-          {pestanias.map(z => {
-            const activa = z === zonaVigente;
-            return (
-              <button
-                key={z} type="button" role="tab" aria-selected={activa}
-                onClick={() => { setZonaActiva(z); setSeleccionada(null); }}
-                style={{
-                  padding: '7px 14px', borderRadius: 999, cursor: 'pointer',
-                  font: 'inherit', fontSize: 13.5, fontWeight: activa ? 650 : 400,
-                  border: activa ? '1px solid transparent' : '1px solid var(--ag-line, rgba(0,0,0,0.15))',
-                  background: activa ? 'var(--ag-ink, #1a1a1a)' : 'transparent',
-                  color: activa ? '#fff' : 'inherit',
-                }}
-              >
-                {z}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {editando && (
-        <p style={{ margin: 0, fontSize: 12.5, color: 'var(--ag-ink-3, #666)' }}>
-          Arrastrá las {terminologia.plural.toLowerCase()} para acomodarlas como están en tu local,
-          o tocá un lugar vacío para agregar una. Se guarda solo.
-        </p>
-      )}
-
-      {/* ── El plano ── */}
-      <div
-        ref={lienzo}
-        onClick={crearAca}
-        style={{
-          position: 'relative',
-          width: '100%',
-          // Relacion fija para que el plano se vea igual en cualquier pantalla:
-          // las posiciones son porcentajes de ESTA caja.
-          aspectRatio: '16 / 10',
-          minHeight: 260,
-          borderRadius: 14,
-          background: editando
-            ? 'repeating-linear-gradient(0deg, transparent 0 23px, rgba(0,0,0,0.05) 23px 24px), repeating-linear-gradient(90deg, transparent 0 23px, rgba(0,0,0,0.05) 23px 24px)'
-            : 'var(--ag-surface-2, rgba(0,0,0,0.03))',
-          border: '1px solid var(--ag-line, rgba(0,0,0,0.12))',
-          overflow: 'hidden',
-        }}
-      >
-        {colocados.length === 0 && (
-          <div style={{
-            position: 'absolute', inset: 0, display: 'grid', placeItems: 'center',
-            textAlign: 'center', padding: 20, color: 'var(--ag-ink-3, #666)', fontSize: 14,
-            // Sin esto el cartel se come el toque y no se puede crear la
-            // primera mesa justo cuando el plano esta vacio.
-            pointerEvents: 'none',
-          }}>
-            <div>
-              <div style={{ fontSize: 30, marginBottom: 6 }}>🗺️</div>
-              Todavía no dibujaste tu salón.<br />
-              {editando
-                ? <>Tocá donde va la primera {terminologia.singular}.</>
-                : <>Tocá <strong>Acomodar salón</strong> para empezar.</>}
-            </div>
-          </div>
-        )}
-
-        {colocados.map(r => (
-          <div key={r.id} data-mesa={r.id} style={{ position: 'absolute', left: `${r.pos_x}%`, top: `${r.pos_y}%` }}>
-            <Mesa
-              recurso={{ ...r, pos_x: 0, pos_y: 0 }}
-              estado={estadoDe(r, reservas)}
-              editando={editando}
-              seleccionada={seleccionada === r.id}
-              onPointerDown={alTomar(r)}
-              onClick={() => { if (!editando) onSeleccionar?.(r); }}
-            />
-          </div>
-        ))}
+    // `cp-root` es la raiz del catalogo y pinta `background: var(--bg)`, que
+    // en el panel es blanco: en tema oscuro aparecia una tarjeta blanca detras
+    // del plano. El panel tiene sus propios tokens `--ag-*`.
+    <section className="ag-salon">
+      <div className="ag-salon-tablero">
+        <Dato
+          rotulo="Capacidad usada"
+          valor={`${panorama.capacidadPct}%`}
+          barra={panorama.capacidadPct}
+          pie={`${panorama.ocupados} de ${panorama.lugares} lugares`}
+        />
+        <Dato
+          rotulo={`${terminologia.plural} ocupadas`}
+          valor={`${panorama.mesasOcupadas} / ${panorama.mesasTotales}`}
+          pie={proxima
+            ? `${panorama.mesasReservadas} reservada${panorama.mesasReservadas === 1 ? '' : 's'} · próxima ${horaCorta(proxima.starts_at) || 'hoy'}`
+            : `${panorama.mesasLibres} libre${panorama.mesasLibres === 1 ? '' : 's'}`}
+        />
+        <Dato
+          rotulo="Consumo abierto"
+          valor={money(panorama.consumoAbierto)}
+          pie="sin cobrar"
+        />
+        <Dato
+          rotulo={`${terminologia.singular} más demorada`}
+          valor={demorada ? duracionCorta(demorada.abiertaHace) : '—'}
+          // El filete sube a oro solo cuando hay algo que atender: una mesa
+          // sentada hace rato sin pedir nada.
+          atencion={!!demorada && (demorada.sinPedirHace ?? 0) >= 30}
+          pie={demorada
+            ? `${demorada.recurso.name} · sin pedir hace ${duracionCorta(demorada.sinPedirHace)}`
+            : 'sin mesas abiertas'}
+        />
       </div>
 
-      {/* ── Bandeja: lo que existe pero todavia no esta en el plano ── */}
-      {sinColocar.length > 0 && (
-        <div>
-          <div style={{ fontSize: 12.5, color: 'var(--ag-ink-3, #666)', marginBottom: 7 }}>
-            Sin ubicar en el plano ({sinColocar.length}). Se pueden reservar igual.
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {sinColocar.map(r => (
-              <button
-                key={r.id} type="button" onClick={() => onSeleccionar?.(r)}
-                style={{
-                  padding: '7px 11px', borderRadius: 9, cursor: 'pointer', font: 'inherit',
-                  fontSize: 13, background: 'var(--ag-surface-2, rgba(0,0,0,0.04))',
-                  border: '1px dashed var(--ag-line, rgba(0,0,0,0.2))', color: 'inherit',
-                }}
-              >
-                {r.name} · {r.capacity}
-              </button>
+      {/* UNA tarjeta con todas las filas, no una tarjeta por llamado. En un
+          servicio grande son ocho o diez y apilados empujaban el plano fuera
+          de la pantalla, que es justo cuando mas se lo necesita. */}
+      {solicitudes.length > 0 && (
+        <section className="ag-salon-llamados" aria-label="Llamados de las mesas">
+          <header>
+            <span className="ag-salon-dato-rotulo">Llamados</span>
+            <span className="ag-salon-cuenta">{solicitudes.length}</span>
+          </header>
+          <ul>
+            {solicitudes.map(solicitud => (
+              <li key={solicitud.id} className="ag-salon-llamado">
+                <div>
+                  <strong>{porMesa.get(solicitud.resource_id)?.recurso.name || 'Mesa'}</strong>
+                  <span>{ETIQUETA_LLAMADO[solicitud.kind] || 'Solicitan asistencia'}</span>
+                </div>
+                <button
+                  type="button"
+                  className={solicitud.status === 'pending' ? 'ag-btn-primary' : 'ag-btn-ghost'}
+                  onClick={() => onActualizarSolicitud?.(
+                    solicitud.id,
+                    solicitud.status === 'pending' ? 'accepted' : 'resolved',
+                  )}
+                >
+                  {solicitud.status === 'pending' ? 'Tomar' : 'Resolver'}
+                </button>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </section>
       )}
 
-      {/* ── Referencia de colores ── */}
-      <div style={{ display: 'flex', gap: 14, fontSize: 12, color: 'var(--ag-ink-3, #666)' }}>
-        {Object.entries(ESTADOS).map(([k, v]) => (
-          <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-            <span style={{
-              width: 10, height: 10, borderRadius: 3,
-              background: v.bg, border: `1.5px solid ${v.borde}`,
-            }} />
-            {v.label}
-          </span>
-        ))}
+      <div className="ag-salon-cuerpo">
+        <div className="ag-salon-plano-caja">
+          <div className="ag-salon-plano-head">
+            {pestanias.length > 0 ? (
+              <div className="ag-salon-zonas" role="tablist" aria-label="Zonas del local">
+                {pestanias.map(z => (
+                  <button
+                    key={z} type="button" role="tab"
+                    className="ag-salon-zona"
+                    aria-selected={z === zonaVigente}
+                    onClick={() => { setZonaActiva(z); setSeleccionada(null); }}
+                  >
+                    {z}
+                  </button>
+                ))}
+              </div>
+            ) : <div />}
+
+            <div className="ag-salon-plano-controles">
+              {/* El tamanio esta siempre a mano, tambien en servicio: quien
+                  mira un salon de cuarenta mesas necesita achicarlo para verlo
+                  entero, no para editarlo. */}
+              <div className="ag-salon-tamanos" role="group" aria-label="Tamaño del plano">
+                {Object.entries(TAMANOS).map(([clave, t]) => (
+                  <button
+                    key={clave} type="button"
+                    className="ag-salon-tamano"
+                    aria-pressed={clave === tamanoVigente}
+                    onClick={() => elegirTamano(clave)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <div className="ag-salon-leyenda">
+                {Object.entries(ETIQUETA_ESTADO).map(([k, label]) => (
+                  <span key={k} data-estado={k}><i />{label}</span>
+                ))}
+              </div>
+              {/* Acomodar vive con el PLANO y no con la seleccion. Estaba en el
+                  panel de la derecha y solo aparecia sin mesa elegida: con una
+                  mesa abierta no habia forma de entrar a editar. */}
+              <button
+                type="button"
+                className="ag-salon-editar"
+                aria-pressed={editando}
+                onClick={() => { setEditando(v => !v); setSeleccionada(null); }}
+              >
+                {editando ? 'Salir de edición' : 'Acomodar salón'}
+              </button>
+            </div>
+          </div>
+
+          {editando && (
+            <div className="ag-salon-edicion">
+              <p className="ag-salon-ayuda">
+                Arrastrá las {terminologia.plural.toLowerCase()} para acomodarlas como están en tu
+                local, o tocá un lugar vacío para agregar una. Se guarda solo.
+                Tocá una {terminologia.singular} para cambiarle el tamaño o la forma.
+              </p>
+              <form className="ag-salon-zona-nueva" onSubmit={crearZona}>
+                <input
+                  type="text"
+                  value={nombreZona}
+                  onChange={(e) => setNombreZona(e.target.value)}
+                  placeholder="Nombre de la zona"
+                  aria-label="Nombre de la zona nueva"
+                  maxLength={40}
+                />
+                <button type="submit" className="ag-btn-ghost" disabled={!nombreZona.trim()}>
+                  Agregar zona
+                </button>
+              </form>
+            </div>
+          )}
+
+          <div
+            ref={lienzo}
+            className="ag-salon-plano"
+            data-editando={editando ? 'true' : 'false'}
+            style={{
+              aspectRatio: TAMANOS[tamanoVigente].aspecto,
+              '--salon-base': TAMANOS[tamanoVigente].escala,
+            }}
+            onClick={crearAca}
+          >
+            {colocados.length === 0 && (
+              <div className="ag-salon-vacio">
+                <div>
+                  Todavía no dibujaste tu salón.<br />
+                  {editando
+                    ? <>Tocá donde va la primera {terminologia.singular}.</>
+                    : <>Tocá <strong>Acomodar salón</strong> para empezar.</>}
+                </div>
+              </div>
+            )}
+
+            {colocados.map(r => {
+              const mesa = porMesa.get(r.id);
+              if (!mesa) return null;
+              return (
+                <div
+                  key={r.id} data-mesa={r.id}
+                  style={{
+                    position: 'absolute',
+                    left: `${r.pos_x}%`, top: `${r.pos_y}%`,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                >
+                  <Mesa
+                    mesa={mesa}
+                    editando={editando}
+                    seleccionada={seleccionada === r.id}
+                    onPointerDown={alTomar(r)}
+                    onClick={() => { if (!editando) setSeleccionada(r.id); }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {sinColocar.length > 0 && (
+            <div className="ag-salon-bandeja">
+              <span className="ag-salon-ayuda">
+                Sin ubicar en el plano ({sinColocar.length}). Se pueden reservar igual.
+              </span>
+              <div className="ag-salon-bandeja-lista">
+                {sinColocar.map(r => (
+                  <button key={r.id} type="button" onClick={() => setSeleccionada(r.id)}>
+                    {r.name} · {r.capacity}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <aside className="ag-salon-detalle" aria-label={`Detalle de la ${terminologia.singular}`}>
+          {!elegida ? (
+            <>
+              <div className="ag-salon-detalle-head">
+                <h3>El salón</h3>
+                <span className="ag-salon-detalle-meta">
+                  Tocá una {terminologia.singular} del plano para ver su cuenta.
+                </span>
+              </div>
+              <div className="ag-salon-acciones">
+                <button
+                  type="button" className="ag-btn-ghost"
+                  onClick={() => onNuevo?.({ zone: zonaParaNueva })}
+                >
+                  Nueva {terminologia.singular}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="ag-salon-detalle-head">
+                <span className="ag-salon-detalle-estado" data-estado={elegida.estado}>
+                  {ETIQUETA_ESTADO[elegida.estado]}
+                </span>
+                <h3>{elegida.recurso.name}</h3>
+                <span className="ag-salon-detalle-meta">
+                  {elegida.recurso.capacity} lugares
+                  {elegida.visita?.responsible_staff_id
+                    && nombreDeStaff.get(elegida.visita.responsible_staff_id)
+                    && ` · ${nombreDeStaff.get(elegida.visita.responsible_staff_id)}`}
+                  {elegida.estado === 'reservada' && elegida.proximaReserva
+                    && ` · reservada ${horaCorta(elegida.proximaReserva.starts_at) || ''}`}
+                </span>
+              </div>
+
+              {/* El perfil de uso: lo que se saco de la burbuja para no
+                  cargar el plano. Aca hay lugar para leerlo. */}
+              {elegida.estado === 'ocupada' && (
+                <dl className="ag-salon-perfil">
+                  <div>
+                    <dt>Abierta hace</dt>
+                    <dd>{duracionCorta(elegida.abiertaHace)}</dd>
+                  </div>
+                  <div>
+                    <dt>Sin pedir hace</dt>
+                    <dd data-alerta={(elegida.sinPedirHace ?? 0) >= 30 ? 'true' : 'false'}>
+                      {duracionCorta(elegida.sinPedirHace)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Sentados</dt>
+                    <dd>{elegida.ocupantes} de {elegida.recurso.capacity}</dd>
+                  </div>
+                </dl>
+              )}
+
+              {renglones.length > 0 && (
+                <div className="ag-salon-consumo">
+                  {renglones.map(r => (
+                    <div key={r.id} className="ag-salon-linea">
+                      <span>{r.texto}</span>
+                      <span>{money(r.importe)}</span>
+                    </div>
+                  ))}
+                  <div className="ag-salon-total">
+                    <span>Consumo</span>
+                    <span>{money(elegida.consumo)}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="ag-salon-acciones">
+                {elegida.estado === 'ocupada' && onCobrarMesa && (
+                  <button
+                    type="button" className="ag-btn-primary"
+                    onClick={() => onCobrarMesa(elegida)}
+                  >
+                    Cobrar {terminologia.singular}
+                  </button>
+                )}
+                {/* En edicion la mesa se toca para cambiarle forma, tamanio y
+                    ubicacion. En servicio no: el editor no tiene nada que
+                    hacer en la mano de alguien que esta cobrando. */}
+                {editando && (
+                  <button
+                    type="button" className="ag-btn-ghost"
+                    onClick={() => onSeleccionar?.(elegida.recurso)}
+                  >
+                    Tamaño y forma
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </aside>
       </div>
     </section>
   );

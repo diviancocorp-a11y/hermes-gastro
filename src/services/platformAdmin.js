@@ -42,6 +42,7 @@ function exigirTenant(tenantId, quien) {
 // legacy: lo escribe submit-order cuando el pago va por MercadoPago y todavia
 // no volvio la confirmacion.
 export const PlatformOrderStatus = Object.freeze({
+  PENDING_REVIEW: 'pending_review',
   PENDING_PAYMENT: 'pending_payment',
   NEW: 'new',
   PREPARING: 'preparing',
@@ -54,6 +55,7 @@ export const PLATFORM_ORDER_STATUSES = Object.values(PlatformOrderStatus);
 
 // Estados que siguen "en juego" para el operador.
 export const OPEN_ORDER_STATUSES = [
+  PlatformOrderStatus.PENDING_REVIEW,
   PlatformOrderStatus.PENDING_PAYMENT,
   PlatformOrderStatus.NEW,
   PlatformOrderStatus.PREPARING,
@@ -62,6 +64,7 @@ export const OPEN_ORDER_STATUSES = [
 
 // Que boton de avance corresponde a cada estado. null = no avanza mas.
 const NEXT_STATUS = {
+  [PlatformOrderStatus.PENDING_REVIEW]: null,
   [PlatformOrderStatus.PENDING_PAYMENT]: PlatformOrderStatus.NEW,
   [PlatformOrderStatus.NEW]: PlatformOrderStatus.PREPARING,
   [PlatformOrderStatus.PREPARING]: PlatformOrderStatus.ACTIVE,
@@ -97,7 +100,7 @@ export async function fetchMyTenant() {
     // src/modules/suscripcion.js, que explica por que la lectura va primero.
     .select('id, slug, name, vertical, timezone, status, settings, '
       + 'plan_id, ciclo, paga_hasta, suspendido_at, '
-      + 'tenant_members(role, roles, branch_id)')
+      + 'tenant_members(user_id, role, roles, branch_id)')
     .eq('slug', slug)
     .maybeSingle();
 
@@ -108,7 +111,19 @@ export async function fetchMyTenant() {
   if (!data) return { tenant: null, role: null, roles: [], branchIds: [], reason: 'not-member' };
 
   const { tenant_members: members, ...tenant } = data;
-  const filas = members || [];
+
+  // SOLO LAS FILAS PROPIAS. La policy de `tenant_members` deja que un miembro
+  // lea a los demas miembros del negocio, asi que este embed trae al equipo
+  // entero, no a la persona. Unir todo eso daba los roles del local sumados:
+  // un mozo entraba con el riel del duenio —Caja, Gastos, Configuracion— y la
+  // unica razon por la que no podia hacer dano era RLS. Medido el 10/9/2026 en
+  // QA Lite: el mozo leia `[{roles:['owner']},{roles:['attendant']}]`.
+  const { data: sesion } = await supabase.auth.getUser();
+  const uid = sesion?.user?.id || null;
+  const propias = (members || []).filter(m => m.user_id === uid);
+  // Sin uid no hay a quien atribuirle roles: mejor sin permisos que con los
+  // de otro. La pantalla trata la lista vacia como "no es miembro".
+  const filas = uid ? propias : [];
 
   // Una persona puede tener varias filas: una por sucursal. Los roles se unen
   // —quien es cajero en una sucursal ve la caja— y el recorte fino por
@@ -133,7 +148,45 @@ export async function fetchMyTenant() {
 
 /* ─────────────────────────── Productos ─────────────────────────── */
 
-const PRODUCT_COLS = 'id, type, name, price, active, category, description, image_url, requires_age_gate, duration_min, stock, created_at';
+const PRODUCT_COLS = 'id, type, name, price, active, is_archived, category, description, image_url, requires_age_gate, duration_min, stock, created_at';
+
+function compactarTexto(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * Corrige los dos errores de carga mas comunes sin pisar marcas escritas con
+ * mayusculas intencionales, como iPhone o Coca-Cola.
+ */
+export function normalizarNombreProducto(value) {
+  const limpio = compactarTexto(value);
+  if (!limpio) return '';
+
+  const minusculas = limpio.toLocaleLowerCase('es-AR');
+  const mayusculas = limpio.toLocaleUpperCase('es-AR');
+  if (limpio !== minusculas && limpio !== mayusculas) return limpio;
+
+  return minusculas.replace(/\p{L}/u, letra => letra.toLocaleUpperCase('es-AR'));
+}
+
+/** Clave humana: ignora caja, tildes, signos y espacios repetidos. */
+export function claveNombreProducto(value) {
+  return compactarTexto(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es-AR')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/** Reutiliza la escritura de una categoria existente antes de crear otra. */
+export function normalizarCategoriaProducto(value, categories = []) {
+  const limpia = compactarTexto(value);
+  if (!limpia) return '';
+  const clave = claveNombreProducto(limpia);
+  return categories.find(category => claveNombreProducto(category) === clave)
+    || normalizarNombreProducto(limpia);
+}
 
 // El tipo por defecto segun el rubro vivia aca; se mudo a
 // src/modules/registry.js (tipoPorDefecto), que es donde vive todo lo que
@@ -145,6 +198,7 @@ export async function fetchProducts(tenantId) {
     .from('products')
     .select(PRODUCT_COLS)
     .eq('tenant_id', tenantId)
+    .eq('is_archived', false)
     .order('category', { nullsFirst: false })
     .order('name');
   if (error) { console.error('fetchProducts:', error.message); return []; }
@@ -156,10 +210,16 @@ export async function fetchProducts(tenantId) {
  * Se valida aca y no con Zod a proposito: los schemas de src/lib/schemas
  * describen el schema legacy y estan atados al manifest del pre-commit.
  */
-export function validateProduct(p) {
+export function validateProduct(p, products = []) {
   const errs = [];
   if (!p?.name?.trim()) errs.push('El nombre no puede estar vacio');
   if (p?.name && p.name.trim().length > 120) errs.push('El nombre es demasiado largo');
+  const clave = claveNombreProducto(p?.name);
+  if (clave && products.some(product => (
+    product.id !== p?.id && claveNombreProducto(product.name) === clave
+  ))) {
+    errs.push('Ya existe un producto con ese nombre');
+  }
   // Ojo con el vacio: Number('') es 0, asi que un precio en blanco pasaria
   // como gratis y el producto saldria publicado a $0 sin avisar.
   const raw = p?.price;
@@ -178,10 +238,11 @@ function toRow(p, tenantId) {
     ...(p.id ? { id: p.id } : {}),
     tenant_id: tenantId,
     type: p.type || 'simple',
-    name: p.name.trim(),
+    name: normalizarNombreProducto(p.name),
     price: Number(p.price) || 0,
     active: p.active !== false,
-    category: p.category?.trim() || null,
+    is_archived: !!p.is_archived,
+    category: normalizarCategoriaProducto(p.category) || null,
     description: p.description?.trim() || null,
     image_url: p.image_url?.trim() || null,
     requires_age_gate: !!p.requires_age_gate,
@@ -213,14 +274,10 @@ export async function setProductActive(id, active) {
   return true;
 }
 
-export async function deleteProduct(id) {
-  const { error } = await supabase.from('products').delete().eq('id', id);
+export async function archiveProduct(id) {
+  const { error } = await supabase.from('products').update({ is_archived: true }).eq('id', id);
   if (error) {
-    console.error('deleteProduct:', error.message);
-    // FK desde order_items: el producto ya se vendio y no se puede borrar.
-    if (error.code === '23503') {
-      return { __error: 'fk', message: 'Ese producto ya tiene pedidos. Desactivalo en vez de borrarlo.' };
-    }
+    console.error('archiveProduct:', error.message);
     return { __error: 'db', message: error.message };
   }
   return true;
@@ -228,12 +285,18 @@ export async function deleteProduct(id) {
 
 /** Categorias existentes, para sugerir en el formulario. */
 export function categoriesFrom(products) {
-  return [...new Set(products.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+  const categories = new Map();
+  for (const product of products) {
+    const category = normalizarCategoriaProducto(product.category);
+    const key = claveNombreProducto(category);
+    if (key && !categories.has(key)) categories.set(key, category);
+  }
+  return [...categories.values()].sort((a, b) => a.localeCompare(b, 'es'));
 }
 
 /* ──────────────────────────── Pedidos ──────────────────────────── */
 
-const ORDER_COLS = 'id, created_at, status, channel, customer_name, customer_phone, customer_email, total, subtotal, discount, delivery, delivery_address, delivery_cost, delivery_date, payment, note, is_gift, gift_note, tip_amount';
+const ORDER_COLS = 'id, created_at, status, channel, customer_name, customer_phone, customer_email, total, subtotal, discount, delivery, delivery_address, delivery_cost, delivery_date, payment, note, is_gift, gift_note, tip_amount, resource_id, staff_id, visit_id, review_status, risk_flags, reviewed_at, review_note';
 
 export async function fetchOrders(tenantId, { limit = 100 } = {}) {
   exigirTenant(tenantId, 'fetchOrders');
@@ -287,4 +350,18 @@ export async function setOrderStatus(id, status) {
     return { __error: 'db', message: error.message };
   }
   return true;
+}
+
+/** Aprobar o rechazar una comanda autogestionada antes de que llegue a cocina. */
+export async function reviewTableOrder(id, decision, note = null) {
+  const { data, error } = await supabase.rpc('review_table_order', {
+    p_order_id: id,
+    p_decision: decision,
+    p_note: note,
+  });
+  if (error) {
+    console.error('reviewTableOrder:', error.message);
+    return { __error: 'db', message: error.message };
+  }
+  return data;
 }

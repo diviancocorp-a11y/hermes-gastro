@@ -28,6 +28,12 @@ const MENSAJES = {
   // caja cobro el saldo en el medio.
   monto_supera_el_saldo: 'No se puede cobrar más que lo que falta del pedido.',
   pedido_ya_saldado: 'Ese pedido ya está pago.',
+  hay_mesas_abiertas: 'Todavía hay mesas con cuenta abierta.',
+  hay_rendiciones_pendientes: 'Faltan revisar rendiciones del equipo.',
+  hay_incidencias_criticas: 'Hay incidencias críticas pendientes.',
+  faltan_comprobantes_verificados: 'Faltan verificar comprobantes de tarjeta.',
+  medio_pago_invalido: 'Ese medio de pago ya no está disponible.',
+  ultimos_cuatro_requeridos: 'Ingresá los últimos cuatro números del comprobante.',
 };
 
 function traducir(msg) {
@@ -143,12 +149,14 @@ export async function saldoDelPedido(orderId) {
  *
  * Idempotente porque el boton de cobrar es el que mas se toca dos veces.
  */
-export async function cobrar(tenantId, orderId, methodId, monto) {
+export async function cobrar(tenantId, orderId, methodId, monto, datos = {}) {
   const { data, error } = await supabase.rpc('register_payment', {
     p_tenant_id: tenantId,
     p_order_id: orderId,
     p_method_id: methodId,
     p_amount: Number(monto),
+    p_reference: datos.reference?.trim() || null,
+    p_receipt_last_four: datos.lastFour?.trim() || null,
     p_client_request_id: claveDeIdempotencia('cobro', [tenantId, orderId, methodId, Number(monto)]),
   });
   if (error) {
@@ -164,13 +172,117 @@ export async function cobrar(tenantId, orderId, methodId, monto) {
 export async function fetchPagosDePedido(orderId) {
   const { data, error } = await supabase
     .from('payments')
-    .select('id, tenant_id, order_id, method_id, amount, paid_at')
+    .select('id, tenant_id, order_id, method_id, amount, paid_at, reference, receipt_last_four, verification_status')
     .eq('order_id', orderId).order('paid_at');
   if (error) {
     console.error('fetchPagosDePedido:', error.message);
     return [];
   }
   return data || [];
+}
+
+/* -------------------- Rendiciones e incidencias ---------------------- */
+
+export async function fetchRendicionesCaja(tenantId, branchId, cashSessionId) {
+  let q = supabase.from('staff_cash_settlements').select(
+    'id, tenant_id, branch_id, cash_session_id, staff_id, status, expected_cash, declared_cash, difference, notes, submitted_at, review_notes, cash_received_at, staff(name)',
+  ).eq('tenant_id', tenantId).order('submitted_at', { ascending: false });
+  if (branchId) q = q.eq('branch_id', branchId);
+  if (cashSessionId) q = q.eq('cash_session_id', cashSessionId);
+  const { data, error } = await q;
+  if (error) {
+    console.error('fetchRendicionesCaja:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+/**
+ * Lo que la mini caja de una persona TENDRIA que tener en efectivo.
+ *
+ * Sale de los pagos en efectivo que cobro esa persona en este turno, no de lo
+ * que vendio: una tarjeta no deja plata en el bolsillo.
+ */
+export async function esperadoDeMiMiniCaja(cashSessionId, staffId) {
+  const { data, error } = await supabase.rpc('staff_settlement_expected_cash', {
+    p_cash_session_id: cashSessionId,
+    p_staff_id: staffId,
+  });
+  if (error) {
+    console.error('esperadoDeMiMiniCaja:', error.message);
+    return null;
+  }
+  return Number(data) || 0;
+}
+
+/**
+ * Presentar el pre-cierre.
+ *
+ * Lo puede hacer la persona por si misma —la funcion lo permite sin rol, con
+ * `v_is_self`— y por eso el mozo no necesita permisos de caja del local. Es
+ * idempotente: el boton de presentar es de los que se tocan dos veces.
+ */
+export async function presentarRendicion(tenantId, cashSessionId, staffId, declarado, notas = null) {
+  const { data, error } = await supabase.rpc('submit_staff_cash_settlement', {
+    p_tenant_id: tenantId,
+    p_cash_session_id: cashSessionId,
+    p_staff_id: staffId,
+    p_declared_cash: Number(declarado),
+    p_notes: notas,
+    p_client_request_id: claveDeIdempotencia('rendicion', [cashSessionId, staffId]),
+  });
+  if (error) {
+    console.error('presentarRendicion:', error.message);
+    return { __error: 'db', message: traducir(error.message) };
+  }
+  reiniciarClave('rendicion');
+  return data;
+}
+
+export async function revisarRendicion(settlementId, decision, notes = null) {
+  const { data, error } = await supabase.rpc('review_staff_cash_settlement', {
+    p_settlement_id: settlementId,
+    p_decision: decision,
+    p_notes: notes,
+  });
+  if (error) return { __error: 'db', message: traducir(error.message) };
+  return { ok: true, rendicion: data };
+}
+
+export async function fetchIncidenciasCaja(tenantId, branchId, { abiertas = true } = {}) {
+  let q = supabase.from('cash_exceptions').select(
+    'id, tenant_id, branch_id, cash_session_id, settlement_id, order_id, payment_id, kind, severity, status, title, description, context, reported_by, assigned_to, resolution, created_at, resolved_at',
+  ).eq('tenant_id', tenantId).order('created_at', { ascending: false });
+  if (branchId) q = q.eq('branch_id', branchId);
+  if (abiertas) q = q.in('status', ['open', 'in_review']);
+  const { data, error } = await q;
+  if (error) {
+    console.error('fetchIncidenciasCaja:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+export async function resolverIncidencia(exceptionId, resolution, dismiss = false) {
+  const { data, error } = await supabase.rpc('resolve_cash_exception', {
+    p_exception_id: exceptionId,
+    p_resolution: resolution,
+    p_dismiss: dismiss,
+  });
+  if (error) return { __error: 'db', message: traducir(error.message) };
+  return { ok: true, incidencia: data };
+}
+
+export async function fetchBloqueosCaja(sessionId) {
+  if (!sessionId) return { open_tables: 0, pending_settlements: 0, critical_exceptions: 0 };
+  const { data, error } = await supabase.rpc('cash_session_blockers', {
+    p_session_id: sessionId,
+  });
+  if (error) {
+    console.error('fetchBloqueosCaja:', error.message);
+    return null;
+  }
+  return data;
 }
 
 /* ───────────────────────── Comanda de salon ─────────────────────────── */

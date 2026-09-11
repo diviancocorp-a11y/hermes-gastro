@@ -54,6 +54,7 @@ const NO_VERIFY_JWT = new Set([
   "mp-preference",  // la paga un cliente sin cuenta
   "mp-webhook",     // lo llama MercadoPago: valida firma, no sesion
   "staff-invite",   // auth interna: JWT de un staff de Divianco
+  "table-assistance", // menu de mesa: rate limit + codigos opacos + RPCs acotadas
 ]);
 
 function parseArgs(argv) {

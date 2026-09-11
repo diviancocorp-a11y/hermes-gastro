@@ -8,6 +8,7 @@ vi.mock('../components/ConfirmSlideProvider', () => ({
   useConfirm: () => async () => false,
 }));
 
+import { supabase } from '../lib/supabase';
 import ProductsPanel from '../components/admin/platform/ProductsPanel';
 import OrdersPanel from '../components/admin/platform/OrdersPanel';
 import FinanzasPanel from '../components/admin/platform/FinanzasPanel';
@@ -97,14 +98,40 @@ describe('las pestañas principales no tapan el chrome del panel', () => {
   });
 });
 
+describe('revision de comandas autogestionadas', () => {
+  it('prioriza el pedido y exige aprobacion antes de producir', async () => {
+    const onReview = vi.fn().mockResolvedValue(true);
+    supabase.from.mockReturnValue({
+      select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) }),
+    });
+    render(<OrdersPanel
+      loading={false}
+      onSetStatus={vi.fn()}
+      onReview={onReview}
+      showToast={vi.fn()}
+      orders={[{
+        id: 'o1', status: 'pending_review', review_status: 'pending',
+        customer_name: 'Cliente mesa', total: 12500, delivery: 'retiro',
+        created_at: '2026-09-09T20:00:00Z', risk_flags: ['high_total_quantity'],
+      }]}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Cliente mesa/ }));
+    expect(await screen.findByText('Cantidad total inusual')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Cobrar/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Aprobar comanda' }));
+    expect(onReview).toHaveBeenCalledWith('o1', 'approve');
+  });
+});
+
 describe('terminología por rubro en las pestañas', () => {
   // El contrato es "la pantalla habla el idioma del rubro", y sigue vigente.
   // Lo que cambio en Phase 4 es DONDE se cumple: ProductsPanel ya no dibuja un
   // <h2> con el plural, porque el shell (`.ag-section-title` en PlatformAdmin)
   // ya ponia ese mismo titulo con la misma terminologia — la pantalla decia
   // "Productos" dos veces, en dos tipografias. Aca se verifica el termino en
-  // los dos lugares del componente que siguen expresandolo: el CTA (singular)
-  // y el buscador (frase propia del rubro).
+  // el buscador (frase propia del rubro). El CTA vive en el shell, junto al
+  // titulo de la seccion, cuando se monta la pantalla completa.
   const casos = [
     { vertical: 'gastro', singular: 'producto', buscar: 'Buscar producto...' },
     { vertical: 'barber', singular: 'servicio', buscar: 'Buscar servicio...' },
@@ -117,7 +144,6 @@ describe('terminología por rubro en las pestañas', () => {
         products={[{ id: 'p1', name: 'Uno', price: 100, active: true, category: 'Cat' }]}
         vertical={vertical} loading={false}
         onSave={vi.fn()} onToggleActive={vi.fn()} onDelete={vi.fn()} showToast={vi.fn()} />);
-      expect(screen.getByRole('button', { name: `+ Agregar ${singular}` })).toBeTruthy();
       expect(screen.getByPlaceholderText(buscar)).toBeTruthy();
     });
 
@@ -141,35 +167,115 @@ describe('lista compacta de Productos', () => {
     { id: 'p2', name: 'Dos', price: 200, active: true, category: 'Principales' },
   ];
 
-  it('nace con las categorias plegadas y abre toda la cabecera', () => {
+  it('abre solo la primera categoria y permite plegarla desde toda la cabecera', () => {
     render(<ProductsPanel {...props} products={products} />);
 
     expect(screen.getByRole('heading', { level: 2, name: 'Categorías' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Editar Uno' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Abrir categoría Bebidas' }));
-    expect(screen.getByRole('button', { name: 'Editar Uno' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Cerrar categoría Bebidas' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ocultar Uno' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Ocultar Dos' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar categoría Bebidas' }));
+    expect(screen.queryByRole('button', { name: 'Ocultar Uno' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Abrir categoría Bebidas' })).toBeTruthy();
+  });
+
+  it('prioriza la categoria que tiene productos bajo el margen minimo', () => {
+    render(<ProductsPanel
+      {...props}
+      products={products}
+      recetas={new Map([
+        ['p1', [{ ingredient_id: 'i1', qty: 1 }]],
+        ['p2', [{ ingredient_id: 'i2', qty: 1 }]],
+      ])}
+      ingredientes={[
+        { id: 'i1', cost: 10 },
+        { id: 'i2', cost: 190 },
+      ]}
+    />);
+
+    expect(screen.queryByRole('button', { name: 'Ocultar Uno' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Ocultar Dos' })).toBeTruthy();
   });
 
   it('abre el grupo que contiene una coincidencia de busqueda', () => {
     render(<ProductsPanel {...props} products={products} />);
 
     fireEvent.change(screen.getByPlaceholderText('Buscar producto...'), { target: { value: 'Dos' } });
-    expect(screen.getByRole('button', { name: 'Editar Dos' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Editar Uno' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Ocultar Dos' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Ocultar Uno' })).toBeNull();
   });
 
-  it('pone Agregar primero en la tira y elimina el contexto repetido', () => {
-    const { container } = render(<ProductsPanel {...props} products={products} />);
-    const resumen = container.querySelector('.ag-productos-resumen');
+  it('deja solo visibilidad afuera y mueve editar y archivar al menu contextual', () => {
+    render(<ProductsPanel {...props} products={[products[0]]} />);
 
-    expect(resumen.firstElementChild).toHaveClass('ag-kpi-accion');
-    expect(screen.getByRole('button', { name: '+ Agregar producto' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Editar Uno' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Archivar Uno' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Ocultar Uno' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones para Uno' }));
+    expect(screen.getByRole('menuitem', { name: 'Editar' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Archivar' })).toBeTruthy();
+  });
+
+  it('en mobile nace con categorias y metricas plegadas', () => {
+    const matchMediaOriginal = window.matchMedia;
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    });
+
+    try {
+      const { container } = render(<ProductsPanel {...props} products={[products[0]]} />);
+      expect(screen.getByRole('button', { name: 'Abrir categoría Bebidas' })).toBeTruthy();
+      expect(container.querySelector('.ag-fila')).toBeNull();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Abrir categoría Bebidas' }));
+      expect(screen.getByRole('button', { name: 'Uno' })).toBeTruthy();
+      expect(container.querySelector('.ag-fila-metricas')).toBeNull();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Uno' }));
+      expect(container.querySelector('.ag-fila-metricas')).toBeTruthy();
+    } finally {
+      window.matchMedia = matchMediaOriginal;
+    }
+  });
+
+  it('deja el resumen al encabezado del shell y elimina el contexto repetido', () => {
+    const { container } = render(<ProductsPanel {...props} products={products} />);
+
+    expect(container.querySelector('.ag-productos-resumen')).toBeNull();
     expect(screen.queryByText('2 productos en 2 categorías.')).toBeNull();
   });
 });
 
 describe('acciones en vivo de Productos', () => {
+  it('la busqueda reemplaza los cuadrantes por resultados que abren el perfil', () => {
+    render(<ProductsPanel
+      products={[{ id: 'p1', name: 'Dulce QA', price: 100, active: true, category: 'Bebidas' }]}
+      vertical="gastro"
+      loading={false}
+      operativo={false}
+      orders={[{ id: 'o1', status: 'completed', created_at: '2026-09-06T20:00:00Z' }]}
+      itemsPorPedido={new Map([['o1', [{ product_id: 'p1', qty: 1, subtotal: 100 }]]])}
+      recetas={new Map([['p1', [{ ingredient_id: 'i1', qty: 1 }]]])}
+      ingredientes={[{ id: 'i1', name: 'Base', cost: 20, stock: 10, min_stock: 1 }]}
+      turnosPrevios={[{
+        id: 't1', status: 'closed', business_day: '2026-09-06',
+        opened_at: '2026-09-06T17:00:00Z', closed_at: '2026-09-07T02:00:00Z',
+      }]}
+      onSave={vi.fn()}
+      onToggleActive={vi.fn()}
+      onDelete={vi.fn()}
+      showToast={vi.fn()}
+    />);
+
+    expect(screen.getByRole('button', { name: 'Abrir ranking de Estrellas' })).toBeTruthy();
+    fireEvent.change(screen.getByPlaceholderText('Buscar producto...'), { target: { value: 'dulce' } });
+    expect(screen.queryByRole('button', { name: 'Abrir ranking de Estrellas' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Dulce QA.*Estrellas/ }));
+    expect(screen.getByRole('heading', { name: 'Dulce QA' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Volver a resultados' })).toBeTruthy();
+  });
+
   it('Impulsar emite una orden directa y muestra el destino resuelto', () => {
     const onImpulsar = vi.fn(() => true);
     render(<ProductsPanel
@@ -216,7 +322,7 @@ describe('acciones en vivo de Productos', () => {
         minutosOperando={65}
         turno={{ opened_at: new Date(ahora - 65 * 60000).toISOString() }}
         orders={[{
-          id: 'o1', status: 'completed', created_at: new Date(ahora - 10 * 60000).toISOString(),
+          id: 'o1', status: 'completed', created_at: new Date(ahora).toISOString(),
         }]}
         itemsPorPedido={new Map()}
         recetas={new Map()}
@@ -230,6 +336,7 @@ describe('acciones en vivo de Productos', () => {
 
       const cuerpo = container.querySelector('.ag-productos-cuerpo');
       expect(cuerpo.firstElementChild).toHaveClass('ag-productos-categorias');
+      expect(cuerpo.firstElementChild).toHaveClass('esta-operativo');
       expect(container.querySelector('.ag-gestion-productos')).toHaveClass('esta-operativo');
       expect(screen.getByLabelText('1 impulsos pendientes')).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Abrir acciones de Dico' }).textContent).toBe('');
@@ -273,12 +380,14 @@ describe('acciones en vivo de Productos', () => {
       />);
 
       expect(screen.getByText('DICO ANALIZA')).toBeTruthy();
-      expect(screen.getByRole('heading', { name: 'Ingeniería de menú' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Sistema Kasavana' })).toBeTruthy();
       expect(container.querySelector('.ag-gestion-flecha')).not.toHaveClass('esta-abierta');
       fireEvent.click(screen.getByRole('button', { name: 'Abrir acciones de Dico' }));
       expect(container.querySelector('.ag-gestion-flecha')).toHaveClass('esta-abierta');
       expect(screen.queryByRole('combobox')).toBeNull();
       expect(container.querySelector('.ag-kasavana-resumen-general').textContent).toContain('1 clasificados');
+      expect(screen.getByText('MARGEN ↑')).toBeTruthy();
+      expect(screen.getByText('POPULARIDAD →')).toBeTruthy();
       fireEvent.click(screen.getByRole('button', { name: 'Cómo funciona la matriz Kasavana' }));
       expect(screen.getByRole('note').textContent).toMatch(/Michael L. Kasavana y Donald I. Smith/);
       expect(screen.getByRole('note').textContent).toMatch(/1982/);
@@ -291,15 +400,15 @@ describe('acciones en vivo de Productos', () => {
       expect(screen.getByText(/RECOMENDACIÓN DE DICO/)).toBeTruthy();
       fireEvent.click(screen.getByRole('button', { name: /Volver al ranking/ }));
       expect(screen.getByText(/Rentables · populares/)).toBeTruthy();
-      fireEvent.click(screen.getByRole('button', { name: /Ingeniería de menú/ }));
-      expect(screen.getByRole('heading', { name: 'Ingeniería de menú' })).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: /Sistema Kasavana/ }));
+      expect(screen.getByRole('heading', { name: 'Sistema Kasavana' })).toBeTruthy();
       fireEvent.click(screen.getByRole('button', { name: /Resumen Dico/ }));
       expect(screen.getByRole('heading', { name: 'Resumen Dico' })).toBeTruthy();
       expect(container.querySelector('.ag-gestion-contenido')).toBeVisible();
       expect(screen.queryByText('DICO ANALIZA')).toBeNull();
       expect(screen.queryByText('IR DIRECTO A')).toBeNull();
       expect(onDicoResumenChange).toHaveBeenLastCalledWith(true);
-      fireEvent.click(screen.getByRole('button', { name: /Ingeniería de menú/ }));
+      fireEvent.click(screen.getByRole('button', { name: /Sistema Kasavana/ }));
       expect(onDicoResumenChange).toHaveBeenLastCalledWith(false);
     } finally {
       window.matchMedia = matchMediaOriginal;

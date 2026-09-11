@@ -41,6 +41,29 @@ function traducir(msg) {
 
 /* ──────────────────────────── El equipo ─────────────────────────────── */
 
+/**
+ * MI ficha del equipo.
+ *
+ * No sale de `fetchPersonal`: esa lista es del encargado y un mozo no la
+ * carga —ni tiene por que ver a sus companeros— asi que depender de ella
+ * dejaba la mini caja diciendo "sin ficha de personal" con la ficha creada.
+ * La policy de `staff` ya deja que cada uno lea la suya.
+ */
+export async function fetchMiFicha(tenantId) {
+  const { data: sesion } = await supabase.auth.getUser();
+  const uid = sesion?.user?.id;
+  if (!uid || !tenantId) return null;
+  const { data, error } = await supabase.from('staff')
+    .select('id, tenant_id, branch_id, name, user_id, job, active')
+    .eq('tenant_id', tenantId).eq('user_id', uid).eq('active', true)
+    .maybeSingle();
+  if (error) {
+    console.error('fetchMiFicha:', error.message);
+    return null;
+  }
+  return data || null;
+}
+
 export async function fetchPersonal(tenantId, branchId = null) {
   let q = supabase.from('staff')
     .select('id, tenant_id, branch_id, name, user_id, job, hourly_cost, commission_pct, payout_alias, color, active, hired_at')

@@ -140,7 +140,8 @@
         "user_id",
         "address",
         "delivery_cost",
-        "tip_pct"
+        "tip_pct",
+        "table_code"
       ],
       "serverOnly": [
         "id",

@@ -22,6 +22,8 @@ vi.mock('../services/platformCaja', () => ({
 const MEDIOS = [
   { id: 'm-efe', name: 'Efectivo', kind: 'cash' },
   { id: 'm-tar', name: 'Tarjeta', kind: 'card' },
+  { id: 'm-qr', name: 'QR', kind: 'mp' },
+  { id: 'm-tra', name: 'Transferencia', kind: 'transfer' },
 ];
 
 const pedido = (over = {}) => ({
@@ -126,6 +128,48 @@ describe('PantallaDeCobro — cuenta dividida', () => {
     expect(onCompletar).toHaveBeenCalledWith(expect.objectContaining({ id: 'o1' }));
     expect(onCerrar).toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /Cobrar \$/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('PantallaDeCobro — referencias conciliables', () => {
+  it('tarjeta exige cuatro números y guarda autorización', async () => {
+    montar();
+    fireEvent.click(await screen.findByRole('button', { name: /Tarjeta/ }));
+    fireEvent.change(screen.getByLabelText('Últimos 4 números del comprobante'), {
+      target: { value: '12' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Cobrar \$/ }));
+    expect(caja.cobrar).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText('Últimos 4 números del comprobante'), {
+      target: { value: '1234' },
+    });
+    fireEvent.change(screen.getByLabelText('Número de autorización'), {
+      target: { value: '928177' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Cobrar \$/ }));
+    await waitFor(() => expect(caja.cobrar).toHaveBeenCalledWith(
+      't1', 'o1', 'm-tar', 6500, { lastFour: '1234', reference: '928177' },
+    ));
+  });
+
+  it('QR permite registrar sin referencia para que Caja lo verifique', async () => {
+    montar();
+    fireEvent.click(await screen.findByRole('button', { name: /^📱 QR$/ }));
+    expect(screen.getByText(/Caja lo deja pendiente para revisión/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Cobrar \$/ }));
+    await waitFor(() => expect(caja.cobrar).toHaveBeenCalledWith('t1', 'o1', 'm-qr', 6500));
+  });
+
+  it('muestra la referencia de un pago ya registrado', async () => {
+    caja.fetchPagosDePedido.mockResolvedValue([{
+      id: 'p1', method_id: 'm-tar', amount: 6500,
+      receipt_last_four: '4312', reference: 'AUT-19',
+    }]);
+    caja.saldoDelPedido.mockResolvedValue(0);
+    montar();
+    expect(await screen.findByText(/4312/)).toBeInTheDocument();
+    expect(screen.getByText(/AUT-19/)).toBeInTheDocument();
   });
 });
 

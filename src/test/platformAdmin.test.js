@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  validateProduct, categoriesFrom,
+  validateProduct, categoriesFrom, claveNombreProducto,
+  normalizarCategoriaProducto, normalizarNombreProducto,
   nextOrderStatus, PlatformOrderStatus, PLATFORM_ORDER_STATUSES, OPEN_ORDER_STATUSES,
 } from '../services/platformAdmin';
 
@@ -42,12 +43,40 @@ describe('validateProduct', () => {
   it('no explota con undefined', () => {
     expect(validateProduct(undefined).length).toBeGreaterThan(0);
   });
+
+  it('rechaza duplicados aunque cambien mayusculas, tildes o guiones', () => {
+    const products = [{ id: 'uno', name: 'Milanesa napolitana' }];
+    expect(validateProduct({ name: 'MILANESA-NAPOLITÁNA', price: 10 }, products))
+      .toContain('Ya existe un producto con ese nombre');
+    expect(validateProduct({ id: 'uno', name: 'MILANESA NAPOLITANA', price: 10 }, products))
+      .toEqual([]);
+  });
+});
+
+describe('normalizacion de nombres de producto', () => {
+  it('compacta espacios y estabiliza textos enteramente en alta o baja', () => {
+    expect(normalizarNombreProducto('  MILANESA   NAPOLITANA ')).toBe('Milanesa napolitana');
+    expect(normalizarNombreProducto('hamburguesa doble')).toBe('Hamburguesa doble');
+  });
+
+  it('preserva una marca con caja intencional', () => {
+    expect(normalizarNombreProducto('Coca-Cola Zero')).toBe('Coca-Cola Zero');
+  });
+
+  it('genera una clave estable para comparar errores humanos comunes', () => {
+    expect(claveNombreProducto('  MILANESA-NAPOLITÁNA ')).toBe('milanesa napolitana');
+  });
+
+  it('recupera la escritura canonica de una categoria existente', () => {
+    expect(normalizarCategoriaProducto(' bebidas ', ['Bebidas', 'Postres'])).toBe('Bebidas');
+    expect(normalizarCategoriaProducto('PROMOCIONES')).toBe('Promociones');
+  });
 });
 
 describe('categoriesFrom', () => {
   it('deduplica, saca vacios y ordena en español', () => {
     const products = [
-      { category: 'Postres' }, { category: 'Bebidas' }, { category: 'Postres' },
+      { category: 'Postres' }, { category: 'Bebidas' }, { category: 'postres' },
       { category: null }, { category: '' }, { category: 'Ñoquis' }, { category: 'Zapallo' },
     ];
     expect(categoriesFrom(products)).toEqual(['Bebidas', 'Ñoquis', 'Postres', 'Zapallo']);
@@ -64,6 +93,7 @@ describe('ciclo de vida del pedido', () => {
     let s = PlatformOrderStatus.PENDING_PAYMENT;
     while (s) { camino.push(s); s = nextOrderStatus(s); }
     expect(camino).toEqual(['pending_payment', 'new', 'preparing', 'active', 'completed']);
+    expect(nextOrderStatus(PlatformOrderStatus.PENDING_REVIEW)).toBeNull();
   });
 
   it('los estados terminales no avanzan', () => {
@@ -86,12 +116,12 @@ describe('ciclo de vida del pedido', () => {
 // (JS y el CHECK de SQL) solo se mantiene sincronizado con un test que los
 // compare. Si divergen, el sintoma es un update que muere contra el CHECK
 // recien en produccion, con el pedido ya en pantalla.
-const MIGRACION = resolve(__dirname, '../../platform/migrations/0022_order_status_check.sql');
+const MIGRACION = resolve(__dirname, '../../platform/migrations/0069_salon_visitas_y_asistencia.sql');
 
 function estadosDelSql() {
   const sql = readFileSync(MIGRACION, 'utf-8').replace(/--[^\n]*/g, '');
   const m = sql.match(/constraint\s+orders_status_check[\s\S]*?\bin\s*\(([\s\S]*?)\)/i);
-  if (!m) throw new Error('No se encontro el IN (...) de orders_status_check en 0022');
+  if (!m) throw new Error('No se encontro el IN (...) final de orders_status_check en 0069');
   return [...m[1].matchAll(/'([^']+)'/g)].map(x => x[1]);
 }
 

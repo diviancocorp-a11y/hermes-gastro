@@ -91,10 +91,13 @@ No hay nada que cablear: el componente busca `poses/moneda.*` y si lo encuentra
 lo usa; si no, dibuja una moneda provisoria en SVG. Se verifica acá:
 
 ```bash
-npm run vitrina
+npm run qa:lite:setup
+node scripts/qa-lite/revision-phase4.mjs
 ```
 
-`http://localhost:5199/?escena=dico`. Lo que hay que mirar:
+`http://127.0.0.1:5273/admin`, entrando con el owner efímero que el script
+deja en `.qa-lite/revision-phase4.txt`. Dico vive en el panel, así que se lo
+mira ahí mismo. Lo que hay que mirar:
 
 1. **Que la cara caiga sobre el disco.** Si el render tiene la moneda más
    grande o más chica que la provisoria, la tinta va a quedar corrida. Se

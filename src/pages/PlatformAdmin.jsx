@@ -32,8 +32,8 @@ import {
 import useMediaQuery from '../lib/useMediaQuery';
 import { intervencionDe, sigueVigente } from '../modules/dico/intervenciones';
 import {
-  fetchProducts, upsertProduct, setProductActive, deleteProduct,
-  fetchOrders, setOrderStatus, OPEN_ORDER_STATUSES, PlatformOrderStatus,
+  fetchProducts, upsertProduct, setProductActive, archiveProduct,
+  fetchOrders, setOrderStatus, reviewTableOrder, OPEN_ORDER_STATUSES, PlatformOrderStatus,
   fetchOrderItemsByOrder,
 } from '../services/platformAdmin';
 import { fetchSales, createSale, completeOrder } from '../services/platformSales';
@@ -47,11 +47,21 @@ import {
 import { fetchDefaultBranch } from '../services/platformInventoryLedger';
 import {
   fetchTurnoAbierto, fetchTurnos, abrirTurno, cerrarTurno, esperadoEnCaja,
+  fetchRendicionesCaja, fetchIncidenciasCaja, fetchBloqueosCaja,
+  esperadoDeMiMiniCaja, presentarRendicion,
+  revisarRendicion, resolverIncidencia,
 } from '../services/platformCaja';
 import {
+  fetchPerfilFiscal, fetchDocumentosFiscales, encolarFactura, procesarFactura,
+} from '../services/platformFiscal';
+import {
   fetchPersonal, fetchFichajesAbiertos, ficharEntrada, ficharSalida,
-  fetchCostoLaboral,
+  fetchCostoLaboral, fetchMiFicha,
 } from '../services/platformPersonal';
+import {
+  fetchServiceRequests, updateServiceRequest, subscribeToServiceRequests,
+  fetchTableVisits,
+} from '../services/platformSalon';
 import { fetchSettings, saveSettings, fetchTenantBrand } from '../services/platformSettings';
 import { getTenantSlugSync } from '../lib/activeTenant';
 import {
@@ -95,11 +105,19 @@ const Users = lazy(() => import('../components/admin/platform/EquipoDelNegocio')
 const MapaDeMesas = lazy(() => import('../components/admin/platform/MapaDeMesas'));
 // El alta de mesas viaja con el salon: quien no tiene local no lo baja nunca.
 const EditorDeMesa = lazy(() => import('../components/admin/platform/EditorDeMesa'));
+// La pantalla de cobro se abre desde Pedidos y desde el plano del salon. Va
+// lazy como el resto de los paneles; OrdersPanel la importa de forma estatica,
+// asi que las dos rutas terminan compartiendo el mismo chunk.
+const PantallaDeCobro = lazy(() => import('../components/admin/platform/PantallaDeCobro'));
 // Cobros online: se abre una vez en la vida del negocio, asi que no tiene por
 // que estar en el chunk que se carga siempre.
 const CobrosOnline = lazy(() => import('../components/admin/platform/CobrosOnline'));
 // Caja: el turno con su arqueo. Lazy por lo mismo que el salon.
 const CajaPanel = lazy(() => import('../components/admin/platform/CajaPanel'));
+// La caja del mozo es otra pantalla, no la misma con ifs adentro: el que
+// cobra las mesas declara lo suyo y no tiene nada que ver con el arqueo del
+// local, las incidencias del turno ni la cola fiscal.
+const MiMiniCaja = lazy(() => import('../components/admin/platform/MiMiniCaja'));
 // Equipo: quien esta trabajando y cuanto cuesta el turno (6e).
 const PersonalPanel = lazy(() => import('../components/admin/platform/PersonalPanel'));
 
@@ -122,6 +140,7 @@ import '../styles/admin-shared.css';
 // Golden Screen de Phase 4. Va despues de admin-shared para poder ajustar
 // .ag-btn-mini y .ag-cta DENTRO de la pantalla sin tocarlos en el resto.
 import '../styles/admin-productos.css';
+import '../styles/admin-caja.css';
 // Machine Soul (Phase 3B): reemplaza la capa visual del shell. Va ultimo
 // a proposito, para pisar la de admin-topbar/bottomnav sin tocar su markup.
 import '../styles/admin-shell.css';
@@ -151,7 +170,35 @@ function Centered({ children }) {
   );
 }
 
+function ConteoBreve({ value, listo }) {
+  const objetivo = Math.max(0, Number(value) || 0);
+  const [actual, setActual] = useState(0);
+  const animacionHecha = useRef(false);
+
+  useEffect(() => {
+    if (!listo) return undefined;
+    let frame;
+    const reducirMovimiento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const inicio = performance.now();
+
+    const avanzar = (ahora) => {
+      const progreso = reducirMovimiento || animacionHecha.current
+        ? 1
+        : Math.min(1, (ahora - inicio) / 300);
+      setActual(Math.round(objetivo * progreso));
+      if (progreso < 1) frame = requestAnimationFrame(avanzar);
+      else animacionHecha.current = true;
+    };
+
+    frame = requestAnimationFrame(avanzar);
+    return () => cancelAnimationFrame(frame);
+  }, [listo, objetivo]);
+
+  return <strong aria-label={String(objetivo)}>{actual}</strong>;
+}
+
 export default function PlatformAdmin() {
+  const productsPanelRef = useRef(null);
   const { session, tenant, role, roles, status, doLogin, doLogout } = usePlatformTenant();
 
   const [tab, setTab] = useState('products');
@@ -170,10 +217,25 @@ export default function PlatformAdmin() {
   const [minutosOperando, setMinutosOperando] = useState(null);
   const [turnosPrevios, setTurnosPrevios] = useState([]);
   const [esperado, setEsperado] = useState(0);
+  const [rendicionesCaja, setRendicionesCaja] = useState([]);
+  const [incidenciasCaja, setIncidenciasCaja] = useState([]);
+  const [bloqueosCaja, setBloqueosCaja] = useState(null);
+  const [perfilFiscal, setPerfilFiscal] = useState(null);
+  const [documentosFiscales, setDocumentosFiscales] = useState([]);
   const [equipo, setEquipo] = useState([]);
   const [fichajes, setFichajes] = useState([]);
   const [costoLaboral, setCostoLaboral] = useState(null);
   const [reservasHoy, setReservasHoy] = useState([]);
+  const [solicitudesSalon, setSolicitudesSalon] = useState([]);
+  // Las visitas abiertas: sin ellas el plano no sabe que mesa tiene gente.
+  const [visitasSalon, setVisitasSalon] = useState([]);
+  // El pedido que se esta cobrando desde el plano del salon. Vive aca y no
+  // adentro del mapa: la pantalla de cobro es un overlay de la pagina, igual
+  // que el editor de mesa, y el mapa solo avisa que mesa se quiere cobrar.
+  const [pedidoDeMesaACobrar, setPedidoDeMesaACobrar] = useState(null);
+  // Lo que YO cobre en efectivo este turno. Es otra cuenta que el esperado
+  // del local: ahi entra la plata de todos.
+  const [miEsperado, setMiEsperado] = useState(null);
   const [utilizacion, setUtilizacion] = useState(null);
   // La mesa que se esta creando o editando. Null = el editor esta cerrado.
   const [mesaEnEdicion, setMesaEnEdicion] = useState(null);
@@ -292,33 +354,79 @@ export default function PlatformAdmin() {
     const hoy = new Date();
     const desde = new Date(hoy); desde.setHours(0, 0, 0, 0);
     const hasta = new Date(hoy); hasta.setHours(23, 59, 59, 999);
-    const [rs, aps, ut] = await Promise.all([
+    const [rs, aps, ut, solicitudes, vs] = await Promise.all([
       fetchResources(tenantId, b.id),
       fetchAppointments(tenantId, {
         branchId: b.id, desde: desde.toISOString(), hasta: hasta.toISOString(),
       }),
       fetchUtilization(b.id, hoy.toISOString().slice(0, 10)),
+      fetchServiceRequests(tenantId, b.id),
+      fetchTableVisits(tenantId, b.id),
     ]);
     setRecursos(rs);
     setReservasHoy(aps);
     setUtilizacion(ut);
+    setSolicitudesSalon(solicitudes);
+    setVisitasSalon(vs);
   }, [tenantId]);
+
+  useEffect(() => {
+    if (!tenantId) return undefined;
+    return subscribeToServiceRequests(tenantId, () => loadSalon());
+  }, [tenantId, loadSalon]);
 
   /* ── Caja (6d) ──
      El esperado se recalcula al abrir la pantalla y a pedido: es lo que el
      cajero compara contra la plata que tiene en la mano. */
+  /* ── Quien cobra y quien certifica ──
+     El mozo cobra sus mesas y presenta su pre-cierre; el encargado certifica
+     cada uno y recien despues cierra el turno. Por eso la pestania de Caja
+     sirve DOS pantallas distintas segun quien mire, no una con secciones
+     escondidas. */
+  const supervisaCaja = useMemo(
+    () => roles.some(r => ['owner', 'manager', 'cashier'].includes(r)),
+    [roles]);
+
+  // Mi ficha del equipo. Los cobros se atribuyen a `staff`, no al usuario de
+  // Auth: sin ficha no hay a quien imputarle la plata.
+  //
+  // Se pide aparte y no se busca en `equipo`: esa lista es del encargado y un
+  // mozo no la carga, asi que buscarla ahi dejaba la mini caja diciendo "sin
+  // ficha" con la ficha creada.
+  const [yoEnElEquipo, setYoEnElEquipo] = useState(null);
+  useEffect(() => {
+    if (!tenantId) { setYoEnElEquipo(null); return; }
+    fetchMiFicha(tenantId).then(setYoEnElEquipo);
+  }, [tenantId]);
+
+  const miRendicion = useMemo(
+    () => rendicionesCaja.find(r => r.staff_id === yoEnElEquipo?.id) || null,
+    [rendicionesCaja, yoEnElEquipo]);
+
   const loadCaja = useCallback(async () => {
     if (!tenantId) return;
     setCajaCargada(false);
     try {
       const b = await fetchDefaultBranch(tenantId);
-      const [abierto, previos] = await Promise.all([
+      const [abierto, previos, perfil, documentos] = await Promise.all([
         fetchTurnoAbierto(tenantId, b?.id),
         fetchTurnos(tenantId, b?.id, { limit: 10 }),
+        fetchPerfilFiscal(tenantId),
+        fetchDocumentosFiscales(tenantId, { limit: 20 }),
       ]);
       setTurno(abierto);
       setTurnosPrevios((previos || []).filter(t => t.status === 'closed'));
       setEsperado(abierto ? await esperadoEnCaja(abierto.id) : 0);
+      const [rendiciones, incidencias, bloqueos] = await Promise.all([
+        fetchRendicionesCaja(tenantId, b?.id, abierto?.id),
+        fetchIncidenciasCaja(tenantId, b?.id),
+        fetchBloqueosCaja(abierto?.id),
+      ]);
+      setRendicionesCaja(rendiciones);
+      setIncidenciasCaja(incidencias);
+      setBloqueosCaja(bloqueos);
+      setPerfilFiscal(perfil);
+      setDocumentosFiscales(documentos);
     } finally {
       setCajaCargada(true);
     }
@@ -362,7 +470,7 @@ export default function PlatformAdmin() {
     if (r.__error) { msg(r.message); return; }
     msg(estaAdentro ? 'Salida registrada' : 'Entrada registrada');
     loadEquipo();
-  }, [tenantId, loadEquipo]);
+  }, [tenantId, loadEquipo, msg]);
 
   const onAbrirCaja = useCallback(async (monto, notas) => {
     const b = await fetchDefaultBranch(tenantId);
@@ -370,7 +478,7 @@ export default function PlatformAdmin() {
     if (r.__error) { msg(r.message); return; }
     msg('Caja abierta');
     loadCaja();
-  }, [tenantId, loadCaja]);
+  }, [tenantId, loadCaja, msg]);
 
   const onCerrarCaja = useCallback(async (contado, notas) => {
     if (!turno) return;
@@ -381,7 +489,21 @@ export default function PlatformAdmin() {
     msg(d === 0 ? 'Caja cerrada, cerró justo'
       : `Caja cerrada · ${d < 0 ? 'faltan' : 'sobran'} ${Math.abs(d)}`);
     loadCaja();
-  }, [turno, loadCaja]);
+  }, [turno, loadCaja, msg]);
+
+  const onRevisarRendicion = useCallback(async (id, decision, notes) => {
+    const r = await revisarRendicion(id, decision, notes);
+    if (r.__error) { msg(r.message); return; }
+    msg(decision === 'approve' ? 'Rendición cerrada' : 'Rendición actualizada');
+    loadCaja();
+  }, [loadCaja, msg]);
+
+  const onResolverIncidencia = useCallback(async (id, resolution) => {
+    const r = await resolverIncidencia(id, resolution);
+    if (r.__error) { msg(r.message); return; }
+    msg('Incidencia resuelta');
+    loadCaja();
+  }, [loadCaja, msg]);
 
   /* ── Alta y edicion de mesas (6c) ──
      El borrador hereda forma y capacidad de la ultima cargada y propone el
@@ -405,14 +527,14 @@ export default function PlatformAdmin() {
     msg(datos.id ? 'Mesa guardada' : `${datos.name} agregada`);
     loadSalon();
     return r;
-  }, [tenantId, branch, loadSalon]);
+  }, [tenantId, branch, loadSalon, msg]);
 
   const archivarMesa = useCallback(async (id) => {
     const ok = await archiveResource(tenantId, id);
     msg(ok ? 'Mesa dada de baja' : 'No se pudo dar de baja');
     if (ok) loadSalon();
     return ok;
-  }, [tenantId, loadSalon]);
+  }, [tenantId, loadSalon, msg]);
 
   const moverRecurso = useCallback(async (id, pos) => {
     const ok = await moveResource(tenantId, id, pos);
@@ -421,7 +543,32 @@ export default function PlatformAdmin() {
     // solto mostraria un salon que no existe en la base.
     if (!ok) { msg('No se pudo guardar la posición'); loadSalon(); }
     return ok;
-  }, [tenantId, loadSalon]);
+  }, [tenantId, loadSalon, msg]);
+
+  /**
+   * Cobrar desde el plano.
+   *
+   * Una mesa puede tener VARIOS pedidos abiertos (cada ronda es uno) y el cobro
+   * es por pedido: se abre el mas viejo, que es el que lleva mas tiempo sin
+   * cobrarse. Cerrada esa pantalla, la mesa muestra lo que queda. Cobrar los
+   * tres de una en un solo pago necesita un modelo de cuenta por visita que
+   * todavia no existe.
+   */
+  const cobrarMesa = useCallback((mesa) => {
+    const abiertos = [...(mesa?.ordenes || [])]
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    if (!abiertos.length) { msg('Esa mesa no tiene nada para cobrar'); return; }
+    setPedidoDeMesaACobrar(abiertos[0]);
+  }, [msg]);
+
+  const actualizarSolicitudSalon = useCallback(async (id, status) => {
+    const r = await updateServiceRequest(id, status);
+    if (r?.__error) { msg(r.message || 'No se pudo actualizar el llamado'); return r; }
+    setSolicitudesSalon(list => list.map(item => (item.id === id ? { ...item, ...r } : item))
+      .filter(item => !['resolved', 'cancelled'].includes(item.status)));
+    msg(status === 'accepted' ? 'Llamado tomado' : 'Llamado resuelto');
+    return r;
+  }, [msg]);
 
   useEffect(() => {
     if (!ready || !tenantId) return;
@@ -488,6 +635,7 @@ export default function PlatformAdmin() {
   const guardarSettings = useCallback(async (valores) => {
     const r = await saveSettings(tenantId, valores);
     if (r?.__error) { msg(r.message || 'No se pudo guardar'); return null; }
+    setSett(r);
     return r;
   }, [tenantId, msg]);
 
@@ -555,8 +703,8 @@ export default function PlatformAdmin() {
     return true;
   }, [msg, products, proponerIntervencion]);
 
-  const handleDeleteProduct = useCallback(async (id) => {
-    const res = await deleteProduct(id);
+  const handleArchiveProduct = useCallback(async (id) => {
+    const res = await archiveProduct(id);
     if (res === true) await loadProducts();
     return res;
   }, [loadProducts]);
@@ -587,11 +735,41 @@ export default function PlatformAdmin() {
       if (res?.__error) return res;
       setOrders(list => list.map(o => (o.id === id ? { ...o, status: next } : o)));
       if (res.sales?.length) setVentas(prev => [...res.sales, ...prev]);
+      if (perfilFiscal?.enabled && perfilFiscal.auto_issue) {
+        const queued = await encolarFactura(tenantId, id);
+        if (queued.__error) {
+          msg('Cuenta cerrada. No se pudo crear la solicitud fiscal.');
+        } else {
+          msg('Cuenta cerrada. Factura en proceso con ARCA.');
+          procesarFactura(queued.documento.id).then(() => loadCaja());
+        }
+      }
       return true;
     }
     const res = await setOrderStatus(id, next);
     if (res === true) setOrders(list => list.map(o => (o.id === id ? { ...o, status: next } : o)));
     return res;
+  }, [loadCaja, msg, perfilFiscal, tenantId]);
+
+  useEffect(() => {
+    if (!turno?.id || !yoEnElEquipo?.id) { setMiEsperado(null); return; }
+    esperadoDeMiMiniCaja(turno.id, yoEnElEquipo.id).then(setMiEsperado);
+  }, [turno?.id, yoEnElEquipo?.id, rendicionesCaja]);
+
+  const onPresentarRendicion = useCallback(async (declarado, notas) => {
+    if (!turno?.id || !yoEnElEquipo?.id) return null;
+    const r = await presentarRendicion(tenantId, turno.id, yoEnElEquipo.id, declarado, notas);
+    if (r?.__error) { msg(r.message || 'No se pudo presentar el pre-cierre'); return r; }
+    msg('Pre-cierre presentado');
+    loadCaja();
+    return r;
+  }, [tenantId, turno, yoEnElEquipo, msg, loadCaja]);
+
+  const handleReviewOrder = useCallback(async (id, decision, note = null) => {
+    const res = await reviewTableOrder(id, decision, note);
+    if (res?.__error) return res;
+    setOrders(list => list.map(o => (o.id === id ? { ...o, ...res } : o)));
+    return true;
   }, []);
 
   // ── Etapa 4: venta manual ──
@@ -640,6 +818,23 @@ export default function PlatformAdmin() {
       label: m.id === 'products' ? terminologia(tenant?.vertical).plural : m.label,
       Icon: ICONOS[m.id],
     })), [tenant?.vertical, roles]);
+
+  const resumenProductos = useMemo(() => {
+    const visibles = products.filter(producto => producto.active !== false).length;
+    const conStock = products.filter(producto => producto.stock !== null && producto.stock !== undefined);
+    const categorias = new Set(products.map(producto => (
+      String(producto.category || 'Sin categoria').trim().toLocaleLowerCase('es-AR')
+    ))).size;
+
+    return {
+      visibles,
+      ocultos: products.length - visibles,
+      categorias,
+      sinStock: conStock.length > 0
+        ? conStock.filter(producto => Number(producto.stock) <= 0).length
+        : null,
+    };
+  }, [products]);
 
   // Entrar al catalogo es una ACCION del usuario, y es el disparador del caso
   // 1. Se mira cuando cambia la pestania o cuando terminan de cargar los
@@ -745,6 +940,7 @@ export default function PlatformAdmin() {
   const themeClass = theme === 'dark' ? 'ag-theme-dark' : 'ag-theme-light';
   const timezone = branch?.timezone || tenant?.timezone;
   const nombreLocal = (sett?.biz_name?.trim() || tenant?.name || 'Dico').toLocaleUpperCase('es-AR');
+  const terminoCatalogo = terminologia(tenant?.vertical);
 
   // Que secciones ve este negocio segun su rubro. modulosDe() ya descarta las
   // que todavia no estan implementadas, asi que declarar "agenda" para
@@ -846,6 +1042,7 @@ export default function PlatformAdmin() {
           <div className="ag-workspace-head">
             <BarraOperativa
               settings={sett}
+              onSaveSettings={guardarSettings}
               timezone={timezone}
               turno={turno}
               onOperativoChange={handleEstadoOperativo}
@@ -855,14 +1052,67 @@ export default function PlatformAdmin() {
               habla Butler, y con escala contenida: una pantalla de trabajo no
               es una landing. El nombre sale de `tabs`, la misma fuente que la
               navegacion — no hay una segunda lista de rotulos. */}
-          <div className="ag-section-head">
-            <h1 className="ag-section-title">
-              {(tabs.find(t => t.id === tab) || {}).label || tenant?.name || 'Panel'}
-            </h1>
-            {openCount > 0 && tab !== 'orders' && tab !== 'products' && (
-              <span className="ag-section-meta">{openCount} en curso</span>
-            )}
-          </div>
+          {tab === 'products' ? (
+            <section className="ag-section-head ag-productos-head" aria-labelledby="ag-productos-titulo">
+              <div className="ag-productos-head-superior">
+                <div>
+                  <span className="ag-productos-kicker">CATÁLOGO</span>
+                  <h1 id="ag-productos-titulo" className="ag-section-title">{terminoCatalogo.plural}</h1>
+                </div>
+                <button
+                  type="button"
+                  className="ag-productos-head-agregar"
+                  aria-label={`Agregar ${terminoCatalogo.singular}`}
+                  onClick={() => productsPanelRef.current?.nuevoProducto()}
+                >
+                  <span aria-hidden="true">+</span>
+                  <span className="ag-productos-head-agregar-texto">Agregar {terminoCatalogo.singular}</span>
+                </button>
+              </div>
+              <div className="ag-productos-head-resumen">
+                <div className="ag-productos-head-metricas" aria-label="Resumen del catálogo">
+                  <div className="ag-productos-head-metrica">
+                    <ConteoBreve value={resumenProductos.visibles} listo={!loadingProducts} />
+                    <span className="ag-productos-head-etiqueta-completa">EN EL CATÁLOGO</span>
+                    <span className="ag-productos-head-etiqueta-corta">catálogo</span>
+                  </div>
+                  <div className="ag-productos-head-metrica">
+                    <ConteoBreve value={resumenProductos.ocultos} listo={!loadingProducts} />
+                    <span>ocultos</span>
+                  </div>
+                  <div className="ag-productos-head-metrica">
+                    <ConteoBreve value={resumenProductos.categorias} listo={!loadingProducts} />
+                    <span className="ag-productos-head-etiqueta-completa">CATEGORÍAS</span>
+                    <span className="ag-productos-head-etiqueta-corta">cat.</span>
+                  </div>
+                </div>
+                {resumenProductos.sinStock > 0 && (
+                  <button
+                    type="button"
+                    className="ag-productos-head-alerta"
+                    onClick={() => setTab('stock')}
+                    aria-label={`${resumenProductos.sinStock} ${terminoCatalogo.plural.toLocaleLowerCase('es-AR')} sin stock. Resolver ahora`}
+                  >
+                    <ConteoBreve value={resumenProductos.sinStock} listo={!loadingProducts} />
+                    <span>SIN STOCK</span>
+                    <small>
+                      <span className="ag-productos-head-etiqueta-completa">Resolver ahora</span>
+                      <span className="ag-productos-head-etiqueta-corta">Resolver →</span>
+                    </small>
+                  </button>
+                )}
+              </div>
+            </section>
+          ) : (
+            <div className="ag-section-head">
+              <h1 className="ag-section-title">
+                {(tabs.find(t => t.id === tab) || {}).label || tenant?.name || 'Panel'}
+              </h1>
+              {openCount > 0 && tab !== 'orders' && (
+                <span className="ag-section-meta">{openCount} en curso</span>
+              )}
+            </div>
+          )}
           {/* Dico vive en la pestania de entrada, que es donde cae el que
               abre el panel. `listo` evita el peor error posible: decirle
               "todavia no cargaste ningun producto" a alguien que tiene
@@ -893,6 +1143,7 @@ export default function PlatformAdmin() {
           </div>
           {tab === 'products' && (
             <ProductsPanel
+              ref={productsPanelRef}
               products={products}
               orders={orders}
               itemsPorPedido={itemsPorPedido}
@@ -911,7 +1162,7 @@ export default function PlatformAdmin() {
               onToggleActive={handleToggleActive}
               onImpulsar={handleImpulsarProducto}
               onDicoResumenChange={setResumenDicoActivo}
-              onDelete={handleDeleteProduct}
+              onArchive={handleArchiveProduct}
               onSubirImagen={subirImagenProducto}
               showToast={msg}
               intervencionActiva={intervencion?.id === 'catalogo-vacio' && !catalogoVacioAngosto}
@@ -924,6 +1175,7 @@ export default function PlatformAdmin() {
               orders={orders}
               loading={loadingOrders}
               onSetStatus={handleSetOrderStatus}
+              onReview={handleReviewOrder}
               showToast={msg}
               tenantId={tenantId}
               roles={roles}
@@ -955,11 +1207,18 @@ export default function PlatformAdmin() {
               <MapaDeMesas
                 recursos={recursos}
                 reservas={reservasHoy}
-                utilizacion={utilizacion}
+                visitas={visitasSalon}
+                /* Los mismos pedidos que ve la pestania de Pedidos: el plano
+                   no vuelve a consultar para mostrar la cuenta de una mesa. */
+                ordenes={orders}
+                personal={equipo}
+                solicitudes={solicitudesSalon}
+                onActualizarSolicitud={actualizarSolicitudSalon}
                 onMover={moverRecurso}
                 terminologia={{ plural: 'Mesas', singular: 'mesa' }}
                 onSeleccionar={setMesaEnEdicion}
                 onNuevo={nuevaMesa}
+                onCobrarMesa={cobrarMesa}
               />
               {mesaEnEdicion && (
                 <EditorDeMesa
@@ -969,6 +1228,16 @@ export default function PlatformAdmin() {
                   onGuardar={guardarMesa}
                   onArchivar={archivarMesa}
                   onCerrar={() => setMesaEnEdicion(null)}
+                />
+              )}
+              {pedidoDeMesaACobrar && (
+                <PantallaDeCobro
+                  tenantId={tenantId}
+                  pedido={pedidoDeMesaACobrar}
+                  hayTurnoAbierto={!!turno}
+                  onCerrar={() => setPedidoDeMesaACobrar(null)}
+                  onCobrado={() => { loadCaja(); loadOrders(); loadSalon(); }}
+                  onCompletar={(o) => handleSetOrderStatus(o.id, PlatformOrderStatus.COMPLETED)}
                 />
               )}
             </Suspense>
@@ -983,14 +1252,34 @@ export default function PlatformAdmin() {
               />
             </Suspense>
           )}
-          {tab === 'caja' && (
+          {tab === 'caja' && !supervisaCaja && (
+            <Suspense fallback={<div style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando...</div>}>
+              <MiMiniCaja
+                turno={turno}
+                yo={yoEnElEquipo}
+                esperado={miEsperado}
+                rendicion={miRendicion}
+                onPresentar={onPresentarRendicion}
+                onRefrescar={loadCaja}
+                cargando={!cajaCargada}
+              />
+            </Suspense>
+          )}
+          {tab === 'caja' && supervisaCaja && (
             <Suspense fallback={<div style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando...</div>}>
               <CajaPanel
                 turno={turno}
                 esperado={esperado}
                 turnosPrevios={turnosPrevios}
+                rendiciones={rendicionesCaja}
+                incidencias={incidenciasCaja}
+                bloqueos={bloqueosCaja}
+                perfilFiscal={perfilFiscal}
+                documentosFiscales={documentosFiscales}
                 onAbrir={onAbrirCaja}
                 onCerrar={onCerrarCaja}
+                onRevisarRendicion={onRevisarRendicion}
+                onResolverIncidencia={onResolverIncidencia}
                 onRefrescarEsperado={loadCaja}
               />
             </Suspense>

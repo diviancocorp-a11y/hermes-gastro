@@ -77,6 +77,8 @@ export const OrderInputSchema = z.object({
   delivery_cost: z.number().min(0).max(50000).optional().default(0),
   // Propina en % — antes bypasseaba la validacion (se leia de orderData crudo).
   tip_pct: z.number().min(0).max(100).optional().default(0),
+  // Presente solo cuando el pedido nace desde el QR fisico de una mesa.
+  table_code: optionalUuid,
 });
 
 /** Validación de cupón público */

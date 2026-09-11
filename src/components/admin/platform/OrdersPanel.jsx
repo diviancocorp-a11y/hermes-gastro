@@ -15,6 +15,7 @@ import PantallaDeCobro from './PantallaDeCobro';
 import { vePrecios } from '../../../modules/roles';
 
 const LABELS = {
+  [PlatformOrderStatus.PENDING_REVIEW]: 'Por revisar',
   [PlatformOrderStatus.PENDING_PAYMENT]: 'Esperando pago',
   [PlatformOrderStatus.NEW]: 'Nuevo',
   [PlatformOrderStatus.PREPARING]: 'En preparación',
@@ -24,6 +25,7 @@ const LABELS = {
 };
 
 const COLORS = {
+  [PlatformOrderStatus.PENDING_REVIEW]: { bg: '#FFF1F0', tx: '#D84A3A' },
   [PlatformOrderStatus.PENDING_PAYMENT]: { bg: '#FFF3E0', tx: '#B15A00' },
   [PlatformOrderStatus.NEW]: { bg: '#E3F2FD', tx: '#1565C0' },
   [PlatformOrderStatus.PREPARING]: { bg: '#FFF8E1', tx: '#8D6E00' },
@@ -66,11 +68,19 @@ function StatusChip({ status }) {
   );
 }
 
-function OrderCard({ order, onAdvance, onCancel, onCobrar, conImportes = true }) {
+const RISK_LABELS = {
+  high_item_quantity: 'Cantidad alta de un producto',
+  high_total_quantity: 'Cantidad total inusual',
+  high_amount: 'Importe atipico',
+  age_restricted: 'Producto con control de edad',
+};
+
+function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, conImportes = true }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState(null);
   const next = nextOrderStatus(order.status);
   const puedeCobrar = !!onCobrar && OPEN_ORDER_STATUSES.includes(order.status);
+  const porRevisar = order.status === PlatformOrderStatus.PENDING_REVIEW;
 
   const toggle = async () => {
     const opening = !open;
@@ -136,10 +146,34 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, conImportes = true })
             {order.is_gift && <Line label="Regalo" value={order.gift_note || 'Sí'} />}
           </dl>
 
+          {porRevisar && (
+            <div style={{ marginTop: 10, padding: '9px 10px', borderLeft: '2px solid #D84A3A', background: 'var(--ag-bg-soft)' }}>
+              <strong style={{ display: 'block', fontSize: 12, color: 'var(--ag-ink)' }}>
+                El camarero debe confirmar esta comanda
+              </strong>
+              {(order.risk_flags || []).map(flag => (
+                <span key={flag} style={{ display: 'block', marginTop: 4, fontSize: 11, color: '#D84A3A' }}>
+                  {RISK_LABELS[flag] || flag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {porRevisar && onReview && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button type="button" className="ag-btn-primary" style={{ flex: 1 }} onClick={() => onReview(order, 'approve')}>
+                Aprobar comanda
+              </button>
+              <button type="button" className="ag-btn-ghost" onClick={() => onReview(order, 'reject')}>
+                Rechazar
+              </button>
+            </div>
+          )}
+
           {/* Cobrar va PRIMERO y en toda la fila: es la accion que se busca en
               esta tarjeta cuando el pedido esta en curso. Avanzar de estado es
               frecuente; cobrar es lo que cierra la plata del dia. */}
-          {puedeCobrar && (
+          {puedeCobrar && !porRevisar && (
             <button
               type="button" className="ag-btn-primary"
               style={{ width: '100%', marginTop: 12 }}
@@ -149,7 +183,7 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, conImportes = true })
             </button>
           )}
 
-          {(next || order.status !== PlatformOrderStatus.CANCELLED) && (
+          {!porRevisar && (next || order.status !== PlatformOrderStatus.CANCELLED) && (
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               {next && (
                 <button
@@ -192,6 +226,7 @@ function Line({ label, value }) {
 
 export default function OrdersPanel({
   orders, loading, onSetStatus, showToast,
+  onReview,
   // Cobrar es opcional: sin `tenantId` el panel se comporta como antes. Asi el
   // catalogo de un negocio que todavia no usa caja no muestra un boton que no
   // lleva a ningun lado.
@@ -204,7 +239,9 @@ export default function OrdersPanel({
   const [cobrando, setCobrando] = useState(null);
   const conImportes = roles === null ? true : vePrecios(roles);
 
-  const openOrders = orders.filter(o => OPEN_ORDER_STATUSES.includes(o.status));
+  const openOrders = orders.filter(o => OPEN_ORDER_STATUSES.includes(o.status))
+    .sort((a, b) => Number(b.status === PlatformOrderStatus.PENDING_REVIEW)
+      - Number(a.status === PlatformOrderStatus.PENDING_REVIEW));
   const closedOrders = orders.filter(o => !OPEN_ORDER_STATUSES.includes(o.status));
 
   const advance = async (order, next) => {
@@ -223,6 +260,20 @@ export default function OrdersPanel({
     const res = await onSetStatus(order.id, PlatformOrderStatus.CANCELLED);
     if (res?.__error) { showToast?.(res.message || 'No se pudo cancelar'); return; }
     showToast?.('Pedido cancelado');
+  };
+
+  const review = async (order, decision) => {
+    if (decision === 'reject') {
+      const ok = await confirmSlide({
+        title: 'Rechazar comanda',
+        body: 'El pedido no se enviara a produccion. La visita y la mesa siguen abiertas.',
+        label: 'Desliza para rechazar',
+      });
+      if (!ok) return;
+    }
+    const res = await onReview?.(order.id, decision);
+    if (res?.__error) { showToast?.(res.message || 'No se pudo revisar'); return; }
+    showToast?.(decision === 'approve' ? 'Comanda aprobada y enviada a produccion' : 'Comanda rechazada');
   };
 
   // Cerrar la cuenta desde el cobro es el mismo camino que "Completar": un solo
@@ -265,6 +316,7 @@ export default function OrdersPanel({
                 <OrderCard
                   key={o.id} order={o} onAdvance={advance} onCancel={cancel}
                   conImportes={conImportes}
+                  onReview={onReview ? review : null}
                   onCobrar={tenantId && conImportes ? setCobrando : null}
                 />
               ))}

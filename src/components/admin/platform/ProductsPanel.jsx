@@ -8,21 +8,28 @@
  * combos: el edificio no tiene modelo de costos todavia. Un producto es
  * nombre + precio + categoria.
  */
-import { useState, useMemo } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useConfirm } from '../../ConfirmSlideProvider';
 import ProductEditor from './ProductEditor';
-import { categoriesFrom } from '../../../services/platformAdmin';
+import { categoriesFrom, normalizarCategoriaProducto } from '../../../services/platformAdmin';
 import { margen, indexarInsumos } from '../../../services/platformRecipes';
 import { terminologia } from '../../../modules/registry';
 import DicoCoreEscena from '../../dico/DicoCoreEscena';
 import GestionProductosPanel from './GestionProductosPanel';
+import useMediaQuery from '../../../lib/useMediaQuery';
 
 function money(n) {
   return `$${Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
 }
 
-export default function ProductsPanel({
-  products, vertical, loading, onSave, onToggleActive, onDelete, showToast,
+function numero(n) {
+  return Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 });
+}
+
+const MINIMO_MARGEN_PCT = 30;
+
+const ProductsPanel = forwardRef(function ProductsPanel({
+  products, vertical, loading, onSave, onToggleActive, onArchive, onSaveSettings, showToast,
   /**
    * Cuando Dico Physical esta atendiendo el catalogo vacio, esta pantalla NO
    * monta su propia escena 2D: serian dos Dicos a la vez. Publica el nodo al
@@ -35,16 +42,44 @@ export default function ProductsPanel({
   orders = [], itemsPorPedido = null, operativo = false, turno = null, minutosOperando = null,
   turnosPrevios = [], timezone = null, onImpulsar = null, onIr = null,
   onDicoResumenChange = null,
-}) {
+}, ref) {
   const confirmSlide = useConfirm();
   const [editing, setEditing] = useState(null); // objeto producto | 'new' | null
   const [search, setSearch] = useState('');
-  const [categoriasAbiertas, setCategoriasAbiertas] = useState(() => new Set());
+  // `null` significa que todas nacen abiertas. Un Set aparece recien cuando
+  // la persona cierra una categoria o la busqueda acota el listado.
+  const [categoriasAbiertas, setCategoriasAbiertas] = useState(null);
+  const [configAbierta, setConfigAbierta] = useState(false);
+  const [minimoInput, setMinimoInput] = useState('30');
+  const [menuProducto, setMenuProducto] = useState(null);
+  const [detalleProducto, setDetalleProducto] = useState(null);
+  const esMobile = useMediaQuery('(max-width: 768px)');
+
+  useEffect(() => {
+    if (!menuProducto) return undefined;
+    const cerrarMenu = (event) => {
+      if (event.key === 'Escape' || !event.target.closest?.('.ag-producto-menu')) {
+        setMenuProducto(null);
+      }
+    };
+    document.addEventListener('pointerdown', cerrarMenu);
+    document.addEventListener('keydown', cerrarMenu);
+    return () => {
+      document.removeEventListener('pointerdown', cerrarMenu);
+      document.removeEventListener('keydown', cerrarMenu);
+    };
+  }, [menuProducto]);
+
+  useImperativeHandle(ref, () => ({
+    nuevoProducto: () => setEditing('new'),
+  }), []);
 
   // Como se llama lo que vende este negocio. Un corte de pelo no es un
   // "producto": la palabra cambia toda la pantalla.
   const t = terminologia(vertical);
   const categories = useMemo(() => categoriesFrom(products), [products]);
+  const minimoConfigurado = Number(settings?.min_product_margin_pct);
+  const minimoMargenPct = Number.isFinite(minimoConfigurado) ? minimoConfigurado : MINIMO_MARGEN_PCT;
 
   // Indice de insumos una sola vez: el margen se calcula para cada fila de la
   // lista, y rearmarlo por producto seria O(productos x insumos) por render.
@@ -58,40 +93,43 @@ export default function ProductsPanel({
     );
   }, [products, search]);
 
-  /* PASS 2 — la tira de resumen.
-   *
-   * SOLO datos que ya estan en esta pantalla y que se pueden verificar
-   * contando. Nada de "valor de inventario": el edificio no tiene modelo de
-   * costos —`unit_cost` va en 0— asi que ese numero seria una invencion con
-   * formato de dato. El de stock aparece unicamente si ALGUN producto lo
-   * tiene cargado; con la columna vacia, un "0 con stock bajo" diria que esta
-   * todo bien cuando en realidad no se sabe.
-   */
-  const resumen = useMemo(() => {
-    const visibles = products.filter(x => x.active !== false).length;
-    const conStock = products.filter(x => x.stock !== null && x.stock !== undefined);
-    return {
-      visibles,
-      ocultos: products.length - visibles,
-      categorias: new Set(products.map(x => x.category || 'Sin categoría')).size,
-      sinStock: conStock.length > 0 ? conStock.filter(x => Number(x.stock) <= 0).length : null,
-    };
-  }, [products]);
-
   // Agrupado por categoria, respetando el orden que ya trae el service.
+  const margenDe = useCallback((producto) => recetas
+    ? margen(producto, recetas.get(producto.id), insumosPorId, settings)
+    : null, [recetas, insumosPorId, settings]);
+
   const groups = useMemo(() => {
     const map = new Map();
     for (const p of filtered) {
-      const key = p.category || 'Sin categoría';
+      const key = normalizarCategoriaProducto(p.category, categories) || 'Sin categoría';
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(p);
     }
-    return [...map.entries()];
-  }, [filtered]);
+    return [...map.entries()]
+      .map(([key, items]) => [key, [...items].sort((a, b) => {
+        const margenA = margenDe(a)?.pct ?? -Infinity;
+        const margenB = margenDe(b)?.pct ?? -Infinity;
+        return margenB - margenA || a.name.localeCompare(b.name, 'es');
+      })])
+      .sort((a, b) => {
+        const mejorA = margenDe(a[1][0])?.pct ?? -Infinity;
+        const mejorB = margenDe(b[1][0])?.pct ?? -Infinity;
+        return mejorB - mejorA || a[0].localeCompare(b[0], 'es');
+      });
+  }, [filtered, categories, margenDe]);
+
+  const categoriaInicial = useMemo(() => (
+    groups.find(([, items]) => items.some((producto) => {
+      const calculado = margenDe(producto);
+      return calculado && calculado.pct < minimoMargenPct;
+    }))?.[0] || groups[0]?.[0] || null
+  ), [groups, margenDe, minimoMargenPct]);
 
   const toggleCategoria = (categoria) => {
     setCategoriasAbiertas((actual) => {
-      const siguiente = new Set(actual);
+      const siguiente = actual === null
+        ? new Set(!esMobile && categoriaInicial ? [categoriaInicial] : [])
+        : new Set(actual);
       if (siguiente.has(categoria)) siguiente.delete(categoria);
       else siguiente.add(categoria);
       return siguiente;
@@ -102,13 +140,15 @@ export default function ProductsPanel({
     setSearch(valor);
     const consulta = valor.trim().toLowerCase();
     if (!consulta) {
-      setCategoriasAbiertas(new Set());
+      setCategoriasAbiertas(null);
       return;
     }
     setCategoriasAbiertas(new Set(products.filter(producto => (
       producto.name.toLowerCase().includes(consulta)
       || (producto.category || '').toLowerCase().includes(consulta)
-    )).map(producto => producto.category || 'Sin categoría')));
+    )).map(producto => (
+      normalizarCategoriaProducto(producto.category, categories) || 'Sin categoría'
+    ))));
   };
 
   // La receta se guarda DESPUES del producto y no antes: un producto nuevo
@@ -122,14 +162,24 @@ export default function ProductsPanel({
 
   const handleDelete = async (p) => {
     const ok = await confirmSlide({
-      title: `Eliminar ${p.name}`,
-      body: 'Se borra del catálogo para siempre. Si solo querés que deje de venderse, apagá "Visible" y listo.',
-      label: 'Deslizá para eliminar',
+      title: `Archivar ${p.name}`,
+      body: 'Sale del catálogo, pero conserva pedidos, receta e historial para siempre.',
+      label: 'Deslizá para archivar',
     });
     if (!ok) return;
-    const res = await onDelete(p.id);
+    const res = await onArchive(p.id);
     if (res?.__error) { showToast?.(res.message); return; }
-    showToast?.('Producto eliminado');
+    showToast?.('Producto archivado · historial conservado');
+  };
+
+  const guardarMinimoMargen = async (event) => {
+    event.preventDefault();
+    const valor = Math.max(0, Math.min(100, Number(minimoInput) || 0));
+    const saved = await onSaveSettings?.({ min_product_margin_pct: valor });
+    if (!saved) return;
+    setMinimoInput(String(valor));
+    setConfigAbierta(false);
+    showToast?.(`Alerta de margen configurada en ${valor}%`);
   };
 
   /* ── Formulario a pantalla completa ── */
@@ -149,6 +199,7 @@ export default function ProductsPanel({
         <div className="ag-page-over-body">
           <ProductEditor
             product={isNew ? null : editing}
+            products={products}
             vertical={vertical}
             categories={categories}
             ingredientes={ingredientes}
@@ -182,42 +233,6 @@ export default function ProductsPanel({
           en dos tipografias distintas: Butler el del shell, DM Sans clavado a
           mano el de aca. Era el sintoma mas visible de "mezcla de eras" y el
           unico lugar de la pantalla que forzaba una familia tipografica. */}
-
-      {/* La accion principal entra en la misma tira de indicadores y ocupa el
-          primer lugar. El titulo ya da contexto suficiente; repetir aca la
-          cantidad total y las categorias agregaba una tercera lectura del
-          mismo dato. */}
-      {products.length > 0 && (
-        <div className="ag-productos-resumen">
-          <button
-            type="button"
-            className="ag-kpi ag-kpi-accion"
-            aria-label={`+ Agregar ${t.singular}`}
-            onClick={() => setEditing('new')}
-          >
-            <span className="ag-kpi-accion-simbolo" aria-hidden="true">+</span>
-            <span className="ag-kpi-pie">Agregar {t.singular}</span>
-          </button>
-          <div className="ag-kpi">
-            <span className="ag-kpi-valor">{resumen.visibles}</span>
-            <span className="ag-kpi-pie">en el catálogo</span>
-          </div>
-          <div className={`ag-kpi${resumen.ocultos > 0 ? ' es-aviso' : ''}`}>
-            <span className="ag-kpi-valor">{resumen.ocultos}</span>
-            <span className="ag-kpi-pie">ocultos</span>
-          </div>
-          <div className="ag-kpi">
-            <span className="ag-kpi-valor">{resumen.categorias}</span>
-            <span className="ag-kpi-pie">categorías</span>
-          </div>
-          {resumen.sinStock !== null && (
-            <div className={`ag-kpi${resumen.sinStock > 0 ? ' es-alerta' : ''}`}>
-              <span className="ag-kpi-valor">{resumen.sinStock}</span>
-              <span className="ag-kpi-pie">sin stock</span>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ── C · Toolbar ──────────────────────────────────────────────── */}
       {products.length > 0 && (
@@ -280,10 +295,55 @@ export default function ProductsPanel({
           21 tarjetas de 60px de alto: nada agrupaba y nada terminaba. */}
       {!loading && products.length > 0 && (
       <div className="ag-productos-cuerpo">
-        <div className="ag-productos-categorias">
-        <h2 className="ag-productos-categorias-titulo">Categorías</h2>
+        <div className={`ag-productos-categorias${operativo ? ' esta-operativo' : ''}`}>
+        <div className="ag-productos-categorias-titulo">
+          <h2>Categorías</h2>
+          <div className="ag-categorias-config">
+            <button
+              type="button"
+              className="ag-categorias-menu"
+              aria-label="Configurar categorías"
+              aria-expanded={configAbierta}
+              onClick={() => {
+                setMinimoInput(String(minimoMargenPct));
+                setConfigAbierta(valor => !valor);
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="5" r="1.5" />
+                <circle cx="12" cy="12" r="1.5" />
+                <circle cx="12" cy="19" r="1.5" />
+              </svg>
+            </button>
+            {configAbierta && (
+              <form className="ag-categorias-popover" onSubmit={guardarMinimoMargen}>
+                <strong>Parámetros de categorías</strong>
+                <label htmlFor="ag-minimo-margen">Alertar debajo de</label>
+                <div>
+                  <input
+                    id="ag-minimo-margen"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={minimoInput}
+                    onChange={event => setMinimoInput(event.target.value)}
+                  />
+                  <span>% de margen</span>
+                </div>
+                <button type="submit">Guardar</button>
+              </form>
+            )}
+          </div>
+        </div>
         {groups.map(([cat, items]) => {
-          const abierta = categoriasAbiertas.has(cat);
+          const abierta = categoriasAbiertas === null
+            ? !esMobile && cat === categoriaInicial
+            : categoriasAbiertas.has(cat);
+          const bajoMinimo = items.filter((producto) => {
+            const calculado = margenDe(producto);
+            return calculado && calculado.pct < minimoMargenPct;
+          }).length;
           return (
           <section key={cat} className={`ag-categoria${abierta ? ' esta-abierta' : ''}`}>
             <header className="ag-categoria-head">
@@ -296,66 +356,122 @@ export default function ProductsPanel({
               >
                 <h3 className="ag-categoria-nombre">{cat}</h3>
                 <span className="ag-categoria-cuenta">
-                  {items.length} {items.length === 1 ? t.singular : t.plural.toLowerCase()}
+                  <span>{items.length} {items.length === 1 ? t.singular : t.plural.toLowerCase()}</span>
+                  {bajoMinimo > 0 && <b>· {bajoMinimo} bajo mínimo</b>}
                 </span>
                 <i className="ag-categoria-flecha" aria-hidden="true" />
               </button>
             </header>
 
             {abierta && <div className="ag-categoria-filas">
+              <div className="ag-fila-columnas" aria-hidden="true">
+                <span>Producto</span><span>Costo</span><span>Ganancia</span><span>Margen</span><span>Precio</span><span />
+              </div>
               {items.map(p => {
                 // null cuando no hay receta cargada: sin insumos el costo da 0
                 // y el margen daria 100%, que es una mentira comoda.
-                const m = recetas ? margen(p, recetas.get(p.id), insumosPorId, settings) : null;
+                const m = margenDe(p);
+                const margenOk = m ? m.pct >= minimoMargenPct : false;
+                const margenVisual = m ? Math.max(0, Math.min(100, m.pct)) : 0;
+                const detalleAbierto = !esMobile || detalleProducto === p.id;
                 return (
-                <div key={p.id} className={`ag-fila${p.active ? '' : ' esta-oculta'}`}>
-                  <button
-                    type="button"
-                    className="ag-fila-abrir"
-                    onClick={() => setEditing(p)}
-                    aria-label={`Editar ${p.name}`}
-                  >
-                    <span className="ag-fila-nombre">
-                      {p.name}
-                      {p.requires_age_gate && <span className="ag-fila-edad">+18</span>}
-                    </span>
-                    <span className="ag-fila-meta">
-                      {!p.active && <span className="ag-fila-oculto">oculto</span>}
-                      {p.duration_min ? <span>{p.duration_min} min</span> : null}
-                      {m && (
-                        <span className={`ag-fila-margen ${m.ganancia >= 0 ? 'gana' : 'pierde'}`}>
-                          deja {money(m.ganancia)} ({m.pct.toFixed(0)}%)
+                <div key={p.id} className={`ag-fila${p.active ? '' : ' esta-oculta'}${m && !margenOk ? ' tiene-alerta' : ''}${detalleAbierto ? ' muestra-detalle' : ''}`}>
+                  <span className="ag-fila-foto" aria-hidden="true">
+                    <span className="ag-fila-foto-inicial">{p.name.trim().charAt(0).toLocaleUpperCase('es-AR') || '?'}</span>
+                    {p.image_url && (
+                      <img
+                        src={p.image_url}
+                        alt=""
+                        loading="lazy"
+                        onError={event => { event.currentTarget.hidden = true; }}
+                      />
+                    )}
+                  </span>
+                  <span className="ag-fila-info">
+                    {esMobile ? (
+                      <button
+                        type="button"
+                        className="ag-fila-detalle-toggle"
+                        aria-expanded={detalleAbierto}
+                        aria-controls={`ag-metricas-${p.id}`}
+                        onClick={() => setDetalleProducto(actual => actual === p.id ? null : p.id)}
+                      >
+                        <span className="ag-fila-nombre">
+                          {p.name}
+                          {p.requires_age_gate && <span className="ag-fila-edad">+18</span>}
                         </span>
-                      )}
+                        <i aria-hidden="true" />
+                      </button>
+                    ) : (
+                      <span className="ag-fila-nombre">
+                        {p.name}
+                        {p.requires_age_gate && <span className="ag-fila-edad">+18</span>}
+                      </span>
+                    )}
+                    {!p.active && <span className="ag-fila-oculto">oculto</span>}
+                  </span>
+                  {detalleAbierto && <div className="ag-fila-metricas" id={`ag-metricas-${p.id}`}>
+                    <span className="ag-fila-costo" data-label="Costo">{m ? numero(m.costo) : 'Sin receta'}</span>
+                    <span className="ag-fila-ganancia" data-label="Ganancia">{m ? numero(m.ganancia) : '—'}</span>
+                    <span className={`ag-fila-margen-celda${margenOk ? ' esta-ok' : ' esta-alerta'}`} data-label="Margen">
+                      {m ? <>
+                        <strong>{m.pct.toFixed(0)}%</strong>
+                        <span className="ag-fila-margen-track" aria-label={`Mínimo ${minimoMargenPct}%`}>
+                          <i style={{ width: `${margenVisual}%` }} />
+                          <b style={{ left: `${minimoMargenPct}%` }} />
+                        </span>
+                      </> : <small>Sin receta cargada</small>}
                     </span>
-                  </button>
-
+                  </div>}
                   <span className="ag-fila-precio">{money(p.price)}</span>
-
                   <div className="ag-fila-acciones">
                     <button
                       type="button"
-                      className="ag-btn-mini"
+                      className="ag-btn-mini ag-fila-visibilidad"
                       onClick={() => onToggleActive(p)}
                       title={p.active ? 'Ocultar del catálogo' : 'Mostrar en el catálogo'}
                       aria-label={p.active ? `Ocultar ${p.name}` : `Mostrar ${p.name}`}
                     >
-                      {p.active ? 'Ocultar' : 'Mostrar'}
-                    </button>
-
-                    <button
-                      type="button"
-                      className="ag-producto-eliminar"
-                      onClick={() => handleDelete(p)}
-                      title="Eliminar"
-                      aria-label={`Eliminar ${p.name}`}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                        <path d="M10 11v6" /><path d="M14 11v6" />
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                        <circle cx="12" cy="12" r="2.5" />
+                        {!p.active && <path d="m4 4 16 16" />}
                       </svg>
                     </button>
+
+                    <div className="ag-producto-menu">
+                      <button
+                        type="button"
+                        className="ag-producto-menu-trigger"
+                        aria-label={`Más acciones para ${p.name}`}
+                        aria-expanded={menuProducto === p.id}
+                        onClick={() => setMenuProducto(actual => actual === p.id ? null : p.id)}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <circle cx="5" cy="12" r="1.6" />
+                          <circle cx="12" cy="12" r="1.6" />
+                          <circle cx="19" cy="12" r="1.6" />
+                        </svg>
+                      </button>
+                      {menuProducto === p.id && (
+                        <div className="ag-producto-menu-popover" role="menu">
+                          <button type="button" role="menuitem" onClick={() => { setMenuProducto(null); setEditing(p); }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                            </svg>
+                            Editar
+                          </button>
+                          <button type="button" role="menuitem" className="es-alerta" onClick={() => { setMenuProducto(null); handleDelete(p); }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M4 7h16v13H4z" />
+                              <path d="M3 7h18M8 7l1-3h6l1 3M8 11h8" />
+                            </svg>
+                            Archivar
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 );
@@ -374,6 +490,7 @@ export default function ProductsPanel({
           recetas={recetas}
           ingredientes={ingredientes}
           settings={settings}
+          busqueda={search}
           operativo={operativo}
           minutosOperando={minutosOperando}
           turno={turno}
@@ -389,4 +506,6 @@ export default function ProductsPanel({
       )}
     </div>
   );
-}
+});
+
+export default ProductsPanel;

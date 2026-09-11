@@ -87,7 +87,7 @@ export default function DicoAvisos({
     const timer = setInterval(() => setAhora(new Date()), 30000);
     return () => clearInterval(timer);
   }, []);
-  const datosActuales = { ...datos, hoy: ahora };
+  const datosActuales = { ...datos, hoy: datos.hoy ?? ahora };
   const idsOmitidos = new Set(omitir);
   /* PASS 2 — LAS DOS CAPAS ENTRAN POR EL MISMO CANAL.
    *

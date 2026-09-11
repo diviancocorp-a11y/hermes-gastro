@@ -55,6 +55,8 @@ export default function PantallaDeCobro({
   const [metodo, setMetodo] = useState(null);
   const [monto, setMonto] = useState('');
   const [entregado, setEntregado] = useState('');
+  const [ultimos4, setUltimos4] = useState('');
+  const [referencia, setReferencia] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
@@ -72,6 +74,8 @@ export default function PantallaDeCobro({
     // siguiente cobro casi siempre es el resto.
     setMonto(s > 0 ? String(s) : '');
     setEntregado('');
+    setUltimos4('');
+    setReferencia('');
   }, [orderId]);
 
   useEffect(() => {
@@ -87,6 +91,8 @@ export default function PantallaDeCobro({
 
   const medioSel = medios.find(m => m.id === metodo) || null;
   const esEfectivo = medioSel?.kind === 'cash';
+  const esTarjeta = medioSel?.kind === 'card';
+  const esPagoDigital = ['card', 'mp', 'transfer'].includes(medioSel?.kind);
   const montoNum = Number(String(monto).replace(',', '.')) || 0;
   const vuelto = esEfectivo && entregado !== ''
     ? (Number(String(entregado).replace(',', '.')) || 0) - montoNum
@@ -98,7 +104,9 @@ export default function PantallaDeCobro({
   // tolerancia es el mismo de la funcion: el total puede venir de una suma
   // redondeada y rechazar por $0,004 seria rechazar un cobro correcto.
   const excedeSaldo = saldo !== null && montoNum > saldo + 0.01;
-  const puedeCobrar = !!metodo && montoNum > 0 && !excedeSaldo && !enviando;
+  const comprobanteCompleto = !esTarjeta || /^\d{4}$/.test(ultimos4);
+  const puedeCobrar = !!metodo && montoNum > 0 && !excedeSaldo
+    && comprobanteCompleto && !enviando;
 
   const confirmar = useCallback(async () => {
     if (!puedeCobrar) return;
@@ -106,12 +114,20 @@ export default function PantallaDeCobro({
     setError(null);
     // Se manda el monto COBRADO. Lo entregado por el cliente solo sirvio para
     // calcular el vuelto en pantalla.
-    const r = await cobrar(tenantId, orderId, metodo, montoNum);
+    const datos = {
+      lastFour: esTarjeta ? ultimos4 : null,
+      reference: esPagoDigital ? referencia : null,
+    };
+    const tieneDatos = !!(datos.lastFour || datos.reference);
+    const r = tieneDatos
+      ? await cobrar(tenantId, orderId, metodo, montoNum, datos)
+      : await cobrar(tenantId, orderId, metodo, montoNum);
     setEnviando(false);
     if (r.__error) { setError(r.message); return; }
     await recargar();
     onCobrado?.();
-  }, [puedeCobrar, tenantId, orderId, metodo, montoNum, recargar, onCobrado]);
+  }, [puedeCobrar, tenantId, orderId, metodo, montoNum, esTarjeta, esPagoDigital,
+    ultimos4, referencia, recargar, onCobrado]);
 
   if (!pedido) return null;
 
@@ -214,7 +230,11 @@ export default function PantallaDeCobro({
                   display: 'flex', justifyContent: 'space-between', fontSize: 12.5,
                   color: 'var(--ag-ink-3, #666)',
                 }}>
-                  <span>{ICONO[m?.kind] || ICONO.other} {m?.name || 'Pago'}</span>
+                  <span>
+                    {ICONO[m?.kind] || ICONO.other} {m?.name || 'Pago'}
+                    {p.receipt_last_four && <small className="ag-cobro-referencia"> •••• {p.receipt_last_four}</small>}
+                    {p.reference && <small className="ag-cobro-referencia"> · {p.reference}</small>}
+                  </span>
                   <span style={{ fontVariantNumeric: 'tabular-nums' }}>{money(p.amount)}</span>
                 </div>
               );
@@ -240,7 +260,11 @@ export default function PantallaDeCobro({
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {medios.map((m) => (
                     <button
-                      key={m.id} type="button" onClick={() => setMetodo(m.id)}
+                      key={m.id} type="button" onClick={() => {
+                        setMetodo(m.id);
+                        setUltimos4('');
+                        setReferencia('');
+                      }}
                       aria-pressed={metodo === m.id}
                       style={{
                         flex: '1 1 30%', minWidth: 104, padding: '13px 10px',
@@ -282,6 +306,65 @@ export default function PantallaDeCobro({
                   : 'Viene con lo que falta. Poné menos para dividir la cuenta.'}
               </span>
             </label>
+
+            {esTarjeta && (
+              <div className="ag-cobro-comprobante">
+                <div className="ag-cobro-comprobante-head">
+                  <strong>Comprobante de tarjeta</strong>
+                  <span>OBLIGATORIO</span>
+                </div>
+                <label>
+                  <span>Últimos 4 números</span>
+                  <input
+                    inputMode="numeric" autoComplete="off" maxLength={4}
+                    value={ultimos4}
+                    onChange={(event) => setUltimos4(event.target.value.replace(/\D/g, '').slice(0, 4))}
+                    aria-label="Últimos 4 números del comprobante"
+                    placeholder="0000"
+                  />
+                </label>
+                <label>
+                  <span>Autorización <small>(opcional)</small></span>
+                  <input
+                    value={referencia}
+                    onChange={(event) => setReferencia(event.target.value.slice(0, 40))}
+                    aria-label="Número de autorización"
+                    placeholder="Ej. 928177"
+                  />
+                </label>
+                {ultimos4.length > 0 && ultimos4.length < 4 && (
+                  <small className="ag-cobro-ayuda es-error">Faltan {4 - ultimos4.length} números.</small>
+                )}
+              </div>
+            )}
+
+            {['mp', 'transfer'].includes(medioSel?.kind) && (
+              <div className="ag-cobro-comprobante">
+                <div className="ag-cobro-comprobante-head">
+                  <strong>{medioSel.kind === 'mp' ? 'Pago con QR' : 'Transferencia'}</strong>
+                  <span>VERIFICACIÓN</span>
+                </div>
+                <label>
+                  <span>ID de operación <small>(si está disponible)</small></span>
+                  <input
+                    value={referencia}
+                    onChange={(event) => setReferencia(event.target.value.slice(0, 60))}
+                    aria-label="ID de operación"
+                    placeholder="Número o referencia"
+                  />
+                </label>
+                <small className="ag-cobro-ayuda">
+                  Si todavía no aparece, podés registrar el cobro. Caja lo deja pendiente para revisión.
+                </small>
+              </div>
+            )}
+
+            {esPagoDigital && (
+              <div className="ag-cobro-tip">
+                <span>DICO TIP</span>
+                <p>La propina directa del camarero queda fuera de esta cuenta y del arqueo.</p>
+              </div>
+            )}
 
             {esEfectivo && (
               <label style={{ display: 'block' }}>
