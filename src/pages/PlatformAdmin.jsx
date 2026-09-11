@@ -22,6 +22,10 @@ import ConfirmSlideProvider from '../components/ConfirmSlideProvider';
 import ProductsPanel from '../components/admin/platform/ProductsPanel';
 import OrdersPanel from '../components/admin/platform/OrdersPanel';
 import StockPanel from '../components/admin/platform/StockPanel';
+// El MISMO formulario que usaba el Stock legacy: alta y edicion de insumo
+// no se reescriben, se reusan.
+const IngForm = lazy(() => import('../components/admin/Stock')
+  .then(m => ({ default: m.IngForm })));
 import ConteoDeDeposito from '../components/admin/platform/ConteoDeDeposito';
 import DicoPresence from '../components/dico/DicoPresence';
 import AdminPushBanner from '../components/admin/shared/AdminPushBanner';
@@ -254,6 +258,7 @@ export default function PlatformAdmin() {
   // El conteo de deposito es una VISTA de la pestania Stock, no una ruta:
   // se entra y se sale sin perder el filtro ni el insumo elegido.
   const [contandoDeposito, setContandoDeposito] = useState(false);
+  const [insumoEnEdicion, setInsumoEnEdicion] = useState(null);
   const [proveedoresDeStock, setProveedoresDeStock] = useState([]);
   const [gastos, setGastos] = useState([]);
   const [ventas, setVentas] = useState([]);
@@ -1218,10 +1223,34 @@ export default function PlatformAdmin() {
                 onRecargar={loadIngs}
                 onGuardarInsumo={guardarIngrediente}
                 onRegistrarMerma={(ing, qty, motivo) => registrarMerma(ing.id, qty, motivo)}
+                onNuevoInsumo={() => setInsumoEnEdicion({ data: null })}
+                onEditarInsumo={(ing) => setInsumoEnEdicion({ data: ing })}
                 onContarDeposito={() => setContandoDeposito(true)}
                 showToast={msg}
               />
             )
+          )}
+          {tab === 'stock' && insumoEnEdicion && (
+            <Suspense fallback={null}>
+              <IngForm
+                data={insumoEnEdicion.data}
+                settings={sett || {}}
+                onClose={() => setInsumoEnEdicion(null)}
+                onSave={async (it) => {
+                  const guardado = await guardarIngrediente(it);
+                  if (guardado && !guardado.__error) {
+                    setInsumoEnEdicion(null);
+                    await loadIngs();
+                  }
+                  return guardado;
+                }}
+                onDel={async (id) => {
+                  const ok = await archivarIngrediente(id);
+                  if (ok) { setInsumoEnEdicion(null); await loadIngs(); }
+                  return ok;
+                }}
+              />
+            </Suspense>
           )}
           {tab === 'mesas' && (
             <Suspense fallback={<div style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando...</div>}>

@@ -281,6 +281,31 @@ describe('conteo de deposito', () => {
   });
 });
 
+/**
+ * Esta regresion ya paso: la primera version de StockPanel porto la LISTA y se
+ * olvido del alta y la edicion, que el componente legacy si tenia. Quedo
+ * publicada. Los dos tests de abajo existen para que no vuelva a pasar en
+ * silencio: una pantalla de stock sin forma de dar de alta un insumo no es una
+ * pantalla de stock.
+ */
+describe('se puede dar de alta y editar un insumo', () => {
+  it('la cabecera ofrece agregar', () => {
+    const onNuevoInsumo = vi.fn();
+    render(<StockPanel tenantId={TENANT} insumos={[]} onNuevoInsumo={onNuevoInsumo} />);
+    fireEvent.click(screen.getByRole('button', { name: /agregar insumo/i }));
+    expect(onNuevoInsumo).toHaveBeenCalled();
+  });
+
+  it('la ficha ofrece editar el insumo elegido', () => {
+    const onEditarInsumo = vi.fn();
+    const ing = insumo({ id: 'm', name: 'Muzzarella', stock: 2.5, min_stock: 8 });
+    render(<StockPanel tenantId={TENANT} insumos={[ing]} onEditarInsumo={onEditarInsumo} />);
+    fireEvent.click(document.querySelector('.ag-stock-fila'));
+    fireEvent.click(screen.getByRole('button', { name: /editar insumo/i }));
+    expect(onEditarInsumo).toHaveBeenCalledWith(expect.objectContaining({ id: 'm' }));
+  });
+});
+
 describe('el servicio del conteo', () => {
   it('descarta filas sin cantidad valida antes de llamar a la base', async () => {
     const r = await guardarConteoDeDeposito({

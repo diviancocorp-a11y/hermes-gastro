@@ -154,7 +154,7 @@ const MOTIVOS_MERMA = [
   ['otro', 'Otro'],
 ];
 
-function Ficha({ ing, consumo, proveedor, onReponer, onAjustar, onMerma }) {
+function Ficha({ ing, consumo, proveedor, onReponer, onAjustar, onMerma, onEditar }) {
   const [modo, setModo] = useState(null); // 'reponer' | 'ajustar' | 'merma'
   const [valor, setValor] = useState('');
   const [motivo, setMotivo] = useState('vencido');
@@ -328,6 +328,14 @@ function Ficha({ ing, consumo, proveedor, onReponer, onAjustar, onMerma }) {
             <button type="button" className="ag-btn-ghost" onClick={() => setModo('ajustar')}>Ajustar</button>
             <button type="button" className="ag-btn-ghost" onClick={() => setModo('merma')}>Merma</button>
           </div>
+          {/* Editar abre el formulario completo —nombre, unidad, costo,
+              categoria, proveedor—. Las tres de arriba son del dia a dia; esta
+              es de mantenimiento y por eso va abajo y sin peso visual. */}
+          {onEditar && (
+            <button type="button" className="ag-btn-mini" onClick={() => onEditar(ing)}>
+              Editar insumo
+            </button>
+          )}
         </div>
       )}
     </aside>
@@ -344,6 +352,7 @@ export default function StockPanel({
   onGuardarInsumo,
   onRegistrarMerma,
   onNuevoInsumo,
+  onEditarInsumo,
   onContarDeposito,
   showToast,
 }) {
@@ -578,6 +587,7 @@ export default function StockPanel({
           onReponer={reponer}
           onAjustar={ajustar}
           onMerma={merma}
+          onEditar={onEditarInsumo}
         />
       </div>
     </section>

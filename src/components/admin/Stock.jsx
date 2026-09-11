@@ -364,7 +364,10 @@ function Stock({
 }
 
 /* ─── IngForm: crear/editar/eliminar insumo ─────────────────── */
-function IngForm({ data, onClose, onSave, onDel, settings }) {
+// Exportado para que el StockPanel del edificio monte el MISMO formulario.
+// Un editor propio alla seria una segunda forma de dar de alta un insumo,
+// con sus propias validaciones y su propia deriva.
+export function IngForm({ data, onClose, onSave, onDel, settings }) {
   const [f, setF] = useState(data || { name: "", unit: "kg", cost: 0, stock: 0, min_stock: 0, food_category: "dry" });
   const [err, setErr] = useState("");
   const s = (k, v) => { setErr(""); setF(p => ({ ...p, [k]: v })); };
