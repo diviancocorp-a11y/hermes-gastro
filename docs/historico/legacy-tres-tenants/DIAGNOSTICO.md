@@ -96,7 +96,7 @@ Causa: localStorage del cliente Supabase tiene un refresh token vencido o ya con
 
 7 SQL files en root + 8 en `supabase/migrations/` + ~7 migraciones aplicadas vía MCP (sin archivo en repo). El "estado real" de la DB es la unión de los 3 sets.
 
-**Decisión aplicada (FASE 4):** Dump del schema actual de Mala Miga (la más limpia) → `supabase/migrations/000_initial_schema.sql` único + `SCHEMA.md` documentando cada tabla. Las DBs existentes NO se tocan, solo dejamos esto como source of truth.
+**Decisión aplicada (FASE 4):** Dump del schema actual de Mala Miga (la más limpia) → `supabase/migrations/000_initial_schema.sql` único + `docs/plataforma/SCHEMA.md` documentando cada tabla. Las DBs existentes NO se tocan, solo dejamos esto como source of truth.
 
 ## 4. Tests — estado actual
 
@@ -127,7 +127,7 @@ Esta es la propuesta que aprobaste — la replico acá para tener todo en un sol
 2. ⏭ **Fase 1** — Unificar status nombres (`OrderStatus.PREPARING` mayúscula)
 3. ⏭ **Fase 2** — Limpieza identidad Hermes (SW caches, package.json, manifest, offline.html, observability)
 4. ⏭ **Fase 3** — Borrar código muerto + fix Invalid Refresh Token
-5. ⏭ **Fase 4** — Consolidar schema (`000_initial_schema.sql` + `SCHEMA.md`)
+5. ⏭ **Fase 4** — Consolidar schema (`000_initial_schema.sql` + `docs/plataforma/SCHEMA.md`)
 6. ⏭ **Fase 5** — Tests E2E con Playwright (corre contra Mala Miga)
 7. ⏭ **Fase 6** — Pause/Resume Supabase LNP (vía MCP)
 8. ⏭ **Fase 7** — Hermes Dashboard (app standalone con CRM export + crear cliente nuevo)

@@ -28,7 +28,7 @@
   consultar una Factura C de prueba en homologacion; produccion queda apagada
   hasta validar el circuito con el contador.
 
-- [ ] **Smoke test en produccion de los 3 tenants** (checklist en ONBOARDING.md seccion 6):
+- [ ] **Smoke test en produccion de los 3 tenants** (checklist en docs/plataforma/ONBOARDING.md seccion 6):
   pedido guest con envio → verificar que la DIRECCION aparece en la tarjeta del admin.
   Hubo muchos cambios deployados hoy; ver con tus ojos antes que un cliente.
 - [ ] **Usuarios admin de LNP**: ricardousa1313, rrodriguezs777 y danagonzalez2607
@@ -67,7 +67,7 @@
 | 5 | **Stock server-side**: cuando un producto esta "Agotado", ¿submit-order RECHAZA el pedido o solo lo avisa al admin? | Hoy el catalogo bloquea en UI (fail-open); un cliente con la pagina abierta de antes podria pedirlo igual | Sprint 5 |
 | 6 | **Dominios custom** por tenant (hoy *.vercel.app) | ~USD 10-15/anio por dominio; se configura en Vercel → Domains | Imagen profesional para vender |
 | 7 | **Pricing del SaaS**: costo base actual por tenant ≈ USD 10/mes (Supabase) + Vercel free tier | Definir cuanto cobras por mes y que incluye | Vender al cliente 4 |
-| 8 | **Hermes Dashboard** (alta de clientes self-service, Fase 7 del viejo plan): ¿lo hacemos antes o despues del cliente 4? | Con ONBOARDING.md el alta manual ya es <30 min; el dashboard vale la pena recien con volumen | Escala |
+| 8 | **Hermes Dashboard** (alta de clientes self-service, Fase 7 del viejo plan): ¿lo hacemos antes o despues del cliente 4? | Con docs/plataforma/ONBOARDING.md el alta manual ya es <30 min; el dashboard vale la pena recien con volumen | Escala |
 
 ---
 

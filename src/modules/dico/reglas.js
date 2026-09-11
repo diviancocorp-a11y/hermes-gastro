@@ -1,6 +1,6 @@
 // src/modules/dico/reglas.js
 // Dico, capa 2: lo que el negocio ya sabe pero nadie le esta preguntando.
-// Ver platform/PLAN-DICO.md.
+// Ver docs/marca/PLAN-DICO.md.
 //
 // SIN IA y sin consultas nuevas: son funciones PURAS sobre los datos que el
 // panel ya tiene en memoria, igual que `useFinancials` en el legacy y que el

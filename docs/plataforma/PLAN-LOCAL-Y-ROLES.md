@@ -4,7 +4,7 @@
 > y 7shifts. Esa revision corrigio siete cosas y agrego cinco; casi todo se
 > acepto. La seccion 9 registra que se acepto, que no, y por que.
 >
-> Continua `PLAN-ERP.md`. `PLAN-MULTI-RUBRO.md` (9/jul) quedo historico:
+> Continua `PLAN-ERP.md`. `docs/plataforma/PLAN-MULTI-RUBRO.md` (9/jul) quedo historico:
 > afirma que no existe `src/modules/registry.js` y hoy existe.
 
 ---

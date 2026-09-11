@@ -2,7 +2,7 @@
 
 > Punto de entrada para continuar. **Las secciones van de mas nueva a mas
 > vieja: leer la primera.** Docs largos: `PLAN-ERP.md` (el plan vivo del ERP),
-> `PLAN-MULTI-RUBRO.md`, `ARQUITECTURA-MODULAR.md`. SQL en `platform/`.
+> `docs/plataforma/PLAN-MULTI-RUBRO.md`, `docs/plataforma/ARQUITECTURA-MODULAR.md`. SQL en `platform/`.
 >
 > Para retomar en un chat nuevo: **`/dico`**. Para cerrar: **`/cerrardico`**.
 
@@ -85,7 +85,7 @@
   eso, `npm run deploy:web` no existe como respaldo si la integracion de Git
   se vuelve a caer. No es urgente mientras el push funcione.
 - Sigue pendiente de antes: **leaked password protection** en el Supabase del
-  edificio (ver `TAREAS-MANUALES.md`).
+  edificio (ver `docs/TAREAS-MANUALES.md`).
 
 ---
 
@@ -107,8 +107,8 @@
 - Se retiro el onboarding standalone: `npm run create-client` queda como guard
   que falla con una explicacion y no escribe archivos. La unica alta vigente es
   `npm run create-owner`, que ejecuta `platform/scripts/create-owner.mjs` y crea
-  un tenant dentro del edificio. Se actualizaron `AGENTS.md`, `ONBOARDING.md`,
-  `README.md`, `SCHEMA.md`, `TAREAS-MANUALES.md` y `docs/RUNBOOKS.md`.
+  un tenant dentro del edificio. Se actualizaron `AGENTS.md`, `docs/plataforma/ONBOARDING.md`,
+  `README.md`, `docs/plataforma/SCHEMA.md`, `docs/TAREAS-MANUALES.md` y `docs/operacion/RUNBOOKS.md`.
 - Los proyectos Supabase legacy de la-nona-pato, cochi y mala-miga siguen
   `INACTIVE`. No deben restaurarse ni recibir deploys: Ricky confirmo que seran
   dados de baja y que esos negocios viven en el edificio.
@@ -1871,7 +1871,7 @@ empezó `DicoPresence`, no hubo push ni deploy.
 - Integrado build identity en dos commits recuperables: `4ba926d` (equivalente
   a `09cc447`) y `4338df8` (equivalente a `475b4d2`).
 - Integrada la línea Machine Soul completa hasta `9e77b0a` mediante merge
-  `cf8f47c`. `platform/HANDOFF.md` se resolvió por contenido, conservando las
+  `cf8f47c`. `docs/HANDOFF.md` se resolvió por contenido, conservando las
   dos historias; no se usó `ours`/`theirs` masivo.
 - `package.json` y `package-lock.json` preservan React Router `7.18.3`, los
   scripts de build identity y los scripts/dependencias pinneadas de QA Lite.
@@ -2639,7 +2639,7 @@ en cada aviso del panel:
 - La vitrina de Dico muestra la escena real, las siete poses y los cinco estados
   chicos sobre fondos claro y oscuro.
 - Las skills `/dico` y `/cerrardico` ahora declaran explícitamente que
-  `platform/HANDOFF.md` es el canal Codex ↔ Claude y que no se pisan archivos
+  `docs/HANDOFF.md` es el canal Codex ↔ Claude y que no se pisan archivos
   locales vivos.
 
 ### Verificado
@@ -4017,7 +4017,7 @@ que compra cada trimestre.
 Sesion larga: 11 commits, **10 migraciones aplicadas**, 663 tests. El edificio
 paso de "ERP a distancia" a tener sucursales, salon, caja, propinas y personal.
 
-> **Doc de la etapa: `platform/PLAN-LOCAL-Y-ROLES.md` (v2).** Ahi esta el
+> **Doc de la etapa: `docs/plataforma/PLAN-LOCAL-Y-ROLES.md` (v2).** Ahi esta el
 > criterio que ordena todo y el registro de que se acepto y que se recorto de
 > la revision contra Square/Toast/Fresha/Shopify/7shifts. Leerlo antes de
 > seguir con 6f o 6g.

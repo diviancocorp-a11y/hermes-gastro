@@ -12,7 +12,7 @@ escribas en el repo.
 
 ## Protocolo Codex ↔ Claude (obligatorio)
 
-`platform/HANDOFF.md` es el mensaje entre agentes. Toda sesión con avances,
+`docs/HANDOFF.md` es el mensaje entre agentes. Toda sesión con avances,
 decisiones o trabajo a medias se registra ahí antes de cerrar, sin importar si
 la hizo Codex o Claude. No alcanza con resumir en el chat.
 
@@ -31,7 +31,7 @@ No lo reconstruyas de memoria, verificalo:
 - `ls platform/migrations/` — ¿se aplicaron migraciones nuevas?
 - Si hubo deploy: confirmá que el último quedó `READY`.
 
-## Paso 2 — Actualizar `platform/HANDOFF.md`
+## Paso 2 — Actualizar `docs/HANDOFF.md`
 
 **Este es el paso importante.** Agregá o actualizá una sección fechada arriba
 de todo (después del encabezado), con:

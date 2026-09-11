@@ -5,7 +5,7 @@
 // ATENCION: el GIF es un hotlink a Dribbble (obra de tercero). Riesgos:
 // puede caerse y es legalmente gris para un producto comercial. Si no carga,
 // cae automatico al fallback con emoji (onError). Pendiente en
-// TAREAS-MANUALES.md: reemplazar por un asset propio.
+// docs/TAREAS-MANUALES.md: reemplazar por un asset propio.
 import { useState } from "react";
 import { Link } from "react-router-dom";
 

@@ -12,7 +12,7 @@ Lo que sí es estable son las decisiones y el porqué, que están más abajo.
 
 ## Protocolo Codex ↔ Claude (obligatorio)
 
-`platform/HANDOFF.md` es el canal común entre agentes. No asumas que el último
+`docs/HANDOFF.md` es el canal común entre agentes. No asumas que el último
 trabajo lo hiciste vos ni reconstruyas el estado sólo desde el chat. Al abrir:
 
 - leé primero la sección 0 del HANDOFF y contrastala con Git;
@@ -28,7 +28,7 @@ se pisan aunque el chat anterior ya no exista.
 
 ## Paso 1 — Leer el estado real (hacelo SIEMPRE, en paralelo)
 
-1. `platform/HANDOFF.md` — **empezá por la sección 0**, que es la más reciente.
+1. `docs/HANDOFF.md` — **empezá por la sección 0**, que es la más reciente.
    Es el documento de continuidad entre sesiones.
 2. `AGENTS.md` — convenciones del repo y bugs recurrentes con sus workarounds.
 3. `git log --oneline -15` y `git status --short` — qué se hizo último y si

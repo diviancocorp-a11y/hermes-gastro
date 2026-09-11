@@ -20,7 +20,7 @@ Escape. Rediseñar el shell encima de eso los congela con otra pintura.
 |---|---|
 | Rama | `codex/dico-phase3-admin-shell` |
 | HEAD medido | `f88b14395239d832419e6d2c75984f6be002a7aa` |
-| Base aprobada de Phase 2B | `ea6f85e8cf3e69e8fd676c78c3ac678a5341cbbd` (ancestro; el delta es sólo `platform/HANDOFF.md`) |
+| Base aprobada de Phase 2B | `ea6f85e8cf3e69e8fd676c78c3ac678a5341cbbd` (ancestro; el delta es sólo `docs/HANDOFF.md`) |
 | Worktree | `hermes-gastro-phase2b`, limpio antes y después |
 | Schema del harness | 58 migraciones, tope `0059` (producción tiene 0060 y 0061; ninguna toca columnas ni UI) |
 

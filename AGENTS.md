@@ -148,7 +148,7 @@ legacy estan pausados: ese lado hay que despausarlo y aplicarle la funcion
 
 ## Tareas pendientes
 
-**El backlog vivo esta en PLAN-DE-ACCION.md** (Sprints 0 a 4 completados el 9-10/jun/2026; queda Sprint 5/escala). Onboarding de cliente nuevo: ver `platform/scripts/README.md`. Deploy de functions del edificio: `npm run deploy:functions`. Tareas manuales de Ricky: TAREAS-MANUALES.md.
+**El backlog vivo esta en docs/historico/legacy-tres-tenants/PLAN-DE-ACCION.md** (Sprints 0 a 4 completados el 9-10/jun/2026; queda Sprint 5/escala). Onboarding de cliente nuevo: ver `platform/scripts/README.md`. Deploy de functions del edificio: `npm run deploy:functions`. Tareas manuales de Ricky: docs/TAREAS-MANUALES.md.
 
 Sprint 1 (seguridad) aplicado en los 3 tenants:
 - **Roles admin**: tabla `admin_users` (owner/staff) + `is_admin()`/`is_owner()`. TODAS las policies "cualquier authenticated" ahora exigen is_admin(). Solo usuarios en admin_users entran al panel. Bootstrap de tenant nuevo: ver seccion ROLES en 000_initial_schema.sql

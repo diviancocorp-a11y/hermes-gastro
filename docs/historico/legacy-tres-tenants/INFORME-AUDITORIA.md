@@ -128,4 +128,4 @@ Ademas de los 19 "intencionales" documentados en PLAN-LIMPIEZA, aparecieron:
 
 ---
 
-**Plan de accion priorizado: [PLAN-DE-ACCION.md](./PLAN-DE-ACCION.md)**
+**Plan de accion priorizado: [docs/historico/legacy-tres-tenants/PLAN-DE-ACCION.md](./PLAN-DE-ACCION.md)**

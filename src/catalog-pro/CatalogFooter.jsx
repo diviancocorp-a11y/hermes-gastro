@@ -12,7 +12,7 @@ import HermesMark from "../components/HermesMark";
 
 // Datos de contacto de Dico (la plataforma). Mientras sean null, los botones
 // de contacto del modal "para tu negocio" NO se muestran — antes habia un
-// WhatsApp falso (5491100000000) en produccion. Ver TAREAS-MANUALES.md.
+// WhatsApp falso (5491100000000) en produccion. Ver docs/TAREAS-MANUALES.md.
 const HERMES = {
   whatsapp: null,   // ej: "5491122334455" (solo digitos, con 54 9)
   email: null,      // ej: "hola@hermesgastro.com"

@@ -298,7 +298,7 @@ verticales cuelgan de ahi:
 - Cada vertical nuevo multiplica proyectos Supabase+Vercel con tu modelo
   1-tenant-1-proyecto. Para 3 dark kitchens funciona; para vender barberias de
   a 10 vas a necesitar el modelo QAJAR (una DB multi-comercio) o automatizar
-  el onboarding por completo (ONBOARDING.md hoy es manual). No hace falta
+  el onboarding por completo (docs/plataforma/ONBOARDING.md hoy es manual). No hace falta
   decidirlo ahora, pero no lo pierdas de vista en Sprint "vendible".
 
 ## Fuentes research USA

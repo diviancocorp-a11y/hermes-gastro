@@ -1,6 +1,6 @@
 # Plan de gestion multi-rubro — hermes a plataforma (gastro / barberia / ropa)
 
-> 9/jul/2026. Continua ARQUITECTURA-MODULAR.md (6/jul). Ese doc definio el QUE
+> 9/jul/2026. Continua docs/plataforma/ARQUITECTURA-MODULAR.md (6/jul). Ese doc definio el QUE
 > (un codebase, packs por vertical). Este define el COMO empezamos hoy, con que
 > orden, y donde vamos a flaquear. Basado en verificacion del estado real del
 > repo + tus 4 decisiones (abajo).
@@ -213,7 +213,7 @@ con su pack montado.
 
 | # | Riesgo | Por que duele | Fix |
 |---|--------|---------------|-----|
-| 1 | Confundir demo con producto | Vendes algo que en la demo es dibujo y no lo podes entregar en el plazo prometido | 2 tracks separados; la demo captura lead, no promete fechas de features inexistentes; **hoja REAL HOY / MOCK abierta en cada demo (ver DEMO-REAL-VS-MOCK.md)** |
+| 1 | Confundir demo con producto | Vendes algo que en la demo es dibujo y no lo podes entregar en el plazo prometido | 2 tracks separados; la demo captura lead, no promete fechas de features inexistentes; **hoja REAL HOY / MOCK abierta en cada demo (ver docs/historico/legacy-tres-tenants/DEMO-REAL-VS-MOCK.md)** |
 | 2 | Vaciar los 3 Supabase viejos sin backup | Perder config/catalogo/branding reusable (aunque esten dormidos, rehacerlo a mano es tiempo) | Snapshot/export de los 3 antes de pausar o borrar; recrearlos como tenants en el edificio nuevo |
 | 3 | **RLS mal hecho = fuga entre tenants** | Un cliente ve la data de otro. Es el bug mas caro y mas letal de un multi-tenant | RLS obligatorio en TODAS las tablas desde el commit 1 + test automatico de aislamiento (un tenant no puede leer otro). Innegociable |
 | 4 | Subestimar la agenda | Parece CRUD, es el 80% del valor de barberia | Presupuestarla como modulo grande; en la demo es un mock, no una promesa |
@@ -273,7 +273,7 @@ verticales nuevos.
    de mostrar, escribi que esta REAL HOY y que es MOCK. Cuando el prospecto
    pregunte "y esto cuando lo tengo?", la respuesta sale de esa hoja, no del
    entusiasmo del momento. Es la vacuna concreta contra el riesgo #1 — el unico
-   que puede convertir una venta en un problema. Vive en `DEMO-REAL-VS-MOCK.md`
+   que puede convertir una venta en un problema. Vive en `docs/historico/legacy-tres-tenants/DEMO-REAL-VS-MOCK.md`
    y se actualiza en cada demo: una fila pasa de MOCK a REAL HOY solo cuando
    esta en produccion y probada.
 

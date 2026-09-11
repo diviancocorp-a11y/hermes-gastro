@@ -19,7 +19,7 @@ npm install
 CLIENT=mala-miga npm run dev      # cualquier slug de clients/
 CLIENT=mala-miga npm run build
 npm test                          # vitest
-npx playwright test               # e2e (ver TESTING.md)
+npx playwright test               # e2e (ver docs/plataforma/TESTING.md)
 ```
 
 ## Documentacion
@@ -27,12 +27,12 @@ npx playwright test               # e2e (ver TESTING.md)
 | Doc | Que contiene |
 |---|---|
 | [CLAUDE.md](./CLAUDE.md) | Contexto operativo: convenciones, bugs recurrentes, gotchas |
-| [SCHEMA.md](./SCHEMA.md) | Schema de DB documentado por dominio + onboarding de cliente nuevo |
+| [docs/plataforma/SCHEMA.md](./SCHEMA.md) | Schema de DB documentado por dominio + onboarding de cliente nuevo |
 | [INFORME-AUDITORIA.md](./INFORME-AUDITORIA.md) | Auditoria completa de codigo e infra (jun 2026) |
-| [PLAN-DE-ACCION.md](./PLAN-DE-ACCION.md) | Plan priorizado de arreglos y mejoras |
-| [TESTING.md](./TESTING.md) | Unit tests + suite E2E Playwright |
+| [docs/historico/legacy-tres-tenants/PLAN-DE-ACCION.md](./PLAN-DE-ACCION.md) | Plan priorizado de arreglos y mejoras |
+| [docs/plataforma/TESTING.md](./TESTING.md) | Unit tests + suite E2E Playwright |
 | [DIAGNOSTICO.md](./DIAGNOSTICO.md) | Diagnostico historico del refactor (may 2026) |
-| [docs/security.md](./docs/security.md) | Medidas de seguridad implementadas |
+| [docs/operacion/SEGURIDAD.md](./docs/security.md) | Medidas de seguridad implementadas |
 
 ## Estructura
 

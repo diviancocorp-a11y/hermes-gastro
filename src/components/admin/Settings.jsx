@@ -60,7 +60,7 @@ const SECTION_TITLES = {
 // Zonas que dependen de tablas que el edificio todavia no tiene. Por defecto
 // TODAS prendidas: el admin legacy no cambia en nada. El panel de la
 // plataforma pasa las que le faltan en false, y se van prendiendo a medida
-// que cada tabla llega (ver platform/PLAN-ERP.md).
+// que cada tabla llega (ver docs/plataforma/PLAN-ERP.md).
 const CAPACIDADES_COMPLETAS = {
   qrs: true,        // tabla dynamic_qrs
   paginas: true,    // tabla info_pages

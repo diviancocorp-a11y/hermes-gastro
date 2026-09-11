@@ -20,7 +20,7 @@ No lo reconstruyas de memoria, verificalo:
 - `ls platform/migrations/` — ¿se aplicaron migraciones nuevas?
 - Si hubo deploy: confirmá que el último quedó `READY`.
 
-## Paso 2 — Actualizar `platform/HANDOFF.md`
+## Paso 2 — Actualizar `docs/HANDOFF.md`
 
 **Este es el paso importante.** Agregá o actualizá una sección fechada arriba
 de todo (después del encabezado), con:

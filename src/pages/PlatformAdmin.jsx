@@ -122,7 +122,7 @@ const MiMiniCaja = lazy(() => import('../components/admin/platform/MiMiniCaja'))
 const PersonalPanel = lazy(() => import('../components/admin/platform/PersonalPanel'));
 
 // Lo que el edificio todavia no tiene tabla para sostener. Cada false se
-// convierte en true cuando llegue su etapa (platform/PLAN-ERP.md).
+// convierte en true cuando llegue su etapa (docs/plataforma/PLAN-ERP.md).
 const CAPACIDADES_EDIFICIO = {
   qrs: true,         // tabla dynamic_qrs (migracion 0037)
   paginas: true,     // tabla info_pages (migracion 0037)
@@ -208,7 +208,7 @@ export default function PlatformAdmin() {
   });
 
   // Salon (6c). `branch` es la sucursal por defecto: mientras el negocio tenga
-  // una sola, nunca se muestra selector — ver platform/PLAN-LOCAL-Y-ROLES.md.
+  // una sola, nunca se muestra selector — ver docs/plataforma/PLAN-LOCAL-Y-ROLES.md.
   const [branch, setBranch] = useState(null);
   const [recursos, setRecursos] = useState([]);
   const [turno, setTurno] = useState(null);

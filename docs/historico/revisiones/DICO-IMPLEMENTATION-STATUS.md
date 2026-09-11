@@ -7,7 +7,7 @@ Rama integrada: `feat/dico-panorama-v1`
 Base funcional autorizada: `0304f28`
 
 Baseline actual certificado: **`98db946`** (Phase 8 y Phase 9 V1 cerradas; ver
-`platform/HANDOFF.md`, sección 3/sep/2026).
+`docs/HANDOFF.md`, sección 3/sep/2026).
 
 Este documento registra evidencia, no intención. `CLOSED` sólo aparece cuando
 existe un gate o una aprobación ya persistida en el repositorio.
@@ -40,7 +40,7 @@ existe un gate o una aprobación ya persistida en el repositorio.
   8.658.041 bytes, HEAD `7b17e97e7d35638109f634b81892135b2a146036`.
 - Cadena recovery lineal y completa sobre `9e77b0a`: `67e95ce` → `a3b07bc` →
   `de5568a` → `9741b96` → `7f40419` → `7b17e97`.
-- `platform/HANDOFF.md` fue reconciliado por contenido. No se usó una
+- `docs/HANDOFF.md` fue reconciliado por contenido. No se usó una
   resolución masiva `ours`/`theirs`.
 - El checkpoint no cambia DB, migraciones, RLS, RPC, auth, Edge Functions,
   lógica comercial, dependencias ni producción.
@@ -57,5 +57,5 @@ existe un gate o una aprobación ya persistida en el repositorio.
 | B6 — expresiones canónicas | **CLOSED** | `platform/PHASE-B6-EXPRESSIONS.md`. Siete estados emocionales + tres frames de habla sobre una sola anatomia. Vocabulario canonico explicito (idle/processing/thinking/success/worried/question/error) mas un eje de habla; los nombres en espaniol quedan como alias que resuelven al canonico. Nuevos `thinking` y `error`; los cinco previos no se reimplementaron. `error` usa la FORMA (X sobre la esclera) y el rojo solo como acento. Physical dejo de estar clavado en `idle`. Proporcion Physical corregida en el wrapper: de 2,28x de desvio a menos de 12,5%, jerarquia ojos/boca identica. 20 contratos, 14 mutaciones verificadas. Same-ref: 1 de 2 corridas dio 1 pixel bloqueante en la esquina de un boton de la burbuja (no la cara); la segunda dio 0. Umbral de antialias marginal anotado como deuda. Pendiente: ningun codigo emite `pensando`, `contento` ni `error` todavia. |
 | B6R — final asset & motion system | **IN PROGRESS — B6R.QA1 CERRADO** | `platform/DICO-FINAL-ASSET-MANIFEST.md`. El personaje nuevo (aro azul, sin galera, 2D sin boca) esta definido pero NO existe como asset de produccion: las 10 poses 3D nuevas vienen sobre negro opaco y el recorte por luminancia no es viable porque el 47,9% de la zona central tambien es casi-negro. El Dico 2D y el isologo solo existen como laminas de presentacion. Bloqueado en re-export con alfa (FINAL_ASSET_ALPHA_EXPORT_REQUIRED). B6R.2A cerro los TRES vocabularios (nativeState / physicalPose / activity, ejes independientes) y `DicoPulso`: capa SVG separada, cinco modos, cero reflow, reduced motion sin perder significado. Blue base #2A3369 vs Volt #3D6BFF resuelto midiendo el arte. B6R.QA1 reparo el nondeterminismo del CTA (line-height 20,3px -> 20px): 0 bloqueantes en 4 de 4 corridas. Pero el gate sigue sin ser repetible por dos causas que estaban tapadas detras: carrera de fuente remota en catalog--ambar y margen auto inestable en .ag-dico-stack. B6R.QA1 CERRADO: 5 corridas same-ref consecutivas con DOM igual, 0 bloqueantes, scroll identical y red 0. Eran tres causas: line-height fraccionario del CTA, un setInterval en el titulo del catalogo que el gate no podia congelar, y el valor computado de un margin:auto que no es estable entre pasadas de layout. Los 7 assets 2D estan normalizados en public/brand/dico/ con gate propio positivo. Falta montar Dico 2D + sidebar + Volt. |
 
-Los resultados completos y las rutas de artifacts están en `platform/HANDOFF.md`.
+Los resultados completos y las rutas de artifacts están en `docs/HANDOFF.md`.
 Este documento no autoriza avanzar automáticamente a B5.
