@@ -1,4 +1,4 @@
-# CLAUDE.md — Contexto para Claude en hermes-gastro
+# CLAUDE.md — Contexto para Claude en Dico
 
 > Leer esto antes de tocar codigo. Te ahorra 30 min de descubrimiento.
 
@@ -6,22 +6,51 @@
 
 ## Que es esto
 
-Multi-tenant SaaS para 3 dark kitchens argentinas:
-- **la-nona-pato** (LNP) — Andres Chazarreta 1435
-- **cochi**
-- **mala-miga** (MM) — la del +18 (cookies cannabicas)
+**Dico**, la plataforma multi-rubro de **Divianco** (gastro, barberia, retail).
+Divianco es la empresa, Dico es el producto: en textos legales va Divianco, en
+marketing y producto va Dico.
 
-Cada tenant = 1 proyecto Supabase + 1 proyecto Vercel + 1 dominio. Mismo codigo, mismo schema, data separada.
+> **La unica verdad de hoy es el edificio**: UNA base Supabase con RLS por
+> `tenant_id`, UN proyecto Vercel, UN dominio. El tenant se resuelve en RUNTIME
+> por hostname: cada negocio vive en `<slug>.divianco.app`.
+
+Lo que **NO** es, aunque quede escrito en muchos lados: no hay un proyecto por
+cliente. Esa era la era legacy (la-nona-pato, cochi, mala-miga con un Supabase
+y un Vercel cada uno). Esos negocios hoy son tenants dentro del edificio. Los
+proyectos viejos siguen existiendo, estan `INACTIVE` y no reciben deploys.
+Todo documento que describa ese mundo vive en `docs/historico/` y no cuenta.
+
+## Donde esta escrito todo
+
+`docs/` es la carpeta madre. Se empieza por **`docs/README.md`**, que dice
+donde vive cada cosa, y por **`docs/HANDOFF.md`**, que es el estado entre
+sesiones y se lee de arriba para abajo (lo mas nuevo primero).
+
+En la raiz solo quedan tres markdown, y es porque las herramientas los leen de
+ahi: `CLAUDE.md` (este), `AGENTS.md` (el mismo, para Codex) y `README.md`.
 
 ## Stack
 
 - **Frontend:** React 19 + Vite + JavaScript puro (NO TypeScript)
-- **Estilos:** CSS plano con tokens (no Tailwind en src). Tokens viven en `--ac`, `--bg`, `--tx`, `--t2`, `--t3`, `--line`, `--b2`, `--b3`, `--font-heading`
-- **Backend:** Supabase (3 proyectos distintos) — Postgres + Auth + Edge Functions Deno + Storage
-- **Build:** Vite con `CLIENT=<slug>` env var. `__CLIENT__` es global inyectado
-- **Hosting:** Vercel (3 proyectos, team `team_E5ATCc0AjW66Ej0axz7l5SSg`, IDs en `mcp__ac4fffd9-...__list_projects`)
-- **Errores prod:** Sentry → edge function `sentry-to-telegram`
-- **Push:** VAPID + service worker. Edge function `send-push` con target `{ role | user_id | phone }`
+- **Estilos:** CSS plano con tokens. Los del catalogo publico viven en
+  `src/styles/dico-tokens.css` (`--ac`, `--bg`, `--tx`, `--t2`, `--t3`,
+  `--line`, `--b2`, `--b3`, `--font-heading`, mas los `--ds-*` del design
+  system). Tailwind v4 esta y **es infraestructura, no deuda**: el bloque
+  `@theme` de `src/index.css` mapea los `--ds-*` y sacarlo rompe el design
+  system entero
+- **Backend:** Supabase `wwwzdgprsooyjgkuyoav` — Postgres + Auth + Edge
+  Functions Deno + Storage. Es free tier y **se auto-pausa por inactividad**
+- **Hosting:** Vercel `hermes-platform` (nombre viejo; renombrarlo rompe
+  deploys a cambio de nada y no lo ve ningun cliente). Publica solo en cada
+  push a `main`, por integracion de GitHub
+- **Dominio:** `divianco.app` + wildcard `*.divianco.app` en Cloudflare. El
+  registro `A *` va en DNS only (nube gris): el plan free no proxea wildcards
+- **Correo:** Resend, dominio `send.divianco.app`, SMTP en Supabase Auth
+- **Errores prod:** Sentry. El release se arma en UN solo lugar,
+  `src/lib/release.js`, formato `dico@<BUILD_ID>`
+- **Push:** VAPID + service worker. Edge function `send-push` con target
+  `{ role | user_id | phone }`
+- **Alias de build:** `@dico/core` apunta a `src/`
 
 ## Convenciones criticas (leer antes de tocar)
 
@@ -37,7 +66,7 @@ Cada tenant = 1 proyecto Supabase + 1 proyecto Vercel + 1 dominio. Mismo codigo,
 - **Si agregas una columna a DB y la usas en `set(...)` desde la UI pero olvidas agregarla al Zod → el upsert NO la persiste y NO da error**
 - Bug recurrente: paso ya 4 veces (#54, #56, #96, ultimo). Ahora hay pre-commit que lo agarra
 - Manifest: `scripts/db-columns-manifest.json` lista las cols que el Zod DEBE conocer. Pre-commit corre `scripts/check-schema-sync.mjs`
-- **Para agregar col nueva:** 1) ALTER TABLE en 3 tenants (MCP apply_migration) + archivo en supabase/migrations/, 2) agregar al Zod schema, 3) agregar al manifest, 4) actualizar `scripts/supabase-schema.json` — con `npm run schema:sync -- --target=legacy` si tenes la service role y el proyecto despausado, o a mano si no
+- **Para agregar col nueva:** 1) migracion en `platform/migrations/` aplicada al edificio (MCP `apply_migration`), 2) agregar al Zod schema, 3) agregar al manifest, 4) `npm run schema:sync` para regenerar el snapshot
 
 ### Phone-only auth (guestUser)
 - Catalogo permite hacer pedidos sin signup via `localStorage.guestUser` + RPCs SECURITY DEFINER
@@ -57,10 +86,27 @@ Cada tenant = 1 proyecto Supabase + 1 proyecto Vercel + 1 dominio. Mismo codigo,
 - En Settings: NO usar dynamic imports de servicios (HERMES-GASTRO-G: chunk
   viejo tras deploy → "e is not a function"). Imports estaticos.
 
-### Multi-tenant gotchas
-- `__CLIENT__` se reemplaza en build, NO en runtime. Si ves el literal `__CLIENT__` en algun lado, el build esta mal
-- Sentry tag `tenant` = `__CLIENT__`
-- VAPID keys + Supabase keys son por tenant. El user las configura manualmente
+### Multi-tenant: edificio vs legacy
+
+Conviven dos formas de resolver el tenant y hay que saber en cual estas:
+
+- **Edificio (lo vigente):** el tenant sale del hostname en RUNTIME.
+  `src/lib/tenantHost.js` lo resuelve y el aislamiento lo da RLS por
+  `tenant_id`. Toda tabla nueva lleva `tenant_id` y una policy con el patron
+  `tenant_id in (select private.current_user_tenants())`.
+- **Legacy (los tres catalogos):** el tenant se hornea en BUILD con
+  `CLIENT=<slug>`, y `__CLIENT__` es un global inyectado. Si ves el literal
+  `__CLIENT__` sin reemplazar, el build esta mal. Sentry taggea `tenant` con
+  ese valor.
+
+Los **slugs reservados viven en 2 lugares**: `src/lib/tenantHost.js` y la
+funcion SQL `is_reserved_slug`. Hay un test que los compara parseando la
+migracion; si agregas uno, tocas los dos y actualizas a que migracion apunta
+`src/test/reservedSlugsSync.test.js`.
+
+Toda edge function publica va con **`verify_jwt=false`**: las keys
+`sb_publishable_` no son JWT y el gateway las rechaza. La proteccion real es
+rate-limit mas validacion interna.
 
 ## Bugs recurrentes (workarounds documentados)
 
@@ -127,52 +173,112 @@ python3 -c "open('FILE','rb').read().decode('utf-8','strict')"
 
 ## Comandos utiles
 
+`NODE_ENV=production` esta seteada global en la maquina de Ricky y se come las
+devDependencies. **Prefijar todo con `NODE_ENV=` vacio.**
+
 ```bash
-CLIENT=la-nona-pato vite build  # build de un tenant (Windows: set CLIENT=x&& npx vite build)
-set NODE_ENV=test&& npm test    # suite completa en la maquina de Ricky
+NODE_ENV= npm run build                      # build del edificio
+NODE_ENV=test npx vitest run --pool=threads  # suite completa
 ```
+
+**Siempre `--pool=threads`.** Con el pool `forks` vitest cuelga workers en
+Windows, no ejecuta archivos enteros y **sale exit 0 igual**. Si el numero de
+archivos o de tests baja sin motivo, es eso. Y si un test falla por
+`Test timed out in 15000ms`, corrarlo aislado antes de darlo por roto: bajo
+carga la maquina flakea y falla en archivos distintos en cada corrida.
+
 ```bash
-npm run schema:sync              # regenera los snapshots desde la base
-npm run schema:sync -- --check   # no escribe: falla si el disco difiere
+NODE_ENV= CLIENT=hermes-cochi npm run build  # build de un catalogo legacy
+npm run schema:sync                          # regenera los snapshots
+npm run schema:sync -- --check               # no escribe: falla si difiere
 ```
-Necesita `PLATFORM_SUPABASE_URL` + `PLATFORM_SUPABASE_SERVICE_ROLE_KEY` (o los
-`LEGACY_*`) exportados; sin credenciales saltea sin fallar. Los 3 proyectos
-legacy estan pausados: ese lado hay que despausarlo y aplicarle la funcion
-`schema_snapshot()` (platform/migrations/0023) antes de poder sincronizarlo.
+
+`schema:sync` necesita `PLATFORM_SUPABASE_URL` +
+`PLATFORM_SUPABASE_SERVICE_ROLE_KEY` exportadas; sin credenciales saltea sin
+fallar. El lado legacy (`--target=legacy`, con los `LEGACY_*`) esta pausado y
+no se va a despausar: esos proyectos se dan de baja.
+
+## Antes de razonar sobre una RPC, traela
+
+**La funcion DESPLEGADA puede no ser la que dice la migracion.** Paso con
+`signup_tenant()`: la de produccion era mas nueva que cualquier archivo del
+repo y leia un campo que no escribe nadie. Ningun gate lo detecta, porque
+`check-schema-freshness.mjs` compara hasta que migracion dice estar al dia el
+snapshot, no si lo desplegado coincide con lo que esa migracion produce.
+
+```sql
+select pg_get_functiondef('public.signup_tenant'::regproc);
+```
 
 ## MCPs conectados
 
-- **Supabase** (`mcp__6897d04b-fbfc-4725-8cd7-781371d4b8d5__*`) — los 3 proyectos via list_projects
-- **Vercel** (`mcp__ac4fffd9-1da6-4512-8868-9dc6b8907e90__*`) — team_E5ATCc0AjW66Ej0axz7l5SSg
+- **Supabase** (`mcp__6897d04b-...__*`) — el edificio es
+  `wwwzdgprsooyjgkuyoav`. Es free tier: si `get_project` dice `INACTIVE`, hay
+  que `restore_project` y esperar unos minutos
+- **Vercel** (`mcp__ac4fffd9-...__*`) — team `team_E5ATCc0AjW66Ej0axz7l5SSg`,
+  el proyecto del edificio es `hermes-platform`
 - **GitHub** repo: `diviancocorp-a11y/hermes-gastro` (publico)
 
-## Tareas pendientes
+## Donde esta el backlog
 
-**El backlog vivo esta en docs/historico/legacy-tres-tenants/PLAN-DE-ACCION.md** (Sprints 0 a 4 completados el 9-10/jun/2026; queda Sprint 5/escala). Onboarding de cliente nuevo: ver docs/plataforma/ONBOARDING.md. Deploy de functions: `node scripts/deploy-functions.mjs --all`. Tareas manuales de Ricky: docs/TAREAS-MANUALES.md.
+El backlog vivo esta en **`docs/HANDOFF.md`** (seccion 0) y en
+`docs/plataforma/PLAN-ERP.md`. Alta de cliente: `docs/plataforma/ONBOARDING.md`.
+Lo que solo puede hacer Ricky a mano: `docs/TAREAS-MANUALES.md`.
 
-Sprint 1 (seguridad) aplicado en los 3 tenants:
-- **Roles admin**: tabla `admin_users` (owner/staff) + `is_admin()`/`is_owner()`. TODAS las policies "cualquier authenticated" ahora exigen is_admin(). Solo usuarios en admin_users entran al panel. Bootstrap de tenant nuevo: ver seccion ROLES en 000_initial_schema.sql
-- **UI Usuarios**: menu ☰ > Usuarios (src/components/admin/Users.jsx) + edge function `admin-users` (solo owners gestionan)
-- `adjust_stock` con guard is_admin + revoke anon; `send-push` exige service role o JWT admin; `push_subscriptions` solo via RPCs por endpoint (upsert/delete/count_push_subscription[s])
-- INSERT publico directo de orders/order_items eliminado (submit-order usa service role)
-- Pendiente manual de Ricky: habilitar leaked password protection en el dashboard de los 3 proyectos (Auth > Settings, 1 click)
+Deploy de functions: `npm run deploy:functions` (apunta solo al edificio).
+Alta de tenant: `npm run create-owner`. `npm run create-client` ya no existe
+como alta: quedo como guard que falla y explica por que.
 
-Proximos: Sprint 2 (multi-tenant: scheduled-export, CatalogFooter, delivery a settings) → Sprint 3 (limpieza) → Sprint 4 (vendible).
+## Lo que todavia no existe (no lo reportes como roto)
 
-Pendientes heredados (ahora en Sprint 4/5 del plan): refactor check-schema-sync para leer supabase-schema.json directo, pre-commit UTF-8 strict. (Sentry sourcemaps + Seer: HECHO 12/jun — sourcemaps via Vercel env, MCP conectado, Replay solo-en-error, filtro anti-ruido.)
+- **El panel del edificio cubre productos, pedidos, caja y salon.** El resto
+  del ERP (recetas, stock, compras, gastos, CRM, P&L) sigue siendo exclusivo
+  del panel legacy. Los dos conviven y los decide `business.platform` en la
+  ruta `/admin`: no comparten ni una tabla, no intentes unificarlos.
+- **`unit_cost` va en 0**: el edificio no tiene modelo de costos, asi que el
+  P&L no da.
+- **No hay con que cobrarle al cliente**: hay planes y precios, pero el
+  registro de cobros guarda `paga_hasta` y nada mas, y la suscripcion de
+  MercadoPago no esta.
 
-Auditoria DB↔repo (12/jun): TODAS las tablas de los 3 tenants estan ahora versionadas en supabase/migrations/ (info_pages, dynamic_qrs y push_subscriptions se crearon a mano en su momento y se versionaron ese dia — info_pages ademas NO tenia policies de escritura y el editor guardaba 0 filas sin error).
+Antes de reportar cualquiera de estas como pendiente, **comprobalo**: son
+todas verificables con un curl, un `ls` o una consulta. Esta lista ya dio por
+rotas cosas que estaban hechas y costo sesiones enteras de planificar al pedo.
 
 ## Preferencias del usuario (Ricky)
 
 - **Tono:** breve, objetivo, mas honestidad menos condescendencia
 - **Siempre ofrecer una mejora al proceso que esta haciendo**
-- **No pegar secrets en el chat** (especialmente service role)
-- Habla en español argentino. El codigo va en español (sin tildes en comments por temas de encoding)
+- **No pegar secrets en el chat** (especialmente service role). Las carga el
+  en el panel que corresponda; nunca se las pidas
+- Habla en español argentino. El codigo va en español (sin tildes en comments
+  por temas de encoding)
+
+## Como se trabaja entre dos agentes
+
+Codex y Claude trabajan sobre el mismo repo, a veces al mismo tiempo.
+
+- `docs/HANDOFF.md` es el canal comun. Se abre por ahi y se cierra con
+  `/cerrardico`, que lo actualiza.
+- **El HANDOFF no alcanza solo**: hay trabajo en worktrees paralelas que no se
+  ve ni en `git log` ni en GitHub. Antes de editar o borrar, correr
+  `git worktree list` y `git -C <cada-una> status --short`.
+- Todo archivo modificado o sin seguimiento es trabajo vivo del otro hasta que
+  entiendas su proposito. No lo reemplaces ni lo revuelvas para avanzar.
+- **Commits chicos y de un solo tema**, para que el otro pueda revertir uno sin
+  perder el resto. **Nunca `git add -A`**: rutas explicitas, o te llevas puesto
+  el working tree del otro.
 
 ## Estado actual
 
-Branch: `main`, sincronizada con origin (cada commit se pushea al toque y
-Vercel auto-deploya los 3 tenants). Mala Miga abrio el 11/jun. P&L del mes
-usa costos REALES (fix doble conteo de merma/gastos proyectados, 12/jun);
-los % proyectados quedan solo para pricing por receta.
+Rama de trabajo y de publicacion: **`main`**. Cada push publica el edificio en
+`divianco.app` por la integracion de GitHub.
+
+Ojo: los tres proyectos Vercel legacy siguen linkeados a este mismo repo, asi
+que **un push a `main` tambien los redeploya**. Desconectarlos es tarea
+pendiente de Ricky en el panel de Vercel.
+
+Para saber que hay publicado de verdad, comparar el SHA del ultimo deployment
+de produccion de `hermes-platform` contra `HEAD` con el MCP de Vercel.
+**Nunca leerlo del HANDOFF**: esa fila se escribe antes de deployar y nadie la
+corrige despues.

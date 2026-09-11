@@ -16,7 +16,7 @@ No lo reconstruyas de memoria, verificalo:
 
 - `git status --short` — ¿quedó algo sin commitear?
 - `git log --oneline <ultimo-commit-de-la-sesion-anterior>..HEAD` — qué entró.
-- `git log origin/platform/runtime-tenant..HEAD` — ¿hay commits sin pushear?
+- `git log origin/main..HEAD` — ¿hay commits sin pushear?
 - `ls platform/migrations/` — ¿se aplicaron migraciones nuevas?
 - Si hubo deploy: confirmá que el último quedó `READY`.
 
@@ -41,8 +41,7 @@ Reglas para escribirlo:
 
 ## Paso 3 — Dejar el repo sano
 
-- Si quedó trabajo sin commitear, **commitealo** (rama
-  `platform/runtime-tenant`, nunca `main`) y **pusheá**. Un commit local no
+- Si quedó trabajo sin commitear, **commitealo en `main`** y **pusheá**. Un commit local no
   protege de nada.
 - Si algo no se puede commitear (roto a medias), decilo en el HANDOFF y
   avisale a Ricky explícitamente antes de que limpie el chat.

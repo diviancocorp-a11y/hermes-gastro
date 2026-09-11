@@ -10,24 +10,13 @@ en un estado del que `/dico` pueda levantar todo el contexto la próxima vez.
 El resumen en el chat se pierde cuando limpia; lo que queda es lo que
 escribas en el repo.
 
-## Protocolo Codex ↔ Claude (obligatorio)
-
-`docs/HANDOFF.md` es el mensaje entre agentes. Toda sesión con avances,
-decisiones o trabajo a medias se registra ahí antes de cerrar, sin importar si
-la hizo Codex o Claude. No alcanza con resumir en el chat.
-
-El registro debe permitir que el otro agente continúe sin pisar nada: indicá
-qué archivos quedaron modificados, cuáles son trabajo en curso, qué parte está
-terminada y qué no debe rehacerse. Nunca reviertas cambios locales que ya
-estaban al abrir la sesión; separalos explícitamente de los cambios nuevos.
-
 ## Paso 1 — Ver qué pasó de verdad
 
 No lo reconstruyas de memoria, verificalo:
 
 - `git status --short` — ¿quedó algo sin commitear?
 - `git log --oneline <ultimo-commit-de-la-sesion-anterior>..HEAD` — qué entró.
-- `git log origin/platform/runtime-tenant..HEAD` — ¿hay commits sin pushear?
+- `git log origin/main..HEAD` — ¿hay commits sin pushear?
 - `ls platform/migrations/` — ¿se aplicaron migraciones nuevas?
 - Si hubo deploy: confirmá que el último quedó `READY`.
 
@@ -43,8 +32,6 @@ de todo (después del encabezado), con:
 - **Pendiente inmediato**: lo próximo, en orden.
 - **Bloqueado por Ricky**: lo que necesita una acción suya (credenciales,
   paneles externos, decisiones de negocio). Sé explícito.
-- **Trabajo local vivo**: archivos modificados o sin seguimiento, quién los
-  venía trabajando si se sabe, para qué sirven y si están listos o a medias.
 
 Reglas para escribirlo:
 - Sin tildes en los comentarios de código; el markdown sí las lleva.
@@ -54,8 +41,7 @@ Reglas para escribirlo:
 
 ## Paso 3 — Dejar el repo sano
 
-- Si quedó trabajo sin commitear, **commitealo** (rama
-  `platform/runtime-tenant`, nunca `main`) y **pusheá**. Un commit local no
+- Si quedó trabajo sin commitear, **commitealo en `main`** y **pusheá**. Un commit local no
   protege de nada.
 - Si algo no se puede commitear (roto a medias), decilo en el HANDOFF y
   avisale a Ricky explícitamente antes de que limpie el chat.

@@ -36,7 +36,7 @@ git diff --stat <base> <su-commit>      # trabajo commiteado
 ```
 
 Lo que salió mal el 29/ago cuando no se hizo: se propuso renombrar
-`src/styles/hermes-tokens.css` y sacar Tailwind de `src/index.css` — los dos
+`src/styles/dico-tokens.css` y sacar Tailwind de `src/index.css` — los dos
 archivos exactos que Codex tenía commiteados en su fase 1 del design system.
 
 Regla: **commits chicos y de un solo tema**, para que el otro agente pueda
@@ -136,11 +136,10 @@ renombrarlos rompe deploys a cambio de nada, no los ve ningún cliente.
   traces de produccion llegaban minificados, sin que fallara nada.
   `src/test/sentryRelease.test.js` compara el uploader (`vite.config.js`) con
   el runtime y falla si divergen. **No borrar ese test.**
-- **CI corre en `main` y en `platform/runtime-tenant`** (desde el 29/ago). Ojo:
-  **Vercel auto-deploya `platform/runtime-tenant` a produccion en cada push** —
-  los deployments traen `githubDeployment:1` con esa ref. El `"link": null` que
-  devuelve la API de Vercel es una limitacion del endpoint, no significa que no
-  haya integracion git. No deducir de ahi.
+- **El `"link"` de la API de Vercel no prueba nada en ninguna dirección.**
+  El 10/sep `hermes-platform` había quedado sin integración de GitHub y un push
+  no produjo deployment, mientras la API seguía sin listarlo entre los
+  linkeados. Lo único que decide es si un push produjo o no un deployment.
 - **`npm audit --audit-level=high` esta rojo** (undici, vite 8.0.0-8.0.15,
   launch-editor: son dev-deps, no llegan al browser). `npm audit fix` toca
   `package-lock.json`: coordinar con quien lo tenga tomado.
@@ -148,10 +147,12 @@ renombrarlos rompe deploys a cambio de nada, no los ve ningún cliente.
   matchea los que contienen la cadena adentro. Se reportaron tres PNGs de marca
   como inexistentes y estaban versionados. Para "existe este archivo?" va `ls`
   o `git ls-files`, nunca un grep de contenido.
-- **Deploy a producción va por CLI**, no por git:
-  `npx vercel --prod --scope diviancocorp-a11ys-projects --yes`.
-  El trabajo vive en la rama `platform/runtime-tenant`; `main` es el legacy y
-  pushear ahí redeploya los 3 tenants viejos.
+- **Se trabaja y se publica desde `main`.** El edificio sale a `divianco.app`
+  en cada push, por la integración de GitHub de `hermes-platform`. Ojo: los 3
+  proyectos Vercel legacy siguen linkeados al mismo repo, así que ese push
+  **también los redeploya** hasta que Ricky los desconecte. La vía manual
+  `npm run deploy:web` está trabada: las dos `VITE_*` del edificio están
+  marcadas Sensitive en Vercel y `vercel pull` baja `[SENSITIVE]`.
 - **`NODE_ENV=production` global en la máquina de Ricky** se come las
   devDependencies. Prefijar todo con `NODE_ENV=` vacío:
   `NODE_ENV= CLIENT=hermes-cochi npm run build` y `NODE_ENV=test npx vitest run`.
@@ -176,20 +177,15 @@ renombrarlos rompe deploys a cambio de nada, no los ve ningún cliente.
   snapshot.
 
 ### Lo que NO funciona todavía (no lo reportes como roto)
-- **El panel del edificio es sólo productos y pedidos.** `PlatformAdmin` cubre
-  el mínimo que desbloquea a un tenant nuevo; todo el resto del ERP (recetas,
-  stock, compras, gastos, CRM, P&L) sigue siendo exclusivo del legacy. Los dos
+- **El panel del edificio cubre productos, pedidos, caja y salón.** El resto
+  del ERP (recetas, stock, compras, gastos, CRM, P&L) sigue siendo exclusivo
+  del legacy. Los dos
   paneles conviven y los decide `business.platform` en la ruta `/admin`: no
   intentes unificarlos, no comparten ni una tabla.
-- **Un tenant sin fila en `tenant_members` no tiene panel.** Los 5 tenants
-  demo/portados (cochi, mala-miga, la-nona-pato, barberia-demo, tienda-demo)
-  se cargaron sin dueño. Ya hay con qué arreglarlo —
-  `node platform/scripts/attach-owner.mjs --email x@y.com --slug cochi`,
-  necesita la service role exportada— pero mientras no se corra, esos tenants
-  siguen sin panel.
-- **Nadie llegó nunca al primer valor.** `tenants.first_value_at` (0058) está
-  en null para los 7: ningún negocio del edificio cobró una operación. El
-  camino alta → catálogo → pedido → cobro **nunca se recorrió entero**.
+- **El camino completo se recorrió una sola vez.** Al 10/sep hay 7 tenants,
+  todos con dueño en `tenant_members`, pero `first_value_at` sólo está cargado
+  en la-nona-pato (3 pedidos). Dos de los 7 son basura de prueba
+  (`prueba-disco`, `tienda-nueva`): sin productos ni pedidos.
 - **`unit_cost` va en 0**: el edificio no tiene modelo de costos, así que el
   P&L no da.
 - **No hay con qué cobrarle al cliente todavía**: hay planes y precios, pero el
