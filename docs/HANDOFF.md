@@ -8,6 +8,70 @@
 
 ---
 
+## 12/sep/2026 — Ejemplos vivos en QA Lite, y dos defectos que destaparon (Claude)
+
+### Lo que pidio Ricky
+
+*"Coloca ejemplos vivos en qa lite y pasame credenciales para ver la pantalla."*
+
+### Como se mira
+
+```bash
+npm run qa:lite:setup                              # Docker + reset + seed
+node scripts/qa-lite/cargar-productos-demo.mjs     # el catalogo, 17 productos
+node scripts/qa-lite/cargar-salon-demo.mjs         # mesas y mozo
+node scripts/qa-lite/cargar-produccion-demo.mjs    # sectores, estaciones y cocina
+node scripts/qa-lite/revision-phase4.mjs           # dev server en :5273
+```
+
+`http://127.0.0.1:5273/admin`, usuario `owner.qa-lite@local.test`. La clave
+esta en `.qa-lite/revision-phase4.txt` (gitignoreado) y en
+`~/.dico-qa-lite/owner-pass.txt`. No se imprime en ningun log.
+
+### Hecho: `cargar-produccion-demo.mjs`
+
+Dos sectores con sus estaciones, estacion para los 21 productos y seis tickets
+en cocina. Lo que la carga demuestra y no se puede ver de otra forma:
+
+- **Tickets mixtos.** El mismo pedido aparece en las dos pantallas con platos
+  distintos. Uno de un solo sector no probaria la separacion.
+- **El umbral es del sector.** Un ticket de 8 minutos esta tranquilo en cocina
+  (18) y en rojo en la barra (5).
+- **Un ticket a medio hacer**, con platos marcados y pendientes conviviendo.
+
+Los minutos son **relativos a ahora**, no fijos como en el seed: volver a
+correrla reinicia el servicio. No toca el fixture; `qa:lite:setup` lo devuelve.
+
+### Los dos defectos que solo se veian abriendo la pantalla
+
+1. **Cocina y Produccion no estaban en la navegacion de nadie.** La matriz de
+   `src/modules/roles.js` declara solo lo que cada rol ve, y lo que no figura
+   es `nada`. Las dos pantallas estaban publicadas, funcionaban, y no las
+   alcanzaba ni el dueño. Ningun test, build ni gate lo nota: el unico sintoma
+   es un boton que no esta. Hay un test nuevo que exige que el dueño llegue a
+   todo modulo implementado de todos los rubros.
+2. **`retiro` contaba como delivery.** `orders.delivery` es NOT NULL con
+   default `'retiro'`, asi que "tiene delivery cargado" era cierto para todos
+   los pedidos: cada ticket de mesa salia rotulado Delivery y el nombre de la
+   mesa no aparecia nunca. El fixture del test no ponia la columna, que en la
+   base no puede faltar.
+
+Ademas, Stock y Produccion escribian su titulo dos veces: el chrome ya dibuja
+el nombre de la seccion.
+
+### Estado
+
+`e8a9084` en `main`. Suite 99 archivos / 1405 tests en verde, gates y build en
+cero. La cocina abre ahora en `kds` y ya no en Pedidos.
+
+### Sigue pendiente
+
+La **comandera**: imprimir una comanda por sector en papel al bajar el pedido
+a cocina, y el boton de cerrar desde Salon. El modo ya vive en el sector y se
+elige en la pantalla; falta disparar la impresion.
+
+---
+
 ## 12/sep/2026 — La barra se separa de la cocina (Claude)
 
 ### Lo que pidio Ricky
