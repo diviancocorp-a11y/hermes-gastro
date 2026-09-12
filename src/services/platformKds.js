@@ -14,7 +14,7 @@ import { supabase } from '../lib/supabase';
 // Literal a proposito: check-supabase-columns solo resuelve constantes de
 // modulo con string literal.
 const COLS_TICKET = 'id, tenant_id, branch_id, status, channel, delivery, delivery_date, customer_name, note, allergy_note, diners, staff_id, resource_id, ticket_number, kitchen_at, ready_at, created_at';
-const COLS_ITEM = 'id, order_id, tenant_id, name_snapshot, qty, station, note, ready_at, created_at';
+const COLS_ITEM = 'id, order_id, tenant_id, name_snapshot, qty, station, station_id, sector_id, note, ready_at, created_at';
 
 function exigirTenant(tenantId, quien) {
   if (!tenantId) throw new Error(`${quien}: falta tenantId (sin el, la consulta trae otros negocios)`);
@@ -184,47 +184,65 @@ export function platosListos(ticket) {
 }
 
 /**
- * Las estaciones presentes, con cuantos TICKETS le tocan a cada una.
+ * Las estaciones del sector, con cuantos TICKETS le tocan a cada una.
+ *
+ * Recibe las estaciones CONFIGURADAS (0074) y no las deduce de los platos:
+ * asi el riel mantiene el orden del circuito de la cocina —caliente primero,
+ * postres al final— que es un dato que solo el local sabe. Deducirlas de los
+ * platos las ordenaba alfabeticamente y las hacia aparecer y desaparecer
+ * segun lo que hubiera en el servicio, que es exactamente lo que no querés de
+ * un riel que se toca con la mano sin mirar.
  *
  * Cuenta tickets y no platos porque el numero es una promesa: al tocar
  * "Parrilla 4" tienen que aparecer cuatro tickets. Contando platos, una
  * parrilla con cuatro milanesas del mismo ticket diria 4 y mostraria 1.
  *
- * Solo cuenta lo PENDIENTE: el riel es para elegir donde hay trabajo, y una
- * estacion que ya despacho todo no tiene por que seguir mostrando un numero.
+ * Una estacion sin trabajo NO se esconde: se muestra en cero. Un riel que
+ * cambia de largo durante el servicio obliga a mirar antes de tocar.
  *
- * Los platos sin estacion no desaparecen: van a `sin-estacion`, porque un
- * plato que nadie ve es un plato que no sale.
- *
- * El orden es alfabetico. La cocina real las ordenaria por su circuito
- * —caliente primero, barra al final— pero ese orden no esta en ningun lado
- * todavia: inventarlo aca seria adivinar el de una cocina y equivocarle a
- * todas las demas.
+ * Los platos sin estacion asignada van a `sin-estacion` y solo aparecen si
+ * hay alguno: un plato que nadie ve es un plato que no sale, pero un local
+ * con todo configurado no tiene por que cargar con esa fila.
  */
-export function estacionesDe(tickets) {
-  const cuenta = new Map();
+export function estacionesDe(tickets, estaciones = []) {
+  const cuenta = new Map(estaciones.map(e => [e.id, 0]));
+  let huerfanos = 0;
   let total = 0;
+
   for (const t of tickets) {
     const suyas = new Set();
+    let tieneHuerfano = false;
     for (const i of t.order_items || []) {
       if (i.ready_at) continue;
-      suyas.add((i.station || '').trim() || 'sin-estacion');
+      if (i.station_id) suyas.add(i.station_id);
+      else tieneHuerfano = true;
     }
-    if (!suyas.size) continue;
+    if (!suyas.size && !tieneHuerfano) continue;
     total += 1;
-    for (const e of suyas) cuenta.set(e, (cuenta.get(e) || 0) + 1);
+    for (const id of suyas) cuenta.set(id, (cuenta.get(id) || 0) + 1);
+    if (tieneHuerfano) huerfanos += 1;
   }
-  const lista = [...cuenta.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0], 'es-AR'))
-    .map(([nombre, n]) => ({ nombre, n }));
+
+  const lista = estaciones.map(e => ({
+    id: e.id,
+    nombre: e.name,
+    corta: e.short_name || null,
+    n: cuenta.get(e.id) || 0,
+  }));
+  if (huerfanos) {
+    lista.push({ id: 'sin-estacion', nombre: 'Sin estación', corta: null, n: huerfanos });
+  }
   return { total, estaciones: lista };
 }
 
 /** Un ticket tiene trabajo en esa estacion si le queda algun plato ahi. */
-export function tocaLaEstacion(ticket, estacion) {
-  if (!estacion || estacion === 'todas') return true;
-  return (ticket.order_items || []).some(
-    i => !i.ready_at && ((i.station || '').trim() || 'sin-estacion') === estacion);
+export function tocaLaEstacion(ticket, estacionId) {
+  if (!estacionId || estacionId === 'todas') return true;
+  return (ticket.order_items || []).some((i) => {
+    if (i.ready_at) return false;
+    if (estacionId === 'sin-estacion') return !i.station_id;
+    return i.station_id === estacionId;
+  });
 }
 
 /**
