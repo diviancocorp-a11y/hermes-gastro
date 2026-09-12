@@ -37,7 +37,7 @@ const user = await bootstrapUser(status);
 const salida = join(REPO_ROOT, '.qa-lite', 'revision-phase4.txt');
 mkdirSync(join(REPO_ROOT, '.qa-lite'), { recursive: true });
 writeFileSync(salida, [
-  'Entorno de revision — Phase 4 Golden Screen (Productos)',
+  'Entorno de revision — QA Lite (todo el panel)',
   '',
   `URL     http://127.0.0.1:${PUERTO}/admin`,
   `Usuario ${user.email}`,
@@ -49,7 +49,7 @@ writeFileSync(salida, [
 ].join('\n'), 'utf8');
 
 console.log('');
-console.log('  Golden Screen — Productos');
+console.log('  QA Lite — entorno de revision');
 console.log(`  ${'─'.repeat(52)}`);
 console.log(`  URL          http://127.0.0.1:${PUERTO}/admin`);
 console.log(`  Credenciales ${salida.replace(REPO_ROOT, '.')}`);
