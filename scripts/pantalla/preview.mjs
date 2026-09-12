@@ -49,6 +49,7 @@ const CSS_PANTALLAS = [
   'src/styles/admin-productos.css',
   'src/styles/admin-caja.css',
   'src/styles/admin-salon.css',
+  'src/styles/admin-kds.css',
 ];
 
 function hojas() {

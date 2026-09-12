@@ -49,6 +49,14 @@ export const MODULOS = {
     label: 'Stock',
     implementado: true,      // Etapa 1 del PLAN-ERP (migracion 0026)
   },
+  kds: {
+    id: 'kds',
+    label: 'Cocina',
+    // La pantalla de produccion. NO reemplaza a `orders`: esa sigue siendo
+    // la administrativa —aprobar, rechazar, cobrar, cancelar— y el KDS
+    // recibe solo lo aprobado (migraciones 0072 y 0073).
+    implementado: true,
+  },
   finanzas: {
     id: 'finanzas',
     label: 'Gastos',
@@ -114,7 +122,7 @@ export const RUBROS = {
     // de la gastronomia: separa comida, packaging y personal de cocina. A una
     // barberia no se le pide clasificar un gasto en "Comida — Lacteos".
     contabilidadUsar: true,
-    modulos: ['products', 'orders', 'stock', 'finanzas', 'ventas', 'caja', 'mesas', 'personal'],
+    modulos: ['products', 'orders', 'kds', 'stock', 'finanzas', 'ventas', 'caja', 'mesas', 'personal'],
   },
 
   barber: {

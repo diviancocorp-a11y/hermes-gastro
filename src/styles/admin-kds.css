@@ -1,0 +1,496 @@
+/* KDS: la cocina en grilla de tickets.
+ *
+ * ESTA PANTALLA NO SE MIRA COMO LAS OTRAS
+ * Las demas del panel se miran a 50 cm, sentado, con el mouse. Esta se mira
+ * a tres metros, parado, de reojo, entre dos cosas calientes. De ahi sale
+ * todo lo que la diferencia del resto del sistema:
+ *
+ *   el cronometro es lo mas grande del ticket, porque es lo unico que se lee
+ *   desde lejos y es lo que decide que se cocina primero
+ *   el color del borde superior dice el estado sin leer una palabra
+ *   los toques son grandes: marcar un plato con la mano ocupada
+ *
+ * DOS MODOS, UNA PANTALLA
+ * `tv` es la pantalla colgada de 1920: grilla ancha, cronometro en numero.
+ * `tablet` es la de mesada de 1280: riel de estaciones al costado y la demora
+ * como barra, que a 50 cm se lee mejor que un numero y deja mas area tactil.
+ * No son dos componentes: cambia el layout, no la informacion.
+ *
+ * EL ORO NO PINTA ESTADOS, igual que en el resto del sistema. Aca marca la
+ * estacion elegida y los modificadores del plato, que es lo que hay que leer
+ * si o si antes de cocinar.
+ */
+
+.ag-kds {
+  --kds-cols: 5;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: var(--ag-sp-3);
+  min-height: 100%;
+  background: var(--ag-bg);
+}
+
+/* ── Barra superior (modo tv) ──────────────────────────────────────── */
+
+.ag-kds-barra {
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-3);
+  flex-wrap: wrap;
+}
+
+.ag-kds-estaciones {
+  display: flex;
+  gap: var(--ag-sp-2);
+  flex-wrap: wrap;
+}
+
+.ag-kds-estacion {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-pill);
+  background: transparent;
+  color: var(--ag-ink-2);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color var(--ag-t-fast) var(--ag-ease);
+}
+
+.ag-kds-estacion:hover { border-color: var(--ag-line-strong); color: var(--ag-ink); }
+
+.ag-kds-estacion > b {
+  font-family: var(--ag-font-mono);
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--ag-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* El oro marca donde estoy parado. Es lo unico que hace. */
+.ag-kds-estacion[aria-pressed='true'] {
+  background: var(--ag-accent);
+  border-color: var(--ag-accent);
+  color: var(--ag-chassis, #1a1408);
+  font-weight: 640;
+}
+
+.ag-kds-estacion[aria-pressed='true'] > b { color: inherit; opacity: 0.75; }
+
+.ag-kds-barra-derecha {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-3);
+  font-family: var(--ag-font-mono);
+  font-size: 12px;
+  color: var(--ag-ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ag-kds-demorados {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ag-bad);
+  font-weight: 600;
+}
+
+.ag-kds-demorados i {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* El reloj de pared. No es decoracion: en una cocina sin ventanas es el unico
+   lugar donde se ve la hora, y la comanda programada se lee contra ella. */
+.ag-kds-reloj {
+  font-family: var(--ag-font-mono);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ag-ink);
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+}
+
+/* ── Grilla de tickets ─────────────────────────────────────────────── */
+
+.ag-kds-grilla {
+  display: grid;
+  grid-template-columns: repeat(var(--kds-cols), minmax(0, 1fr));
+  gap: var(--ag-sp-3);
+  align-content: start;
+  align-items: start;
+  overflow-y: auto;
+}
+
+.ag-kds-ticket {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--ag-line);
+  /* El filete de arriba es el estado. Se lee a tres metros, antes que
+     cualquier texto. */
+  border-top: 3px solid var(--ag-ok);
+  border-radius: var(--ag-r-md);
+  background: var(--ag-surface);
+  overflow: hidden;
+}
+
+.ag-kds-ticket[data-estado='atencion'] { border-top-color: var(--ag-warn); }
+.ag-kds-ticket[data-estado='demorado'] { border-top-color: var(--ag-bad); }
+
+.ag-kds-ticket-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px var(--ag-sp-3);
+  padding: 13px 14px 11px;
+}
+
+.ag-kds-zona {
+  grid-column: 1;
+  font-family: var(--ag-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ag-ok);
+}
+
+.ag-kds-ticket[data-estado='atencion'] .ag-kds-zona { color: var(--ag-warn); }
+.ag-kds-ticket[data-estado='demorado'] .ag-kds-zona { color: var(--ag-bad); }
+
+.ag-kds-nombre {
+  grid-column: 1;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ag-ink);
+}
+
+.ag-kds-sub {
+  grid-column: 1;
+  font-size: 12px;
+  color: var(--ag-ink-3);
+}
+
+/* El cronometro: lo mas grande del ticket. Es lo que decide el orden de la
+   cocina y lo unico que se lee desde el otro lado del salon. */
+.ag-kds-cronometro {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  justify-self: end;
+  text-align: right;
+  font-family: var(--ag-font-mono);
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ag-ok);
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-kds-ticket[data-estado='atencion'] .ag-kds-cronometro { color: var(--ag-warn); }
+.ag-kds-ticket[data-estado='demorado'] .ag-kds-cronometro { color: var(--ag-bad); }
+
+.ag-kds-cronometro small {
+  display: block;
+  margin-top: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+/* La barra de demora del modo tablet. A 50 cm un largo se compara de un
+   vistazo entre seis tickets; seis numeros hay que leerlos uno por uno. */
+.ag-kds-barra-demora {
+  height: 4px;
+  background: var(--ag-surface-2);
+}
+
+.ag-kds-barra-demora > i {
+  display: block;
+  height: 100%;
+  background: var(--ag-ok);
+  transition: width 1s linear;
+}
+
+.ag-kds-ticket[data-estado='atencion'] .ag-kds-barra-demora > i { background: var(--ag-warn); }
+.ag-kds-ticket[data-estado='demorado'] .ag-kds-barra-demora > i { background: var(--ag-bad); }
+
+/* ── Alergias ──────────────────────────────────────────────────────── */
+
+/* El unico bloque con fondo de color del ticket. Se lo gana: es el dato que
+   no se puede pasar por alto ni una vez. */
+.ag-kds-alergia {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 2px;
+  padding: 8px 14px;
+  background: var(--ag-bad-bg);
+  border-left: 3px solid var(--ag-bad);
+  color: var(--ag-bad-ink, var(--ag-bad));
+  font-size: 13px;
+  font-weight: 640;
+}
+
+.ag-kds-alergia::before {
+  content: '◆';
+  font-size: 9px;
+  line-height: 1;
+}
+
+/* ── Platos ────────────────────────────────────────────────────────── */
+
+.ag-kds-platos {
+  display: grid;
+  margin: 0;
+  padding: 4px 0 0;
+  list-style: none;
+}
+
+.ag-kds-plato {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 14px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  color: var(--ag-ink);
+  cursor: pointer;
+  transition: background var(--ag-t-fast) var(--ag-ease);
+}
+
+.ag-kds-plato:hover { background: var(--ag-surface-2); }
+.ag-kds-plato:focus-visible { outline: 2px solid var(--ag-accent); outline-offset: -2px; }
+
+.ag-kds-cant {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid var(--ag-line-strong);
+  border-radius: var(--ag-r-sm);
+  font-family: var(--ag-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-kds-plato-texto { display: grid; gap: 2px; min-width: 0; }
+
+.ag-kds-plato-nombre {
+  font-size: 14.5px;
+  font-weight: 620;
+  line-height: 1.25;
+}
+
+/* Los modificadores van en oro: es lo que hay que leer SI O SI antes de
+   cocinar, y lo que mas facil se pasa por alto cuando va en gris. */
+.ag-kds-plato-mod {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--ag-accent);
+}
+
+.ag-kds-plato-estacion {
+  font-family: var(--ag-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+  padding-top: 4px;
+  white-space: nowrap;
+}
+
+/* Un plato listo se tacha y se apaga. No se saca de la lista: el que arma la
+   bandeja necesita ver el ticket entero, incluido lo que ya salio. */
+.ag-kds-plato[data-listo='true'] { opacity: 0.42; }
+.ag-kds-plato[data-listo='true'] .ag-kds-plato-nombre { text-decoration: line-through; }
+.ag-kds-plato[data-listo='true'] .ag-kds-cant {
+  border-color: var(--ag-ok);
+  color: var(--ag-ok);
+}
+
+/* ── Pie del ticket ────────────────────────────────────────────────── */
+
+.ag-kds-ticket-pie {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--ag-sp-2);
+  padding: 11px 14px 13px;
+}
+
+.ag-kds-listo,
+.ag-kds-todo {
+  padding: 11px 14px;
+  border: 1px solid var(--ag-line-strong);
+  border-radius: var(--ag-r-sm);
+  background: transparent;
+  color: var(--ag-ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--ag-t-fast) var(--ag-ease),
+              background var(--ag-t-fast) var(--ag-ease);
+}
+
+.ag-kds-listo:hover,
+.ag-kds-todo:hover { border-color: var(--ag-accent); background: var(--ag-surface-2); }
+
+.ag-kds-todo { color: var(--ag-ink-3); }
+
+/* Con todos los platos marcados, cerrar deja de ser una opcion y pasa a ser
+   LA accion: se pinta en oro. */
+.ag-kds-listo[data-completo='true'] {
+  background: var(--ag-accent);
+  border-color: var(--ag-accent);
+  color: var(--ag-chassis, #1a1408);
+}
+
+/* ── Pie de la pantalla ────────────────────────────────────────────── */
+
+.ag-kds-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ag-sp-3);
+  flex-wrap: wrap;
+  font-family: var(--ag-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-kds-leyenda { display: flex; gap: var(--ag-sp-3); flex-wrap: wrap; }
+.ag-kds-leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+
+.ag-kds-leyenda i { width: 8px; height: 8px; border-radius: 2px; }
+.ag-kds-leyenda [data-e='en-tiempo'] i { background: var(--ag-ok); }
+.ag-kds-leyenda [data-e='atencion']  i { background: var(--ag-warn); }
+.ag-kds-leyenda [data-e='demorado']  i { background: var(--ag-bad); }
+
+.ag-kds-ayuda { color: var(--ag-accent); text-transform: none; letter-spacing: 0; font-size: 11.5px; }
+
+.ag-kds-vacio {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  place-items: center;
+  padding: var(--ag-sp-6);
+  text-align: center;
+  color: var(--ag-ink-3);
+}
+
+.ag-kds-vacio strong { font-size: 17px; color: var(--ag-ink-2); }
+
+/* ── Modo tablet: el riel al costado ───────────────────────────────── */
+
+.ag-kds[data-modo='tablet'] {
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: var(--ag-sp-3);
+}
+
+.ag-kds[data-modo='tablet'] .ag-kds-riel {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: var(--ag-sp-3);
+  align-content: start;
+}
+
+.ag-kds[data-modo='tablet'] .ag-kds-reloj {
+  font-size: 23px;
+  padding: 2px 4px;
+}
+
+/* En el riel las estaciones son una lista vertical: la mano sube y baja por
+   el borde de la tablet sin cruzar la pantalla. */
+.ag-kds[data-modo='tablet'] .ag-kds-estaciones {
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ag-kds[data-modo='tablet'] .ag-kds-estacion {
+  justify-content: space-between;
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: var(--ag-r-sm);
+}
+
+.ag-kds-riel-demorados {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-surface);
+}
+
+.ag-kds-riel-demorados > span:first-child {
+  font-family: var(--ag-font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-kds-riel-demorados > strong {
+  font-family: var(--ag-font-mono);
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ag-bad);
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-kds-riel-demorados[data-hay='false'] > strong { color: var(--ag-ink-3); }
+
+.ag-kds-riel-demorados > small { font-size: 10.5px; color: var(--ag-ink-3); }
+
+/* Tres columnas y platos mas compactos: menos tickets a la vez, cada uno mas
+   grande, que es lo que sirve cuando se toca en vez de mirar. */
+.ag-kds[data-modo='tablet'] .ag-kds-grilla { --kds-cols: 3; }
+.ag-kds[data-modo='tablet'] .ag-kds-nombre { font-size: 20px; }
+.ag-kds[data-modo='tablet'] .ag-kds-cronometro { font-size: 21px; }
+.ag-kds[data-modo='tablet'] .ag-kds-plato { padding: 11px 13px; }
+
+/* ── Angosto ───────────────────────────────────────────────────────── */
+
+@media (max-width: 1280px) {
+  .ag-kds { --kds-cols: 3; }
+}
+
+@media (max-width: 900px) {
+  .ag-kds { --kds-cols: 2; }
+  .ag-kds[data-modo='tablet'] { grid-template-columns: minmax(0, 1fr); }
+  .ag-kds[data-modo='tablet'] .ag-kds-riel { grid-template-rows: auto; }
+  .ag-kds[data-modo='tablet'] .ag-kds-estaciones { flex-direction: row; }
+  .ag-kds[data-modo='tablet'] .ag-kds-estacion { width: auto; }
+}
+
+@media (max-width: 620px) {
+  .ag-kds { --kds-cols: 1; }
+  .ag-kds[data-modo='tablet'] .ag-kds-grilla { --kds-cols: 1; }
+  .ag-kds-reloj { font-size: 21px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ag-kds-barra-demora > i { transition: none; }
+}

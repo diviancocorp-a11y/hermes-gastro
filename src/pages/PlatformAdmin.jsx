@@ -22,6 +22,7 @@ import ConfirmSlideProvider from '../components/ConfirmSlideProvider';
 import ProductsPanel from '../components/admin/platform/ProductsPanel';
 import OrdersPanel from '../components/admin/platform/OrdersPanel';
 import StockPanel from '../components/admin/platform/StockPanel';
+import KdsPanel from '../components/admin/platform/KdsPanel';
 // El MISMO formulario que usaba el Stock legacy: alta y edicion de insumo
 // no se reescriben, se reusan.
 const IngForm = lazy(() => import('../components/admin/Stock')
@@ -69,6 +70,10 @@ import {
   fetchTableVisits,
 } from '../services/platformSalon';
 import { fetchSettings, saveSettings, fetchTenantBrand } from '../services/platformSettings';
+import {
+  fetchTicketsDeCocina, marcarPlato, cerrarTicket, etiquetaDePasador,
+} from '../services/platformKds';
+import { imprimirEtiqueta } from '../lib/impresionDePasador';
 import { getTenantSlugSync } from '../lib/activeTenant';
 import {
   fetchIngredients, upsertIngredient as upsertIngrediente, archiveIngredient as archivarIngrediente,
@@ -148,6 +153,7 @@ import '../styles/admin-shared.css';
 import '../styles/admin-productos.css';
 import '../styles/admin-caja.css';
 import '../styles/admin-stock.css';
+import '../styles/admin-kds.css';
 // Machine Soul (Phase 3B): reemplaza la capa visual del shell. Va ultimo
 // a proposito, para pisar la de admin-topbar/bottomnav sin tocar su markup.
 import '../styles/admin-shell.css';
@@ -159,6 +165,9 @@ const ICONOS = {
   products: BoxIcon,
   orders: BagIcon,
   stock: StockIcon,
+  // La cocina reusa el icono de pedidos: es la misma comanda, del otro lado
+  // del mostrador.
+  kds: BagIcon,
   finanzas: MoneyIcon,
   ventas: ChartIcon,
   mesas: MesasIcon,
@@ -258,6 +267,9 @@ export default function PlatformAdmin() {
   // El conteo de deposito es una VISTA de la pestania Stock, no una ruta:
   // se entra y se sale sin perder el filtro ni el insumo elegido.
   const [contandoDeposito, setContandoDeposito] = useState(false);
+  const [ticketsDeCocina, setTicketsDeCocina] = useState([]);
+  // La tablet de mesada y la TV colgada son la misma pantalla con otro layout.
+  const [modoKds, setModoKds] = useState('tv');
   const [insumoEnEdicion, setInsumoEnEdicion] = useState(null);
   const [proveedoresDeStock, setProveedoresDeStock] = useState([]);
   const [gastos, setGastos] = useState([]);
@@ -326,6 +338,36 @@ export default function PlatformAdmin() {
     if (!tenantId) return;
     setProveedoresDeStock(await fetchSuppliers(tenantId) || []);
   }, [tenantId]);
+
+  // ── La cocina (KDS, migraciones 0072-0073) ──
+  // Se refresca sola cada 12 segundos. El cronometro NO depende de esto: corre
+  // local dentro del panel. Volver a consultar cada segundo para mover un
+  // numero serian 300 consultas por minuto toda la noche.
+  const loadCocina = useCallback(async () => {
+    if (!tenantId) return;
+    setTicketsDeCocina(await fetchTicketsDeCocina(tenantId, { branchId: branch?.id || null }));
+  }, [tenantId, branch?.id]);
+
+  const marcarPlatoDeCocina = useCallback(async (ticket, item, listo) => {
+    const r = await marcarPlato(tenantId, item.id, listo);
+    if (r?.__error) return r;
+    await loadCocina();
+    return r;
+  }, [tenantId, loadCocina]);
+
+  const cerrarTicketDeCocina = useCallback(async (ticket) => {
+    const r = await cerrarTicket(tenantId, ticket.id);
+    if (r?.__error) return r;
+    // La etiqueta sale DESPUES de cerrar y no antes: si la impresora no
+    // responde, el ticket igual quedo cerrado. Una cocina detenida porque
+    // falta papel es peor que una bandeja sin etiqueta.
+    const impresion = await imprimirEtiqueta(
+      etiquetaDePasador(ticket, { timezone: branch?.timezone || tenant?.timezone }),
+      { ticketId: ticket.id });
+    if (!impresion.ok) msg('El ticket se cerró, pero la etiqueta no se imprimió');
+    await loadCocina();
+    return r;
+  }, [tenantId, loadCocina, branch?.timezone, tenant?.timezone, msg]);
 
   const loadIngs = useCallback(async () => {
     if (!tenantId) return;
@@ -597,6 +639,7 @@ export default function PlatformAdmin() {
     loadSettings();
     loadIngs();
     loadProveedoresDeStock();
+    loadCocina();
     loadRecetas();
     loadGastos();
     loadVentas();
@@ -606,7 +649,7 @@ export default function PlatformAdmin() {
     loadCaja();
     loadEquipo();
     loadOportunidades();
-  }, [ready, tenantId, loadProducts, loadOrders, loadSettings, loadIngs, loadProveedoresDeStock, loadRecetas, loadGastos, loadVentas, loadItemsPedidos, loadMerma, loadSalon, loadCaja, loadEquipo, loadOportunidades]);
+  }, [ready, tenantId, loadProducts, loadOrders, loadSettings, loadIngs, loadProveedoresDeStock, loadCocina, loadRecetas, loadGastos, loadVentas, loadItemsPedidos, loadMerma, loadSalon, loadCaja, loadEquipo, loadOportunidades]);
 
   // La cuenta de transacciones del turno no puede quedar congelada con la
   // carga inicial. Se refresca mientras el panel esta abierto, incluido un
@@ -898,6 +941,14 @@ export default function PlatformAdmin() {
   // `products` en el mismo tick y la configuracion del negocio era
   // inalcanzable (P0-1). El permiso lo decide `puedeAbrirDestino`, que sigue
   // a las policies de 0050 — no alcanza con que el destino exista.
+  // Mientras se mira la cocina, los tickets se refrescan solos. Fuera de esa
+  // pestania no: el KDS es la unica pantalla que se deja abierta seis horas.
+  useEffect(() => {
+    if (tab !== 'kds' || !tenantId) return undefined;
+    const id = setInterval(() => { loadCocina(); }, 12000);
+    return () => clearInterval(id);
+  }, [tab, tenantId, loadCocina]);
+
   useEffect(() => {
     if (!tabs.length) return;
     if (tabs.some(t => t.id === tab) || puedeAbrirDestino(roles, tab)) return;
@@ -1251,6 +1302,18 @@ export default function PlatformAdmin() {
                 }}
               />
             </Suspense>
+          )}
+          {tab === 'kds' && (
+            <KdsPanel
+              tickets={ticketsDeCocina}
+              modo={modoKds}
+              umbralMin={Number(sett?.kds_umbral_min) || 18}
+              timezone={branch?.timezone || tenant?.timezone}
+              nombreDePantalla={branch?.name || null}
+              onMarcarPlato={marcarPlatoDeCocina}
+              onCerrarTicket={cerrarTicketDeCocina}
+              showToast={msg}
+            />
           )}
           {tab === 'mesas' && (
             <Suspense fallback={<div style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando...</div>}>

@@ -38,6 +38,81 @@ export const INSUMOS = [
   insumo({ id: '10', name: 'Queso azul de oveja estacionado 9 meses', category: 'Lácteos', unit: 'kg', stock: 1.25, min_stock: 6, cost: 48500 }),
 ];
 
+
+/**
+ * Los tickets del KDS. El reloj va FIJO: sin eso la vista previa cambia en
+ * cada corrida y dos capturas del mismo diseño no se pueden comparar.
+ */
+export const AHORA_KDS = new Date('2026-09-11T22:00:00');
+
+const haceMin = (m) => new Date(AHORA_KDS.getTime() - m * 60000).toISOString();
+
+const plato = (o) => ({
+  id: o.id, order_id: o.order_id, tenant_id: 't',
+  qty: 1, station: null, note: null, ready_at: null,
+  created_at: '2026-09-11T21:00:00Z', ...o,
+});
+
+const tk = (o) => ({
+  tenant_id: 't', branch_id: 'b', status: 'preparing',
+  channel: null, delivery: null, delivery_date: null, customer_name: null,
+  note: null, allergy_note: null, diners: null, staff_id: null,
+  resource_id: null, ready_at: null, created_at: haceMin(90), ...o,
+});
+
+export const TICKETS = [
+  tk({
+    id: 't1', titulo: 'Mesa 7', resource_id: 'm7', staff_nombre: 'Lucía',
+    diners: 6, ticket_number: 7, kitchen_at: haceMin(19.1),
+    allergy_note: 'Alergia: frutos secos',
+    order_items: [
+      plato({ id: 'i1', order_id: 't1', qty: 2, name_snapshot: 'Milanesa napolitana', note: 'a punto · sin jamón en una', station: 'Plancha' }),
+      plato({ id: 'i2', order_id: 't1', name_snapshot: 'Provoleta', note: 'con orégano', station: 'Parrilla' }),
+      plato({ id: 'i3', order_id: 't1', name_snapshot: 'Ensalada de estación', station: 'Fríos' }),
+    ],
+  }),
+  tk({
+    id: 't2', titulo: 'Pedido 12', staff_nombre: 'Bruno', delivery: 'takeaway',
+    ticket_number: 12, kitchen_at: haceMin(11.1),
+    order_items: [
+      plato({ id: 'i4', order_id: 't2', name_snapshot: 'Bife de chorizo', note: 'jugoso', station: 'Parrilla' }),
+      plato({ id: 'i5', order_id: 't2', qty: 2, name_snapshot: 'Papas rústicas', station: 'Plancha' }),
+    ],
+  }),
+  tk({
+    id: 't3', titulo: 'Mesa 3', resource_id: 'm3', staff_nombre: 'Nahuel',
+    diners: 4, ticket_number: 3, kitchen_at: haceMin(5.1),
+    order_items: [
+      plato({ id: 'i6', order_id: 't3', qty: 3, name_snapshot: 'Empanadas de carne', station: 'Plancha' }),
+      plato({ id: 'i7', order_id: 't3', name_snapshot: 'Asado de tira', note: 'bien cocido', station: 'Parrilla' }),
+      plato({ id: 'i8', order_id: 't3', qty: 2, name_snapshot: 'Flan con dulce', note: 'uno sin crema', station: 'Postres' }),
+    ],
+  }),
+  tk({
+    id: 't4', titulo: 'Delivery 87', delivery: 'envio', customer_name: 'Retira el cadete',
+    ticket_number: 87, kitchen_at: haceMin(2.1), allergy_note: 'Celíaca',
+    order_items: [
+      plato({ id: 'i9', order_id: 't4', name_snapshot: 'Pollo a la plancha', note: 'sin sal', station: 'Plancha' }),
+      plato({ id: 'i10', order_id: 't4', name_snapshot: 'Ensalada césar', note: 'sin croutons', station: 'Fríos' }),
+    ],
+  }),
+  tk({
+    id: 't5', titulo: 'Mesa 12', resource_id: 'm12', staff_nombre: 'Sol',
+    delivery_date: '2026-09-12', ticket_number: 12, kitchen_at: haceMin(0.77),
+    order_items: [
+      plato({ id: 'i11', order_id: 't5', qty: 4, name_snapshot: 'Vacío al horno', note: 'dos a punto, dos jugosos', station: 'Parrilla' }),
+      plato({ id: 'i12', order_id: 't5', qty: 2, name_snapshot: 'Limonada', note: 'con jengibre', station: 'Barra' }),
+    ],
+  }),
+  tk({
+    id: 't6', titulo: 'Pedido 13', staff_nombre: 'Ana', delivery: 'takeaway',
+    ticket_number: 13, kitchen_at: haceMin(0.44),
+    order_items: [
+      plato({ id: 'i13', order_id: 't6', name_snapshot: 'Sándwich de lomo', note: 'completo, sin huevo', station: 'Plancha' }),
+    ],
+  }),
+];
+
 /**
  * Cada entrada declara que componente montar, con que props y a que anchos
  * mirarlo. `anchos` son los que de verdad cambian el layout, no una lista de
@@ -51,6 +126,18 @@ export const MUESTRAS = {
     // un render sin seleccion no lo muestra nunca.
     props: { tenantId: 't', insumos: INSUMOS, seleccionadoInicial: '1' },
     anchos: [1340, 900, 560],
+  },
+  kds: {
+    modulo: 'src/components/admin/platform/KdsPanel.jsx',
+    titulo: 'KDS · cocina TV',
+    props: { tickets: TICKETS, modo: 'tv', columnas: 5, umbralMin: 18, ahoraFijo: AHORA_KDS, nombreDePantalla: 'Parrilla · pantalla 1' },
+    anchos: [1340, 900],
+  },
+  'kds-tablet': {
+    modulo: 'src/components/admin/platform/KdsPanel.jsx',
+    titulo: 'KDS · tablet de mesada',
+    props: { tickets: TICKETS, modo: 'tablet', umbralMin: 18, ahoraFijo: AHORA_KDS },
+    anchos: [1280],
   },
   conteo: {
     modulo: 'src/components/admin/platform/ConteoDeDeposito.jsx',
