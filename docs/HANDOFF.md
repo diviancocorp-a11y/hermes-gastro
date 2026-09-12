@@ -8,6 +8,86 @@
 
 ---
 
+## 11/sep/2026 — El KDS: la cocina tiene su propia pantalla (Claude)
+
+### Hecho
+
+- **KDS 1a y 1b**, del render que paso Ricky por Claude Design. La TV colgada
+  de 1920 y la tablet de mesada de 1280 son el MISMO componente
+  (`KdsPanel.jsx`) con dos layouts: en tv la demora es un numero grande, en
+  tablet una barra y un riel de estaciones al costado.
+- **Migraciones 0072 y 0073**, aplicadas al edificio. De los ocho datos que
+  pide una pantalla de cocina, cinco no tenian donde vivir: estacion del
+  plato, sus modificadores, si el plato ya salio, cuando bajo a cocina y las
+  alergias. Mas el numero de ticket, que se asigna al bajar a cocina y se
+  reinicia con el servicio.
+- **La impresion queda funcional** (`src/lib/impresionDePasador.js`): la
+  termica se instala en el sistema como cualquier impresora y la etiqueta sale
+  por `print()`. Sin agente local ni WebUSB.
+
+### La decision que ordeno todo
+
+Ricky: *"vamos a separar pedidos del catalogo como delivery, el KDS solo
+recibe las cosas que tenemos que producir"*.
+
+Eso resolvio lo que iba a ser el problema: la pantalla de Pedidos hace cuatro
+cosas que el render del KDS no muestra —aprobar, rechazar, cobrar, cancelar—.
+No se pierden: **Pedidos se queda** como la pantalla administrativa y el KDS
+recibe solo lo aprobado. La frontera es `orders.kitchen_at`.
+
+`npm run pantalla:acciones -- OrdersPanel KdsPanel` marca las diez acciones
+como faltantes, y esta bien que lo haga: no es un port, es una pantalla nueva
+al lado. Hay un test que falla si alguna de las cuatro aparece en el KDS.
+
+### Lo que se aprendio
+
+- **El cronometro cuenta desde `kitchen_at` y no desde `created_at`.** Es lo
+  que justifica media migracion: un pedido programado para las 21:00 cargado a
+  las 19:00 entraria en rojo a la cocina, y el rojo dejaria de significar algo.
+- **Dos numeros salieron de comparar contra el render, no de los tests.** El
+  umbral de "atencion" estaba en dos tercios y el diseño pone 11:06 en ambar
+  contra un umbral de 18: es 60%. Y las estaciones contaban platos cuando el
+  render cuenta TICKETS — al tocar "Parrilla 4" tienen que aparecer cuatro
+  tickets. Los seis contadores y los seis cronometros ahora coinciden exacto.
+- **El deploy del KDS fallo y produccion se quedo en el commit anterior.**
+  `.replace(/</g, '&lt;')` hace que `check-file-integrity` lea el archivo como
+  JSX en un `.js`. Esta documentado en CLAUDE.md —se escribe `/[<]/g`— y se me
+  paso igual.
+- **Por que el gate local no aviso, que es lo que de verdad importa:** corri
+  `npm run check:integrity | tail -2`. El pipe descarta el exit code (bash
+  devuelve el de `tail`) y `tail -2` se comio la linea del error, que salia en
+  medio de los lotes. El gate habia fallado y yo lei dos lineas que decian OK.
+  **Los gates se corren mirando `$?`, nunca las ultimas lineas.**
+
+### Para el render que sigue
+
+Con el render a la vista, el orden que funciono fue: inventario de acciones de
+la pantalla vieja, mirar los datos REALES, migracion, servicio con las reglas
+puras, componente, tests, y recien ahi comparar la vista previa contra el
+render numero por numero. Los dos desajustes de arriba salieron de ese ultimo
+paso.
+
+El acceso a Claude Design desde esta sesion **no funciona**: `/design-login` no
+esta disponible en la app de escritorio y `/design-consent` devuelve 403. Lo
+que si funciono fue abrir el proyecto con el Chrome real del usuario, que
+tiene su sesion, y leer la API del editor. El filtro de seguridad de la
+extension bloquea sacar el contenido del archivo por el chat, asi que al final
+se trabajo con capturas. Salieron bien.
+
+### Lo que falta
+
+- **1c, Expedicion**: la lista de armando, el pasador y la etiqueta en
+  pantalla. El modelo ya lo soporta (`orders.ready_at` marca el pase al
+  pasador); falta la pantalla.
+- **El orden de las estaciones es alfabetico.** Una cocina las ordenaria por
+  su circuito —caliente primero, barra al final— pero ese orden no esta en
+  ningun lado. Cuando se configure, sale de ahi.
+- **La estacion de cada producto no tiene UI todavia**: la columna
+  `products.station` existe y el editor de producto aun no la muestra. Sin
+  eso, todos los platos caen en "sin estacion".
+
+---
+
 ## 11/sep/2026 — Stock rehecho y dos herramientas para los proximos renders (Claude)
 
 ### Hecho
