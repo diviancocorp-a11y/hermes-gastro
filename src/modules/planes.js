@@ -14,9 +14,14 @@
  * La idea original era cobrar distinto a físico / digital / híbrido. El modo
  * no correlaciona con el valor ni con la capacidad de pago —una dark kitchen
  * puede facturar más que un bar— y ningún competidor del mercado segmenta así.
- * Lo que sí es cierto es que el local físico usa más producto, y eso se captura
- * poniendo el salón, la caja y el personal en el plan de arriba. El modo pasa a
- * SUGERIR el plan en el alta, no a definirlo.
+ * El modo pasa a SUGERIR el plan en el alta, no a definirlo.
+ *
+ * QUE SEPARA UN PLAN DEL OTRO (desde el 12/sep/2026)
+ * Ya no son los módulos: el plan gratis los trae todos. Lo que se paga es lo
+ * que un local en blanco necesita para operar —facturación electrónica, cocina
+ * en pantalla, soporte con una persona del otro lado— y la escala: varias
+ * sucursales con su consolidado. Si algún día vuelve a haber un módulo que
+ * solo esté en un plan pago, va acá y se nota en el diff.
  *
  * DICOTIP NO ES UN EXTRA
  * Se evaluó cobrarlo aparte y se decidió que no: es el diferencial que hace que
@@ -31,28 +36,41 @@ const TODO = [
 ];
 
 export const PLANES = {
+  /**
+   * DIGITAL — gratis desde el 12/sep/2026.
+   *
+   * Antes valía $29.000 e incluía seis módulos. El cambio no es una promo: es
+   * la apuesta de que el producto se vende usándolo. Un local que carga sus
+   * recetas y ve su primer P&L real ya entendió para qué sirve; uno que mira
+   * una página de precios, no. Lo que se cobra pasa a ser lo que un local en
+   * blanco necesita para operar —facturación, cocina en pantalla, soporte— y
+   * lo que solo le sirve a quien ya creció: varias sucursales.
+   *
+   * Por eso el plan gratis trae TODO lo que el edificio sabe hacer hoy y sin
+   * tope de usuarios: poner un límite de tres personas en un plan pensado para
+   * que lo use el equipo entero lo vuelve inservible justo donde tiene que
+   * enganchar.
+   */
   digital: {
     id: 'digital',
     // Los negocios que operan sin salón. El registry de modos (6a) los llama
     // `virtual`.
     modosSugeridos: ['virtual'],
-    modulos: ['products', 'orders', 'stock', 'finanzas', 'ventas', 'variants'],
+    modulos: [...TODO],
     limites: {
       sucursales: 1,
-      // Sin tope de productos ni de pedidos a propósito: cobrar por volumen
+      // Sin tope de usuarios, de productos ni de pedidos: cobrar por volumen
       // castiga al que crece, que es justo el que no se quiere perder.
-      usuarios: 3,
+      // `limiteDe` devuelve Infinity cuando la clave no está.
     },
   },
 
   local: {
     id: 'local',
     modosSugeridos: ['fisico', 'hibrido'],
-    // Todo lo del salón: es lo que separa este plan del anterior.
     modulos: [...TODO],
     limites: {
       sucursales: 1,
-      usuarios: 15,
     },
   },
 
@@ -61,9 +79,7 @@ export const PLANES = {
     modosSugeridos: [],
     modulos: [...TODO],
     limites: {
-      // El límite real del plan: varias sucursales.
-      sucursales: 20,
-      usuarios: 100,
+      // El límite real del plan: varias sucursales, y sin tope.
     },
   },
 

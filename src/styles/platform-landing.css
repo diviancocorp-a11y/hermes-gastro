@@ -206,17 +206,19 @@
   line-height: 1.1;
 }
 
-/* El titular no es serif: la serif queda reservada para la palabra que Dico
-   escribe. Mezclar las dos en la misma linea es lo que le da el contraste. */
+/* El titular es una sola frase partida en dos: la maquina afirma y el alma
+   remata. La primera mitad va en Overused Grotesk y la segunda en Butler, que
+   es el unico contraste tipografico que se permite en la pagina. */
 .pl-titular-fijo {
   font-family: var(--ds-font-ui, 'Overused Grotesk', system-ui, sans-serif);
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
-.pl-titular-rota {
-  font-size: 1.12em;
-  line-height: 1.05;
+.pl-titular-alma {
+  font-size: 1.06em;
+  line-height: 1.08;
+  color: var(--pl-gold);
 }
 
 .pl-hero-sub {
@@ -648,6 +650,249 @@
 }
 
 .pl-pie-links a:hover { color: var(--pl-tx); }
+
+/* ─────────────── Grillas y remates de seccion ─────────────── */
+
+/* Dos columnas anchas, para bloques de texto en vez de tarjetas chicas. */
+.pl-grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+}
+
+/* La linea que cierra una seccion y la ata a la siguiente. */
+.pl-remate {
+  margin: 28px 0 0;
+  max-width: 68ch;
+  font-size: clamp(15px, 2vw, 17px);
+  color: var(--pl-t2);
+}
+
+.pl-problema .pl-card h3 { color: var(--pl-t3); font-weight: 600; }
+
+/* ─────────────── Los tres pilares ─────────────── */
+
+.pl-pilares {
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+}
+
+.pl-pilar {
+  display: flex;
+  flex-direction: column;
+  padding: 26px;
+}
+
+.pl-pilar-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.pl-pilar-indice {
+  flex: none;
+  font-size: 12px;
+  color: var(--pl-gold);
+  border: 1px solid var(--pl-line-2);
+  border-radius: 6px;
+  padding: 4px 7px;
+  line-height: 1;
+}
+
+.pl-pilar-sub {
+  margin: 3px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pl-t3);
+}
+
+/* El ejemplo numerico es el argumento de la seccion: va en la tipografia
+   tecnica y alineado a la derecha para que se lea como un ticket. */
+.pl-ejemplo {
+  margin: 20px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--pl-line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  font-size: 12.5px;
+}
+
+.pl-ejemplo-fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 5px 0;
+}
+
+.pl-ejemplo-fila + .pl-ejemplo-fila { border-top: 1px solid var(--pl-line); }
+
+.pl-ejemplo dt { color: var(--pl-t2); margin: 0; }
+.pl-ejemplo dd { margin: 0; color: var(--pl-tx); white-space: nowrap; }
+
+.pl-ejemplo-tipo {
+  color: var(--pl-t3);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* La ultima fila del ejemplo es el resultado: es lo unico en oro. */
+.pl-ejemplo-fila:last-child dd { color: var(--pl-gold); font-weight: 600; }
+
+/* ─────────────── Los cinco pasos ─────────────── */
+
+.pl-pasos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--pl-line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.pl-paso {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 22px 24px;
+  background: var(--pl-panel);
+}
+
+.pl-paso + .pl-paso { border-top: 1px solid var(--pl-line); }
+
+.pl-paso-n {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--pl-line-2);
+  color: var(--pl-gold);
+  font-size: 13px;
+}
+
+.pl-paso h3 { margin: 3px 0 0; font-size: 16px; font-weight: 650; }
+.pl-paso p { margin: 7px 0 0; color: var(--pl-t2); font-size: 14px; max-width: 70ch; }
+
+/* ─────────────── Los avisos de Dico ─────────────── */
+
+.pl-avisos {
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+}
+
+.pl-aviso { background: var(--pl-panel-2); }
+
+.pl-aviso-firma {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pl-gold);
+}
+
+.pl-aviso-firma img { width: 22px; height: 22px; display: block; }
+
+.pl-aviso p { margin-top: 12px; color: var(--pl-tx); font-size: 14.5px; }
+
+/* ─────────────── Preguntas ─────────────── */
+
+.pl-faq {
+  border: 1px solid var(--pl-line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.pl-faq-item { background: var(--pl-panel); }
+.pl-faq-item + .pl-faq-item { border-top: 1px solid var(--pl-line); }
+
+.pl-faq-item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15.5px;
+  list-style: none;
+}
+
+.pl-faq-item summary::-webkit-details-marker { display: none; }
+
+.pl-faq-item summary:hover { color: var(--pl-gold); }
+
+.pl-faq-item summary:focus-visible {
+  outline: 2px solid var(--pl-gold);
+  outline-offset: -2px;
+}
+
+/* El signo es una cruz que gira a menos cuando la pregunta se abre: dos
+   pseudo-elementos, sin icono ni dependencia. */
+.pl-faq-signo {
+  flex: none;
+  position: relative;
+  width: 14px;
+  height: 14px;
+}
+
+.pl-faq-signo::before,
+.pl-faq-signo::after {
+  content: '';
+  position: absolute;
+  inset: 50% 0 auto 0;
+  height: 1.5px;
+  background: var(--pl-gold);
+  transition: transform 0.18s ease;
+}
+
+.pl-faq-signo::after { transform: rotate(90deg); }
+
+.pl-faq-item[open] .pl-faq-signo::after { transform: rotate(0deg); }
+
+.pl-faq-item > p {
+  margin: 0;
+  padding: 0 24px 22px;
+  max-width: 78ch;
+  color: var(--pl-t2);
+  font-size: 14.5px;
+}
+
+/* ─────────────── Contacto del cierre ─────────────── */
+
+.pl-contacto {
+  margin: 40px auto 0;
+  max-width: 720px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 1px;
+  background: var(--pl-line);
+  border: 1px solid var(--pl-line);
+  border-radius: 12px;
+  overflow: hidden;
+  text-align: left;
+}
+
+.pl-contacto > div { background: var(--pl-bg); padding: 16px 18px; }
+
+.pl-contacto dt {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pl-t3);
+}
+
+.pl-contacto dd { margin: 6px 0 0; font-size: 13.5px; color: var(--pl-tx); }
+.pl-contacto a { color: var(--pl-gold); text-decoration: none; }
+.pl-contacto a:hover { text-decoration: underline; }
+
+/* El KPI que cierra el mockup es el unico que lleva el oro: es el numero del
+   que habla toda la pagina. */
+.pl-kpi.destacado { border-color: rgba(224, 172, 60, 0.45); }
+.pl-kpi.destacado .pl-kpi-valor { color: var(--pl-gold); }
 
 @media (prefers-reduced-motion: reduce) {
   .pl-root * { transition: none !important; animation: none !important; }

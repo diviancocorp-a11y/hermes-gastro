@@ -39,8 +39,9 @@ export default async function handler(req, res) {
   const slug = slugFromHost(host);
 
   // Sin tenant (raiz): la marca de la plataforma.
-  let title = 'Dico';
-  let description = 'Tu negocio online en minutos: catálogo, pedidos y números reales.';
+  let title = 'Dico — Sabé cuánto ganás, no solo cuánto vendés';
+  let description = 'Gestión para gastronomía: recetas con costo real, nómina por '
+    + 'hora y la ganancia neta de cada noche.';
   let image = null;
   let color = '#0f0e0d';
 

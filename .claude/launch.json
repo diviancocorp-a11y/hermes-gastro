@@ -8,6 +8,12 @@
       "port": 5173
     },
     {
+      "name": "dev-node",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/vite/bin/vite.js"],
+      "port": 5173
+    },
+    {
       "name": "qa-lite",
       "runtimeExecutable": "node",
       "runtimeArgs": ["scripts/qa-lite/revision-phase4.mjs"],

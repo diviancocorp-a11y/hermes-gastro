@@ -6,8 +6,11 @@
 //     mismo terminan diciendo tres cosas distintas, y una de ellas se factura;
 //   - que la promo de cada plan sea la que se decidio: Digital solo el mes
 //     gratis, Local ademas 3 meses al 50%;
-//   - que el salon este en Local y no en Digital, que es lo que separa un plan
-//     del otro.
+//   - que el plan gratis traiga TODO el producto. Desde el 12/sep/2026 los
+//     modulos dejaron de separar un plan del otro: Digital los trae todos y
+//     lo que se paga es facturacion, cocina en pantalla, soporte y escala.
+//     Si alguien vuelve a sacarle un modulo al plan gratis, estos tests
+//     tienen que gritar.
 
 import { describe, it, expect } from 'vitest';
 import {
@@ -26,9 +29,11 @@ const LOCAL = {
 };
 
 describe('que incluye cada plan', () => {
-  it('el salon es lo que separa Local de Digital', () => {
+  it('el plan gratis trae el salon, la caja y el equipo', () => {
+    // La landing vende "todo el sistema, sin pagar". Si esto se rompe, la
+    // pagina de precios pasa a prometer algo que el alta no entrega.
     for (const m of ['mesas', 'caja', 'personal', 'agenda']) {
-      expect(planTieneModulo('digital', m), `digital no deberia traer ${m}`).toBe(false);
+      expect(planTieneModulo('digital', m), `digital deberia traer ${m}`).toBe(true);
       expect(planTieneModulo('local', m), `local deberia traer ${m}`).toBe(true);
     }
   });
@@ -40,9 +45,11 @@ describe('que incluye cada plan', () => {
   });
 
   it('dice cual es el plan minimo para un modulo', () => {
-    // Es lo que deja decir "Salón está en el plan Local" en vez de "no tenés
-    // permiso", que no le dice a nadie que hacer.
-    expect(planMinimoPara('mesas')).toBe('local');
+    // Hoy ningun modulo del edificio exige pagar, asi que el minimo siempre es
+    // Digital. La funcion sigue existiendo para el dia que vuelva a haber uno
+    // que si lo exija: ahi tiene que poder decir "eso esta en el plan Local"
+    // en vez de "no tenés permiso", que no le dice a nadie que hacer.
+    expect(planMinimoPara('mesas')).toBe('digital');
     expect(planMinimoPara('products')).toBe('digital');
     expect(planMinimoPara('modulo_inventado')).toBe(null);
   });
@@ -59,9 +66,16 @@ describe('limites', () => {
     expect(limiteDe('cadena', 'sucursales')).toBeGreaterThan(1);
   });
 
-  it('avisa cuando llego al tope', () => {
-    expect(alcanzoElLimite('digital', 'usuarios', 3)).toBe(true);
-    expect(alcanzoElLimite('digital', 'usuarios', 2)).toBe(false);
+  it('el plan gratis no tiene tope de usuarios', () => {
+    // Un tope de tres personas en el plan pensado para que lo use el equipo
+    // entero lo vuelve inservible justo donde tiene que enganchar.
+    expect(limiteDe('digital', 'usuarios')).toBe(Infinity);
+    expect(alcanzoElLimite('digital', 'usuarios', 40)).toBe(false);
+  });
+
+  it('avisa cuando llego al tope de sucursales', () => {
+    expect(alcanzoElLimite('digital', 'sucursales', 1)).toBe(true);
+    expect(alcanzoElLimite('digital', 'sucursales', 0)).toBe(false);
   });
 
   it('un limite que el plan no declara no bloquea', () => {
