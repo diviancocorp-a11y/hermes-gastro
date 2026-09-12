@@ -49,6 +49,7 @@ const PLATFORM_PATHS = [
   'src/services/platformFiscal.js',
   'src/services/platformKds.js',
   'src/services/platformProduccion.js',
+  'src/services/platformComandera.js',
   'src/services/platformPersonal.js',
   'src/services/platformSalon.js',
   'src/hooks/usePlatformTenant.js',
