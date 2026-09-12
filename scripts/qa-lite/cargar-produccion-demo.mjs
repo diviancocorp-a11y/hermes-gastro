@@ -180,7 +180,9 @@ async function cargar() {
   const db = conectar();
   morir('sectores', (await db.from('production_sectors').upsert([
     { id: COCINA, tenant_id: QA_TENANT_ID, name: 'Cocina', mode: 'pantalla', umbral_min: 18, orden: 0, active: true },
-    { id: BARRA, tenant_id: QA_TENANT_ID, name: 'Barra', mode: 'pantalla', umbral_min: 5, orden: 1, active: true },
+    // La barra en PAPEL: es la configuracion por la que se hizo la 0075.
+    // Cocina con monitor y barra con comandera, mezcladas en el mismo local.
+    { id: BARRA, tenant_id: QA_TENANT_ID, name: 'Barra', mode: 'papel', umbral_min: 5, orden: 1, active: true },
   ], { onConflict: 'id' })).error);
 
   morir('estaciones', (await db.from('production_stations').upsert(
@@ -299,8 +301,8 @@ async function cargar() {
     'Que mirar',
     '  Produccion  los dos sectores, sus estaciones y el modo de cada uno',
     '  Cocina      Mesa QA 2 en verde, Mesa QA 5 en atencion, Retira Bruno en rojo',
-    '  Barra       el mismo ticket de Mesa QA 5, con OTROS platos',
-    '  Barra 3     9 minutos: tranquilo para cocina, rojo para la barra',
+    '  Barra       la COMANDERA: cola de impresion y papel sin cerrar',
+    '  Salon       la mesa dice que le debe cada sector, y cierra la barra',
     '',
     'Data de revision. `npm run qa:lite:setup` vuelve al fixture limpio.',
     '',

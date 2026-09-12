@@ -8,6 +8,74 @@
 
 ---
 
+## 12/sep/2026 — La comandera: el sector que despacha en papel (Claude)
+
+### Lo que pidio Ricky
+
+*"Dale comandera, termina todo lo pendiente en esta pantalla para cerrar
+proceso hasta aca."* Es la otra mitad de su pregunta del dia anterior: si el
+KDS obliga a tener pantallas, que hace el que no las tiene.
+
+### FALTA APLICAR LA MIGRACION AL EDIFICIO
+
+`platform/migrations/0075_la_comanda_sale_por_papel.sql` esta en el repo y
+**no** esta aplicada: el clasificador bloqueo `apply_migration`. Hasta que
+Ricky la corra por el SQL Editor, en produccion un sector en comandera muestra
+la pantalla vacia. Esta en `docs/TAREAS-MANUALES.md`, arriba de todo.
+
+Lo que NO se rompe mientras tanto: cerrar el ticket entero desde el KDS sigue
+mandando dos argumentos, no tres con null, justamente para eso.
+
+### La restriccion que definio el diseño
+
+Una termica USB imprime desde la maquina donde esta enchufada y el navegador
+solo puede mandarle a la PREDETERMINADA de ese equipo. De ahi sale que la
+comandera sea una pantalla: no es para mirar, es la pagina que queda abierta en
+la computadora que tiene la impresora del sector. Dos sectores en papel son dos
+equipos. Una termica de red saca la restriccion sin tocar el modelo.
+
+**Y Chrome pide confirmacion salvo que se le diga.** `print()` abre la vista
+previa y espera. El equipo del sector tiene que abrir Chrome con
+`--kiosk-printing`. Esto se descubrio probando: al tocar Imprimir, el navegador
+quedo colgado en el dialogo. Es lo que decide si la funcion sirve en una cocina
+o es una demo, asi que lo dice la propia pantalla.
+
+### Hecho
+
+- **0075**: `production_dispatches` (una fila por pedido y sector),
+  `comandas_por_imprimir`, `comandas_abiertas`, `marcar_comanda_impresa` y
+  `cerrar_ticket_de_cocina` con sector opcional.
+- **`ComanderaPanel`**: cola de impresion, papel sin cerrar, ancho 58/80 mm,
+  impresion automatica que se enciende a mano una vez.
+- **Salon**: la ficha de la mesa muestra que le debe cada sector. El de papel
+  trae "Entregado"; el de pantalla se muestra y no se toca.
+- `npm run pantalla -- comandera` y la barra del demo de QA Lite pasa a papel.
+- `docs/plataforma/COMANDERA.md` con el circuito y el armado del equipo.
+
+### Lo que se arreglo de paso
+
+`cerrar_ticket_de_cocina` marcaba listos TODOS los platos del pedido. El
+cocinero que tocaba "Ticket listo" estaba diciendo que la barra ya sirvio los
+tragos. Ahora cierra solo su sector y el pedido se sella cuando no queda nada.
+
+### Verificado a mano en QA Lite
+
+Con la barra en papel: la cola trajo 4 comandas, el mozo cerro la de Mesa QA 5
+desde Salon, la cola bajo a 3 y la cocina mantuvo sus 3 platos. Las tres RPC
+se probaron con un JWT de usuario real: imprimir marca 1, repetir sin pedirlo
+deja 1, y la reimpresion explicita lleva a 2.
+
+### Estado
+
+Suite 100 archivos / 1432 tests, gates, typecheck y build en cero.
+
+### Sigue pendiente
+
+Expedicion (1c): el armado de bandejas y el pasador. El modelo ya lo sostiene
+con `orders.ready_at`.
+
+---
+
 ## 12/sep/2026 — Ejemplos vivos en QA Lite, y dos defectos que destaparon (Claude)
 
 ### Lo que pidio Ricky
