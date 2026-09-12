@@ -8,6 +8,88 @@
 
 ---
 
+## 12/sep/2026 — La barra se separa de la cocina (Claude)
+
+### Lo que pidio Ricky
+
+Dos cosas: que la barra tenga su gestion y su KDS aparte, y que el KDS no
+obligue a comprar pantallas — *"si no tienen, hay forma de darles una opcion
+de comandera clasica?"*.
+
+Las dos entran por el mismo cambio de modelo. En esta pasada esta la primera
+entera y la base de la segunda.
+
+### Hecho: migracion 0074
+
+- **`production_sectors`** — lo que tiene pantalla propia o impresora propia.
+  Cocina, Barra. Lleva su `mode` (`pantalla` o `papel`) y su `umbral_min`.
+- **`production_stations`** — donde se hace el plato dentro del sector.
+  Parrilla, Plancha. Lleva `short_name` y `orden`.
+- `products.station_id`, `order_items.station_id` y `order_items.sector_id`.
+- Un **trigger** copia la estacion del producto al item al insertarlo.
+- `crear_sectores_tipicos()` deja cocina con cuatro estaciones y barra con una.
+
+**Dos niveles y no uno.** El sector es la unidad de DESPACHO y la estacion la
+de TRABAJO. Con un solo nivel hay que elegir cual de las dos representa, y
+cualquiera de las dos elecciones rompe la otra.
+
+**El umbral es del sector.** Un gin tonic sale en tres minutos y un asado en
+veinticinco: con un umbral comun, o la barra vive en rojo o la cocina nunca
+avisa. Cocina queda en 18 y Barra en 5.
+
+**El modo tambien es del sector.** Cocina con monitor y barra con comandera es
+una configuracion normal, no un caso raro.
+
+### Hecho: la pantalla
+
+- **`Producción`** (`SectoresPanel.jsx`), modulo nuevo en la nav. Es la que
+  desbloquea todo: sin ella los platos caen en "sin estacion" y el KDS no
+  sirve. Avisa cuantos productos quedaron sin asignar, que es el modo de
+  fallar mas caro del circuito — el plato no sale y no hay error en ningun
+  lado.
+- **El KDS pasa a ser uno por sector.** Los tickets llegan recortados: el
+  barman no ve la milanesa. El selector de sector aparece recien con mas de
+  uno.
+- **El riel sale de lo CONFIGURADO**, en el orden del circuito, y una estacion
+  sin trabajo se muestra en cero en vez de esconderse. Antes se deducia de los
+  platos: se ordenaba alfabeticamente y cambiaba de largo durante el servicio.
+- **El editor de producto elige la estacion.** `toRow` la escribe explicita.
+
+### Por que se pudo cambiar el modelo sin migrar nada
+
+Cero productos tenian estacion y cero pedidos habian bajado a cocina: el KDS
+estaba publicado pero no se habia usado. En un mes habria habido que reescribir
+comandas historicas.
+
+### Lo que falta: la comandera
+
+Decidido con Ricky y **sin implementar todavia**:
+
+- **La impresora que tiene para probar es USB.** Eso define la arquitectura:
+  desde el navegador se imprime a la impresora PREDETERMINADA del equipo, asi
+  que con una sola computadora y dos impresoras no se puede elegir destino sin
+  abrir el dialogo, que en servicio es inviable. **Un equipo por sector**, cada
+  uno con su impresora predeterminada. El camino de red —una termica con IP y
+  ePOS-Print por HTTP— permitiria varios destinos desde un solo equipo y queda
+  anotado para cuando haya una.
+- **En modo papel el pedido lo cierra el mozo desde Salon**, cuando la cocina
+  le canta el plato. No hace falta hardware nuevo y los tiempos se siguen
+  midiendo, que es lo que despues dice si la cocina va bien.
+- Falta: disparar la impresion de la comanda al bajar el pedido a cocina, una
+  por sector en papel, y el boton de cerrar en Salon.
+
+`src/lib/impresionDePasador.js` ya resuelve la mitad: imprime texto plano por
+el navegador con el ancho de 58 mm.
+
+### Pendientes de antes que siguen
+
+- **1c, Expedicion**: la lista de armando, el pasador y la etiqueta en
+  pantalla. El modelo lo soporta (`orders.ready_at`).
+- Los 66 productos del edificio no tienen estacion. Hasta que la tengan, el
+  KDS se ve vacio aunque haya pedidos.
+
+---
+
 ## 11/sep/2026 — El KDS: la cocina tiene su propia pantalla (Claude)
 
 ### Hecho
