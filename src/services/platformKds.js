@@ -128,7 +128,11 @@ export function zonaDelTicket(ticket, ahora = new Date()) {
   const programado = ticket?.delivery_date
     && new Date(ticket.delivery_date).getTime() > ahora.getTime();
   if (programado) return 'programado';
-  if (ticket?.delivery && ticket.delivery !== 'takeaway' && ticket.delivery !== 'pickup') return 'delivery';
+  // `envio` y nada mas. La columna es NOT NULL con default 'retiro' (0012) y
+  // el Zod solo acepta esos dos valores, asi que "tiene delivery" es cierto
+  // para TODOS los pedidos: con esa condicion cada ticket de mesa salia
+  // rotulado Delivery y el nombre de la mesa no aparecia nunca.
+  if (ticket?.delivery === 'envio') return 'delivery';
   if (ticket?.resource_id) return 'salon';
   return 'mostrador';
 }

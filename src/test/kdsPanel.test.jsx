@@ -54,8 +54,16 @@ describe('de donde viene el ticket', () => {
     expect(zonaDelTicket(ticket(), AHORA)).toBe('mostrador');
   });
 
-  it('take away NO es delivery aunque tenga el campo cargado', () => {
-    expect(zonaDelTicket(ticket({ delivery: 'takeaway' }), AHORA)).toBe('mostrador');
+  // `delivery` es NOT NULL con default 'retiro': TODOS los pedidos lo traen
+  // cargado. Mientras la regla fue "tiene delivery", cada ticket de mesa salio
+  // rotulado Delivery y el nombre de la mesa no aparecio nunca. El fixture no
+  // lo mostraba porque no ponia la columna, que en la base no puede faltar.
+  it('retiro NO es delivery: es el valor que trae el 90% de los pedidos', () => {
+    expect(zonaDelTicket(ticket({ delivery: 'retiro' }), AHORA)).toBe('mostrador');
+  });
+
+  it('una mesa con retiro sigue siendo salon', () => {
+    expect(zonaDelTicket(ticket({ delivery: 'retiro', resource_id: 'm1' }), AHORA)).toBe('salon');
   });
 
   it('programado gana sobre delivery: lo primero es que no sale ahora', () => {
