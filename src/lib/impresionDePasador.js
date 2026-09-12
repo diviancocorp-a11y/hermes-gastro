@@ -41,8 +41,11 @@ export function olvidarPendiente(id) {
 
 /** El papel, en CSS. 58 mm de ancho y sin margenes: la termica no tiene. */
 function hoja(texto, anchoMm) {
+  // `[<]` y no `<` a secas: `check-file-integrity` lee `/</g` como una
+  // etiqueta de cierre JSX y rechaza el archivo entero. Esta escrito en
+  // CLAUDE.md y se me paso igual; el build de Vercel lo agarro.
   const escapado = String(texto)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    .replace(/&/g, '&amp;').replace(/[<]/g, '&lt;').replace(/[>]/g, '&gt;');
   return `<!doctype html><html><head><meta charset="utf-8">
 <style>
   @page { size: ${anchoMm}mm auto; margin: 0; }
