@@ -1,0 +1,282 @@
+/* Producción: dónde se hace cada cosa.
+ *
+ * Es una pantalla de configuración y se comporta como tal: se abre una vez
+ * cada tanto, se toca poco y no se mira de lejos. Por eso no hereda nada del
+ * KDS más que los tokens: ahí todo grita porque se lee a tres metros, acá se
+ * lee sentado.
+ *
+ * Cada sector es una tarjeta con sus estaciones adentro. La jerarquía es la
+ * del modelo: lo que tiene pantalla propia contiene a lo que es un puesto de
+ * trabajo, y el sangrado lo dice sin escribirlo.
+ */
+
+.ag-sectores {
+  display: grid;
+  gap: var(--ag-sp-4);
+  max-width: 900px;
+}
+
+.ag-sectores-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ag-sp-3);
+  flex-wrap: wrap;
+}
+
+.ag-sectores-head h1 {
+  margin: 0;
+  font-family: var(--ag-font-display, inherit);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ag-ink);
+}
+
+.ag-sectores-head h1::after {
+  content: '';
+  display: block;
+  width: 2.4ch;
+  height: 2px;
+  margin-top: 7px;
+  background: var(--ag-accent);
+}
+
+.ag-sectores-sub {
+  margin: 8px 0 0;
+  font-family: var(--ag-font-mono);
+  font-size: 12px;
+  color: var(--ag-ink-3);
+}
+
+/* ── Arranque: todavía no hay nada ─────────────────────────────────── */
+
+.ag-sectores-arranque {
+  display: grid;
+  gap: var(--ag-sp-3);
+  justify-items: start;
+  max-width: 60ch;
+  padding: var(--ag-sp-5);
+  border: 1px solid var(--ag-line);
+  border-top: 2px solid var(--ag-accent);
+  border-radius: var(--ag-r-md);
+  background: var(--ag-surface);
+}
+
+.ag-sectores-arranque strong { font-size: 18px; color: var(--ag-ink); }
+.ag-sectores-arranque p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--ag-ink-2); }
+.ag-sectores-arranque small { font-size: 12px; color: var(--ag-ink-3); }
+.ag-sectores-arranque-botones { display: flex; gap: var(--ag-sp-2); flex-wrap: wrap; }
+
+/* ── El aviso que importa ──────────────────────────────────────────── */
+
+/* Único bloque con fondo de color de la pantalla. Se lo gana: un producto sin
+   estación no aparece en NINGUNA pantalla de producción, y eso no se nota
+   hasta que un plato no sale. */
+.ag-sectores-aviso {
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-warn-bg);
+  color: var(--ag-warn);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ag-sectores-aviso strong { font-family: var(--ag-font-mono); font-weight: 700; }
+
+/* ── Sector ────────────────────────────────────────────────────────── */
+
+.ag-sectores-lista { display: grid; gap: var(--ag-sp-3); }
+
+.ag-sectores-sector {
+  display: grid;
+  gap: var(--ag-sp-3);
+  padding: var(--ag-sp-4);
+  border: 1px solid var(--ag-line);
+  border-top: 2px solid var(--ag-line-strong);
+  border-radius: var(--ag-r-md);
+  background: var(--ag-surface);
+}
+
+/* El sector en papel se distingue por el filete, no por fondo: es una forma
+   de trabajar, no una advertencia. */
+.ag-sectores-sector[data-modo='papel'] { border-top-color: var(--ag-accent); }
+
+.ag-sectores-sector-head {
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-3);
+}
+
+.ag-sectores-sector-nombre {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--ag-r-sm);
+  background: transparent;
+  color: var(--ag-ink);
+  font: inherit;
+  font-size: 19px;
+  font-weight: 680;
+}
+
+.ag-sectores-sector-nombre:hover { border-color: var(--ag-line); }
+.ag-sectores-sector-nombre:focus { border-color: var(--ag-accent); outline: none; background: var(--ag-surface-2); }
+
+.ag-sectores-ajustes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--ag-sp-4);
+  align-items: start;
+}
+
+.ag-sectores-modo {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ag-sectores-modo legend {
+  padding: 0 0 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-sectores-modo label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 9px;
+  align-items: center;
+  padding: 9px 11px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-sm);
+  cursor: pointer;
+}
+
+.ag-sectores-modo label:has(input:checked) {
+  border-color: var(--ag-accent);
+  background: var(--ag-surface-2);
+}
+
+.ag-sectores-modo input { grid-row: 1 / span 2; }
+.ag-sectores-modo span { font-size: 13.5px; font-weight: 600; color: var(--ag-ink); }
+.ag-sectores-modo em { grid-column: 2; font-size: 11.5px; font-style: normal; color: var(--ag-ink-3); }
+
+.ag-sectores-campo { display: grid; gap: 6px; }
+
+.ag-sectores-campo > span:first-child {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-sectores-numero { display: flex; align-items: center; gap: 7px; }
+
+.ag-sectores-numero input {
+  width: 74px;
+  padding: 8px 10px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-bg-card, var(--ag-surface));
+  color: var(--ag-ink);
+  font: inherit;
+  font-family: var(--ag-font-mono);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-sectores-numero em { font-style: normal; font-size: 12px; color: var(--ag-ink-3); }
+
+.ag-sectores-guardar { display: flex; gap: var(--ag-sp-2); }
+
+/* ── Estaciones ────────────────────────────────────────────────────── */
+
+.ag-sectores-subtitulo {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin: 4px 0 0;
+  padding-top: var(--ag-sp-3);
+  border-top: 1px solid var(--ag-line);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-sectores-subtitulo small {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ag-ink-3);
+  opacity: 0.8;
+}
+
+.ag-sectores-estaciones { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+
+.ag-sectores-estacion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: var(--ag-sp-2);
+  padding: 9px 11px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-surface-2);
+}
+
+.ag-sectores-estacion[data-editando='true'] {
+  grid-template-columns: minmax(0, 1fr) 90px auto;
+  border-color: var(--ag-accent);
+}
+
+.ag-sectores-estacion input {
+  padding: 7px 10px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-bg-card, var(--ag-surface));
+  color: var(--ag-ink);
+  font: inherit;
+  font-size: 13.5px;
+  min-width: 0;
+}
+
+.ag-sectores-estacion-nombre { font-size: 13.5px; font-weight: 600; color: var(--ag-ink); }
+
+.ag-sectores-estacion-corta {
+  font-family: var(--ag-font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--ag-ink-3);
+  padding: 3px 7px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-sm);
+}
+
+.ag-sectores-orden { display: flex; gap: 4px; }
+.ag-sectores-acciones { display: flex; gap: 5px; flex-wrap: wrap; grid-column: 1 / -1; }
+.ag-sectores-estacion[data-editando='true'] .ag-sectores-acciones { grid-column: auto; }
+
+.ag-sectores-sumar { justify-self: start; }
+
+.ag-sectores-vacio { margin: 0; font-size: 12.5px; color: var(--ag-ink-3); }
+.ag-sectores-error { font-size: 12px; color: var(--ag-bad); grid-column: 1 / -1; }
+
+@media (max-width: 720px) {
+  .ag-sectores-ajustes { grid-template-columns: minmax(0, 1fr); }
+  .ag-sectores-estacion { grid-template-columns: minmax(0, 1fr) auto; }
+  .ag-sectores-estacion[data-editando='true'] { grid-template-columns: minmax(0, 1fr); }
+  .ag-sectores-orden { grid-column: 2; }
+}

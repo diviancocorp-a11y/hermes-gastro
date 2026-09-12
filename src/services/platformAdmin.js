@@ -148,7 +148,7 @@ export async function fetchMyTenant() {
 
 /* ─────────────────────────── Productos ─────────────────────────── */
 
-const PRODUCT_COLS = 'id, type, name, price, active, is_archived, category, description, image_url, requires_age_gate, duration_min, stock, created_at';
+const PRODUCT_COLS = 'id, type, name, price, active, is_archived, category, description, image_url, requires_age_gate, duration_min, stock, station_id, created_at';
 
 function compactarTexto(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');
@@ -248,6 +248,10 @@ function toRow(p, tenantId) {
     requires_age_gate: !!p.requires_age_gate,
     duration_min: num(p.duration_min),
     stock: num(p.stock),
+    // Columna 0074. Explicita y no por spread: si se olvidara aca, el upsert
+    // la descartaria sin error y el plato no apareceria en ninguna pantalla
+    // de produccion. Es el bug que este repo ya se comio cuatro veces.
+    station_id: p.station_id || null,
   };
 }
 

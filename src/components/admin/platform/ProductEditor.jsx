@@ -21,6 +21,7 @@ import { usaCampo, terminologia, tipoPorDefecto, usaReceta } from '../../../modu
 const EMPTY = {
   name: '', price: '', category: '', description: '', image_url: '',
   active: true, requires_age_gate: false, duration_min: '', stock: '',
+  station_id: '',
 };
 
 const lbl = { display: 'block', fontSize: 12, color: 'var(--ag-ink-3)', marginBottom: 5 };
@@ -37,6 +38,9 @@ export default function ProductEditor({
   ingredientes = [], lineasReceta = [], settings = null,
   // Sin uploader, ImagePicker se cae al input de URL de siempre.
   onSubirImagen = null,
+  // Los sectores con sus estaciones (0074). Vacio = el negocio todavia no
+  // configuro produccion y el campo no se muestra.
+  sectores = [],
 }) {
   const [lineas, setLineas] = useState(() => lineasReceta.map(l => ({ ...l })));
   const [form, setForm] = useState(() => ({
@@ -46,6 +50,7 @@ export default function ProductEditor({
     duration_min: product?.duration_min ?? '',
     stock: product?.stock ?? '',
     category: product?.category ?? '',
+    station_id: product?.station_id ?? '',
     description: product?.description ?? '',
     image_url: product?.image_url ?? '',
   }));
@@ -67,6 +72,8 @@ export default function ProductEditor({
       ...form,
       name: normalizarNombreProducto(form.name),
       category: normalizarCategoriaProducto(form.category, categories),
+      // Vacio va como null: un string vacio en una FK uuid revienta el upsert.
+      station_id: form.station_id || null,
     };
     const problems = [
       ...validateProduct(normalizado, products),
@@ -151,6 +158,34 @@ export default function ProductEditor({
           Agrupa el catalogo. Si escribis una nueva, se crea sola.
         </div>
       </div>
+
+      {/* La estacion decide en QUE pantalla de produccion aparece el plato.
+          Sin ella el pedido entra igual pero nadie lo ve en cocina, que es el
+          modo de fallar mas caro de todo el circuito: el plato no sale y no
+          hay ningun error en ningun lado. */}
+      {sectores.length > 0 && (
+        <div style={row}>
+          <label style={lbl} htmlFor="pe-station">Estación de producción</label>
+          <select
+            id="pe-station" style={input} value={form.station_id}
+            onChange={e => set('station_id', e.target.value)}
+          >
+            <option value="">Sin estación</option>
+            {sectores.map(s => (
+              <optgroup key={s.id} label={s.name}>
+                {(s.estaciones || []).map(e => (
+                  <option key={e.id} value={e.id}>{e.name}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <div style={{ fontSize: 11, color: 'var(--ag-ink-3)', marginTop: 5 }}>
+            {form.station_id
+              ? 'Aparece en la pantalla del sector de esa estación.'
+              : 'Sin estación no aparece en ninguna pantalla de producción.'}
+          </div>
+        </div>
+      )}
 
       <div style={row}>
         <label style={lbl} htmlFor="pe-desc">Descripcion</label>

@@ -494,3 +494,51 @@
 @media (prefers-reduced-motion: reduce) {
   .ag-kds-barra-demora > i { transition: none; }
 }
+
+/* ── Selector de sector ────────────────────────────────────────────── */
+
+/* Con un solo sector no se dibuja: elegir entre una opcion es ruido en una
+   pantalla que se mira de lejos. Aparece recien cuando la barra existe. */
+.ag-kds-sectores {
+  display: flex;
+  gap: var(--ag-sp-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--ag-sp-3);
+}
+
+.ag-kds-sector {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid var(--ag-line);
+  border-bottom: 2px solid transparent;
+  border-radius: var(--ag-r-sm);
+  background: transparent;
+  color: var(--ag-ink-2);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ag-kds-sector:hover { color: var(--ag-ink); border-color: var(--ag-line-strong); }
+
+/* El sector elegido se marca con el filete inferior, no con fondo: el fondo
+   dorado ya lo usa la estacion activa y dos oros compiten. */
+.ag-kds-sector[aria-pressed='true'] {
+  color: var(--ag-ink);
+  border-color: var(--ag-line-strong);
+  border-bottom-color: var(--ag-accent);
+  background: var(--ag-surface);
+}
+
+.ag-kds-sector em {
+  font-style: normal;
+  font-family: var(--ag-font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}

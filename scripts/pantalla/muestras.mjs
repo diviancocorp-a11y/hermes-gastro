@@ -39,6 +39,29 @@ export const INSUMOS = [
 ];
 
 
+
+/** Sectores y estaciones, como los deja "crear cocina y barra". */
+export const SECTORES = [
+  {
+    id: 'sec-cocina', name: 'Cocina', mode: 'pantalla', umbral_min: 18, orden: 0,
+    estaciones: [
+      { id: 'e-par', sector_id: 'sec-cocina', name: 'Parrilla', short_name: 'PAR', orden: 0 },
+      { id: 'e-pla', sector_id: 'sec-cocina', name: 'Plancha', short_name: 'PLA', orden: 1 },
+      { id: 'e-fri', sector_id: 'sec-cocina', name: 'Fríos', short_name: 'FRÍ', orden: 2 },
+      { id: 'e-pos', sector_id: 'sec-cocina', name: 'Postres', short_name: 'POS', orden: 3 },
+    ],
+  },
+  {
+    id: 'sec-barra', name: 'Barra', mode: 'papel', umbral_min: 5, orden: 1,
+    estaciones: [
+      { id: 'e-bar', sector_id: 'sec-barra', name: 'Barra', short_name: 'BAR', orden: 0 },
+    ],
+  },
+];
+
+const EST = { Parrilla: 'e-par', Plancha: 'e-pla', 'Fríos': 'e-fri', Postres: 'e-pos', Barra: 'e-bar' };
+const SEC = { 'e-bar': 'sec-barra' };
+
 /**
  * Los tickets del KDS. El reloj va FIJO: sin eso la vista previa cambia en
  * cada corrida y dos capturas del mismo diseño no se pueden comparar.
@@ -47,11 +70,18 @@ export const AHORA_KDS = new Date('2026-09-11T22:00:00');
 
 const haceMin = (m) => new Date(AHORA_KDS.getTime() - m * 60000).toISOString();
 
-const plato = (o) => ({
-  id: o.id, order_id: o.order_id, tenant_id: 't',
-  qty: 1, station: null, note: null, ready_at: null,
-  created_at: '2026-09-11T21:00:00Z', ...o,
-});
+const plato = (o) => {
+  const p = {
+    id: o.id, order_id: o.order_id, tenant_id: 't',
+    qty: 1, station: null, note: null, ready_at: null,
+    created_at: '2026-09-11T21:00:00Z', ...o,
+  };
+  // El id de estacion sale del nombre, como lo hace el trigger 0074 al
+  // insertar el item: asi la muestra no puede quedar desfasada del modelo.
+  p.station_id = p.station_id || EST[p.station] || null;
+  p.sector_id = p.sector_id || SEC[p.station_id] || (p.station_id ? 'sec-cocina' : null);
+  return p;
+};
 
 const tk = (o) => ({
   tenant_id: 't', branch_id: 'b', status: 'preparing',
@@ -130,14 +160,35 @@ export const MUESTRAS = {
   kds: {
     modulo: 'src/components/admin/platform/KdsPanel.jsx',
     titulo: 'KDS · cocina TV',
-    props: { tickets: TICKETS, modo: 'tv', columnas: 5, umbralMin: 18, ahoraFijo: AHORA_KDS, nombreDePantalla: 'Parrilla · pantalla 1' },
+    props: {
+      tickets: TICKETS.map(t => ({ ...t, order_items: t.order_items.filter(i => i.sector_id === 'sec-cocina') })).filter(t => t.order_items.length),
+      estaciones: SECTORES[0].estaciones,
+      modo: 'tv', columnas: 5, umbralMin: 18, ahoraFijo: AHORA_KDS,
+      nombreDePantalla: 'Cocina · pantalla 1',
+    },
     anchos: [1340, 900],
   },
   'kds-tablet': {
     modulo: 'src/components/admin/platform/KdsPanel.jsx',
     titulo: 'KDS · tablet de mesada',
-    props: { tickets: TICKETS, modo: 'tablet', umbralMin: 18, ahoraFijo: AHORA_KDS },
+    props: {
+      tickets: TICKETS.map(t => ({ ...t, order_items: t.order_items.filter(i => i.sector_id === 'sec-cocina') })).filter(t => t.order_items.length),
+      estaciones: SECTORES[0].estaciones,
+      modo: 'tablet', umbralMin: 18, ahoraFijo: AHORA_KDS,
+    },
     anchos: [1280],
+  },
+  sectores: {
+    modulo: 'src/components/admin/platform/SectoresPanel.jsx',
+    titulo: 'Producción · sectores y estaciones',
+    props: { sectores: SECTORES, productosSinEstacion: 66 },
+    anchos: [980, 560],
+  },
+  'sectores-vacio': {
+    modulo: 'src/components/admin/platform/SectoresPanel.jsx',
+    titulo: 'Producción · sin configurar',
+    props: { sectores: [], productosSinEstacion: 0 },
+    anchos: [980],
   },
   conteo: {
     modulo: 'src/components/admin/platform/ConteoDeDeposito.jsx',

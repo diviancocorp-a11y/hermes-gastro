@@ -29,7 +29,8 @@ const haceMin = (m) => new Date(AHORA.getTime() - m * 60000).toISOString();
 
 const plato = (o = {}) => ({
   id: o.id || crypto.randomUUID(), order_id: 'o', tenant_id: 't',
-  name_snapshot: 'Plato', qty: 1, station: null, note: null, ready_at: null,
+  name_snapshot: 'Plato', qty: 1, station: null, station_id: null, sector_id: null,
+  note: null, ready_at: null,
   created_at: '2026-09-11T21:00:00Z', ...o,
 });
 
@@ -113,45 +114,58 @@ describe('los tres colores', () => {
 });
 
 describe('estaciones', () => {
+  // Desde la 0074 las estaciones son entidades con id y orden, no texto: el
+  // riel sale de lo CONFIGURADO y no de los platos que haya en pantalla.
+  const PARRILLA = { id: 'e-par', name: 'Parrilla', short_name: 'PAR' };
+  const PLANCHA = { id: 'e-pla', name: 'Plancha', short_name: 'PLA' };
+  const ESTACIONES = [PARRILLA, PLANCHA];
+
   const tks = [
     ticket({ order_items: [
-      plato({ id: 'a', station: 'Parrilla' }),
-      plato({ id: 'b', station: 'Plancha' }),
-      plato({ id: 'c', station: 'Parrilla', ready_at: haceMin(1) }),
+      plato({ id: 'a', station: 'Parrilla', station_id: PARRILLA.id }),
+      plato({ id: 'b', station: 'Plancha', station_id: PLANCHA.id }),
+      plato({ id: 'c', station: 'Parrilla', station_id: PARRILLA.id, ready_at: haceMin(1) }),
     ] }),
-    ticket({ order_items: [plato({ id: 'd', station: 'Parrilla' })] }),
+    ticket({ order_items: [plato({ id: 'd', station: 'Parrilla', station_id: PARRILLA.id })] }),
   ];
 
   it('cuenta TICKETS, no platos: el numero es una promesa de lo que vas a ver', () => {
-    const { estaciones, total } = estacionesDe(tks);
+    const { estaciones, total } = estacionesDe(tks, ESTACIONES);
     expect(total).toBe(2); // dos tickets con trabajo pendiente
-    // El primero tiene un plato de parrilla pendiente y otro ya marcado: es
-    // UN ticket, no dos.
     expect(estaciones.find(e => e.nombre === 'Parrilla').n).toBe(2);
     expect(estaciones.find(e => e.nombre === 'Plancha').n).toBe(1);
   });
 
   it('un ticket con dos platos de la misma estacion cuenta una vez', () => {
     const t = ticket({ order_items: [
-      plato({ id: 'x', station: 'Parrilla' }),
-      plato({ id: 'y', station: 'Parrilla' }),
+      plato({ id: 'x', station_id: PARRILLA.id }),
+      plato({ id: 'y', station_id: PARRILLA.id }),
     ] });
-    expect(estacionesDe([t]).estaciones.find(e => e.nombre === 'Parrilla').n).toBe(1);
+    expect(estacionesDe([t], ESTACIONES).estaciones.find(e => e.nombre === 'Parrilla').n).toBe(1);
   });
 
   it('un ticket con todo marcado no cuenta en ninguna estacion', () => {
-    const t = ticket({ order_items: [plato({ station: 'Parrilla', ready_at: haceMin(1) })] });
-    expect(estacionesDe([t]).total).toBe(0);
+    const t = ticket({ order_items: [plato({ station_id: PARRILLA.id, ready_at: haceMin(1) })] });
+    expect(estacionesDe([t], ESTACIONES).total).toBe(0);
   });
 
-  it('el plato sin estacion no desaparece', () => {
-    const { estaciones } = estacionesDe([ticket({ order_items: [plato({ station: null })] })]);
-    expect(estaciones.map(e => e.nombre)).toContain('sin-estacion');
+  it('el plato sin estacion no desaparece: va a una fila propia', () => {
+    const t = ticket({ order_items: [plato({ station_id: null })] });
+    const { estaciones } = estacionesDe([t], ESTACIONES);
+    expect(estaciones.find(e => e.id === 'sin-estacion').n).toBe(1);
+  });
+
+  it('una estacion sin trabajo se muestra en cero, no se esconde', () => {
+    // Un riel que cambia de largo durante el servicio obliga a mirar antes de
+    // tocar, que es justo lo que no se puede hacer con las manos ocupadas.
+    const t = ticket({ order_items: [plato({ station_id: PLANCHA.id })] });
+    const { estaciones } = estacionesDe([t], ESTACIONES);
+    expect(estaciones.find(e => e.nombre === 'Parrilla').n).toBe(0);
   });
 
   it('un ticket toca la estacion solo si le queda algo pendiente ahi', () => {
-    const t = ticket({ order_items: [plato({ station: 'Parrilla', ready_at: haceMin(1) })] });
-    expect(tocaLaEstacion(t, 'Parrilla')).toBe(false);
+    const t = ticket({ order_items: [plato({ station_id: PARRILLA.id, ready_at: haceMin(1) })] });
+    expect(tocaLaEstacion(t, PARRILLA.id)).toBe(false);
     expect(tocaLaEstacion(t, 'todas')).toBe(true);
   });
 });
@@ -216,16 +230,21 @@ describe('la etiqueta del pasador', () => {
 });
 
 describe('la pantalla', () => {
+  const ESTACIONES_PANTALLA = [
+    { id: 'e-par', name: 'Parrilla', short_name: 'PAR' },
+    { id: 'e-pla', name: 'Plancha', short_name: 'PLA' },
+  ];
+
   const tks = [
     ticket({
       id: 't1', resource_id: 'm', resources: { name: 'Mesa 7' }, diners: 6,
       kitchen_at: haceMin(19), allergy_note: 'Alergia: frutos secos',
       order_items: [
-        plato({ id: 'p1', qty: 2, name_snapshot: 'Milanesa napolitana', note: 'a punto · sin jamón en una', station: 'Plancha' }),
-        plato({ id: 'p2', qty: 1, name_snapshot: 'Provoleta', station: 'Parrilla' }),
+        plato({ id: 'p1', qty: 2, name_snapshot: 'Milanesa napolitana', note: 'a punto · sin jamón en una', station: 'Plancha', station_id: 'e-pla' }),
+        plato({ id: 'p2', qty: 1, name_snapshot: 'Provoleta', station: 'Parrilla', station_id: 'e-par' }),
       ],
     }),
-    ticket({ id: 't2', ticket_number: 13, kitchen_at: haceMin(1), order_items: [plato({ id: 'p3', station: 'Plancha' })] }),
+    ticket({ id: 't2', ticket_number: 13, kitchen_at: haceMin(1), order_items: [plato({ id: 'p3', station: 'Plancha', station_id: 'e-pla' })] }),
   ];
 
   it('el ticket pasado del umbral sale en rojo, el nuevo en verde', () => {
@@ -251,7 +270,7 @@ describe('la pantalla', () => {
   });
 
   it('filtrar por estacion deja solo los tickets con trabajo ahi', () => {
-    render(<KdsPanel tickets={tks} ahoraFijo={AHORA} />);
+    render(<KdsPanel tickets={tks} estaciones={ESTACIONES_PANTALLA} ahoraFijo={AHORA} />);
     fireEvent.click(screen.getByRole('button', { name: /^Parrilla/ }));
     // Solo el primero tiene un plato de parrilla pendiente.
     expect(document.querySelectorAll('.ag-kds-ticket')).toHaveLength(1);

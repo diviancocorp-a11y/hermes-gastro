@@ -23,6 +23,7 @@ import ProductsPanel from '../components/admin/platform/ProductsPanel';
 import OrdersPanel from '../components/admin/platform/OrdersPanel';
 import StockPanel from '../components/admin/platform/StockPanel';
 import KdsPanel from '../components/admin/platform/KdsPanel';
+import SectoresPanel from '../components/admin/platform/SectoresPanel';
 // El MISMO formulario que usaba el Stock legacy: alta y edicion de insumo
 // no se reescriben, se reusan.
 const IngForm = lazy(() => import('../components/admin/Stock')
@@ -73,6 +74,10 @@ import { fetchSettings, saveSettings, fetchTenantBrand } from '../services/platf
 import {
   fetchTicketsDeCocina, marcarPlato, cerrarTicket, etiquetaDePasador,
 } from '../services/platformKds';
+import {
+  fetchSectores, guardarSector, guardarEstacion, desactivarSector,
+  desactivarEstacion, crearSectoresTipicos, ticketDelSector,
+} from '../services/platformProduccion';
 import { imprimirEtiqueta } from '../lib/impresionDePasador';
 import { getTenantSlugSync } from '../lib/activeTenant';
 import {
@@ -154,6 +159,7 @@ import '../styles/admin-productos.css';
 import '../styles/admin-caja.css';
 import '../styles/admin-stock.css';
 import '../styles/admin-kds.css';
+import '../styles/admin-sectores.css';
 // Machine Soul (Phase 3B): reemplaza la capa visual del shell. Va ultimo
 // a proposito, para pisar la de admin-topbar/bottomnav sin tocar su markup.
 import '../styles/admin-shell.css';
@@ -168,6 +174,9 @@ const ICONOS = {
   // La cocina reusa el icono de pedidos: es la misma comanda, del otro lado
   // del mostrador.
   kds: BagIcon,
+  // Produccion comparte icono con Stock: las dos hablan de lo que se hace
+  // con los insumos, una antes y otra durante.
+  sectores: StockIcon,
   finanzas: MoneyIcon,
   ventas: ChartIcon,
   mesas: MesasIcon,
@@ -268,6 +277,10 @@ export default function PlatformAdmin() {
   // se entra y se sale sin perder el filtro ni el insumo elegido.
   const [contandoDeposito, setContandoDeposito] = useState(false);
   const [ticketsDeCocina, setTicketsDeCocina] = useState([]);
+  const [sectores, setSectores] = useState([]);
+  // Que sector se esta mirando. Null = el primero. Cada sector es una
+  // pantalla distinta: la barra no ve la milanesa.
+  const [sectorKds, setSectorKds] = useState(null);
   // La tablet de mesada y la TV colgada son la misma pantalla con otro layout.
   const [modoKds, setModoKds] = useState('tv');
   const [insumoEnEdicion, setInsumoEnEdicion] = useState(null);
@@ -343,6 +356,11 @@ export default function PlatformAdmin() {
   // Se refresca sola cada 12 segundos. El cronometro NO depende de esto: corre
   // local dentro del panel. Volver a consultar cada segundo para mover un
   // numero serian 300 consultas por minuto toda la noche.
+  const loadSectores = useCallback(async () => {
+    if (!tenantId) return;
+    setSectores(await fetchSectores(tenantId));
+  }, [tenantId]);
+
   const loadCocina = useCallback(async () => {
     if (!tenantId) return;
     setTicketsDeCocina(await fetchTicketsDeCocina(tenantId, { branchId: branch?.id || null }));
@@ -368,6 +386,18 @@ export default function PlatformAdmin() {
     await loadCocina();
     return r;
   }, [tenantId, loadCocina, branch?.timezone, tenant?.timezone, msg]);
+
+  const guardarSectorDeProduccion = useCallback(async (s) => {
+    const r = await guardarSector(tenantId, s);
+    if (!r?.__error) await loadSectores();
+    return r;
+  }, [tenantId, loadSectores]);
+
+  const guardarEstacionDeProduccion = useCallback(async (e) => {
+    const r = await guardarEstacion(tenantId, e);
+    if (!r?.__error) await loadSectores();
+    return r;
+  }, [tenantId, loadSectores]);
 
   const loadIngs = useCallback(async () => {
     if (!tenantId) return;
@@ -640,6 +670,7 @@ export default function PlatformAdmin() {
     loadIngs();
     loadProveedoresDeStock();
     loadCocina();
+    loadSectores();
     loadRecetas();
     loadGastos();
     loadVentas();
@@ -649,7 +680,7 @@ export default function PlatformAdmin() {
     loadCaja();
     loadEquipo();
     loadOportunidades();
-  }, [ready, tenantId, loadProducts, loadOrders, loadSettings, loadIngs, loadProveedoresDeStock, loadCocina, loadRecetas, loadGastos, loadVentas, loadItemsPedidos, loadMerma, loadSalon, loadCaja, loadEquipo, loadOportunidades]);
+  }, [ready, tenantId, loadProducts, loadOrders, loadSettings, loadIngs, loadProveedoresDeStock, loadCocina, loadSectores, loadRecetas, loadGastos, loadVentas, loadItemsPedidos, loadMerma, loadSalon, loadCaja, loadEquipo, loadOportunidades]);
 
   // La cuenta de transacciones del turno no puede quedar congelada con la
   // carga inicial. Se refresca mientras el panel esta abierto, incluido un
@@ -948,6 +979,21 @@ export default function PlatformAdmin() {
     const id = setInterval(() => { loadCocina(); }, 12000);
     return () => clearInterval(id);
   }, [tab, tenantId, loadCocina]);
+
+  // El sector que se esta mirando y SUS tickets, recortados a sus platos.
+  // El recorte se hace aca y no en el panel: el KDS repinta cada segundo por
+  // el cronometro y no puede rehacer el filtro sesenta veces por minuto.
+  const sectorActivo = sectores.find(s => s.id === sectorKds) || sectores[0] || null;
+
+  const ticketsDelSector = useMemo(() => {
+    if (!sectorActivo) return ticketsDeCocina;
+    return ticketsDeCocina
+      .map(t => ticketDelSector(t, sectorActivo.id))
+      .filter(Boolean);
+  }, [ticketsDeCocina, sectorActivo]);
+
+  const productosSinEstacion = useMemo(
+    () => products.filter(p => !p.station_id).length, [products]);
 
   useEffect(() => {
     if (!tabs.length) return;
@@ -1304,14 +1350,51 @@ export default function PlatformAdmin() {
             </Suspense>
           )}
           {tab === 'kds' && (
-            <KdsPanel
-              tickets={ticketsDeCocina}
-              modo={modoKds}
-              umbralMin={Number(sett?.kds_umbral_min) || 18}
-              timezone={branch?.timezone || tenant?.timezone}
-              nombreDePantalla={branch?.name || null}
-              onMarcarPlato={marcarPlatoDeCocina}
-              onCerrarTicket={cerrarTicketDeCocina}
+            <>
+              {/* Con un solo sector el selector no sale: elegir entre una
+                  opcion es ruido en una pantalla que se mira de lejos. */}
+              {sectores.length > 1 && (
+                <nav className="ag-kds-sectores" aria-label="Sectores de producción">
+                  {sectores.map(s => (
+                    <button
+                      key={s.id} type="button" className="ag-kds-sector"
+                      aria-pressed={s.id === sectorActivo?.id}
+                      onClick={() => setSectorKds(s.id)}
+                    >
+                      {s.name}
+                      {s.mode === 'papel' && <em>comandera</em>}
+                    </button>
+                  ))}
+                </nav>
+              )}
+              <KdsPanel
+                tickets={ticketsDelSector}
+                estaciones={sectorActivo?.estaciones || []}
+                modo={modoKds}
+                umbralMin={sectorActivo?.umbral_min || 18}
+                timezone={branch?.timezone || tenant?.timezone}
+                nombreDePantalla={sectorActivo
+                  ? `${sectorActivo.name}${branch?.name ? ` · ${branch.name}` : ''}`
+                  : branch?.name || null}
+                onMarcarPlato={marcarPlatoDeCocina}
+                onCerrarTicket={cerrarTicketDeCocina}
+                showToast={msg}
+              />
+            </>
+          )}
+          {tab === 'sectores' && (
+            <SectoresPanel
+              sectores={sectores}
+              productosSinEstacion={productosSinEstacion}
+              onGuardarSector={guardarSectorDeProduccion}
+              onQuitarSector={async (s) => { await desactivarSector(s.id); await loadSectores(); }}
+              onGuardarEstacion={guardarEstacionDeProduccion}
+              onQuitarEstacion={async (e) => { await desactivarEstacion(e.id); await loadSectores(); }}
+              onCrearTipicos={async () => {
+                const r = await crearSectoresTipicos(tenantId);
+                if (r?.__error) { msg(r.message); return; }
+                await loadSectores();
+              }}
               showToast={msg}
             />
           )}

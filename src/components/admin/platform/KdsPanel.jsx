@@ -8,6 +8,13 @@
  * acá no aparece. Que este panel no pueda cancelar un pedido no es una
  * carencia, es el límite.
  *
+ * UNA PANTALLA POR SECTOR
+ * La barra no es una estación más de la cocina (0074). Este panel muestra UN
+ * sector, con los tickets ya recortados a sus platos: el barman no ve la
+ * milanesa y el cocinero no ve la limonada. El umbral de demora también es
+ * del sector, porque un gin tonic sale en tres minutos y un asado en
+ * veinticinco: un umbral común no sirve para ninguno de los dos.
+ *
  * DOS MODOS, UNA PANTALLA
  * `tv` es la colgada de 1920: grilla ancha, cronómetro en número grande.
  * `tablet` es la de mesada de 1280: riel de estaciones al costado y la demora
@@ -24,6 +31,7 @@ import {
   zonaDelTicket, minutosEnCocina, cronometro, estadoDeDemora, avanceDeDemora,
   platosListos, estacionesDe, tocaLaEstacion,
 } from '../../../services/platformKds';
+import { abreviar } from '../../../services/platformProduccion';
 
 const ZONA = {
   salon: 'Salón',
@@ -41,9 +49,6 @@ const ESTADO = {
 const hora = (d, timezone) => new Intl.DateTimeFormat('es-AR', {
   hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timezone || undefined,
 }).format(d);
-
-/** La estación abreviada del modo tablet: PARRILLA no entra, PAR sí. */
-const corta = (s) => (s || '').trim().slice(0, 3).toLocaleUpperCase('es-AR');
 
 /**
  * El renglón de contexto debajo del nombre. Cada zona necesita un dato
@@ -68,7 +73,7 @@ function contexto(t, zona, timezone) {
 
 /* ─────────────────────────── Ticket ───────────────────────────────── */
 
-function Ticket({ ticket, modo, umbralMin, ahora, timezone, onMarcar, onCerrar, ocupado }) {
+function Ticket({ ticket, modo, umbralMin, ahora, timezone, cortas, onMarcar, onCerrar, ocupado }) {
   const zona = zonaDelTicket(ticket, ahora);
   const minutos = minutosEnCocina(ticket, ahora);
   const estado = estadoDeDemora(minutos, umbralMin);
@@ -117,7 +122,12 @@ function Ticket({ ticket, modo, umbralMin, ahora, timezone, onMarcar, onCerrar, 
               </span>
               {i.station && (
                 <span className="ag-kds-plato-estacion">
-                  {modo === 'tablet' ? corta(i.station) : i.station}
+                  {/* En tablet va la abreviatura que cargó el local, no un
+                      corte a tres letras: "Fríos" y "Frituras" cortados dan
+                      lo mismo y son dos estaciones distintas. */}
+                  {modo === 'tablet'
+                    ? abreviar({ name: i.station, short_name: cortas?.get(i.station_id) })
+                    : i.station}
                 </span>
               )}
             </button>
@@ -152,6 +162,10 @@ function Ticket({ ticket, modo, umbralMin, ahora, timezone, onMarcar, onCerrar, 
 
 export default function KdsPanel({
   tickets = [],
+  // Las estaciones CONFIGURADAS del sector, en el orden de su circuito. Sin
+  // esto el riel se deduciria de los platos presentes y cambiaria de largo
+  // durante el servicio.
+  estaciones = [],
   modo = 'tv',
   columnas = 5,
   umbralMin = 18,
@@ -179,7 +193,13 @@ export default function KdsPanel({
 
   useEffect(() => () => { vivo.current = false; }, []);
 
-  const { estaciones, total } = useMemo(() => estacionesDe(tickets), [tickets]);
+  const { estaciones: conCuenta, total } = useMemo(
+    () => estacionesDe(tickets, estaciones), [tickets, estaciones]);
+
+  // El mapa se arma una vez y no por plato: la pantalla repinta cada segundo
+  // por el cronometro.
+  const cortas = useMemo(
+    () => new Map(estaciones.map(e => [e.id, e.short_name])), [estaciones]);
 
   const visibles = useMemo(
     () => tickets.filter(t => tocaLaEstacion(t, estacion)),
@@ -211,12 +231,12 @@ export default function KdsPanel({
       >
         Todas <b>{total}</b>
       </button>
-      {estaciones.map(e => (
+      {conCuenta.map(e => (
         <button
-          key={e.nombre} type="button" className="ag-kds-estacion"
-          aria-pressed={estacion === e.nombre} onClick={() => setEstacion(e.nombre)}
+          key={e.id} type="button" className="ag-kds-estacion"
+          aria-pressed={estacion === e.id} onClick={() => setEstacion(e.id)}
         >
-          {e.nombre === 'sin-estacion' ? 'Sin estación' : e.nombre} <b>{e.n}</b>
+          {e.nombre} <b>{e.n}</b>
         </button>
       ))}
     </div>
@@ -241,6 +261,7 @@ export default function KdsPanel({
           umbralMin={umbralMin}
           ahora={ahora}
           timezone={timezone}
+          cortas={cortas}
           ocupado={ocupado}
           onMarcar={marcar}
           onCerrar={cerrar}

@@ -42,6 +42,8 @@ const ProductsPanel = forwardRef(function ProductsPanel({
   orders = [], itemsPorPedido = null, operativo = false, turno = null, minutosOperando = null,
   turnosPrevios = [], timezone = null, onImpulsar = null, onIr = null,
   onDicoResumenChange = null,
+  // Los sectores de produccion (0074), para elegir la estacion del plato.
+  sectores = [],
 }, ref) {
   const confirmSlide = useConfirm();
   const [editing, setEditing] = useState(null); // objeto producto | 'new' | null
@@ -198,6 +200,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
         </div>
         <div className="ag-page-over-body">
           <ProductEditor
+            sectores={sectores}
             product={isNew ? null : editing}
             products={products}
             vertical={vertical}
