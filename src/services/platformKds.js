@@ -104,12 +104,25 @@ export async function marcarPlato(tenantId, itemId, listo = true) {
   return data;
 }
 
-/** Cerrar el ticket: marca lo que falte, sella la hora y lo saca del KDS. */
-export async function cerrarTicket(tenantId, orderId) {
+/**
+ * Cerrar el ticket: marca lo que falte, sella la hora y lo saca del KDS.
+ *
+ * Con `sectorId` cierra SOLO lo de ese sector (0075). El cocinero que toca
+ * "Ticket listo" en su pantalla no esta diciendo que la barra ya sirvio los
+ * tragos; el pedido se sella recien cuando no queda ningun plato pendiente.
+ *
+ * SIN SECTOR SE MANDAN DOS ARGUMENTOS, NO TRES CON NULL
+ * PostgREST resuelve la funcion por el conjunto de argumentos NOMBRADOS que
+ * recibe. Mandar siempre `p_sector_id` deja la pantalla rota contra una base
+ * que todavia no tiene la 0075, porque ahi la funcion solo acepta dos. Asi,
+ * cerrar el ticket entero funciona igual antes y despues de la migracion, y
+ * lo unico que la necesita es lo que la migracion trajo.
+ */
+export async function cerrarTicket(tenantId, orderId, sectorId = null) {
   exigirTenant(tenantId, 'cerrarTicket');
-  const { data, error } = await supabase.rpc('cerrar_ticket_de_cocina', {
-    p_tenant_id: tenantId, p_order_id: orderId,
-  });
+  const args = { p_tenant_id: tenantId, p_order_id: orderId };
+  if (sectorId) args.p_sector_id = sectorId;
+  const { data, error } = await supabase.rpc('cerrar_ticket_de_cocina', args);
   if (error) { console.error('cerrarTicket:', error.message); return { __error: 'db', message: traducir(error.message) }; }
   return data;
 }

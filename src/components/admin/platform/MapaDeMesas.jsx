@@ -45,6 +45,7 @@
  */
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { panoramaDelSalon, duracionCorta } from '../../../modules/salonDelDia';
+import { sectoresPendientes } from '../../../services/platformComandera';
 import '../../../styles/admin-salon.css';
 
 // Las mesas que el negocio no asigno a ninguna zona necesitan un lugar donde
@@ -174,6 +175,14 @@ export default function MapaDeMesas({
   onSeleccionar,          // (recurso) -> void
   onNuevo,                // () -> void
   onCobrarMesa,           // (mesa) -> void
+  // Lo que la cocina y la barra le deben a cada mesa. Un sector que despacha
+  // en PAPEL no tiene pantalla donde marcar: el que cierra es el mozo, desde
+  // aca, cuando retira. Uno con pantalla se muestra y no se toca, porque dos
+  // lugares para marcar lo mismo es la forma mas facil de que un plato se de
+  // por entregado sin que nadie lo haya visto.
+  sectores = [],
+  cocina = [],
+  onCerrarSector,         // (ticket, sector) -> Promise
   solicitudes = [],
   onActualizarSolicitud,
   terminologia = { plural: 'Mesas', singular: 'mesa' },
@@ -357,6 +366,16 @@ export default function MapaDeMesas({
       importe: Number(it.subtotal) || 0,
     })));
   }, [elegida, itemsPorOrden]);
+
+  // Lo que falta producir de los pedidos de ESTA mesa, agrupado por sector.
+  const enProduccion = useMemo(() => {
+    if (!elegida) return [];
+    const ids = new Set(elegida.ordenes.map(o => o.id));
+    return cocina
+      .filter(t => ids.has(t.id))
+      .map(t => ({ ticket: t, pendientes: sectoresPendientes(t, sectores) }))
+      .filter(x => x.pendientes.length > 0);
+  }, [elegida, cocina, sectores]);
 
   const proxima = panorama.proximaReserva;
   const demorada = panorama.demorada;
@@ -634,6 +653,38 @@ export default function MapaDeMesas({
                     <span>Consumo</span>
                     <span>{money(elegida.consumo)}</span>
                   </div>
+                </div>
+              )}
+
+              {enProduccion.length > 0 && (
+                <div className="ag-salon-produccion">
+                  <h4>En producción</h4>
+                  {enProduccion.map(({ ticket, pendientes }) => pendientes.map(s => (
+                    <div
+                      key={`${ticket.id}-${s.id}`}
+                      className="ag-salon-prod"
+                      data-modo={s.modo}
+                    >
+                      <span className="ag-salon-prod-nombre">
+                        {s.nombre}
+                        {s.huerfano && <em> sin asignar</em>}
+                      </span>
+                      <span className="ag-salon-prod-platos">
+                        {s.platos} {s.platos === 1 ? 'plato' : 'platos'}
+                      </span>
+                      {s.modo === 'papel' && onCerrarSector && (
+                        <button
+                          type="button" className="ag-btn-mini"
+                          onClick={() => onCerrarSector(ticket, s)}
+                        >
+                          Entregado
+                        </button>
+                      )}
+                      {s.modo === 'pantalla' && (
+                        <span className="ag-salon-prod-espera">en pantalla</span>
+                      )}
+                    </div>
+                  )))}
                 </div>
               )}
 

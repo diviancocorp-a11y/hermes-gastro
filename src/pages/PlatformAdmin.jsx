@@ -24,6 +24,7 @@ import OrdersPanel from '../components/admin/platform/OrdersPanel';
 import StockPanel from '../components/admin/platform/StockPanel';
 import KdsPanel from '../components/admin/platform/KdsPanel';
 import SectoresPanel from '../components/admin/platform/SectoresPanel';
+import ComanderaPanel from '../components/admin/platform/ComanderaPanel';
 // El MISMO formulario que usaba el Stock legacy: alta y edicion de insumo
 // no se reescriben, se reusan.
 const IngForm = lazy(() => import('../components/admin/Stock')
@@ -78,6 +79,10 @@ import {
   fetchSectores, guardarSector, guardarEstacion, desactivarSector,
   desactivarEstacion, crearSectoresTipicos, ticketDelSector,
 } from '../services/platformProduccion';
+import {
+  fetchComandasPorImprimir, fetchComandasAbiertas, marcarComandaImpresa,
+  cerrarSectorDelTicket,
+} from '../services/platformComandera';
 import { imprimirEtiqueta } from '../lib/impresionDePasador';
 import { getTenantSlugSync } from '../lib/activeTenant';
 import {
@@ -160,6 +165,7 @@ import '../styles/admin-caja.css';
 import '../styles/admin-stock.css';
 import '../styles/admin-kds.css';
 import '../styles/admin-sectores.css';
+import '../styles/admin-comandera.css';
 // Machine Soul (Phase 3B): reemplaza la capa visual del shell. Va ultimo
 // a proposito, para pisar la de admin-topbar/bottomnav sin tocar su markup.
 import '../styles/admin-shell.css';
@@ -281,6 +287,11 @@ export default function PlatformAdmin() {
   // Que sector se esta mirando. Null = el primero. Cada sector es una
   // pantalla distinta: la barra no ve la milanesa.
   const [sectorKds, setSectorKds] = useState(null);
+  // La cola de la comandera y el papel que ya salio. Solo se cargan cuando el
+  // sector que se esta mirando trabaja con papel: en un local sin comandera
+  // serian dos consultas por refresco que nadie usa.
+  const [comandasPorImprimir, setComandasPorImprimir] = useState([]);
+  const [comandasAbiertas, setComandasAbiertas] = useState([]);
   // La tablet de mesada y la TV colgada son la misma pantalla con otro layout.
   const [modoKds, setModoKds] = useState('tv');
   const [insumoEnEdicion, setInsumoEnEdicion] = useState(null);
@@ -373,16 +384,83 @@ export default function PlatformAdmin() {
     return r;
   }, [tenantId, loadCocina]);
 
-  const cerrarTicketDeCocina = useCallback(async (ticket) => {
-    const r = await cerrarTicket(tenantId, ticket.id);
+  // La cola de la comandera. Solo se consulta si el sector que se esta mirando
+  // trabaja con papel: en un local con todo en pantalla serian dos consultas
+  // por refresco para no mostrar nada.
+  const loadComandera = useCallback(async (sector) => {
+    if (!tenantId || sector?.mode !== 'papel') {
+      setComandasPorImprimir([]);
+      setComandasAbiertas([]);
+      return;
+    }
+    const opciones = { branchId: branch?.id || null };
+    const [cola, abiertas] = await Promise.all([
+      fetchComandasPorImprimir(tenantId, sector.id, opciones),
+      fetchComandasAbiertas(tenantId, sector.id, opciones),
+    ]);
+    setComandasPorImprimir(cola);
+    setComandasAbiertas(abiertas);
+  }, [tenantId, branch?.id]);
+
+  /**
+   * El papel sale primero y recien despues se anota.
+   *
+   * Al reves —anotar y despues imprimir— una impresora sin papel deja la
+   * comanda marcada como impresa y el pedido no se cocina nunca. Asi, lo peor
+   * que puede pasar es que salga dos veces, y eso se ve.
+   */
+  const imprimirComanda = useCallback(async (sector, ticket, texto, { reimpresion = false } = {}) => {
+    if (!sector?.id) return { ok: false, motivo: 'sin-sector' };
+    const impresion = await imprimirEtiqueta(texto, { ticketId: `${ticket.id}:${sector.id}` });
+    if (!impresion.ok) return impresion;
+    const r = await marcarComandaImpresa(tenantId, ticket.id, sector.id, { reimprimir: reimpresion });
+    if (r?.__error) msg(r.message);
+    await loadComandera(sector);
+    return impresion;
+  }, [tenantId, loadComandera, msg]);
+
+  /**
+   * El mozo marca entregado desde el plano del salon.
+   *
+   * `sector.id` puede ser `sin-sector`, que es el cajon de los platos sin
+   * estacion asignada: ahi se cierra el pedido entero, porque no hay sector
+   * al que atribuirle nada y dejarlo abierto para siempre es peor.
+   */
+  const cerrarSectorDesdeSalon = useCallback(async (ticket, sector) => {
+    const id = sector?.id && sector.id !== 'sin-sector' ? sector.id : null;
+    const r = await cerrarSectorDelTicket(tenantId, ticket.id, id);
+    if (r?.__error) { msg(r.message); return r; }
+    await loadCocina();
+    return r;
+  }, [tenantId, loadCocina, msg]);
+
+  const cerrarComandaDeSector = useCallback(async (sector, ticket) => {
+    const r = await cerrarSectorDelTicket(tenantId, ticket.id, sector?.id || null);
+    if (r?.__error) { msg(r.message); return r; }
+    await Promise.all([loadCocina(), loadComandera(sector)]);
+    return r;
+  }, [tenantId, loadCocina, loadComandera, msg]);
+
+  /**
+   * Cerrar lo de UN sector, no el pedido entero.
+   *
+   * El cocinero que toca "Ticket listo" en su pantalla no esta diciendo que la
+   * barra ya sirvio los tragos. La etiqueta del pasador sale recien cuando el
+   * pedido queda completo —la RPC devuelve `ready_at`— porque es la etiqueta
+   * de la bandeja que sale, no la de media bandeja.
+   */
+  const cerrarTicketDeCocina = useCallback(async (ticket, sectorId = null) => {
+    const r = await cerrarTicket(tenantId, ticket.id, sectorId);
     if (r?.__error) return r;
     // La etiqueta sale DESPUES de cerrar y no antes: si la impresora no
     // responde, el ticket igual quedo cerrado. Una cocina detenida porque
     // falta papel es peor que una bandeja sin etiqueta.
-    const impresion = await imprimirEtiqueta(
-      etiquetaDePasador(ticket, { timezone: branch?.timezone || tenant?.timezone }),
-      { ticketId: ticket.id });
-    if (!impresion.ok) msg('El ticket se cerró, pero la etiqueta no se imprimió');
+    if (r?.ready_at) {
+      const impresion = await imprimirEtiqueta(
+        etiquetaDePasador(ticket, { timezone: branch?.timezone || tenant?.timezone }),
+        { ticketId: ticket.id });
+      if (!impresion.ok) msg('El ticket se cerró, pero la etiqueta no se imprimió');
+    }
     await loadCocina();
     return r;
   }, [tenantId, loadCocina, branch?.timezone, tenant?.timezone, msg]);
@@ -974,8 +1052,11 @@ export default function PlatformAdmin() {
   // a las policies de 0050 — no alcanza con que el destino exista.
   // Mientras se mira la cocina, los tickets se refrescan solos. Fuera de esa
   // pestania no: el KDS es la unica pantalla que se deja abierta seis horas.
+  // Tambien mientras se mira el salon: ahi el mozo ve que le falta a cada mesa
+  // y cierra lo de los sectores de papel. Con el refresco solo en `kds`, esa
+  // lista mostraba lo que habia al abrir el panel.
   useEffect(() => {
-    if (tab !== 'kds' || !tenantId) return undefined;
+    if ((tab !== 'kds' && tab !== 'mesas') || !tenantId) return undefined;
     const id = setInterval(() => { loadCocina(); }, 12000);
     return () => clearInterval(id);
   }, [tab, tenantId, loadCocina]);
@@ -994,6 +1075,17 @@ export default function PlatformAdmin() {
 
   const productosSinEstacion = useMemo(
     () => products.filter(p => !p.station_id).length, [products]);
+
+  // La comandera se refresca aparte del KDS: pregunta otra cosa —que falta
+  // imprimir— y solo tiene sentido en un sector de papel. Doce segundos es el
+  // mismo ritmo del KDS, y es lo que tarda el papel en salir sin que nadie
+  // sienta que el pedido se colgo.
+  useEffect(() => {
+    if (tab !== 'kds' || sectorActivo?.mode !== 'papel') return undefined;
+    loadComandera(sectorActivo);
+    const id = setInterval(() => { loadComandera(sectorActivo); }, 12000);
+    return () => clearInterval(id);
+  }, [tab, sectorActivo, loadComandera]);
 
   useEffect(() => {
     if (!tabs.length) return;
@@ -1367,19 +1459,34 @@ export default function PlatformAdmin() {
                   ))}
                 </nav>
               )}
-              <KdsPanel
-                tickets={ticketsDelSector}
-                estaciones={sectorActivo?.estaciones || []}
-                modo={modoKds}
-                umbralMin={sectorActivo?.umbral_min || 18}
-                timezone={branch?.timezone || tenant?.timezone}
-                nombreDePantalla={sectorActivo
-                  ? `${sectorActivo.name}${branch?.name ? ` · ${branch.name}` : ''}`
-                  : branch?.name || null}
-                onMarcarPlato={marcarPlatoDeCocina}
-                onCerrarTicket={cerrarTicketDeCocina}
-                showToast={msg}
-              />
+              {/* Un sector de papel no tiene KDS: tiene una impresora. Mostrarle
+                  la grilla de tickets a alguien que despacha en papel seria
+                  ofrecerle marcar platos que nadie va a mirar. */}
+              {sectorActivo?.mode === 'papel' ? (
+                <ComanderaPanel
+                  sector={sectorActivo}
+                  porImprimir={comandasPorImprimir}
+                  abiertas={comandasAbiertas}
+                  timezone={branch?.timezone || tenant?.timezone}
+                  onImprimir={(t, texto, opciones) => imprimirComanda(sectorActivo, t, texto, opciones)}
+                  onCerrar={(t) => cerrarComandaDeSector(sectorActivo, t)}
+                  showToast={msg}
+                />
+              ) : (
+                <KdsPanel
+                  tickets={ticketsDelSector}
+                  estaciones={sectorActivo?.estaciones || []}
+                  modo={modoKds}
+                  umbralMin={sectorActivo?.umbral_min || 18}
+                  timezone={branch?.timezone || tenant?.timezone}
+                  nombreDePantalla={sectorActivo
+                    ? `${sectorActivo.name}${branch?.name ? ` · ${branch.name}` : ''}`
+                    : branch?.name || null}
+                  onMarcarPlato={marcarPlatoDeCocina}
+                  onCerrarTicket={(t) => cerrarTicketDeCocina(t, sectorActivo?.id || null)}
+                  showToast={msg}
+                />
+              )}
             </>
           )}
           {tab === 'sectores' && (
@@ -1415,6 +1522,12 @@ export default function PlatformAdmin() {
                 onSeleccionar={setMesaEnEdicion}
                 onNuevo={nuevaMesa}
                 onCobrarMesa={cobrarMesa}
+                /* El mozo cierra lo que la cocina le canta. Un sector de papel
+                   no tiene donde marcar del otro lado: si no se cierra desde
+                   aca, no se cierra nunca. */
+                sectores={sectores}
+                cocina={ticketsDeCocina}
+                onCerrarSector={cerrarSectorDesdeSalon}
               />
               {mesaEnEdicion && (
                 <EditorDeMesa

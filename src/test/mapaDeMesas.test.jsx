@@ -198,3 +198,79 @@ describe('MapaDeMesas', () => {
     expect(screen.getByRole('button', { name: /Nueva sillón/i })).toBeInTheDocument();
   });
 });
+
+// Lo que la cocina y la barra le deben a la mesa (0075). El mozo cierra desde
+// aca SOLO los sectores que despachan en papel: los de pantalla los marca
+// quien cocina, y dos lugares para lo mismo es la forma mas facil de que un
+// plato se de por entregado sin que nadie lo haya visto.
+describe('lo que falta producir, visto desde la mesa', () => {
+  const COCINA = { id: 'sec-cocina', name: 'Cocina', mode: 'pantalla' };
+  const BARRA = { id: 'sec-barra', name: 'Barra', mode: 'papel' };
+
+  const orden = {
+    id: 'o1', resource_id: 'm1', status: 'preparing', total: 12000,
+    created_at: '2026-09-12T21:00:00-03:00',
+  };
+  const enCocina = [{
+    ...orden,
+    order_items: [
+      { id: 'i1', qty: 1, name_snapshot: 'Milanesa', sector_id: COCINA.id, ready_at: null },
+      { id: 'i2', qty: 2, name_snapshot: 'Gaseosa', sector_id: BARRA.id, ready_at: null },
+    ],
+  }];
+
+  const abrirMesa = (extra = {}) => {
+    render(
+      <MapaDeMesas
+        recursos={[mesa()]}
+        reservas={[{ resource_id: 'm1', status: 'in_service' }]}
+        ordenes={[orden]}
+        sectores={[COCINA, BARRA]}
+        cocina={enCocina}
+        {...extra}
+      />
+    );
+    fireEvent.click(screen.getByLabelText(/Mesa 1/));
+    return screen.getByLabelText('Detalle de la mesa');
+  };
+
+  it('muestra cuantos platos debe cada sector', () => {
+    const detalle = abrirMesa();
+    expect(within(detalle).getByText('Cocina')).toBeInTheDocument();
+    expect(within(detalle).getByText('1 plato')).toBeInTheDocument();
+    expect(within(detalle).getByText('2 platos')).toBeInTheDocument();
+  });
+
+  it('el boton de entregado es SOLO del sector que despacha en papel', () => {
+    const onCerrarSector = vi.fn();
+    const detalle = abrirMesa({ onCerrarSector });
+
+    const botones = within(detalle).getAllByRole('button', { name: 'Entregado' });
+    expect(botones).toHaveLength(1);
+
+    fireEvent.click(botones[0]);
+    expect(onCerrarSector).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'o1' }),
+      expect.objectContaining({ id: BARRA.id }),
+    );
+  });
+
+  it('el sector con pantalla se ve y no se toca', () => {
+    const detalle = abrirMesa({ onCerrarSector: vi.fn() });
+    expect(within(detalle).getByText(/en pantalla/i)).toBeInTheDocument();
+  });
+
+  it('sin nada en produccion no dibuja el bloque', () => {
+    render(
+      <MapaDeMesas
+        recursos={[mesa()]}
+        reservas={[{ resource_id: 'm1', status: 'in_service' }]}
+        ordenes={[orden]}
+        sectores={[COCINA, BARRA]}
+        cocina={[]}
+      />
+    );
+    fireEvent.click(screen.getByLabelText(/Mesa 1/));
+    expect(screen.queryByText(/en producción/i)).not.toBeInTheDocument();
+  });
+});

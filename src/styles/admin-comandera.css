@@ -1,0 +1,244 @@
+/* La comandera: el sector que despacha en papel.
+ *
+ * NO ES EL KDS Y NO TIENE QUE PARECERLO. El KDS se lee a tres metros, parado,
+ * entre dos cosas calientes: por eso ahi todo grita. Esta pantalla vive
+ * minimizada en la computadora que tiene la impresora y se mira dos veces por
+ * servicio, sentado. Si gritara, gritaria al vacio.
+ *
+ * Lo unico que tiene peso visual es la linea de estado: es lo que alguien
+ * comprueba de pasada para saber si el sector esta cubierto.
+ */
+
+.ag-comandera {
+  display: grid;
+  gap: var(--ag-sp-4);
+  max-width: 1100px;
+}
+
+.ag-comandera-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ag-sp-4);
+  flex-wrap: wrap;
+}
+
+.ag-comandera-sector {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ag-ink);
+}
+
+.ag-comandera-sector span {
+  margin-left: 9px;
+  font-family: var(--ag-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+  vertical-align: middle;
+}
+
+.ag-comandera-sub {
+  margin: 6px 0 0;
+  max-width: 46ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ag-ink-2);
+}
+
+.ag-comandera-ajustes {
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-3);
+  flex-wrap: wrap;
+}
+
+.ag-comandera-ancho {
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ag-comandera-ancho legend {
+  float: left;
+  margin-right: 9px;
+  padding: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-comandera-ancho label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-sm);
+  font-size: 13px;
+  color: var(--ag-ink);
+  cursor: pointer;
+}
+
+.ag-comandera-ancho label:has(input:checked) {
+  border-color: var(--ag-accent);
+  background: var(--ag-surface-2);
+}
+
+/* ── El estado, que es lo unico que se mira de pasada ───────────────── */
+
+.ag-comandera-estado {
+  margin: 0;
+  padding: 12px 15px;
+  border-radius: var(--ag-r-sm);
+  border-left: 3px solid var(--ag-bad);
+  background: var(--ag-bad-bg);
+  color: var(--ag-ink);
+  font-family: var(--ag-font-mono);
+  font-size: 13px;
+}
+
+.ag-comandera-estado[data-encendida='true'] {
+  border-left-color: var(--ag-ok);
+  background: var(--ag-ok-bg);
+}
+
+.ag-comandera-aviso {
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-warn-bg);
+  color: var(--ag-warn);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── Las dos listas ────────────────────────────────────────────────── */
+
+.ag-comandera-cuerpo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ag-sp-4);
+  align-items: start;
+}
+
+.ag-comandera-col {
+  display: grid;
+  gap: var(--ag-sp-2);
+  padding: var(--ag-sp-4);
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-md);
+  background: var(--ag-surface);
+}
+
+.ag-comandera-titulo {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ag-ink-3);
+}
+
+.ag-comandera-titulo small {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.85;
+}
+
+.ag-comandera-lista {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ag-comandera-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ag-sp-3);
+  padding: 10px 12px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-surface-2);
+}
+
+.ag-comandera-item[data-fallida='true'] {
+  border-color: var(--ag-bad);
+}
+
+.ag-comandera-item-datos { display: grid; gap: 2px; min-width: 0; }
+.ag-comandera-item-datos strong { font-size: 14px; color: var(--ag-ink); }
+
+.ag-comandera-item-datos span {
+  font-family: var(--ag-font-mono);
+  font-size: 11.5px;
+  color: var(--ag-ink-3);
+}
+
+.ag-comandera-fallo { font-size: 11.5px; font-style: normal; color: var(--ag-bad); }
+.ag-comandera-item-acciones { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.ag-comandera-vacio {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ag-ink-3);
+}
+
+.ag-comandera-ayuda {
+  padding: 12px 15px;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-surface);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ag-ink-2);
+}
+
+.ag-comandera-ayuda summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ag-ink);
+}
+
+.ag-comandera-ayuda ol { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+.ag-comandera-ayuda p { margin: 10px 0 0; }
+.ag-comandera-ayuda strong { color: var(--ag-ink); }
+
+.ag-comandera-ayuda code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--ag-surface-2);
+  font-family: var(--ag-font-mono);
+  font-size: 12px;
+}
+
+.ag-comandera-pie {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ag-ink-3);
+}
+
+@media (max-width: 860px) {
+  .ag-comandera-cuerpo { grid-template-columns: minmax(0, 1fr); }
+  .ag-comandera-head { flex-direction: column; align-items: stretch; }
+}

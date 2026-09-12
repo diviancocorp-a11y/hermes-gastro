@@ -190,6 +190,28 @@ export const MUESTRAS = {
     props: { sectores: [], productosSinEstacion: 0 },
     anchos: [980],
   },
+  comandera: {
+    modulo: 'src/components/admin/platform/ComanderaPanel.jsx',
+    titulo: 'Comandera · el sector que despacha en papel',
+    props: {
+      sector: SECTORES[1],
+      porImprimir: TICKETS
+        .map(t => ({ ...t, order_items: t.order_items.filter(i => i.sector_id === 'sec-barra') }))
+        .filter(t => t.order_items.length)
+        .slice(0, 2),
+      abiertas: TICKETS
+        .map(t => ({
+          ...t,
+          order_items: t.order_items.filter(i => i.sector_id === 'sec-barra'),
+          printed_at: t.kitchen_at,
+          impresiones: 1,
+        }))
+        .filter(t => t.order_items.length)
+        .slice(2, 4),
+      ahoraFijo: AHORA_KDS,
+    },
+    anchos: [1100, 700],
+  },
   conteo: {
     modulo: 'src/components/admin/platform/ConteoDeDeposito.jsx',
     titulo: 'Conteo de depósito · mobile',

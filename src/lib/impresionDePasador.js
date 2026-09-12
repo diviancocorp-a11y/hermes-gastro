@@ -15,6 +15,14 @@
 // son comandos ESC/POS. Cuando haga falta, `imprimirEtiqueta` es el unico
 // lugar que cambia: recibe texto plano, que es lo que ESC/POS tambien manda.
 //
+// CHROME PIDE CONFIRMACION SALVO QUE SE LO DIGA
+// `print()` abre la ventana de vista previa y espera. Para una comandera que
+// imprime sola toda la noche eso no sirve: el equipo del sector tiene que
+// abrir Chrome con `--kiosk-printing`, que manda directo a la impresora
+// PREDETERMINADA sin preguntar. Esta escrito en `docs/plataforma/COMANDERA.md`
+// y la propia pantalla lo explica, porque es lo que decide si la funcion
+// sirve en una cocina o no.
+//
 // LA IMPRESION NO PUEDE FRENAR LA COCINA
 // Si la impresora no responde, el ticket se cierra igual. El diseño lo dice:
 // "si la impresora no responde, el KDS deja el aviso en la pantalla de
