@@ -62,7 +62,9 @@ export const ROLES = {
     id: 'kitchen',
     label: 'Cocina',
     descripcion: 'Prepara y marca listo. No ve precios ni cobra.',
-    abreEn: 'orders',
+    // Abre en el KDS, no en Pedidos: Pedidos es la pantalla administrativa
+    // —aprobar, cobrar, cancelar— y nada de eso es de la cocina.
+    abreEn: 'kds',
     // Solo tiene sentido en un local que cocina.
     soloVerticales: ['gastro'],
     requiereSalon: true,
@@ -94,11 +96,11 @@ const MATRIZ = {
   owner: {
     products: COMPLETO, orders: COMPLETO, mesas: COMPLETO, agenda: COMPLETO,
     caja: COMPLETO, stock: COMPLETO, finanzas: COMPLETO, ventas: COMPLETO,
-    personal: COMPLETO, variants: COMPLETO,
+    personal: COMPLETO, variants: COMPLETO, kds: COMPLETO, sectores: COMPLETO,
   },
   manager: {
     products: COMPLETO, orders: COMPLETO, mesas: COMPLETO, agenda: COMPLETO,
-    caja: COMPLETO, stock: COMPLETO,
+    caja: COMPLETO, stock: COMPLETO, kds: COMPLETO, sectores: COMPLETO,
     // Acotados a su sucursal: el encargado de una no mira los numeros de otra.
     finanzas: PROPIO, ventas: PROPIO, personal: PROPIO, variants: COMPLETO,
   },
@@ -122,6 +124,10 @@ const MATRIZ = {
     // Sin precio ni costo: la cocina necesita saber que preparar, no cuanto
     // sale. El recorte de columnas lo hace la pantalla.
     products: LECTURA, orders: PROPIO, stock: PROPIO, personal: PROPIO,
+    // Su pantalla. `sectores` NO: donde se hace cada cosa es una decision del
+    // negocio, no del turno, y cambiarla en medio del servicio reordena el
+    // riel de todos.
+    kds: COMPLETO,
   },
   marketer: {
     products: LECTURA, ventas: LECTURA,

@@ -13,6 +13,7 @@ import {
   pantallaInicial, rolesAsignables, etiquetaDeRol, vePrecios,
   puedeAbrirDestino,
 } from '../modules/roles';
+import { RUBROS, modulosDe } from '../modules/registry';
 
 const MODULOS_GASTRO = ['products', 'orders', 'mesas', 'caja', 'stock', 'finanzas', 'ventas', 'personal'];
 
@@ -207,5 +208,33 @@ describe('los destinos que no son modulos', () => {
   it('un modulo comun no es un destino suelto', () => {
     expect(puedeAbrirDestino(['owner'], 'products')).toBe(false);
     expect(puedeAbrirDestino(['owner'], undefined)).toBe(false);
+  });
+});
+
+// Un modulo que no figura en la matriz es `nada` para todos —el olvido tiene
+// que ser seguro— pero eso tambien hace que una pantalla nueva quede
+// invisible sin que falle nada. Paso con Cocina y Produccion: las dos se
+// publicaron, las dos funcionaban, y ninguna aparecia en la navegacion de
+// nadie, ni siquiera del duenio.
+describe('ninguna pantalla publicada queda sin puerta', () => {
+  const publicados = [...new Set(
+    Object.keys(RUBROS).flatMap(v => modulosDe(v).map(m => m.id)),
+  )];
+
+  it('hay modulos implementados para revisar', () => {
+    expect(publicados.length).toBeGreaterThan(5);
+  });
+
+  it('el duenio llega a todos', () => {
+    for (const m of publicados) {
+      expect(puedeVer(['owner'], m), `owner no llega a ${m}`).toBe(true);
+    }
+  });
+
+  it('la cocina abre en su pantalla y no en la administrativa', () => {
+    expect(ROLES.kitchen.abreEn).toBe('kds');
+    expect(puedeVer(['kitchen'], 'kds')).toBe(true);
+    // Donde se hace cada cosa lo decide el negocio, no el turno.
+    expect(puedeVer(['kitchen'], 'sectores')).toBe(false);
   });
 });
