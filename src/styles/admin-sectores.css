@@ -24,26 +24,8 @@
   flex-wrap: wrap;
 }
 
-.ag-sectores-head h1 {
-  margin: 0;
-  font-family: var(--ag-font-display, inherit);
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--ag-ink);
-}
-
-.ag-sectores-head h1::after {
-  content: '';
-  display: block;
-  width: 2.4ch;
-  height: 2px;
-  margin-top: 7px;
-  background: var(--ag-accent);
-}
-
 .ag-sectores-sub {
-  margin: 8px 0 0;
+  margin: 0;
   font-family: var(--ag-font-mono);
   font-size: 12px;
   color: var(--ag-ink-3);

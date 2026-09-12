@@ -274,9 +274,6 @@ export default function SectoresPanel({
   if (sectores.length === 0) {
     return (
       <section className="ag-sectores">
-        <header className="ag-sectores-head">
-          <h1>Producción</h1>
-        </header>
         <div className="ag-sectores-arranque">
           <strong>Todavía no hay sectores</strong>
           <p>
@@ -303,9 +300,9 @@ export default function SectoresPanel({
 
   return (
     <section className="ag-sectores">
+      {/* Sin <h1>: el chrome del panel ya escribe "Producción" arriba. */}
       <header className="ag-sectores-head">
         <div>
-          <h1>Producción</h1>
           <p className="ag-sectores-sub">
             {sectores.length} {sectores.length === 1 ? 'sector' : 'sectores'}
             {' · '}

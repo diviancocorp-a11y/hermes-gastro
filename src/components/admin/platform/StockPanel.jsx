@@ -455,8 +455,10 @@ export default function StockPanel({
   return (
     <section className="ag-stock">
       <header className="ag-stock-head">
+        {/* Sin titulo propio: el chrome del panel ya escribe el nombre de la
+            seccion (`ag-section-title`). Repetirlo dejaba "Stock" dos veces
+            en pantalla y dos <h1> en el documento. */}
         <div className="ag-stock-titulo">
-          <h1>Stock</h1>
           <span className="ag-stock-resumen">
             {insumos.length} insumos
             {resumen.bajos > 0 && <> · <b>{resumen.bajos} bajo mínimo</b></>}
