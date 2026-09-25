@@ -1,0 +1,65 @@
+{
+  "ok": true,
+  "atlas": "/workspace/scratch/264975bcfa8f/dico-pet/final/spritesheet-extended-compact.png",
+  "encoded_bytes": 3144491,
+  "sha256": "06eb6420c3b776ab48b069c85e4ae86b60061100500d17876b72158946b8390e",
+  "jump": {
+    "idle_baseline": 201,
+    "jump_baselines": [
+      201,
+      201,
+      166,
+      197,
+      202
+    ],
+    "airborne_lift_pixels": 36,
+    "landing_delta_pixels": 1
+  },
+  "look_registration": {
+    "neutral_center_x": 95.5,
+    "look_centers_x": [
+      96.0,
+      95.5,
+      96.0,
+      96.0,
+      96.0,
+      96.0,
+      96.0,
+      96.0,
+      96.5,
+      96.5,
+      96.5,
+      95.5,
+      95.5,
+      96.5,
+      95.5,
+      95.5
+    ],
+    "look_widths": [
+      136,
+      135,
+      136,
+      136,
+      136,
+      136,
+      136,
+      136,
+      137,
+      137,
+      137,
+      137,
+      137,
+      137,
+      137,
+      137
+    ],
+    "maximum_center_drift_pixels": 1.0,
+    "maximum_width_ratio": 1.0148148148148148
+  },
+  "errors": [],
+  "warnings": [
+    "157.5->180 diff is a local outlier (1203 pixels vs neighbor average 553)",
+    "225->247.5 diff is a local outlier (966 pixels vs neighbor average 610)",
+    "337.5->000 diff is a local outlier (1291 pixels vs neighbor average 716)"
+  ]
+}
