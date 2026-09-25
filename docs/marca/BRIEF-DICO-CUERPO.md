@@ -1,173 +1,146 @@
 # Brief — el cuerpo de Dico
 
-> **Histórico desde el 25/ago/2026.** El brief original incluía galera. La
-> anatomía Core vigente la retiró junto con bigote y nariz para darle identidad
-> propia a Dico. El cuerpo activo es `poses/moneda.webp`; la versión anterior
-> quedó archivada como `poses/moneda-retro-galera.webp`. No volver a generar el
-> Core con este prompt sin adaptar esa parte.
-
-> **Un solo render, y sin cara.** Reemplaza al brief de seis poses: con la cara
-> de tinta encima, las expresiones son SVG y no hacen falta renders por estado.
+> **Vigente desde el 25/sep/2026.** Reemplaza al brief del cuerpo Core, que
+> pedía un disco liso sin cara para montarle una capa de tinta SVG encima.
+> Ese camino se abandonó: ver "Lo que se dio de baja".
 
 ---
 
-## Por qué uno solo
+## Dico tiene DOS versiones y nada más
 
-La cara es una capa de tinta plana dibujada en SVG arriba del render. Eso
-cambia el pedido de raíz:
+| | Qué es | Dónde vive | Quién la dibuja |
+|---|---|---|---|
+| **La marca** | El disco 2D. Oro, aro azul, dos óvalos negros. Sin boca ni nariz. | `public/brand/dico/dico-2d-*.png` | `DicoNative` |
+| **El pet** | El personaje 3D completo, con brazos, guantes, piernas y botas. | `public/brand/dico/pet/dico-pet-atlas.webp` | `DicoPhysical` |
 
-| | Seis poses | Un cuerpo + cara de tinta |
-|---|---|---|
-| Imágenes a generar | 6, y tienen que calzar entre sí | **1** |
-| Consistencia entre estados | el riesgo principal | **no existe: es la misma imagen siempre** |
-| Una expresión nueva | otro render | dos curvas |
-| Parpadeo y pupilas | imposibles en un PNG | ya funcionan |
-| A 30px | el sombreado 3D se empasta | la tinta se lee |
+Las dos comparten la identidad: mismo oro, mismo aro azul, mismos dos óvalos
+negros como ojos. **Esa es la prueba de que son el mismo personaje**, y es lo
+único que no se negocia. Todo lo demás —piernas, guantes, animación— es
+vocabulario que la marca no necesita y el pet sí.
 
-Y de paso resuelve lo que dijiste de la última versión: una cara 3D con
-mejillas y nariz esculpidas se ve "humana" —cae en el valle inquietante— y una
-de tinta no puede caer ahí, porque no pretende ser real.
+Hay un contrato que lo sostiene: `src/test/dicoIdentidad.test.jsx` camina el
+grafo de imports real desde `src/main.jsx` y falla si aparece un tercer cuerpo.
 
 ---
 
-## El prompt
+## La marca
 
-Lo que va en mayúscula es lo que el modelo se saltea si no se lo grita. Los
-generadores tienden a grabarle una cara o un número a cualquier moneda: por eso
-la negación va repetida.
+Siete estados, uno por `nativeState`: `neutral`, `curious`, `happy`,
+`celebrate`, `alert`, `concerned`, `question`. Comunica con **cejas y ojos**,
+sin boca.
 
-```
-3D render of a gold coin character body, front view, facing the camera straight
-on, centered, floating.
-
-Polished gold coin, perfectly circular, seen face-on. Visible milled reeded edge
-around the rim and a beveled border with embossed concentric ring detail.
-
-THE FACE OF THE COIN IS COMPLETELY BLANK AND SMOOTH. NO FACE, NO EYES, NO MOUTH,
-NO NOSE, NO TEXT, NO NUMBERS, NO ENGRAVING, NO SYMBOLS in the center. Just clean
-empty polished gold.
-
-Thin copper-orange rubber-hose arms coming out from behind the coin at the sides,
-with white four-finger cartoon gloves, relaxed and hanging down. NO LEGS, NO FEET.
-
-Soft studio lighting from the upper left, subtle ambient occlusion, glossy
-metallic gold material.
-
-Plain flat neutral grey background, no ground shadow.
-
-Square composition, the coin fills about 62% of the frame with empty margin on
-all sides.
-
-Pixar-style 3D product render, high detail, clean, professional.
-```
-
-**De frente y no en 3/4**, aunque el 3/4 haya salido más lindo. Dos razones: la
-cara plana se monta sobre un círculo sin deformarla (sobre una elipse hay que
-proyectarla y calibrarla a ojo), y de frente se lee mejor a 30px. El 3/4 que ya
-tenés queda para el hero del alta y para marketing, donde entra a 190px.
-
----
-
-## Requisitos
-
-| Qué | Cómo |
-|---|---|
-| Nombre | `moneda.webp` (o `.png` / `.avif`) |
-| Dónde | `src/components/dico/poses/` |
-| Fondo | **Transparente.** Se genera sobre gris plano y se recorta después |
-| Lienzo | Cuadrado, moneda centrada, ~62% del alto |
-| Tamaño | **512×512** |
-| Peso | Bajo 80 KB |
-
-**La cara del disco tiene que estar limpia de verdad.** Cualquier grabado en el
-centro va a competir con los ojos de tinta. Si el generador insiste en ponerle
-algo, se borra a mano: es una imagen sola, no seis.
-
----
-
-## Cuando esté
-
-No hay nada que cablear: el componente busca `poses/moneda.*` y si lo encuentra
-lo usa; si no, dibuja una moneda provisoria en SVG. Se verifica acá:
+Se generan desde `platform/brand/dico-2d-masters/` y **no se editan a mano**:
 
 ```bash
-npm run qa:lite:setup
-node scripts/qa-lite/revision-phase4.mjs
+node scripts/dico-2d-derivar.mjs --check
 ```
 
-`http://127.0.0.1:5273/admin`, entrando con el owner efímero que el script
-deja en `.qa-lite/revision-phase4.txt`. Dico vive en el panel, así que se lo
-mira ahí mismo. Lo que hay que mirar:
-
-1. **Que la cara caiga sobre el disco.** Si el render tiene la moneda más
-   grande o más chica que la provisoria, la tinta va a quedar corrida. Se
-   corrige con `CAMPO` en `src/components/dico/CaraDeTinta.jsx` — un centro y
-   un radio, nada más.
-2. **A 30px**: que se distinga `contento` de `preocupado`.
-3. **Sobre fondo oscuro**: que no haya quedado un halo gris del recorte. Es el
-   error más común y sólo se ve sobre negro.
+Es la versión que se usa cuando Dico tiene que estar **presente y chico**: la
+barra lateral, un aviso, cualquier lugar donde entre a 30 o 40 píxeles. A ese
+tamaño un render 3D se empasta y la tinta plana se lee.
 
 ---
 
-## Lo que ya está hecho
+## El pet
 
-- `CaraDeTinta.jsx` — los cinco estados en tinta, estilo rubber hose.
-- `DicoCara.jsx` — elige render o moneda provisoria, misma API de siempre:
-  `<DicoCara estado="contento" size={30} />`.
-- `dico.css` — todo el movimiento: boya, bamboleo, follow-through, sacadas,
-  parpadeo doble irregular, salto con squash, ladeo, y la entrada girando.
-- `BurbujaDico.jsx` — el globo de historieta, con tipeo letra por letra.
+Un solo archivo: un atlas de **1536×2288**, ocho columnas por once filas,
+**celda de 192×208**, setenta y tres cuadros dibujados.
+
+```bash
+npm run dico:pet:derive    # master PNG -> runtime WebP lossless
+npm run dico:pet:check     # falla si el master cambió o el derivado difiere
+```
+
+El master es inmutable y se comprueba **por sha256**. Un atlas reexportado
+"igual pero mejor" corre las celdas medio píxel y Dico empieza a temblar en
+pantalla sin que falle nada más.
+
+El derivado es **lossless a propósito**. Con pérdida, los bordes de cada celda
+se manchan, y al recortar por `background-position` esa mugre aparece como un
+halo del cuadro de al lado. No es una preferencia de calidad: es la diferencia
+entre que el recorte funcione o no.
+
+### Las once filas
+
+| Fila | Cuadros | fps | Para qué |
+|---|---|---|---|
+| `idle` | 6 | 8 | reposo |
+| `correDerecha` · `correIzquierda` · `corre` | 8 · 8 · 6 | 14 | sin uso todavía |
+| `saluda` | 4 | 10 | `explain` |
+| `salta` | 5 | 12 | `success` |
+| `falla` | 8 | 10 | `error` |
+| `espera` | 6 | 7 | `thinking` |
+| `revisa` | 6 | 8 | `worried` |
+| `miradaA` · `miradaB` | 8 + 8 | — | dieciséis direcciones fijas |
+
+Las filas se llenan de izquierda a derecha y el resto queda transparente. Por
+eso `cuadros` no es siempre ocho: animar las ocho columnas de `idle` haría
+desaparecer a Dico dos veces por vuelta.
+
+### Mirar no es señalar
+
+`pointUp` y `pointDown` **no levantan el guante**: el pack no tiene esa pose.
+Resuelven a una de las dieciséis direcciones de mirada, que dan la misma
+instrucción con los ojos. Cero grados es **arriba**, en sentido horario.
+
+Inventar un brazo levantado recortando otro cuadro habría sido dibujar una
+anatomía que el personaje no tiene.
+
+### El vocabulario de arriba no cambió
+
+`physicalPose` sigue teniendo los mismos ocho valores. Lo que cambió es a qué
+resuelven: antes a un archivo, ahora a una fila del atlas. Cambiar el
+vocabulario habría obligado a tocar `DicoPresence`, `DicoAvisos` y cada llamada
+del panel para no ganar nada.
 
 ---
 
-## Los ojos: en qué formato mandarlos
+## Cómo pedir arte nuevo
 
-La cara que hay ahora está dibujada **a ojo desde una referencia chica**, y por
-eso no se parece. No es cuestión de intentarlo de nuevo: con una imagen de
-100px no hay forma de sacar las curvas exactas. Lo que cambia el resultado es
-el formato.
+**Lo primero es la referencia.** Cualquier render nuevo se genera con
+`public/brand/dico/dico-2d-neutral.png` a la vista. Los tres cuerpos que se
+dieron de baja fallaron todos en lo mismo: se generaron sin ella y salió otro
+personaje.
 
-### 1. SVG — el bueno, y por lejos
+Lo que tiene que cumplir un render de Dico:
 
-La hoja de caras que pasaste dice **"EDITABLE STROKE"**: es un pack vectorial.
-Si tenés el archivo original (`.svg`, `.ai` o `.eps`), es la solución completa:
+- **Oro pulido con aro azul.** El aro no es un adorno, es la mitad de la marca.
+- **Dos óvalos negros como ojos. Sin boca, sin nariz, sin cejas, sin pestañas.**
+  En cuanto aparece una boca deja de ser Dico y pasa a ser una moneda con cara.
+- **Sin galera y sin bigote.** Se retiraron el 25/ago para darle identidad
+  propia; volvieron dos veces por inercia del generador.
+- **Fondo transparente de verdad**, sin halo. El error más común, y sólo se ve
+  sobre negro.
+- **Registro constante**: el personaje centrado en su celda y los pies a la
+  misma altura en todos los cuadros. Sin eso el sprite tiembla.
 
-- Leo el markup y **levanto los paths exactos**. Cero interpretación.
-- La hoja tiene ~28 expresiones, así que **los cinco estados salen del mismo
-  pack** y en el mismo trazo. El problema de consistencia desaparece para
-  siempre, y agregar un estado nuevo es elegir otra cara de la hoja.
+Un sprite nuevo entra por `platform/brand/dico-pet-masters/`, se declara en
+`platform/brand/dico-pet-assets.mjs` y se deriva con `npm run dico:pet:derive`.
+El manifiesto es **la única fuente** de la geometría: lo leen el derivador, el
+componente y el test. Repetir el tamaño de celda en dos lugares es exactamente
+como el recorte termina corrido.
 
-Cómo conseguirlo:
-- El pack que descargaste ya trae `.eps` o `.ai`. Abrilo en Illustrator,
-  Inkscape (gratis) o Figma y exportá **SVG**.
-- En Figma alcanza con pegar el vector, botón derecho → *Copy as SVG*.
+---
 
-Dónde ponerlo: `src/components/dico/poses/cara.svg`. Si son varias, una por
-estado: `cara-idle.svg`, `cara-contento.svg`, etc. **No hace falta separar
-ojos de boca**: mandá la cara entera y yo la parto.
+## Lo que se dio de baja el 25/sep/2026
 
-> Si el pack es de stock, revisá que la licencia habilite uso comercial dentro
-> de un producto. No es un detalle menor cuando el personaje es la marca.
+Llegaron a convivir cuatro cuerpos y tres de ellos no reproducían la marca.
 
-### 2. PNG con transparencia — el segundo
+**El cuerpo Core** (`poses/moneda.webp` + `brazos.webp` + `CaraDeTinta.jsx`).
+Un disco liso con la cara dibujada en SVG encima. La idea era buena —una
+expresión nueva costaba dos curvas en vez de un render— pero el disco perdió
+el aro azul, y la cara de tinta tenía esclerótica, párpados y cejas que la
+marca no tiene. Con él se fueron `DicoCara`, `CaraDeTinta`, `DicoCoreEscena` y
+`dico.css` entero: 436 líneas que ya no dibujaban nada.
 
-Sólo la cara, **sin la moneda**, sobre fondo transparente, de 1024px o más,
-tinta plena. Lo calco a paths. Sale bien, pero hay interpretación mía en el
-medio: las curvas las reconstruyo, no las copio.
+**El pack 3D de ocho poses** (`platform/brand/dico-3d-masters/`). Mostaza en
+vez de oro, ojos de dibujo con pestañas, nariz y boca. Era el que veían los
+clientes cuando Dico aparecía en el panel.
 
-### 3. JPG con fondo — el que ya probamos
+**Las siete escenas heredadas** (`poses/escena-*.webp`). Galera y bigote. Ya
+estaban marcadas como retiradas y los archivos seguían en el repo; sólo las
+alcanzaban los tests.
 
-Redibujo a ojo. Es lo que falló dos veces. Sirve para decidir el estilo, no
-para clavar el dibujo.
-
-### Cómo "subirlo"
-
-Guardá el archivo en `src/components/dico/poses/` y decime el nombre. Leo
-directo de ahí — así llegaron los dos renders de la moneda.
-
-### Qué pasa cuando llegue
-
-Se cambian los paths de `CaraDeTinta.jsx` y nada más. El armado, los cinco
-estados, el parpadeo, las sacadas y todo el movimiento **no se tocan**: están
-enganchados por clase (`dico-ojo-tinta`, `dico-pupila`, `dico-boca--neutra`…),
-no por la forma del dibujo.
+Ninguno de los tres está más en el repo. El contrato anterior era más débil
+—vivían ahí y sólo se prohibía alcanzarlos desde el bundle— y eso duró hasta
+que alguien los volvió a importar.

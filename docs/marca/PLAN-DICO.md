@@ -1,5 +1,12 @@
 # Plan: Dico, el asistente
 
+> **Actualización 25/sep/2026: el cuerpo cambió.** `CaraDeTinta` y el cuerpo
+> Core se dieron de baja. Dico tiene ahora dos versiones —la marca 2D y el pet
+> 3D— y el documento vigente sobre el personaje es
+> `docs/marca/BRIEF-DICO-CUERPO.md`. Lo que sigue describe el plan del
+> asistente, que no cambió; el párrafo de abajo sobre la anatomía sí quedó
+> viejo.
+
 > Actualización 25/ago/2026: Dico Core ya no usa galera, bigote ni nariz como
 > anatomía. `CaraDeTinta.jsx` usa ojos simétricos de lenguaje retro 50s, con
 > pupila orgánica y recorte crema angosto. La moneda, los dos brazos y la cara

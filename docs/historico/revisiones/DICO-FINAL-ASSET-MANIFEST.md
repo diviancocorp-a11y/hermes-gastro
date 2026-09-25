@@ -1,5 +1,10 @@
 # DICO — Manifiesto de assets finales
 
+> **Histórico desde el 25/sep/2026.** Es una auditoría con fecha de corte, y
+> los archivos que inventaría ya no existen: el cuerpo Core, el pack 3D de
+> ocho poses y las siete escenas heredadas se dieron de baja. Hoy Dico tiene
+> dos versiones y están en `docs/marca/BRIEF-DICO-CUERPO.md`.
+
 **B6R.1 · auditoría.** Fecha de corte: 2026-09-01. Rama `feat/dico-panorama-v1`,
 HEAD `40de375`.
 
