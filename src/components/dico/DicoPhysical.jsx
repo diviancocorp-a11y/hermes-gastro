@@ -1,52 +1,78 @@
 /**
- * DicoPhysical — el personaje 3D en runtime, con el pack oficial.
+ * DicoPhysical — Dico 3D en runtime, desde el atlas del pet.
  *
  * Es un PRIMITIVE, no una maquina: recibe una pose y la dibuja. No sabe cuando
  * aparecer —eso lo decide `DicoPresence`—, no conoce el POS, no habla. Lo que
  * dice Dico va en la burbuja, que es otro componente: aca no se rasteriza
  * texto ni se simula lipsync nunca.
  *
- * ─────────────────── POR QUE NO PUEDE HABER SALTO ───────────────────
+ * ───────────────────── POR QUE YA NO HAY CRUCE ─────────────────────
  *
- * Los ocho assets comparten canvas EXACTO (1600x1136), centro (800, 546,5) y
- * diametro de moneda dentro del 0,29% — verificado por el validator que ya
- * esta en el repo. Asi que las dos capas se dibujan en la MISMA caja, con
- * `inset: 0` y `object-fit: contain`: el encuadre no puede moverse entre poses
- * porque no hay nada que lo mueva. No hace falta compensar nada.
+ * El pack anterior eran ocho WebP sueltos, y cambiar de pose significaba
+ * esperar una descarga: sin cruce, la primera vez que se usaba una pose se
+ * veia un hueco transparente. De ahi venian las dos capas, el `--lista` y el
+ * temporizador que las retiraba.
  *
- * Por eso tampoco hay microtraslacion. El brief la permite hasta 2px "si
- * realmente mejora la continuidad", y medido no hay discontinuidad que
- * mejorar: mover el personaje seria agregar movimiento decorativo, no
- * arreglarlo.
+ * El atlas es UNA imagen. Cuando Dico esta en pantalla ya esta cargada entera,
+ * asi que cambiar de pose es mover el recorte: no hay nada que esperar y nada
+ * contra que cruzar. Un fundido entre dos cuadros del mismo sprite ademas se
+ * ve mal, porque durante el cruce se superponen dos dibujos del mismo cuerpo.
  *
- * ───────────────────────── EL CRUCE ─────────────────────────
+ * ──────────────── POR QUE EL CUADRO LO MUEVE JAVASCRIPT ────────────────
  *
- * La pose saliente se queda OPACA abajo y la entrante aparece encima. No es un
- * cross-dissolve: si las dos se desvanecieran a la vez se veria el fondo a
- * traves del personaje en el medio del cambio. La saliente se retira recien
- * cuando la entrante termino.
+ * Cada fila tiene su propia cantidad de cuadros y su propio ritmo: el saludo
+ * son cuatro a 10 fps y la carrera ocho a 14. Con `steps()` de CSS eso son
+ * once animaciones declaradas a mano, cada una con su keyframe de
+ * `background-position`, y cualquier cambio en el atlas obliga a reescribirlas
+ * todas. Con un intervalo, el ritmo sale del manifiesto y el atlas manda.
  *
- * Y la entrante no empieza a aparecer hasta que el WebP CARGO. Sin eso, la
- * primera vez que se usa una pose el navegador todavia la esta bajando y el
- * cruce arranca contra un hueco transparente.
+ * Es UN intervalo, a 14 cuadros por segundo en el peor caso, para un
+ * personaje que aparece de a ratos. No es el cuello de botella de nada.
+ *
+ * ───────────────────────── MIRAR NO ES SENALAR ─────────────────────────
+ *
+ * `pointUp` y `pointDown` no levantan el guante: el pack no tiene esa pose.
+ * Resuelven a una de las dieciseis direcciones de mirada, que dan la misma
+ * instruccion con los ojos. Inventar un brazo levantado recortando otro cuadro
+ * habria sido dibujar una anatomia que el personaje no tiene.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PHYSICAL_POSES, physicalPoseCanonica } from './vocabulario';
+import {
+  DICO_PET_ATLAS,
+  DICO_PET_FILAS,
+  DICO_PET_POR_POSE,
+  DICO_PET_PUBLIC_PATH,
+  celdaDeMirada,
+} from '../../../platform/brand/dico-pet-assets.mjs';
 import useMediaQuery from '../../lib/useMediaQuery';
 import './physical.css';
 
-/** Duracion del cruce. El CSS lo lee de aca via variable. */
-export const CRUCE_MS = 140;
-
 /**
- * De pose a archivo. NO es una segunda lista: es la regla de nombre del pack
- * (`pointDown` -> `dico-3d-point-down.webp`), y hay un contrato que la compara
- * contra `platform/brand/dico-3d-assets.mjs`, que es el manifiesto certificado.
+ * Donde cae el recorte para una celda, en porcentaje.
+ *
+ * La formula divide por `columnas - 1` y no por `columnas`: con
+ * `background-size` al 800%, el 100% de posicion es el borde DERECHO de la
+ * ultima columna, no el ancho de una. Dividir por 8 deja cada cuadro corrido
+ * un octavo y el error crece hacia la derecha.
  */
-export const rutaDePose = (pose) => {
-  const guiones = pose.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
-  return `/brand/dico/physical/dico-3d-${guiones}.webp`;
-};
+export function posicionDeCelda(columna, fila, atlas = DICO_PET_ATLAS) {
+  const x = atlas.columnas > 1 ? (columna / (atlas.columnas - 1)) * 100 : 0;
+  const y = atlas.filas > 1 ? (fila / (atlas.filas - 1)) * 100 : 0;
+  return { x, y };
+}
+
+/** Que fila y que ritmo le toca a una pose del vocabulario. */
+export function planDePose(pose) {
+  const entrada = DICO_PET_POR_POSE[physicalPoseCanonica(pose)];
+  if (entrada?.animacion) {
+    const fila = DICO_PET_FILAS[entrada.animacion];
+    return { fila: fila.fila, cuadros: fila.cuadros, fps: fila.fps, columna: 0 };
+  }
+  // Mirada: una celda fija, sin ritmo.
+  const celda = celdaDeMirada(entrada?.mirada ?? 0);
+  return { fila: celda.fila, cuadros: 1, fps: 0, columna: celda.columna };
+}
 
 export default function DicoPhysical({
   pose = 'idle',
@@ -57,73 +83,47 @@ export default function DicoPhysical({
 }) {
   const actual = physicalPoseCanonica(pose);
   const menosMovimiento = useMediaQuery('(prefers-reduced-motion: reduce)');
-  const sinCruce = reducedMotion ?? menosMovimiento;
+  const quieto = reducedMotion ?? menosMovimiento;
 
-  // Estado derivado de props SIN efecto: es el patron de React para "ajustar
-  // estado cuando una prop cambia". Con un efecto, el primer frame despues del
-  // cambio dibujaria la pose nueva sin la saliente y el cruce se perderia.
-  const [capas, setCapas] = useState({ actual, saliente: null, lista: true });
-  if (capas.actual !== actual) {
-    setCapas({
-      actual,
-      saliente: sinCruce ? null : capas.actual,
-      // Con reduced motion no hay nada que esperar: el cambio es inmediato.
-      lista: sinCruce,
-    });
+  const plan = useMemo(() => planDePose(actual), [actual]);
+  const [cuadro, setCuadro] = useState(0);
+
+  // El cuadro vuelve a cero al cambiar de pose. Entrar a `falla` por el cuadro
+  // cinco porque el `idle` anterior iba por ahi arranca la animacion a la
+  // mitad y se lee como un salto.
+  const poseAnterior = useRef(actual);
+  if (poseAnterior.current !== actual) {
+    poseAnterior.current = actual;
+    setCuadro(0);
   }
 
-  const temporizador = useRef(null);
-  const retirarSaliente = useCallback(() => {
-    setCapas((c) => (c.saliente === null ? c : { ...c, saliente: null }));
-  }, []);
-
-  // La saliente se retira cuando termina el cruce. El tope existe para que una
-  // imagen que no carga nunca no deje dos capas montadas para siempre.
   useEffect(() => {
-    if (capas.saliente === null) return undefined;
-    clearTimeout(temporizador.current);
-    temporizador.current = setTimeout(retirarSaliente, capas.lista ? CRUCE_MS + 20 : CRUCE_MS + 900);
-    return () => clearTimeout(temporizador.current);
-  }, [capas.saliente, capas.lista, retirarSaliente]);
+    if (quieto || plan.fps <= 0 || plan.cuadros <= 1) return undefined;
+    const id = setInterval(
+      () => setCuadro((c) => (c + 1) % plan.cuadros),
+      Math.round(1000 / plan.fps),
+    );
+    return () => clearInterval(id);
+  }, [quieto, plan.fps, plan.cuadros]);
 
-  const entranteCargo = useCallback(() => {
-    setCapas((c) => (c.lista ? c : { ...c, lista: true }));
-  }, []);
-
-  const clases = ['dico-pose', sinCruce ? 'dico-pose--sin-cruce' : '', className]
-    .filter(Boolean).join(' ');
+  const columna = plan.cuadros > 1 ? cuadro : plan.columna;
+  const { x, y } = posicionDeCelda(columna, plan.fila);
 
   return (
     <div
-      className={clases}
-      style={{ '--dico-cruce': `${CRUCE_MS}ms` }}
+      className={['dico-pose', quieto ? 'dico-pose--quieto' : '', className].filter(Boolean).join(' ')}
       role="img"
       aria-label={title}
-      data-dico-physical={capas.actual}
-      data-dico-physical-cruzando={capas.saliente ? 'si' : 'no'}
+      data-dico-physical={actual}
+      data-dico-physical-cuadro={columna}
     >
-      {capas.saliente && (
-        <img
-          key={capas.saliente}
-          className="dico-pose-capa dico-pose-capa--saliente"
-          src={rutaDePose(capas.saliente)}
-          alt=""
-          width={1600}
-          height={1136}
-          draggable="false"
-          aria-hidden="true"
-        />
-      )}
-      <img
-        key={capas.actual}
-        className={`dico-pose-capa dico-pose-capa--actual${capas.lista ? ' dico-pose-capa--lista' : ''}`}
-        src={rutaDePose(capas.actual)}
-        alt=""
-        width={1600}
-        height={1136}
-        draggable="false"
-        decoding="async"
-        onLoad={entranteCargo}
+      <span
+        className="dico-pose-celda"
+        style={{
+          backgroundImage: `url(${DICO_PET_PUBLIC_PATH})`,
+          backgroundSize: `${DICO_PET_ATLAS.columnas * 100}% ${DICO_PET_ATLAS.filas * 100}%`,
+          backgroundPosition: `${x}% ${y}%`,
+        }}
       />
     </div>
   );

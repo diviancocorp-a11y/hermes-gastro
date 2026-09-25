@@ -6,7 +6,6 @@
  */
 import DicoPhysical from './DicoPhysical';
 import { physicalPoseCanonica } from './vocabulario';
-import './dico.css';
 import './dico-slot.css';
 
 export default function DicoSlot({

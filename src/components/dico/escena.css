@@ -19,7 +19,6 @@
   width: min(var(--dico-cuadro-size), 72vw);
   aspect-ratio: 1;
   margin-top: 1px;
-  animation: dico-cuadro-respira 4.1s ease-in-out infinite;
   transform-origin: 50% 85%;
 }
 
@@ -32,13 +31,15 @@
   -webkit-user-drag: none;
 }
 
-.dico-cuadro--core .dico-cuadro-personaje > .dico {
-  width: 100% !important;
-  height: 100% !important;
-}
+/* La celda del atlas no es cuadrada: 192x208. Con el `aspect-ratio: 1` del
+   contenedor el personaje quedaba achatado.
 
-.dico-cuadro--core .dico-cuadro-personaje {
-  animation: none;
+   Y no hay balanceo del contenedor: el pet ya se anima dentro de su celda, y
+   dos movimientos encimados a ritmos distintos se leen como un error de
+   sincronizacion, no como vida. Por eso se fue `dico-cuadro-respira`, que era
+   ademas la ultima animacion infinita de esta hoja. */
+.dico-cuadro--pet .dico-cuadro-personaje {
+  aspect-ratio: auto;
 }
 
 .dico-cuadro-accion {
@@ -65,11 +66,6 @@
 .dico-cuadro-accion:hover { filter: brightness(1.04); }
 .dico-cuadro-accion:active { transform: translateY(2px); box-shadow: 0 3px 0 rgba(36, 26, 8, .18); }
 .dico-cuadro-accion:focus-visible { outline: 3px solid #241a08; outline-offset: 3px; }
-
-@keyframes dico-cuadro-respira {
-  0%, 100% { transform: translateY(0) rotate(-.45deg); }
-  50%      { transform: translateY(-3px) rotate(.45deg); }
-}
 
 @media (max-width: 480px) {
   .dico-cuadro { padding-inline: 0; }

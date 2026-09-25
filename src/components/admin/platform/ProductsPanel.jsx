@@ -14,7 +14,7 @@ import ProductEditor from './ProductEditor';
 import { categoriesFrom, normalizarCategoriaProducto } from '../../../services/platformAdmin';
 import { margen, indexarInsumos } from '../../../services/platformRecipes';
 import { terminologia } from '../../../modules/registry';
-import DicoCoreEscena from '../../dico/DicoCoreEscena';
+import DicoCuadro from '../../dico/DicoCuadro';
 import GestionProductosPanel from './GestionProductosPanel';
 import useMediaQuery from '../../../lib/useMediaQuery';
 
@@ -273,9 +273,11 @@ const ProductsPanel = forwardRef(function ProductsPanel({
               </button>
             </>
           ) : (
-            <DicoCoreEscena
-              estado="pregunta"
-              lookY={0.65}
+            <DicoCuadro
+              /* Mira hacia abajo, al boton que tiene que tocar. Antes eso era
+                 `lookY` sobre las pupilas de tinta; ahora es una de las
+                 dieciseis direcciones de mirada del pet. */
+              pose="pointDown"
               size={188}
               texto={`Empecemos por tu primer ${t.singular}. Cargalo y queda publicado en tu catálogo.`}
               accion={`+ Agregar ${t.singular}`}

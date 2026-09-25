@@ -25,42 +25,33 @@
 
 /* ── EL ESCENARIO, DERIVADO DEL CONTRATO ─────────────────────────────────
  *
- * El pack oficial NO es cuadrado: canvas 1600x1136 (aspecto 1,4085), contra el
- * cuerpo legacy que era 1254x1254. Asi que la caja cambia de forma, y los
- * numeros salen de medir, no de tantear:
+ * El pet vive en una celda de 192x208 y la llena: el personaje mide 166x191
+ * dentro de ella. El pack anterior era al reves —un canvas de 1600x1136 con el
+ * personaje ocupando el 40% y el resto margen transparente— y por eso la caja
+ * del Slot tenia que ser enorme para que la moneda se viera chica.
  *
- *   legacy      moneda 75,60% del canvas -> en 184px se veia a ~139px
- *   oficial     moneda 31,19% del canvas -> necesita 446px para verse igual
+ * Todos los numeros de abajo salen de medir el atlas, no de tantear:
  *
- * Se toma 448px para que la moneda quede en ~139,7px: el mismo tamanio en
- * pantalla que tenia Dico antes. No se elige una escala nueva.
+ *   moneda            142 de 192 de ancho   -> 73,96% de la celda
+ *   personaje         166x191 en idle       -> centro en 49,74% del ancho
+ *   pies              y=201 de 208          -> 2,88% de margen abajo
+ *   extremo izquierdo x=6 de 192            -> 3,13%, sobre TODAS las filas
  *
- * La caja se ve grande porque el personaje ocupa solo el 40% del canvas: el
- * resto es margen transparente, y ese margen es justamente lo que permite que
- * las ocho poses —incluidas las de brazo levantado— entren en el mismo encuadre
- * sin clipping. Recortarlo romperia el footprint compartido. */
+ * `--pose-ancho` sale de la moneda y no del personaje: 139,7 / 0,7396 = 189px
+ * deja la moneda del mismo tamanio en pantalla que tenia antes. No se elige una
+ * escala nueva, se conserva la que ya estaba aprobada. */
 .dico-slot {
-  --pose-ancho: 448px;
-  --pose-alto: calc(var(--pose-ancho) / (1600 / 1136));
-  /* Los pies del personaje caen a 878/1136 del alto: debajo queda 22,71% de
-     margen transparente. Se descuenta para que los pies queden sobre la ranura
-     y no flotando, que es lo que hace legible que Dico SALE del Slot. */
-  --pose-bajo-pies: calc(var(--pose-alto) * 0.2271);
-  /* Donde empieza la TINTA dentro de la caja. Sale del extremo de las OCHO, no
-     de `idle`: `explain` abre los brazos hasta x=273 de 1600 (17,06%) contra
-     x=491 de idle. Anclar por idle dejaria a `explain` pisando lo que tenga a
-     la izquierda, y el salto solo se veria al cambiar de pose. */
-  --pose-tinta-izq: calc(var(--pose-ancho) * 0.1706);
-  /* Donde cae la PUNTA DEL DEDO de `pointDown`, medida sobre el asset: la
-     tinta mas baja esta en x=536 de 1600 (33,5%) e y=882, bien por debajo del
-     arco de la moneda. NO es el centro: Dico senala con la mano izquierda, asi
-     que centrarlo sobre un boton haria que el dedo apunte al costado. */
-  --pose-dedo: calc(var(--pose-ancho) * 0.335);
-  /* Y a que altura queda esa punta: y=882 de 1136, o sea 22,36% del alto por
-     encima del borde inferior de la caja. Es OTRO numero que el de los pies
-     (`--pose-bajo-pies`), y confundirlos deja al personaje sentado sobre el
-     boton en vez de senalandolo desde arriba. */
-  --pose-dedo-y: calc(var(--pose-alto) * 0.2236);
+  --pose-ancho: 189px;
+  --pose-alto: calc(var(--pose-ancho) / (192 / 208));
+  /* Debajo de los pies queda 2,88% de margen transparente. Se descuenta para
+     que los pies apoyen sobre la ranura y no floten, que es lo que hace
+     legible que Dico SALE del Slot. Se mide sobre TODAS las filas en uso y no
+     sobre `idle`: el salto baja mas que el reposo. */
+  --pose-bajo-pies: calc(var(--pose-alto) * 0.0288);
+  /* Donde empieza la tinta dentro de la caja, tambien sobre todas las filas:
+     la carrera estira el brazo mas que el reposo, y anclar por `idle` dejaria
+     a la carrera pisando lo que tenga al lado. */
+  --pose-tinta-izq: calc(var(--pose-ancho) * 0.0313);
 }
 
 /* ── ANCLAJE `target` ────────────────────────────────────────────────────
@@ -69,8 +60,11 @@
  * vive, y `target` es un NODO REAL que el objetivo publica. Physical viaja
  * hasta ahi con un portal, asi que no hay nada que medir en runtime.
  *
- * Lo unico que se calcula es el corrimiento que pone el dedo sobre el centro
- * del objetivo, y sale de la medicion del asset. */
+ * ANTES SE ANCLABA POR LA PUNTA DEL DEDO. El pack viejo tenia una pose con el
+ * brazo extendido y el Slot se corria para que ese dedo cayera sobre el CTA.
+ * El pet no senala con el guante: `pointDown` es MIRAR hacia abajo, una de sus
+ * dieciseis direcciones. Asi que Dico se centra sobre el objetivo y lo mira,
+ * que es la misma instruccion sin inventar una anatomia que no tiene. */
 .dico-objetivo {
   position: relative;
   display: block;
@@ -81,17 +75,16 @@
   position: absolute;
   left: 50%;
   bottom: 0;
-  /* Centrar el Slot y despues correrlo para que el DEDO —no el centro del
-     personaje— quede sobre el objetivo. */
-  transform: translateX(calc(-50% + (var(--pose-ancho) / 2) - var(--pose-dedo)));
+  /* Centrado y nada mas: el personaje esta centrado en su propia celda
+     (49,74%), asi que centrar la caja centra a Dico. */
+  transform: translateX(-50%);
   pointer-events: none;
 }
 
-/* Anclado al objetivo, lo que se apoya en la linea del ancla es LA PUNTA DEL
-   DEDO, no los pies: es lo que hace que `pointDown` senale y no se siente
-   encima. Los 8px son el aire entre el dedo y el borde del CTA. */
+/* Lo que se apoya en la linea del ancla son LOS PIES. Los 8px son el aire
+   entre Dico y el borde del CTA que esta mirando. */
 .dico-anclado .dico-slot-stage {
-  bottom: calc(8px - var(--pose-dedo-y));
+  bottom: calc(8px - var(--pose-bajo-pies));
 }
 
 /* El unico control que queda tocable es la ranura, que es como se guarda. */

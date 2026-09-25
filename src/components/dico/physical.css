@@ -1,78 +1,42 @@
-/* DicoPhysical — el pack oficial en runtime.
+/* DicoPhysical — el atlas del pet en runtime.
  *
- * ── UNA SOLA CAJA, DOS CAPAS ──
- * Las dos capas son `absolute; inset: 0` con `object-fit: contain`. La caja la
- * pone quien monta el primitive; las capas no participan del layout, asi que
- * cambiar de pose NO puede producir reflow ni desplazamiento: no hay nada en
- * el flujo que se pueda mover.
+ * ── UNA CAJA, UNA CELDA ──
+ * La caja la pone quien monta el primitive. Adentro hay un solo elemento que
+ * muestra el atlas por `background-position`, asi que cambiar de cuadro o de
+ * pose NO toca el layout: no hay nada en el flujo que se pueda mover.
  *
- * `aspect-ratio` sale del canvas certificado (1600x1136) y no se toca: es lo
- * que garantiza que las ocho poses compartan encuadre, escala y anclaje.
+ * `aspect-ratio` sale de la celda certificada (192x208) y no se toca. Es lo
+ * que garantiza que las once filas compartan encuadre y anclaje: el personaje
+ * esta registrado dentro de su celda por construccion, no por suerte.
  */
 
 .dico-pose {
   position: relative;
   width: 100%;
-  aspect-ratio: 1600 / 1136;
+  aspect-ratio: 192 / 208;
   /* Decorativo por definicion: lo que Dico dice va en la burbuja, y el control
      para guardarlo es la ranura del Slot. */
   pointer-events: none;
   isolation: isolate;
 }
 
-.dico-pose-capa {
+.dico-pose-celda {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  /* `contain` sobre la caja del canvas entero: el personaje queda donde el
-     encuadre lo puso, y el margen transparente del asset se respeta. Recortar
-     ese margen romperia justamente lo que lo hace util: que las ocho poses
-     —incluidas las de brazo levantado— entren en el mismo canvas sin clipping. */
+  display: block;
+  background-repeat: no-repeat;
+  /* `background-size` y `background-position` los pone el componente: salen
+     del manifiesto del atlas y no pueden vivir en dos lugares. */
   user-select: none;
   -webkit-user-drag: none;
-}
-
-/* La saliente se queda OPACA abajo. Si las dos se desvanecieran a la vez, en
-   el medio del cambio se veria el fondo a traves del personaje. */
-.dico-pose-capa--saliente {
-  z-index: 0;
-  opacity: 1;
-}
-
-/* La entrante aparece ENCIMA. Arranca invisible y no se revela hasta que el
-   WebP cargo (`--lista`): sin eso, la primera vez que se usa una pose el cruce
-   empieza contra un hueco transparente. */
-.dico-pose-capa--actual {
-  z-index: 1;
-  opacity: 0;
-}
-
-.dico-pose-capa--actual.dico-pose-capa--lista {
-  opacity: 1;
-  transition: opacity var(--dico-cruce, 140ms) ease-out;
-}
-
-/* Sin capa saliente no hay nada contra que cruzar: la primera pose aparece
-   directamente, sin un fundido de entrada que nadie pidio. */
-.dico-pose:not([data-dico-physical-cruzando='si']) .dico-pose-capa--actual.dico-pose-capa--lista {
-  transition: none;
+  /* El atlas es lossless y cada celda entra justa. Si el navegador suaviza al
+     escalar, el borde del cuadro de al lado se mete como un halo. */
+  image-rendering: auto;
 }
 
 /* ── Reduced Motion ──────────────────────────────────────────────────────
- * Cambio inmediato: ni cruce ni traslacion. No se degrada la transicion, se
- * saca. La pose se sustituye y punto. */
-.dico-pose--sin-cruce .dico-pose-capa--actual,
-.dico-pose--sin-cruce .dico-pose-capa--actual.dico-pose-capa--lista {
-  opacity: 1;
-  transition: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dico-pose-capa--actual,
-  .dico-pose-capa--actual.dico-pose-capa--lista {
-    opacity: 1;
-    transition: none;
-  }
-}
+ * El sprite se detiene en el primer cuadro de su fila. No se degrada el ritmo,
+ * se saca: quien pidio menos movimiento no quiere uno mas lento, quiere
+ * ninguno. Lo hace el componente, que no arranca el intervalo; esta clase
+ * queda como marca legible desde QA. */
+.dico-pose--quieto { --dico-pose-quieto: 1; }
