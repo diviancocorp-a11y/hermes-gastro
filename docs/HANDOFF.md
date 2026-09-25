@@ -8,6 +8,69 @@
 
 ---
 
+## 25/sep/2026 — Dico queda en dos versiones: la marca y el pet (Claude)
+
+### Lo que pidio Ricky
+
+Trajo un pet 3D generado con ChatGPT —`~/OneDrive/dico-pet-final/`— y pregunto
+si servia para reemplazar al Dico 3D y mantener una sola identidad. Despues de
+ver la comparacion: *"reemplaza el physical por esta version pet, dejemos solo
+2 versiones la pet y la marca, las otras 3 son cosas que fueron pruebas, van
+para afuera"*.
+
+### Lo que habia, y es el hallazgo
+
+**Cuatro cuerpos de Dico conviviendo, y tres NO reproducian la marca.**
+
+- la marca 2D: oro, aro azul, dos ovalos negros. La identidad.
+- el cuerpo Core (`poses/moneda.webp` + `CaraDeTinta`): perdio el aro azul, y
+  la cara de tinta tenia esclerotica, parpados y cejas.
+- el pack 3D de ocho poses: mostaza, ojos de dibujo con pestanias, nariz y
+  boca. **Era el que veian los clientes en el panel.**
+- siete escenas heredadas con galera y bigote.
+
+El pet es el unico 3D que reproduce la marca. Sumarlo no agrego un Dico mas:
+reemplazo al que mas se alejaba.
+
+### Hecho
+
+- `platform/brand/dico-pet-masters/` con el atlas y su QA. Master inmutable,
+  verificado por sha256; derivado lossless a `public/brand/dico/pet/`.
+- `platform/brand/dico-pet-assets.mjs` es la **unica fuente** de la geometria:
+  lo leen el derivador, el componente y el test.
+- `DicoPhysical` pasa de cruzar ocho WebP a animar el atlas por
+  `background-position`. Setenta y tres cuadros contra ocho imagenes fijas.
+- Afuera: `DicoCara`, `CaraDeTinta`, `DicoCoreEscena`, `DicoEscena`,
+  `poses/`, el pack 3D, sus scripts y `dico.css` entero (436 lineas muertas,
+  con cinco animaciones infinitas adentro).
+- `docs/marca/BRIEF-DICO-CUERPO.md` reescrito.
+
+### Dos cosas que hay que saber antes de tocar esto
+
+**Mirar no es senalar.** `pointUp` y `pointDown` no levantan el guante: el
+pack no tiene esa pose. Resuelven a una de las dieciseis direcciones de
+mirada. Por eso el Slot dejo de anclarse por la punta del dedo y ahora se
+centra sobre el objetivo.
+
+**La geometria del Slot se volvio a medir.** El pack viejo era un canvas de
+1600x1136 con el personaje ocupando el 40%; la celda del pet es 192x208 y la
+llena. La moneda pasa de 31,19% a 73,96% del ancho, asi que `--pose-ancho`
+baja de 448px a 189px para que la moneda quede del mismo tamanio en pantalla.
+
+### Verificado
+
+Hoja de contacto de las once filas recortadas con la misma formula del
+componente: el encuadre cae exacto en las 88 celdas y el mapa de poses se lee
+solo —`worried` es el cuadro de la lupa, `error` el de los ojos cerrados—.
+Suite 99 archivos / 1418 tests, gates, typecheck y build en cero.
+
+### Estado
+
+`831600d` en `main`. Sigue pendiente de Ricky la migracion 0075 de la
+comandera, que no esta aplicada al edificio.
+
+---
+
 ## 12/sep/2026 — La comandera: el sector que despacha en papel (Claude)
 
 ### Lo que pidio Ricky
