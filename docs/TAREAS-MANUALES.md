@@ -67,6 +67,18 @@
   solo-en-error + tags de contexto activos).
 - [ ] Los 4 `.docx` ya no estan en GitHub pero siguen en la carpeta del repo
   (gitignoreados). Si queres, movelos a Documentos para tener el repo limpio.
+- [ ] **Desconectar del repo los 3 Vercel legacy** (`la-nona-pato`, `cochi`,
+  `mala-miga`): Project Settings > Git > Disconnect, uno por uno. Cada push a
+  `main` los vuelve a deployar. Pausarlos no alcanza (no corta los builds de
+  git) y `vercel.json` tampoco sirve: es el mismo archivo para los cuatro
+  proyectos y se llevaria puesto al edificio. (Venia del HANDOFF del 10/sep.)
+- [ ] **Borrar los tenants de prueba** `prueba-disco` y `tienda-nueva`. Al
+  10/sep estaban vacios (0 productos, 0 pedidos, 0 pagos): contalo de nuevo
+  antes del delete. Las FK a `tenants` son `ON DELETE CASCADE`
+  salvo `profiles` y `consola_log`, que quedan en null:
+  `delete from tenants where slug in ('prueba-disco','tienda-nueva') returning slug;`
+  Deja sin tenant a dos cuentas de prueba del signup del 15/ago; borrarlas es
+  aparte. (Venia del HANDOFF del 10/sep.)
 - [ ] **Destildar Sensitive** en `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`
   del proyecto Vercel `hermes-platform` (Settings > Environment Variables).
   Son claves publicas que igual viajan al navegador dentro del bundle. Sin eso,
