@@ -8,6 +8,72 @@
 
 ---
 
+## 26/sep/2026 — Cierre: el modelo esta entero y sin estrenar (Claude)
+
+**Ricky paro el desarrollo aca a proposito.** Sus palabras: *"cuando tenga el
+primer cliente con mesas termino de desarrollar"*. No es un bloqueo tecnico ni
+algo a medias: es que lo que falta no se puede decidir sin un local de verdad
+adentro.
+
+### Donde quedo todo
+
+`d796c45` en `main`, READY en produccion, arbol limpio, nada sin pushear, una
+sola worktree.
+
+La **0075 ya esta aplicada al edificio**. La corrio Ricky y se verifico contra
+la base, no contra el archivo: existe `production_dispatches` con sus nueve
+columnas en el mismo orden que el snapshot, RLS activa, su policy y tres
+indices; estan las tres RPC nuevas; y `cerrar_ticket_de_cocina` quedo en UNA
+sola version de tres argumentos. Eso ultimo era lo riesgoso: con las dos vivas,
+una llamada de dos argumentos falla en runtime y no al desplegar.
+
+Se trajo ademas el cuerpo desplegado con `pg_get_functiondef` en vez de confiar
+en la migracion. Es el nuevo: cierra por sector, anota la comanda y sella el
+pedido recien cuando no queda nada pendiente.
+
+### EL NUMERO QUE IMPORTA PARA LA PROXIMA SESION
+
+**Los siete tenants tienen CERO sectores y CERO productos con estacion, y
+ningun pedido bajo nunca a cocina.**
+
+| tenant | productos | con estacion |
+|---|---|---|
+| la-nona-pato | 43 | 0 |
+| mala-miga | 11 | 0 |
+| cochi | 10 | 0 |
+
+El modelo de produccion esta completo —sectores, estaciones, KDS por sector,
+comandera en papel, cierre desde Salon— y **nadie lo uso todavia**. El KDS y la
+comandera se ven vacios en produccion, y eso es correcto: falta configurar, no
+falta codigo. No reportarlo como roto.
+
+### Lo primero al retomar
+
+1. **Configurar produccion en UN cliente, y que sea `cochi`.** Tiene diez
+   productos: alcanza para recorrer el circuito entero en una sentada y
+   descubrir ahi lo que no cierre, en vez de con 43 ya cargados.
+2. Asignar estacion a esos productos. La pantalla avisa cuantos faltan.
+3. Bajar un pedido a cocina y mirar el KDS.
+4. Poner la barra en comandera y probar la termica que Ricky tiene.
+   **Chrome va con `--kiosk-printing`** o alguien confirma un dialogo por cada
+   comanda: ver `docs/plataforma/COMANDERA.md`.
+
+### Lo que sigue pendiente de Ricky, sin urgencia
+
+- Desconectar los 3 proyectos Vercel legacy del repo. Cada push a `main` los
+  redeploya.
+- Borrar los tenants de prueba `prueba-disco` y `tienda-nueva`. Siguen ahi.
+- Leaked password protection en Supabase.
+
+### Una cosa abierta de diseño, chica
+
+Dico 3D ahora tiene piernas, asi que sale mas alto de la ranura: paso de unos
+127px a 188px de alto. La moneda conserva su tamanio exacto, 139,8px medidos en
+pantalla. Ricky lo vio en QA Lite y no lo objeto, pero no lo dio por bueno
+tampoco. Si molesta, se corrige con `--pose-ancho` en `dico-slot.css`.
+
+---
+
 ## 25/sep/2026 — Dico queda en dos versiones: la marca y el pet (Claude)
 
 ### Lo que pidio Ricky
