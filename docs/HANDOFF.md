@@ -11,6 +11,115 @@
 
 ---
 
+## 26/sep/2026 (b) — Del codigo a la base en un comando, y el HANDOFF recortado (Claude)
+
+### Lo que pidio Ricky
+
+Implementar graphify *"asi aliviamos la recorrida de los datos"*. Se probo
+antes de decidir y **no se implemento**. En su lugar entraron dos cosas mas
+chicas que atacan lo que de verdad cuesta recorrer en este repo.
+
+### Por que no graphify
+
+Se corrio en una copia, solo codigo, local y sin API key: 9 segundos, 3923
+nodos. No sirve aca por algo estructural, no de configuracion:
+
+- **No une el codigo con la base.** Aca ese cruce pasa por strings,
+  `.rpc('x')` y `.from('t')`, y ningun analizador de AST los ve. Cero aristas
+  entre `platformKds.js` y `cerrar_ticket_de_cocina`.
+- **Cada version de una funcion es un nodo aparte** (la de la 0072 y la de la
+  0075) y no dice cual es la vigente: la trampa de `signup_tenant` en formato
+  grafo.
+- Busqueda con ruido, grupos sin nombre si no hay un modelo que los nombre, y
+  un reporte de 47 KB (~12k tokens) que su hook hace leer al empezar.
+- Para los docs necesita API key. Sus hooks escriben en `.git/hooks`, que con
+  husky no corre, y `graphify claude install` edita CLAUDE.md.
+- Dejo `graphify-out/` adentro del repo aunque se le paso `--out`.
+
+Si vuelve a aparecer la idea: el costo de este repo esta en el cruce
+codigo-base, y eso se resuelve leyendo los strings, no con un grafo de AST.
+
+### Hecho
+
+- **`npm run mapa -- <rpc o tabla>`** (`scripts/mapa.mjs`). Que migraciones la
+  crean, alteran o borran, separadas por base (edificio `platform/migrations`,
+  legacy `supabase/migrations`); que firma queda viva despues de los `drop`; y
+  que codigo la llama por `.rpc()`, `/rest/v1/rpc/` o `.from()`, con los tests
+  marcados aparte. `.storage.from()` no cuenta como tabla. Sin argumentos lista
+  lo que el repo no cierra: RPC que ninguna migracion define y funciones con
+  mas de una firma viva (hoy cero). Lee archivos en el momento: no hay indice
+  que regenerar ni que quede viejo, y responde en ~0,2 s.
+- **`npm run handoff:archivar`** (`scripts/archivar-handoff.mjs`). Deja las
+  ultimas 5 secciones y baja el resto, intacto, a
+  `docs/historico/HANDOFF-anterior.md`. Es un script y no una edicion a mano
+  por los bugs 1 y 2 de CLAUDE.md: decodifica UTF-8 estricto y verifica
+  titulos y contenido de los dos lados antes de escribir. `/cerrardico` lo
+  corre, en la copia de Claude y en la de Codex.
+- **El HANDOFF paso de 5577 a 356 lineas.** Las 59 secciones del 11/sep para
+  atras estan en `historico/HANDOFF-anterior.md`.
+- **Antes de archivar se revisaron sus pendientes contra el codigo.** Siguen
+  abiertos y subieron a `docs/TAREAS-MANUALES.md`: destildar Sensitive en las
+  dos `VITE_*` (A), la pantalla de Expedicion y los trazos de la landing (C).
+  Ya resueltos, no subieron: el orden de estaciones (la 0074 agrego `orden`),
+  la estacion en el editor de producto, y la rama `feat/dico-panorama-v2`,
+  que no tiene ni un commit fuera de `main`: se puede borrar.
+- `CLAUDE.md` y `AGENTS.md` mencionan el mapa en "Comandos utiles" y en
+  "Antes de razonar sobre una RPC".
+
+### Hallazgos que NO se tocaron
+
+- **`increment_qr_visit`** (`src/services/qrs.js`) y **`upsert_customer`**
+  (`src/services/catalog.js`, `src/services/phoneAuth.js`): el codigo las
+  llama y ninguna migracion de ninguna de las dos bases las define. Son del
+  flujo legacy y el codigo se traga sus errores, asi que no rompen nada
+  visible. Si ese flujo pasa al edificio, hay que escribirlas.
+- El comentario de `overloadsDe` en `scripts/check-functions-drift.mjs` dice
+  que `sumar_staff` tiene dos firmas en produccion. Segun el repo, la 0062
+  dropeo la de un argumento. **No se verifico contra la base.**
+- `docs/TAREAS-MANUALES.md` tiene partes muertas: se titula "Hermes Gastro" y
+  pide un smoke de "los 3 tenants" legacy, que ya no existen como proyectos.
+
+### Verificado
+
+- Suite completa: 101 archivos / 1446 tests (eran 99 / 1418; los 28 nuevos son
+  del mapa y del archivador). Pre-commit completo, con typecheck y build, en
+  cada uno de los cuatro commits.
+- El mapa contra casos reales: `cerrar_ticket_de_cocina` da la 0075 de tres
+  argumentos como vigente, que coincide con lo que se verifico en la base el
+  26/sep; `sumar_staff` y `orders` (esta ultima en las dos bases).
+- El archivado: el HANDOFF original se reconstruye byte a byte juntando las
+  dos partes (chequeado aparte, con Python). Correrlo dos veces no hace nada.
+- `819d1d3` en `main`, deployment de produccion de `hermes-platform` READY.
+  **No cambia nada que vea un cliente**: solo scripts, tests y docs.
+
+### Como se trabajo
+
+La sesion corrio en la rama `claude/dico-vijxdj` y se llevo a `main` con un
+fast-forward cuando Ricky lo pidio. `main` no se habia movido, asi que no
+hubo nada que resolver.
+
+### Pendiente inmediato
+
+1. **Lo de la seccion de abajo no cambio**: configurar produccion en `cochi`
+   es lo primero cuando se retome el desarrollo.
+2. **Propuesta sin respuesta de Ricky: que un push de solo docs no publique.**
+   El merge de hoy compilo y publico los cuatro proyectos Vercel para cambiar
+   scripts y markdown. Un "Ignored Build Step" que compare contra
+   `VERCEL_GIT_PREVIOUS_SHA` y saltee si no se toco `src/`, `public/`, `api/`,
+   `middleware.js` ni la config de build lo evita. Como `vercel.json` es uno
+   solo para los cuatro, alcanza tambien a los legacy, que es lo que se quiere.
+3. Revisar `docs/TAREAS-MANUALES.md` item por item contra el codigo, con el
+   mismo criterio que se uso para archivar, y bajar lo muerto a `historico/`.
+
+### Bloqueado por Ricky
+
+Nada nuevo. Siguen los de antes, ahora todos en `docs/TAREAS-MANUALES.md`:
+desconectar los 3 Vercel legacy (el push de hoy los volvio a redeployar),
+borrar `prueba-disco` y `tienda-nueva`, leaked password protection, y
+destildar Sensitive en las `VITE_*` de `hermes-platform`.
+
+---
+
 ## 26/sep/2026 — Cierre: el modelo esta entero y sin estrenar (Claude)
 
 **Ricky paro el desarrollo aca a proposito.** Sus palabras: *"cuando tenga el
@@ -269,87 +378,5 @@ cero. La cocina abre ahora en `kds` y ya no en Pedidos.
 La **comandera**: imprimir una comanda por sector en papel al bajar el pedido
 a cocina, y el boton de cerrar desde Salon. El modo ya vive en el sector y se
 elige en la pantalla; falta disparar la impresion.
-
----
-
-## 12/sep/2026 — La barra se separa de la cocina (Claude)
-
-### Lo que pidio Ricky
-
-Dos cosas: que la barra tenga su gestion y su KDS aparte, y que el KDS no
-obligue a comprar pantallas — *"si no tienen, hay forma de darles una opcion
-de comandera clasica?"*.
-
-Las dos entran por el mismo cambio de modelo. En esta pasada esta la primera
-entera y la base de la segunda.
-
-### Hecho: migracion 0074
-
-- **`production_sectors`** — lo que tiene pantalla propia o impresora propia.
-  Cocina, Barra. Lleva su `mode` (`pantalla` o `papel`) y su `umbral_min`.
-- **`production_stations`** — donde se hace el plato dentro del sector.
-  Parrilla, Plancha. Lleva `short_name` y `orden`.
-- `products.station_id`, `order_items.station_id` y `order_items.sector_id`.
-- Un **trigger** copia la estacion del producto al item al insertarlo.
-- `crear_sectores_tipicos()` deja cocina con cuatro estaciones y barra con una.
-
-**Dos niveles y no uno.** El sector es la unidad de DESPACHO y la estacion la
-de TRABAJO. Con un solo nivel hay que elegir cual de las dos representa, y
-cualquiera de las dos elecciones rompe la otra.
-
-**El umbral es del sector.** Un gin tonic sale en tres minutos y un asado en
-veinticinco: con un umbral comun, o la barra vive en rojo o la cocina nunca
-avisa. Cocina queda en 18 y Barra en 5.
-
-**El modo tambien es del sector.** Cocina con monitor y barra con comandera es
-una configuracion normal, no un caso raro.
-
-### Hecho: la pantalla
-
-- **`Producción`** (`SectoresPanel.jsx`), modulo nuevo en la nav. Es la que
-  desbloquea todo: sin ella los platos caen en "sin estacion" y el KDS no
-  sirve. Avisa cuantos productos quedaron sin asignar, que es el modo de
-  fallar mas caro del circuito — el plato no sale y no hay error en ningun
-  lado.
-- **El KDS pasa a ser uno por sector.** Los tickets llegan recortados: el
-  barman no ve la milanesa. El selector de sector aparece recien con mas de
-  uno.
-- **El riel sale de lo CONFIGURADO**, en el orden del circuito, y una estacion
-  sin trabajo se muestra en cero en vez de esconderse. Antes se deducia de los
-  platos: se ordenaba alfabeticamente y cambiaba de largo durante el servicio.
-- **El editor de producto elige la estacion.** `toRow` la escribe explicita.
-
-### Por que se pudo cambiar el modelo sin migrar nada
-
-Cero productos tenian estacion y cero pedidos habian bajado a cocina: el KDS
-estaba publicado pero no se habia usado. En un mes habria habido que reescribir
-comandas historicas.
-
-### Lo que falta: la comandera
-
-Decidido con Ricky y **sin implementar todavia**:
-
-- **La impresora que tiene para probar es USB.** Eso define la arquitectura:
-  desde el navegador se imprime a la impresora PREDETERMINADA del equipo, asi
-  que con una sola computadora y dos impresoras no se puede elegir destino sin
-  abrir el dialogo, que en servicio es inviable. **Un equipo por sector**, cada
-  uno con su impresora predeterminada. El camino de red —una termica con IP y
-  ePOS-Print por HTTP— permitiria varios destinos desde un solo equipo y queda
-  anotado para cuando haya una.
-- **En modo papel el pedido lo cierra el mozo desde Salon**, cuando la cocina
-  le canta el plato. No hace falta hardware nuevo y los tiempos se siguen
-  midiendo, que es lo que despues dice si la cocina va bien.
-- Falta: disparar la impresion de la comanda al bajar el pedido a cocina, una
-  por sector en papel, y el boton de cerrar en Salon.
-
-`src/lib/impresionDePasador.js` ya resuelve la mitad: imprime texto plano por
-el navegador con el ancho de 58 mm.
-
-### Pendientes de antes que siguen
-
-- **1c, Expedicion**: la lista de armando, el pasador y la etiqueta en
-  pantalla. El modelo lo soporta (`orders.ready_at`).
-- Los 66 productos del edificio no tienen estacion. Hasta que la tengan, el
-  KDS se ve vacio aunque haya pedidos.
 
 ---
