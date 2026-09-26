@@ -8,21 +8,19 @@
 
 ## A. TAREAS MANUALES (las haces vos, ~30 min total)
 
-### Urgente — la comandera no anda hasta que corras esto (2 min)
+### Hecho — la migracion 0075 (25/sep/2026)
 
-- [ ] **Aplicar la migracion `0075_la_comanda_sale_por_papel.sql` al edificio.**
-  Dashboard de Supabase `wwwzdgprsooyjgkuyoav` → SQL Editor → pegar el archivo
-  entero `platform/migrations/0075_la_comanda_sale_por_papel.sql` → Run.
-  El clasificador de la sesion bloqueo `apply_migration`, asi que el codigo
-  esta publicado pero la base todavia no tiene la tabla ni las funciones.
+- [x] **`0075_la_comanda_sale_por_papel.sql` aplicada al edificio.** Verificado
+  contra la base: existe `production_dispatches` con sus nueve columnas, RLS y
+  tres indices; estan las tres RPC nuevas; `cerrar_ticket_de_cocina` quedo en
+  UNA sola version de tres argumentos, asi que no hay ambiguedad de firma. El
+  cuerpo desplegado es el nuevo, no solo la firma: cierra por sector, anota la
+  comanda y sella el pedido recien cuando no queda nada pendiente.
 
-  Hasta que corras esto, en produccion:
-  - un sector en modo comandera muestra la pantalla vacia y no imprime;
-  - cerrar un ticket desde el KDS falla, porque `cerrar_ticket_de_cocina`
-    ahora se llama con tres argumentos y la version desplegada tiene dos.
-
-  El snapshot `scripts/platform-schema.json` ya dice `0075`: si corres la
-  migracion y algo no coincide, `npm run schema:sync` lo regenera.
+  Lo que sigue **no es tecnico, es configuracion por cliente**: hoy los siete
+  tenants tienen CERO sectores y CERO productos con estacion, asi que el KDS y
+  la comandera se ven vacios aunque el modelo este completo. Los tres gastro
+  suman 64 productos por asignar: la-nona-pato 43, mala-miga 11, cochi 10.
 
 ### Urgente — seguridad (10 min)
 
