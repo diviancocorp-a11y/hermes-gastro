@@ -179,6 +179,7 @@ devDependencies. **Prefijar todo con `NODE_ENV=` vacio.**
 ```bash
 NODE_ENV= npm run build                      # build del edificio
 NODE_ENV=test npx vitest run --pool=threads  # suite completa
+npm run mapa -- cerrar_ticket_de_cocina      # que migracion la define y quien la llama
 npm run pantalla -- stock                    # mira una pantalla sin levantar la app
 npm run pantalla:acciones -- viejo.jsx nuevo.jsx   # que se perdio al portarla
 ```
@@ -206,6 +207,11 @@ fallar. El lado legacy (`--target=legacy`, con los `LEGACY_*`) esta pausado y
 no se va a despausar: esos proyectos se dan de baja.
 
 ## Antes de razonar sobre una RPC, traela
+
+Primero `npm run mapa -- <rpc o tabla>`: dice que migraciones la tocan, en
+cual de las dos bases, que firma quedo vigente y que codigo la llama. Sin
+argumentos lista lo que el repo no cierra: RPC que ninguna migracion define y
+funciones con mas de una firma viva. Es lectura de archivos, no de la base.
 
 **La funcion DESPLEGADA puede no ser la que dice la migracion.** Paso con
 `signup_tenant()`: la de produccion era mas nueva que cualquier archivo del

@@ -34,7 +34,8 @@
     "dico:pet:derive": "node scripts/dico-pet-derivar.mjs",
     "dico:pet:check": "node scripts/dico-pet-derivar.mjs --check",
     "pantalla": "node scripts/pantalla/preview.mjs",
-    "pantalla:acciones": "node scripts/pantalla/acciones.mjs"
+    "pantalla:acciones": "node scripts/pantalla/acciones.mjs",
+    "mapa": "node scripts/mapa.mjs"
   },
   "dependencies": {
     "@sentry/react": "^10.57.0",
