@@ -35,7 +35,8 @@
     "dico:pet:check": "node scripts/dico-pet-derivar.mjs --check",
     "pantalla": "node scripts/pantalla/preview.mjs",
     "pantalla:acciones": "node scripts/pantalla/acciones.mjs",
-    "mapa": "node scripts/mapa.mjs"
+    "mapa": "node scripts/mapa.mjs",
+    "handoff:archivar": "node scripts/archivar-handoff.mjs"
   },
   "dependencies": {
     "@sentry/react": "^10.57.0",

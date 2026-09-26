@@ -39,6 +39,19 @@ Reglas para escribirlo:
 - Si algo quedó a medias, decilo con esas palabras. Un handoff optimista
   hace perder más tiempo del que ahorra.
 
+### Después: archivar
+
+`npm run handoff:archivar` deja las últimas 5 secciones y mueve el resto,
+intacto, arriba de `docs/historico/HANDOFF-anterior.md`.
+
+**Antes de correrlo, mirá las secciones que se van.** Si alguna tiene un
+pendiente que sigue vigente, subilo a la sección nueva o a
+`docs/TAREAS-MANUALES.md`: lo que se archiva deja de leerse.
+
+No muevas secciones a mano. El script decodifica en UTF-8 estricto y verifica
+que no se pierda ni cambie nada antes de escribir; un editor no hace ninguna
+de las dos cosas, y así se corrompieron archivos antes.
+
 ## Paso 3 — Dejar el repo sano
 
 - Si quedó trabajo sin commitear, **commitealo en `main`** y **pusheá**. Un commit local no
