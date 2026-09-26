@@ -67,6 +67,12 @@
   solo-en-error + tags de contexto activos).
 - [ ] Los 4 `.docx` ya no estan en GitHub pero siguen en la carpeta del repo
   (gitignoreados). Si queres, movelos a Documentos para tener el repo limpio.
+- [ ] **Destildar Sensitive** en `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`
+  del proyecto Vercel `hermes-platform` (Settings > Environment Variables).
+  Son claves publicas que igual viajan al navegador dentro del bundle. Sin eso,
+  `npm run deploy:web` no sirve de respaldo si la integracion de Git se vuelve
+  a caer: `vercel pull` las baja como `[SENSITIVE]`. No es urgente mientras el
+  push publique. (Venia del HANDOFF del 10/sep.)
 
 ---
 
@@ -86,6 +92,18 @@
 ---
 
 ## C. PENDIENTES TECNICOS (los hago yo — proxima sesion de desarrollo)
+
+Del edificio. Subieron del HANDOFF el 26/sep, al archivar las secciones del
+11/sep para atras, y se verificaron contra el codigo ese dia:
+
+- [ ] **Pantalla de Expedicion (1c)**: la lista de armado, el pasador y la
+  etiqueta en pantalla. El modelo ya lo soporta (`orders.ready_at` marca el
+  pase al pasador) y `src/lib/impresionDePasador.js` existe; falta la pantalla.
+- [ ] **Trazos de la landing**: `scripts/generar-trazos.mjs` no existe y
+  `src/components/landing/trazos.json` esta vacio (`{}`), asi que
+  `PalabraEscrita` dibuja con la fuente en vez de trazar los contornos. Es el
+  fallback previsto y no rompe nada, pero en la palabra que rota del titular se
+  nota como un parpadeo.
 
 Herencia del plan que quedo sin ejecutar (lo digo explicito para que no se pierda):
 
