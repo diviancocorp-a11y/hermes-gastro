@@ -26,6 +26,7 @@ se contradicen, gana el que esta fuera de `historico/`.
 | `marca/` | Dico como identidad: design system, tipografia, el personaje | Al tocar cualquier cosa visual |
 | `operacion/` | Runbooks, seguridad, cobros, performance | Cuando algo falla en produccion |
 | `historico/` | Cerrado. Se conserva para entender el porque, no el que | Solo para arqueologia |
+| `historico/HANDOFF-anterior.md` | Las secciones viejas del HANDOFF | Para saber por que se decidio algo |
 
 ## Que NO esta aca
 
@@ -41,4 +42,6 @@ esa carpeta. Si es un plan, una fase, un informe o un brief, vive aca.
 2. Documento que se cierra: se mueve a `historico/` **en el mismo commit** que
    lo cierra. No se borra, para que quede el porque.
 3. Al cerrar sesion con `/cerrardico`, se actualiza `HANDOFF.md` y nada mas.
-   El HANDOFF es el unico documento que crece por arriba.
+   El HANDOFF es el unico documento que crece por arriba, y
+   `npm run handoff:archivar` lo recorta a sus ultimas 5 secciones: lo demas
+   baja, intacto, a `historico/HANDOFF-anterior.md`.

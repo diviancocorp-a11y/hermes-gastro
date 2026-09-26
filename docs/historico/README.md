@@ -11,5 +11,8 @@ que se tomaron las decisiones, no para saber como funciona el sistema hoy.
   estan `INACTIVE` y no reciben deploys.
 - `revisiones/` — auditorias y smokes con fecha. Valen por lo que midieron ese
   dia, no por lo que digan que falta.
+- `HANDOFF-anterior.md` — las secciones que salieron de `docs/HANDOFF.md`, de
+  la mas nueva a la mas vieja. Los pendientes que seguian vigentes se subieron
+  antes a `docs/TAREAS-MANUALES.md`; lo que diga que falta aca, verificalo.
 
 Antes de citar cualquier cosa de esta carpeta, verificala contra el codigo.

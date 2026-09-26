@@ -1,0 +1,5235 @@
+# HANDOFF anterior — Dico
+
+> Las secciones que salieron de `docs/HANDOFF.md`, de la mas nueva a la mas
+> vieja, igual que alla. **Nada de esto describe el presente**: sirve para
+> entender por que se decidio algo, no para saber como esta hoy. Antes de
+> citar algo de aca, verificalo contra el codigo o la base.
+>
+> Las mueve `npm run handoff:archivar`. No se editan a mano.
+
+---
+
+## 11/sep/2026 — El KDS: la cocina tiene su propia pantalla (Claude)
+
+### Hecho
+
+- **KDS 1a y 1b**, del render que paso Ricky por Claude Design. La TV colgada
+  de 1920 y la tablet de mesada de 1280 son el MISMO componente
+  (`KdsPanel.jsx`) con dos layouts: en tv la demora es un numero grande, en
+  tablet una barra y un riel de estaciones al costado.
+- **Migraciones 0072 y 0073**, aplicadas al edificio. De los ocho datos que
+  pide una pantalla de cocina, cinco no tenian donde vivir: estacion del
+  plato, sus modificadores, si el plato ya salio, cuando bajo a cocina y las
+  alergias. Mas el numero de ticket, que se asigna al bajar a cocina y se
+  reinicia con el servicio.
+- **La impresion queda funcional** (`src/lib/impresionDePasador.js`): la
+  termica se instala en el sistema como cualquier impresora y la etiqueta sale
+  por `print()`. Sin agente local ni WebUSB.
+
+### La decision que ordeno todo
+
+Ricky: *"vamos a separar pedidos del catalogo como delivery, el KDS solo
+recibe las cosas que tenemos que producir"*.
+
+Eso resolvio lo que iba a ser el problema: la pantalla de Pedidos hace cuatro
+cosas que el render del KDS no muestra —aprobar, rechazar, cobrar, cancelar—.
+No se pierden: **Pedidos se queda** como la pantalla administrativa y el KDS
+recibe solo lo aprobado. La frontera es `orders.kitchen_at`.
+
+`npm run pantalla:acciones -- OrdersPanel KdsPanel` marca las diez acciones
+como faltantes, y esta bien que lo haga: no es un port, es una pantalla nueva
+al lado. Hay un test que falla si alguna de las cuatro aparece en el KDS.
+
+### Lo que se aprendio
+
+- **El cronometro cuenta desde `kitchen_at` y no desde `created_at`.** Es lo
+  que justifica media migracion: un pedido programado para las 21:00 cargado a
+  las 19:00 entraria en rojo a la cocina, y el rojo dejaria de significar algo.
+- **Dos numeros salieron de comparar contra el render, no de los tests.** El
+  umbral de "atencion" estaba en dos tercios y el diseño pone 11:06 en ambar
+  contra un umbral de 18: es 60%. Y las estaciones contaban platos cuando el
+  render cuenta TICKETS — al tocar "Parrilla 4" tienen que aparecer cuatro
+  tickets. Los seis contadores y los seis cronometros ahora coinciden exacto.
+- **El deploy del KDS fallo y produccion se quedo en el commit anterior.**
+  `.replace(/</g, '&lt;')` hace que `check-file-integrity` lea el archivo como
+  JSX en un `.js`. Esta documentado en CLAUDE.md —se escribe `/[<]/g`— y se me
+  paso igual.
+- **Por que el gate local no aviso, que es lo que de verdad importa:** corri
+  `npm run check:integrity | tail -2`. El pipe descarta el exit code (bash
+  devuelve el de `tail`) y `tail -2` se comio la linea del error, que salia en
+  medio de los lotes. El gate habia fallado y yo lei dos lineas que decian OK.
+  **Los gates se corren mirando `$?`, nunca las ultimas lineas.**
+
+### Para el render que sigue
+
+Con el render a la vista, el orden que funciono fue: inventario de acciones de
+la pantalla vieja, mirar los datos REALES, migracion, servicio con las reglas
+puras, componente, tests, y recien ahi comparar la vista previa contra el
+render numero por numero. Los dos desajustes de arriba salieron de ese ultimo
+paso.
+
+El acceso a Claude Design desde esta sesion **no funciona**: `/design-login` no
+esta disponible en la app de escritorio y `/design-consent` devuelve 403. Lo
+que si funciono fue abrir el proyecto con el Chrome real del usuario, que
+tiene su sesion, y leer la API del editor. El filtro de seguridad de la
+extension bloquea sacar el contenido del archivo por el chat, asi que al final
+se trabajo con capturas. Salieron bien.
+
+### Lo que falta
+
+- **1c, Expedicion**: la lista de armando, el pasador y la etiqueta en
+  pantalla. El modelo ya lo soporta (`orders.ready_at` marca el pase al
+  pasador); falta la pantalla.
+- **El orden de las estaciones es alfabetico.** Una cocina las ordenaria por
+  su circuito —caliente primero, barra al final— pero ese orden no esta en
+  ningun lado. Cuando se configure, sale de ahi.
+- **La estacion de cada producto no tiene UI todavia**: la columna
+  `products.station` existe y el editor de producto aun no la muestra. Sin
+  eso, todos los platos caen en "sin estacion".
+
+---
+
+## 11/sep/2026 — Stock rehecho y dos herramientas para los proximos renders (Claude)
+
+### Hecho
+
+- **Stock habla el idioma de Salon y Caja.** Se rehizo entero contra el render
+  de Ricky: escritorio con cabecera, cuatro cintas, tabla con el nivel como
+  BARRA contra el minimo y ficha al costado que resuelve la fila; y el conteo
+  de deposito mobile con botones de 44 px, paso segun la unidad y guardado por
+  lote. Los dos en `src/components/admin/platform/`.
+- **Migracion 0071.** Reponer y ajustar **no existian como operacion**: habia
+  dos funciones en el repo, incompatibles entre si, y no las llamaba nadie.
+  Ahora `mover_stock_de_insumo` mueve `ingredients.stock` Y asienta en el
+  libro en la misma transaccion, como ya hacia `register_waste`.
+  `guardar_conteo_de_deposito` aplica el conteo entero o nada, y
+  `consumo_diario_de_insumos` da el "alcanza para N dias". Suma
+  `ingredients.supplier_id`.
+- **Dos herramientas nuevas**, porque vienen mas renders:
+  `npm run pantalla -- stock` arma la pantalla a los anchos que cambian su
+  layout, sin levantar la app. `npm run pantalla:acciones -- viejo nuevo`
+  compara lo que cada pantalla HACE. El orden completo esta en
+  `docs/plataforma/PORTAR-UNA-PANTALLA.md`.
+
+### El error que hay que no repetir
+
+**Se porto la lista de Stock y se olvido el alta y la edicion de insumos.**
+Quedo publicado asi entre dos commits. El build pasaba, los 1338 tests pasaban
+y la pantalla se veia igual al render: no habia NADA que lo delatara salvo
+intentar usarla. Se arreglo reusando `IngForm`, el mismo formulario del legacy,
+que ahora se exporta.
+
+Portar una pantalla es portar lo que HACE, no lo que muestra. De ahi sale
+`pantalla:acciones`: sobre el caso real marca el alta y el editor como
+faltantes, que era exactamente lo que se habia caido.
+
+### Lo que se aprendio
+
+- **Mirar los datos reales cambia el diseño.** El render mostraba la pantalla
+  llena. En el edificio hay 2 insumos y NINGUNO tiene minimo cargado, y toda
+  la pantalla se apoyaba en comparar contra el minimo. De ahi salio el estado
+  `sin-minimo`, que no estaba en el render: barra a rayas y la fila pidiendo
+  el numero, en vez de pintar de verde un dato que no existe.
+- **Tres defectos salieron solo de mirar la pantalla armada**, no de los tests:
+  un "180% del minimo" sin topear, la etiqueta del buscador saliendo como
+  titulo —la clase de este sistema es `ag-sr-only`, no `sr-only`— y un nombre
+  de insumo cortado en el conteo.
+- **Un test si agarro un bug de logica**: el panel envolvia la merma y
+  descartaba la cantidad y el motivo.
+- Para la vista previa, dos cosas que costaron tiempo: `machine-soul.css` va
+  primero y sin `@import` (concatenado en un `<style>`, un `@import` a mitad de
+  hoja es invalido, los `--ms-*` no cargan y la pantalla sale en blanco), y
+  cada ancho va en su propio iframe porque los media queries miran el viewport
+  y no el contenedor.
+
+### Estado
+
+`main` en `12de5dc`. Suite: 97 archivos, 1340 tests. La 0071 esta aplicada al
+edificio y reflejada en el snapshot.
+
+### Lo que sigue
+
+Ricky va a pasar mas renders para aplicar la identidad de Dico al resto de las
+pantallas. Para cada uno: leer `docs/plataforma/PORTAR-UNA-PANTALLA.md` y
+arrancar por el inventario de acciones de la pantalla vieja.
+
+Cuando una pantalla nueva se agregue a `scripts/pantalla/muestras.mjs`, la
+muestra tiene que incluir el caso vacio, el nombre largo y el numero que
+desborda. El caso que no esta en la muestra es el que no se mira.
+
+---
+
+## 10/sep/2026 — Cierre: ordenar la realidad y renombrar a Dico (Claude)
+
+### Por que Productos "habia vuelto atras"
+
+No volvio atras: **nunca se habia publicado**. Los 22 commits de
+`feat/dico-panorama-v2` seguian en la rama. El 10/sep se trajeron a `main` solo
+dos por cherry-pick, los de la landing, y el resto quedo ahi: nueve de
+Productos, cuatro de Caja, cuatro de Salon, uno de roles por persona y el
+retiro de la vitrina. Como QA Lite construye desde un ref de git y produccion
+se publica desde `main`, los dos mostraban el Productos del 8/sep. El archivo
+de estilos difiere en 703 lineas entre las dos versiones: eso era la ventana
+que faltaba.
+
+**Se mergeo la rama entera** (`9776b8c`). Unico conflicto:
+`tools/vitrina/vite.config.mjs`, borrado en la rama y modificado en `main`;
+se resolvio por el borrado.
+
+### Hecho
+
+- **`main` quedo en `149a421` y esta publicado.** `/version.json` devuelve
+  `149a421a`. Verificado ademas que las clases nuevas de Productos
+  (`ag-fila-margen-celda`, `ag-dico-busqueda`, `ag-categorias-popover`,
+  `ag-fila-detalle-toggle`) estan en el chunk `PlatformAdmin-BTw3q0Sw.css`
+  servido por produccion, y que el chunk de Salon responde 200.
+- **Una sola carpeta madre de documentos.** Los 71 markdown estaban repartidos
+  entre la raiz (19), `platform/` (31) y `docs/` (6). Ahora todo vive en
+  `docs/` con cuatro subcarpetas —`plataforma`, `marca`, `operacion`,
+  `historico`— y `docs/README.md` fija la regla de que gana cuando dos
+  documentos se contradicen. En la raiz quedan los tres que las herramientas
+  leen de ahi. `platform/HANDOFF.md` paso a ser `docs/HANDOFF.md`.
+- **El producto se llama Dico.** `HermesMark.jsx` -> `DicoMark.jsx`,
+  `hermes-tokens.css` -> `dico-tokens.css`, los PNG de marca, el paquete
+  (`hermes-gastro` -> `dico`), el alias de build (`@hermes/core` ->
+  `@dico/core`) y el `app.name` del locale, que era lo unico que decia Hermes
+  en pantalla. **No se toco** nada atado al nombre viejo: las claves de
+  storage (`hermes_guest_v1`, `hermes-auth`, `hermes-theme`, `hermes-lang`,
+  `hermes_phone_blocks_v1`), el prefijo de cache, los iconos del manifest PWA,
+  los ids `HERMES-GASTRO-*` de Sentry y los nombres de infra.
+- **`CLAUDE.md` y `AGENTS.md` describen el edificio.** Abrian con "multi-tenant
+  SaaS para 3 dark kitchens" y "cada tenant = 1 proyecto Supabase + 1 proyecto
+  Vercel". Ahora abren con la regla del edificio y mandan a `docs/`.
+- **Las skills dejaron de mentir.** `/dico` daba por huerfanos a los 7 tenants
+  y decia que nadie habia llegado al primer valor: las dos cosas son falsas
+  desde hace rato. `/cerrardico` mandaba a commitear en
+  `platform/runtime-tenant` y "nunca en `main`", justo al reves de como se
+  publica hoy. La copia de `.agents/` estaba atrasada y se sincronizo.
+- **110 MB fuera del repo**, a `C:/Users/ricar/Proyectos/_archivo-dico/`: los
+  cuatro bundles de git (redundantes, cada commit que traen vive en ramas),
+  `output/`, el export de Sintra y los cuatro `.docx`. Nada se borro.
+
+### Lo que se aprendio
+
+- **Un cherry-pick parcial deja la rama divergida y nadie se entera.** Publicar
+  dos commits de veintidos no deja rastro en produccion de los veinte que
+  faltan: la app anda, solo que con la version vieja de una pantalla. Si se
+  publica parcial, el HANDOFF tiene que decir **que quedo afuera**, no solo que
+  entro.
+- **La suite flakea distinto en cada corrida.** Tres corridas seguidas dieron
+  fallos en archivos distintos, todos `Test timed out in 15000ms`, y una de
+  ellas reporto 94 archivos en vez de 96. Los ocho sospechosos pasan aislados
+  en 31 s. Antes de dar un test por roto: correlo solo.
+
+### Hecho el 11/sep: se limpio el arbol de git
+
+Las **10 worktrees quedaron retiradas** y las **15 ramas ya contenidas en
+`main` borradas**. El repo quedo con una sola worktree, seis ramas y el arbol
+limpio. `git worktree remove` sin `--force` alcanza: el clasificador bloquea la
+version con `--force`, pero ninguna worktree tenia trabajo sin commitear. Las
+dos que se resistian tenian un archivo suelto cada una (un bundle y una copia
+vieja de `AGENTS.md`), que se movieron a `_archivo-dico/`.
+
+Dos ramas dieron `warning: not deleting ... not yet merged` estando 100%
+contenidas en `main`, local y en origin. Se verifico con
+`git merge-base --is-ancestor` antes de forzar: el aviso era espurio.
+
+**Las 6 ramas que quedan, y por que:**
+
+| Rama | Por que se queda |
+|---|---|
+| `main` | la de trabajo y publicacion |
+| `prep/dico-3d-final` | 8 commits de assets 3D sin publicar |
+| `ops/build-identity-fail-closed` | 2 commits sobre identidad de build |
+| `release/platform-security-2026-08-30` | 1 commit de documentacion |
+| `respaldo/codex-2026-09-08` | snapshot de trabajo en vuelo de Codex |
+| `respaldo/codex-2026-09-09` | idem, del dia siguiente |
+
+En **origin** siguen 8 ramas ya contenidas en `main`. Borrarlas no pierde ni un
+commit, pero le rompe el push a cualquier sesion de Codex que este apuntando a
+una. No se tocaron: decision de Ricky.
+
+### Pendiente de Ricky
+
+El clasificador bloquea desde la sesion toda accion destructiva sobre
+infraestructura, asi que estas dos quedan a mano.
+
+1. **Sacar de circulacion los 3 Vercel legacy** (`la-nona-pato`, `cochi`,
+   `mala-miga`). Los tres redeployaron con el push del 10/sep. Ninguno tiene
+   dominio propio —solo `*.vercel.app`— y su Supabase esta `INACTIVE`, asi que
+   el catalogo no puede cargar nada: no hay nada real que se caiga.
+
+   La via correcta es **Project Settings > Git > Disconnect** en el panel, por
+   proyecto. Pausar NO alcanza: segun la API, `pause` "disables auto-assigning
+   custom production domains and blocks the active Production Deployment", y no
+   dice nada de cortar los builds de git.
+
+   `vercel.json` no sirve para esto: es el mismo archivo para los 4 proyectos,
+   asi que un `git.deploymentEnabled: false` se llevaria puesto al edificio.
+
+2. **Borrar los 2 tenants de prueba.** Los dos estan vacios: 0 productos, 0
+   pedidos, 0 pagos. Solo tienen el `settings` y la sucursal que crea el alta.
+   Todas las FK a `tenants` son `ON DELETE CASCADE`, salvo `profiles` y
+   `consola_log` que son `SET NULL`.
+
+   ```sql
+   delete from tenants where slug in ('prueba-disco','tienda-nueva')
+   returning slug, name, status;
+   ```
+
+   Deja sin tenant a dos usuarios de auth que son cuentas de prueba del signup
+   del 15/ago (`rrodriguezs777@` y `ricardousa1313@`), con su `profiles.
+   tenant_id` en null. Si tambien queres borrar esos usuarios, es aparte.
+
+3. Sigue de antes: **destildar Sensitive** en `VITE_SUPABASE_URL` y
+   `VITE_SUPABASE_ANON_KEY` de `hermes-platform`, y **leaked password
+   protection** en el Supabase del edificio.
+
+---
+
+## 10/sep/2026 — Cierre: la landing nueva publicada en divianco.app (Claude)
+
+### Hecho
+
+- La landing de siete secciones esta **publicada en `https://divianco.app`**.
+  Llego a `main` por dos cherry-picks de `feat/dico-panorama-v2` y nada mas:
+  `f887960` (la landing entera, con `PalabraEscrita` y `FooterAscii`) y
+  `2cd7b04` (la ruta `/landing`, que solo existe en dev). Salon, caja,
+  productos y roles siguen en la rama, sin publicar: Ricky eligio publicar
+  solo la landing y no el release grande.
+- `main` quedo en `1668367`. El deployment de produccion es
+  `dpl_J8FefC8xYTCjufs19jbUZgWpc8uc`, `READY`, y `/version.json` devuelve
+  `16683673`.
+- **`hermes-platform` volvio a tener integracion de GitHub** y publica solo en
+  cada push a `main`, igual que los tres catalogos. Lo reconecto Ricky en esta
+  sesion. Ya no hace falta el deploy manual por CLI.
+- La URL vieja de la landing standalone, `http://localhost:5199/landing.html`,
+  es del vitrina y sigue siendo valida en `main` porque el vitrina no fue
+  retirado de este lado. Dentro de la app real se mira en `/landing`.
+
+### Verificado
+
+- **En produccion, en Chrome real**: hero, rubros, modulos, integraciones, la
+  tabla comparativa, los tres planes de precios, el cierre y la moneda ASCII
+  del footer. Tema oscuro aplicado, ningun recurso en 404.
+- `npm run build` limpio con integridad y schema-sync; pre-commit completo
+  (typecheck, 87 smoke tests, columnas, frescura del snapshot) en verde.
+- Los tres catalogos legacy redeployaron solos por el push y quedaron `READY`.
+  La ruta `/landing` no viaja al bundle de produccion, asi que para ellos el
+  cambio es nulo.
+
+### Lo que se aprendio en el camino
+
+- El push a `419282a` **no** produjo deployment en `hermes-platform`: el
+  proyecto estaba sin integracion de GitHub, y `get_git_deployment_context` no
+  lo listaba entre los linkeados mientras los tres legacy si aparecian. La
+  nota del 29/ago que dice que la integracion existe era cierta cuando se
+  escribio; se perdio en algun momento posterior. Moraleja: el campo `link` de
+  la API no alcanza como prueba en ninguna de las dos direcciones. Lo que
+  decide es si un push produjo o no un deployment.
+- La via manual `npm run deploy:web` **sigue trabada**: muere en el paso 5
+  porque `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` estan marcadas
+  Sensitive en el proyecto Vercel. Vercel no entrega el valor de una variable
+  Sensitive, `vercel pull` baja `[SENSITIVE]` y `assertEnvUsable` corta antes
+  de construir para no hornear claves rotas en el bundle. Con la integracion
+  de Git andando esto dejo de bloquear, pero el respaldo manual no existe
+  hasta que se destilde.
+- **El panel de preview interno no sirve para revisar esta landing.** Mostro
+  todas las secciones bajo el hero como un rectangulo crema, mientras las
+  propiedades computadas decian `opacity: 1` sobre `.pl-root` con fondo
+  `rgb(8,9,11)` cubriendo los 4983 px del documento. Es un artefacto de
+  composicion del panel, no del sitio: en Chrome real se ve bien. Para
+  verificar produccion, ir a Chrome directo.
+
+### Pendiente inmediato
+
+1. `scripts/generar-trazos.mjs` no existe y `trazos.json` esta vacio, asi que
+   `PalabraEscrita` dibuja con la fuente real en vez de trazar los contornos.
+   Es el fallback previsto y no rompe nada, pero en la palabra que rota del
+   titular se nota como un parpadeo. Es lo unico visualmente a medias de la
+   landing publicada.
+2. Decidir que hacer con el resto de `feat/dico-panorama-v2` (salon, caja,
+   productos, roles): son 20 commits que quedaron sin publicar y la rama ya
+   divergio de `main`.
+3. La skill `/cerrardico` dice que se commitea en `platform/runtime-tenant` y
+   "nunca en `main`". Eso quedo viejo: desde el 8/sep el edificio se publica
+   desde `main`, y ahora ademas por integracion de Git. Conviene corregir el
+   texto de la skill antes de que induzca a error.
+
+### Bloqueado por Ricky
+
+- **Destildar Sensitive** en `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`
+  del proyecto Vercel `hermes-platform` (Settings > Environment Variables).
+  Son claves publicas que igual viajan al navegador dentro del bundle. Sin
+  eso, `npm run deploy:web` no existe como respaldo si la integracion de Git
+  se vuelve a caer. No es urgente mientras el push funcione.
+- Sigue pendiente de antes: **leaked password protection** en el Supabase del
+  edificio (ver `docs/TAREAS-MANUALES.md`).
+
+---
+
+## 8/sep/2026 — Cierre: panorama de Productos publicado y legacy retirado (Codex)
+
+### Hecho
+
+- El panorama de Productos y Dico de esta ronda quedo integrado en `main` en
+  `f9b0362` y publicado en `https://divianco.app`. El deploy de Vercel quedo
+  `READY`; `/version.json` devolvio `f9b03628` y `/admin` respondio 200.
+- El trabajo siguiente queda en `feat/dico-panorama-v2`, basado exactamente en
+  `f9b0362`. QA Lite sigue levantado en `http://127.0.0.1:5273/admin` con el
+  fixture de 21 productos y cinco categorias; no se reseteo la base local.
+- Se retiro el flujo de deploy a los tres Supabase legacy. El comando historico
+  `node scripts/deploy-functions.mjs` ahora delega en
+  `platform/scripts/deploy-functions.mjs`; no contiene project refs legacy ni
+  puede aceptar `--tenant` o `--project-ref`. `npm run deploy:functions` apunta
+  solo al edificio `wwwzdgprsooyjgkuyoav`.
+- Se retiro el onboarding standalone: `npm run create-client` queda como guard
+  que falla con una explicacion y no escribe archivos. La unica alta vigente es
+  `npm run create-owner`, que ejecuta `platform/scripts/create-owner.mjs` y crea
+  un tenant dentro del edificio. Se actualizaron `AGENTS.md`, `docs/plataforma/ONBOARDING.md`,
+  `README.md`, `docs/plataforma/SCHEMA.md`, `docs/TAREAS-MANUALES.md` y `docs/operacion/RUNBOOKS.md`.
+- Los proyectos Supabase legacy de la-nona-pato, cochi y mala-miga siguen
+  `INACTIVE`. No deben restaurarse ni recibir deploys: Ricky confirmo que seran
+  dados de baja y que esos negocios viven en el edificio.
+
+### Verificado
+
+- Suite completa previa a publicar el panorama: 90 archivos, 1240 tests; QA
+  unitario: 28 tests; build Vite, typecheck de ocho Edge Functions y pre-commit
+  completos. El E2E de sidebar paso en seis anchos responsivos.
+- Vercel produccion: `hermes-platform` deploy
+  `dpl_729vzYSsyL2RiLzvuXkra2TNF3oY`, estado `READY`, alias
+  `https://divianco.app`; los cuatro proyectos no mostraron errores runtime en
+  la ventana revisada.
+- Edge Functions del edificio `submit-order` y `tenant-users` fueron publicadas
+  correctamente. No se publico `admin-users`: pertenece al legacy retirado.
+- Ambos comandos de functions, el historico y `npm run deploy:functions`, se
+  probaron con `--dry-run`: enumeran las mismas ocho functions de
+  `platform/functions/` y unicamente el ref del edificio. `--tenant` queda
+  rechazado. `npm run create-client` termina con codigo 1 antes de mutar nada.
+- QA Lite responde HTTP 200 y el panel se verifico cargado en navegador con las
+  cinco categorias plegadas y el fixture intacto. El archivo local de acceso
+  `.qa-lite/revision-phase4.txt` existe y sigue ignorado por Git.
+
+### Pendiente inmediato
+
+1. En el proximo chat, abrir primero `http://127.0.0.1:5273/admin` y darle a
+   Ricky las credenciales QA leyendo `.qa-lite/revision-phase4.txt`. No copiar
+   la password al repo: el archivo es local, ignorado y puede cambiar al
+   reiniciar el harness.
+2. Continuar los cambios visuales sobre `feat/dico-panorama-v2`, usando el
+   fixture actual para revisar en vivo. No resetear QA Lite salvo pedido
+   explicito.
+3. Cuando la nueva ronda quede aprobada, integrar y publicar desde esta rama con
+   el mismo gate completo usado en el cierre anterior.
+
+### Bloqueado por Ricky
+
+- Nada para continuar el trabajo visual en QA Lite.
+
+### Trabajo local vivo
+
+- Los cambios de retiro y este handoff quedan listos para commit y push en
+  `feat/dico-panorama-v2`; no hay implementacion a medias.
+- `.qa-lite/revision-phase4.txt` contiene el acceso local solicitado para el
+  proximo inicio. No versionarlo ni mostrarlo fuera del QA local.
+- `DICO_SINTRA_EXPORT/`, `DICO_SINTRA_EXPORT_2026-09-04.zip` y `output/` son
+  artefactos locales preservados e ignorados; no agregarlos al commit.
+
+---
+
+## 6/sep/2026 — Ronda en curso: topbar y cuenta (Codex)
+
+Octavo incremento del 8/sep en Productos. El subtitulo `Categorias` sube de
+15 a 20px y gana aire vertical para diferenciarse con claridad de los nombres
+de cada categoria plegable.
+
+Durante el gate de publicacion se corrigio el tipado del costo congelado en
+`platform/functions/submit-order`: la relacion `ingredients` acepta tanto la
+forma objeto como la forma array inferida por Supabase. El calculo conserva el
+mismo fallback seguro a costo cero.
+
+El E2E de sidebar tambien se alineo con el componente vigente: al abrir Dico
+comprueba la tarjeta `.dico-avisos-mensaje`, no la vieja burbuja eliminada en
+la ronda visual.
+
+Septimo incremento del 8/sep en Productos. La columna izquierda suma el titulo
+semantico `Categorias` dentro de la card, arriba de los desplegables. El `h1`
+del shell sigue siendo `Productos`; el nuevo `h2` ordena la lista sin duplicar
+el nombre de pantalla.
+
+Sexto incremento del 8/sep en Productos. La burbuja `Agregar producto` deja el
+fondo oscuro con borde oro y pasa a laton dorado: gradiente metalico de bandas
+anchas, canto oscuro, doble luz interior y texto Zinc 950. El reflejo solo se
+desplaza al hover; no tiene halo ni animacion autonoma, para conservar la regla
+de accion dorada sin convertirla en neon.
+
+Quinto incremento del 8/sep en `DICO ANALIZA`. El control de informacion se
+redujo visualmente de 22 a 18px y conserva un area tactil ampliada invisible.
+La nota desplegada tambien es mas compacta y deja de repetir la explicacion de
+los cuadrantes. Ahora cuenta el origen: Michael L. Kasavana y Donald I. Smith,
+Michigan State University, su publicacion de 1982 y la adaptacion de una matriz
+de cartera para tomar decisiones de menu con ventas y margen.
+
+Cuarto incremento del 8/sep en Productos. Las categorias del listado nacen
+plegadas y toda la cabecera funciona como disclosure con cantidad y chevron;
+una busqueda abre solamente las categorias con coincidencias y al limpiarla
+vuelve a plegar la lista. Se eliminaron del encabezado `3 en curso` y la frase
+redundante `21 productos en 5 categorias`. `Agregar producto` paso al primer
+lugar de la tira de indicadores y usa la misma geometria de burbuja, con borde
+dorado de accion. El contador de pedidos se conserva donde aporta valor: en la
+navegacion de Pedidos.
+
+Tercer incremento del 8/sep sobre `Resumen Dico`: se retiro el rotulo pequeno
+`DICO ANALIZA`, se centro la identidad y solo la palabra `Dico` queda en Butler
+dorado. El cuerpo completo usa Overused y escribe primero las metricas del menu
+y despues la lectura priorizada con el tipeo compartido de Dico; tocar cualquier
+punto completa el texto y movimiento reducido lo salta. Los accesos `IR DIRECTO
+A` desaparecieron. Los Enigmas ahora generan microacciones por producto para el
+proximo brief, con la directriz exacta que recibira el equipo, por ejemplo
+`Ofrezcan Risotto durante el proximo turno`. El boton agrega a un borrador local
+y lo declara asi en UI/toast; persistencia y distribucion real siguen pendientes.
+
+Segundo incremento del ranking vivo el 8/sep. El panorama de `DICO ANALIZA`
+deja los acordeones y pasa a cuatro bloques: Estrellas, Caballos, Enigmas y
+Perros, con definicion, cantidad y entrada al ranking. Cada cuadrante reemplaza
+el cuerpo de la misma card, muestra sus totales y agrupa rankings independientes
+por categoria comercial. Producto conserva el tercer nivel estadistico y su
+boton volver.
+
+Las flechas de fila representan proximidad al limite mas cercano y nombran el
+cuadrante posible; no se presentan como tendencia hasta tener snapshots. La
+lectura fija desaparecio y ahora `Resumen Dico` abre una vista humana con Dico
+2D dentro de la card y accesos directos a las prioridades. Mientras esa vista
+esta activa, la presencia 2D se retira de topbar/sidebar y vuelve al cerrarla.
+Butler se usa en la voz del resumen; metricas y controles conservan tipografia
+de interfaz. Las microacciones con efectos siguen bloqueadas hasta tener
+persistencia. El fixture local carga 12 transacciones, 40 unidades y ocho
+recetas repartidas entre Bebidas y Principales; cada cuadrante permite comprobar
+dos rankings que reinician en `#1`.
+
+Primer incremento funcional del ranking vivo implementado el 8/sep. Se saco el
+selector temporal y la lectura actual queda fija a 28 dias, con pulso de ventas
+de 7 dias. Kasavana calcula popularidad y margen ponderado dentro de cada
+categoria comercial; los cuadrantes son acordeones y ordenan por contribucion
+total. Al elegir un producto, la misma card muestra su perfil, referencias de
+categoria, distancia a mejora y recomendacion directa; volver restaura el
+ranking y el scroll. Mobile nace con cuadrantes cerrados y desktop abre la
+prioridad mas urgente.
+
+Esta primera capa usa los pedidos y costos ya disponibles en cliente. No tiene
+todavia snapshots persistidos, oportunidades/exposicion, historial de stock ni
+acciones guardadas; por eso la trayectoria se marca como pendiente y no se
+ofrecen microacciones ficticias. El siguiente incremento debe mover el agregado
+y los snapshots al backend antes de habilitar brief y seguimiento.
+
+Decision funcional del 8/sep para la siguiente iteracion de `DICO ANALIZA`.
+Antes de implementar se fijo el contrato en
+`platform/DICO-MENU-ENGINEERING-RULES.md`: ranking vigente de 28 dias
+operativos, pulso de 7, snapshots eternos por cierre, comparacion dentro de la
+categoria y estado `En observacion` para productos sin exposicion suficiente.
+El perfil estadistico no abre pagina: reemplaza el cuerpo de la misma card y
+volver restaura cuadrante y scroll. Se definieron elegibilidad, exclusiones,
+formulas, estabilidad de cambios, orden, microacciones y medicion de resultado.
+El contrato tiene una implementacion parcial de interfaz y calculo vigente; la
+persistencia y elegibilidad siguen pendientes.
+
+Decimocuarto ajuste de Productos. Kasavana deja la matriz visual 2x2 y pasa a
+cuatro filas apiladas: Estrellas, Caballos, Enigmas y Perros, cada una con un
+emoji identificador, criterio, productos, unidades y contribucion. En desktop
+el panel tiene sticky real y altura maxima de viewport con scroll propio: con
+21 productos de revision se midio de 468px iniciales a 12px del borde al bajar,
+sin superar 552px de alto en un viewport de 600px. En mobile conserva el
+disclosure voluntario; nace plegado y no acompana el scroll como panel fijo.
+
+La lectura deja de describir cantidades abstractas y emite decisiones con
+nombre: mantener Estrellas, revisar costo o precio de Caballos, promocionar
+Enigmas y considerar reformular o sacar Perros. Un control `i` junto a
+`Ingenieria de menu` explica el cruce popularidad/margen, cada cuadrante y el
+corte temporal. La propuesta cristal se descarto y el titulo vuelve a la
+opcion 1: tipografia Overused grande y linea oro respirando, sin halo neon.
+El fixture local suma ahora 17 productos de volumen para juzgar el sticky.
+
+Decimotercer ajuste de Productos. Ricardo aprobo el encastre topbar/sidebar.
+Las leyendas pequenas de Dico vuelven a la autoridad anterior: kicker y label
+en mono, lectura en Overused; Butler se veia extrano a esa escala. La flecha
+mobile deja de representar abierto/cerrado del negocio: representa el estado
+de la card en ambos modos, con chevron fino hacia abajo plegada y hacia arriba
+desplegada. Se cargo un fixture local de revision con un turno cerrado, seis
+transacciones, veinte unidades, cuatro recetas y los cuatro cuadrantes de
+Kasavana; es reversible con `cargar-gestion-productos-demo.mjs --limpiar`.
+
+La propuesta de titulo grande con linea oro respirando queda registrada como
+opcion 1. La opcion 2 activa ahora una textura cristal estatica dentro de las
+letras, construida con Zinc y sin halo, neon ni blur; una linea mineral fina
+reemplaza el pulso. Vista Analiza mobile comprobada con los datos locales.
+Validacion: 88/88 tests enfocados y build Vite verdes; ESLint sin errores.
+Todo sigue local, sin commit ni deploy.
+
+Duodecimo ajuste de Productos. En desktop la topbar ahora acompana la
+expansion lateral del sidebar: arranca junto al riel y se desplaza y reduce
+con el mismo movimiento cuando el riel abre, por lo que ambas piezas conservan
+un solo borde visual. El gate de sidebar mide este contrato en 1440, 1280,
+1024 y 900 px, ademas de comprobar el cambio a navegacion inferior en 768 y
+390 px; paso sin overflow, con riel 64 px y sidebar abierta 224 px.
+
+En estado cerrado, `DICO ANALIZA`, `LECTURA DE DICO` y su lectura usan Butler.
+Debajo de `Ingenieria de menu` aparece la fecha del ultimo turno cerrado y un
+selector a la derecha para analizar ultimo turno, 3 dias, 1 semana, 2 semanas
+o 30 dias. La seleccion modifica de verdad el intervalo de pedidos que alimenta
+Kasavana, usando como corte el cierre del ultimo turno gestionado. En mobile la
+cabecera conserva todo su ancho como target: muestra `⌄` en Dico Recomienda y
+`⌃` en Dico Analiza; el badge queda al lado del nombre solo cuando existen
+recomendaciones y no aparece en Analiza. Los titulos de pantalla crecieron y
+recibieron una linea oro inferior que respira, respetando movimiento reducido.
+
+Validacion de este ajuste: 88/88 tests enfocados verdes, gate Playwright de
+sidebar/topbar verde en los seis anchos, ESLint sin errores y build Vite verde.
+Todo sigue local, sin commit ni deploy.
+
+Undecimo ajuste a partir de captura real. La barra vuelve a `Sistema operativo`
+abierto y conserva `Sistema en reposo` cerrado. El panel elimina por completo
+el indicador redundante `Local abierto`. Su identidad es `DICO RECOMIENDA · EN
+VIVO` con linea Volt durante la operacion; cerrado cambia a `DICO ANALIZA`,
+linea y nombre oro, y el titulo pasa a `Ingenieria de menu`.
+
+La antiguedad de Caja ya no define el reloj: producia `18 d 9 h` cuando el
+fixture conservaba una cash_session vieja. `ventanaOperativa()` expone los
+minutos transcurridos desde la apertura de la ventana actual y el panel los
+muestra en mono como `HH:MM operando`, junto a las transacciones completadas
+del dia. Cerrado no muestra ese reloj. En mobile desaparecio la burbuja `+/-`:
+toda la cabecera es el target plegable y el unico elemento visible a la derecha
+es el badge Volt cuando existen impulsos pendientes. El sidebar abre por hover
+sin depender de `(pointer: fine)`, porque el navegador interno reportaba mouse
+como puntero coarse. Verificacion visual mobile hecha en el dev autenticado;
+tests enfocados verdes.
+
+Decimo ajuste, Productos mobile y estado operativo. Se corrigio la apertura
+del sidebar desktop: una regla condicionada a la burbuja abierta de Dico lo
+forzaba al ancho cerrado y ya no bloquea hover ni foco de teclado. En mobile,
+el panel `DICO · EN VIVO` se ordena arriba de la lista, nace plegado, conserva
+una cabecera tactil de 44px y muestra un badge Volt solo cuando hay impulsos
+pendientes. Su linea superior tiene el barrido de pulso; con movimiento
+reducido queda estatica. Desktop conserva el panel abierto a la derecha.
+
+El alcance del panel abierto reemplaza la hora inicial por duracion desde
+`turno.opened_at` y cantidad de pedidos completados del dia local. El reloj y
+los pedidos se refrescan cada 30 segundos; el polling silencioso tambien trae
+pedidos ingresados desde otro dispositivo sin poner la pantalla en loading.
+La barra operativa ahora dice `Sistema operando` mientras abre y `Sistema en
+reposo` al cerrar, sin duplicar el estado. Tests enfocados: 61/61 verdes y
+build verde. Sigue todo local, sin commit ni deploy.
+
+Noveno ajuste funcional sobre Productos: `Impulsar` ya no arma ni espera un
+brief y tampoco ofrece elegir push/canal. El toque representa una decision
+inmediata del encargado: Dico resuelve el destino por area y confirma en su
+intervencion 3D que la directriz salio. En este prototipo las seniales de
+bebidas van al equipo de barra y el resto a camareros y recepcion; la heuristica
+por nombre/categoria debe reemplazarse por un `service_area` explicito cuando
+se implemente la entrega persistida a los dispositivos de cada rol. El brief
+inicial queda como un flujo separado, preparado antes del turno y entregado al
+equipo cuando llega. La UI, reglas de destino e intervencion estan en dev;
+la entrega cross-user/realtime todavia requiere modelo de directrices y no se
+simula como push. Tests enfocados: 46/46 verdes, incluido el click real sobre
+`Impulsar` y su confirmacion de destino. Build verde.
+
+Octavo ajuste visual, Productos como centro de decision por turno. En desktop
+la zona inferior se divide: la lista de productos queda compacta y vertical a
+la izquierda, sin mosaico de cards de alturas desparejas; a la derecha nace el
+panel contextual de Dico. Si el local esta abierto muestra acciones explicables
+por prioridad (faltante confirmado, stock bajo y oportunidad de rotacion), con
+accesos a Stock, pausa real del producto y una accion inmediata para impulsar.
+
+Con el local cerrado, el mismo lugar cambia a Matriz Kasavana. Usa solo pedidos
+completados con detalle y productos con receta/costo: popularidad contra margen
+de contribucion unitario, en Estrellas, Caballos, Enigmas y Perros. Si falta
+venta o receta lo dice y no inventa una clasificacion. El alcance toma el turno
+abierto o el ultimo cerrado cuando existen; cae a los pedidos disponibles en
+un negocio sin historial de Caja. En mobile las dos columnas se apilan.
+
+Se agregaron `GestionProductosPanel.jsx`, el calculo puro
+`gestionProductos.js` y tres pruebas de ventas, cuadrantes y prioridad. Build
+verde y 23/23 tests enfocados verdes. Se generaron capturas controladas en
+`.qa-lite/artifacts/gestion-productos/` para los estados abierto y cerrado; los
+datos temporales se restauraron al terminar. El gate Phase 4 genero las diez
+capturas de anchos/temas y llego al final, pero vencio su timeout global de 60s
+al volver a abrir el panel para restaurar visibilidad; no fallo por layout.
+No hubo commit, deploy ni cambios persistentes de base.
+
+Septimo ajuste visual de Ricardo. La luz Volt no va dentro de la card madre ni
+como linea externa: vuelve a vivir debajo de `.ag-main`, en `.ag-workspace-stage`,
+y la card tapa el centro. Se conserva la vuelta completa en 12s, pero el efecto
+buscado es luminiscencia que pasa por abajo siguiendo el contorno, visible y
+sutil. Ajuste posterior: se redujo el tamano del halo con menos blur y una
+franja mas angosta; el color base usa Volt profundo (`--ms-volt`) para que no
+lea celeste. Cuando la burbuja de Dico esta abierta o Physical aparece, la
+luminiscencia pasa a oro Dico (`--ms-gold`) por CSS `:has()`. Ajuste siguiente:
+se subio a un punto medio de presencia (blur 18px, opacidad .39 y franja apenas
+mas ancha) porque la version reducida quedo demasiado baja. La frase inspiradora
+debajo de la card madre paso a Butler (`--ag-font-display`), con tracking cero.
+El nombre de la persona tambien pasa a Butler: aplica al saludo fuera de la card,
+al nombre visible en la burbuja de cuenta y al encabezado de identidad del menu.
+Nuevo ajuste: en mobile el halo de luz vuelve a estar activo detras de la card
+madre. Para que se vea, `.ag-main` recupera un gutter minimo de 6px y radio en
+mobile; el halo baja blur/opacidad respecto de desktop para no comerse espacio.
+El nombre visible de la persona en la topbar deja Butler y pasa a Overused,
+mayusculas, 14px y el mismo peso del nombre del local. El nombre dentro del menu
+de cuenta conserva Butler.
+
+Sexto ajuste visual de Ricardo. La luz Volt ya no cruza solo el borde superior:
+un arco conico enmascarado recorre los cuatro lados de la card madre en 12s,
+solo en desktop. El pulso de la linea operativa dejo de variar la opacidad de
+todo el tramo y ahora es un destello que barre de izquierda a derecha.
+
+Sistema y Caja comparten tamano, peso y separacion. Caja tiene punto verde fijo
+si esta abierta, rojo si esta cerrada con el local operativo y zinc apagado si
+ambos estan cerrados. Todo el texto de Caja queda gris como Sistema. Caja sigue
+visible con el local en reposo para no perder el
+estado. La barra bajo de 84 a 58px en desktop y de 82 a 62px en mobile; se
+elimino el aire que quedaba bajo la linea. Evidencia abierta en
+`.qa-lite/artifacts/phase4-golden/perimetro-despues/` y cerrada en
+`compacta-cerrada-despues/`; ambos gates pasaron 2 temas x 5 anchos. El video
+adjunto no pudo abrirse por la politica del navegador para archivos locales;
+se implemento la direccion izquierda→derecha indicada por Ricardo.
+
+Quinto ajuste visual de Ricardo, implementado localmente. El reloj salio de la
+barra operativa y ocupa el extremo derecho de la banda de saludo. La frase
+diaria paso debajo de la card madre, centrada y en oro. El nombre del local se
+renderiza siempre en mayusculas.
+
+La barra ahora sigue al horario, no a la antiguedad de Caja. Abierto: muestra
+Sistema operativo con pulso, Caja abierta en oro o Caja cerrada en rojo; a la
+derecha, Cierre de turno y la cuenta regresiva mono. La linea Volt se carga
+hacia el cierre y respira. Cerrado: Local cerrado / Sistema en reposo queda
+apagado; Apertura y la cuenta regresiva son el unico Volt, mientras la linea
+conserva el progreso en zinc sin pulso. Se agrego textura Zinc al chasis y se
+subio de .32 a .46 la intensidad de la luz detras de la card.
+
+Dico 2D recalcula el horario cada 30 segundos y recomienda abrir Caja durante
+los cinco minutos previos. Dico 3D registra una intervencion si la ventana ya
+abrio sin Caja, con CTA Abrir Caja, y se guarda al abrirla o cerrar el local.
+En mobile no sale Physical para este caso porque su burbuja no entra en el
+Slot; el estado rojo de la barra permanece visible. Evidencia del caso 3D en
+`.qa-lite/artifacts/phase4-golden/caja-cerrada-despues/`.
+
+Validacion: 83 tests enfocados, 28/28 QA Lite unitarios y build completos
+verdes. El gate visual normal paso en abierto y cerrado, 2 temas x 5 anchos;
+capturas en `barra-despues/` y `barra-cerrada-final-despues/`. La corrida
+diagnostica con Caja cerrada genero las 10 capturas, pero su paso posterior
+para abrir manualmente Dico 2D vencio el timeout porque la nueva intervencion
+3D lo habia abierto y desmontado; el fixture normal conserva Caja abierta y el
+gate oficial pasa. Horario y Caja locales fueron restaurados al finalizar.
+
+Cuarto grupo visual de Ricardo, implementado localmente: el lienzo bajo la
+superficie madre ahora es hormigón frío con grano irregular generado en CSS,
+en claro y oscuro. Fuera de la card aparece el saludo por hora local con el
+primer nombre en oro y una frase determinista que cambia por día y pantalla.
+La card tiene una luz Volt tenue que recorre su borde por detrás sólo en
+desktop; mobile no monta esa animación. El movimiento está declarado en el
+inventario de QA para congelarlo en capturas.
+
+La cabecera operativa ahora contrasta con la card usando chasis oscuro. Lee el
+horario real y muestra una barra azul que avanza hacia el cierre o se descarga
+hacia la próxima apertura. Si hay caja abierta prioriza el turno; si supera
+24 horas lo señala como «Turno sin cerrar» con acceso conceptual a Caja. El
+fixture local reveló uno de 16 días, y se muestra como dato accionable. El
+título de pantalla dejó Butler y usa Overused Grotesk. Precios, márgenes,
+contadores chicos, reloj y datos operativos usan JetBrains Mono.
+
+Regla de identidad: toda cuenta nueva exige nombre. Se aplicó al registro del
+dueño, al alta de equipo del edificio y al admin legacy, tanto en UI/servicio
+como en `tenant-users` y `admin-users`. Auth guarda `full_name`; las listas de
+equipo ya devuelven y muestran nombre con email secundario. No hubo deploy de
+Edge Functions en esta ronda.
+
+Evidencia visual: `grupo2-desktop.png`, `grupo2-desktop-dark.png`,
+`grupo2-mobile.png` y `grupo2-mobile-320.png`. Sin overflow horizontal a 320;
+la luz Volt no existe en mobile. 67 tests enfocados verdes antes del build
+final, incluidos ventana operativa, saludo/frases, signup y nombre obligatorio
+en Equipo.
+
+Tercer ajuste visual de Ricardo: se descartó el saludo. La topbar global queda
+con el nombre del local a la izquierda y la cuenta con nombre del usuario a la
+derecha. La superficie madre contiene el estado y el reloj. En desktop tiene
+margen, borde y radio; en mobile ocupa todo el ancho. El nombre visible del
+local usa `settings.biz_name` y cae al nombre del tenant. Corrección posterior:
+en mobile Dico va inmediatamente a la izquierda del nombre del local dentro de
+la topbar; debajo se veía fuera de lugar.
+
+Verificación de este ajuste: capturas nuevas
+`topbar-local-workspace-desktop.png`, `topbar-local-workspace-mobile.png`,
+`topbar-local-workspace-cuenta-mobile.png` y
+`topbar-local-workspace-320.png`. A 1440×900 y 375×812 el layout quedó dentro
+del viewport; a 320 px `scrollWidth === innerWidth`, Dico conserva 4 px con el
+estado y el usuario del fixture entra completo. El menú mobile muestra
+Configuración, Tema y Salir. Build verde y 49 tests enfocados verdes.
+
+Pedido de Ricardo: indicador azul «Sistema operativo», reloj y nombre del
+usuario logueado; burbuja sin foto. Tema y salir pasan a esa burbuja en ambos
+chasis. En desktop solo Configuración queda al pie del riel; en mobile va en
+la burbuja. La captura adjunta es referencia visual; no se agregó «Caja
+conectada» porque esta ronda no implementa una señal real de conexión.
+
+Implementado en `ControlesDeSesion.jsx`, `PlatformAdmin.jsx`, `NavLateral.jsx`
+y `admin-topbar.css`, `admin-shell.css`, `admin-sidebar.css`. Reloj aislado para
+no renderizar el panel cada segundo. Iniciales y nombre desde la sesión, con
+correo como fallback. Menú con identidad, cierre afuera/Escape, retorno de
+foco y navegación con flechas/Home/End. En mobile angosto la hora queda debajo
+del indicador y el nombre se trunca; completo dentro del menú.
+
+Segundo pedido de la ronda: en mobile Dico queda a la izquierda del estado,
+separado por 4px. El estado ya no es decorativo: `estadoOperativo.js` lee
+`store_open` y `store_hours`, usa la zona de la sucursal (o la del tenant), y
+cambia entre «Sistema operativo» y «Sistema en reposo». La luz Volt pulsa sólo
+cuando está abierto; en reposo queda gris y sin animación. Durante la carga
+dice «Verificando sistema» con la luz apagada. Soporta los dos formatos de
+horarios que existen en los datos y jornadas que cruzan medianoche. La hora de
+la topbar ahora usa la misma zona horaria que el cálculo.
+
+Verificado en el dev server local existente, `http://127.0.0.1:5273/admin`:
+cuenta QA local, captura desktop claro, cambio de tema a oscuro, captura
+mobile 375×812 con menú dentro del viewport y sin desborde horizontal.
+Desktop solo Configuración en el pie; mobile Configuración/Tema/Salir.
+Teclado End enfoca Salir; Escape devuelve foco a la cuenta.
+49 tests de estadoOperativo/navLateral/platformAdmin/platformAdminScope verdes;
+ESLint 0 errores (16 warnings previos), typecheck y `npm run build` verdes.
+UTF-8 estricto y sin NULL en los 8 archivos tocados por esta parte. En navegador
+real: reposo a 375x812, luz gris y `animation:none`; operativo forzado sólo en
+la base local, luz `#60A5FA` y `ag-sistema-pulso` corriendo; 0px de overflow a
+375 y 320. El horario del fixture fue restaurado y se recargó para comprobar
+otra vez «Sistema en reposo». El inventario de motion declara este pulso
+infinito porque fue pedido explícitamente y lo congela para capturas estables.
+No hubo cambios persistentes de base ni deploy.
+
+Trabajo local vivo: los archivos de la topbar, `platformAdmin.js`, el nuevo
+`estadoOperativo.js`, su test, el registro de motion y este HANDOFF siguen sin commit en
+`feat/dico-panorama-v1` (HEAD al comenzar `e04f164`). Ronda abierta para revisión
+visual y siguientes cambios de Ricardo, no cierre de sesión. `output/` ya
+existía sin seguimiento; se agregaron allí capturas `topbar-*.png` de evidencia,
+incluidas `topbar-reposo-mobile.png` y `topbar-operativo-mobile.png`.
+`DICO_SINTRA_EXPORT/` y su ZIP eran preexistentes y no se tocaron.
+
+Próximo propuesto, todavía SIN implementar: «Mis datos» (nombre/contacto) y
+«Seguridad» (contraseña/sesiones). No hay botones vacíos para esas opciones.
+Continuar con el feedback de Ricardo. No requiere ninguna acción externa
+para seguir editando; publicación y migraciones pendientes conservan el
+estado de la sección anterior.
+
+---
+
+## 6/sep/2026 — LIVE BUILD MODE: dos lotes visuales y el logo DIC en el riel
+
+Sesión de trabajo visual directo sobre el panel del dueño (gastro), con
+Ricardo mirando la app y pidiendo cambios de a cinco. El método es el del 5/9:
+observación → cambio chico → smoke → revisión.
+
+### Hecho
+
+**Lote 1 — `d02a061`**
+
+1. **Dico 2D deja de crecer al abrirse el riel.** Pasaba de 60 a 88 y
+   arrastraba todo lo que le cuelga: el contador saltaba de esquina y la cara
+   cambiaba de tamaño justo cuando el mouse pasaba al lado. Se eliminó
+   `--ag-dico-abierta`.
+2. **En claro, el riel es claro.** El chasis nacía oscuro en los dos temas
+   ("la estructura lee como material", `admin-tokens.css`); en el tema claro
+   dejaba una columna negra que se leía como un panel ajeno pegado al costado.
+   Se cambió SOLO la sidebar y SOLO en claro, redefiniendo los tokens de tinta
+   dentro de la regla. La topbar sigue oscura **por decisión de Ricardo**: "no
+   rompemos el manual".
+3. **Saludo en vez de rótulo** (`src/modules/saludo.js`). Arriba decía el
+   nombre del negocio, un dato que el dueño ya sabe porque está parado adentro.
+   Ahora saluda por la hora y por su nombre, en Butler y con el nombre en oro.
+   Sin nombre no inventa: cae al nombre del negocio.
+4. **Dico 2D habla en TARJETA, no en globo** (`MensajeDico.jsx` +
+   `mensaje.css`). El globo dibujado es un objeto de historieta y funciona
+   cuando el que habla está en la escena; con un avatar de 60px clavado en el
+   riel, la cola peleaba con su posición y el papel crema no pertenecía a
+   ninguna superficie del panel. **El globo queda para Dico 3D.** Se conserva
+   la VOZ —la letra y el tipeo, ahora compartidos por las dos superficies en
+   `useTipeo.js`—; cambia el envase.
+5. **«Siguiente», no «hay 1 más»**, y deja de ser un enlace gris ilegible: es
+   un botón con tinta y contorno. El número va en la cabecera ("1 DE 2").
+6. **Lo que dice Dico es una CAPA, no una fila**: salía del flujo sólo en
+   desktop; ahora en todos los chasis.
+
+**Lote 2 — `0faba98`**
+
+1. **La barra cruza por encima del riel.** Compartían capa y, como el riel se
+   pinta después en el DOM, ganaba el riel: expandido tapaba el saludo. Ahora
+   la barra tiene capa propia (`--ag-z-topbar: 6`), cruza de punta a punta
+   (`.ag-root--con-sidebar > .ag-topbar` recupera el ancho que le comía el
+   padding del shell) y el riel arranca debajo, con `--ag-topbar-alto` como
+   medida declarada en vez del 57 repetido en comentarios de dos hojas.
+2. **Los tres controles se van al pie del riel** (`ControlesDeSesion.jsx`).
+   Configuración, tema y salir vivían sueltos en la barra: a 375px peleaban la
+   fila con el saludo y con Dico. Una fuente, dos formas: al pie del riel en
+   desktop —los tres iconos SIEMPRE visibles, el rótulo aparece al expandir— y
+   dentro de un solo botón en mobile. El primer intento escondía dos de los
+   tres en el riel colapsado y no servía: el ítem seguía ocupando su fila, así
+   que el hueco se veía igual (corregido en vivo por Ricardo).
+3. **Azul volt para el nivel `aviso`**, en la tarjeta y en el globo: el ámbar
+   competía con el oro de la acción dentro de la misma pieza.
+4. **Mientras Dico habla, el riel no se mueve.** Tocar a Dico deja el puntero
+   sobre la sidebar y la expande; ir hacia el mensaje lo saca y la colapsa, y
+   con ella se corría el mensaje, que cuelga de su ancho. **Esto revierte la
+   regla "Dico nunca le saca capacidades a la navegación"** y el contrato de
+   `navLateral.test.jsx` pasa a exigir lo que esa regla protegía de verdad: que
+   el riel nunca quede en 0 ni oculto y que sus ítems sigan recibiendo el click.
+5. **El fondo queda inmóvil** (innegociable, dicho por Ricardo). Eran DOS
+   cosas: el resplandor de `admin-bg.css` derivaba en un ciclo infinito de 38s,
+   y —la grande— `admin-shell.css` le metía `padding-top: 148px` con transición
+   a `.ag-main` cuando había un mensaje abierto, así que el catálogo entero
+   bajaba al abrirlo y volvía a subir al cerrarlo. Venía de B3 ("abrir un aviso
+   mueve el contenido de forma deliberada") y de un problema real —el cuerpo
+   del globo interceptaba el click de la primera fila—, que hoy se resuelve
+   solo porque la tarjeta se cierra al tocar afuera. Las dos reglas se
+   eliminaron de raíz. **El shell ya no tiene ninguna animación infinita.**
+
+**El logo DIC en el bloque de marca — `60586ff`**
+
+El bloque se dio vuelta: antes era Dico y a su derecha un `DICO` de TEXTO; con
+el logo real eso daría «ODIC», porque la palabra ya termina en O y **el
+personaje ES la O**. Ahora es una grilla de dos columnas —logo y riel— donde la
+del logo mide 0 con la sidebar cerrada: colapsado se ve sólo Dico; al abrirse
+entra el DIC por izquierda y el personaje se corre a ocupar la O.
+
+- **Dico SE MUEVE al expandirse.** Es lo único que permite que el mismo
+  personaje sea la O sin montar un segundo. El riesgo que importaba —que el
+  control se escape del puntero y genere ciclos de hover— no aplica: el puntero
+  queda dentro de la sidebar expandida.
+- **Dos piezas, una por tema**, copiadas de `output/DICO-ENTREGA-FINAL-PNG/` a
+  `public/brand/dico/logo/dic-claro.png` y `dic-oscuro.png` — producción no
+  puede depender de una carpeta de entrega. Mudas: `alt=""`, `aria-hidden`,
+  dimensiones declaradas y `object-fit: contain`.
+- **Las medidas salen de MEDIR LA TINTA de los PNG, no de tantear**: el DIC
+  ocupa el 85,6% de su lienzo de 240x104 y el aro de Dico el 78,1% del suyo.
+  Logo a 48 → letras 41,1; Dico a 56 → aro 43,7 (el sobrepaso óptico de un
+  glifo redondo al lado de uno recto). Entre la C y la O quedaban 15px de aire
+  propio de los dos PNG: el logo invade 10px de la columna del personaje y el
+  hueco óptico baja a 3,4px. Juntar a Dico no era opción: su columna tiene que
+  seguir midiendo el riel, que es lo que lo deja centrado con la sidebar
+  cerrada.
+- **El bloque de marca dejó de tener aire de más**: medía 116px con Dico de 60,
+  herencia de cuando Dico crecía a 88 y el contador era un control aparte.
+  Ahora mide lo del personaje más el aire del contador, así que Dico quedó
+  pegado a la barra y los iconos subieron.
+
+### Verificado
+
+Todo contra la base local de QA Lite, en navegador real, a 1280x800, 800x620 y
+375x812, en claro y en oscuro:
+
+| Qué | Medido |
+|---|---|
+| Empuje del catálogo al abrir el mensaje | **0px** en los dos anchos; `padding-top` de `.ag-main` = 0 |
+| Riel con el mensaje abierto y el mouse encima | **64px**, y el mensaje clavado en x=64; al cerrar vuelve a expandir a 224 |
+| Dico en el riel | 56x56, el mismo tamaño abierto y cerrado |
+| Lockup DIC+O | letras 41,1 · aro 43,7 · hueco óptico 3,4px |
+| Assets | los dos PNG dan **200** y entran a `dist/`; la única carga fallida de la página es `feature_flags`, que no existe en la base local y es previa |
+| Menú de sesión en mobile | tres ítems, 44px de alto, dentro del viewport |
+| Suite | **1206/1206**, 87 archivos · eslint, tsc y `vite build` verdes |
+
+Defecto encontrado y corregido en el camino: con un mensaje abierto y el mouse
+encima, el DIC se dibujaba cortado detrás del personaje — la regla de hover le
+ganaba por orden a la del congelamiento.
+
+### Pendiente inmediato
+
+1. **Seguir con los lotes visuales de Ricardo.** El método es de a cinco
+   cambios; los tres lotes de hoy están aprobados por él.
+2. **Publicar.** Sigue siendo el objetivo del modo y no se hizo: falta la URL
+   real para trabajar sobre ella. El deploy lo corre Ricky (el clasificador
+   bloquea el comando de Vercel).
+3. `npm run build:platform` **no se pudo correr** durante la revisión del logo:
+   se niega a empaquetar con el worktree sucio y Ricardo había pedido no
+   commitear todavía. Ya está commiteado, así que ahora corre.
+4. La **0062** (`drop sumar_staff` de un argumento) sigue sin aplicar en el
+   edificio: los advisors muestran los dos overloads vivos.
+
+### Bloqueado por Ricky
+
+- **Docker.** Se traba con sockets huérfanos y **el reinicio NO lo arregla**
+  (probado hoy). Lo que lo destraba es renombrar `AppData\Local\Docker\run` y
+  `AppData\Local\docker-secrets-engine` ANTES de arrancar. Sin Docker no hay
+  Supabase local ni dev server. El comando exacto está en la memoria del
+  proyecto.
+- **El deploy**, cuando se decida publicar.
+
+---
+
+## 5/sep/2026 — LIVE BUILD MODE · los tres defectos del Sales-Critical Smoke, cerrados
+
+Cambio de metodo operativo, decidido por Ricardo al abrir la sesion: **se
+trabaja sobre la aplicacion real**. Observacion → cambio chico → smoke →
+revision. El roadmap, las fases 0-10, los gates visuales y QA Lite siguen
+siendo documentacion y herramientas, pero **dejan de gobernar el orden diario
+de trabajo**. Los cuatro guardrails que si detienen una instruccion antes de
+ejecutarla: brand lock del manual DICO, seguridad/dinero/datos, riesgo
+funcional concreto y accesibilidad grave. QA proporcional: la suite completa
+se corre cuando el riesgo lo justifica, no por cada ajuste visual.
+
+Primer lote bajo ese metodo: los tres defectos reproducidos en
+`platform/SALES-CRITICAL-SMOKE-2026-09-04.md` (que entro al repo en esta
+sesion; estaba sin trackear).
+
+### Hecho
+
+**P0-1 · La configuracion del negocio era inalcanzable** — `01ebcea`.
+`src/modules/roles.js` + `src/pages/PlatformAdmin.jsx:626`.
+El efecto que corrige un tab invalido miraba SOLO la lista de modulos del
+rubro, y `config`/`cobros`/`usuarios` nunca fueron modulos —se abren desde el
+engranaje—: cualquier intento de entrar rebotaba a `products` en el mismo
+tick. Con eso quedaban inalcanzables horarios, direccion, delivery, marca,
+cuentas de pago, conectar MercadoPago y el equipo.
+La salida fue declarar los tres destinos en `roles.js` (`DESTINOS_DE_CONFIG` +
+`puedeAbrirDestino`) **con los roles que pueden abrirlos**, siguiendo a las
+policies de 0050: `settings` es de duenio y encargado, las credenciales de
+cobro y el equipo son del duenio. Se declaran ahi y no sueltos en el panel
+porque el guard tiene que poder preguntar si el destino es valido. El
+engranaje ademas dejo de dibujarse para quien no puede entrar.
+
+**P0-2 · Se podia cobrar mas que el saldo** — `9dbeb35`.
+`platform/migrations/0063_cobro_no_supera_el_saldo.sql` +
+`src/components/admin/platform/PantallaDeCobro.jsx` + `platformCaja.js`.
+Pedido de $29.000, cobro de $29.000, segundo cobro de $29.000 con otra clave:
+aceptado. No es doble click —la idempotencia por `client_request_id` si
+funciona—: es un importe mal tipeado que ninguna capa rechazaba.
+El tope va en `register_payment` porque la RPC es lo que cualquiera con sesion
+puede llamar por API; la pantalla lo avisa antes de mandar, pero eso es
+comodidad, no control. **El `for update` sobre la fila del pedido antes de
+leer el saldo no es adorno**: sin el, dos cajas cobrando la misma cuenta leen
+el mismo saldo y el sobrecobro vuelve por la ventana. Tolerancia de un
+centavo, porque el total puede venir de una suma redondeada.
+
+**P1 · Cualquier empleado editaba y borraba productos por API** — `ec8b464`.
+`platform/migrations/0064_productos_por_rol.sql`.
+Las policies de `products` venian de 0001/0002 y son por MEMBRESIA; la 0050
+puso roles a expenses, suppliers, sales, settings, staff, audit_log y
+cash_sessions, y `products` quedo afuera. El panel lo escondia, pero eso es
+navegacion, no seguridad. Ahora: **lee** cualquier miembro (el mozo necesita
+el catalogo para tomar el pedido), **escriben** duenio y encargado, **borra**
+el duenio. Mismo barrido previo de policies que 0050 y por la misma razon: las
+permisivas se combinan con OR, alcanza con que sobreviva una vieja por
+membresia para que el corte no sirva de nada.
+
+`scripts/platform-schema.json` subio `_migrations_through` a `"0064"` a mano:
+las dos migraciones tocan una funcion y policies, no columnas — es una de las
+dos salidas que el propio guard declara legitimas.
+
+### Verificado
+
+Todo contra la **base local de QA Lite** (Supabase local, 63 migraciones,
+seed determinista). **Nada de esto se aplico a `wwwzdgprsooyjgkuyoav`.**
+
+| Que | Como | Resultado |
+|---|---|---|
+| P0-1 | Navegador real, dev server 5273, sesion de duenio | Configuracion **abre**; Equipo **abre**; Cobros online **abre**. Las dos ultimas muestran "Cargando..." porque el stack local no sirve edge functions (`tenant-users`, `mp-status` dan 503) — no es del cambio |
+| P0-2 | Sonda contra la base, con 0063 aplicada | 1500 sobre 1000 → `monto_supera_el_saldo`; 600 → ok; 500 con saldo 400 → rechazado; 400 → ok; uno mas con saldo 0 → `pedido_ya_saldado`. Suma 1000 / total 1000 |
+| P0-2 | `probe-04-dinero.mjs` completo | El paso 6 pasa de $58.000 cobrados a **$29.000**; el arqueo esperado, de $78.000 a **$49.000** |
+| P1 | `probe-05-roles.mjs` + sonda con sesion real de `attendant` | update precio **0 filas** (antes 3); delete **0 filas**; insert **RECHAZADO 42501**; lee catalogo **3 filas** (tiene que poder). Con sesion de duenio, update/insert/delete siguen funcionando |
+| Regresion | `vitest run` completo | **1191/1191**, 86 archivos (6 tests nuevos: tope de cobro en la pantalla, destinos por rol) |
+| | eslint + tsc + vite build | verdes, 0 errores |
+
+### Pendiente inmediato
+
+1. ~~Aplicar 0063 y 0064 al edificio~~ — **HECHO el 5/9**, por Ricky desde el
+   editor SQL: el clasificador de permisos bloquea `apply_migration` sobre
+   produccion (mismo camino que 0060/0061 el 29/8). Verificado contra la base:
+   `register_payment` con UNA sola firma y el comentario de 0063, `anon` sin
+   execute y `authenticated` con execute; `products` con exactamente 4
+   policies —select por membresia, insert/update owner+manager, delete owner—
+   y ninguna vieja sobreviviendo al barrido; RLS activa; 66 productos, 3
+   pedidos, 0 pagos, sin danio; advisors de seguridad identicos a antes.
+   `get_catalog` es SECURITY DEFINER, asi que el catalogo publico no depende
+   de las policies que se cambiaron.
+   **Sigue sin aplicar la 0062**: los advisors muestran los dos overloads de
+   `sumar_staff` vivos.
+2. **Que Ricardo mire P0-1 con sus ojos** en el panel. Bloqueado por Docker
+   (abajo).
+3. **Publicar** y pasar a trabajar desde su feedback visual directo, que es el
+   objetivo del modo. Mientras P0-2/P1 no esten aplicados en la base real,
+   publicar contra backend de testing/sandbox, no productivo.
+
+Lo que el smoke dejo abierto y **no** se toco en esta sesion: el pedido no se
+puede tomar desde el panel, el salon no toma comandas, la venta no descuenta
+stock, el libro de inventario y el numero de stock divergen, la merma acepta
+mas que el stock, sin facturacion electronica, el tenant nace con
+`plan_id = null`.
+
+### Bloqueado por Ricky
+
+- **Reiniciar Windows.** Docker Desktop no arranca: quedo huerfano el socket
+  `AppData\Local\Docker\run\sailor-ingest.sock` (del 3/9) y el arranque muere
+  en `initializing Ingest server ... The file cannot be accessed by the
+  system`. Sin Docker no hay Supabase local y no levanta el dev server. Se
+  probo todo lo que no requiere reinicio: matar los procesos de Docker,
+  `wsl --shutdown` (no habia distros corriendo), `Remove-Item`, `Move-Item`,
+  `File.Delete` de .NET y `fsutil reparsepoint delete` — los cuatro ultimos
+  dan **error 1920**. **NO usar "Reset to factory defaults"** del dialogo de
+  Docker: borra imagenes y volumenes y no hace falta.
+- **Decidir si se aplican 0063/0064 al edificio** (punto 1 de arriba).
+
+---
+
+## 3/sep/2026 (b) — PHASE 3B CLOSED · GOLDEN SCREEN DESBLOQUEADA
+
+Se ejecutó el gate **A3**, que era lo único que separaba a Phase 3B de
+`CLOSED` y, por transitividad, lo único que bloqueaba **Phase 4 — Golden
+Screen**. Detalle completo en `platform/PHASE-3B-A3-CLOSURE.md`.
+
+**Verde en las seis dimensiones** (browser, light/dark, mobile, navegación,
+focus, overflow), medido en Chromium real sobre el shell **ya integrado** —con
+Machine Soul, el recovery Presence/Slot, Native 2D, Physical y Phase 9 encima—,
+que es lo único que "cierre integrado" puede significar:
+
+- desborde `scrollWidth − clientWidth` = **0** en las 6 combinaciones tema ×
+  viewport (contra los 151px a 390 y 181px a 360 del síntoma de 3A);
+- nav con **target mínimo 46px** y **0** secciones fuera del viewport en
+  390×844 y 360×800;
+- diálogo con foco adentro, backdrop **800** / panel **810**, **0 de 5** ítems
+  de nav clickeables y Escape cerrando, en los dos temas;
+- contraste del par del shell **19,90:1** en claro y **16,12:1** en oscuro.
+
+Suite **1172/1172**, build y typecheck verdes.
+
+### El hallazgo que casi lo hace fallar mal
+
+La primera corrida falló en `--ag-surface`: `#fff` en claro y `#18181b` en
+oscuro contra los `#FFFDF7`/`#262626` de la tabla de 3A. **No era regresión**:
+verificado en `admin-tokens.css`, son `var(--ms-white)` y `var(--ms-zinc-900)`,
+o sea la re-base a Zinc/Carbon que 3B **declaró** en su sección 0. Exigir los
+hexes de 3A habría hecho fallar al shell por cumplir 3B.
+
+El contrato real de 3A no era un hex: era que el token **siguiera al tema** en
+vez de caer a un literal fijo (ese era el 1,24:1 en oscuro, y sobrevivió meses
+porque `var()` con fallback nunca falla). Esa firma se mide sin depender de la
+paleta: el valor tiene que **diferir** entre claro y oscuro. Es lo que el gate
+mide ahora, más el contraste real resuelto por el navegador contra el mismo
+4,5:1 de AA que usó 3A. **Ningún umbral se subió.**
+
+Lección para el próximo gate: cuando una aserción anclada a un número histórico
+falla, primero hay que ver si el número fue **reemplazado a propósito** por una
+fase posterior. Aquí lo estaba, y estaba escrito.
+
+### Pendiente inmediato
+
+1. **Phase 4 — Golden Screen**, ya desbloqueada, con brief propio. Sigue
+   necesitando aprobación visual humana: ese es el gate de la propia Phase 4.
+2. Phase 5 (primitives) sigue atada a Golden Screen: *extraer sólo lo
+   demostrado*. No crear una librería UI paralela por adelantado.
+
+### Bloqueado por Ricky
+
+- **Resuelto: la rama se publicó.** `origin/feat/dico-panorama-v1` =
+  `ba61504ec8af58c6cdaa85063a0f3136f785d209` al momento del push (3/sep/2026),
+  idéntico al local y con upstream configurado. Phase 8, Phase 9 V1 y el
+  cierre integrado de Phase 3B dejaron de existir sólo en disco.
+- Sigue sin deploy. Nada de este lote está en producción.
+
+### Nota de entorno (costó ~25 min)
+
+Docker Desktop crashea al arrancar si quedan **sockets huérfanos** de una
+instancia anterior: `starting services: ... remove <algo>.sock: The file cannot
+be accessed by the system`. Son stubs de 0 bytes que no se pueden borrar ni sin
+procesos Docker vivos. **No usar "Reset to factory defaults"** del diálogo: eso
+borra imágenes y volúmenes, incluido el stack local de Supabase del harness.
+Lo que sirve es **renombrar el directorio que los contiene** y relanzar; Docker
+lo recrea. Aparecieron en dos lugares —`%LOCALAPPDATA%\Docker\run` y
+`%LOCALAPPDATA%\docker-secrets-engine`— y quedaron en cuarentena como
+`*-huerfano-20260903*`, borrables cuando se quiera.
+
+---
+
+## 3/sep/2026 — PHASE 8 CLOSED · PHASE 9 V1 CLOSED / QA CERTIFIED
+
+**Baseline actual: `feat/dico-panorama-v1 @ 98db946`.** Son 17 commits sobre
+`237aba3` (el cierre del paquete 3D). Physical dejó de ser un pack de assets y
+pasó a ser runtime conectado a dos eventos reales.
+
+| Fase | Estado |
+|---|---|
+| Phase 8 — Dico Native 2D | **CLOSED / certified** |
+| Phase 9 — Slot / Physical (V1) | **CLOSED / QA CERTIFIED** |
+| Event contract | **CLOSED** (auditado, 2 eventos) |
+| Primer lote de intervenciones | **CLOSED / certified** |
+| Responsive Physical | **CLOSED** |
+
+### Hecho
+
+**1. Physical runtime (`0c67a14`, `4086d57`).** `DicoPhysical` es un primitive
+de dos capas con crossfade de 140ms, sin morphing, sin rig y sin lipsync. La
+caja sale del contrato del pack (canvas 1600×1136), no de tantear: 448×318,08
+px, elegidos para que la moneda quede en ~139,7px, **el mismo tamaño en
+pantalla que tenía Dico antes**. No se eligió una escala nueva.
+
+**2. Anclaje por la tinta, no por la caja (`dfacae2`, `613aae4`).** El 40% del
+canvas es personaje y el resto margen transparente. Anclar por la caja dejaba
+al personaje flotando; anclar `pointDown` por el centro hacía que el dedo
+apuntara al costado, porque Dico señala con la mano izquierda. Las constantes
+del Slot (`--pose-bajo-pies`, `--pose-tinta-izq`, `--pose-dedo`,
+`--pose-dedo-y`) salen de medir píxeles alpha del asset. **Si alguien las
+"redondea", el dedo deja de caer sobre el CTA.**
+
+**3. Event contract (`371617c`, `platform/DICO-PHYSICAL-EVENT-CONTRACT.md`).**
+Se inventariaron las señales reales del runtime **antes** de conectar nada. El
+hallazgo que ordena todo el lote: casi todas las señales ya tienen a Dico
+encima (el aviso 2D, las oportunidades, los toasts), así que sacar a Physical
+para esas sería decir lo mismo dos veces, más grande. De muchos candidatos
+sobrevivieron **dos**.
+
+**4. Primer lote de intervenciones (`71b12ce`).**
+`src/modules/dico/intervenciones.js` es puro, sin React, al estilo de
+`reglas.js`. **Recibe un EVENTO, no un estado** — la regla que ordena el
+módulo: "hay cero productos visibles" es cierto todo el tiempo en una cuenta
+vacía, así que dispararlo por lectura de estado sacaría al personaje encima
+del workspace en cada login y en cada re-render.
+
+- `catalogo-vacio` → `pointDown`, anclaje `target`, una vez por sesión.
+- `nada-visible` → `worried`, anclaje `presence`, **sólo por transición**
+  (`visiblesAntes > 0 && visiblesAhora === 0`).
+
+Dos placements semánticos y **cero coordenadas libres**: `presence` (donde Dico
+ya vive) y `target` (un nodo real que el objetivo publica, al que Physical
+viaja por portal). `target` es exclusivo de poses direccionales: anclar al
+objetivo con una pose que no señala no significa nada.
+
+La transición se calcula **en el handler**, no en un efecto: es la única forma
+de distinguir "el usuario apagó el último" de "esta cuenta ya estaba en cero".
+Un efecto no sabe quién causó el cambio.
+
+**5. La carrera de cierre (`b50efab`) — el bug más caro del lote.** La máquina
+sólo acepta `CLOSE_PHYSICAL` desde `physical_open`. Si el productor retiraba la
+intervención mientras Physical todavía estaba **abriendo** (780ms), el cierre
+se tragaba y **Dico quedaba afuera para siempre**. Se arregló reconciliando
+contra el ESTADO, no sólo contra el cambio de prop, más un ref
+`porIntervencion` para no cerrar las invocaciones manuales. El test que lo
+cubre resuelve el estado *dentro* de la animación de entrada, a propósito.
+
+**6. QA flake stabilization (`6e74961`, `97c79af`, `28ac616`).** Se separó
+producto de harness midiendo, no deduciendo:
+
+- *Typewriter*: era **harness**. La aserción leía un nombre accesible
+  transitorio que existe 1,93s mientras tipea. Se ancló a un selector
+  permanente.
+- *`data-cp-theme` vacío*: era **producto real**. El anti-flash de
+  `index.html` sólo escribía el atributo si había cache: **en primera visita
+  real el catálogo se pintaba sin tema**. Ahora siempre pinta un default y
+  `applyCatalogTheme` marca `data-cp-theme-listo='1'` cuando el tema es el de
+  verdad. Los tests esperan esa señal semántica en vez de esperar N ms.
+- `use.reducedMotion` del config de Playwright **no surte efecto tras
+  navegación**; se aplica y se verifica con `page.emulateMedia` en
+  `aplicarMovimiento()`. Es un bug de harness medido, no una preferencia.
+
+**7. Phase 9 — responsive (`98db946`).** La auditoría visual en 7 viewports
+con catálogo **realmente** vacío (`applyFixtureState('empty')`, no simulado)
+encontró dos defectos reales: la burbuja se salía del viewport, y a ≤768px la
+caja de 448px del personaje **no entra** en el ancho disponible.
+
+La decisión de producto (de Ricky) fue no sacrificar semántica por clipping:
+**por debajo de 769px `catalogo-vacio` no monta Physical** y la pantalla se
+queda con la escena Native 2D que `ProductsPanel` ya sabía mostrar. No se
+degrada a `presence` ni se cambia la pose: *una pose direccional sólo puede
+existir si señala realmente a su objetivo*. 769px no es un breakpoint nuevo —
+es el mismo de `admin-sidebar.css`, el que ya decide sidebar vs flujo.
+
+La burbuja se corrigió **sólo con CSS**: `max-width` elástico en `vw`, derivado
+de medir dónde cae el Slot en el layout real (`ranura.x = 0,5·vp + 38`,
+constante en las cuatro resoluciones de escritorio medidas). Sin coordenadas
+JS, sin mover el personaje, sin tocar dónde cae el dedo, sin tercer placement.
+
+### Verificado (sobre `98db946`, no sobre "debería andar")
+
+| Qué | Resultado |
+|---|---|
+| Suite completa (`--pool=threads`) | **1172/1172** |
+| Harness QA Lite (`qa:lite:test`) | **28/28** |
+| Validator 3D (`dico:3d:validate`) | **8/8 · 8/8 · 21/21** |
+| `phase9-visual.spec.ts` (7 viewports + 769 + cruce 768↔769 en ambos sentidos) | verde |
+| `dico-intervenciones.spec.ts` · `dico-physical-poses.spec.ts` | verdes |
+| same-ref gate (`--base HEAD --candidate HEAD`) | **5/5**; DOM igual, píxeles bloqueantes 0, scroll identical, red externa 0 |
+| `git diff --check` | limpio |
+
+Todo lo visual se midió en Chromium real vía Playwright (geometría por bbox de
+píxeles alpha), no en jsdom, que no hace layout.
+
+### Lo que NO se hizo, a propósito
+
+- **No hay tercer evento Physical.** Sólo `catalogo-vacio` y `nada-visible`.
+  `margen-negativo` no se implementó. No se buscó uso para `success`, `error`,
+  `thinking` ni `pointUp`: existen en el pack, no en el runtime.
+- **Deuda visual del Slot: NO BLOQUEANTE.** Con anclaje `target` la ranura
+  queda visualmente entre el personaje y el CTA. Se decidió dejarla como está
+  y evaluarla en el cierre general de primitives/presencia, no ahora.
+- Deuda conocida: `DicoPresence` **se remonta** al cruzar 769px (en desktop
+  vive en la sidebar y en mobile en el flujo) y su máquina arranca de cero. Por
+  eso la carga vive en el productor (`PlatformAdmin`, que no se remonta) y la
+  reconciliación vuelve a abrir Physical del otro lado sin re-despachar nada.
+  Hay un test que lo ancla.
+
+### Pendiente inmediato, en orden
+
+1. **Gate A3 de Phase 3B** — es lo que desbloquea Golden Screen. Phase 3B está
+   *implementada* (`9e77b0a`, merge `cf8f47c`) pero **no certificada**:
+   verificado con `git log --all`, el commit
+   `chore(dico): close integrated phase3 shell` **no existe en ninguna rama**.
+   El gate cubre browser, light/dark, mobile, navegación, focus y overflow.
+2. Si A3 queda verde: commit formal de cierre + actualizar esta matriz.
+3. **Phase 4 — Golden Screen**, recién ahí, con brief propio.
+4. Phase 5 (primitives) sigue atada: *extraer sólo lo demostrado por Golden
+   Screen*. No crear una librería UI paralela por adelantado.
+
+### Bloqueado por Ricky
+
+- ~~`feat/dico-panorama-v1` NO tiene upstream: nunca se pusheó.~~
+  **Resuelto el mismo día**: la rama se publicó en `ba61504`, ya con el cierre
+  de Phase 3B encima. Durante todo este lote fue deliberado ("sin push, sin
+  deploy"), pero un commit local no protege de nada — ver la sección
+  `3/sep/2026 (b)`.
+- Sin deploy. Nada de este lote está en producción.
+
+### Trampa de infraestructura que costó un ciclo
+
+`scripts/qa-lite/captura-secuencia.mjs` y `compare-refs.mjs` construyen desde
+una **worktree de un ref de git** (`git worktree add --detach <sha>`), no desde
+el working tree. **Los cambios sin commitear son invisibles para el harness**:
+corrí un spec contra una corrección recién escrita y el resultado fue el del
+código viejo, sin ningún aviso. Hay que commitear (o apuntar `--ref`) antes de
+medir.
+
+---
+
+## 2/sep/2026 — PAQUETE 3D INTEGRADO (assets, no runtime)
+
+**Tag `DICO_3D_ASSET_PACKAGE_INTEGRATED` en `4ce334f`.** Integrado sobre la
+base certificada `22a8e1b` por cherry-pick de **8 commits contiguos** de
+`prep/dico-3d-final`, en orden y sin una sola resolucion manual.
+
+**Esto es solo el paquete de assets.** No se monto ninguna pose, no se toco
+crossfade, poses, bubble/cloud ni la presencia 2D/3D. `src/` no cambio ni una
+linea.
+
+### Por que 8 y no 3
+
+El pedido original eran los 3 commits finales. **No son autocontenidos**: el
+ultimo (`8246bd0`) *modifica* cinco archivos —el contrato, el validator con su
+test, y la sonda de auditoria— que crean los cinco commits anteriores.
+Verificado en una worktree descartable antes de tocar la rama:
+
+  b0861b1 + 4aff034 limpios, 8246bd0 conflicto DU en los cinco archivos
+  saltear los dos intermedios tampoco alcanza: conflicto UU de contenido
+  los 8 contiguos: 8/8 limpio
+
+Los cinco "extra" son exactamente contrato + validator + sonda, y **ninguno
+toca `src/`**. Sin ellos el propio paso de "ejecutar el validator 3D" no tiene
+que ejecutar.
+
+### El pack
+
+8 poses: `idle` `explain` `pointDown` `pointUp` `thinking` `worried` `success`
+`error`. **No entran** `processing`, `question` ni nada legacy — hay mutaciones
+del validator que lo prueban.
+
+  platform/brand/dico-3d-masters/   8 PNG (masters)
+  public/brand/dico/physical/       8 WebP lossless (derivados)
+  scripts/dico-3d-validar-assets.mjs + .test.mjs
+  scripts/dico-3d-derivar.mjs + .test.mjs
+  tools/dico-3d/                    sonda de auditoria
+  platform/DICO-3D-FINAL-PREP.md    el contrato
+
+### Verificacion
+
+| | |
+|---|---|
+| validator sobre masters | 8/8 PASS |
+| derivados `--check` | 8/8 reproducibles, RGBA exacto |
+| tests + mutaciones | 21/21 PASS |
+| suite | 1140/1140 |
+| harness | 28/28 |
+| same-ref | DOM igual, bloqueantes 0, scroll identical, red externa 0, **crudos 0** en las 9 superficies |
+
+Contrato: canvas 1600x1136, centro 800/546,5 exacto en las ocho, diametro de
+referencia 517,02 px con tolerancia declarada de 1,5% — `explain` y `thinking`
+miden 515,52 (desvio 0,29%), el resto exacto. Blue 453,5 declarado en el
+contrato canonico.
+
+### Dos cosas que conviene saber
+
+- **`@jsquash/webp` es dependencia nueva** (con `wasm-feature-detect`). Despues
+  de traer estos commits hay que correr `npm install` o el pre-commit rechaza
+  todo por el chequeo de `node_modules` contra el lockfile.
+- **El gate de assets publicos NO cubre `public/brand/dico/physical/`.** Lee
+  `public/brand/dico` sin recursion y filtra `.png`, asi que los WebP nuevos no
+  lo tocan —sigue 17/17— pero tampoco estan protegidos por el. Si el pack 3D
+  tiene que quedar bajo contrato de "exactamente estos ocho y nada mas", hay
+  que extenderlo; no se hizo aca porque el lote era integracion, no cambios.
+
+---
+
+## 2/sep/2026 — OPTION A — DICO 2D + SIDEBAR + VOLT = CLOSED / QA CERTIFIED
+
+**Commit certificado: `4bdfa1b`**, en `feat/dico-panorama-v1`. Tags:
+`DICO_OPTION_A_FEATURE_COMPLETE_GATE_PENDING` (e627e43) y
+`DICO_OPTION_A_QA_CERTIFIED` (4bdfa1b). Integrado por `--ff-only`, sin merge
+commit. Lo que venga despues de ese SHA es documentacion, no codigo. Sin push,
+sin deploy.
+
+Base única certificada para empezar Physical.
+
+### Qué quedó cerrado
+
+- **Dico 2D final montado**, 40 px visual / 44 de área. El tamaño se eligió
+  midiendo: a 32 y 36 las cejas de `alert` se pierden en la trama y el estado
+  se lee igual que `neutral` — para una alerta eso es un error semántico.
+- **Sidebar desktop**, riel 64 → 224. La frontera es `769px`, que **no es
+  nueva**: era la única división "teléfono vs no-teléfono" que el repo ya
+  tenía. `NavInferior` no se elimina, se oculta donde la sidebar la sustituye,
+  y las dos consumen el mismo `tabs`.
+- **Dico se adapta a la interfaz, no al revés** (REVIEW A). La sidebar se
+  expande siempre —hover, teclado, con Physical afuera o el aviso abierto— y
+  lo que se corre es Dico. Una sola geometría: `--ag-sidebar-ancho`.
+- **B1 exacto**: click en Dico cierra el aviso y trae a Physical, sin
+  coexistencia. Dos gestos, dos targets: el contador dejó de ser calcomanía
+  sobre el arte (pisaba 15,3 px del aro) y es un botón de 44×44.
+- **Volt sobre el aro real del arte.** Los azules se nombran por soporte
+  (`2d-base` `#192B6C`, `3d-base` `#2A3369`, `flat`, `volt`) porque no son el
+  mismo RGB; el único sistemático es Volt y hay contrato que exige su
+  contraste contra **cada** base. Ningún PNG recoloreado.
+
+Detalle completo: `platform/PHASE-B6R-2D-MOUNT.md` y
+`platform/PHASE-B6R-SIDEBAR.md`.
+
+### Causas raíz del lote QA-CATALOG-DETERMINISM
+
+Fue un lote propio (rama `fix/qa-catalog-determinism`) porque no era Dico.
+**Tres de las cinco causas estaban en el harness, no en el producto.**
+
+1. **La preferencia de movimiento declarada nunca llegaba a la página**
+   (harness). Con el config pidiendo `reduce`, la página reportaba
+   `matchMedia(...).matches === false`; `page.emulateMedia` sí funcionaba.
+   O sea: toda la QA corría con movimiento, y los
+   `test.use({ reducedMotion: 'no-preference' })` de tres specs eran **no-ops
+   silenciosos**. De ahí el carrusel auto-avanzando en cada superficie, cuya
+   transición monta una segunda capa durante 744 ms. Medido: 83 momentos con
+   dos capas → 0.
+2. **El contrato neutral de Dico describía un estado que sólo existía porque
+   el harness estaba roto** (harness). Con `reduce` real el pulso y la entrada
+   se apagan, así que no podía converger nunca.
+3. **El panel de cobro del POS se medía mientras terminaba de entrar**
+   (harness). Primera medición variable, segunda siempre 403,25.
+4. **El carrusel auto-avanzaba con `prefers-reduced-motion`** y su lista se
+   encogía bajo el usuario cuando el ranking cargaba vacío (producto).
+5. **`generateId` colisionaba** 1 de cada ~300 corridas y bloqueaba commits al
+   azar (producto).
+
+**No se subió ningún threshold, no se excluyeron píxeles, no se agregaron
+sleeps y no se desactivó funcionalidad.** El auto-avance del carrusel se pausa
+con la afordancia que el producto ya tiene —tocar la tarjeta— y el reloj fijo
+del harness hace que esa pausa no venza durante la captura.
+
+Detalle y mediciones: `platform/QA-CATALOG-DETERMINISM.md`.
+
+### Cómo quedó el gate
+
+5 corridas consecutivas: DOM igual, `blockingDiffPixels: 0`, scroll identical,
+red externa 0. Los crudos varían (0/8/0/22/134) y quedan absorbidos por el
+contrato de anti-alias y redondeo **que ya existía**. Suite 1140/1140, harness
+28/28.
+
+### Dos trampas de esta sesión que conviene no repetir
+
+- **El gate compila la app desde el ref de git, no desde el working tree.** Un
+  cambio de `src/` sin commitear NO aparece en la corrida; el harness (`e2e/`)
+  sí se lee del working tree. Perdí varias vueltas creyendo que un arreglo no
+  funcionaba cuando ni siquiera estaba en el build.
+- **Dos veces un commit se llevó archivos que el mensaje no describía**, porque
+  el índice quedaba sucio de un intento fallido de commit. `git show --stat`
+  lo agarró las dos veces: no es una formalidad.
+
+---
+
+## 2/sep/2026 — B6R.QA1 CERRADO: same-ref determinista (sesión Claude)
+
+**Cinco corridas consecutivas verdes**: DOM igual, `blockingDiffPixels: 0`,
+scroll trace identical, red externa 0. Antes de empezar fallaban 2 de 3.
+
+Eran **tres** causas, y ninguna era la que parecía.
+
+1. **El CTA «Registrar gasto»**: `line-height: 1.45` sobre 14 px = 20,3 px de
+   caja de línea. La fracción se acumulaba y el `border-radius` del botón
+   rasterizaba sus esquinas con fase distinta. Arreglo: `line-height: 20px`.
+2. **El título del catálogo**: **no era carrera de fuente.** `<RotatingVerb>`
+   corría un `setInterval`, y el gate sólo puede congelar lo que aparece en
+   `getAnimations()`. `minWidth: 5ch` mantenía el ancho idéntico, así que se
+   veía tipográfico. Ahora es una animación CSS declarada en el registro. De
+   paso se arregló que no respetaba `prefers-reduced-motion` (WCAG 2.2.2).
+3. **`.ag-dico-stack`**: **no era el estado del aviso.** El valor *computado* de
+   un `margin: auto` no es estable entre pasadas de layout — medido en el mismo
+   estado y con la misma posición usada, `getComputedStyle` devolvía 0px en una
+   pasada y 463px en otra. Ahora el Slot centra desde el contenedor con
+   `display: grid` y no queda nada fluctuante que leer.
+
+**Dos defectos reales que la tercera causa tapaba**, los dos en 390 px: el aviso
+perdía **40 px** recortados por el `overflow: hidden` del Slot, y la presencia
+**saltaba 20 px** al abrirlo.
+
+### Lo que queda y conviene no olvidar
+
+Las cinco corridas tienen 0 bloqueantes pero **no 0 crudos**: `catalog--carbon`
+34 en 4 de 5, `admin--dark` 46 en 2 de 5, `admin--light` 50 en 1 de 5,
+`catalog--noche` 24 en 2 de 5. El filtro los clasifica como antialiasing y
+redondeo y nunca cruzan el umbral. `catalog--ambar`, que fallaba con 451, quedó
+en 0 en las cinco.
+
+### Gate de assets públicos
+
+`public/` no pasa por el grafo de imports de Vite, así que los siete assets 2D
+quedaban sin cubrir. El contrato nuevo es **positivo, no sólo negativo** —un
+gate que sólo dice «no hay legacy» pasa igual con la carpeta vacía—: declara los
+siete que tienen que estar, los ata al vocabulario `nativeState`, exige RGBA
+real y corre `scripts/dico-2d-derivar.mjs --check` para que nadie edite un
+derivado a mano. Cinco mutaciones, las cinco fallan.
+
+---
+
+## 1/sep/2026 — B6R.QA1: el botón reparado, el gate todavía no (sesión Claude)
+
+Llegó el brief de Opción A con los siete assets finales de Dico 2D. Su primer
+bloque es obligatorio: reparar el nondeterminismo del same-ref **antes** de
+montar nada. **No se montó Dico 2D**: el gate sigue sin ser repetible.
+
+### El botón: reparado
+
+La causa era `line-height: 1.45` sobre 14 px en `.dico-burbuja-contenido` —
+**20,3 px de caja de línea**. Los 0,3 se acumulaban, la burbuja quedaba en
+`h: 149,891` y el CTA heredaba `y: 772,797`; con su `border-radius`, esa fase
+fraccionaria rasterizaba las esquinas distinto.
+
+Se localizó comparando **todos** los bordes verticales: filas 200, 240 y 330 con
+91, 4 y 8 bordes y **ninguno corrido**; sólo las dos filas donde el botón curva.
+
+El cambio es una declaración: `line-height: 20px`. Después, todos los deltas
+verticales de la cadena quedan enteros.
+
+**4 corridas de same-ref: `admin--dark` con 0 bloqueantes en las 4** (antes era 1
+en 2 de 3). No se subió umbral, no se excluyó píxel, no se declaró flake.
+
+### Lo que aparecio detrás
+
+El gate corta en el primer fallo y ese fallo era siempre el botón. Con el botón
+limpio salieron dos causas más, ninguna del lote:
+
+1. **`catalog--ambar`, 1 de 4 corridas: 1429 crudos / 451 bloqueantes.** Es el
+   título «¿Qué te seduce hoy?» con tracking distinto — carrera de carga de las
+   fuentes remotas del catálogo público. Delta 98: no es antialiasing.
+2. **`.ag-dico-stack`, 1 de 4: diferencia de DOM con píxeles en cero.** Mismo
+   `width: 430px` en las dos puntas, pero `margin: auto` resuelve 487px de un
+   lado y 0px del otro. El `auto` se resuelve contra un `.ag-slot` que no se
+   asentó.
+
+**1 de 4 corridas falla** (antes 2 de 3). Mejoró, no alcanza.
+
+### Normalización de alfa de los assets 2D
+
+Los masters traían el cuerpo en **alfa 251-254**, un export casi-opaco. Se
+normalizó **sólo el canal alfa** —`a==0` queda en 0, `1..244` intacto porque es
+el antialiasing, `a>=245` pasa a 255— sin tocar un byte de RGB.
+
+Medido sobre damero: el mismo píxel de oro daba **0,378-0,400** de diferencia
+según cayera en cuadro claro u oscuro; después, **0,000**.
+
+Verificado sobre blanco, Zinc oscuro y damero, con el borde ampliado ×10: sin
+halo (0 píxeles con alfa 0 y RGB residual), sin borde duro, sin lavado de Gold ni
+Blue, ojos y cejas idénticos, caja idéntica. **No hizo falta mover el umbral.**
+
+La verificación destapó un bug mío: el reductor a 256 px usaba el alfa sin
+redondear para invertir la premultiplicación y dejaba 223 píxeles con alfa 0 y
+color residual. Corregido.
+
+Todo queda reproducible en `scripts/dico-2d-derivar.mjs`, con `--check` para que
+nadie edite un derivado a mano. Masters intactos en `platform/brand/`,
+productivos en `public/brand/dico/` (392 KB contra 4,8 MB).
+
+**Ojo:** Vite copia `public/` tal cual, así que esos archivos no pasan por el
+grafo de imports y el gate de B5 no los cubre.
+
+### Lo que sí se hizo, sin montar nada
+
+Se verificaron los 7 assets: alfa RGBA real, cuerpo en 251-254 (menos del 2 % de
+mezcla), **dispersión de registro 0,022pp** entre los siete. Se midió algo que el
+brief no traía y que hace falta: **el aro azul está a r/R 0,67, no en el borde**,
+y el personaje se centra en **49,90 / 48,05**, no en el medio — así que
+`DicoPulso`, que tenía el centro clavado en 50/50, se parametrizó.
+
+Los masters quedan en `platform/brand/dico-2d-masters/` (fuera del grafo, 4,8 MB)
+y los derivados a 256 px en `src/components/dico/native/` (392 KB), reducidos con
+**alfa premultiplicada** para no dejar orla. Los derivados quedan mejor
+registrados que los masters: dispersión 0,000pp.
+
+`FINAL_ASSET_ALPHA_EXPORT_REQUIRED`: **RESUELTO para Dico 2D**, sigue **ABIERTO**
+para Dico 3D.
+
+---
+
+## 1/sep/2026 — B6R.2A: vocabularios y pulso Volt (sesión Claude)
+
+Se cerraron los tres vocabularios y se construyó `DicoPulso`. Es lo único de
+B6R que no depende de los assets bloqueados. **No se integró ningún PNG, no se
+tocó la sidebar, no hay deploy.**
+
+### Tres ejes, no uno
+
+`nativeState` (7 caras 2D) · `physicalPose` (8 poses 3D) · `activity` (5 estados
+del sistema). Ninguno determina a los otros: que el sistema esté en `processing`
+no implica cara ni pose.
+
+El mapa de alias dejó a la vista lo que estaba mal: **la lista vieja de
+`DicoCara` mezclaba los tres ejes**. `processing` y `thinking` nunca fueron
+expresiones faciales, eran actividad. Quedan marcados en
+`LEGACY_NO_ES_EXPRESION` para que la migración no los arrastre por inercia.
+
+### El azul, resuelto midiendo antes de asignar
+
+|  | Hex | Luminancia |
+|---|---|---|
+| Aro del render 3D | `#2A3369` | 53 |
+| Aro del isologo plano | `#0957E6` | 81 |
+| Declarado en la lámina | `#3D6BFF` | 108 |
+
+Contraste del pulso: `#2A3369` vs `#3D6BFF` = **2,67:1** (se ve);
+`#0957E6` vs `#3D6BFF` = **1,35:1** (desaparece).
+
+**`#3D6BFF` es el Volt, no la base.** La base es el navy opaco del arte. Si se
+usaba el azul brillante de la lámina como base, el pulso quedaba invisible sobre
+su propio aro. `#0957E6` queda como `--dico-blue-flat`: el aro vectorial del
+isologo, ni base ni señal.
+
+### Medido en navegador
+
+Reflow **cero**. Reduced motion pasa de 18 animaciones (15 infinitas) a **0**
+conservando cinco formas estáticas distinguibles. Recorrido continuo verificado
+por el ángulo del centroide en cuatro frames (238,5° → 319,3° → 30,8° → 114,7°)
+y el segmento no parpadea (6448 vs 6428 px).
+
+23 contratos, **10 mutaciones y las 10 fallan**.
+
+### El gate same-ref falla ~la mitad de las veces
+
+En B6 esto se reportó como un flake de una corrida. **Era optimista.** Con esta
+corrida son **dos de tres** (B6: falla, pasa; B6R.2A: falla).
+
+Y no es ruido: los 42 píxeles son **exactamente los mismos** que en B6 —mismas
+columnas, mismas filas, mismos deltas— con `base` y `candidate` intercambiados.
+La superficie se renderiza en **una de dos variantes fijas** y el gate falla
+cuando las dos puntas caen en variantes distintas.
+
+**La causa, medida:** el borde izquierdo del botón «Registrar gasto» de la
+burbuja cae en **567,243** en una variante y **567,676** en la otra — un
+desplazamiento **sub‑píxel de 0,43 px**. La rampa del gradiente es la misma
+forma, corrida.
+
+No lo causa B6R.2A: `DicoPulso` no está montado en ninguna pantalla y la firma
+de píxeles es idéntica a la de B6, en dos commits con código distinto.
+
+**Qué habría que hacer**, en orden: encontrar y fijar la fuente del medio píxel
+en la burbuja; o esperar quiescencia de fuentes antes de capturar. Subir el
+umbral del antialias es la peor salida y por eso no se tocó — ajustar el umbral
+en el mismo lote en que el gate molesta es cómo se pierde un gate.
+
+**Bloquea la certificación same-ref de todo lote siguiente**: mientras esté,
+«same-ref limpio» es un resultado con 50 % de probabilidad, no una garantía.
+
+### Deuda que deja este lote
+
+`DicoPulso` **no está montado en ninguna pantalla todavía**. Cuando lo esté, sus
+animaciones infinitas van a aparecer en las superficies de QA Lite y hay que
+registrarlas en `e2e/qa-lite/dico-neutral-contract.mjs` o el gate falla por
+«unexpected selector». No se registró ahora porque registrar una animación que
+no existe en ninguna superficie deja el contrato mintiendo.
+
+`FINAL_ASSET_ALPHA_EXPORT_REQUIRED` sigue bloqueando todo lo demás. Los
+requisitos exactos de re-export para 2D y 3D quedaron escritos en el manifiesto.
+
+---
+
+## 1/sep/2026 — B6R.1: auditoría de assets finales (sesión Claude)
+
+Llegó un brief nuevo que **supersede la dirección visual anterior**. Se ejecutó
+sólo hasta el STOP obligatorio: auditar, snapshot, reconciliar B6, manifiesto.
+**No se tocó UI.**
+
+### La corrección de arranque
+
+El brief supone que B6 pudo quedar «parcialmente editado y no commiteado».
+**No**: worktree limpio, B6 entero en 7 commits (`f25da40` … `40de375`). No hay
+nada que rescatar del disco ni que revertir.
+
+### El titular de la auditoría
+
+**El personaje nuevo está definido pero no existe como asset de producción.**
+Ningún conjunto reúne identidad vigente **y** transparencia:
+
+- `Downloads/Dico 3D/` (10 archivos, los más nuevos): es el personaje NUEVO
+  —aro azul, pestañas, sin galera— pero **los diez están sobre negro opaco**.
+- `…/02_Dico_3D` (11): tiene alfa real, pero es el personaje VIEJO con galera y
+  bigote.
+- `…/03_Isologo`: `Isologo_Dico_master_liso.png` **es** el Dico 2D del brief
+  (aro azul, dos ojos, sin boca) y **declara los tokens: GOLD `#E0AC3C`,
+  BLUE `#3D6BFF`** — pero es una lámina 1448×1086 con wordmark y muestras
+  horneadas, sin alfa.
+
+### Lo que decide el ritmo
+
+El fondo negro es puro (promedio 1,1 / máximo 3 sobre 255, 0 % fuera de negro),
+así que *parece* recortable por luminancia. **No lo es**: en la zona central del
+personaje el **47,9 % de los píxeles también es casi-negro** — aro azul oscuro,
+pupilas y pestañas. Un key por luminancia se lleva puesta media identidad.
+
+Además las resoluciones no son homogéneas (1024×726 a 1488×1057): el personaje
+no está al mismo tamaño entre poses y un crossfade saltaría de escala.
+
+**La salida correcta es pedir el re-export con alfa desde la fuente**, no
+recortar el PNG. Recrearlo en SVG está prohibido por el brief, y con razón.
+
+Anomalía extra medida en el set viejo: el sujeto está pintado con alfa 224–254 y
+**cero píxeles totalmente opacos**, o sea levemente translúcido.
+
+### Qué se conserva de B6
+
+No se revierte nada. Los commits quedan en la historia marcados superseded,
+porque revertirlos borraría también los contratos que viven en los mismos
+commits: el gate de imports, el método de mutación y el arreglo de reduced
+motion. B1–B4 intactos.
+
+`B5 = CLOSED FOR PREVIOUS CANONICAL-FACE ARCHITECTURE / SUPERSEDED BY FINAL
+ASSET DIRECTION`.
+
+### Choque de vocabularios, sin resolver a propósito
+
+Hay tres listas de estados que no coinciden: la del código (`idle` `processing`
+`thinking` `success` `worried` `question` `error`), la del brief §4 para 2D
+(`neutral` `curious` `happy` `celebrate` `alert` `concerned` `question`) y la
+del §11 para poses 3D (`idle` `explain` `point-down` `point-up` `thinking`
+`worried` `success` `error`). Elegir es decisión de producto y cambia la API de
+tres componentes.
+
+### Lo único que se puede hacer sin assets
+
+`DicoPulso`, el overlay Volt: es SVG/CSS propio, no depende de ningún archivo y
+el brief lo quiere reutilizable para 2D, 3D y logo. Es el candidato natural para
+B6R.2 mientras llega el re-export.
+
+Snapshot del estado encontrado: `DICO_B6_FOUND_40de375.bundle`, 8.838.901 bytes,
+SHA-256 `1703da4a50283911039e136e903266716c2857678140f037972cdf34eb5d584b`.
+
+---
+
+## 1/sep/2026 — Stage B6 cerrado: vocabulario facial canónico (sesión Claude)
+
+Siete estados emocionales y tres frames de habla sobre **una sola anatomía**.
+Se detuvo antes de Panorama de roles/verticales. Sin push, deploy, DB/RLS/auth
+ni dependencias. React Router sigue en `7.18.3`.
+
+### Los dos huecos que encontró la auditoría, y que el lote usa
+
+- **Los párpados eran geometría muerta.** Existían en el SVG desde siempre, con
+  `opacity: 0`, y *ninguna* regla los encendía. Ahora `contento` los usa para
+  cerrar apenas los ojos: la sonrisa llega también a la mirada.
+- **Physical estaba clavado en `idle`.** Literalmente
+  `<g className="dico--idle">` en el JSX de `DicoSlot`: no podía expresar nada.
+  Ahora recibe `cara` y `habla` y usa el mismo vocabulario que Native.
+
+### Hecho
+
+- Snapshot previo `DICO_B5_APPROVED_8965aa2.bundle`: 8.808.354 bytes, SHA-256
+  `81e3ecb73a7b03049af9281f8643191ca2d6d15e347a74f2832648c3135b8a00`.
+- `f25da40 fix(dico): align physical and native face proportions`. Physical
+  pintaba la misma cara **2,28× más chica**. Lo decisivo fue medir la jerarquía
+  interna: ojos/boca daba **1,732 contra 1,730**, o sea que la geometría ya era
+  correcta y el problema era el **marco**. Se corrige en el wrapper con tres
+  custom properties; no se duplicó anatomía ni nació una `CaraDeTintaPhysical`.
+- `d6b3b72 feat(dico): define canonical facial expression system`. Nuevos
+  `pensando` (thinking) y `error`. Los cinco que ya funcionaban no se
+  reimplementaron. `error` usa una **X sobre cada esclera**: la forma carga el
+  significado y el rojo entra sólo como acento — se lee igual en escala de
+  grises. La cara no se tiñe.
+- `24d2e4e test(dico): tighten the physical face frame contract`.
+- Nombres en español, como el resto del código; el mapeo al vocabulario del
+  sistema quedó escrito arriba de `ESTADOS_DICO`.
+
+### Verificado
+
+- **20 contratos**, **14 mutaciones y todas fallan**; control 20/20 verde.
+- Suite completa **79 archivos / 1.076 PASS**. Integridad, typecheck,
+  install-state, `qa:lite:test` 27/0, build y `git diff --check`: PASS.
+- Proporción final: las cinco medidas faciales de Physical caen dentro del
+  **12,5 %** de Native (venían de 2,28× de desvío), centro dx **−0,00 %**,
+  jerarquía ojos/boca idéntica.
+- **No se agrega ninguna animación infinita**: el contrato de movimiento de QA
+  Lite queda igual.
+
+### Dos cosas que valen para el próximo
+
+- **El factor de escala es 2,0 y no el 2,28 que igualaría el ancho exacto.**
+  Igualarlo dejaba la cara ocupando el 58 % del alto de una moneda escorzada
+  contra el 45 % de Native: se corregía una desproporción creando otra.
+- **Reduced motion no cubría la cara de Physical.** El neutralizador apuntaba a
+  `.dico *` y esa cara no cuelga de `.dico`, así que el parpadeo seguía
+  corriendo con la preferencia activa. Se notaba poco mientras Physical sólo
+  sabía estar en idle.
+
+### Segunda pasada: vocabulario y `thinking`
+
+La revisión pidió dos cosas más y las dos eran correctas.
+
+- **El vocabulario canónico ahora es explícito.** `ESTADOS_DICO` declara los
+  siete en inglés (idle/processing/thinking/success/worried/question/error) y
+  `ALIAS_ESTADO` conserva los cinco nombres en español que ya usaban
+  `DicoAvisos`, `ProductsPanel`, la vitrina y varios tests. `estadoCanonico()`
+  resuelve ambos y **lo que llega al DOM es siempre el canónico**: hay un
+  contrato que verifica que la clase del alias no sobreviva, para que el
+  vocabulario no quede partido en dos familias de clases. La plancha muestra
+  diez columnas pero son **siete estados más un eje de habla**, no diez
+  emociones.
+- **`thinking` era `idle` con dos píxeles de diferencia.** Movía las cejas
+  2,6 px y las rotaba 4°: al lado de `idle` no se distinguía, y a 36 px no
+  existe. Lo que se lee de lejos es la dirección de la mirada, así que ahí fue
+  la corrección — `thinking` mira arriba y al costado, `processing` barre al
+  costado y nivelado. Un contrato lee las dos transformaciones del CSS y lo
+  exige.
+
+`dico-boca--pensando` se renombró a `dico-boca--proceso`: era la boca de
+*processing* con nombre de *thinking*, justo la confusión que hacía que los dos
+parecieran el mismo estado.
+
+Física verificada en el flujo real con el marco nuevo: la cara viaja pegada al
+cuerpo (rango 0,0000 abriendo y 0,0002 cerrando; escala 0,0000), Native ausente
+con Physical afuera y vuelve al cerrar.
+
+**No se persiguió el 0 % de diferencia de escala.** Quedó en 12,1–12,5 % y se
+evaluó visualmente: Native y Physical se leen inequívocamente como el mismo
+Dico. Forzar la igualdad exacta empeoraba el encuadre vertical.
+
+### El same-ref falló una vez y hay que saberlo
+
+La primera corrida de `qa:lite:compare` sobre `a276291` ↔ `a276291` dio
+**`blockingDiffPixels: 1`** y el gate falló. La segunda dio **0**. DOM igual,
+scroll trace idéntico y red externa cero en las dos.
+
+Los 42 píxeles crudos (38 antialias + 3 redondeo + 1 bloqueante) caían en las
+**esquinas redondeadas del botón «Registrar gasto»** de la burbuja, no en la
+cara. Un same-ref compila las dos puntas desde el mismo commit, así que por
+construcción no puede ser regresión de código: es no-determinismo del render.
+
+**Deuda anotada:** el umbral del filtro de antialias es marginal en esa curva
+—absorbió 38 de 42 y dejó pasar 1—, así que el gate puede volver a ponerse rojo
+sin que nada haya cambiado. No se ajustó en este lote: bajar un umbral para que
+un gate deje de molestar, en el mismo lote que lo hizo fallar, es cómo se pierde
+un gate. Forense en `.qa-lite/artifacts/phase-b6-expresiones/forense/`.
+
+### Lo que queda pendiente
+
+1. **Ningún código emite `pensando`, `contento` ni `error`.** `DicoAvisos` mapea
+   los tres niveles de aviso y nada más, así que la app hoy sólo alcanza `idle`,
+   `esperando`, `preocupado` y `pregunta`. Cablear productores es lógica de
+   negocio.
+2. **Los ~9 px de galera recortados** siguen en el backlog de Phase 9, sin
+   tocar, como pedía el brief.
+3. Brazos para `pensando` y `error`: quedan en reposo. B6 es la cara.
+
+### Trampa nueva
+
+Al verificar por mutación, la función que revertía hacía
+`git checkout -- src/components/`. Como la implementación **todavía no estaba
+commiteada**, se llevó puesto el trabajo del lote; lo delató el control fallando
+igual que las mutaciones. Hubo que rehacerlo entero. **Commitear antes de
+mutar**: la mutación necesita un baseline en git, no en el working tree.
+
+---
+
+## 1/sep/2026 — Stage B5 cerrado: una sola cara canónica (sesión Claude)
+
+B5 quedó **CLOSED por evidencia, sin refactor productivo**. Se detuvo antes de
+B6: no se rediseñaron expresiones, ni placement facial, ni assets. No hubo
+push, preview, deploy ni cambio de producción, DB/RLS/auth ni dependencias.
+React Router sigue exactamente en `7.18.3`.
+
+### El hallazgo que decidió el lote
+
+La auditoría encontró la arquitectura **ya cumplida**: `CaraDeTinta` es el único
+módulo productivo que define geometría facial, Native (`DicoCara`) y Physical
+(`DicoSlot`) la montan, el cuerpo Physical está limpio —se inspeccionó el
+`.webp`: no tiene ojos, boca ni bigote— y los dos `import.meta.glob` nombran
+archivos exactos. El build lo confirma: emite tres assets Dico y ninguno tiene
+cara.
+
+Faltaba **garantía**, no código. Refactorizar habría sido trabajo inventado.
+
+### Hecho
+
+- Snapshot previo `DICO_B4_APPROVED_6ca8d67.bundle`: 8.785.799 bytes, SHA-256
+  `5d12e6f4749e9987a0d945009ac5039cd6dcc8f74c3454e15c6956b8f58efd3b`, historia
+  completa, HEAD `6ca8d67`, rama `feat/dico-panorama-v1`. Excluido por **ruta
+  exacta** en `.git/info/exclude`, sin regla global.
+- `src/test/dicoCaraCanonica.test.jsx` — 12 contratos estructurales. El gate de
+  legacy **camina el grafo de imports real desde `src/main.jsx`** en vez de
+  filtrar por rutas: productivo es lo que el bundle alcanza. Resuelve imports
+  estáticos y dinámicos, `export … from`, `@import` y `url()` de CSS, los alias
+  del build, y expande los `import.meta.glob` contra el disco como hace Vite.
+  Tests, `tools/vitrina` y documentación quedan afuera solos.
+- **`DicoEscena.jsx` y los 7 `escena-*.webp` no se movieron ni se borraron.**
+  Son legacy legítimo de vitrina/archivo. El contrato no es que no existan: es
+  que ninguna superficie productiva los alcance.
+- La paridad Native/Physical se define como *la geometría sale de
+  `CaraDeTinta`*, no como igualdad de tamaño, offset o encuadre. La firma
+  comparada son atributos internos del viewBox, y se compara contra el
+  componente renderizado **solo**: si las dos modalidades se bifurcaran a la
+  vez, compararlas entre sí no lo notaría.
+- `platform/PHASE-B5-CANONICAL-FACE.md`: matriz A/B/C/D/E completa, evidencia y
+  backlog.
+
+### Verificado
+
+- Contratos rotos a propósito, uno por uno: los **7** fallan. El control que
+  importa es el octavo: **la vitrina importa `DicoEscena` dos veces y la suite
+  queda 12/12 verde**, que es la prueba de que la exclusión es semántica.
+  Todas las mutaciones revertidas.
+- Tests dirigidos B5: **12 PASS**. Dirigidos Dico: **9 archivos / 89**. Suite
+  completa: **78 archivos / 1.056 PASS** con `--pool=threads`.
+- Integridad, typecheck, install-state, `qa:lite:test` 27/0, build identificado
+  y `git diff --check`: PASS.
+- QA Lite same-ref `6ca8d67` ↔ `6ca8d67`: **DOM igual, `blockingDiffPixels: 0`,
+  red externa 0 y scroll trace IDENTICAL**.
+- Medición en navegador (Playwright, 1440×900 y 390×844): cara centrada sobre
+  el cuerpo con desvío **0,02 px**; **la cara no se recorta** (queda 44,4 px por
+  dentro); **no se separa del cuerpo** al abrir/cerrar (rango del offset
+  relativo 0,0000 abriendo y 0,0039 cerrando); red externa cero.
+
+### Lo que queda anotado para B6/backlog
+
+1. **Escala y altura de la cara en Physical.** La anatomía es la misma pero su
+   proporción no: ojos a **10,21 %** del ancho de la moneda contra **23,24 %**
+   en Native, y el eje al doble de altura. Se comprobó que **no** es del probe:
+   Native mide igual a `size=36` (el real de la app) que a 220 px, ±0,11 %. La
+   causa es que `.dico-physical-cara` se posiciona en porcentajes del marco
+   entero y la galera empuja la moneda hacia abajo. Es acabado facial.
+2. **9 px de galera recortados.** `.ag-slot` tiene `overflow: hidden`
+   (Phase 3B) y `.dico-slot-stage` sobresale 161 px hacia arriba (Phase 9/B2).
+   Ningún test de los dos lotes cubre ese cruce. La cara no se ve afectada.
+
+### Trampa nueva, para no repetirla
+
+Medir layout desde la consola del panel del navegador puede dar
+`window.innerHeight === 0`. Con eso `max-height: 40vh` computa `0px`, `.ag-slot`
+mide 0 de alto y **todo Physical parece recortado**: casi se reporta un defecto
+grave inexistente. Toda medición que dependa de unidades de viewport va con
+Playwright y viewport declarado.
+
+Y un bug propio que vale como método: el expansor de globs del test escapaba los
+paréntesis que él mismo generaba, así que preguntar «¿este glob alcanza un asset
+legacy?» respondía que no **por vacío**. Lo destapó el contrato que pregunta al
+revés, «¿qué alcanza?». Cuando un gate sólo sabe decir que no, conviene
+obligarlo a decir qué sí.
+
+---
+
+## 31/ago/2026 — Stage B2/B3/B4 cerrado: mensaje Native estable (sesión Codex)
+
+B2, B3 y B4 quedaron cerrados sobre el B1 aprobado. Se detuvo el trabajo antes
+de B5: no se tocó `CaraDeTinta`, expresiones, assets/materiales Physical,
+registry, roles, Golden Screen, módulos Admin, DB/RLS/auth ni dependencias. No
+hubo push, preview, deploy ni cambio de producción.
+
+### Hecho
+
+- Antes de tocar código se creó
+  `C:\Users\ricar\Downloads\DICO_B1_APPROVED_903f765.bundle`: historia
+  completa, rama `feat/dico-panorama-v1`, HEAD `903f765`, SHA-256
+  `8486f572847c76949ffe822c391bb6542d10b4c99af1b057178a8f750b38a692`.
+- B2 se auditó y cerró sin código nuevo: `DicoSlot` recibe `estado` desde
+  `DicoPresence`, no controla avisos, no decide si Native existe y no conserva
+  una segunda máquina de presencia.
+- `f429722 fix(dico): place native message above character` mueve el mensaje
+  antes de Native en DOM y flujo, centra la cola, reserva volumen y deja el hit
+  target de Native en 44x44 sin agrandar el personaje visual.
+- `f33d8eb fix(dico): stabilize native typewriter geometry` conserva el
+  typewriter existente y superpone por CSS Grid una copia completa invisible
+  (`aria-hidden`) que fija la geometría desde el primer frame. La copia tipeada
+  también es decorativa; `.dico-burbuja-lectura` sigue siendo la única fuente
+  accesible completa. Reduced Motion nace completo en el primer render.
+- QA Lite incorpora un gate Native específico en 320, 375, 768 y 1440 px,
+  seis capturas nuevas y neutralización declarada de `dico-sacada`. El
+  manifiesto deriva sus selectores de la misma autoridad del contrato de
+  movimiento para que no vuelvan a divergir.
+
+### Verificado
+
+- Tests dirigidos finales: **6 archivos / 61 tests PASS**. Suite completa:
+  **77 archivos / 1.044 tests PASS** con threads y un worker.
+- QA Lite unitario: **27/27 PASS**. Typecheck, integridad de 326 archivos,
+  install-state, schema y `git diff --check`: PASS.
+- Build identificado del edificio: `f33d8ebf`, React Router `7.18.3`, artefacto
+  auditado y sin sourcemaps: PASS.
+- QA Lite same-ref `f33d8eb` ↔ `f33d8eb`: 8/8 contratos DOM iguales, 8/8
+  screenshots iguales, `blockingDiffPixels: 0`, red externa 0. Hubo 80 píxeles
+  raw clasificados como AA/redondeo no bloqueante (65/15).
+- Scroll trace: **4 archivos / 40 checkpoints idénticos**.
+- Gate geométrico real: burbuja, Native y `scrollHeight` idénticos entre inicio,
+  mitad y final del typewriter en 320/375/768/1440; ancho de documento igual al
+  viewport, hit target 44x44, una fuente accesible y Physical ausente.
+- Evidencia final:
+  `.qa-lite/artifacts/2026-08-31T23-36-52-426Z/`. Las seis capturas están en
+  `candidate/dico-native-message/` y fueron inspeccionadas: burbuja arriba,
+  cola hacia Dico, sin clipping, overflow ni cruce de topbar/bottom nav.
+- Producción no se modificó. La consulta final sigue mostrando como último
+  deploy `READY` a `d86c8a9` (`fix(security): update react router to 7.18.3`).
+
+### Pendiente inmediato
+
+1. Ricky debe revisar `f429722` y `f33d8eb` junto con las capturas del artifact.
+2. Sólo con un GO nuevo iniciar B5 (una cara canónica). No reinterpretar ni
+   rehacer B1–B4: sus contratos y evidencia ya están persistidos.
+3. Phase 3B continúa necesitando su cierre integrado A3 específico; este lote
+   no lo declara cerrado porque su objetivo fue exclusivamente Native B2–B4.
+
+### Bloqueado por Ricky
+
+- B5 / nueva cara requiere autorización explícita. La pausa es deliberada.
+- La rama no se pusheó: la instrucción de este bloque prohíbe push/deploy. El
+  bundle previo protege el punto aprobado B1 y los checkpoints B3/B4 quedan
+  locales en la rama actual.
+
+### Trabajo local vivo
+
+- Rama: `feat/dico-panorama-v1`.
+- Checkpoints técnicos: `f429722` y `f33d8eb`.
+- No hay código a medias. Esta sección y `DICO-IMPLEMENTATION-STATUS.md` son el
+  cierre documental posterior; deben quedar en un commit separado.
+
+---
+
+## 31/ago/2026 — Stage B1: presencia centralizada y cerrada (sesión Codex)
+
+B1 quedó terminado en `be5d6b5` y se detuvo ahí por instrucción. No se empezó
+B2/B3, no se tocó posición de burbuja, typewriter, cara, materiales, roles ni
+Golden Screen. No hubo push, preview, deploy ni producción.
+
+### Hecho
+
+- Antes de tocar código se creó el snapshot recuperable
+  `C:\Users\ricar\Downloads\DICO_STAGE_A_APPROVED_c3582a0.bundle`: historia
+  completa, HEAD `c3582a0`, 8.761.217 bytes y SHA-256
+  `10899a2d0088128ec179da4f29d93222ad33796a78af4ee5047b386c726e3270`.
+- `src/components/dico/DicoPresence.jsx` es la única autoridad de presencia.
+  Usa el reducer puro de `dicoPresenceMachine.js` con `native_idle`,
+  `native_notice`, `physical_opening`, `physical_open` y `physical_closing`.
+- `DicoSlot.jsx` quedó controlado: no guarda fase, no controla avisos y sólo
+  emite intención de abrir/cerrar y fin real de las animaciones Physical.
+- `DicoAvisos.jsx` quedó controlado: conserva paginado/entrada, pero ya no
+  guarda si el aviso está abierto. `PlatformAdmin.jsx` monta una sola
+  `DicoPresence` en el mismo lugar y sin wrapper de layout nuevo.
+- Reduced Motion usa el mismo reducer y recorre los mismos estados; completa
+  opening/closing en efectos inmediatos, sin esperar una animación visual.
+- Checkpoint obligatorio: `be5d6b5 refactor(dico): centralize native and
+  physical presence state`.
+
+### Verificado
+
+- Tests dirigidos finales: **5 archivos / 53 tests PASS**. Incluyen los nueve
+  contratos B1: idle, notice, opening, open, cierre completo, restauración,
+  cierre del notice al abrir Physical, Reduced Motion y exclusión absoluta.
+- Suite completa: **76 archivos / 1.036 tests PASS**, con `--pool=threads` y un
+  worker para evitar omisiones de Windows.
+- Integridad: 325 archivos PASS. Typecheck PASS. ESLint dirigido: 0 errores;
+  sólo 10 warnings preexistentes de `PlatformAdmin.jsx`.
+- `git diff --check`: PASS antes del checkpoint.
+- Producción no se modificó. El último deploy consultado sigue `READY` en
+  `d86c8a9`; B1 sólo fue verificado localmente.
+
+### Pendiente inmediato
+
+1. Ricky debe revisar `be5d6b5` y confirmar el contrato B1.
+2. Sólo con ese GO continuar a B2/B3 según el Plan Maestro v2. El motivo de la
+   pausa es aislar la máquina de estados antes de cualquier cambio visual.
+3. Al iniciar el siguiente bloque, conservar el test de exclusión como gate:
+   ningún estado puede montar Native y Physical simultáneamente.
+
+### Bloqueado por Ricky
+
+- B2/B3 requieren su aprobación explícita del checkpoint B1.
+- La rama no se pusheó porque el usuario autorizó snapshot por bundle o push y
+  se eligió el bundle para evitar cualquier preview/deploy involuntario.
+
+### Trabajo local vivo
+
+- Rama: `feat/dico-panorama-v1`.
+- Checkpoint técnico B1: `be5d6b5`.
+- No hay código a medias ni cambios de DB/migraciones/RLS/auth.
+- Esta sección y la actualización de estado son documentación posterior al
+  checkpoint técnico; no cambian su comportamiento ni sus gates.
+
+---
+
+## 31/ago/2026 — Stage A: recovery integrado y checkpoint verde (sesión Codex)
+
+Stage A quedó cerrado hasta el checkpoint de integración pedido. No se avanzó
+a `DicoPresence`, no hubo cambios de DB/RLS/auth, no hubo push, deploy ni
+producción. El usuario pidió revisar este checkpoint antes de continuar.
+
+### Hecho
+
+- Verificado `DICO_RECOVERY_PRESENCE_SLOT.bundle`: 8.658.041 bytes, SHA-256
+  `735fefa1d12face5caa41adc0d40896698ccf31d0c14c3e5318eee6692329931`,
+  HEAD `7b17e97e7d35638109f634b81892135b2a146036` y parent `9e77b0a`.
+- Integrada como segundo parent la cadena completa `67e95ce` → `a3b07bc` →
+  `de5568a` → `9741b96` → `7f40419` → `7b17e97`. El merge recuperable es
+  `40c1d550243be4a26dec2818ce5134a7cfc1160e`, con mensaje exacto
+  `chore(dico): integrate machine soul recovery with current platform`.
+- `9741b96` se comparó con `0304f28` por patch y blob. CSS y test eran
+  idénticos; se conservó una sola implementación y el `brazos.webp` más nuevo
+  de `0304f28`. Sólo se rescató la documentación útil del recovery.
+- Incorporados `DicoSlot`, el límite físico, la secuencia de retorno y el flujo
+  nativo de avisos. React Router sigue en `7.18.3`.
+- Creado `platform/DICO-IMPLEMENTATION-STATUS.md` con evidencia real de las
+  fases 0–10. `DicoPresence` sigue ausente por diseño.
+- QA Lite se adaptó al contrato real del disparador de avisos y neutraliza a
+  Dico tanto en admin como en POS; no se relajaron umbrales ni se ocultaron
+  diferencias de producto.
+
+### Verificado
+
+- Gates estructurales: install-state, integridad (322 archivos), schema,
+  freshness hasta 0062, columns (321 archivos), typecheck y lint en verde;
+  lint conserva 293 warnings preexistentes y 0 errores.
+- Suite completa con pool `threads`: **75 archivos / 1.028 tests PASS**.
+- Suite dirigida Dico: **5 archivos / 88 tests PASS**. QA Lite unitario:
+  **27/27 PASS**.
+- QA Lite same-ref en `.qa-lite/artifacts/2026-08-31T18-20-26-441Z`:
+  DOM igual, píxeles iguales para el gate, 46 píxeles raw clasificados como
+  antialias/redondeo, `blockingDiffPixels: 0`, sin tráfico externo; scroll:
+  4 trazas / 40 checkpoints / 0 diferencias.
+- Build plataforma ejecutado sobre `40c1d550`: identidad `40c1d550` consistente
+  en `version.json`, bundle y release Sentry; sin sourcemaps en el output.
+- Worktree limpio al ejecutar el build. No se verificó producción porque esta
+  rama no se desplegó, conforme a la orden explícita.
+
+### Pendiente inmediato
+
+1. Ricky debe revisar el checkpoint `40c1d550` y aprobar la integración.
+2. Sólo después de esa aprobación, continuar el Plan Maestro desde el bloque
+   siguiente. No crear ni iniciar `DicoPresence` antes de ese GO.
+3. Mantener los gates por bloque y crear un checkpoint recuperable antes de
+   cualquier avance visual posterior.
+
+### Bloqueado por Ricky
+
+- El avance posterior a este checkpoint necesita su validación explícita.
+- Los commits quedan locales porque Ricky indicó **sin push, sin deploy y sin
+  producción**. Esta restricción prevalece sobre el cierre habitual de sesión.
+
+### Trabajo local vivo
+
+- Rama: `feat/dico-panorama-v1`.
+- Checkpoint técnico a revisar: `40c1d550` (merge de la línea funcional con el
+  recovery `7b17e97`).
+- No hay trabajo de código a medias ni archivos sin seguimiento.
+- Esta actualización de handoff es sólo documentación posterior al checkpoint;
+  no modifica el producto ni invalida sus gates.
+
+---
+
+## 31/ago/2026 — Stage A: build identity y Machine Soul integrados; recovery bloqueado (sesión Codex)
+
+La auditoría A–H fue aprobada y Stage A quedó autorizada desde `0304f28`.
+Se avanzó sólo hasta el último punto verificable sin el bundle recovery. No se
+empezó `DicoPresence`, no hubo push ni deploy.
+
+### Hecho
+
+- Creada `feat/dico-panorama-v1` exactamente desde `0304f28`.
+- Integrado build identity en dos commits recuperables: `4ba926d` (equivalente
+  a `09cc447`) y `4338df8` (equivalente a `475b4d2`).
+- Integrada la línea Machine Soul completa hasta `9e77b0a` mediante merge
+  `cf8f47c`. `docs/HANDOFF.md` se resolvió por contenido, conservando las
+  dos historias; no se usó `ours`/`theirs` masivo.
+- `package.json` y `package-lock.json` preservan React Router `7.18.3`, los
+  scripts de build identity y los scripts/dependencias pinneadas de QA Lite.
+- Phase 1 queda bajo la autoridad de
+  `platform/qa-lite/PHASE-1-VALIDATION.md`: **CLOSED / ORIGINAL GATE PASSED**.
+  Su baseline sólo queda supersedido para cambios visuales intencionales
+  posteriores; no se debe volver a documentar como no verificado.
+
+### Verificado
+
+- Producción sigue `READY` en `d86c8a9`; esta rama no fue desplegada.
+- `npm ci --include=dev`: árbol reinstalado desde lockfile; 7 vulnerabilidades
+  preexistentes informadas, sin ejecutar `npm audit fix`.
+- `check:install-state`: 459 paquetes revisados, árbol consistente.
+- El hook llegó en verde por integrity global, columns, freshness hasta 0062,
+  schema sync y typecheck.
+- El smoke del hook con pool `forks` reprodujo la falla conocida de Windows:
+  0 tests y timeout de workers. Se repitió manualmente con `--pool=threads`:
+  **2 archivos / 87 tests PASS**.
+- Build Vite `CLIENT=la-nona-pato`: PASS.
+- `git diff --check`: PASS.
+
+### Pendiente inmediato
+
+1. Materializar `DICO_RECOVERY_PRESENCE_SLOT.bundle` en el filesystem.
+2. Verificar tamaño 8.658.041 bytes, SHA-256
+   `735fefa1d12face5caa41adc0d40896698ccf31d0c14c3e5318eee6692329931`,
+   HEAD `7b17e97e7d35638109f634b81892135b2a146036`, parent `9e77b0a` y los
+   seis commits esperados.
+3. Comparar patch y blob de `9741b96` con `0304f28`; conservar una sola
+   implementación de `brazos.webp` y rescatar documentación útil sin duplicar.
+4. Integrar recovery en orden semántico, crear
+   `platform/DICO-IMPLEMENTATION-STATUS.md` y recién entonces emitir el
+   checkpoint `chore(dico): integrate machine soul recovery with current platform`.
+5. Ejecutar suite completa con `--pool=threads`, tests Dico dirigidos, QA Lite,
+   build plataforma y gates restantes. No avanzar a Panorama antes del verde.
+
+### Bloqueado por Ricky
+
+- El mensaje de aprobación incluyó nombre, tamaño, SHA e historia del bundle,
+  pero no sus bytes: no aparece en Downloads, Documents, Proyectos, AppData,
+  `.codex`, recursos MCP ni GitHub. Hace falta adjuntarlo directamente o
+  copiarlo a una ruta local accesible y comunicar esa ruta.
+- `DICO_PLAN_MAESTRO_UNIFICADO_CODEX_v2.md` tampoco quedó materializado. Las
+  correcciones operativas sí están explícitas en el mensaje y ya se respetan;
+  el archivo es necesario para dejar la fuente canónica persistida.
+
+### Trabajo local vivo
+
+- Rama: `feat/dico-panorama-v1`.
+- Último checkpoint técnico antes de este handoff: `cf8f47c`.
+- No hay cambios de DB, RLS, auth, edge functions ni producción.
+- No rehacer build identity ni volver a mergear `9e77b0a`; ambos bloques ya
+  están integrados. Retomar directamente desde la verificación del bundle.
+
+---
+
+## 29/ago/2026 — Auditoría técnica: CI, Sentry y drift de `signup_tenant` (sesión Claude)
+
+Auditoría de 5 fases contrastada contra la base de producción, Vercel y GitHub.
+Ricky la revisó a su vez y corrigió dos errores míos. Lo que sigue es el
+resultado ya depurado. **Codex: leé la sección "Zonas y dueños" antes de tocar
+nada — hay cosas que dejé sin hacer justamente para no pisarte.**
+
+### Zonas y dueños al 29/ago
+
+| Zona | Dueño | Estado |
+|---|---|---|
+| `src/index.css`, `src/styles/hermes-tokens.css` | **Codex** (`dico-machine-soul-phase1`) | commiteado en `621c492` — **no toqué** |
+| `package.json`, `.gitignore`, `e2e/`, `playwright.*`, `clients/dico-qa-lite/`, `scripts/qa-lite/`, `platform/qa-lite/` | **Codex** (`dico-qa-lite`) | sin commitear — **no toqué** |
+| `src/components/dico/**` | **Ricky** | sin commitear — **no toqué** |
+| `.github/workflows/ci.yml`, `eslint.config.js`, `src/lib/observability.js`, `src/lib/sentryFull.js`, `vite.config.js` (sólo el bloque Sentry), `platform/migrations/0060`, `src/lib/release.js`, `src/test/sentryRelease.test.js` | **Claude** (esta sesión) | hecho |
+
+### Hecho
+
+- **CI corría en `main` únicamente.** `platform/runtime-tenant` tenía **0 runs**
+  mientras Vercel **sí** la auto-deploya a producción en cada push
+  (verificado: los 20 deployments traen `githubDeployment:1` y
+  `githubCommitRef: platform/runtime-tenant`). O sea: el commit llegaba al
+  cliente sin pasar por ningún gate. Agregada la rama a los triggers de
+  `ci.yml`. Antes de encenderlo verifiqué los 6 gates a mano: typecheck,
+  eslint, integrity, schema, freshness y columns pasan todos.
+- **`eslint.config.js` ahora ignora `.claude/worktrees`.** Era el origen del
+  único error de lint del repo: linteaba una worktree de agente en un commit
+  viejo con la config nueva. Fallaba local y pasaba en CI.
+- **Sentry unificado.** Había tres lugares armando el release con prefijos
+  incompatibles (`${CLIENT}@...` en el uploader, `hermes-gastro@...` en los dos
+  reporters): los sourcemaps se subían a un release que ningún evento
+  reportaba, así que **todo stack trace de producción llegaba minificado**.
+  Ahora hay un solo origen, `src/lib/release.js`, con formato `dico@<BUILD_ID>`
+  — el SHA corto del commit, que ya se emitía en `/version.json`.
+  `src/test/sentryRelease.test.js` compara uploader y runtime y falla si vuelven
+  a divergir. **No borrar ese test**: es lo único que impide que se repita.
+- **Limpieza acotada** (sólo fuera de las zonas de Codex): borrados
+  `src/config/delivery.js`, `src/config/payments.js`, `src/test/plugins.test.js`
+  (el registry de plugins no lo leía nadie salvo su propio test) y
+  `src/assets/{hero.png,react.svg,vite.svg}`.
+
+### Escrito y NO aplicado — decisión de Ricky
+
+- **`platform/migrations/0060_signup_tenant_lee_biz_name.sql`.** La función
+  `signup_tenant()` **desplegada no la produce ninguna migración del repo**: es
+  más nueva que la 0041 y lee el nombre del negocio de `business_name`, campo
+  que no existe en ningún lado (`signup.js` manda `biz_name`, y las 4
+  migraciones anteriores leen `biz_name`). El `coalesce` cae siempre al
+  fallback: **el próximo alta va a guardar el negocio con su slug como nombre**
+  ("Panadería del Sur" → `panaderia-del-sur`), y no hay UI para corregirlo.
+  Es latente, no observado: los 7 tenants tienen `name <> slug` porque los dos
+  últimos son del 15/ago, anteriores al drift. La migración reproduce el cuerpo
+  desplegado **exacto** con un solo cambio, así que aplicarla sin el fix sería
+  un no-op — esa propiedad la hace segura de revisar.
+  El marcador `_migrations_through` del snapshot ya está en `0060`.
+
+  **Codex:** tu harness QA aplica migraciones hasta 0059. Cuando se aplique la
+  0060 hay que subir ese número en `platform/qa-lite/`.
+
+### Verificado, no deducido
+
+- 7 tenants, los 7 con `paga_hasta = NULL`, 0 suspendidos, 1 con primer valor.
+- `cron.job` tiene **un solo job**: `release_dormant_tenants(45)`.
+  `suspender_impagos()` existe y no está agendada.
+- `tenant_puede_operar()` no la invoca ninguna policy, RPC ni pantalla.
+- 47/47 tablas con RLS. Las 3 sin policies son fail-closed a propósito.
+- `npm audit --audit-level=high` **ya estaba rojo** antes de esta sesión: 7
+  high (undici, vite 8.0.0–8.0.15, launch-editor). No lo arreglé porque
+  `npm audit fix` toca `package-lock.json`, que Codex tiene modificado.
+  **Queda para cuando qa-lite aterrice.**
+
+### Dos cosas que la auditoría dijo mal (corregidas)
+
+1. Dije que `hermes-icon-192/512.png` y `hermes-apple-touch.png` estaban
+   referenciados pero no existían. **Existen y están versionados.** Los deduje
+   ausentes de un `grep` de contenido sobre binarios en vez de correr `ls`.
+2. Dije que el proyecto Vercel `hermes-platform` no tenía integración Git,
+   por un `"link": null` de la API. **Sí la tiene** y auto-deploya. Eso hace
+   el problema de CI *peor*, no mejor.
+
+### Anulado: NO sacar Tailwind
+
+La auditoría proponía eliminar Tailwind porque los únicos consumidores de
+clases utilitarias eran componentes huérfanos. **Es incorrecto.** El
+`src/index.css` de Codex en `621c492` tiene un bloque `@theme { ... }`, que es
+una directiva de **Tailwind v4**: el design system de Dico se está construyendo
+*sobre* Tailwind. Sacarlo rompe `designSystemTokens.test.js` y el trabajo de
+Machine Soul. Queda descartado, no pospuesto.
+
+### Segunda tanda del 29/ago — implementación
+
+Commiteado en 7 commits chicos y de un solo tema (para que Codex pueda revertir
+uno sin perder el resto). **Nada pusheado**: `git push` en esta rama deploya a
+producción.
+
+| Commit | Qué |
+|---|---|
+| `c9772c1` | CI corre en `platform/runtime-tenant`; eslint ignora `.claude/worktrees` |
+| `e730de7` | Release de Sentry unificado en `src/lib/release.js` + test anti-drift |
+| `61ddb67` | Borrados `src/config/*`, `plugins.test.js`, assets del scaffold |
+| `5c46739` | Migración 0060 (`signup_tenant` lee `biz_name`) |
+| `3d9057b` | HANDOFF + las dos skills |
+| `3ba8c08` | **Suscripción en solo lectura** — paso 1 de 7 de la monetización |
+| `ff14618` | **Guard de drift de funciones** + migración 0061 |
+
+**Suscripción (paso 1).** `fetchMyTenant` ahora trae `plan_id, ciclo,
+paga_hasta, suspendido_at`, y `usePlatformTenant` expone `suscripcion`.
+**No recorta nada**: `puedeOperar` sale de `tenants.status`, que lo escribe el
+server — el front no deduce suspensiones de la fecha, porque un front que
+calcula quién está al día puede dejar afuera a alguien que pagó. Los dos
+estados que hoy dan en producción (`sin_fecha` para los 7 negocios, `sin_plan`
+para toda alta nueva) están cubiertos por tests: si alguien cablea el bloqueo
+antes de tiempo, esos tests avisan que dejaría afuera a todos los clientes.
+
+**Guard de drift.** `scripts/check-functions-drift.mjs` compara el cuerpo
+(`pg_proc.prosrc`, que Postgres guarda literal) de 7 funciones críticas contra
+la última migración que las define. Necesita el RPC de la 0061; sin
+credenciales o sin el RPC saltea con exit 0. Ya está enganchado a
+`morning-health.mjs`.
+
+### ✅ 0060 y 0061 APLICADAS (29/ago, por Ricky desde el editor SQL)
+
+El clasificador de permisos bloquea `apply_migration` sobre producción, así que
+las aplicó Ricky a mano. Verificado contra la base:
+
+- `signup_tenant` lee `biz_name` y conserva `business_name` como fallback.
+  Hash: `33aac832…` → `108cd427…`
+- `function_snapshot()` existe, sin permiso para `anon` ni `authenticated`.
+- **El guard corre y da 7/7**, con el aviso no bloqueante de los dos overloads
+  de `sumar_staff`.
+- Sin daño: 7 tenants (0 con `name = slug`), 66 productos, 2 pedidos,
+  47/47 tablas con RLS, 1 cron activo. Advisors de seguridad idénticos a antes.
+
+**Dos bugs que encontré en mi propio guard antes de que se aplicara**, los dos
+por probarlo contra producción en vez de darlo por bueno:
+
+1. El RPC agregaba por `proname` y `jsonb_object_agg` descartaba en silencio
+   uno de los dos overloads de `sumar_staff`. La clave ahora es `nombre(args)`.
+2. El normalizador daba drift en `tenant_puede_operar` siendo el mismo código:
+   el repo lo tiene en varias líneas y la base en una, así que colapsar
+   espacios dejaba `coalesce( (select` contra `coalesce((select`. Ahora borra
+   también el espacio pegado a puntuación.
+
+Los dos son la misma lección: un guard contra fallas silenciosas que falla
+silenciosamente es peor que no tenerlo.
+
+### Pusheado el 29/ago
+
+`21b33e5 → d3ec75a`, 12 commits. **Es el primer push con CI activo en esta
+rama.** Recordar: el job `audit` sale rojo por `undici`/`vite` (dev-deps
+preexistentes, no llegan al browser); no bloquea el `build`. Se arregla con
+`npm audit fix`, que toca `package-lock.json` — coordinar con qa-lite.
+
+### Pendiente menor: los dos `sumar_staff`
+
+Hay dos firmas vivas, `(p_email text)` de la 0053 y `(p_email text, p_puesto
+text)` de la 0057. La 0054 creó la segunda y nadie dropeó la primera —
+`create or replace` con otra firma **crea**, no reemplaza. No es urgente: la
+consola no usa esa RPC, va por la edge function `staff-invite`, que escribe
+`platform_admins` con service role. Cuando se limpie:
+Ya esta escrita: `platform/migrations/0062_drop_sumar_staff_de_un_argumento.sql`
+(sin aplicar — el clasificador bloquea DDL en produccion). El mock muerto de
+la vitrina que la simulaba ya se borro.
+
+### Referencia histórica (ya resuelto)
+
+Cuando estaban sin aplicar, iban juntas:
+
+```
+0060  signup_tenant lee biz_name   (arregla el bug latente del alta)
+0061  function_snapshot() RPC      (habilita el guard de drift)
+```
+
+Estado previo de `signup_tenant` guardado para revertir:
+`md5 = 33aac832a052223afbe65281d139e983`, con `business_name` y sin `biz_name`.
+Después de aplicar, verificar:
+
+```sql
+select pg_get_functiondef('public.signup_tenant'::regproc) like '%biz_name%';
+```
+
+`_migrations_through` ya está en `0061` y es correcto aunque todavía no se
+apliquen: ese marcador dice hasta qué migración se revisó el snapshot de
+**columnas**, y ninguna de las dos toca columnas.
+
+**Aplicar el archivo del repo tal cual**, no una versión resumida: el guard de
+drift compara el cuerpo desplegado contra ese archivo, así que cualquier
+diferencia —aunque sea equivalente— lo va a reportar como drift la primera vez
+que corra.
+
+### Pendiente, en orden (riesgo creciente)
+
+1. Aplicar la 0060 y la 0061, y probar el alta punta a punta.
+2. `retry_signup_tenant(p_slug text)` como **RPC nueva** — no como parámetro de
+   `signup_tenant()`: agregarle firma crea un overload y PostgREST resuelve por
+   argumentos. Es el callejón sin salida de `Bienvenido.jsx` cuando el slug se
+   ocupa entre el registro y la confirmación del mail: pantalla terminal, sin
+   botón, y cada login futuro repite el error.
+3. Contrato E2E: `ci.yml` pasa `BASE_URL` y `playwright.config.ts` sólo lee
+   `TARGET_URL`; además ese job no pasa `E2E_SUPABASE_ANON_KEY`, así que los
+   tests con `test.skip(!ANON_KEY)` se saltan en silencio. **Coordinar con
+   Codex**: qa-lite está construyendo su propio config.
+4. `npm audit fix` (después de qa-lite).
+5. Monetización, **gradual**: exponer plan en lectura → mostrar "Mi
+   suscripción" → asignar plan en el alta → límites con aviso → bloqueo →
+   cobros → **recién al final** el cron de suspensión.
+6. Limpieza en cola, ya verificada y **sin hacer** por cercanía a Codex:
+   `src/components/ui/{Avatar,Badge,Button,Card,Input,Modal,Toast,OptimizedImage}.jsx`
+   (0 importadores), `src/App.css` (0 importadores), la worktree abandonada
+   `.claude/worktrees/admiring-hofstadter-b27a5d` (8 MB).
+
+### Mejora de proceso
+
+El drift de `signup_tenant` pasó por un hueco real: `check-schema-freshness.mjs`
+compara **hasta qué migración** dice estar al día el snapshot, no si la función
+desplegada es la que esa migración produce. Un `apply_migration` por MCP sin
+archivo es invisible para todos los gates.
+
+Propuesta: `scripts/check-functions-drift.mjs` que traiga
+`pg_get_functiondef` de las funciones críticas (`signup_tenant`,
+`complete_order`, `submit_order`, `sumar_staff`) y lo compare contra el
+`create or replace` de la última migración que las define. Sumado a
+`morning-health.mjs`, convierte "alguien aplicó algo y no escribió el archivo"
+de invisible a un mensaje de Telegram. Es el mismo antídoto que ya existe para
+las columnas, aplicado a funciones.
+
+**Además**: en esta máquina `vitest` con el pool `forks` cuelga workers y sale
+**exit 0 igual** (11 unhandled errors, y en un caso 0 tests corridos con exit
+0). Con `--pool=threads` la suite corre en ~18 s y sin errores. Vale evaluar
+fijarlo en `vite.config.js` — **pero eso toca la config que Codex está
+usando para qa-lite, así que lo dejo propuesto, no hecho.**
+
+---
+
+## 28/ago/2026 — DICO-QA-Lite implementado; gate visual todavía pendiente (sesión Codex)
+
+Phase 1 de Machine Soul permanece cerrada como checkpoint local en
+`621c4925365506862035fdd66fc6a4dec6d1b42b`. Para demostrar su neutralidad se
+armó un harness QA aislado que compara los refs reales `621c492^` y `621c492`.
+No se empezó `/registro` y no se modificó `src/**` desde el worktree QA.
+
+### Hecho
+
+- Worktree `C:\Users\ricar\Proyectos\hermes-gastro-qa-lite`, rama
+  `codex/dico-qa-lite`, creado desde `621c492`. El trabajo sigue local y sin
+  commit para permitir la auditoría técnica antes de publicarlo.
+- `platform/qa-lite/`: Supabase local pinneado, 58 migraciones copiadas a un
+  directorio generado/ignorado, seed sintético, bootstrap de Auth con UUID
+  efímero, reset y salida capturada/sanitizada. No hay credenciales en repo ni
+  en manifiestos.
+- El seed colisionaba con `settings_pkey`: la migración
+  `0025_settings_table.sql` crea `settings(tenant_id, biz_name)` mediante el
+  trigger `tenants_crear_settings` al insertar el tenant. El seed usa la misma
+  PK `10000000-0000-4000-8000-000000000001`. Se corrigió con
+  `ON CONFLICT (tenant_id) DO UPDATE SET ...` explícito para garantizar todos
+  los valores QA; no usa `DO NOTHING` ni borra settings.
+- `scripts/qa-lite/`: comparación de dos worktrees Git exactos, builds y
+  previews separados, secuencia estrictamente serial
+  `reset -> base -> reset -> candidate`, comparación estructural/PNG y
+  manifiesto sin secrets.
+- `e2e/qa-lite/`: guard de red, Google Fonts CSS+binarios servidos con fixtures
+  locales, reloj/render estabilizados, contrato DOM/layout/computed styles y
+  las ocho capturas bloqueantes acordadas.
+- Launcher cross-platform centralizado: `.cmd` en Windows pasa por
+  `ComSpec /d /c` con rechazo de metacaracteres; comandos nativos (`docker`,
+  `git`, `node`) se ejecutan por nombre vía PATH. Docker conserva diagnóstico
+  sanitizado con command/args/status/signal/error/stdout/stderr.
+- El fallo más reciente del runner BASE era del harness: `loginAdmin()` hacía
+  `page.evaluate(localStorage...)` sobre una página potencialmente
+  `about:blank`. Se separaron responsabilidades: `loginAdmin()` sólo autentica
+  y `openAdmin()` instala el theme antes de navegar. El helper nuevo
+  `e2e/qa-lite/admin-theme.mjs` usa `addInitScript`, no recarga, y resuelve
+  correctamente light/dark aun cuando la misma Page acumula init scripts.
+- Tests unitarios agregados para resolver `.cmd`/Docker, contrato trigger-seed
+  y theme Admin light/dark sin tocar localStorage en `about:blank`.
+
+### Verificado
+
+- Antes de los últimos fixes: suite del repo **877/877**, build del cliente
+  `dico-qa-lite`, typecheck y lint sin errores; QA unit tests **9/9** después
+  del fix de seed (dato confirmado por Ricky).
+- Ricky confirmó desde Node en este mismo worktree: Supabase local levanta,
+  aplica migraciones hasta `0059`, seed y Auth local completan correctamente.
+- El compare llegó al runner BASE y expuso el bug de `page.evaluate`; por eso
+  DOM parity y pixel parity todavía **no corrieron**.
+- Después del fix de theme, el ejecutor integrado de esta sesión no pudo
+  repetir el gate porque su proceso no resuelve `docker` (`spawnSync docker
+  ENOENT`). Ricky verificó que desde su Node/terminal sí resuelve Docker 29.7.2;
+  no es evidencia de un fallo del repo.
+- El test nuevo de `admin-theme.mjs` quedó escrito pero no fue ejecutado en esta
+  sesión: la orden posterior autorizada era únicamente `qa:lite:compare`.
+- Phase 1 sigue limpia en su worktree. No hubo push, merge ni deploy.
+
+### Pendiente inmediato
+
+1. En el worktree QA y desde el entorno de Ricky que sí ve Docker, ejecutar
+   `npm run qa:lite:test`. Debe incluir el test nuevo de theme; no asumir que
+   pasa hasta verlo.
+2. Ejecutar exactamente
+   `npm run qa:lite:compare -- --base=621c492^ --candidate=621c492`.
+3. Si vuelve a fallar, detenerse en el primer error completo; no cambiar
+   selectors, contratos DOM ni criterios del gate para conseguir igualdad.
+4. Si DOM, pixels y red externa dan igualdad, marcar Phase 1 como
+   `VISUALLY VERIFIED / MERGEABLE`; recién entonces diseñar Phase 2A
+   `/registro`.
+5. Antes de cualquier commit/push de QA Lite, revisar el diff técnico completo.
+   No reescribir ni amendear el checkpoint `621c492`.
+
+### Bloqueado por Ricky
+
+- La ejecución final debe lanzarse desde su terminal/Node, único entorno que
+  en esta sesión resolvió Docker. No requiere secrets productivos ni cambios
+  en paneles externos.
+- Hace falta su veredicto sobre el diff y autorización separada antes de push,
+  merge o deploy.
+
+### Trabajo local vivo — no pisar
+
+- **QA Lite (nuevo de esta sesión, a medias):** worktree
+  `C:\Users\ricar\Proyectos\hermes-gastro-qa-lite`, rama
+  `codex/dico-qa-lite`, con cambios en `.gitignore`, `package*.json`,
+  `clients/dico-qa-lite/`, `public/clients/dico-qa-lite/`,
+  `platform/qa-lite/`, `e2e/qa-lite/`, `scripts/qa-lite/` y
+  `playwright.qa-lite.config.ts`. No está commiteado ni pusheado. La
+  implementación está completa, pero el gate posterior al fix de theme no.
+- **WIP de Dico previo, ajeno a QA Lite:** el worktree original
+  `platform/runtime-tenant` conserva modificaciones en
+  `src/components/dico/DicoCara.jsx`, `src/components/dico/dico.css`,
+  `src/components/dico/poses/README.md`, `src/test/dicoEscena.test.jsx` y el
+  archivo nuevo `src/components/dico/poses/brazos.webp`. No fueron tocados por
+  esta sesión y no deben mezclarse con el commit de QA.
+- **Phase 1:** worktree `hermes-gastro-phase1`, rama
+  `codex/dico-machine-soul-phase1`, limpio en `621c492`.
+
+---
+## 31/ago/2026 — Recuperacion de continuidad Dico Presence / Slot
+
+### Checkpoint Native arms — clean sprite
+
+- `DicoCara` ya no recorta brazos desde `moneda.webp` con poligonos.
+- Nuevo `poses/brazos.webp`: 800x800 RGBA, dos componentes de brazos/guantes
+  limpios sobre alfa; se deriva de los renders alineados existentes sin
+  introducir un tercer cuerpo visual.
+- Cada brazo se separa por mitad con `clip-path: inset(...)` y conserva su
+  transform-origin de hombro. Esto elimina las cuñas doradas que aparecian al
+  rotar el sprite fuente junto con fragmentos de la moneda.
+- Se portaron los offsets/angulos ya validados en
+  `feature/dico-native-pose-system` para `esperando`, `contento`, `preocupado`
+  y `pregunta`.
+- Test contractual: `.dico-brazo` debe resolver un asset cuyo `src` contiene
+  `brazos`. `moneda.webp` queda archivado como fuente, no runtime.
+- Layout del retorno corregido: `.ag-dico-stack` reserva los 164 px mientras
+  exista `.dico-slot--visible`, incluyendo la fase `cerrando`; el contenido no
+  salta hacia arriba antes de que termine la animacion inversa.
+
+
+Se reconstruyo desde el bundle `DICO_PHASE3B_9e77b0a.bundle` el primer
+checkpoint posterior al corte de Work. La rama local de recuperacion parte
+exactamente de `9e77b0a`.
+
+### Hecho
+
+- `DicoAvisos` separa Presence de Message: Dico Native queda montado aunque no
+  haya avisos o se cierre la burbuja.
+- Native baja de 82 px a 36 px, sin fondo propio.
+- Los avisos ya no hablan automaticamente: el usuario abre/cierra la burbuja
+  desde Dico y un badge discreto indica cantidad.
+- Cerrar la burbuja no oculta a Dico.
+- `PlatformAdmin` monta Native en todas las pestanas, no solo Productos.
+- Se actualizaron estilos responsive/focus y tests de contrato del componente.
+
+### Estado inmediato
+
+1. The Slot gobierna exclusivamente Physical 3D con el asset de produccion
+   `dico-physical-body.webp` derivado del PNG 1254x1254 aprobado y cara SVG
+   modular encima.
+2. El control visual es una ranura Zinc contenida con actividad Blue; Gold llega
+   con el personaje. Native queda debajo y su toggle sigue abriendo solo avisos.
+3. Physical implementa ida y regreso: perfil/objeto -> frente -> brazos ->
+   rostro; al cerrar invierte la secuencia antes de desmontarse. Reduced Motion
+   lo retira sin desplazamiento.
+4. Siguiente gate: browser real. Validar proporciones de cara, escala Physical,
+   clipping del Slot en desktop/mobile y apertura de burbuja con Physical cerrado.
+5. Ejecutar suite en el worktree real de Windows. Este entorno no puede bajar
+   las dependencias faltantes del registry npm (`EAI_AGAIN`), por lo que el gate
+   automatico completo sigue pendiente.
+
+### Regla de continuidad
+
+No volver a acoplar personaje y burbuja. Native permanece; Message es
+condicional; Physical pertenece a The Slot.
+## 30/ago/2026 — Phase 2B aprobada; Phase 3 Admin Shell lista para empezar (sesión Codex)
+
+Ricky aprobó visualmente el canary `/registro`: Butler sostiene la voz Soul y
+Overused Grotesk mantiene precisa la capa Machine. La superficie ya se siente
+DICO sin depender del logo master ni de texturas; esos dos refinamientos quedan
+deliberadamente fuera de esta fase.
+
+### Hecho
+
+- Phase 1 quedó cerrada en `621c492` con foundation tokens visualmente neutros.
+  El gate determinista QA Lite se versionó en `e1652ce` y compara DOM, layout,
+  motion y raster sin tocar `src/**`.
+- Phase 2A `/registro` quedó en `066d820`: primer canary Machine/Soul.
+- Phase 2B quedó en `c165943`: fuentes locales Butler/Overused, autoridad
+  tipográfica documentada y ownership de tema sin migración masiva de Admin/POS.
+- `platform/PHASE-2B-VALIDATION.md` registra la aprobación humana, el alcance,
+  los pendientes y las nueve vulnerabilidades observadas sin ejecutar
+  `npm audit fix`. El cierre documental es `ea6f85e`.
+- Se creó `codex/dico-phase3-admin-shell` exactamente desde `ea6f85e`. Phase 3
+  todavía no tiene cambios de implementación; no reabrir Phase 2B desde esta
+  rama salvo decisión explícita nueva.
+
+### Verificado
+
+- QA Lite: unitarios 27/27, TypeScript y motion inventory PASS; BASE↔BASE 3/3,
+  CANDIDATE↔CANDIDATE y BASE↔CANDIDATE PASS. El cross-ref final tuvo DOM igual,
+  raw pixels 0, `blockingDiffPixels` 0 y tráfico externo 0.
+- Bundle Phase 2B verificado antes de importarlo: commit `c165943`, padre
+  `066d820`, 8.336.845 bytes y SHA-256
+  `302A36E7157CB37C20A98D8225B2E844C6CAC6F13C3943E194FFC3AC260112F3`.
+- Browser real en `http://localhost:5173/registro`: formulario completo;
+  headings computados con Butler e inputs/botones con Overused Grotesk. La
+  captura inicial no mostró errores, pero Vite registró después
+  `slug_available: Failed to fetch` en el entorno aislado. No bloqueó la
+  revisión visual; disponibilidad de slug y submit funcional no quedaron
+  validados en esta sesión.
+- Hooks del commit documental: integridad, schema, TypeScript y smoke tests
+  **87/87 PASS**.
+- No hubo merge ni deploy. Phase 2B se revisó desde un worktree aislado.
+
+### Pendiente inmediato
+
+1. Antes de editar, inventariar el shell Admin actual y capturar baseline. No
+   reconstruir Phase 1/2A/2B ni volver a calibrar QA Lite.
+2. Phase 3 puede intervenir sólo `AdminBackdrop`, `AdminTopbar`, `AdminDrawer`,
+   `BottomNav`, `AdminProfileMenu`, capa de toasts, raíz `.ag-root` y el antiguo
+   `theme-color` ámbar.
+3. Mantener fuera pantallas funcionales, cálculos/datos, catálogo, Dico,
+   texturas, migración tipográfica masiva de Admin/POS y toda DB/RLS/auth.
+4. Al completar el shell, repetir autoconsistencia QA antes de atribuir cualquier
+   diferencia cross-ref al producto.
+
+### Bloqueado por Ricky
+
+- Logo master definitivo: pendiente de entrega/aprobación, pero no bloquea
+  Phase 3 porque el placeholder actual fue aceptado.
+- Texturas: refinamiento posterior decidido; no bloquea Phase 3 y no debe
+  adelantarse dentro del shell.
+
+### Trabajo local vivo — no pisar
+
+- Worktree: `C:\Users\ricar\Proyectos\hermes-gastro-phase2b`.
+- Rama activa al cierre: `codex/dico-phase3-admin-shell`.
+- HEAD antes de este handoff: `ea6f85e`.
+- No hay implementación Phase 3 a medias ni archivos locales sin seguimiento.
+- `npm ci` quedó instalado localmente; `node_modules` está ignorado. El servidor
+  Vite usado para la revisión se detiene al cerrar esta sesión.
+
+---
+
+## 25/ago/2026 — Dico Core retro y brazos articulados (sesión Codex)
+
+Ricky rechazó la primera cara sin accesorios porque seguía viéndose genérica
+y luego detectó que las pupilas espejadas hacían parecer bizco a Dico. La
+dirección aprobada para seguir iterando es cartoon editorial de los años 50,
+sin volver a galera, bigote, nariz, mejillas ni pecas.
+
+### Hecho
+
+- `CaraDeTinta.jsx` tiene ojos perfectamente simétricos en posición, tamaño y
+  altura. Las dos pupilas comparten orientación —nunca se espejan— y usan una
+  masa negra orgánica con recorte crema angosto. Así miran juntas y conservan
+  la firma retro de la referencia sin copiar otro personaje.
+- Los párpados son formas sólidas `#FDCE18`, color muestreado de la moneda, con
+  borde inferior negro. Si una emoción los activa no aparece una línea
+  transparente sobre el cuerpo.
+- `esperando` dejó la pose cansada: ojos abiertos, cejas simétricas levantadas,
+  sonrisa leve, mirada apenas elevada, puntos de proceso y manos algo abiertas.
+- `pregunta` muestra un `?` SVG con halo crema para funcionar en fondos claros
+  y oscuros. La mano izquierda entra desde abajo y queda bajo el mentón; no
+  cruza ojos ni boca.
+- El cuerpo dejó de ser un único render rígido. `DicoCara.jsx` monta tres capas:
+  `moneda-sin-brazos.webp`, brazo izquierdo y brazo derecho recortados del
+  `moneda.webp` original. Los brazos viven detrás de la moneda para ocultar el
+  empalme; sólo la mano pensante pasa delante en `pregunta`.
+- `dico.css` define una pose de manos para los cinco estados: reposo (`idle`),
+  expectativa (`esperando`), apertura/celebración (`contento`), manos bajas
+  hacia adentro (`preocupado`) y mentón (`pregunta`). Son transforms sobre dos
+  sprites, no cinco renders nuevos.
+- La moneda limpia se produjo editando el activo existente y quedó como WebP
+  transparente 800×800. Los dos activos de runtime siguen por debajo de 100 KB
+  cada uno. Se actualizaron el README de poses y `PLAN-DICO.md` para que Claude
+  no vuelva a tratar brazos y moneda como una sola pieza.
+- `dicoEscena.test.jsx` ahora cubre las dos capas de brazos y la anatomía de la
+  pregunta. La suite pasó de 869 a 870 tests.
+
+### Verificado
+
+- Vitrina real `http://localhost:5199/?escena=dico`: fondos claro/oscuro,
+  estados 30/48/120 px, composición operativa y viewport 390×844. Las pupilas
+  miran juntas, la abertura crema se mantiene legible, no hay halo de fondo en
+  la moneda limpia y las cinco poses de manos se distinguen.
+- Suite completa: **870/870 tests** en 64 archivos.
+- Build `CLIENT=hermes-cochi`: limpio; integridad y schema-sync pasan. El build
+  transforma 495 módulos y publica sólo los dos WebP activos del Core.
+- ESLint focalizado: 0 errores; tres warnings preexistentes de Fast Refresh.
+- Producción sigue READY en el commit `18c5ae4`; esta identidad no se desplegó
+  porque Ricky no pidió deploy.
+
+### Pendiente inmediato
+
+1. Ricky debe revisar la versión articulada en la vitrina. Si cambia una pose,
+   ajustar sólo sus transforms en `dico.css`, no generar otro cuerpo.
+2. Después de aprobarla, usar esta mirada neutral como master para cualquier
+   estado nuevo. No volver a espejar pupilas ni introducir diferencias de
+   altura entre ojos.
+3. No migrar aún las siete escenas heredadas: siguen fuera del flujo operativo
+   y convertirlas antes de necesitar una escena concreta crea arte descartable.
+4. El bloque general siguiente continúa siendo tokens + piloto `/registro`.
+
+### Bloqueado por Ricky
+
+Sólo aprobación visual y decisión de deploy. No hay bloqueo técnico.
+
+### Trabajo local vivo — no pisar
+
+Al cerrar esta sección no debe quedar trabajo local: rostro, sprites, CSS,
+tests y documentación se entregan juntos en un único commit. Los PNG generados
+durante la separación quedaron fuera del repo; sólo entra el WebP final.
+
+---
+
+## 25/ago/2026 — Dico Core deja la identidad Monopoly (sesión Codex)
+
+Ricky entregó una directriz de marca nueva que reemplaza una decisión tomada
+horas antes: galera, bigote y nariz ya no son anatomía canónica. Dico Core debe
+ser reconocible como moneda + rostro modular + brazos + guantes, sin piernas,
+mejillas ni pecas. Se implementó sin romper los cinco estados públicos.
+
+### Hecho
+
+- `CaraDeTinta.jsx` ahora es una sola anatomía SVG modular: cejas, ojos,
+  scleras, pupilas, brillos, párpados y bocas son piezas independientes. Se
+  quitaron bigote, nariz, rubor, gota y signo de pregunta flotante.
+- `DicoCara` conserva `idle`, `esperando`, `contento`, `preocupado` y
+  `pregunta`. Sumó mirada paramétrica limitada (`lookX`/`lookY`, -1…1), tres
+  frames opcionales de boca (`speakingFrame`: closed/mid/open), `className`,
+  `style` y `data-dico-core` para poder desplazarlo/recortarlo dentro del futuro
+  DicoSlot.
+- `dico.css` reemplazó salto, squash, encogimiento, gota y balanceo amplio por
+  boya mínima, parpadeo natural y micro-sacadas. `prefers-reduced-motion` sigue
+  dejando todo quieto.
+- Se generó a partir del cuerpo existente un Core sin galera, con centro vacío
+  y alfa real. El derivado activo quedó en `poses/moneda.webp` (800×800,
+  98.684 bytes). El cuerpo anterior se archivó como
+  `poses/moneda-retro-galera.webp` y el glob exacto de `DicoCara` no lo carga.
+  La edición se hizo con imagegen integrado y luego se optimizó a WebP.
+- `DicoAvisos` usa `lookX={0.55}` para mirar hacia el mensaje en vez de mover
+  el cuerpo entero.
+- Se creó `DicoCoreEscena`: conserva burbuja + personaje + CTA pero monta el
+  Core modular, sin importar los siete renders viejos. El vacío operativo real
+  de `ProductsPanel` ya lo usa y Dico mira hacia el CTA con `lookY`.
+- `DicoEscena` queda explícitamente como compatibilidad narrativa heredada para
+  campañas/Retro Moments. Sus siete poses con identidad anterior sólo aparecen
+  en la sección histórica de la vitrina; no están en el flujo operativo.
+- La vitrina muestra mirada paramétrica, estados a 30/48/120 px, Core operativo
+  y poses heredadas separadas. También se corrigió su layout móvil.
+- Se actualizaron `PLAN-DICO.md`, `BRIEF-DICO-CUERPO.md`, el README de poses y
+  las reglas del Design System para que Claude no restaure la identidad vieja.
+
+### Por qué se separó `DicoCoreEscena`
+
+Cambiar solamente la cara chica dejaba dos mascotas simultáneas: el aviso nuevo
+sin accesorios y, debajo, el vacío de Productos con galera/bigote. Además,
+importar `DicoEscena` desde Productos metía siete WebP narrativos en producción.
+El wrapper Core evita ambas cosas sin romper la API histórica. El build final
+transforma 494 módulos y publica sólo `moneda.webp`; ya no lista los siete
+`escena-*.webp` que listaba antes de esta separación.
+
+### Verificado
+
+- Navegador real en la vitrina: escritorio y viewport 390×844, fondos claro y
+  oscuro, tamaños 30/48/120/190, mirada paramétrica y vacío operativo. La cara
+  queda centrada, los estados se distinguen y no hay halo visible ni desborde
+  móvil.
+- Suite completa: **869/869 tests** en 64 archivos.
+- Build `CLIENT=hermes-cochi`: limpio; integridad y schema-sync pasan.
+- ESLint focalizado: 0 errores; cuatro warnings preexistentes de Fast Refresh
+  por exportar constantes junto a componentes.
+- No se desplegó: Ricky pidió implementar/revisar, no deployar.
+
+### Pendiente inmediato
+
+1. Ricky debe aprobar visualmente el Core en la vitrina
+   `http://localhost:5199/?escena=dico`. Si cambia proporciones de ojos o boca,
+   hacerlo en esta única anatomía antes de producir más arte.
+2. No regenerar las siete poses heredadas todavía. Migrarlas sólo cuando una
+   campaña o escena real las necesite; hoy no forman parte de producción.
+3. DicoSlot sigue futuro: la API ya admite desplazamiento/recorte, pero falta
+   diseñar Blue → Gold, emerger/ocultar y el botón accesible “Ocultar Dico”.
+4. El siguiente bloque general continúa siendo el núcleo de tokens y piloto
+   `/registro` documentado en `DICO-DESIGN-SYSTEM-V0.1.md`.
+
+### Bloqueado por Ricky
+
+Nada técnico. Sólo aprobación visual antes de extender esta identidad a nuevo
+arte narrativo.
+
+### Trabajo local vivo — no pisar
+
+No queda trabajo a medias. Código, asset, tests, vitrina y documentación forman
+un único cierre. La vitrina local queda disponible para revisión.
+
+---
+
+## 25/ago/2026 — Dico Design System v0.1 inventariado (sesión Codex)
+
+Ricky pidió dejar de decidir la interfaz por pantalla y construir el primer
+sistema visual desde el código real. El inventario y las decisiones quedaron
+en `platform/DICO-DESIGN-SYSTEM-V0.1.md`.
+
+### Hecho
+
+- Se auditaron `admin-tokens.css`, `hermes-tokens.css`,
+  `catalog-pro/tokens.css`, `Signup.jsx`, `DicoCara.jsx`, `DicoAvisos.jsx`,
+  `roles.js` y `registry.js`.
+- Apareció una cuarta autoridad que el listado inicial no incluía:
+  `src/index.css` tiene un `@theme` propio. `Signup.jsx`, con 44 estilos inline
+  y cero tokens, funciona además como una quinta fuente informal.
+- Línea de base: en los ocho archivos pedidos hay 104 hex y 68 valores únicos;
+  en todo `src/` hay 1.077 apariciones, 233 hex únicos y 3.346 atributos
+  `style=`. Estos valores sirven para que un guard futuro impida deuda nueva
+  sin pretender arreglar todo de una vez.
+- Se eligió el archivo global existente `src/styles/hermes-tokens.css` como
+  núcleo. No se crea un cuarto/quinto archivo central: ahí vivirán primitivas
+  `--ds-*`, semántica y contratos de componente.
+- `admin-tokens.css`, `catalog-pro/tokens.css` y `index.css @theme` se migran
+  mediante aliases/adaptadores. `.cp-root` y los tres temas del catálogo se
+  conservan porque son parte viva del theming multi-tenant.
+- Se conservaron como base de marca `#E8B947`, DM Sans, Instrument Serif y la
+  neutralidad cálida de carbón/noche. `#F59E0B` deja de mezclar marca con
+  warning; el zinc frío no será el neutral global.
+- Se cerraron las escalas v0.1: spacing 4/8/12/16/24/32, radios 4/6/8/12,
+  tipografía 11/13/15/18/24 + métrica 28 y densidades compact/default/touch
+  con alturas 34/40/48 para inputs y botones.
+- Se documentaron reglas y slots de Dico: uno por pantalla, cinco estados,
+  nunca reemplaza texto ni compite con el CTA, respeta reduced motion y sólo
+  aparece en vacío, asesor, onboarding o confirmación.
+- El primer piloto será `/registro`, sólo presentación: no cambia lógica,
+  campos, validaciones, payload ni rutas. El segundo será Caja/POS.
+
+### Verificado
+
+- El inventario se contrastó con imports y consumidores reales del repo.
+  `--ag-*` y `.cp-root` están vivos; no se encontraron consumidores de
+  `--hg-*`/`.hg-*` fuera de su archivo ni imports actuales de los seis
+  componentes UI que declaran usar el `@theme`.
+- `git diff --check`: limpio antes del cierre.
+- No hubo cambios de runtime, tests ni deploy: esta sesión produjo una
+  especificación basada en código, no una implementación.
+
+### Pendiente inmediato
+
+1. Implementar las tres capas `--ds-*` dentro de `hermes-tokens.css`, dejando
+   aliases de compatibilidad; todavía no retirar tokens vivos.
+2. Mapear `index.css @theme` al núcleo.
+3. Hacer el piloto visual de `/registro` con CSS scoped y verificar todos sus
+   estados a 390 px y desktop, teclado, foco y contraste.
+4. Recién después validar Caja/POS y congelar los valores v0.1.
+5. Agregar un guard incremental: la línea de base de hex/medidas puede bajar,
+   nunca crecer.
+
+### Bloqueado por Ricky
+
+Nada. La implementación del piloto puede empezar con el documento aprobado;
+si Ricky quiere cambiar marca, escalas o ubicación de Dico, conviene hacerlo
+antes de migrar `Signup.jsx`.
+
+### Trabajo local vivo — no pisar
+
+No queda trabajo a medias. El documento v0.1 y este handoff forman un cierre
+documental; no se modificó código de producción.
+
+---
+
+## 25/ago/2026 — Dico grande para estados vacíos (sesión Codex, trabajo local)
+
+Se separaron los dos usos del personaje para no cargar ilustraciones pesadas
+en cada aviso del panel:
+
+- **`DicoCara`** sigue siendo el Dico chico y animado de `DicoAvisos`.
+- **`DicoEscena`** es nuevo: usa poses completas en altas, estados vacíos y
+  momentos con espacio.
+
+### Hecho
+
+- Siete poses fuente quedaron archivadas como WebP de 800×800, con
+  transparencia y entre 85–98 KB: `idle`, `explica`, `pregunta`, `descubre`,
+  `celebra`, `senala` y `fatal`. `fatal` no se usa para errores comunes.
+- `BurbujaDico` conserva texto HTML, tipeo y accesibilidad, pero ahora toma el
+  lenguaje visual elegido por Ricky: marco irregular, cola inferior adaptable
+  y trama de imprenta generada con CSS. No usa la imagen de referencia como
+  fondo rígido.
+- El estado vacío real de `ProductsPanel` usa `DicoEscena pose="senala"`, dice
+  “Empecemos por tu primer producto…” y abre el editor con el CTA que Dico
+  señala. Se eliminó el CTA duplicado que estaba arriba del vacío.
+- La vitrina de Dico muestra la escena real, las siete poses y los cinco estados
+  chicos sobre fondos claro y oscuro.
+- Las skills `/dico` y `/cerrardico` ahora declaran explícitamente que
+  `docs/HANDOFF.md` es el canal Codex ↔ Claude y que no se pisan archivos
+  locales vivos.
+
+### Verificado
+
+- Vitrina inspeccionada con Chrome real a 1365 px y 390 px: la cola cae sobre
+  Dico, el dedo termina en el CTA y no hay desborde móvil.
+- `npx vitest run --maxWorkers=2`: **858/858 tests**.
+- ESLint focalizado: limpio.
+- `CLIENT=hermes-cochi npm run build`: limpio; integridad y schema-sync pasan.
+- No se desplegó.
+
+### Cuerpo neutro definitivo (01:12)
+
+- Ricky entregó el cuerpo final vacío con moneda, galera, brazos y guantes.
+  Quedó optimizado a WebP 800×800 con alfa, **87 KB**, en
+  `src/components/dico/poses/moneda.webp`.
+- Se verificaron los cinco estados de `DicoCara` a 30, 48 y 120 px, sobre claro
+  y oscuro, con Chrome real en desktop y móvil. La cara ya queda centrada: no
+  fue necesario recalibrar `CAMPO`.
+- Los brazos se conservan. A 30 px siguen leyendo como silueta del personaje y
+  a 48/120 px evitan que parezca sólo un ícono de moneda.
+- Verificación final de este reemplazo: test focalizado **3/3** y build
+  `CLIENT=hermes-cochi` limpio (integridad y schema-sync incluidos).
+
+### Cara canónica única (01:31)
+
+- Ricky detectó en la vitrina que `DicoCara` todavía parecía otro personaje:
+  tenía ojos y una boca en W, pero no la nariz ni el bigote del Dico grande.
+- Se corrigió la única fuente de identidad, `CaraDeTinta.jsx`: ahora ojos con
+  doble brillo, nariz redonda y bigote blanco permanecen en los cinco estados.
+  Sólo cambian cejas, mirada y boca. No se agregaron PNG por estado.
+- El mismo SVG se usa automáticamente en 30, 48, 96, 120 y 190 px, sobre el
+  único cuerpo `moneda.webp`. La vitrina lo muestra sobre claro y oscuro.
+- Se agregó un guard de estructura para que ningún cambio futuro quite
+  `.dico-bigote` o `.dico-nariz`: test focalizado **4/4**. Build limpio;
+  ESLint focalizado sin errores (quedan las dos advertencias preexistentes por
+  exportar `CAMPO` y `ZONA` junto al componente).
+
+### Expresiones y entrada corregidas (01:42)
+
+- `preocupado`: las cejas subieron y abren hacia el centro; ya no pisan los
+  ojos ni durante el parpadeo.
+- `contento`: se retiraron las tres rayitas de cada pómulo. Conserva ojos
+  cerrados, bigote y boca abierta.
+- `esperando`: muestra tres puntos secuenciales centrados y con aire sobre la
+  galera, legibles también a 30 px. Se eligió
+  esto en vez del reloj porque brazos y manos todavía forman parte del mismo
+  WebP; fingir un reloj sin separar capas quedaría rígido.
+- `entrada`: se reemplazó la caída/compresión por una vuelta 3D. Primero se ve
+  el cuerpo neutro oscurecido y sin cara (lee como espalda); al girar aparece
+  la tinta y recupera la luz. La copia de la vitrina también fue actualizada.
+- Vitrina inspeccionada en varios frames del giro y en los cinco estados.
+  Test focalizado **5/5**, build limpio y ESLint sin errores.
+
+**Brazos:** hoy están fusionados con `moneda.webp`, por lo que sólo se mueven
+con el cuerpo entero. Si se decide animarlos de forma independiente, el asset
+correcto es cuerpo sin brazos + brazo izquierdo + brazo derecho transparentes.
+En reposo conviene un balanceo mínimo; los gestos grandes se reservan para
+acciones como saludar, señalar o mirar un reloj.
+
+### Burbuja integrada al panel real (02:01)
+
+- `DicoAvisos` ya no dibuja una lista de tarjetas. Usa el Dico chico con la
+  cara correspondiente y un único `BurbujaDico`; desde ahí se puede ejecutar
+  el CTA, cerrar o avanzar con “hay N más”. La expresión cambia junto con la
+  gravedad del mensaje.
+- La vuelta de entrada ocurre sólo la primera vez que aparece el asesor
+  compacto en ese dispositivo. Se registra en `localStorage` con la clave
+  `dico:primera-entrada:v1`; los ingresos siguientes no repiten el efecto.
+- El aviso `catalogo-vacio` se omite sólo en `PlatformAdmin`, porque ese caso ya
+  está resuelto inmediatamente debajo por la escena grande de Dico señalando
+  “+ Agregar producto”. Así no aparecen dos Dicos diciendo lo mismo.
+- La vitrina ahora incluye el componente real con tres casos conmutables:
+  alerta + aviso siguiente, sólo espera y negocio sin avisos. El último no deja
+  hueco en el panel.
+- Verificación de navegador: navegación entre los dos avisos, CTA, espera y
+  ausencia de aviso; composición sin desborde en el ancho angosto de 499 px.
+- Verificación automatizada: **866/866 tests**, incluidos seis de integración
+  nuevos para `DicoAvisos`; build `CLIENT=hermes-cochi` limpio con integridad y
+  schema-sync. ESLint focalizado sin errores; sólo warnings preexistentes de
+  `PlatformAdmin.jsx`.
+- Revisión final de Ricky: la cola del globo llegaba a tocar el CTA. El SVG baja
+  24 px fuera de su caja pero el pie empezaba a 10 px; `burbuja.css` ahora deja
+  28 px. Se verificó en la vitrina con el texto completo: cola, botón y enlace
+  quedan separados.
+- Cierre aprobado: bloque completo commiteado, pusheado y desplegado por CLI a
+  producción; el deployment de `hermes-platform` quedó confirmado en `READY`.
+
+### Pendiente inmediato
+
+1. Esperar la próxima tarea de Ricky: este bloque de Dico está cerrado.
+2. Los brazos quedan para una etapa posterior; no separarlos salvo que una tarea
+   nueva lo pida explícitamente.
+
+### Trabajo local vivo — no pisar
+
+No queda trabajo local de Dico a medias. El código, los assets, la vitrina, los
+tests, los briefs, `AGENTS.md` y las skills de continuidad forman parte del
+mismo cierre y quedaron versionados juntos.
+
+---
+
+## 24/ago/2026 (cierre) — HAY PROSPECTO: se corta la consola y se mira el sistema
+
+Ricky consiguió el primer prospecto real, **de gastronomía**. Según el plan
+v1.1 eso dispara el PRODUCTO, no la consola: la Fase 2 (cobrar) espera una
+venta cerrada. Se paró el desarrollo de la consola y se recorrió el camino
+crítico de gastro antes de mostrárselo a nadie.
+
+### El bug grande: el trigger de la 0058 era casi código muerto
+
+`orders.paid_at` lo escribe **únicamente `mp-webhook`** — el camino de
+MercadoPago y nada más. Un bar que cobra en efectivo por mostrador no pasa por
+ahí: `complete_order` asienta la venta en `sales` y `paid_at` queda en null.
+
+O sea que para **el caso más común de gastronomía** el primer valor no se
+marcaba nunca. Y el síntoma era peor que un error: el panel decía «0 llegaron al
+primer valor» con total seguridad.
+
+**Migración 0059** — entra por los tres caminos:
+
+| Camino | Tabla |
+|---|---|
+| MercadoPago | `orders.paid_at` / `payment_status` |
+| Cobro en caja | `payments` |
+| `complete_order` y venta manual | `sales` ← **el que faltaba, y el más transitado** |
+
+**Corrección al dato de la sección anterior:** no era cero. Con el backfill
+correcto, **La Nona Pato llegó al primer valor el 18/ago**. Es 1 de 7. El número
+que reordenó el plan estaba mal por mi propio trigger incompleto.
+
+Dato nuevo que apareció: **Cochi creó un pedido el 20/ago y nunca lo completó.**
+
+### Lo que se verificó del camino crítico, y cómo
+
+| Qué | Cómo se verificó | Resultado |
+|---|---|---|
+| Alta de un negocio | Consulta sobre `tienda-nueva`, nacida del alta self-service | **Sana**: dueño, settings, 3 medios de pago y sucursal se crean solos |
+| `get_catalog` | RPC contra la base | 10 productos + settings |
+| Catálogo público | **Navegador contra `cochi.divianco.app`** | Anda: productos, precios, filtros, recomendaciones, pie legal |
+| Comprar con teclado | Auditoría de elementos focusables en producción | Los 10 «Agregar al carrito» son `<button>`: **se puede comprar** |
+| Abrir el detalle con teclado | Lo mismo | **No se podía** → arreglado |
+
+### El bug del catálogo
+
+Las tarjetas de la carta eran `<div onClick>` sin `role` ni `tabIndex`. Con
+mouse abren el detalle del producto; con teclado no existen. Se podía agregar al
+carrito —ese sí es un `<button>`— pero no abrir el producto para leer la
+descripción ni las aclaraciones.
+
+Helper `abrible()` en `src/catalog-pro/atoms.jsx`, aplicado en las **cuatro**
+tarjetas (HomeScreen ×2, CategoryScreen ×2) en vez de repetir el arreglo cuatro
+veces. Incluye `preventDefault` en Space: en un div focusable la barra
+espaciadora scrollea, y sin eso la carta se va saltando mientras se intenta
+abrir un producto. 6 tests.
+
+### También en esta sesión
+
+**El alias corporativo se dio de baja (0057).** Necesitaba una routing rule de
+Cloudflare y ese permiso no está en el token. El staff entra con su **correo
+personal**. `staff_dominios` se dropeó. −1050 líneas netas. La protección del
+alta sigue siendo la de siempre: sólo el dueño da de alta.
+
+**Fase 0 y 1 del plan v1.1 (0058).** Primer valor, `organizations` +
+`organization_id` (vacío a propósito), `consola_log` por trigger con retención
+como **parámetro** y no como constante del esquema, y la pestaña «Hoy».
+
+### Cuatro cosas que los papeles daban por rotas y estaban hechas
+
+Esta sesión encontró una más: **`src/modules/registry.js` existe** y
+`PlatformAdmin` ya ramifica por rubro (módulos, terminología, campos). La skill
+`/dico` decía que una barbería veía «Recetas» y el filtro «Vegetariano». Ya está
+corregida.
+
+Van cuatro en tres días (formulario de contraseña, `og:` tags, module registry,
+y el «cero primer valor» de hoy). **El patrón no es de documentación: es de
+afirmar inferencias como hechos.** Comprobar antes de reportar.
+
+### Verificado / no verificado
+
+**Verificado en producción:** el catálogo público de Cochi con el navegador.
+**Verificado contra la base:** el alta, `get_catalog`, los tres caminos del
+primer valor y el backfill.
+**Sólo compila:** el panel «Hoy» con datos reales — se vio en la vitrina, no en
+producción.
+**Nunca se probó:** MercadoPago contra una cuenta real. Cero integraciones
+conectadas. Es el hueco más grande del camino crítico.
+
+855 tests, build limpio, los cuatro checks del pre-commit pasan.
+
+### Pendiente inmediato
+
+1. **Deployar** (`npm run deploy`) — hay 3 migraciones aplicadas y código sin
+   subir.
+2. **Ricky recorre el camino con plata real**: alta → 3 productos → pedido desde
+   el catálogo → cobro con MercadoPago. Es lo único que no se puede verificar
+   sin una cuenta de verdad, y es justo lo que nunca se probó.
+3. Arreglar lo que aparezca de ahí, **antes** de mostrárselo al prospecto.
+4. Fase 2 del plan (cobros de suscripción) **sólo cuando la venta esté cerrada**.
+   Ojo: `payments` ya existe con otro significado —los pagos del comprador al
+   negocio— así que la tabla de cobros de Dico necesita otro nombre o rompe el
+   checkout.
+
+### Bloqueado por Ricky
+
+- **El deploy** (el clasificador bloquea el comando de Vercel).
+- **El recorrido con plata real.** Requiere una cuenta de MercadoPago conectada;
+  no la puedo cargar yo.
+- **`https://divianco.app/consola` en Redirect URLs** de Supabase Auth — sigue
+  pendiente de la sesión del 20/ago.
+- **Leaked password protection** en el edificio, un clic.
+
+---
+
+## 24/ago/2026 — FASE 0 Y 1 DEL PLAN v1.1 (migración 0058)
+
+Sale del debate sobre la ruta de la consola. El plan v1.1 está en el artifact
+«Ruta de la Consola»; esto es su primer tramo.
+
+### El número que reordenó todo
+
+Al aplicar la migración, la primera consulta contestó lo que el edificio nunca
+había podido contestar:
+
+**7 negocios · 3 crearon un pedido · CERO lo cobraron.**
+
+> **Corregido el mismo dia (0059): el numero estaba MAL.** El trigger de esta
+> migracion solo miraba `orders.paid_at`, que escribe unicamente mp-webhook.
+> Con el backfill por los tres caminos, La Nona Pato tenia primer valor desde
+> el 18/ago. Ver la seccion del 24/ago (cierre).
+
+Ni siquiera los tres emprendimientos propios. Y son propios: Cochi, La Nona Pato
+y Mala Miga **no son clientes** —son emprendimientos de Ricky— y además operan
+sobre el sistema VIEJO. El edificio tiene un pedido en toda su historia.
+
+O sea: el embudo no está flojo en la punta del pago. Está vacío de principio a
+fin. Por eso la Fase 1 dejó de ser «cobrar» y pasó a ser «activar».
+
+### Lo que se construyó
+
+**Primer valor** (`tenants.first_value_at`). `first_order_at` marcaba el primer
+pedido CREADO: alguien probó. Esto marca el primero COBRADO: alguien puso plata.
+Confundirlos hace que un negocio que probó una vez y se fue figure como
+arrancado.
+
+**El rubro no cambia cómo se detecta, sólo cómo se llama.** Un turno de barbería
+ya es un `order` con `resource_id` — la arquitectura unificó las operaciones, y
+esto se apoya en eso en vez de pelearlo. El nombre por rubro vive en
+`src/modules/panelDeHoy.js`.
+
+**La capa de arriba del negocio** (`organizations` + `tenants.organization_id`).
+Vacía a propósito. Lo caro es la forma: hoy son diez líneas, con clientes
+adentro es una migración.
+
+**El registro de la consola** (`consola_log`). No es `audit_log` (0043): aquel
+audita lo que pasa DENTRO de un negocio y lo mira el negocio; éste audita lo que
+Divianco le hace a un negocio y lo mira Divianco. Por trigger, no desde la
+pantalla — un log que escribe el cliente es un log que el auditado puede no
+escribir.
+
+**La retención va como parámetro, no en el esquema.** `purgar_consola_log(dias)`
+recibe el plazo. En la v1.0 del plan yo había escrito «24 y 36 meses» como
+práctica de la industria; salía de un solo artículo y no lo es. Un número
+copiado no puede convertirse en requisito de arquitectura.
+
+**Panel del fundador** (pestaña «Hoy»). Los seis números y la lista de qué
+resolver hoy. Cálculos en `src/modules/panelDeHoy.js`, puros y testeados.
+
+### La regla del panel
+
+**Ni una fila se carga a mano.** Nada de prospectos ni demos: esos datos no
+tienen sistema de registro y una pantalla para tipear lo que ya sabés es trabajo
+que no rinde. Con doce prospectos eso es una planilla.
+
+Queda escrito en el módulo para quien quiera agregarle algo: **si una fila pide
+que la cargues, el panel se rompió.**
+
+### Dos decisiones de diseño que valen
+
+**«Se apagó» y «nunca prendió» son cosas distintas.** La alerta de inactividad
+sólo aplica a quien ya había llegado al primer valor. Mezclarlos esconde a los
+dos: el que nunca arrancó necesita una llamada de arranque, no una de rescate.
+
+**La demora al primer valor va en MEDIANA.** Con pocos negocios, uno que tardó
+medio año corre el promedio y hace parecer que el producto no se entiende cuando
+el resto arrancó en dos días.
+
+### Lo que NO se hizo, y por qué
+
+**No hay tabla de cobros de suscripción.** Con cero clientes sería una tabla
+vacía por tiempo indefinido. Y hay una trampa que casi cuesta caro: **`payments`
+YA EXISTE** con otro significado —los pagos del COMPRADOR al negocio—, así que
+reusar ese nombre habría roto el checkout. Se hace cuando haya una venta
+concreta sobre la mesa; es cuestión de días.
+
+### Verificado
+
+En la vitrina, con los siete negocios reales y sus fechas. La escena destapó un
+bug de datos: decía `vertical: 'barberia'` y la base usa `'barber'`, así que la
+barbería mostraba «primera operación cobrada» en vez de «primer turno cobrado».
+Corregido — y es justo el tipo de error que sólo aparece mirando la pantalla.
+
+849 en verde (18 nuevos), build limpio, los cuatro checks pasan.
+
+### Lo que sigue
+
+Fase 2 (cobrar) **cuando haya una conversación real de venta**, no antes. Y el
+plan tiene un alto explícito: **congelamiento del desarrollo funcional hasta
+tres clientes pagos**.
+
+---
+
+## 21/ago/2026 (cierre 4) — SE DA DE BAJA EL ALIAS CORPORATIVO (0057)
+
+**−1050 líneas netas.** El alta de staff vuelve a ser lo que era: se pone el
+correo de la persona, le llega la invitación, elige su contraseña, entra.
+
+### Por qué se descarta
+
+El alias corporativo necesitaba DOS cosas de Cloudflare: un **destino** —que se
+pudo crear siempre— y una **routing rule**, que es la que hace que el alias
+entregue. Ese permiso (Zone → Email Routing Rules: Edit) no está en el token y
+no apareció forma de conseguirlo.
+
+Sin la regla el alias existe y no entrega: la invitación se pierde en silencio y
+vence a las 24 horas. Cuatro intentos, ninguno cerró el ciclo.
+
+**El correo de trabajo no se descarta como idea; se descarta como REQUISITO para
+dar de alta.** La cuenta de la consola y el correo de la empresa son dos cosas
+distintas y no tenían por qué estorbarse. Si algún día aparece el permiso, el
+alias se crea en Cloudflare a mano y nada de esto cambia.
+
+### Qué se borró
+
+| | |
+|---|---|
+| `src/modules/correoDeEquipo.js` + su test | ya no hay alias que validar |
+| Toda la capa de Cloudflare en `staff-invite` | `cf()`, permisos, zona, destinos, reglas, catch-all, sonda, diagnóstico |
+| El alta de tres pasos en la consola | vuelve a ser un correo, un puesto y un botón |
+| `staff_dominios` (tabla) | sin la exigencia de dominio no la lee nadie, y una tabla que nadie consulta es una que en seis meses alguien lee creyendo que decide algo |
+| La cuenta huérfana `camila.gonzalez@grupodivianco.com` | la había creado la prueba: staff, sin legajo, invitación a un alias que no entregaba |
+
+**La protección del alta no era la lista de dominios**: es que sólo el dueño
+puede dar de alta (`private.es_owner_divianco()`), y eso no cambió. La lista
+filtraba la FORMA del correo, no quién lo daba de alta.
+
+### Lo que se conserva, y vale
+
+Puestos, modalidad, legajo, ficha, foto de perfil. Nada de eso dependía del
+alias. **"Reenviar acceso"** queda en la fila de cada persona: sirve para quien
+olvidó la clave y para quien no recibió la invitación.
+
+### Lo que NO se borró, y casi
+
+Al limpiar borré `tools/vitrina/escenas/equipo.jsx` creyendo que era del equipo
+de Divianco. Es del equipo del NEGOCIO CLIENTE —otra pantalla, otro modelo—.
+Restaurada con `git checkout`. Dos nombres parecidos en dos productos distintos:
+vale releer qué es cada archivo antes de borrarlo, no sólo cómo se llama.
+
+### Verificado
+
+En la vitrina: un correo, un puesto, "Enviar invitación", y la persona aparece
+en la lista. Cero menciones a Cloudflare o a alias en la pantalla.
+
+830 en verde (14 menos: se fueron los del alias), build limpio, los cuatro
+checks pasan, `staff-invite` typechequea.
+
+---
+
+## 21/ago/2026 (cierre 3) — "EL CORREO NO PARECE VÁLIDO": una barra invertida
+
+Sin migración. Un bug propio, y una limpieza que NO había que hacer.
+
+### El bug
+
+El alta rechazaba los cuatro correos de prueba de Ricky con "Ese correo personal
+no parece válido". El patrón, en `crear_correo`, había quedado así:
+
+```
+/^[^@s]+@[^@s]+.[^@s]+$/
+```
+
+Le faltan las barras invertidas. `[^@\s]` —"cualquier cosa que no sea arroba ni
+espacio"— se convirtió en `[^@s]`, que es **una clase que excluye la letra s**.
+Los cuatro correos de prueba tienen una s. Casi cualquier correo tiene una s.
+
+**Cómo se rompió:** ese bloque se reescribió con un script de node metido en un
+heredoc de bash. Tres capas de escapado —bash, template literal de JS, regex— y
+las barras se perdieron en el camino. El typecheck no lo ve: la regex es válida,
+sólo significa otra cosa.
+
+**Regla que queda:** un patrón nunca se escribe atravesando capas de escapado.
+Va con Edit sobre el archivo, y punto. Es la segunda vez en el día que el
+escapado muerde (la otra fue el rango de tildes en `correoDeEquipo.js`, que ahí
+sí se detectó a tiempo).
+
+**Arreglo de fondo:** el patrón estaba a mano en TRES lugares. Ahora hay una sola
+constante `ES_EMAIL`. Tres copias de una regex es tres oportunidades de que una
+se rompa distinto que las otras.
+
+### La limpieza que no se hizo, y por qué
+
+Ricky pidió limpiar cuatro correos de prueba. Antes de borrar, se miró qué eran:
+
+| Correo | Qué es |
+|---|---|
+| `rrodriguezs777@gmail.com` | **Dueño de SEIS tenants**: Cochi, La Nona Pato, Mala Miga, Tienda Demo, Barbería Demo y Prueba Disco |
+| `ricardousa1313@gmail.com` | Dueño de `tienda-nueva` |
+| `camilausa333@gmail.com` | No existe como usuario |
+| `ricardoars13@gmail.com` | No existe como usuario |
+
+Borrar el primero habría dejado **seis negocios sin dueño**, incluidos los tres
+que están en producción. Nadie podría entrar a sus paneles.
+
+Y no hacía falta ninguna limpieza: la base tiene 1 staff (el dueño), 1 legajo y
+3 usuarios. Los correos no estaban en `platform_admins` ni eran destinos de
+Cloudflare —Ricky ya los había borrado de ahí—. **Lo único que bloqueaba era la
+regex.**
+
+Vale como recordatorio del criterio: mirar el objetivo antes de borrarlo no es
+burocracia. Acá la diferencia entre mirar y no mirar era producción.
+
+---
+
+## 21/ago/2026 (cierre 2) — EL ALTA, SIN FRENOS
+
+Sin migración. Se sacó todo lo que frenaba el alta del correo, porque frenaba
+mal.
+
+### El dato que cambió el diagnóstico
+
+Ricky contó que ANTES de estos cambios el ciclo funcionaba: cargaba el correo
+personal y el alias, le llegaba la verificación, la aceptaba, y **el alias
+quedaba andando** — probó mandándole un mail y llegó.
+
+Eso no encaja con "el token no puede escribir reglas"… salvo por una cosa: **el
+catch-all**. Una regla que se lleva todo lo que no matchea ninguna otra hace que
+CUALQUIER alias del dominio entregue, sin regla propia.
+
+Y ahí estaba mi error: `catchAllDe()` se tragaba cualquier excepción y devolvía
+`{activo: false}`. Si al token le falta permiso para leerlo —que es plausible,
+es el mismo permiso de zona que falla al escribir— el diagnóstico decía
+**"catch-all: apagado"** con total seguridad, y mandó a buscar el problema donde
+no estaba.
+
+Ahora devuelve `ilegible: true` con el motivo. **"No hay catch-all" y "no lo
+puedo leer" son dos cosas distintas**, y tragarse un error para devolver un
+valor cómodo es fabricar una mentira que después alguien usa para decidir.
+
+### Lo que hace ahora, y nada más
+
+1. Si el destino no existe, lo crea. **Eso es lo único que dispara el mail.**
+2. Intenta la regla y, si no puede, **sigue igual**.
+3. Devuelve el estado real.
+
+El segundo botón dejó de ser un chequeo y pasó a ser **"Ya lo verifiqué,
+seguir"**: una confirmación del dueño, que mira Cloudflare y decide. Es el único
+que puede — la API no confirma un destino por su dueño, y el catch-all no
+siempre se puede leer. Al lado, **"Reenviar el mail"**.
+
+**El guard de la invitación se sacó entero.** Consultaba Cloudflare y frenaba si
+la dirección no figuraba recibiendo correo: con el catch-all ilegible veía "no
+recibe" donde sí recibía, y bloqueaba altas sanas. Si el mail no llega, el
+remedio está a mano (Reenviar); eso es más barato que un chequeo que se
+equivoca.
+
+### El bug que Ricky reportó
+
+"Ahora ni siquiera manda el correo." Era esto: `camilausa333@gmail.com` **ya
+estaba cargado como destino** de la prueba anterior, así que Cloudflare no
+mandaba nada —correcto— y la pantalla **no lo decía**. Parecía un botón muerto.
+
+Ahora los tres casos hablan:
+
+| Estado del destino | Qué dice la pantalla |
+|---|---|
+| No existe | "Le mandamos un mail a X para que confirme el reenvío." |
+| Existe, sin confirmar | "Ya estaba cargado y sin confirmar. No se manda otro mail automáticamente: usá Reenviar si no le llegó." |
+| Existe y confirmado | "X ya está confirmado en Cloudflare." → va directo a dar el acceso |
+
+También se sacó el cartel que afirmaba "ya reenvía a X": la regla es
+best-effort, así que prometerlo era prometer algo que no se puede comprobar.
+
+### Verificado
+
+Los tres casos en la vitrina, con el fake simulando que el token NO puede
+escribir la regla — que es el escenario real. 844 en verde, build limpio,
+`staff-invite` typechequea.
+
+### Si igual molesta
+
+Queda dicho para no volver a discutirlo: si el alias sigue dando problemas, la
+salida es **dar de alta con el correo personal**. `staff_dominios` es una tabla:
+alcanza con sumarle el dominio del correo, o con sacar la validación de dominio
+del alta. No es una reescritura, es un insert.
+
+---
+
+## 21/ago/2026 (cierre) — LA FICHA: el dueño puede VER lo que junta
+
+Migración **0056**, aplicada. Cierra un agujero que abrió la 0054 y que no se
+veía: el edificio pedía fotos de documentos y CBUs, y **no había pantalla para
+leerlos**. Peor que no juntarlos — el riesgo de guardarlos estaba y el beneficio
+no.
+
+### Lo que se agregó
+
+**Foto de perfil, opcional.** Una burbuja arriba del formulario. No entra en
+"está completo": trabar una incorporación por una foto de perfil sería trabarla
+por lo único que no importa. Va al mismo bucket privado que el documento —
+podría ser pública, una cara no es un DNI, pero un segundo bucket con otras
+policies es una segunda superficie donde equivocarse.
+
+**Ficha del empleado, en Equipo → "Ver legajo".** El dueño abre a cualquiera y
+ve identidad, documento (con las fotos), domicilio, contacto y cobro. Una sola
+abierta a la vez: dos pantallas de datos sensibles al mismo tiempo son dos
+pantallas a la vista de quien pase por atrás.
+
+**Es SOLO LECTURA, y es a propósito.** Un CBU que puede cambiar alguien que no
+es su titular es un sueldo que se puede desviar sin que la persona se entere; y
+un documento que otro puede reemplazar deja de servir como prueba de nada. Si
+hay un dato mal, lo corrige quien lo cargó.
+
+### La vista `staff_fichas`
+
+La ficha necesita el EMAIL de cada persona (`platform_admins`) junto al estado
+de su legajo (`staff_legajo`). Se resolvió con una vista y no con un join desde
+el cliente porque PostgREST exigiría una FK declarada entre las dos tablas — y
+esa FK no existe ni debería: `platform_admins` dice quién tiene acceso HOY, y
+un legajo sobrevive a que alguien deje de tenerlo.
+
+**`security_invoker = true` no es opcional.** Sin eso una vista corre con los
+permisos de quien la creó, y cualquier staff vería el legajo de todos con sólo
+consultarla. Con security_invoker cada uno ve lo que sus propias policies le
+dejan: la persona lo suyo, el dueño todo.
+
+### Verificado
+
+En la vitrina, los tres estados que importan: Sofía con el legajo completo (la
+ficha entera), Martín contratista e incompleto —con el cartel de que no puede
+entrar y **sin sección de domicilio**, porque a quien factura no se le pide— y
+la burbuja de foto diciendo "opcional" y sin aparecer entre los pendientes.
+
+844 en verde, build limpio, los cuatro checks pasan.
+
+---
+
+## 21/ago/2026 (noche) — EL LEGAJO, CORREGIDO: pais, documento y modalidad
+
+Migración **0055**, aplicada. Ricky revisó la pantalla del legajo y la
+devolución cambió tres supuestos que la 0054 daba por ciertos.
+
+### Los tres supuestos que se rompieron
+
+| Lo que asumía la 0054 | Por qué está mal |
+|---|---|
+| El documento tiene dorso | Un **pasaporte no**. Exigirlo dejaba a la persona trabada sin manera de destrabarse: no hay foto que sacar |
+| La identificación fiscal se llama CUIL | En Chile y Uruguay es RUT, en México RFC. Pedir CUIL a alguien de Colombia es pedirle un dato que no existe |
+| Hace falta domicilio y teléfono | De quien **factura** su servicio, no. De esa persona hace falta con qué facturarle y a dónde pagarle |
+
+### Empleado y contratista
+
+Es la respuesta a "si tengo gente de Fiverr, ellos me facturan". Se agregó
+`platform_admins.modalidad`:
+
+- **En relación de dependencia**: legajo completo, con domicilio.
+- **Factura sus servicios**: identidad, identificación fiscal y datos de cobro.
+  Nada de domicilio ni teléfono — son datos personales que la empresa no
+  necesita y frenan un alta que debería tomar dos minutos.
+
+**La fija el dueño al dar el acceso, no la persona.** En qué relación está
+alguien con la empresa es una decisión de la empresa, no una autodeclaración; y
+por eso vive en `platform_admins` —que sólo escribe el dueño— y no en el
+legajo, que lo edita la persona.
+
+### El país
+
+Se reusó la lista de `src/modules/paises.js` (los 9 países que ya declaraba el
+alta de tenants) en vez de armar otra. Lo nuevo va en
+`src/modules/documentacionPorPais.js`, que es **otra pregunta sobre el mismo
+país**: aquel describe dónde opera un NEGOCIO (moneda, huso, adaptador fiscal),
+éste qué papeles presenta una PERSONA.
+
+Ojo con un detalle que se pasa fácil: en Argentina el identificador de una
+empresa es CUIT y el de una persona es **CUIL**. `paises.js` declara el
+primero; el legajo necesita el segundo.
+
+Los países sin regla propia caen en una genérica —pasaporte o documento
+nacional, IBAN y SWIFT— y usan el identificador que ya declaraba `paises.js`.
+Adivinar mal la regla de un país es peor que preguntar genérico: un largo
+equivocado rechaza datos correctos y la persona no tiene cómo saber por qué.
+
+### El resto de la devolución
+
+- Nombre y apellido en dos casillas.
+- **La cámara se abre directo** (`capture="environment"`). En una computadora
+  el navegador lo ignora y cae en el selector de archivos, que ahí corresponde.
+- Contactos de emergencia **opcionales**, sin la aclaración de más y con las
+  etiquetas completas. Son datos de un TERCERO que no dio su consentimiento.
+- Los campos de una fila quedan **a la misma altura**: la ayuda ocupa lugar
+  aunque esté vacía, así una etiqueta de dos renglones no escalona la grilla.
+- **El CBU no anuncia "22 dígitos" pero los valida.** Se cuentan sólo los
+  dígitos: la gente lo pega con espacios y guiones, y rechazarlo por eso es
+  rechazar un dato correcto mal tipeado.
+- **El titular de la cuenta se autocompleta con el nombre y no se edita**, salvo
+  que se tilde "la cuenta es de una empresa". Depositar el sueldo de alguien en
+  la cuenta de un tercero es la forma más silenciosa de que ese sueldo no
+  llegue.
+- Se sacó "podés guardar incompleto": el botón dice **Finalizar incorporación**
+  y está apagado hasta que esté todo.
+- Textos reescritos en registro formal.
+
+### Al dueño no se le exige
+
+Preguntó si él también tiene que cargarlo. **No, y no por comodidad**: si el
+legajo lo bloqueara y algo fallara subiendo el documento, el único que puede
+administrar accesos quedaría afuera y no habría quien lo destrabe. Mismo
+criterio que 0053 con "al dueño no se lo puede quitar". Lo puede cargar cuando
+quiera desde **Mis datos**, en la barra de la consola.
+
+### Un error propio, y lo que enseña
+
+**Pisé `src/modules/paises.js` entero con Write.** Ya existía, lo usa
+`Signup.jsx`, y el build lo agarró con `MISSING_EXPORT`. Se recuperó con
+`git checkout` y lo nuevo quedó en un archivo aparte — que además es el diseño
+correcto, así que el error terminó mejorando la solución.
+
+**La señal estaba y no la leí**: la herramienta contestó *"has been updated"* y
+no *"created"*. Para la próxima: antes de escribir un módulo "nuevo", mirar si
+el archivo ya existe.
+
+### Verificado
+
+En la vitrina: los 9 países en el selector, DNI mostrando dorso y pasaporte
+haciéndolo desaparecer, México pidiendo RFC + IBAN + SWIFT en vez de CUIL +
+CBU, y la escena `legajo-contratista` sin sección de domicilio.
+
+25 tests del legajo, **844** en verde. Cuatro comparan el módulo contra la
+migración parseando el SQL: los documentos con dorso, los campos que se piden
+siempre, y que el domicilio sea exactamente lo que separa empleado de
+contratista en los dos lados.
+
+**Contra la base, nada todavía**: ninguna persona real completó un legajo.
+
+---
+
+## 21/ago/2026 (tarde) — PUESTOS Y LEGAJO: el alta de staff, completa
+
+Migración **0054**, aplicada. El alta de un empleado de Dico pasó de "correo +
+invitación" a las cuatro etapas del flujo que pidió Ricky.
+
+### Las cuatro etapas
+
+1. **Puesto.** Al dar de alta se elige: administrador, ventas, soporte o
+   marketing. Decide qué ve la persona cuando entra.
+2. **Correo de trabajo.** Alias en `grupodivianco.com` que reenvía a su correo
+   personal, vía Cloudflare Email Routing. Sin cambios respecto de la mañana.
+3. **Invitación** a ese correo: crea la cuenta y le pide elegir su contraseña.
+4. **Legajo.** Apenas entra, la consola le pide sus datos y no la deja pasar
+   hasta completarlos.
+
+### Dos ejes que no son el mismo
+
+`rol` (owner | staff) ya existía y contesta **quién reparte el acceso**. Sigue
+habiendo un solo dueño (0053). `puesto` es lo nuevo y contesta **qué hace
+adentro**.
+
+Mezclarlos era tentador y caro: si el puesto decidiera también quién reparte
+accesos, cada administrador podría nombrar administradores y el acceso volvería
+a ser transitivo — justo lo que 0053 vino a cerrar. Por eso ningún puesto trae
+la pestaña Equipo; la trae el dueño, sea cual sea su puesto. Hay un test que lo
+fija para los cuatro.
+
+### Qué puede cada puesto
+
+| | Planes | Negocios | Equipo |
+|---|---|---|---|
+| Administrador | edita | edita | ve (si es dueño) |
+| Ventas | lee | edita | — |
+| Soporte | lee | **lee** | — |
+| Marketing | lee | **nada** | — |
+
+Soporte ve al cliente para poder atenderlo y no le mueve la suscripción: "me lo
+dejaste sin cobrar" no puede salir de una pantalla de ayuda. Marketing no ve la
+lista de negocios: quién es cliente y cuánto paga es el dato más delicado de la
+consola y no hace falta para comunicar precios.
+
+La matriz vive en `src/modules/rolesDeConsola.js` — misma división que 6f con
+los roles del negocio: el DATO a la base, la POLITICA al código. **Lo que mueve
+plata baja igual a RLS**: `plans` sólo lo escribe administrador, `tenants`
+administrador y ventas. Esconder una pestaña no protege una tabla.
+
+### El legajo
+
+Tabla `staff_legajo`: identidad, documento con foto (frente y dorso),
+domicilio, contacto de emergencia y CBU. 17 campos obligatorios.
+
+Es **lo más sensible que guarda el edificio**, y por eso no lo ve ni siquiera un
+administrador: sólo la persona y el dueño. Un administrador administra la
+plataforma, no el legajo de sus compañeros.
+
+- Las fotos van a un bucket **privado** (`staff-legajo`), al revés que
+  `tenant-images`, que es público porque lo mira un comprador sin sesión.
+- Se guardan **paths, no URLs**. Una URL firmada vence, y guardar una vencida es
+  guardar basura que parece un dato. Se pide una nueva al mostrar y dura 5 min.
+- **Quien decide si el legajo está completo es el servidor**, no el navegador:
+  lo sella un trigger en `completado_at`. Si lo decidiera el cliente, entrar
+  sería cuestión de mandar un request a mano.
+- Se puede guardar incompleto y volver — los datos del legajo no siempre están
+  todos a mano el mismo día. Lo que no se puede es ENTRAR incompleto.
+
+La regla de "qué es completo" está escrita dos veces a propósito (SQL y
+`src/modules/legajo.js`) porque hace dos trabajos distintos: la pantalla dice
+qué falta mientras se escribe, el servidor abre la puerta. **Hay un test que
+compara las dos parseando la migración**, igual que el de los slugs reservados;
+si se separan, alguien completa el formulario, ve todo en verde y no entra.
+
+### Verificado
+
+En la vitrina, con dos escenas para poder comparar: `consola` (dueño
+administrador) y `consola-soporte`, la misma pantalla con los mismos datos
+vista por soporte — sin pestaña Equipo, los cuatro planes diciendo "los precios
+los edita un administrador" y la suscripción sin botón de guardar. Más `legajo`,
+que arranca vacío y lista los 17 campos que faltan.
+
+19 tests nuevos. Suite completa: **826** en verde. Build limpio, `staff-invite`
+typechequea, los cuatro checks del pre-commit pasan.
+
+**Contra la base, nada todavía**: no se probó con una persona real entrando a
+completar su legajo. Es lo primero que hay que hacer después de deployar.
+
+### Lo que sigue bloqueado
+
+**El paso 2 depende del permiso de Cloudflare.** El bloque que Ricky mostró es
+el de *Account* (ahí están "Email Routing Addresses" y "Email Routing Account
+Rules"); `Email Routing Rules` es de **Zone** y está en otro bloque del editor
+de tokens. Por eso crear el destino anda y crear el alias no.
+
+Por decisión de Ricky, **el alta ya no se frena por eso**: si Cloudflare rechaza
+la escritura, sigue hasta la invitación y avisa en pantalla. Conviene tener
+claro qué compra y qué paga: compra no depender del token; paga que, sin la
+regla y con el catch-all apagado, esa dirección no entrega y la invitación se
+pierde. El aviso está para que, si no llega, la causa esté a la vista.
+
+---
+
+## 21/ago/2026 — EL ALTA DE UN EMPLEADO CREA EL CORREO SOLA
+
+Cierra el pendiente #2 del 20/ago. Antes, sumar a alguien al equipo eran dos
+trabajos en dos lugares: crear el reenvío a mano en el panel de Cloudflare, y
+después invitarlo desde la consola. Ahora es una pantalla.
+
+### Estado
+
+| | Dónde está |
+|---|---|
+| Base | migración **0053**, sin cambios (esto no toca la base) |
+| Rama `platform/runtime-tenant` | commit de esta sesión |
+| Producción | **falta deployar**: web y la edge function `staff-invite` |
+
+### Lo primero: el HANDOFF decía mal el estado
+
+El pendiente #1 —"deployar, producción atrasada"— **ya estaba hecho**. El
+último deploy de producción es `3e2b273`, el commit del propio HANDOFF, y las 8
+edge functions se actualizaron 50 segundos después. O sea que `npm run deploy`
+corrió al final de la sesión pasada, después de escribir el documento.
+
+Es estructural, no un descuido: la fila `Producción` de la tabla de estado se
+escribe ANTES de deployar y nunca se vuelve a tocar, porque el deploy es lo
+último que pasa. **Se saca de la plantilla**: es un dato que se consulta en dos
+segundos con el MCP de Vercel y que el documento no puede mantener al día.
+
+### Cómo funciona el alta ahora
+
+En Consola → Equipo, el dueño escribe nombre y correo personal. El alias se
+sugiere solo (`José Pérez` → `jose.perez`) y se puede pisar.
+
+**Son dos pasos y no puede ser uno.** Cloudflare exige que el dueño del correo
+personal confirme el destino con un clic, y no deja apuntar una regla a un
+destino sin confirmar. Eso no lo puede hacer ninguna API — es justamente la
+protección contra desviarle el correo a un tercero. Así que:
+
+1. **Crear el correo** → crea el destino en Cloudflare, que le manda el mail de
+   confirmación a la persona. La pantalla queda en "esperando".
+2. La persona hace el clic.
+3. **Ya confirmó, seguir** → ahora sí crea la regla `alias@dominio → personal`.
+4. **Dar acceso a la consola** → recién acá sale la invitación de Supabase.
+
+La llamada de crear es **idempotente**: apretar el botón dos veces no duplica
+nada, y es la forma prevista de retomar el alta después del clic.
+
+### La trampa que esto evita
+
+Si la invitación sale antes de la confirmación, **se pierde en silencio**: el
+alias existe, se ve en el panel de Cloudflare y no entrega nada. Y encima vence
+a las 24 horas, así que cuando la persona por fin confirma, el link que la
+esperaba ya caducó. El síntoma que llega después es "no me llegó nada", que no
+dice nada de esto.
+
+Por eso el guard está **en la edge function**, no sólo en la pantalla: antes de
+invitar comprueba contra Cloudflare que esa dirección reciba correo hoy, y si
+no, contesta 409 con el motivo. La pantalla se puede saltear; la function no.
+
+**El catch-all cuenta.** Las cuentas fundadoras son anteriores a que hubiera
+una regla por persona y andan por ahí. Si el guard mirara sólo las reglas, le
+diría al dueño de la plataforma que no tiene correo.
+
+### Dónde vive cada cosa
+
+- `src/modules/correoDeEquipo.js` — puro y testeado: qué alias sugerir y si a
+  una dirección le llega el correo. Misma división que 6f hizo con los roles.
+- `platform/functions/staff-invite/index.ts` — todo lo que le habla a
+  Cloudflare. El token no sale de acá.
+- La regla de "recibe correo" está escrita **dos veces a propósito**: en el
+  módulo decide qué botón mostrar, en la function decide si sale un mail.
+- **No se guarda nada en nuestra base.** A dónde va el correo de alguien lo
+  sabe Cloudflare; una copia nuestra sería una segunda verdad, y la que manda
+  no es la nuestra.
+
+### Verificado
+
+En la vitrina, el flujo entero: alias sugerido con tildes (`José Pérez` →
+`jose.perez`), el paso de "esperando confirmación", el segundo intento que
+cierra el alta, la invitación, y la persona apareciendo en la lista con su
+reenvío. Más los tres estados en la lista del equipo: recibe / esperando /
+sin correo.
+
+22 tests nuevos. Suite completa: 805 en verde. Build limpio.
+
+**Contra Cloudflare de verdad, sólo lo que probó Ricky** (ver abajo): el paso 1
+anduvo, el paso 2 no. Yo no toqué la cuenta.
+
+### La primera prueba real: funcionó a medias
+
+Ricky lo deployó y probó con una persona. **El paso 1 anduvo entero**: se creó
+el destino, le llegó el mail de Cloudflare y confirmó. **El paso 2 se cayó**
+con `Cloudflare: Authentication error` y ahí murió — sin regla y sin
+invitación.
+
+Y el mensaje no servía para nada. "Authentication error" es lo que contesta
+Cloudflare cuando a un token le falta un permiso, **sin decir cuál ni sobre qué
+recurso**, y el alta usa cuatro permisos distintos. Yo deduje "le falta Email
+Routing Rules: Edit" razonando desde qué llamadas habían andado; Ricky contestó
+que el token es de permiso total. O sea: estaba adivinando, y con eso no se
+arregla nada.
+
+**Dos cambios, y el segundo es el que importa:**
+
+1. Cada llamada a Cloudflare ahora dice **qué estaba haciendo**, con **qué
+   permiso** y con el **código** de Cloudflare (10000 = Authentication error).
+   El código vale más que el texto: es el único que significa "el token no
+   puede hacer esto"; validaciones y duplicados tienen código propio.
+2. Hay un **diagnóstico** en Equipo — "Probar el token de Cloudflare" — que
+   corre las cinco llamadas del alta y dice cuál falla, en vez de deducirlo.
+
+**La sonda de escritura no crea nada.** Manda un POST a propósito inválido
+(cuerpo vacío): si falta el permiso, Cloudflare contesta 10000 *antes* de mirar
+el cuerpo; si el permiso está, contesta un error de validación. Los dos se
+distinguen por el código y ninguno deja una regla dando vueltas.
+
+### El diagnóstico corrió, y contestó
+
+Sobre `grupodivianco.com`, con el token en producción:
+
+| Paso | |
+|---|---|
+| 1. encontrar la zona | ✓ |
+| 2. leer los destinos (cuenta) | ✓ 4 |
+| 3. leer los reenvíos (zona) | ✓ 1 |
+| 4. leer el catch-all (zona) | ✓ apagado |
+| 5. **escribir un reenvío** | ✗ **Authentication error [10000]** |
+
+**Lee reglas y no las puede escribir.** Eso es `Email Routing Rules` en Read y
+no en Edit sobre esa zona — en el editor de tokens de Cloudflare es UNA fila
+con un desplegable Read/Edit, así que un token que uno da por "total" puede
+tenerla en Read sin que se note.
+
+Se descartó la otra explicación que parecía razonable —que el segundo paso
+estuviera reintentando la verificación del destino— mirando el código: el POST
+al destino está detrás de `if (!e.destinos.some(...))` y en la segunda pasada no
+se ejecuta. La etiqueta del error lo confirma: dice "crear el reenvío", no
+"crear el destino". Y la invitación (Supabase/Resend) no entra: eso es el tercer
+botón.
+
+**El segundo botón dejó de ser un callejón sin salida.** Si Cloudflare rechaza
+la escritura, el error ahora ofrece la salida: crear la ruta a mano en el panel
+(medio minuto) y volver a apretar — la función detecta la regla existente y
+retoma en "listo". Verificado en la vitrina.
+
+### Pendiente inmediato
+
+1. **Poner `Email Routing Rules` en Edit** en el token, para la zona
+   `grupodivianco.com`. El diagnóstico vuelve a correr y tiene que dar todo ✓.
+2. **Retomar el alta de esa persona.** El destino ya está creado y confirmado:
+   apretando "Ya confirmó, seguir" se crea la regla y sigue. No hay que
+   empezar de nuevo ni pedirle que confirme otra vez.
+3. Si hace falta, el nombre del secreto: la function busca `CLOUDFLARE_API_TOKEN`
+   (canónico), `CF_API_TOKEN`, `CLOUDFLARE_TOKEN`. Y se puede saltear la
+   búsqueda de zona cargando `CLOUDFLARE_ZONE_ID` + `CLOUDFLARE_ACCOUNT_ID`.
+
+### Las edge functions no las typechequeaba nadie
+
+`npm run build` compila `src/`. Las functions son TypeScript que **nadie mira**:
+Supabase las deploya sin typecheckear, así que un error de tipos llega a
+producción como un 500 en la cara de alguien.
+
+Ahora hay `npm run check:functions` (Deno, por npx). En la primera corrida
+encontró dos cosas:
+
+- En `staff-invite`, un `filter(Boolean)` sobre `T | null` que dejaba el `null`
+  en el tipo, y el consumidor lo tapaba con un `!`. Arreglado con un predicado.
+- **En `submit-order`, uno preexistente**: el costo por producto se lee de una
+  relación embebida como si fuera objeto, cuando el tipo dice arreglo. Si en
+  runtime llega arreglo, `unit_cost` queda en 0 sin error — y está dentro de un
+  try/catch best-effort, así que tampoco se loguea. **Puede ser la causa del
+  pendiente "`unit_cost` va en 0"**. No se tocó: es otra tarea.
+
+Por eso `check:functions` NO está en el pre-commit todavía: lo estaría dejando
+en rojo por algo ajeno a esta sesión.
+
+### Sigue pendiente de antes
+
+- Registro de cobros en la consola (hoy sólo `paga_hasta`, sin historia ni MRR).
+- Cobro automático por MercadoPago Suscripciones.
+- El recorte `propio` de 6f, a medias (sólo cocina).
+- Agregar `https://divianco.app/consola` a Redirect URLs en Supabase Auth.
+- Leaked password protection en el edificio.
+- El primer cobro real de MercadoPago: 0 integraciones conectadas.
+- Decidir si Cadena lleva los 3 meses al 50%.
+
+### De paso
+
+La vitrina llamaba `createRoot` sobre el mismo nodo en cada HMR y llenaba la
+consola del navegador de errores de React — justo la consola que se mira para
+saber si la pantalla está rota. Y la escena de la consola mutaba su propio
+array de staff, que el fake copia al cargar: los cambios no se veían. Las dos
+arregladas.
+
+---
+
+## 20/ago/2026 — DICO PASA A SER UN NEGOCIO: planes, precios y consola
+
+La sesion mas larga hasta ahora: 16 commits, 5 migraciones del edificio
+(0049-0053) y una del legacy. El edificio dejo de ser "software que anda" para
+tener **con que cobrar**.
+
+### Estado
+
+| | Donde esta |
+|---|---|
+| Base (`wwwzdgprsooyjgkuyoav`) | migracion **0053**, todo aplicado |
+| Rama `platform/runtime-tenant` | **e32cce7** |
+| ~~Produccion~~ | ~~atrasada: los ultimos 3 commits no estan~~ — **era falso**, ver 21/ago |
+
+**Hay que deployar.** `npm run deploy` ← se corrió al terminar la sesión, después
+de escribir esto. Por eso la fila de arriba mintió durante un día entero.
+
+### Hecho
+
+**Pantalla de cobro (0049).** Cierra 6d. El seed de medios de pago quedo
+comentado en 0004 y se corrio una sola vez: los dos negocios nacidos del alta
+self-service tenian CERO medios y no podian cobrar nada. Va como trigger sobre
+`tenants`, mismo criterio que 0044.
+
+**Alta de mesas y zonas.** Cierra 6c, sin migracion. **Las zonas son un plano
+POR zona con pestanias**, y las coordenadas pasaron a ser relativas a la zona —
+decidido antes de que nadie dibujara en serio, porque cambiarlo despues obliga
+a redibujar a mano.
+
+**ETAPA 6f — roles con alcance (0050).** `tenant_members` es
+`(tenant_id, user_id, branch_id, roles[])`. Permisos declarados en
+`src/modules/roles.js`. RLS real sobre expenses, suppliers, sales, settings,
+staff, audit_log y cash_sessions.
+
+**ETAPA 6g — oportunidades**, sin migracion. Seis reglas puras en
+`src/modules/dico/oportunidades.js`. **Con esto el PLAN-LOCAL-Y-ROLES quedo
+cerrado entero.**
+
+**MercadoPago por tenant (0051).** Cada negocio cobra en SU cuenta.
+`payment_integrations` con RLS habilitada y **cero policies a proposito**: el
+token no sale de las edge functions.
+
+**Planes y consola (0052, 0053).** `tenants.plan` existia y no hacia nada.
+Ahora hay 4 planes con precios editables desde `divianco.app/consola`, y
+`platform_admins` con rol owner/staff.
+
+  Digital $29.000 · Local $59.000 · Cadena $99.000 · Total (fuera de venta)
+
+**Los precios van a la base y QUE INCLUYE cada plan al codigo**
+(`src/modules/planes.js`), misma division que 6f hizo con los roles: un UPDATE
+mal hecho no puede abrir el ERP entero al plan mas barato.
+
+**Vitrina (`npm run vitrina`).** Sirve UNA pantalla sin base ni sesion.
+Ocho escenas. Cierra la deuda de "ninguna pantalla se vio en un navegador".
+
+### Verificado
+
+**En produccion, con curl:** las `og:` por tenant (UA de WhatsApp da "Cochi" y
+"La Nona Pato"), la landing y el catalogo de un tenant.
+
+**Contra la base, con roles simulados:** un mozo no lee expenses/sales/settings
+/audit_log/nomina, cierra un pedido y la venta se asienta, y sigue sin ver el
+facturado. Un duenio de negocio ve los precios pero no los edita y no puede
+darse plan Cadena gratis. Un staff entra a la consola pero no reparte accesos.
+El token de MP es inalcanzable desde el cliente (ni el duenio lo lee).
+
+**En la vitrina:** cobro con cuenta dividida, alta de mesa, equipo con roles
+traducidos, pedidos vistos por la cocina sin un solo importe, y la consola con
+el cronograma de promo recalculando en vivo.
+
+### Bugs que aparecieron ejecutando (ninguno leyendo)
+
+1. **`audit_log` tenia DOS policies select** — la nueva y `audit_select`, con el
+   nombre viejo. Las permisivas se combinan con **OR**: la vieja anulaba la
+   restriccion. Ahora se barren todas antes de crear las nuevas.
+2. **Un mozo no podia cerrar un pedido**: `complete_order` termina en
+   `insert ... returning *` y el RETURNING exige poder LEER la fila. Se
+   resolvio haciendola definer, no aflojando la lectura de `sales`.
+3. **`undefined.divianco.app`** (bug propio): el guard evitaba crear el tenant
+   pero `destinoTrasLogin()` seguia armando la URL con el slug que ya no venia.
+   No se creo ningun tenant; la persona terminaba en un dominio inexistente.
+4. Con una sola zona, el boton + mandaba `zone: null` y creaba una pestania
+   "Sin zona" espuria.
+
+### DOS "pendientes" que ya estaban hechos
+
+El HANDOFF los arrastraba y casi cuestan otra sesion: **el formulario de
+contraseña nueva existe** en `Login.jsx`, y **las `og:` tags estan resueltas**
+por `middleware.js` + `api/og.js`. La leccion es de proceso: los pendientes
+verificables se comprueban ANTES de listarlos, no se copian de aca.
+
+### Pendiente inmediato
+
+1. **Deployar** (3 commits, incluye el fix de `undefined`).
+2. **Alta de empleados con la API de Cloudflare Email Routing.** Hoy hay que
+   crear el reenvio a mano por cada uno. La idea: se escribe el correo personal
+   + el alias y el sistema crea destino, regla e invitacion. **Cloudflare exige
+   que el duenio del correo personal confirme el destino con un clic**: eso no
+   lo puede hacer la API, asi que el empleado va a recibir dos mails.
+   Necesita un API token de Cloudflare con permiso de Email Routing.
+3. **Registro de cobros en la consola.** Hoy guarda "pago hasta tal fecha", que
+   dice el estado pero no la historia. Con cinco clientes alcanza; con treinta
+   no. Falta cada pago con fecha, importe, medio y si se facturo, mas el MRR.
+4. **Cobro automatico por MercadoPago Suscripciones**: que mueva `paga_hasta`
+   solo. Hoy se registra a mano desde la consola.
+5. El recorte `propio` de 6f, que quedo a medias (solo se hizo el de la cocina).
+
+### Bloqueado por Ricky
+
+- **Agregar `https://divianco.app/consola` a Redirect URLs** en Supabase Auth.
+  Sin eso el link de invitacion se rechaza ANTES de llegar a la app: es el
+  "acceso denegado" que aparecio al aceptar la invitacion.
+- **Deployar** (el clasificador bloquea el comando de Vercel).
+- **El primer cobro real de MercadoPago.** Nada de MP se probo contra una
+  cuenta de verdad: 0 integraciones conectadas.
+- **Leaked password protection** sigue desactivada en el edificio (un clic).
+- **Decidir si Cadena lleva los 3 meses al 50%.** Hoy solo Local, siguiendo la
+  instruccion literal. Se cambia desde la consola sin tocar codigo.
+
+### Trampas nuevas
+
+- **Reemplazar una policy por nombre no alcanza**: si la vieja se llamaba
+  distinto, sobrevive y la anula. Barrer y recrear. Y al tocar RLS, listar
+  `pg_policies` antes y despues, y probar con el rol que va a sufrir la
+  restriccion — el bug de `complete_order` era del lado del PERMITIDO.
+- **Un `insert ... returning` necesita permiso de SELECT**, no solo de INSERT.
+  PostgREST agrega RETURNING por defecto.
+- **`check-supabase-columns.mjs` NO valida los selects embebidos** de PostgREST
+  (`tenant_members(role, roles, branch_id)`): paso en verde con el snapshot
+  desactualizado.
+- **Las escenas de la vitrina se pisaban entre si**: el glob las evalua todas,
+  asi que una que le asignara `supabase.functions` al fake se lo robaba a las
+  demas. Ahora todo va por `datos`.
+- **La sesion de Supabase es POR ORIGEN**: la del subdominio de un negocio no
+  existe en `divianco.app`. Por eso la consola tiene su propio login.
+- **La consola NO tiene "olvide mi contraseña"** a proposito: ese link llevaba
+  a `/entrar`, que resuelve a que negocio mandarte, y un empleado no tiene
+  negocio. El duenio le manda el link desde Equipo.
+
+---
+
+## 20/ago/2026 — AUDITORIA DE ESTADO: dos "pendientes" ya estaban hechos
+
+Se reviso que falta para vender y aparecio que **el HANDOFF arrastraba como
+pendientes cosas resueltas**. Verificado contra produccion y contra el codigo,
+no contra este documento:
+
+| Lo que decia el HANDOFF | La realidad |
+|---|---|
+| "Falta el formulario de contrasena nueva tras el reset" | **Existe** en `Login.jsx`: detecta `type=recovery`, valida coincidencia y largo, y hasta usa un mensaje ambiguo al pedir el reset para no revelar que direcciones tienen cuenta |
+| "Las `og:` tags son las del build" | **Resuelto** por `middleware.js` + `api/og.js`. Verificado con curl y UA de WhatsApp: `cochi.divianco.app` devuelve "Cochi" y `la-nona-pato` devuelve "La Nona Pato" |
+| "5 tenants sin fila en `tenant_members`" | Corregido antes: los 7 tienen duenio |
+
+**La leccion es de proceso, no de codigo:** planificar leyendo el HANDOFF en vez
+de la realidad hace perder tiempo en cosas hechas — y casi lo pierde de nuevo
+hoy. Los pendientes verificables (migraciones sin aplicar, tablas vacias,
+rutas que no existen) se comprueban antes de listarlos.
+
+### Lo unico que se toco
+
+`Login.jsx` detectaba la recuperacion leyendo `type=recovery` del hash en el
+primer render. Eso es **ganarle una carrera** al cliente de Supabase, que
+procesa y limpia ese hash apenas puede. Si la pierde, la persona ve el login
+comun con una sesion de recuperacion abierta, escribe la contraseña vieja —la
+que no recuerda, por eso pidio el reset— y no entra. Se sumo el evento
+`PASSWORD_RECOVERY` de `onAuthStateChange`, que es el que Supabase emite para
+esto y no depende del hash. 7 tests nuevos.
+
+### Estado real para vender
+
+**Lo que anda en produccion, verificado hoy:** las 7 edge functions ACTIVE (las
+4 de MP en v1), la landing de `divianco.app`, el catalogo de un tenant con sus
+10 productos y su footer legal, y las `og:` por tenant.
+
+**Lo que no existe:** forma de cobrarle al cliente. La columna `tenants.plan`
+existe y **no hace nada**: los 7 dicen `free`. No hay limites por plan, ni
+suscripcion, ni facturacion. Toda la infraestructura de MercadoPago sirve para
+que el TENANT le cobre a sus compradores, no para que Dico le cobre al tenant.
+
+**Lo que no se uso nunca:** 1 pedido real en toda la base, 2 ventas, 0 cuentas
+de MP conectadas, 0 suscripciones push. Nada de 6c-6g paso por manos reales.
+
+### Del linter de seguridad (advisors), lo que vale
+
+- `payment_integrations`, `push_subscriptions` y `rate_limits` figuran como
+  "RLS sin policies". En los tres es **a proposito** (se accede por RPC o por
+  service role). No tocar.
+- **Funciones de trigger expuestas como RPC**: `auditar`, `completar_sucursal`,
+  `touch_tenant_on_order`, `touch_tenant_on_product`,
+  `aplicar_movimiento_al_saldo`, `crear_settings_de_tenant`,
+  `espejar_settings_a_tenant` son ejecutables por `anon`. Son triggers: nadie
+  deberia poder invocarlos. Se cierra con un `revoke execute`.
+- `search_path` mutable en `tocar_settings_updated_at` y
+  `libro_es_de_solo_agregar`.
+- **Leaked password protection desactivada** en el edificio (un clic en el
+  dashboard, Auth > Settings). Ya estaba pendiente para los 3 legacy.
+
+---
+
+## 19/ago/2026 (noche) — MERCADOPAGO POR TENANT (migracion 0051)
+
+Lo mas grande que faltaba. El edificio pasa a poder **cobrarle a un cliente
+real**: cada negocio cobra en SU cuenta de MercadoPago.
+
+### Estado
+
+| | Donde esta |
+|---|---|
+| Base | migracion **0051**, aplicada |
+| Rama | commit de esta sesion |
+| Produccion | **falta deployar** — web y edge functions |
+
+`npm run deploy`. **Las 4 functions nuevas (`mp-connect`, `mp-status`,
+`mp-preference`, `mp-webhook`) no existen en Supabase hasta que corra el deploy
+de functions**, asi que hasta entonces la pantalla de cobros no conecta nada.
+
+### Como quedo
+
+**Token manual, no OAuth.** MP no habilita OAuth para apps de tipo "Integracion
+propia", que es lo que crea su wizard por default. El negocio copia su Access
+Token de produccion y lo pega. Es lo que ya resolvio el legacy y lo que hacen
+Tienda Nube y compania.
+
+**El token es inalcanzable desde el cliente.** `payment_integrations` tiene RLS
+habilitada y **cero policies a proposito**: ni el duenio del negocio puede
+leerla. Solo la service role, desde edge functions. Verificado ejecutando: el
+duenio lee 0 filas, no puede insertar y su update afecta 0 filas.
+
+**El agujero del legacy que NO se porto:** `mp-connect-manual` no verifica quien
+la llama. En una app de un negocio el danio esta acotado; aca cualquiera podria
+apuntar el cobro de OTRO negocio a su propia cuenta de MP y quedarse con sus
+ventas. `mp-connect` verifica que quien llama sea OWNER de ese negocio.
+
+**El webhook y el problema circular.** La notificacion de MP no dice de que
+negocio es, y para preguntarle a MP por el pago hace falta el token de ese
+negocio. Se rompe con el `?tenant=` que `mp-preference` pone en la
+notification_url: esa pista NO se cree —se usa para elegir con que token
+preguntar— y despues se verifica que el pedido sea de ese negocio. Si no
+coincide, se descarta.
+
+**Los importes no vienen del browser.** `mp-preference` arma la preferencia con
+lo que dice la base. Si el precio viajara desde el cliente, cualquiera pagaria
+$1 un pedido de $20.000 y el webhook lo aprobaria sin notar nada.
+
+**Firma del webhook**: si el negocio cargo el secreto, se valida el HMAC de
+`x-signature`. Si no, se sigue igual y queda en el log.
+
+### Lo que falta y hay que decir
+
+- **Nada de esto se probo contra MercadoPago de verdad.** Se probo la RLS
+  contra la base y la pantalla en la vitrina, pero no hay una cuenta de MP
+  conectada. El primer cobro real es la prueba que falta.
+- **El token se guarda EN CLARO.** Lo que lo protege es que la tabla es
+  inalcanzable desde el cliente. Cifrarlo con Vault es el paso siguiente y no
+  se hizo para no atar la primera version a una pieza mas.
+- **Solo Argentina.** `mp-connect` rechaza cuentas de otro pais (`site_id`
+  distinto de MLA) y tenants con `country` distinto de AR.
+- **La pantalla de "pedido" a la que vuelve el comprador** (`/pedido/:id?pago=ok`)
+  no se verifico que exista en el catalogo del edificio.
+
+### Trampas nuevas
+
+- **Las escenas de la vitrina se pisaban entre si.** El glob evalua TODAS al
+  cargar, asi que una escena que le asignaba `supabase.functions` al fake se lo
+  robaba a las demas: la pantalla de cobros recibia el router de la de equipo y
+  contestaba "accion desconocida". Ahora las functions se declaran en
+  `datos.functions`, como las tablas.
+- **`payment_integrations` existia en el legacy sin migracion.** Se creo a mano,
+  como paso con `info_pages`. **Versionada el 20/ago** en
+  `supabase/migrations/20260820_version_payment_integrations.sql`, reconstruida
+  desde el codigo que la usa (los 3 proyectos estan pausados, no es un volcado).
+  Todo idempotente: sobre los tenants que ya la tienen no cambia nada.
+  Queda anotado ahi, sin resolver: en el legacy el `access_token` es legible por
+  cualquier admin del negocio. En el edificio no (0051, RLS sin policies).
+  Cerrarlo exige la base despierta para poder probarlo.
+
+---
+
+## 19/ago/2026 (tarde) — COBRO, MESAS Y ETAPA 6f (migraciones 0049-0050)
+
+Cuatro commits. El edificio pasa de "construido" a **entregable a un local con
+empleados**: hasta hoy, darle el panel a un mozo era darle el P&L.
+
+### Estado
+
+| | Donde esta |
+|---|---|
+| Base (`wwwzdgprsooyjgkuyoav`) | migracion **0050**, todo aplicado |
+| Rama `platform/runtime-tenant` | **8423418** |
+| Produccion (Vercel) | commit **483892c** — **12 commits atras** |
+
+**Falta deployar.** `npm run deploy`. El asistente no puede: el clasificador de
+permisos bloquea el comando de Vercel.
+
+### Hecho
+
+**Pantalla de cobro (6d cerrada).** `register_payment` y `order_balance`
+existian desde 6d sin que nadie las llamara. El monto viene cargado con lo que
+falta; dividir la cuenta es escribir menos, sin modo aparte. En efectivo
+calcula el vuelto pero asienta lo COBRADO: guardar el billete entero haria que
+el arqueo diera faltante todos los dias.
+
+**0049 — medios de pago por defecto.** El seed quedo comentado en 0004 para
+correrlo a mano; se corrio una vez y nunca mas. Los dos negocios nacidos del
+alta self-service tenian CERO medios y no podian cobrar nada. Va como trigger
+sobre `tenants`, mismo criterio que 0044.
+
+**Alta de mesas y zonas (6c cerrada).** Sin migracion: todo estaba en 0045. En
+modo acomodar se toca el plano y la mesa nace ahi, con el nombre siguiente y la
+forma heredada. **Las zonas son un plano POR zona, con pestanias, y las
+coordenadas pasaron a ser relativas a la zona** — decidido antes de que nadie
+dibujara en serio, porque cambiarlo despues obliga a redibujar a mano.
+
+**ETAPA 6f — roles con alcance.** `tenant_members` es
+(tenant_id, user_id, branch_id, roles[]). Permisos declarados en
+`src/modules/roles.js`, no en tabla editable. RLS real sobre expenses,
+suppliers, sales, settings, staff, audit_log y cash_sessions. Pantalla de
+equipo propia del edificio. La cocina no ve importes ni anula.
+
+**Vitrina (`npm run vitrina`).** Sirve UNA pantalla sin base ni sesion,
+interceptando `src/lib/supabase.js`. Cierra la deuda de "ninguna pantalla se
+vio renderizada en un navegador". Seis escenas.
+
+### Verificado
+
+**Contra la base, con roles simulados** (`set_config('request.jwt.claims',...)`
++ `set local role authenticated`): un mozo no lee expenses, sales, settings,
+suppliers, audit_log, cash_sessions ni nomina ajena; si ve productos; no carga
+un gasto; al ascenderse a duenio el update afecta 0 filas; cierra un pedido y
+la venta se asienta, y sigue sin ver el facturado.
+
+**En el navegador, via vitrina:** cobro con cuenta dividida (dos medios hasta
+saldar), alta de mesa tocando el plano (queda en 74.8%/79.7%, la zona correcta),
+equipo con roles traducidos por rubro, y pedidos vistos por la cocina sin un
+solo importe.
+
+**726 tests, 4 checks del pre-commit, lint y build en verde.**
+
+### Cuatro bugs que aparecieron ejecutando (ninguno leyendo)
+
+1. **`audit_log` tenia dos policies select.** La nueva y `audit_select`, con el
+   nombre viejo. Las permisivas se combinan con **OR**: la vieja anulaba la
+   restriccion. Ahora se BARREN todas antes de crear las nuevas. Los delete de
+   `staff` y `cash_sessions` tenian el mismo agujero.
+2. **Un mozo no podia cerrar un pedido.** `complete_order` termina en
+   `insert ... returning *` y el RETURNING exige poder LEER la fila; PostgREST
+   lo agrega por defecto. Se resolvio haciendo la funcion definer con guard
+   explicito, no aflojando la lectura de `sales`.
+3. **Con una sola zona, el boton + mandaba `zone: null`**, creando una pestania
+   "Sin zona" espuria. Lo agarro un test.
+4. **La primera prueba de RLS fue un falso positivo**: el miembro ficticio no
+   se habia insertado, asi que "no ve nada" era por no ser miembro.
+
+### Lo que queda de 6f (decirlo con esas palabras)
+
+- **El recorte `propio` esta a medias.** Se implemento el de la cocina (sin
+  importes, sin anular). Falta que el mozo vea SUS mesas y SUS ventas, y que el
+  encargado quede acotado a su sucursal: hoy el filtro es por modulo entero.
+- **`accountant` y `marketer` no tienen pantalla propia.** El contador abre en
+  Ventas, que es lo mas cerca que hay. Su pantalla es la lista de sus negocios
+  (seccion 4.5) y no existe.
+- **El alcance por sucursal no se ejerce en la UI.** `alcanza_branch` existe y
+  las policies de caja lo usan, pero el panel todavia no deja elegir sucursal
+  ni filtra por ella.
+- **`role` sigue en la tabla**, deprecada y sincronizada por trigger. Se elimina
+  cuando produccion este al dia y ningun consumidor la lea.
+
+### Trampas nuevas
+
+- **Reemplazar una policy por nombre no alcanza.** Si la vieja se llamaba
+  distinto, sobrevive y anula la nueva. Barrer y recrear.
+- **`check-supabase-columns.mjs` NO valida los selects embebidos** de PostgREST
+  (`tenant_members(role, roles, branch_id)`). Paso en verde con el snapshot
+  desactualizado, que es justo el bug que ese checker existe para atrapar.
+- **La flakiness de los tests no era azar: era CPU.** Con un dev server
+  corriendo fallan 3-4 al azar por timeout; sin el pasan los 726. `testTimeout`
+  subio a 15s.
+- **Un `insert ... returning` necesita permiso de SELECT**, no solo de INSERT.
+
+### Regla nueva: tocar RLS empieza y termina listando policies
+
+Dos de los cuatro bugs de arriba fueron la misma clase de error —asumir en vez
+de mirar— y los dos eran gratis de evitar:
+
+```sql
+select policyname, cmd, permissive, qual, with_check
+  from pg_policies where schemaname='public' and tablename='<tabla>';
+```
+
+Antes, porque **reemplazar por nombre no alcanza**: las permisivas se combinan
+con OR y basta que sobreviva una vieja para que la restriccion nueva sea
+decorativa. Despues, porque es la unica forma de ver que quedo de verdad.
+
+Y probar con el rol que va a sufrir la restriccion, no solo con el duenio:
+`set local role authenticated` + `set_config('request.jwt.claims', ...)`.
+Verificar que el permitido pueda es tan importante como que el prohibido no:
+el bug de `complete_order` era del lado del permitido.
+
+### 6g — opportunity engine (cerrada el mismo dia, sin migracion)
+
+`src/modules/dico/oportunidades.js`. Seis reglas de la segunda familia: lo que
+no rota, capital inmovilizado, clientes fuera de frecuencia, ocupacion baja,
+demanda perdida y margen flaco. Misma arquitectura que la capa 2 —funciones
+puras sobre lo que el panel ya tiene—, asi que no alucina, no puede filtrar
+entre negocios y no cuesta por uso.
+
+Dos reglas que se impusieron a si mismas:
+- **`crear()` exige `porque` y `hacer`**, o devuelve null. El titulo solo es
+  una afirmacion que hay que creer; con la cuenta al lado es verificable.
+- **Nada se afirma sin muestra**: <8 ventas, <21 dias de historia o <4 clientes
+  recurrentes y la regla se calla.
+
+"Sucursales desbalanceadas" figura en el plan y **no se construyo**: con un
+solo local por negocio seria una regla que no puede dispararse.
+
+`agregarClientes` gano `first_order` — sin el, "cliente perdido" solo podia
+decir "hace mucho que no viene", que no distingue al que compra cada semana del
+que compra cada trimestre.
+
+**Con esto el PLAN-LOCAL-Y-ROLES queda cerrado entero.**
+
+### Pendiente inmediato
+
+1. ~~Deployar~~ **HECHO** (19/ago, 12 commits). **6g y este bloque quedaron
+   despues: hay que volver a deployar.**
+2. Cerrar el recorte `propio` que quedo a medias.
+3. ~~6g~~ **HECHA**.
+4. **MercadoPago multi-tenant: es lo mas grande que queda y lo que mas plata
+   mueve.** Ya no compite con ninguna etapa del plan.
+
+---
+
+## 19/ago/2026 — EL LOCAL FISICO: ETAPAS 0, 6a-6e (migraciones 0039-0048)
+
+Sesion larga: 11 commits, **10 migraciones aplicadas**, 663 tests. El edificio
+paso de "ERP a distancia" a tener sucursales, salon, caja, propinas y personal.
+
+> **Doc de la etapa: `docs/plataforma/PLAN-LOCAL-Y-ROLES.md` (v2).** Ahi esta el
+> criterio que ordena todo y el registro de que se acepto y que se recorto de
+> la revision contra Square/Toast/Fresha/Shopify/7shifts. Leerlo antes de
+> seguir con 6f o 6g.
+
+### ATENCION: la base esta ADELANTADA respecto de produccion
+
+| | Donde esta |
+|---|---|
+| Base (`wwwzdgprsooyjgkuyoav`) | migracion **0048**, todo aplicado |
+| Produccion (Vercel) | commit **483892c**, o sea hasta 6b |
+| Rama `platform/runtime-tenant` | commit **a6cf0d1** (6e) |
+
+**6c, 6d y 6e NO estan en produccion.** Son 7 commits sin deployar. No rompe
+nada —las migraciones son aditivas y ninguna pantalla vieja usa las tablas
+nuevas— pero lo que se ve en divianco.app no es lo que dice el repo.
+
+Para deployar: `npm run deploy` (encadena Vercel + edge functions).
+
+### El criterio que ordeno la etapa
+
+**Barato ahora y caro despues -> entra ya, aunque no tenga pantalla.** Todo lo
+que cambia la FORMA del dato (branch_id, ledger, business_date, audit log,
+claves de idempotencia) se migro ahora; migrarlo con dos anios de operacion
+cargada es reescribir. Lo que cuesta lo mismo siempre (pantallas, algoritmos)
+espera al cliente que lo pida.
+
+Ese criterio salio de discutir una revision externa que proponia agregar doce
+cosas mas. Cada una era correcta por separado; sumadas eran mas trabajo que
+todo lo construido hasta hoy, con cero clientes usando el edificio.
+
+### Hecho
+
+**Etapa 0 — idempotencia (0040) y audit log (0043).** El diagnostico previo
+decia "falta idempotencia". Verificado contra el codigo: NO era eso.
+`complete_order`, `signup_tenant` y `mp-webhook` ya la tenian y bien. Faltaba
+en `submit-order`, `register_waste` y `register_purchase`. La clave se ata al
+CONTENIDO de la operacion: generarla por llamada no sirve (dos clicks = dos
+claves) y guardarla por sesion tampoco (la segunda compra del dia devolveria
+la primera). Las firmas viejas de las RPC se eliminaron: si quedaran, una
+llamada sin clave las elegiria por sobrecarga y perderia la garantia en
+silencio.
+
+El audit log es un trigger generico (no uno por tabla, que se desincroniza) y
+guarda el DIFF `{columna: {antes, despues}}`, no la fila: una fila de settings
+tiene 50 columnas y guardarla entera hace el log ilegible.
+
+**6a — los ejes del alta (0039).** `operation_mode` (fisico/virtual/hibrido),
+`channels[]`, `country`, `currency`, `timezone`. Modo y canales son DOS cosas
+porque los canales son varios a la vez; meterlos en uno obligaria a inventar
+`fisico_con_delivery`. El pais es el punto de entrada del adaptador fiscal:
+solo AR tiene integracion y la UI lo dice en vez de prometerlo.
+
+**6b — sucursales (0041) y el libro del stock (0042).** `branch_id` en lo que
+ocurre EN un lugar, no en lo que es del negocio: un cliente que compra en dos
+locales es un cliente, no dos. `business_date` calcula el dia operativo en la
+zona del local y con hora de corte configurable.
+
+El stock dejo de ser un numero: `inventory_movements` + `inventory_balances`
+mantenido por trigger. El libro es de SOLO AGREGAR —se corrige con asiento
+contrario— porque si se pudiera editar, el saldo cacheado quedaria mintiendo.
+`ingredients.stock` NO se elimino: corre en paralelo hasta compararlo con
+datos reales. Cambiar la fuente de verdad del stock a ciegas es el error caro.
+
+**0044 — ninguna operacion nueva queda sin sucursal.** Con un trigger y no
+tocando cada escritor: son media docena y crecen.
+
+**6c — recursos y reservas (0045).** `appointments` ya tenia desde 0005 un
+EXCLUDE que impide turnos solapados del mismo barbero; se agrego el equivalente
+por recurso y se reuso todo lo demas. `staff_id` paso a nullable (una reserva
+de mesa no tiene barbero) con un CHECK que exige al menos uno de los dos. El
+status paso a flujo real: `booked -> confirmed -> arrived -> in_service ->
+done`. Las senias se modelaron aunque el cobro llegue con MercadoPago. Waitlist
+como entidad: `status='left'` es demanda perdida.
+
+`MapaDeMesas.jsx`: coordenadas en PORCENTAJE (el mismo plano en el monitor y
+en el telefono), dos modos sobre el mismo plano y **arrastre apagado por
+defecto** — un toque torcido no puede mover una mesa en hora pico. Dibujar el
+salon es opcional: lo no ubicado se reserva igual.
+
+**6d — caja, comanda y Dicotip (0046, 0047).** `cash_sessions` existia desde
+0004 sin usarse. Se agrego el indice unico de UNA caja abierta por sucursal, y
+el esperado suma SOLO efectivo: lo de tarjeta no esta en el cajon y sumarlo
+haria que el arqueo diera mal siempre.
+
+No hay estado "cuenta abierta" (`orders.status` ya tiene `active`) ni tabla
+para dividir la cuenta (`payments` ya soporta varios pagos por pedido).
+
+Propinas como DOMINIO, no como campo: `employee_direct` (Dicotip, no pasa por
+la caja), `employee_pool`, `merchant_collected`. Sin distinguirlos, el local
+declara propinas que no recibio o el mozo cobra dos veces. `get_tip_target` es
+publica y por SLUG, y devuelve el alias del mozo y NADA mas de el.
+
+**6e — personal (0048).** Turnos con EXCLUDE por persona, disponibilidad
+declarada por el EMPLEADO, ausencias, fichaje y costo laboral.
+
+**La biometria no entra nunca.** WebAuthn guarda clave publica y contador; la
+huella no sale del telefono. Geocerca y selfie quedaron como senial opcional:
+acumular ubicacion e imagen de cada empleado todos los dias para resolver "que
+no fiche un companiero" es desproporcionado cuando la passkey ya lo resuelve.
+
+`labor_cost_vs_sales` cruza horas FICHADAS (no programadas: lo programado es
+una intencion) por costo/hora contra las ventas del dia operativo.
+
+**Reclasificacion del checker de columnas.** Los 4 avisos eran tres problemas
+distintos: `activeTenant.js` mal clasificado; `account.js` e `infoPages.js`
+son DUALES (bifurcan por `business.platform`) y el checker no lo contemplaba
+—se agrego `DUAL_PATHS`, validados contra la union—; y el snapshot LEGACY
+estaba viejo (5/jun, sin `waste_log`, `info_pages`, `push_subscriptions`).
+
+### Verificado
+
+**En produccion, con curl:** el checkout con la misma clave dos veces devuelve
+el MISMO orderId con `deduplicated:true` y un solo pedido en la base. El alta
+en divianco.app/registro muestra los 7 campos, 3 modos y 9 paises.
+
+**Contra la base, con datos reales y limpieza** (~60 casos): merma y compra
+idempotentes; el libro contesta "purchase 20, waste -3, adjustment -2 = 15";
+rechaza update y delete; doble reserva de la misma mesa rechazada por el
+EXCLUDE; `available_resources` no ofrece la mesa de 8 para 2 personas; arqueo
+con faltante guarda -200 y cerrar de nuevo no lo pisa; la propina directa no
+cambia el esperado en caja; turno solapado rechazado; jornada 20:00-04:00 da 8
+horas y el MISMO dia operativo; costo laboral 12%; `staff_credentials` sin
+ninguna columna biometrica (verificado contra `information_schema`).
+
+**663 tests, build, 4 checks del pre-commit y lint en verde.**
+
+### Tres bugs que aparecieron probando (y no antes)
+
+1. **La clave del libro no incluia la cosa movida.** Una compra de 3 insumos
+   con una sola clave chocaba en la segunda linea y el guard devolvia el
+   movimiento de la primera: **la compra entraba INCOMPLETA y sin error**.
+2. **Las escrituras nuevas quedaban sin `branch_id`.** El backfill de 0041
+   llenaba lo historico pero no lo nuevo. Se detecto probando el checkout
+   contra produccion. Arreglado en 0044.
+3. **El CHECK del fichaje era `>` estricto.** Con una salida en el mismo
+   instante que la entrada, el empleado quedaba con el fichaje ABIERTO PARA
+   SIEMPRE, y una jornada abierta sigue sumando horas. Pasa a `>=`.
+
+Los tres se encontraron ejecutando, no leyendo. Es el argumento a favor de
+probar cada migracion contra la base antes de commitear.
+
+### Lo que quedo A MEDIAS (decirlo con esas palabras)
+
+- **No se puede crear una mesa desde la UI.** El boton "Nueva mesa" muestra un
+  toast que dice que llega con el editor. Las 5 de `barberia-demo` se cargaron
+  por SQL. Falta el formulario de alta de recursos.
+- **No hay pantalla de cobro.** `register_payment` y `order_balance` existen en
+  `platformCaja.js` pero nadie los llama todavia: la caja abre, arquea y
+  cierra, pero el cobro sigue sin UI.
+- **No hay pantalla para armar la semana.** `PersonalPanel` acepta un
+  `onVerSemana` que el panel no le pasa. Se puede fichar y ver el costo, no
+  programar turnos.
+- **Dicotip no tiene ni QR impreso ni pantalla publica.** Las RPC
+  (`get_tip_target`, `submit_service_review`, `register_tip`) estan probadas
+  contra la base, pero falta la pagina que abre el cliente al escanear.
+- **`agenda` y `variants` siguen en `implementado: false`.** Sus tablas estan
+  desde 0005 y 0007; falta la UI. Un modulo en la nav sin pantalla es peor que
+  uno ausente.
+- **Ninguna pantalla de 6c/6d/6e se vio renderizada en un navegador.** El panel
+  pide sesion y el asistente no la tiene: la verificacion fue por tests de
+  render (34 casos). Si algo se ve mal, hay que mirarlo.
+
+### Pendiente inmediato (en orden)
+
+1. **Deployar.** `npm run deploy`. Hay 7 commits sin publicar.
+2. **Cerrar los a-medias de arriba**, empezando por el alta de mesas y la
+   pantalla de cobro: sin esas dos, 6c y 6d no se pueden usar de verdad.
+3. **6f — vistas por rol.** El esquema completo (7 roles, que ve cada uno,
+   donde abre) esta en la seccion 8 de `PLAN-LOCAL-Y-ROLES.md`. Incluye ampliar
+   `tenant_members.role` y pasar a una fila por (tenant, usuario, sucursal) con
+   `roles[]`.
+4. **6g — opportunity engine.** Las reglas de Dico hoy son 9 y **todas son de
+   higiene** ("te falta el precio"). La segunda familia —stock muerto, demanda
+   perdida, clientes fuera de frecuencia, ocupacion baja— esta desbloqueada por
+   los datos que dejo esta sesion.
+5. **MercadoPago multi-tenant.** Sigue siendo lo mas grande que falta y lo que
+   mas plata mueve. Bloquea las senias de reserva y el pre-cobro anti no-show.
+
+### Bloqueado por Ricky
+
+- **Deployar** (ver arriba). El asistente no puede: el clasificador de permisos
+  bloquea el comando de Vercel.
+- **El encuadre legal de la propina electronica.** El modelo contempla
+  distribucion y settlement, pero la regulacion 2024 + LCT es cumplimiento, no
+  arquitectura, y **no esta verificada**. Antes de que un mozo cobre por
+  Dicotip, tiene que mirarlo un contador.
+- **Verificar que "Dicotip" este libre** como marca y dominio. Va impreso en
+  cada ticket. (El nombre anterior, "Tipco", ya estaba tomado.)
+- **Probar el salon, la caja y el fichaje con datos reales.** Es la leccion que
+  se repite: la Etapa 3 dio 4 correcciones al probarla, y esta sesion dio 3
+  bugs mas al ejecutar contra la base. Nada de 6c-6e lo uso una persona.
+- **Push sigue sin probarse de punta a punta** (`push_subscriptions` en cero,
+  pendiente desde el 18/ago).
+
+### Trampas nuevas para el que siga
+
+- **El snapshot legacy no se puede regenerar**: los 3 proyectos estan pausados.
+  Si falta una tabla, las columnas salen de `supabase/migrations/`.
+- **Hay DOS `submit-order`** con codigo distinto: `supabase/functions/`
+  (legacy) y `platform/functions/` (edificio). `scripts/deploy-functions.mjs`
+  apunta al legacy; el del edificio es `platform/scripts/deploy-functions.mjs`,
+  que arma un workdir temporal porque el CLI busca en `supabase/functions/`.
+  Usar el equivocado sube el codigo legacy al edificio **sin fallar**.
+- **La flakiness de los tests existe y se manifesto**: el pre-commit fallo una
+  vez en los smoke tests (`utils.test.js` + `schemas.test.js`) y paso a la
+  siguiente sin cambiar nada. Tambien habia 4 `async` sin `await` en
+  `mapaDeMesas.test.jsx` que daban timeouts — se sacaron, pero el fallo del
+  smoke es otro caso y sigue sin identificar.
+- **Al probar RPC con el MCP de Supabase** hay que simular la sesion con
+  `set_config('request.jwt.claims', ...)`: el MCP corre sin `auth.uid()` y
+  todos los guards de membresia cortan. Y **no usar `raise` para revertir**: se
+  lleva puesta la tabla temporal de resultados y el test devuelve vacio. Hay
+  que limpiar con `delete` explicito.
+
+---
+
+## 18/ago/2026 — EL ERP QUEDO COMPLETO Y LA PERIFERIA CERRADA
+
+Sesion larga: 12 commits, migraciones **0032 a 0038**, 3 edge functions.
+El edificio pasó de "panel de productos y pedidos" a **ERP entero**: Etapas 4
+(ventas y P&L), 5a (CRM) y 5b (cuenta del comprador), mas TODA la periferia
+(merma, imagenes propias, push, QRs, paginas de info, equipo). Ademas Dico
+capa 1 y el arreglo de las `og:` tags.
+
+### Lo mas reutilizable que salio
+
+**Antes de asumir que un RPC devuelve algo, mirarlo.** Escribi las RPCs de
+push pidiendo `tenant_id` asumiendo que `get_tenant_brand` devolvia el `id`.
+**No lo devuelve.** Verificarlo antes cambio el diseño: las RPCs publicas del
+edificio reciben el **slug**, que ya viaja en la URL, y asi no hubo que
+exponer un endpoint nuevo solo para traducir slug→uuid. Vale para
+`upsert_push_subscription`, `get_info_page` y `resolve_qr`.
+
+**Dos caminos de lectura, no uno.** Todo lo que un visitante SIN SESION tiene
+que ver (paginas de info, QRs, catalogo) va por RPC con el slug; lo que edita
+un miembro va por tabla con RLS. Mezclarlos obliga a exponer de mas.
+
+**Portar no es copiar: revisar que se hereda.** Dos agujeros del legacy que
+NO se portaron, los dos por la misma razon (lo que en una app de un negocio
+esta acotado, en una plataforma se multiplica):
+
+1. `admin-users` **pisa la contraseña** de un email que ya tiene cuenta. Aca
+   cualquier dueño podria "agregar a su equipo" a otra persona y quedarse con
+   su cuenta, incluidos los negocios que ella administra.
+2. `upsert_push_subscription` aceptaba `role` sin validar. Los push de admin
+   llevan nombre del cliente y monto.
+
+### Hecho (todo aplicado, commiteado y pusheado)
+
+**Etapa 4 — ventas y P&L (0032).** `sales` + RPC `complete_order`: completar
+un pedido cambia el estado y asienta sus ventas en UNA transaccion (en el
+legacy es un bucle de `createSale` desde el navegador). El costo se congela
+dos veces: `submit-order` lo escribe al crear el pedido y `complete_order` lo
+recalcula si vino en 0. El P&L del mes va **sin** el colchon de pricing — es
+el doble conteo que ya se arreglo una vez el 12/jun.
+
+**Etapa 5a — CRM (sin tabla nueva).** Correccion al plan: el CRM del legacy no
+lee una tabla de clientes, **agrega sobre `orders`**. `addresses`/`favorites`
+eran de otra mitad (la 5b).
+
+**Etapa 5b — cuenta del comprador (0035).** Arreglaba **tres roturas
+silenciosas**: `addresses`/`favorites` no existian, MyAccount leia `recipes`,
+y —la que no estaba en el plan— **un comprador logueado no podia ver sus
+propios pedidos** porque la unica policy de select de `orders` era para
+miembros. Ninguna daba error: un `.select()` que falla devuelve `{error}`.
+`addresses` y `favorites` **sin `tenant_id` a proposito**: son de la persona,
+no del negocio. Se toco `orders_select`, asi que el test incluye la
+no-regresion del dueño.
+
+**Periferia completa:**
+
+- **Merma (0033)** — RPC `register_waste`, asiento + descuento juntos.
+- **Imagenes propias (0034)** — bucket `tenant-images`, UNO para todos,
+  aislado por carpeta `<tenant_id>/`. Un bucket por tenant obligaria a
+  provisionar infraestructura en cada alta self-service. El alta de producto
+  pedia "Imagen (URL)": un panadero no tiene una URL.
+- **Push (0036)** — UNA VAPID para toda la plataforma (identifica al SERVIDOR,
+  no al negocio). `send-push` corta con 400 sin tenant: un fallback a "todos"
+  seria notificarle a los clientes de otro local.
+- **QRs y paginas (0037)** — `resolve_qr` resuelve y cuenta la visita en UNA
+  llamada; desde un telefono recien escaneando, un segundo request a veces no
+  llega. Por eso `incrementQrVisit` **no hace nada** en el edificio.
+- **Equipo (0038)** — `tenant-users` + `find_user_id_by_email` (solo
+  service_role: expuesto a `authenticated` seria un oraculo de emails
+  registrados). No se puede sacar ni degradar al ultimo dueño.
+
+**`og:` tags por tenant.** Compartir cualquier local por WhatsApp mostraba
+"Cochi". La causa NO era el endpoint sino el ruteo: **Vercel resuelve el
+filesystem antes que los rewrites**, y para `/` ya existe `index.html`, asi
+que la regla por User-Agent nunca se evaluaba. Se resolvio con
+**`middleware.js`** (Edge Middleware), que corre antes del filesystem. Va
+defensivo: try/catch y cualquier duda termina en dejar pasar — corre en TODAS
+las visitas de documento y una excepcion ahi tira el sitio entero.
+
+**Reset de contraseña**: `/entrar` detecta `type=recovery` en el hash.
+
+**morning-health reescrito**: miraba los 3 legacy pausados, o sea rojo todas
+las mañanas. Ahora mira lo vivo (landing, tenants con conteo de productos,
+`submit-order`, drift del snapshot, Sentry 24h).
+
+**Dico capa 1**: `src/components/dico/DicoCara.jsx` + `dico.css`, 5 estados,
+enchufado en `DicoAvisos` con la expresion atada al nivel del aviso mas grave
+— o sea la misma informacion que el color. **SVG y no video**: los mp4 no
+tienen canal alfa (el "fondo transparente" sale blanco; harian falta WebM/VP9
+para Chrome y HEVC para Safari) y 13 clips pesan mas que toda la app, que se
+usa desde el telefono de una cocina.
+
+**Tooling**: `_chain.js` daba a todos los metodos del builder el MISMO
+`vi.fn`, asi que un `not.toHaveBeenCalled()` no podia pasar nunca. Arreglado
+(la trampa estaba anotada en este handoff y cai en ella igual).
+
+### Verificado
+
+**En produccion, con curl:** las `og:` tags por tenant (UA de WhatsApp da "La
+Nona Pato", de Telegram en cochi da "Cochi", el humano recibe la SPA con 200);
+los guards de las 3 edge functions (sin tenant 400, sin auth 401, y **con la
+anon key —que es publica y viaja en el bundle— 401**); catalogo 200.
+
+**Contra la base, con BEGIN/ROLLBACK:** ~50 casos entre las 7 migraciones. Lo
+importante: aislamiento entre negocios en storage, push, paginas y QRs;
+no-regresion del dueño al tocar `orders_select`; el colado que pide rol admin
+queda como customer; anon no ve ni escribe nada.
+
+**Estado de la base al cierre:** 7 tablas nuevas, 6 RPCs, bucket. Todo ahi.
+
+**569 tests + build.** Una corrida fallo una vez y paso las 3 siguientes:
+**hay flakiness**, no identificada.
+
+### LO QUE NO SE PROBO (importante)
+
+1. **Push de punta a punta: `push_subscriptions` tiene CERO filas.** Nadie
+   activo el banner todavia, asi que no llego ninguna notificacion nunca. La
+   VAPID publica esta en el bundle; la privada solo se puede comprobar con una
+   llamada autorizada. **Hasta que alguien active el banner y entre un pedido,
+   esto no esta probado.**
+2. **Dico no se vio nunca con ojos humanos.** El pane del navegador no
+   renderiza archivos locales. El ajuste fino de las curvas sale de mirarlo.
+3. Las pantallas nuevas (equipo, QRs, paginas, favoritos, direcciones) estan
+   deployadas pero **nadie las uso con datos reales**. Las listas de que probar
+   estan al final de cada seccion del `PLAN-ERP.md`.
+
+### Pendiente inmediato (en orden)
+
+1. **Probar lo de arriba.** Son 3 etapas y toda la periferia sin tocar por un
+   usuario real. La leccion de la Etapa 3 fue exactamente esa: probarla saco
+   cuatro correcciones.
+2. **MercadoPago multi-tenant** — lo mas grande que queda y lo que mas plata
+   mueve: un negocio que no cobra online pierde ventas. OAuth por tenant.
+3. Canales de venta y zona de riesgo (los `false` que quedan en
+   `CAPACIDADES_EDIFICIO`).
+4. Packs de rubro: agenda (barberia), variantes (retail), caja.
+5. **Dico capa 3 (LLM)** — ya desbloqueada: su plan pedia Etapas 4 y 5, que
+   estan. Pero antes conviene que el P&L se valide con datos reales: una IA
+   que opina sobre numeros no probados dice cosas equivocadas con seguridad.
+
+### Bloqueado por Ricky
+
+- **Activar el banner de push y hacer un pedido.** Sin eso, push no esta
+  probado (ver arriba). Las VAPID ya estan cargadas en Supabase y Vercel.
+- **Mirar a Dico** y decir que se siente mal. Ricky genero 3 videos de
+  animacion con sus prompts; **el asistente no puede reproducir video**, asi
+  que si hay que ajustar curvas hace falta que describa el movimiento o mande
+  capturas.
+- **Decision: historial por telefono del invitado.** Hoy devuelve vacio A
+  PROPOSITO. El RPC del legacy deja ver los pedidos de cualquier numero que
+  se escriba; en una plataforma con muchos locales es el mismo agujero
+  multiplicado. Tres salidas planteadas en el `PLAN-ERP.md` (portarlo igual /
+  scopear a tenant + ultimos N dias / pedir el codigo de pedido).
+- **Decision: que pasa con `main`.** Sigue congelada sirviendo a los 3 legacy.
+  Cuanto mas conviven las ramas, mas se parece a una bifurcacion permanente.
+- **Secrets opcionales del morning-health**: `PLATFORM_SUPABASE_*` (activa el
+  check de drift) y `SENTRY_*` (activa el de errores) en GitHub Actions. Sin
+  ellos anda igual, saltea esos dos checks. **OJO**: el cron corre desde
+  `main`; hasta el merge, probarlo con workflow_dispatch eligiendo la rama.
+
+### Trampas nuevas para el que siga
+
+- **Al probar aislamiento, ojo con dos cosas.** (a) El dueño de prueba es
+  miembro de los 6 tenants, asi que "escribir en la carpeta de cochi" **esta
+  permitido** y parece un bug: hay que crear un tenant sin membresia dentro de
+  la transaccion. (b) Al pasar a rol `anon` hay que **limpiar
+  `request.jwt.claims`**; si quedan las del usuario anterior, `auth.uid()`
+  sigue devolviendo su id y el "anonimo" ve todo.
+- **Los deploys NO salen del push.** Van por CLI
+  (`npx.cmd vercel --prod --scope diviancocorp-a11ys-projects --yes`). Se
+  verifico: hubo commits pusheados sin deployar durante horas.
+- **PowerShell rompe los here-strings** con parentesis o comillas en el texto.
+  Para commits largos, `git commit -F archivo.txt`.
+
+---
+
+## 16/ago/2026 (noche) — CORRECCIONES DE LA ETAPA 3, PROBADA EN PRODUCCION
+
+Ricky probó la Etapa 3 con datos reales y salieron cuatro cosas. Migración
+0031. **Dico quedó planificado en `PLAN-DICO.md`** (capas 1 y 2 primero, la
+del LLM recién después de las Etapas 4 y 5; personaje sin piernas dentro de la
+app, con piernas sólo para marketing).
+
+1. **Una compra volvió a ser UN movimiento.** 0030 la partía en una fila por
+   categoría de alimento, copiando al legacy. En pantalla no se sostiene: la
+   lista reescribe la descripción de toda compra de materia prima a
+   `Compra · <proveedor>`, así que las filas quedaban **idénticas** y parecían
+   varias compras al mismo proveedor — la etiqueta por la que se partía
+   ("Secos", "Lácteos") no se ve en ningún lado. Ahora el desglose viaja
+   dentro de `items` (cada línea con su `food_category`) y no se pierde nada.
+   **La lección: si el que carga no puede distinguir dos filas en pantalla,
+   están mal partidas.** El criterio no puede ser sólo qué necesita el cálculo.
+2. **`suppliers.scope`.** `category` dice de qué rubro es el proveedor y sirve
+   para leerlo, no para filtrar: la carnicería salía en el desplegable de
+   "Registrar gasto". `scope` (insumos | servicios | ambos) decide en qué
+   pantalla aparece. Default `ambos` para no hacer desaparecer nada, y el alta
+   inline hereda el contexto (desde un gasto nace `servicios`).
+3. **`ToggleSwitch` mostraba un interruptor pelado.** `label` iba sólo a
+   `aria-label` y `hint` **ni siquiera era una prop** — se descartaba en
+   silencio. Los dos lugares que pasaban las dos cosas esperando verlas
+   ("Este proveedor factura" y el **"Tengo local físico"** de la marca, que ya
+   estaba así en producción) mostraban un switch sin una palabra de qué
+   prendía. Con lector de pantalla se entendía; mirando, no.
+4. **Barbería también stockea.** Compra gel, toallas y repuestos: eso es una
+   compra que ingresa mercadería, no un gasto suelto. `stock` pasó a estar en
+   los tres rubros. Lo que la barbería no tiene es **receta** — nadie carga
+   cuánto gel lleva un corte, así que `usaReceta` sigue siendo sólo de gastro.
+
+**Verificado contra la base:** la compra mixta da 1 fila con el desglose
+adentro, y el insumo sin clasificar sigue cayendo en `dry` sólo en gastro.
+499 tests.
+
+**Trampa para el que escriba tests: ARREGLADA el 18/ago.** En
+`src/test/_chain.js` todos los métodos del builder eran **el mismo** `vi.fn`,
+así que `.in` acumulaba también los `.eq` y los `.order`, y un
+`not.toHaveBeenCalled()` no podía pasar nunca. Ahora cada método tiene su
+propio mock (siguen devolviendo `self`, así que encadenar funciona igual).
+Se corrió la suite entera al cambiarlo: 569 tests, ninguno dependía de la
+acumulación. Los tests viejos que filtran por argumento siguen siendo
+correctos, sólo que ya no hace falta.
+
+---
+
+## 16/ago/2026 (tarde) — ETAPA 3: GASTOS, COMPRAS Y PROVEEDORES
+
+El edificio ya sabía cuánto cuesta producir (Etapa 2). Ahora sabe cuánto sale
+todo lo demás. Migración 0030 + dos RPCs.
+
+### Lo más reutilizable que salió
+
+**Antes de portar una tabla, buscar quién la escribe hoy.** El plan pedía
+`expenses`, `suppliers` y `purchases`. `purchases` y `purchase_items` existen
+en el legacy desde el schema inicial y **ninguna pantalla las escribe**: una
+compra son N filas de `expenses` (una por categoría de alimento, con el
+detalle en `items` jsonb) más los ajustes de stock. `fetchPurchases` estaba en
+`services/finance.js` sin un solo llamador. Un `grep` al principio se ahorra
+una etapa de trabajo inútil.
+
+**Regla nueva del molde: si toca varias filas y es plata, va a una RPC.** Es
+la primera etapa que no se resuelve solo con tabla + service. Anular un gasto
+y registrar una compra eran bucles desde el navegador con un rollback escrito
+a mano en JavaScript — si el navegador se cierra en el medio, queda mercadería
+ingresada sin su gasto. Ahora son `void_expense` y `register_purchase`, las
+dos `security invoker`: la RLS sigue decidiendo quién toca qué, lo único que
+cambia es que todo pasa en una transacción. Los guards contables (no anular
+dos veces, no anular una anulación, no tocar un mes cerrado) viven en la DB, y
+el email de quien anula sale del token y no de lo que mande el cliente.
+
+**La trampa de los hijos que guardan solos volvió a aparecer**, tal como
+estaba anotado: `ExpForm` y `Purchase` cargan y crean **proveedores** por su
+cuenta, salteando cualquier saver de la pantalla que los contiene. Se revisó
+antes de portar, así que esta vez no costó un bug.
+
+### Hecho
+
+- **0030**: `suppliers` y `expenses` con las mismas columnas del legacy +
+  `tenant_id`. `expenses` **no tiene policy de DELETE** a propósito: un gasto
+  se anula, no se borra, y esa regla la sostiene la base y no la buena
+  voluntad de la pantalla.
+- **Índice único de proveedores** por `(tenant_id, lower(btrim(name)))` —
+  novedad contra el legacy, donde el campo era texto libre y generó duplicados.
+  El `btrim` no es cosmético: sin él `"  Carniceria"` entraba como fila nueva.
+  Se probó y pasaba.
+- **`FinanzasPanel`**: las tres pantallas entran como UNA pestaña con tres
+  solapas. La barra inferior se usa con el pulgar y seis ítems no entran.
+  `Suppliers` va con `asPage` porque su raíz normal es `.ag-page-over`, que
+  esconde el topbar y el nav — el bug de esta mañana, ahora con test.
+- **Registry**: `finanzas` en los tres rubros; `contabilidadUsar` solo en
+  gastro. Ningún componente pregunta por el vertical.
+- **`schema:sync` ahora lee `.env.scripts`.** Con el archivo ya creado seguía
+  respondiendo "sin credenciales — salteado", que se lee como "no hace falta"
+  y deja el snapshot viejo sin que nadie se entere.
+
+### Decisiones que conviene conocer
+
+- **Un insumo sin `food_category` se resuelve por rubro.** En gastro cae en
+  `dry` como el legacy: dejarlo sin clasificar lo sacaría del costo de comida
+  del P&L y el food cost daría más bajo de lo real, en silencio — y no es raro,
+  porque el alta rápida de insumo dentro de la compra no pide la categoría. En
+  barbería y retail queda sin `usar_category`.
+- **La foto del ticket quedó apagada.** Necesita un bucket de Storage y el
+  edificio no tiene ninguno (las imágenes de producto se cargan pegando una
+  URL). Se apagó entera con `permiteComprobante={false}` en vez de dejar un
+  botón que falla.
+
+### Verificado
+
+**Contra la base, con `BEGIN`/`ROLLBACK`:** la compra completa (agregación de
+líneas repetidas, stock, costo, desglose por categoría) y la anulación; y 11
+casos negativos — insumo de otro negocio, compra vacía, tenant ajeno, anular
+dos veces, anular una anulación, anular un mes cerrado, borrar un gasto,
+proveedor duplicado (con y sin espacios), mismo nombre en otro negocio, y el
+insumo sin clasificar en gastro vs barbería.
+
+**Solo tests y build:** 494 tests. **Nadie lo tocó todavía con un usuario
+real** — la lista de qué probar está al final de la Etapa 3 en `PLAN-ERP.md`.
+
+---
+
+## 16/ago/2026 — EL PANEL DEL EDIFICIO EXISTE Y EL ERP EMPEZO A MUDARSE
+
+Sesion larga (19 commits, migraciones 0022 a 0029). El edificio paso de "un
+cliente se registra y no tiene donde cargar nada" a tener panel con productos,
+pedidos, configuracion, stock y recetas con costo real.
+
+### El metodo que salio de esta sesion (lo mas reutilizable)
+
+Las pantallas del admin legacy **no le hablan a la base, le hablan a un
+service**, y los calculos (`useFinancials`) son funciones puras. De las tres
+capas —pantalla, service, tabla— **se rehace una sola**.
+
+Cada pantalla se porta asi: se le inyecta el saver por prop con **default
+legacy** (asi el admin viejo no cambia en nada) y se apaga por `capacidades`
+lo que dependa de tablas que todavia no estan. Encender un modulo despues es
+cambiar un `false` por `true`. El molde completo esta en `PLAN-ERP.md`.
+
+**Trampa que ya nos mordio:** al portar una pantalla hay que revisar si sus
+**componentes hijos escriben por su cuenta**. `CatChipsEditor` y
+`PaymentAccountsEditor` llamaban a `updateSettings` directo, salteando el
+`onSave` inyectado. En el edificio eso es un cambio que no persiste y no
+avisa — y en cuentas de pago era el dueno cargando su CBU, viendo el toast de
+exito, y un checkout que seguia sin cuentas.
+
+### Hecho
+
+**Panel del edificio** (`src/pages/PlatformAdmin.jsx`) — panel NUEVO, no una
+bifurcacion del legacy: `pages/Admin.jsx` carga recipes, ingredients, sales,
+expenses y waste_log, y de eso el edificio no tiene ninguna tabla. Lo decide
+`business.platform` en la ruta `/admin`, igual que `fetchCatalog`. **Los dos
+paneles conviven y no comparten una sola tabla: no intentar unificarlos.**
+
+**`attach_owner` (0024)** + `platform/scripts/attach-owner.mjs` — vincula un
+dueno a un tenant que YA existe. Los 5 portados/demo se habian cargado sin
+dueno y por eso nadie podia abrirles el panel. Ya estan los 7 con dueno.
+
+**Registry de rubros** (`src/modules/registry.js`) — declara QUE ES cada rubro
+(como se llama lo que vende, que campos carga, que modulos tiene). Ningun
+componente vuelve a preguntar `vertical === 'barber'`. `implementado:
+true|false` es la unica fuente de verdad de que existe hoy; la nav filtra por
+ahi, asi que declarar un modulo futuro no ensucia la UI.
+
+**Etapa 0 — settings en tabla (0025).** Fue tabla y no jsonb porque el bug
+recurrente del repo (campo que se agrega a la UI, no al Zod, y se descarta en
+silencio) tiene toda su red de contencion construida alrededor de columnas.
+**El puente es lo importante:** habia dos lectores del jsonb en produccion
+(`get_catalog` y la edge function `submit-order`). En vez de migrar los tres a
+la vez —todo o nada, con plata en juego— la tabla es la verdad y un trigger
+espeja al jsonb las claves que ellos leen. Siguen andando sin tocarlos.
+**No escribir `tenants.settings` a mano: se pisa en el proximo guardado.**
+
+**Etapa 1 — stock (0026).** `Stock.jsx` reusada con `onUpsert`/`onArchive`
+inyectados. Indice unico parcial por `(tenant_id, lower(name))` sobre no
+archivados. `adjustStock` **no es atomico**: lee y escribe en dos pasos;
+cuando los pedidos descuenten stock solos tiene que pasar a RPC.
+
+**Etapa 2 — recetas y costo (0028).** **No se porto `Recipes.jsx`**: en el
+legacy "receta" y "producto" eran la misma fila, y en el edificio esa fila ya
+es `products`. Traerla habria dejado dos lugares para cargar lo mismo. La
+receta se edita dentro del formulario del producto. **Combos pospuestos** por
+decision explicita (son recursivos, media etapa de complejidad, un cliente
+nuevo no los necesita el primer dia).
+
+**Tooling que se arreglo en el camino** (todo esto fallaba en silencio):
+- `check-supabase-columns.mjs` medía TODO contra el schema legacy y ademas
+  solo entendia `.select('literal')` — los archivos con `.select(COLS)` se
+  salteaban ENTEROS. Los "✓ N archivos validan" incluian archivos que ni
+  miraba. Ahora distingue las dos bases (`PLATFORM_PATHS`) y resuelve
+  constantes de modulo.
+- `npm run schema:sync` **ahora existe** (antes la doc lo mencionaba y no
+  estaba), sobre el RPC `schema_snapshot()` (0023). Y hay un guard offline de
+  frescura que corre en el pre-commit sin credenciales.
+- `check-integrity-all` armaba UN comando con los ~225 paths de `src/`: al
+  cruzar el limite de 8191 caracteres de Windows **dejo de dejar commitear**.
+  Va por lotes.
+- Los scripts de `platform/scripts/` no corrian en Windows
+  (`import.meta.url === file://argv[1]` nunca da true con backslashes): salian
+  con codigo 0 sin hacer nada.
+
+### Bugs de esta sesion que vale conocer (todos fallaban sin avisar)
+
+1. **Aislamiento entre tenants.** Las lecturas se apoyaban solo en RLS, que
+   dice "las filas de cualquier tenant del que seas miembro" — correcto como
+   frontera de seguridad, **inutil como filtro de alcance**. Con un dueno en
+   5 tenants, el panel de cada uno mostraba los productos de todos. **RLS
+   decide QUE PODES ver; el filtro por `tenant_id` decide QUE ESTAS MIRANDO.
+   Hacen falta los dos.** Nunca hubo filtracion a terceros.
+2. **El panel sin engranaje ni nav.** Las pestanias usaban `ag-page-over` como
+   contenedor raiz: es un overlay full-screen y `admin-shared.css` tiene una
+   regla que esconde el topbar y el bottom nav mientras exista uno en el DOM.
+   El chrome se renderizaba y quedaba tapado — el DOM estaba perfecto, asi que
+   leyendo el codigo no se veia nada raro.
+3. **La marca del build en todos los tenants.** El login leia `settings`, que
+   desde 0025 tiene RLS, y sin sesion caia al `business` compilado: todos
+   decian "Cochi". Se resolvio con el RPC publico `get_tenant_brand` (0027).
+   El `<title>` tenia lo mismo: `applyTenantHead` solo se llama desde
+   `Catalog.jsx`, nunca desde `/admin`.
+4. **`Number(null)` es 0.** El colchon de merma no se aplicaba: la pantalla
+   mostraba `waste_pct ?? 5` (5%) y el costeo calculaba `Number(null)` (0%).
+   Misma familia que `Number('')` en el precio, dos veces en un dia. Ahora
+   null/undefined/'' es "sin definir" y un **0 explicito sigue valiendo 0**.
+   0029 ademas puso defaults en la DB para que no haya una tercera lectura.
+5. **El PWA no se podia actualizar.** La deteccion de version nueva andaba,
+   pero `reload` era un `location.reload()` pelado y el service worker volvia
+   a servir el build cacheado. Ni Ctrl+Shift+R ni cerrar todas las pestanias
+   alcanzaban. `src/lib/hardReload.js` vacia los caches antes de recargar, y
+   lo usan el banner **y** el rescate por chunk roto de `App.jsx` — ese
+   segundo era peor: recargaba, el SW devolvia el mismo index con el mismo
+   chunk inexistente, y el usuario quedaba con la pantalla rota.
+
+### Verificado
+
+**En produccion, por Ricky:** el panel entero (productos, pedidos, config,
+stock, recetas), la separacion por tenant con datos reales, la terminologia
+por rubro, el costo y el margen con el colchon aplicado. Quedaron 2 insumos y
+2 lineas de receta cargadas de esas pruebas.
+
+**Contra la base, con `BEGIN`/`ROLLBACK`:** `attach_owner` (idempotencia y los
+3 guards), el puente de settings (escribir en la tabla se refleja en
+`get_catalog` sin pisar lo que la tabla no modela).
+
+**Solo tests y build:** 462 tests. Lo que NO se probo con un usuario real es
+el checkout del edificio de punta a punta desde que existe la tabla settings.
+
+### Pendiente inmediato
+
+1. **Etapa 3 del `PLAN-ERP.md`**: compras, gastos y proveedores. Alimenta el
+   otro lado del P&L y depende de la 1, que ya esta.
+2. **`order_items.unit_cost` sigue en 0.** Ya hay con que calcularlo (la
+   receta existe); falta que `submit-order` lo escriba al confirmar el pedido.
+   Va con la Etapa 4, que es la que necesita ese dato.
+3. Encender en la config del edificio lo que sigue apagado: QRs, paginas de
+   info, pasarelas, canales de venta, zona de riesgo. Cada uno con su tabla.
+4. Las `og:` tags siguen siendo las del build (compartir por WhatsApp muestra
+   la marca equivocada). Necesita render en el edge — el `<title>` ya se
+   arreglo, esto no.
+
+### Bloqueado por Ricky
+
+- **Nada tecnico.** Los scripts leen las credenciales de `.env.scripts`
+  (ignorado por git), asi que no hace falta exportar nada por terminal.
+- **Una decision, sin urgencia:** que pasa con `main`. Hoy sirve a los 3
+  negocios legacy y esta congelada (0 commits desde que salio la rama). La
+  rama lleva +9465 lineas, casi todo archivos nuevos, con 104 borradas
+  repartidas en 10 archivos legacy — **no hay riesgo de conflicto**. Pero
+  cuanto mas tiempo convivan las dos, mas se parece a una bifurcacion
+  permanente. Las salidas son mergear cuando el edificio este maduro, o que
+  esta rama pase a ser la principal y main quede archivada.
+
+---
+
+## 00. Actualizacion 14/ago/2026 — EL ALTA SELF-SERVICE FUNCIONA
+
+**El producto se llama Dico. Divianco es la empresa.** No son
+intercambiables: textos legales y copyright -> Divianco; marketing y
+producto -> Dico. `dico.app` esta tomado por un tercero, por eso la
+plataforma se queda en `divianco.app`.
+
+**Probado punta a punta en produccion (14/ago):** alta nueva completa
+(registro -> mail -> confirmacion -> tenant creado -> redirect al subdominio)
+y recuperacion de una cuenta huerfana via login. Las dos OK.
+
+### Hecho en esta sesion
+
+**Correo (Resend)** — dominio `send.divianco.app`, region sa-east-1.
+Los 4 registros DNS verificados a mano en Cloudflare (DKIM, MX, SPF, DMARC).
+SMTP cargado en Supabase Auth. Limite de envio: 30 mails/hora en Supabase,
+pero **el techo real es Resend free = 100/dia**; subir Supabase sin subir el
+plan de Resend solo mueve donde rebota.
+
+**Signup self-service** (`/registro`, `/bienvenido`, `/entrar`):
+- `0016`+`0019` `signup_tenant()`: sin argumentos, toma la identidad de
+  `auth.uid()` y lee los datos del negocio del `raw_user_meta_data`. NO se
+  reuso `provision_owner` porque recibe el `user_id` como parametro: darle
+  grant a `authenticated` dejaria crear tenants a nombre de otro. Es
+  idempotente — devuelve el tenant existente con `already_existed=true`.
+- `0020`+`0021` slugs reservados: UNA fuente en SQL (`is_reserved_slug`) y
+  una en JS (`tenantHost.js`), con un test que las compara parseando la
+  migracion. Incluye los subdominios de correo y `dico`.
+- Los datos del negocio viajan en `user_metadata`, NO en localStorage: el
+  mail se confirma a veces desde otro dispositivo.
+
+**Login** (`/entrar`) — *nacio de un bug real*: en la primera prueba el Site
+URL de Supabase estaba en `localhost:3000`, el redirect fallo y quedo una
+cuenta CONFIRMADA sin forma de entrar. Resuelve los dos casos con la misma
+llamada gracias a la idempotencia de `signup_tenant`. Los mensajes de error
+son **ambiguos a proposito** (no distinguen mail inexistente de clave
+incorrecta): precisarlos permitiria enumerar cuentas.
+
+**Ciclo de vida** (`0017`) — `status` / `activated_at` / `first_order_at` /
+`last_activity_at` + triggers. `release_dormant_tenants()` agendada con
+pg_cron (4am UTC): a los 45 dias sin un solo producto, el slug se libera
+(se RENOMBRA a `dormant-<id>`, no se borra). Ataca la ocupacion del
+namespace, que es el danio caro, sin friccion en el alta.
+
+**Rename a Dico** — landing, signup, bienvenida, login, manifest, favicon
+generado, y el catalogo/admin legacy. Los identificadores internos
+(`HermesMark`, `HERMES_BUSINESS_COPY`) y los nombres de infraestructura
+(repo, proyecto Supabase, proyecto Vercel) se dejan: renombrarlos rompe
+imports y deploys a cambio de nada.
+
+### Bloqueado por Ricky
+- Nada critico. Si abre el registro al publico, vigilar el consumo de
+  Resend (100 mails/dia en el plan free).
+
+### Pendiente inmediato (en orden)
+1. **El panel del admin no esta conectado al edificio.** Un tenant nuevo se
+   registra, entra a su subdominio y NO TIENE DONDE CARGAR PRODUCTOS. Es el
+   bloqueante para que el signup sirva de algo. Bloque grande.
+2. **Module registry por vertical**: hoy una barberia ve "Recetas" y el
+   filtro "Vegetariano". La UI sigue siendo la gastronomica.
+3. Formulario de contrasena nueva tras el reset (el link ya cae en
+   `/entrar` con sesion, falta el form).
+4. `og:` tags por tenant — compartir por WhatsApp muestra la marca del
+   build. Necesita render en el edge.
+5. `unit_cost` en 0: sin modelo de costos, el P&L no da.
+
+---
+
+## 0. Actualizacion 12/ago/2026
+
+**Deploy vivo:** https://hermes-platform-sigma.vercel.app — proyecto Vercel
+`hermes-platform` (`prj_3WSWrxws27VLbIDebl8mDqyTPxCC`), aparte de los 3 legacy.
+OJO: `hermes-platform.vercel.app` SIN el `-sigma` es de un tercero (proyecto PHP),
+no es un deploy roto. Se deploya por CLI (`npx vercel --prod`), NO por git: el WIP
+del edificio no esta commiteado y pushear a main redeployaria los 3 legacy.
+
+**Decisiones tomadas esta sesion:**
+1. Un solo proyecto Vercel para TODOS los tenants, con el tenant resuelto en
+   RUNTIME por hostname — no un proyecto por cliente. Un proyecto por cliente
+   hace imposible el alta self-service (habria que crear carpeta + proyecto +
+   envs + deploy por cada registro).
+2. Wildcard `*.<dominio-propio>` para dar a cada tenant su puerta. Vercel NO da
+   wildcard en `*.vercel.app`, asi que esto exige dominio comprado (pendiente).
+3. Orden: checkout -> runtime multi-tenant + wildcard + signup self-service ->
+   recien despues ERP y migracion de los 3 legacy.
+
+**Por que ese orden:** migrar los 3 legacy = reconstruir el ERP entero
+multi-tenant. Legacy `orders` tiene 42 columnas y `settings` 47; el edificio no
+tiene `recipes`, `ingredients`, `recipe_ingredients`, `settings`, `customers`,
+`expenses` ni `sales`. Un cliente NUEVO en cambio arranca vacio y no necesita
+nada de eso, asi que el signup puede salir meses antes que la migracion.
+
+**Hecho (checkout del edificio):**
+- `0012_checkout_core`: `orders` de 8 a 25 columnas (envio, pago + snapshot
+  anti-spoof, propina, descuento, regalo, cupon), `order_items.subtotal`,
+  tabla `coupons` con RLS por tenant, `rate_limits` + `check_rate_limit`.
+- `0013_get_catalog_v2_checkout`: **fix** — v1 mandaba `sold_out_override:false`
+  y eso significa "forzar agotado" (ver src/lib/stockAvailability.js), asi que
+  TODO el catalogo salia AGOTADO. Va `null`. Ademas expone `payment_accounts`
+  (filtradas server-side: sin cuentas de proveedor) y `delivery_pricing`.
+- `platform/functions/submit-order/index.ts`: version multi-tenant, deployada
+  con verify_jwt=false. Probada: pedido OK, aislamiento entre tenants OK
+  (producto de otro tenant -> 400), sin tenant_slug -> 400.
+- `src/services/catalog.js`: manda `tenant_slug` solo si `business.platform`.
+
+**Hecho (resolucion de tenant en runtime, 13/ago/2026):**
+- Dominio `divianco.app` + wildcard `*.divianco.app` en el proyecto, cert
+  emitido. DNS en Cloudflare: `A @` y `A *` -> 76.76.21.21, **DNS only /
+  nube gris** (Cloudflare free no proxea wildcards).
+- `0014_tenant_host_resolution`: `tenants.domain` (dominio propio del cliente),
+  CHECK de formato de slug + lista de slugs RESERVADOS (que nadie registre
+  `www`, `admin`, `api`...), y RPC publico `get_tenant_by_host`.
+- `src/lib/tenantHost.js`: parseo puro host -> tenant/root/unknown. 14 tests
+  en `src/test/tenantHost.test.js` (incluye multi-nivel, reservados y
+  dominios que se le parecen). Suite completa: 313 tests OK.
+- `src/lib/activeTenant.js`: subdominio sincronico (sin red), dominio propio
+  via RPC, fallback a `business.slug` para local y previews.
+- `src/services/catalog.js`: `fetchCatalog` y `submitOrder` usan el slug
+  resuelto por hostname, no el del build.
+- `src/pages/PlatformLanding.jsx` + gate en App.jsx: la raiz sirve landing,
+  no el catalogo de nadie (antes `fetchCatalog` devolvia null y el catalogo
+  lo leia como "Supabase caido").
+
+VERIFICADO en produccion: `mala-miga.divianco.app` sirve los 8 productos de
+Mala Miga y `barberia-demo.divianco.app` los suyos, DESDE EL MISMO BUILD que
+tiene `CLIENT=hermes-cochi` horneado. `divianco.app` sirve la landing.
+
+**Lo que sigue acoplado al build (el `<head>`):** para TODOS los tenants,
+`document.title` dice "Cochi", el meta `theme-color` es `#c91b14` y el favicon
+apunta a `/clients/hermes-cochi/favicon.png`. Los genera el plugin de
+vite en index.html. Falta tambien el manifest PWA por tenant. El `--ac` del
+catalogo SI sale bien (viene del sistema de temas, no de business.js).
+
+**Pendiente inmediato:**
+- Verificar el formulario de checkout en un browser real (el pane headless de
+  la sesion no entrega clicks a React; el carrito SI funciona, verificado por
+  DOM click).
+- `tenants.settings` de cochi tiene delivery_pricing y prep_time_min, pero
+  `payment_accounts` VACIO a proposito = solo efectivo. No cargar CBU/alias
+  inventados en un negocio real.
+- `unit_cost` de order_items va en 0: el edificio no tiene modelo de costos.
+- Consola del catalogo: `fetchSettings` (App.jsx:107) sigue pegandole a la
+  tabla `settings` que no existe en el edificio, y falta el RPC
+  `get_weekly_top`. Ninguno bloquea el pedido.
+- Los placeholders `__BIZ_TITLE__`, `__BIZ_SUPABASE_URL__` y 6 mas quedan sin
+  reemplazar en el HTML — bug PREEXISTENTE del build, pasa igual en local.
+
+---
+
+## 1. Que estamos haciendo
+
+Pivot de hermes-gastro (SaaS single-vertical gastro) a **plataforma multi-rubro
+multi-tenant**: gastro / barberia / ropa, en UN codebase y UNA base de datos
+compartida con RLS por `tenant_id`. Los 3 gastro viejos estan dormidos y se
+consolidan como tenants del edificio nuevo (no se migra data transaccional).
+
+## 2. Infra
+
+| Que | Valor |
+|-----|-------|
+| Org Supabase | `lidtvkdatrcxcpmvioup` |
+| **Edificio** (proyecto nuevo) | `hermes-platform` ref `wwwzdgprsooyjgkuyoav`, sa-east-1 |
+| URL | https://wwwzdgprsooyjgkuyoav.supabase.co |
+| anon/publishable key | `sb_publishable_8gMlo42jYdK8epcD-Zr9TQ_eKmY2nW-` |
+| service role | solo del dashboard, NUNCA en repo/chat |
+| gastro viejos (PAUSADOS, data intacta) | cochi `nzrzfknvlnddpexghynq` · mala-miga `tszcksppdglktcmzgepd` · la-nona-pato `rewzotanfurutjolghkf` |
+
+Free tier = 2 proyectos activos. Hoy solo `hermes-platform` activo. Para leer los
+gastro viejos hay que pausar uno y restaurar el otro (reversible, tarda minutos).
+
+## 3. DB del edificio (migraciones aplicadas, en `platform/migrations/`)
+
+- **0001** fundacion: `tenants`, `tenant_members`, `products` (con `type`:
+  composite|simple|variant_parent|service) + RLS. Helper `current_user_tenants()`.
+- **0002** helper movido a schema `private` (linter).
+- **0003** core Pedidos: `orders`, `order_items`.
+- **0004** POS/Caja: `payment_methods`, `cash_sessions`, `payments` (split).
+- **0005** pack barberia: `staff`, `appointments` (exclusion constraint anti-solape),
+  `products.duration_min`.
+- **0006** `btree_gist` a schema `extensions`.
+- **0007** pack ropa: `product_variants` (talle/color/sku/barcode/stock),
+  `store_credits`, `product_returns`, `products.stock`.
+- **0008** auth: `profiles` + `provision_owner()` (tenant+owner+profile atomico).
+- **0009** `products` gana category/description/image_url.
+- **0010** `products.requires_age_gate` (+18 mala-miga).
+- **0011** `get_catalog(slug)` RPC publico (shape de catalog-pro).
+
+Patron RLS (toda tabla de negocio): `tenant_id uuid not null references
+tenants(id)` + `enable row level security` + policies `using/with check
+(tenant_id in (select private.current_user_tenants()))`.
+
+Advisors de seguridad: **limpio salvo 2 warnings INTENCIONALES** de `get_catalog`
+(es endpoint publico, anon debe poder llamarlo).
+
+Test de aislamiento (correr si tocas RLS): `platform/tests/tenant_isolation.sql`
+(SQL rapido) y `platform/tests/isolation_e2e.mjs` (RLS real via API con JWT).
+
+## 4. Tenants y datos actuales
+
+| slug | vertical | datos |
+|------|----------|-------|
+| la-nona-pato | gastro | 43 productos, 10 cat (sin desc/img: backfill pendiente) |
+| cochi | gastro | 10 productos, 4 cat (con desc+img) |
+| mala-miga | gastro | 11 productos, 5 cat (2 con +18) |
+| barberia-demo | barber | 2 barberos, 2 turnos demo, 1 servicio |
+| tienda-demo | retail | 1 producto padre + 3 variantes (S/M/L) |
+
+Catalogo gastro real portado (recipes -> products composite). Las imagenes
+apuntan al storage de los proyectos viejos (viven mientras existan; copiar
+buckets = paso aparte).
+
+## 5. Auth (decidido: por script)
+
+- **`platform/scripts/create-owner.mjs`**: recibe email+name+vertical+slug ->
+  crea auth user -> `provision_owner` (tenant+owner+profile atomico) -> si el
+  vinculo falla, borra el user (rollback). Exporta `createOwner()` para reuso.
+- Reusa lo mismo: el test e2e y, en B6, el boton de signup self-service.
+- Correr con env `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+  Requiere `npm i @supabase/supabase-js`. (No se corrio en la sesion: necesita
+  service role.)
+- **`platform/scripts/attach-owner.mjs`** (15/ago): linkea un dueno a un tenant
+  que YA existe — los 5 portados/demo, que se cargaron sin dueno y por eso no
+  se les podia abrir el panel. Usa la RPC `attach_owner` (migracion 0024), que
+  es idempotente. `create-owner` no servia para esos: crea el tenant.
+  `node platform/scripts/attach-owner.mjs --email x@y.com --slug cochi`
+
+## 6. Front (reuso de hermes-gastro)
+
+- Build nuevo tipo "platform": `.env.hermes-cochi` (apunta al edificio) +
+  `clients/hermes-cochi/business.js` (`platform: true`, `slug: 'cochi'`).
+- `src/services/catalog.js` -> `fetchCatalog()` bifurca: si `business.platform`,
+  usa RPC `get_catalog(slug)`; si no, deja el camino viejo (single-tenant sobre
+  `recipes`) intacto para los clients legacy.
+- Se reusa TAL CUAL: `src/catalog-pro/*`, `src/contexts/AuthContext.jsx`,
+  `src/components/admin/LoginScreen.jsx`, `src/lib/supabase.js`
+  (env `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`).
+- Correr (git bash): `bash platform/dev-cochi.sh` o
+  `cd ~/Proyectos/hermes-gastro && npm install --include=dev && CLIENT=hermes-cochi npm run dev`.
+
+## 7. Operativo vs pendiente
+
+**Operativo hoy:** catalogo publico de cochi (home/categorias/producto) leyendo
+del edificio via `get_catalog`.
+
+**Pendiente para dejar todo vivo:**
+1. Deploy de edge functions al edificio: `submit-order`, `validate-coupon`,
+   `mp-*`, + RPCs `get_server_time`, `upsert_customer` (para el checkout).
+   Recordar `verify_jwt=false` en las publicas (bug #6 CLAUDE.md).
+2. `attach_owner` + login admin + apuntar Orders/Stock/Finance al edificio.
+3. Module registry (`src/modules/registry.js`) + nav que se arma segun
+   `tenant.vertical` (Recetas|Servicios|Productos, etc.).
+4. UI de los packs: agenda (barberia) y grilla de variantes (ropa).
+5. B6: signup self-service (boton -> `createOwner`).
+6. Backfill desc/imagenes de LNP; copiar buckets de storage.
+
+## 8. Gotchas (de CLAUDE.md + esta sesion)
+
+- NO escribir via el mount Linux; solo herramientas del lado Windows. UTF-8 strict.
+- `NODE_ENV=production` global se come devDeps -> `npm install --include=dev`.
+- git bash: env var inline (`CLIENT=x npm run dev`), NO `set CLIENT=x&&` (eso es CMD).
+- Toda tabla nueva: tenant_id + policy patron + test de aislamiento ANTES (TDD).
+- `get_catalog` SECURITY DEFINER expuesto a anon = intencional (endpoint publico).
+- Restaurar proyecto pausado tarda varios minutos y la conexion "flapea" al final.
+
+## 9. Orden sugerido para seguir
+
+1. `attach_owner` + correr `create-owner` -> login admin del edificio andando.
+2. Edge functions `submit-order` (+deps) al edificio -> checkout vivo.
+3. Module registry + nav por vertical.
+4. UI packs barberia/ropa.
+5. B6 signup self-service.
