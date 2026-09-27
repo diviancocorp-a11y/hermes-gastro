@@ -94,6 +94,8 @@ Conviven dos formas de resolver el tenant y hay que saber en cual estas:
   `src/lib/tenantHost.js` lo resuelve y el aislamiento lo da RLS por
   `tenant_id`. Toda tabla nueva lleva `tenant_id` y una policy con el patron
   `tenant_id in (select private.current_user_tenants())`.
+  `npm run check:rls` lo verifica contra la base (y morning-health, cada
+  manana): tabla sin RLS, policy abierta o vista sin `security_invoker`.
 - **Legacy (los tres catalogos):** el tenant se hornea en BUILD con
   `CLIENT=<slug>`, y `__CLIENT__` es un global inyectado. Si ves el literal
   `__CLIENT__` sin reemplazar, el build esta mal. Sentry taggea `tenant` con

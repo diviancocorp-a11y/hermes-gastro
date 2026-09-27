@@ -18,6 +18,8 @@
 //   4. Drift de schema del edificio (schema-sync --check) — con service role
 //      en secrets; sin ella se saltea. Un snapshot viejo no falla: deja de
 //      proteger en silencio (la familia de bug del Zod, 4 veces).
+//   4b. RLS: ninguna tabla con tenant_id abierta entre negocios (check-rls)
+//      — misma service role; sin ella se saltea.
 //   5. Sentry: issues nuevos en 24h — con SENTRY_AUTH_TOKEN; sin token se
 //      saltea.
 //
@@ -92,6 +94,13 @@ async function main() {
   const fnDrift = checkFunctionsDrift();
   if (fnDrift.rojo) problemas.push(`Funciones DRIFTEADAS vs migraciones — node scripts/check-functions-drift.mjs --verbose`);
   detalles.push(`funciones: ${fnDrift.texto}`);
+
+  /* ── 5b. RLS (opcional, exige service role) ────────────
+     El unico que mira el aislamiento entre negocios. Una tabla abierta no
+     falla: la app anda y los datos de todos quedan a la vista. */
+  const rls = checkRls();
+  if (rls.rojo) problemas.push(`RLS ABIERTO entre negocios — npm run check:rls`);
+  detalles.push(`rls: ${rls.texto}`);
 
   /* ── 6. Sentry (opcional) ────────────────────────────── */
   const sentry = await checkSentry();
@@ -198,6 +207,17 @@ function checkFunctionsDrift() {
   if (/salteado/.test(salida)) return { rojo: false, texto: 'sin credenciales — salteado' };
   if (r.status === 0) return { rojo: false, texto: '✓ coinciden' };
   return { rojo: true, texto: 'DRIFT' };
+}
+
+/** Tablas, policies y vistas de public contra la regla de check-rls.mjs. */
+function checkRls() {
+  const r = spawnSync(process.execPath, [join(HERE, 'check-rls.mjs')], {
+    encoding: 'utf-8', timeout: 60000,
+  });
+  const salida = `${r.stdout || ''}${r.stderr || ''}`;
+  if (/salteado/.test(salida)) return { rojo: false, texto: 'sin credenciales — salteado' };
+  if (r.status === 0) return { rojo: false, texto: '✓ cerrado' };
+  return { rojo: true, texto: 'ABIERTO' };
 }
 
 /** Issues sin resolver vistos en las ultimas 24h. Sin token se saltea. */
