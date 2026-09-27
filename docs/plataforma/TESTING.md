@@ -13,12 +13,13 @@ All unit suites live under `src/test/`. Coverage runs against `src/lib`,
 
 ## End-to-end tests (Playwright)
 
-There are two Playwright configs, and they do not overlap:
+There are three Playwright configs, and they do not overlap:
 
 | Config | What it runs |
 |---|---|
 | `playwright.config.ts` | The general suite under `e2e/`. Today it only holds `delivery-persistence.spec.ts`, which still talks to the **legacy** schema (`recipes`, `orders.customer`) and is skipped unless the `E2E_SUPABASE_*` vars are set. **It does not cover the edificio yet.** |
 | `playwright.qa-lite.config.ts` | DICO-QA-Lite: a local DOM/visual parity gate (Docker + local Supabase). The general config ignores `e2e/qa-lite/`. Run it with `npm run qa:lite:compare` — see `platform/qa-lite/README.md`. |
+| `playwright.smoke.config.ts` | The edificio in production (`smoke/`), after each deploy. See "Smoke del edificio" below. |
 
 The legacy suites `order-flow`, `admin-flow` and `multi-client` were removed
 on 27/sep/2026. They targeted the per-client Vercel deploys (mala-miga, cochi,
