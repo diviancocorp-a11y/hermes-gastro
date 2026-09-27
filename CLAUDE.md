@@ -93,6 +93,11 @@ ahi: `CLAUDE.md` (este), `AGENTS.md` (el mismo, para Codex) y `README.md`.
   `src/lib/tenantHost.js` lo resuelve y el aislamiento lo da RLS por
   `tenant_id`. Toda tabla nueva lleva `tenant_id` y una policy con el patron
   `tenant_id in (select private.current_user_tenants())`.
+  `npm run check:rls` lo verifica contra la base (y morning-health, cada
+  manana): tabla sin RLS, policy abierta, vista sin `security_invoker` o
+  funcion `SECURITY DEFINER` llamable desde el front sin aprobar. Funcion
+  definer nueva: o `revoke execute ... from anon, authenticated`, o se suma
+  a `DEFINER_APROBADAS` en `scripts/check-rls.mjs` con el motivo.
 - **El build (`CLIENT`):** quedan dos, `clients/edificio` (produccion, el
   default) y `clients/dico-qa-lite` (fixture local). Ninguno hornea el tenant:
   `business.slug` es solo el fallback de local y de las URLs `*.vercel.app`.
