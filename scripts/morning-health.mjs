@@ -18,8 +18,9 @@
 //   4. Drift de schema del edificio (schema-sync --check) — con service role
 //      en secrets; sin ella se saltea. Un snapshot viejo no falla: deja de
 //      proteger en silencio (la familia de bug del Zod, 4 veces).
-//   4b. RLS: ninguna tabla con tenant_id abierta entre negocios (check-rls)
-//      — misma service role; sin ella se saltea.
+//   4b. RLS: ninguna tabla con tenant_id abierta entre negocios, ni una
+//      SECURITY DEFINER llamable sin aprobar (check-rls) — misma service
+//      role; sin ella se saltea.
 //   5. Sentry: issues nuevos en 24h — con SENTRY_AUTH_TOKEN; sin token se
 //      saltea.
 //
@@ -209,15 +210,18 @@ function checkFunctionsDrift() {
   return { rojo: true, texto: 'DRIFT' };
 }
 
-/** Tablas, policies y vistas de public contra la regla de check-rls.mjs. */
+/** Tablas, policies, vistas y SECURITY DEFINER contra la regla de check-rls.mjs. */
 function checkRls() {
   const r = spawnSync(process.execPath, [join(HERE, 'check-rls.mjs')], {
     encoding: 'utf-8', timeout: 60000,
   });
   const salida = `${r.stdout || ''}${r.stderr || ''}`;
+  // El exit code PRIMERO: son dos chequeos (tablas y funciones) y uno puede
+  // saltear mientras el otro da rojo. Mirando antes "salteado", ese rojo
+  // salia verde en el reporte.
+  if (r.status !== 0) return { rojo: true, texto: 'ABIERTO' };
   if (/salteado/.test(salida)) return { rojo: false, texto: 'sin credenciales — salteado' };
-  if (r.status === 0) return { rojo: false, texto: '✓ cerrado' };
-  return { rojo: true, texto: 'ABIERTO' };
+  return { rojo: false, texto: '✓ cerrado' };
 }
 
 /** Issues sin resolver vistos en las ultimas 24h. Sin token se saltea. */
