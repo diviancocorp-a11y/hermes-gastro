@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────
 // Health check matutino de DICO (el edificio) — envia a Telegram.
 // Corre via GitHub Actions cron L-S 7am AR (10:00 UTC), o a mano:
-//   node scripts/morning-health.mjs
+//   SMOKE_TENANTS=la-nona-pato,cochi node scripts/morning-health.mjs
 //
 // Reescrito 17/ago/2026. La version anterior chequeaba los 3 tenants LEGACY
 // (proyectos Supabase pausados a proposito): daba rojo todas las mananas, y un
@@ -27,7 +27,8 @@
 // Criterio del mensaje: lo roto va PRIMERO y el verde es corto. Secrets que
 // espera el workflow: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, y opcionales
 // PLATFORM_SUPABASE_URL / PLATFORM_SUPABASE_SERVICE_ROLE_KEY (drift) y
-// SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT (errores).
+// SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT (errores). Los negocios
+// salen de la VARIABLE del repo SMOKE_TENANTS (no es secret).
 // ─────────────────────────────────────────────────────────
 
 import { spawnSync } from 'node:child_process';
@@ -43,9 +44,13 @@ const PLATFORM_ANON = 'sb_publishable_8gMlo42jYdK8epcD-Zr9TQ_eKmY2nW-';
 
 const LANDING = 'https://divianco.app';
 
-// Tenants con negocio real andando. Los demo (barberia-demo, tienda-demo) no
-// van: que se caigan no despierta a nadie.
-const TENANTS = ['la-nona-pato', 'cochi', 'mala-miga'];
+// Negocios reales andando: un demo que se cae no despierta a nadie. Salen de
+// SMOKE_TENANTS, la misma variable del repo que lee el smoke
+// (smoke/edificio.spec.ts): una sola lista para los dos. Antes estaba fija aca
+// y el 27/sep, con los tenants vaciados para rehacer la carga, el reporte iba
+// a dar rojo por slugs que ya no existian.
+const TENANTS = (process.env.SMOKE_TENANTS || '')
+  .split(',').map((s) => s.trim()).filter(Boolean);
 
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TG_CHAT = process.env.TELEGRAM_CHAT_ID;
@@ -66,6 +71,11 @@ async function main() {
   if (landing !== '✓') problemas.push(`Landing divianco.app: ${landing}`);
 
   /* ── 2. Tenants: subdominio + catalogo por RPC ───────── */
+  // Sin lista no hay "todo en verde": un reporte que no mira ningun negocio no
+  // puede decir que andan.
+  if (TENANTS.length === 0) {
+    problemas.push('SMOKE_TENANTS vacia: no se mira ningun negocio (GitHub → Settings → Secrets and variables → Actions → Variables)');
+  }
   const tenants = await Promise.all(TENANTS.map(async (slug) => {
     const [front, rpc] = await Promise.all([
       httpCheck(`https://${slug}.divianco.app`),

@@ -94,8 +94,11 @@ SMOKE_TENANTS=cochi,mala-miga npm run test:smoke
 `SMOKE_TENANTS` no tiene valor por defecto. En CI sale de la **variable** del
 repo con ese nombre (**Settings → Secrets and variables → Actions →
 Variables**), separada por comas. Vacia, los catalogos se saltean con aviso y
-quedan la landing y el admin: cargala cuando los negocios esten de nuevo en el
-edificio.
+quedan la landing y el admin.
+
+Es la lista de negocios vigilados de todo el repo: `morning-health.yml` lee la
+misma variable. Un negocio nuevo se suma ahi y lo miran los dos; si queda
+vacia, el reporte de la mañana lo marca como problema.
 
 El test del admin necesita tres secrets en GitHub (**Settings → Secrets and
 variables → Actions**): `SMOKE_ADMIN_SLUG`, `SMOKE_ADMIN_EMAIL` y

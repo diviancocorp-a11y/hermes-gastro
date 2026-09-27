@@ -27,6 +27,9 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Variable (no secret): los negocios que se miran. La misma que usa
+          # smoke-edificio.yml. Vacia, el reporte lo marca como problema.
+          SMOKE_TENANTS: ${{ vars.SMOKE_TENANTS }}
           # Opcional: habilita el check de drift del snapshot del edificio.
           PLATFORM_SUPABASE_URL: ${{ secrets.PLATFORM_SUPABASE_URL }}
           PLATFORM_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PLATFORM_SUPABASE_SERVICE_ROLE_KEY }}
