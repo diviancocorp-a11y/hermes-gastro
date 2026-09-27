@@ -38,7 +38,7 @@ afterEach(() => {
 });
 
 /** Arma un output valido y deja que el test lo estropee a proposito. */
-function outputValido({ buildId = CORTO, title = 'Cochi', conVersion = true, conMapa = false } = {}) {
+function outputValido({ buildId = CORTO, title = 'Dico', conVersion = true, conMapa = false } = {}) {
   const dir = tmp();
   mkdirSync(join(dir, 'assets'), { recursive: true });
   if (conVersion) writeFileSync(join(dir, 'version.json'), JSON.stringify({ buildId }));
@@ -229,8 +229,8 @@ describe('wrapper de deploy', () => {
     // Template literal a proposito: check-file-integrity.mjs ignora el contenido
     // entre backticks, y un `</title>` en comillas simples lo hace creer que hay
     // JSX en un .js.
-    writeFileSync(join(salida, 'index.html'), `<!doctype html><title>Cochi</title>`);
-    writeFileSync(join(salida, 'manifest.json'), JSON.stringify({ name: 'Cochi' }));
+    writeFileSync(join(salida, 'index.html'), `<!doctype html><title>Dico</title>`);
+    writeFileSync(join(salida, 'manifest.json'), JSON.stringify({ name: 'Dico' }));
     const run = fakeRun([
       ['rev-parse', { stdout: `${SHA}\n` }],
       ['status --porcelain', { stdout: '' }],

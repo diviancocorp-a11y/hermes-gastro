@@ -92,7 +92,7 @@ Hace, en orden:
 4. fija `DICO_BUILD_ID=<HEAD>`, `CLIENT=edificio`, `DICO_RELEASE=1`;
 5. corre el build;
 6. audita `dist/`: `version.json` = short SHA, el short SHA aparece en algún
-   bundle, `<title>` y `manifest.name` son `Cochi`, cero sourcemaps;
+   bundle, `<title>` y `manifest.name` son `Dico`, cero sourcemaps;
 7. falla ante cualquier divergencia.
 
 El SHA se resuelve **antes** de arrancar el build. No se depende de que Vercel

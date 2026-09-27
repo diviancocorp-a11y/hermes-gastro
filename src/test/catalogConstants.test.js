@@ -62,6 +62,13 @@ describe('catalogConstants', () => {
     expect(STORE_LNG).toBeGreaterThanOrEqual(-180);
     expect(STORE_LNG).toBeLessThanOrEqual(180);
   });
+
+  it('el origen del envio es el centro de Buenos Aires, no un local', () => {
+    // Uno solo para todos los tenants, igual que la busqueda de direcciones
+    // del checkout. Antes eran las coordenadas de Cochi (Caracas).
+    expect(STORE_LAT).toBeCloseTo(-34.60, 1);
+    expect(STORE_LNG).toBeCloseTo(-58.38, 1);
+  });
 });
 
 describe('haversine', () => {
