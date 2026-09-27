@@ -67,12 +67,14 @@
   solo-en-error + tags de contexto activos).
 - [ ] Los 4 `.docx` ya no estan en GitHub pero siguen en la carpeta del repo
   (gitignoreados). Si queres, movelos a Documentos para tener el repo limpio.
-- [ ] **Desconectar del repo los 3 Vercel legacy** (`la-nona-pato`, `cochi`,
+- [x] ~~**Desconectar del repo los 3 Vercel legacy**~~ — HECHO 27/sep/2026: se
+  borraron los proyectos (y los Supabase legacy). Era: (`la-nona-pato`, `cochi`,
   `mala-miga`): Project Settings > Git > Disconnect, uno por uno. Cada push a
   `main` los vuelve a deployar. Pausarlos no alcanza (no corta los builds de
   git) y `vercel.json` tampoco sirve: es el mismo archivo para los cuatro
   proyectos y se llevaria puesto al edificio. (Venia del HANDOFF del 10/sep.)
-- [ ] **Borrar los tenants de prueba** `prueba-disco` y `tienda-nueva`. Al
+- [x] ~~**Borrar los tenants de prueba**~~ — HECHO 27/sep/2026, junto con
+  todos los demas tenants del edificio. Era: `prueba-disco` y `tienda-nueva`. Al
   10/sep estaban vacios (0 productos, 0 pedidos, 0 pagos): contalo de nuevo
   antes del delete. Las FK a `tenants` son `ON DELETE CASCADE`
   salvo `profiles` y `consola_log`, que quedan en null:

@@ -148,9 +148,8 @@ renombrarlos rompe deploys a cambio de nada, no los ve ningún cliente.
   como inexistentes y estaban versionados. Para "existe este archivo?" va `ls`
   o `git ls-files`, nunca un grep de contenido.
 - **Se trabaja y se publica desde `main`.** El edificio sale a `divianco.app`
-  en cada push, por la integración de GitHub de `hermes-platform`. Ojo: los 3
-  proyectos Vercel legacy siguen linkeados al mismo repo, así que ese push
-  **también los redeploya** hasta que Ricky los desconecte. La vía manual
+  en cada push, por la integración de GitHub de `hermes-platform` (los 3
+  proyectos Vercel legacy se borraron el 27/sep/2026). La vía manual
   `npm run deploy:web` está trabada: las dos `VITE_*` del edificio están
   marcadas Sensitive en Vercel y `vercel pull` baja `[SENSITIVE]`.
 - **`NODE_ENV=production` global en la máquina de Ricky** se come las
