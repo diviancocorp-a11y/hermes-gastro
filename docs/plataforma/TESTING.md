@@ -13,23 +13,21 @@ All unit suites live under `src/test/`. Coverage runs against `src/lib`,
 
 ## End-to-end tests (Playwright)
 
-The E2E suite (under `e2e/`) hits the **mala-miga** staging deployment by
-default and is split into three suites:
+There are two Playwright configs, and they do not overlap:
 
-| Suite | What it checks |
+| Config | What it runs |
 |---|---|
-| `order-flow.spec.ts` | Customer can add product, complete checkout, see confirmation |
-| `admin-flow.spec.ts` | Admin can log in, navigate tabs, no fatal console errors |
-| `multi-client.spec.ts` | Each Vercel deploy (mala-miga / cochi / la-nona-pato) shows the correct title and manifest |
+| `playwright.config.ts` | The general suite under `e2e/`. Today it only holds `delivery-persistence.spec.ts`, which still talks to the **legacy** schema (`recipes`, `orders.customer`) and is skipped unless the `E2E_SUPABASE_*` vars are set. **It does not cover the edificio yet.** |
+| `playwright.qa-lite.config.ts` | DICO-QA-Lite: a local DOM/visual parity gate (Docker + local Supabase). The general config ignores `e2e/qa-lite/`. Run it with `npm run qa:lite:compare` — see `platform/qa-lite/README.md`. |
+
+The legacy suites `order-flow`, `admin-flow` and `multi-client` were removed
+on 27/sep/2026. They targeted the per-client Vercel deploys (mala-miga, cochi,
+la-nona-pato), which now answer 404, and kept E2E red on `main` from 20/may.
 
 ### One-time setup
 
-1. Copy `.env.e2e.example` to `.env.e2e` and fill in:
-   - `E2E_SUPABASE_SERVICE_ROLE` — from Supabase Dashboard of the staging
-     project → Project Settings → API → `service_role` secret. **Never commit.**
-   - `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` — create a dedicated test
-     admin in Supabase Dashboard → Authentication → Users → Add user.
-     Email is auto-confirmed. Password ≥ 12 chars.
+1. Copy `.env.e2e.example` to `.env.e2e` and fill in the `E2E_SUPABASE_*`
+   vars. The service role is a secret: **never commit it.**
 
 2. Install Playwright browsers (one time):
    ```bash
@@ -41,9 +39,9 @@ default and is split into three suites:
 `playwright.config.ts` auto-loads `.env.e2e`, so:
 
 ```bash
-npx playwright test               # all suites
-npx playwright test order-flow    # one suite
-npx playwright test --ui          # interactive runner
+npx playwright test                        # general suite (qa-lite excluded)
+npx playwright test delivery-persistence   # one spec
+npx playwright test --ui                   # interactive runner
 ```
 
 After every run, `cleanupE2EOrders()` deletes any row in `orders` whose
@@ -51,16 +49,14 @@ After every run, `cleanupE2EOrders()` deletes any row in `orders` whose
 
 ### CI
 
-`.github/workflows/e2e.yml` runs the full suite on every PR to `main` and
-on every push to `main`. It needs these secrets configured at
-**Repo Settings → Secrets and variables → Actions**:
+`.github/workflows/e2e.yml` runs the general suite on every PR to `main` and
+on every push to `main`; `ci.yml` has no E2E job of its own. The spec that is
+left reads these secrets from **Repo Settings → Secrets and variables →
+Actions**:
 
-- `E2E_TARGET_URL`
 - `E2E_SUPABASE_URL`
-- `E2E_SUPABASE_ANON_KEY`
+- `E2E_SUPABASE_ANON_KEY` (not set today, so the spec is skipped)
 - `E2E_SUPABASE_SERVICE_ROLE`
-- `E2E_ADMIN_EMAIL`
-- `E2E_ADMIN_PASSWORD`
 
 On failure, the workflow uploads `playwright-report/` as an artifact so
 you can download the HTML report with screenshots/video of the failed step.
