@@ -64,7 +64,7 @@ B ve solo lo suyo, anon ve 0). Se escribio ANTES que las policies (rojo -> verde
   - NOTA: cochi y mala-miga con descripcion+imagen; LNP solo name/price/category (desc+img se pueden backfillear despues). Las imagenes apuntan al storage de los proyectos viejos: copiar buckets al edificio es paso aparte (los links viven mientras esos proyectos existan).
 - [ ] attach_owner(user, slug): linkear duenos a los tenants gastro ya existentes (create-owner crea tenant nuevo; los 3 gastro ya existen)
 - [x] 0011 get_catalog(slug): endpoint publico de catalogo por tenant (shape de catalog-pro). 2 warnings de advisor INTENCIONALES (endpoint publico anon).
-- [~] Front reusado: build "platform" nuevo. `.env.hermes-cochi` + `clients/hermes-cochi/business.js` (platform:true, slug:cochi) apuntan al edificio. `src/services/catalog.js` bifurca: si business.platform -> RPC get_catalog; si no, camino viejo intacto. Sintaxis verificada. FALTA: correr `CLIENT=hermes-cochi npm run dev` y ver el catalogo real + login.
+- [~] Front reusado: build "platform" nuevo (la carpeta se llamaba `hermes-cochi`; hoy es `clients/edificio`). `.env.hermes-cochi` + `clients/hermes-cochi/business.js` (platform:true, slug:cochi) apuntan al edificio. `src/services/catalog.js` bifurca: si business.platform -> RPC get_catalog; si no, camino viejo intacto. Sintaxis verificada. FALTA: correr `CLIENT=hermes-cochi npm run dev` y ver el catalogo real + login.
 - [ ] Admin: attach_owner + apuntar Orders/Stock/Finance al edificio
 - [ ] Module registry + nav por vertical (front-end)
 - [ ] B6: signup self-service que cuelga del boton -> reusa createOwner()
@@ -73,8 +73,8 @@ B ve solo lo suyo, anon ve 0). Se escribio ANTES que las policies (rojo -> verde
 
 ```
 npm install --include=dev        # NODE_ENV=production global se come las devDeps (bug #5 CLAUDE.md)
-set CLIENT=hermes-cochi&& npm run dev     # Windows
-# CLIENT=hermes-cochi npm run dev         # mac/linux
+set CLIENT=edificio&& npm run dev     # Windows
+# CLIENT=edificio npm run dev         # mac/linux
 ```
 
 Deberia abrir el catalogo con los 10 productos REALES de cochi (Arroz Chino,

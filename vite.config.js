@@ -6,7 +6,16 @@ import fs from 'fs'
 import { pathToFileURL } from 'url'
 import { resolveBuildIdentity } from './scripts/build-identity.mjs'
 
-const CLIENT = process.env.CLIENT || 'la-nona-pato'
+// El edificio vive en clients/edificio. `hermes-cochi` es el nombre viejo de
+// esa misma carpeta y la variable CLIENT del panel de Vercel todavia lo usa:
+// se traduce aca para que el renombre no dependa de tocar el panel en el mismo
+// minuto del merge. Cuando el panel diga `edificio` (o no diga nada), se borra.
+const RENOMBRADOS = { 'hermes-cochi': 'edificio' }
+const CLIENT_PEDIDO = process.env.CLIENT || 'edificio'
+const CLIENT = RENOMBRADOS[CLIENT_PEDIDO] || CLIENT_PEDIDO
+if (CLIENT !== CLIENT_PEDIDO) {
+  console.warn(`[client] CLIENT=${CLIENT_PEDIDO} es el nombre viejo: se construye ${CLIENT}. Cambiar la variable en Vercel.`)
+}
 
 // Build id unico por deploy: los primeros 8 caracteres del SHA del commit.
 // Se bakea en el bundle (__BUILD_ID__), se emite en /version.json y nombra el
@@ -24,8 +33,12 @@ const { buildId: BUILD_ID, source: BUILD_ID_SOURCE } = resolveBuildIdentity()
 console.log(`[build-identity] buildId=${BUILD_ID} source=${BUILD_ID_SOURCE}`)
 
 function loadClientEnv() {
-  const envFile = path.resolve(__dirname, `.env.${CLIENT}`)
-  if (!fs.existsSync(envFile)) return
+  // `.env.hermes-cochi` sigue valiendo en las maquinas que ya lo tienen.
+  const viejos = Object.keys(RENOMBRADOS).filter((k) => RENOMBRADOS[k] === CLIENT)
+  const envFile = [CLIENT, ...viejos]
+    .map((c) => path.resolve(__dirname, `.env.${c}`))
+    .find((f) => fs.existsSync(f))
+  if (!envFile) return
   const content = fs.readFileSync(envFile, 'utf-8')
   for (const line of content.split(/\r?\n/)) {
     const trimmed = line.trim()

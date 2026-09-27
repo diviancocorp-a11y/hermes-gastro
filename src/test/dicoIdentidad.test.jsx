@@ -53,7 +53,7 @@ const DADOS_DE_BAJA = [
 
 const ALIAS = [
   { prefijo: '@dico/core/', destino: 'src/' },
-  { prefijo: '@business', destino: 'clients/hermes-cochi/business.js', exacto: true },
+  { prefijo: '@business', destino: 'clients/edificio/business.js', exacto: true },
 ];
 
 const EXTENSIONES = ['', '.js', '.jsx', '.ts', '.tsx', '/index.js', '/index.jsx'];

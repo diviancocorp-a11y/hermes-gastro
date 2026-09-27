@@ -57,8 +57,13 @@ describe('Push service', () => {
   it('getSubscriberCount usa el RPC count_push_subscriptions', async () => {
     const { getSubscriberCount } = await import('../services/push');
     const { supabase } = await import('../lib/supabase');
+    const { default: business } = await import('@business');
     const count = await getSubscriberCount('customer');
-    expect(supabase.rpc).toHaveBeenCalledWith('count_push_subscriptions', { p_role: 'customer' });
+    // El build del edificio es platform: en jsdom el host no dice el tenant y
+    // cae al slug del build.
+    expect(supabase.rpc).toHaveBeenCalledWith('count_push_subscriptions', {
+      p_role: 'customer', p_tenant_slug: business.slug,
+    });
     expect(count).toBe(0);
   });
 });

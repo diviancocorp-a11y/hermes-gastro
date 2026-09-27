@@ -1,4 +1,4 @@
-// clients/hermes-cochi/business.js
+// clients/edificio/business.js
 // ═══════════════════════════════════════════════════════════════
 // COCHI corriendo sobre el EDIFICIO (hermes-platform, multi-tenant).
 // Misma identidad visual que clients/cochi, pero apunta a la DB unica.

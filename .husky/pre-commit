@@ -66,6 +66,6 @@ npx vitest run src/test/utils.test.js src/test/schemas.test.js --no-coverage --s
 # (lo que rompió 9 deploys seguidos por buildRecos faltante en homeHelpers.js)
 if [ -n "$STAGED_SRC" ] && [ "$SKIP_VITE_BUILD" != "1" ]; then
   echo "→ Vite build (verifica imports/exports — sobreescribible con SKIP_VITE_BUILD=1)..."
-  CLIENT=la-nona-pato npx vite build --logLevel error > /dev/null
+  CLIENT=edificio npx vite build --logLevel error > /dev/null
   echo "  ✓ build OK"
 fi

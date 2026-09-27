@@ -155,7 +155,7 @@ renombrarlos rompe deploys a cambio de nada, no los ve ningún cliente.
   marcadas Sensitive en Vercel y `vercel pull` baja `[SENSITIVE]`.
 - **`NODE_ENV=production` global en la máquina de Ricky** se come las
   devDependencies. Prefijar todo con `NODE_ENV=` vacío:
-  `NODE_ENV= CLIENT=hermes-cochi npm run build` y `NODE_ENV=test npx vitest run`.
+  `NODE_ENV= CLIENT=edificio npm run build` y `NODE_ENV=test npx vitest run`.
 - **Cloudflare no proxea wildcards en plan free**: el registro `A *` tiene que
   quedar en DNS only (nube gris) o los subdominios de tenants dejan de
   resolver.

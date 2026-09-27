@@ -14,7 +14,7 @@ import { spawnSync } from 'node:child_process';
 import { SHA_RE, normalizeSha, shortId, sentryRelease, BuildIdentityError } from './build-identity.mjs';
 
 /** El cliente que corresponde al edificio. Unico con `platform: true`. */
-export const PLATFORM_CLIENT = 'hermes-cochi';
+export const PLATFORM_CLIENT = 'edificio';
 
 /**
  * Version EXACTA del CLI de Vercel. No `latest`.

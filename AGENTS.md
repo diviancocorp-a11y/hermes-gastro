@@ -196,7 +196,7 @@ archivos o de tests baja sin motivo, es eso. Y si un test falla por
 carga la maquina flakea y falla en archivos distintos en cada corrida.
 
 ```bash
-NODE_ENV= CLIENT=hermes-cochi npm run build  # build de un catalogo legacy
+NODE_ENV= CLIENT=edificio npm run build      # el build del edificio, a mano
 npm run schema:sync                          # regenera los snapshots
 npm run schema:sync -- --check               # no escribe: falla si difiere
 ```
