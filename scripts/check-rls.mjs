@@ -46,8 +46,8 @@
 // MCP de Supabase.
 //
 // Necesita PLATFORM_SUPABASE_URL + PLATFORM_SUPABASE_SERVICE_ROLE_KEY (o las
-// SUPABASE_* genericas), public.rls_snapshot() (0076) y function_snapshot()
-// con permisos (0077). SIN credenciales o SIN los RPC: saltea y devuelve 0,
+// SUPABASE_* genericas), public.rls_snapshot() (0077) y function_snapshot()
+// con permisos (0078). SIN credenciales o SIN los RPC: saltea y devuelve 0,
 // mismo criterio que check-functions-drift. El que corre siempre es el de CI
 // (morning-health).
 
@@ -305,7 +305,7 @@ function sinComentarios(sql) {
  * Saca la lista de funciones de la salida de function_snapshot(): el mapa
  * pelado (RPC), `[{ function_snapshot: {...} }]` (SQL por MCP) o
  * `{ function_snapshot: {...} }`. Null si no tiene la forma, o si le faltan
- * los permisos (la base no tiene la 0077): sin ellos no se puede juzgar nada
+ * los permisos (la base no tiene la 0078): sin ellos no se puede juzgar nada
  * y callarse seria dar verde.
  */
 export function desenvolverFunciones(crudo) {
@@ -427,8 +427,8 @@ async function traerTodo() {
   }
 
   const [tablas, funciones] = await Promise.all([
-    llamarRpc('rls_snapshot', '0076_rls_snapshot_rpc.sql', desenvolver),
-    llamarRpc('function_snapshot', '0077_function_snapshot_con_permisos.sql', desenvolverFunciones),
+    llamarRpc('rls_snapshot', '0077_rls_snapshot_rpc.sql', desenvolver),
+    llamarRpc('function_snapshot', '0078_function_snapshot_con_permisos.sql', desenvolverFunciones),
   ]);
   return { tablas, funciones };
 }

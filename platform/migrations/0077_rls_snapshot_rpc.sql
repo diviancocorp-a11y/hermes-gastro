@@ -1,4 +1,4 @@
--- 0076 Poder leer como esta REALMENTE el RLS del edificio.
+-- 0077 Poder leer como esta REALMENTE el RLS del edificio.
 --
 -- ══════════════════ EL HUECO QUE TAPA ══════════════════
 --
@@ -99,5 +99,5 @@ comment on function public.rls_snapshot is
 --   2. Con PLATFORM_SUPABASE_SERVICE_ROLE_KEY exportada:
 --        npm run check:rls
 --      Sin credenciales o sin este RPC, el script SALTEA sin fallar.
---   3. No toca columnas: se sube `_migrations_through` a "0076" en
+--   3. No toca columnas: se sube `_migrations_through` a "0077" en
 --      scripts/platform-schema.json sin regenerar.

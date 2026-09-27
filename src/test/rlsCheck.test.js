@@ -219,7 +219,7 @@ describe('desenvolverFunciones', () => {
     expect(desenvolverFunciones([{ function_snapshot: { 'get_catalog()': f } }])).toEqual([f]);
   });
 
-  it('sin permisos (base sin la 0077) es null, no un verde', () => {
+  it('sin permisos (base sin la 0078) es null, no un verde', () => {
     const sinPermisos = { name: 'x', args: '', body: 'select 1', secdef: true };
     expect(desenvolverFunciones({ 'x()': sinPermisos })).toBeNull();
   });

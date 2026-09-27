@@ -65,10 +65,9 @@ Deno.serve(async (req) => {
     if (total <= 0) return json({ error: "El pedido no tiene importe" }, 400);
 
     /* ── La cuenta de ESTE negocio ── */
-    const { data: integ } = await supabase.from("payment_integrations")
-      .select("access_token, live_mode")
-      .eq("tenant_id", tenant.id).eq("provider", "mercadopago")
-      .eq("is_active", true).maybeSingle();
+    // El token vive en Vault desde la 0076: la tabla ya no lo tiene.
+    const { data: integ } = await supabase
+      .rpc("mp_credenciales", { p_tenant_id: tenant.id }).maybeSingle();
 
     if (!integ?.access_token) {
       return json({ error: "Este negocio todavía no conectó MercadoPago" }, 503);

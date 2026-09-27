@@ -1,8 +1,8 @@
--- 0077 function_snapshot() dice tambien quien puede ejecutar cada funcion.
+-- 0078 function_snapshot() dice tambien quien puede ejecutar cada funcion.
 --
 -- ══════════════════ EL HUECO QUE TAPA ══════════════════
 --
--- check-rls.mjs (0076) mira el RLS de las tablas, pero una funcion SECURITY
+-- check-rls.mjs (0077) mira el RLS de las tablas, pero una funcion SECURITY
 -- DEFINER lo saltea a proposito: corre con los permisos de su dueno. Si anon
 -- o authenticated la pueden ejecutar, lo unico que separa un negocio de otro
 -- es lo que la funcion valide adentro.
@@ -67,4 +67,4 @@ revoke all on function public.function_snapshot() from public, anon, authenticat
 --   1. Aplicar por MCP sobre `wwwzdgprsooyjgkuyoav`.
 --   2. npm run check:rls (con la service role) ahora juzga tambien las
 --      funciones SECURITY DEFINER.
---   3. No toca columnas: `_migrations_through` sube a "0077" sin regenerar.
+--   3. No toca columnas: `_migrations_through` sube a "0078" sin regenerar.

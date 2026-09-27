@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     // "este local cobra con MP" no es informacion sensible. El token no sale
     // de aca en ningun caso.
     const { data: i } = await supabase.from("payment_integrations")
-      .select("public_key, mp_nickname, live_mode, connected_at, webhook_secret")
+      .select("public_key, mp_nickname, live_mode, connected_at, webhook_secret_vault_id")
       .eq("tenant_id", tenant.id).eq("provider", "mercadopago")
       .eq("is_active", true).maybeSingle();
 
@@ -61,7 +61,8 @@ Deno.serve(async (req) => {
       public_key: i.public_key || null,
       desde: i.connected_at,
       // Se dice si hay firma configurada, no cual es.
-      firma_configurada: !!i.webhook_secret,
+      // El secreto esta en Vault; alcanza con saber que hay uno.
+      firma_configurada: !!i.webhook_secret_vault_id,
     });
   } catch (err) {
     console.error("mp-status error:", err);
