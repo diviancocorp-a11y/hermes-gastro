@@ -16,8 +16,9 @@ marketing y producto va Dico.
 
 Lo que **NO** es, aunque quede escrito en muchos lados: no hay un proyecto por
 cliente. Esa era la era legacy (la-nona-pato, cochi, mala-miga con un Supabase
-y un Vercel cada uno). Esos negocios hoy son tenants dentro del edificio. Los
-proyectos viejos siguen existiendo, estan `INACTIVE` y no reciben deploys.
+y un Vercel cada uno). El 27/sep/2026 se borraron esos proyectos, sus carpetas
+de `clients/` y los tenants que los reemplazaban en el edificio: los negocios
+se vuelven a cargar desde cero como tenants del edificio.
 Todo documento que describa ese mundo vive en `docs/historico/` y no cuenta.
 
 ## Donde esta escrito todo
@@ -86,11 +87,9 @@ ahi: `CLAUDE.md` (este), `AGENTS.md` (el mismo, para Codex) y `README.md`.
 - En Settings: NO usar dynamic imports de servicios (HERMES-GASTRO-G: chunk
   viejo tras deploy → "e is not a function"). Imports estaticos.
 
-### Multi-tenant: edificio vs legacy
+### Multi-tenant: el tenant sale del hostname
 
-Conviven dos formas de resolver el tenant y hay que saber en cual estas:
-
-- **Edificio (lo vigente):** el tenant sale del hostname en RUNTIME.
+- **Edificio:** el tenant sale del hostname en RUNTIME.
   `src/lib/tenantHost.js` lo resuelve y el aislamiento lo da RLS por
   `tenant_id`. Toda tabla nueva lleva `tenant_id` y una policy con el patron
   `tenant_id in (select private.current_user_tenants())`.
@@ -99,10 +98,11 @@ Conviven dos formas de resolver el tenant y hay que saber en cual estas:
   funcion `SECURITY DEFINER` llamable desde el front sin aprobar. Funcion
   definer nueva: o `revoke execute ... from anon, authenticated`, o se suma
   a `DEFINER_APROBADAS` en `scripts/check-rls.mjs` con el motivo.
-- **Legacy (los tres catalogos):** el tenant se hornea en BUILD con
-  `CLIENT=<slug>`, y `__CLIENT__` es un global inyectado. Si ves el literal
-  `__CLIENT__` sin reemplazar, el build esta mal. Sentry taggea `tenant` con
-  ese valor.
+- **El build (`CLIENT`):** quedan dos, `clients/edificio` (produccion, el
+  default) y `clients/dico-qa-lite` (fixture local). Ninguno hornea el tenant:
+  `business.slug` es solo el fallback de local y de las URLs `*.vercel.app`.
+  `__CLIENT__` es un global inyectado; si ves el literal sin reemplazar, el
+  build esta mal. Sentry taggea `tenant` con ese valor.
 
 Los **slugs reservados viven en 2 lugares**: `src/lib/tenantHost.js` y la
 funcion SQL `is_reserved_slug`. Hay un test que los compara parseando la
@@ -201,15 +201,15 @@ archivos o de tests baja sin motivo, es eso. Y si un test falla por
 carga la maquina flakea y falla en archivos distintos en cada corrida.
 
 ```bash
-NODE_ENV= CLIENT=hermes-cochi npm run build  # build de un catalogo legacy
+NODE_ENV= CLIENT=edificio npm run build      # el build del edificio, a mano
 npm run schema:sync                          # regenera los snapshots
 npm run schema:sync -- --check               # no escribe: falla si difiere
 ```
 
 `schema:sync` necesita `PLATFORM_SUPABASE_URL` +
 `PLATFORM_SUPABASE_SERVICE_ROLE_KEY` exportadas; sin credenciales saltea sin
-fallar. El lado legacy (`--target=legacy`, con los `LEGACY_*`) esta pausado y
-no se va a despausar: esos proyectos se dan de baja.
+fallar. El lado legacy (`--target=legacy`, con los `LEGACY_*`) ya no tiene
+contra que correr: esos proyectos se borraron.
 
 ## Antes de razonar sobre una RPC, traela
 
@@ -252,7 +252,9 @@ como alta: quedo como guard que falla y explica por que.
 - **El panel del edificio cubre productos, pedidos, caja y salon.** El resto
   del ERP (recetas, stock, compras, gastos, CRM, P&L) sigue siendo exclusivo
   del panel legacy. Los dos conviven y los decide `business.platform` en la
-  ruta `/admin`: no comparten ni una tabla, no intentes unificarlos.
+  ruta `/admin`: no comparten ni una tabla, no intentes unificarlos. Ojo: hoy
+  ningun build tiene `platform: false`, asi que el panel legacy no lo sirve
+  nadie.
 - **`unit_cost` va en 0**: el edificio no tiene modelo de costos, asi que el
   P&L no da.
 - **No hay con que cobrarle al cliente**: hay planes y precios, pero el
@@ -292,9 +294,8 @@ Codex y Claude trabajan sobre el mismo repo, a veces al mismo tiempo.
 Rama de trabajo y de publicacion: **`main`**. Cada push publica el edificio en
 `divianco.app` por la integracion de GitHub.
 
-Ojo: los tres proyectos Vercel legacy siguen linkeados a este mismo repo, asi
-que **un push a `main` tambien los redeploya**. Desconectarlos es tarea
-pendiente de Ricky en el panel de Vercel.
+Los tres proyectos Vercel legacy ya no existen: un push a `main` publica solo
+`hermes-platform`.
 
 Para saber que hay publicado de verdad, comparar el SHA del ultimo deployment
 de produccion de `hermes-platform` contra `HEAD` con el MCP de Vercel.

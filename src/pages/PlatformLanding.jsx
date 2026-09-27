@@ -291,7 +291,7 @@ const PLANES = [
 const pesos = (n) => `$${n.toLocaleString('es-AR')}`;
 
 /** Escribe el titulo y los meta de la raiz. El index.html del build lleva los
- *  del tenant que se horneo (hermes-cochi), asi que sin esto la pestania de
+ *  del cliente que se horneo (clients/edificio), asi que sin esto la pestania de
  *  divianco.app dice el nombre de un restaurante. Los bots de vista previa no
  *  pasan por aca: a esos los atiende `api/og.js`. */
 function useMetaDeLaPlataforma() {

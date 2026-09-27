@@ -3,7 +3,7 @@
 //
 // El build del EDIFICIO, con identidad explicita.
 //
-// `npm run build` a secas no sirve para produccion: sin CLIENT cae a
+// `npm run build` a secas no sirve para produccion: sin CLIENT caia a
 // `la-nona-pato` (vite.config.js) y sin SHA caia a un timestamp. O sea que el
 // gate verde de un RC no probaba que compilara el artefacto real. Este script
 // resuelve las dos cosas ANTES de arrancar el build y despues audita que el

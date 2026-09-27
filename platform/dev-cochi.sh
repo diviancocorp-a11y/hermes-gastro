@@ -12,5 +12,5 @@ if [ ! -d node_modules/vite ]; then
   NODE_ENV=development npm install --include=dev
 fi
 
-echo "Levantando CLIENT=hermes-cochi (catalogo de cochi contra el edificio)..."
-CLIENT=hermes-cochi npm run dev
+echo "Levantando CLIENT=edificio (catalogo de cochi contra el edificio)..."
+CLIENT=edificio npm run dev

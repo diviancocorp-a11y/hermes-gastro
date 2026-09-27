@@ -16,8 +16,8 @@ Multi-tenant SaaS para dark kitchens. Mismo codigo, N clientes: cada tenant tien
 
 ```bash
 npm install
-CLIENT=mala-miga npm run dev      # cualquier slug de clients/
-CLIENT=mala-miga npm run build
+npm run dev                       # CLIENT=edificio por defecto (ver clients/)
+npm run build
 npm test                          # vitest
 npx playwright test               # e2e (ver docs/plataforma/TESTING.md)
 ```

@@ -14,7 +14,7 @@ import { spawnSync } from 'node:child_process';
 import { SHA_RE, normalizeSha, shortId, sentryRelease, BuildIdentityError } from './build-identity.mjs';
 
 /** El cliente que corresponde al edificio. Unico con `platform: true`. */
-export const PLATFORM_CLIENT = 'hermes-cochi';
+export const PLATFORM_CLIENT = 'edificio';
 
 /**
  * Version EXACTA del CLI de Vercel. No `latest`.
@@ -169,7 +169,7 @@ export function assertAuthorizedProject(cwd = process.cwd()) {
  * Audita un directorio de salida (dist/ o .vercel/output/static) contra la
  * identidad esperada. Es el gate que habria frenado el deploy del 30/ago.
  */
-export function auditOutput(outDir, expectedShort, { expectTitle = 'Cochi' } = {}) {
+export function auditOutput(outDir, expectedShort, { expectTitle = 'Dico' } = {}) {
   const problemas = [];
   if (!existsSync(outDir)) {
     return { ok: false, problemas: [`No existe el directorio de salida: ${outDir}`] };

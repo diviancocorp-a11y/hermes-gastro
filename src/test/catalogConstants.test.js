@@ -5,14 +5,17 @@ import {
   haversine, calcDeliveryCost, CHECKOUT_STEPS, DEFAULT_FORM
 } from '../constants/catalogConstants';
 
+// Leen el @business del build (clients/edificio por defecto). Hasta el 27/sep
+// el default era la-nona-pato y estos tests fijaban sus datos: 10 colores,
+// grupos de categorias de respaldo y la ubicacion del local.
 describe('catalogConstants', () => {
-  it('avatarColors has 10 colors', () => {
-    expect(avatarColors).toHaveLength(10);
+  it('avatarColors son colores hex', () => {
+    expect(avatarColors.length).toBeGreaterThan(0);
     avatarColors.forEach(c => expect(c).toMatch(/^#[0-9A-Fa-f]{6}$/));
   });
 
   it('CAT_GROUPS has correct structure', () => {
-    expect(CAT_GROUPS.length).toBeGreaterThan(0);
+    // El edificio no trae grupos de respaldo: las categorias salen de get_catalog.
     CAT_GROUPS.forEach(g => {
       expect(g).toHaveProperty('name');
       expect(g).toHaveProperty('icon');
@@ -53,9 +56,18 @@ describe('catalogConstants', () => {
     });
   });
 
-  it('STORE coordinates are in Buenos Aires area', () => {
-    expect(STORE_LAT).toBeCloseTo(-34.43, 1);
-    expect(STORE_LNG).toBeCloseTo(-58.73, 1);
+  it('STORE coordinates son una coordenada valida', () => {
+    expect(STORE_LAT).toBeGreaterThanOrEqual(-90);
+    expect(STORE_LAT).toBeLessThanOrEqual(90);
+    expect(STORE_LNG).toBeGreaterThanOrEqual(-180);
+    expect(STORE_LNG).toBeLessThanOrEqual(180);
+  });
+
+  it('el origen del envio es el centro de Buenos Aires, no un local', () => {
+    // Uno solo para todos los tenants, igual que la busqueda de direcciones
+    // del checkout. Antes eran las coordenadas de Cochi (Caracas).
+    expect(STORE_LAT).toBeCloseTo(-34.60, 1);
+    expect(STORE_LNG).toBeCloseTo(-58.38, 1);
   });
 });
 

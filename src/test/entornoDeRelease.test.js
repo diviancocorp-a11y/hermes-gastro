@@ -18,7 +18,7 @@ describe('envUsable', () => {
     const { ok, rotas } = envUsable([
       'VITE_SUPABASE_URL="https://abc.supabase.co"',
       'VITE_SUPABASE_ANON_KEY="una-clave"',
-      'CLIENT="hermes-cochi"',
+      'CLIENT="edificio"',
     ].join('\n'));
     expect(ok).toBe(true);
     expect(rotas).toEqual([]);

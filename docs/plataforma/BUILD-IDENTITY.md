@@ -89,10 +89,10 @@ Hace, en orden:
 2. valida que sea un SHA completo de 40 hex;
 3. exige worktree limpio (`--allow-dirty` sólo para probar, y avisa que lo
    producido no es publicable);
-4. fija `DICO_BUILD_ID=<HEAD>`, `CLIENT=hermes-cochi`, `DICO_RELEASE=1`;
+4. fija `DICO_BUILD_ID=<HEAD>`, `CLIENT=edificio`, `DICO_RELEASE=1`;
 5. corre el build;
 6. audita `dist/`: `version.json` = short SHA, el short SHA aparece en algún
-   bundle, `<title>` y `manifest.name` son `Cochi`, cero sourcemaps;
+   bundle, `<title>` y `manifest.name` son `Dico`, cero sourcemaps;
 7. falla ante cualquier divergencia.
 
 El SHA se resuelve **antes** de arrancar el build. No se depende de que Vercel
@@ -112,7 +112,7 @@ Pasos:
 3. el HEAD existe en `origin` (si no, el deploy no sería reproducible);
 4. `.vercel/project.json` apunta al proyecto autorizado `hermes-platform`;
 5. `vercel pull --yes --environment=production`;
-6. exportar `DICO_BUILD_ID` y `CLIENT=hermes-cochi`;
+6. exportar `DICO_BUILD_ID` y `CLIENT=edificio`;
 7. `vercel build --prod`;
 8. auditar `.vercel/output/static`;
 9. exigir `version.json` = short HEAD, consistencia de bundle y Sentry release;

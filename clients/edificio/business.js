@@ -1,10 +1,14 @@
-// clients/hermes-cochi/business.js
+// clients/edificio/business.js
 // ═══════════════════════════════════════════════════════════════
-// COCHI corriendo sobre el EDIFICIO (hermes-platform, multi-tenant).
-// Misma identidad visual que clients/cochi, pero apunta a la DB unica.
-//   platform: true  -> catalog.js usa el RPC get_catalog(slug) en vez de
-//                      las queries directas a `recipes` del modelo viejo.
-//   slug: 'cochi'    -> que tenant del edificio muestra este build.
+// El build del EDIFICIO (hermes-platform, multi-tenant). Un solo build sirve
+// a todos los negocios: el tenant sale del hostname en runtime y cada uno
+// pinta su nombre, colores y favicon desde la DB (src/lib/tenantHead.js).
+// Lo de aca es solo lo que se ve ANTES de eso, y por eso es Dico y no un
+// negocio: hasta el 27/sep/2026 era la identidad de Cochi y el manifest de
+// todos los tenants decia "Cochi".
+//   platform: true  -> catalog.js usa el RPC get_catalog(slug).
+//   slug            -> fallback de local y de *.vercel.app, donde el host no
+//                      dice el tenant. Tiene que ser un tenant que exista.
 // ═══════════════════════════════════════════════════════════════
 
 const business = {
@@ -13,35 +17,41 @@ const business = {
   slug: 'cochi',
 
   // ── Core identity ──────────────────────────────────────────
-  name: 'Cochi',
-  shortName: 'Cochi',
-  tagline: '¡Qué bien se cochina aquí!',
-  description: 'Restaurante de cerdo y parrilla artesanal.',
-  logoLetter: 'C',
-  logoColor: '#c91b14',
-  logoUrl: '/clients/cochi/logo-icon.jpg',
-  logoHorizontalUrl: '/clients/cochi/logo-horizontal.jpg',
-  logoWordmarkUrl: '/clients/cochi/logo-wordmark.jpg',
+  name: 'Dico',
+  shortName: 'Dico',
+  tagline: '',
+  description: 'Pedidos online y gestion para tu negocio.',
+  logoLetter: 'D',
+  logoColor: '#C45D3E',
+  // Sin logo propio: el favicon queda en /favicon.svg y el manifest usa el
+  // icono generico de la raiz.
+  logoUrl: '',
+  logoHorizontalUrl: '',
+  logoWordmarkUrl: '',
+  faviconUrl: '/icon-192.png',
 
   address: { street: '', city: '', region: '', country: 'AR', postalCode: '' },
-  geo: { lat: 10.4806, lng: -66.9036 },
+  // Origen del calculo de envio (catalogConstants). Es UNO para todos los
+  // tenants: el centro de Buenos Aires, igual que la busqueda de direcciones
+  // del checkout. Antes eran las coordenadas de Cochi, en Caracas.
+  geo: { lat: -34.6037, lng: -58.3816 },
   phone: '', whatsapp: '', email: '',
   website: '', instagram: '', facebook: '',
   cbu: '', aliasMp: '', cuit: '',
 
   branding: {
-    mascotEmoji: '🐷',
-    sound: '/oink.mp3',
-    themeColorLight: '#c91b14',
-    themeColorDark: '#221c1a',
-    ogImage: '/og-image.png',
-    accentColors: ['#c91b14', '#e3debe', '#221c1a', '#D84315', '#BF360C', '#4E342E', '#3E2723', '#FF5722', '#FF8A65', '#A1887F'],
-    catalogBg: '#c91b14',
+    mascotEmoji: '',
+    sound: '',
+    themeColorLight: '#C45D3E',
+    themeColorDark: '#171513',
+    ogImage: '',
+    accentColors: ['#C45D3E'],
+    catalogBg: '#FFF8F0',
     catalogCardBg: '#FFFFFF',
     catalogHeaderBg: '#FFFFFF',
-    catalogTextOnBg: '#FFFFFF',
-    catalogStickyBg: 'rgba(201,27,20,0.95)',
-    catalogStickyText: '#FFFFFF',
+    catalogTextOnBg: '#171513',
+    catalogStickyBg: 'rgba(255,248,240,0.95)',
+    catalogStickyText: '#171513',
   },
 
   locale: 'es-AR',
@@ -49,20 +59,17 @@ const business = {
   currency: 'ARS',
   currencySymbol: '$',
 
-  type: 'grill',
+  type: 'restaurant',
   schemaOrgType: 'Restaurant',
-  cuisines: ['Cerdo', 'Parrilla'],
+  cuisines: [],
   priceRange: '$$',
 
-  hours: [
-    { days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], opens: '11:00', closes: '22:00' },
-    { days: ['Saturday', 'Sunday'], opens: '11:00', closes: '23:00' },
-  ],
+  hours: [],
 
   defaultSettings: {
-    biz_name: 'Cochi',
-    logo_letter: 'C',
-    logo_color: '#c91b14',
+    biz_name: 'Dico',
+    logo_letter: 'D',
+    logo_color: '#C45D3E',
     cover_url: '',
     exp_cats: ['Materia Prima', 'Servicios', 'Packaging', 'Transporte', 'Alquiler', 'Equipamiento', 'Otros'],
     ing_cats: ['Carnes', 'Verduras', 'Condimentos', 'Bebidas', 'Packaging', 'Otros'],
@@ -75,7 +82,7 @@ const business = {
   legal: {
     privacyUrl: '/privacidad',
     termsUrl: '/terminos',
-    copyrightHolder: 'Cochi',
+    copyrightHolder: 'Divianco',
     copyrightYear: 2026,
   },
 };
