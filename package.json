@@ -22,6 +22,7 @@
     "prepare": "husky",
     "check:schema": "node scripts/check-schema-sync.mjs",
     "check:freshness": "node scripts/check-schema-freshness.mjs",
+    "check:rls": "node scripts/check-rls.mjs",
     "schema:sync": "node scripts/schema-sync.mjs",
     "deploy": "npm run deploy:web && npm run deploy:functions",
     "deploy:web": "node scripts/deploy-web.mjs",
