@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:smoke": "playwright test --config playwright.smoke.config.ts",
     "create-client": "node scripts/create-client.mjs",
     "create-owner": "node platform/scripts/create-owner.mjs",
     "check:integrity": "node scripts/check-integrity-all.mjs",
