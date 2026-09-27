@@ -128,9 +128,10 @@ Herencia del plan que quedo sin ejecutar (lo digo explicito para que no se pierd
   a nombre de otro usuario logueado; impacto bajo, pero esta abierto).
 - [ ] **Firma x-signature de MercadoPago** en mp-webhook (era 1.7): riesgo bajo
   (re-consulta la API de MP) pero conviene cerrarlo.
-- [ ] **Selectores viejos en E2E**: order-flow.spec (`.prod-card`, `cart-add`) y
-  admin-flow.spec (`.hd`) no matchean la UI nueva — la suite de CI esta roja por
-  drift, no por bugs. Reescribir con data-testid actuales.
+- [x] **Selectores viejos en E2E** (cerrado 27/sep): no era drift de selectores.
+  order-flow, admin-flow y multi-client le pegaban a los deploys legacy, que dan
+  404, y se retiraron. Lo que falta ahora es un smoke E2E del edificio: hoy
+  ningun E2E toca `<slug>.divianco.app`.
 - [ ] **Subir coverage threshold** de 35 → 45 (la suite ya esta verde).
 - [ ] **rate_limits policy USING(true)** y **recipe_sale_counts expuesta a anon**
   (advisors): mover a acceso via RPC/revocar de la Data API.
