@@ -1,0 +1,22 @@
+# Dependabot: abre PRs cuando una dependencia tiene un parche de seguridad.
+# El job `audit` del CI avisa, pero no propone el arreglo; esto si.
+# Semanal y agrupado para no llenar el repo de PRs: uno por ecosistema.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-seguridad:
+        applies-to: security-updates
+        patterns: ["*"]
+      npm-menores:
+        update-types: ["minor", "patch"]
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -64,7 +64,14 @@ async function firmaValida(
   const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(manifest));
   const esperado = [...new Uint8Array(mac)]
     .map((b) => b.toString(16).padStart(2, "0")).join("");
-  return esperado === v1;
+  // Comparacion de tiempo constante: con `===` la respuesta tarda distinto
+  // segun cuantos caracteres coinciden, y eso deja adivinar la firma de a uno.
+  if (esperado.length !== v1.length) return false;
+  let diff = 0;
+  for (let i = 0; i < esperado.length; i++) {
+    diff |= esperado.charCodeAt(i) ^ v1.charCodeAt(i);
+  }
+  return diff === 0;
 }
 
 Deno.serve(async (req) => {
