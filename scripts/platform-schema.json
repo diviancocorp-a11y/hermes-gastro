@@ -1,7 +1,7 @@
 {
   "_comment": "Snapshot del schema del EDIFICIO (proyecto Supabase hermes-platform, wwwzdgprsooyjgkuyoav) para validar columnas en .select(). El otro snapshot, supabase-schema.json, describe el schema LEGACY de los 3 tenants gastro viejos: son bases distintas y varias tablas (orders, order_items, coupons, profiles) existen en las dos con columnas diferentes. Que archivo se valida contra cual lo decide PLATFORM_PATHS en check-supabase-columns.mjs. Regenerar con: npm run schema:sync",
-  "_refreshed_at": "2026-09-12",
-  "_migrations_through": "0078",
+  "_refreshed_at": "2026-09-27",
+  "_migrations_through": "0079",
   "tables": {
     "addresses": [
       "id",
@@ -335,17 +335,17 @@
       "payment_external_id",
       "payment_status",
       "paid_at",
+      "kitchen_at",
+      "ready_at",
+      "diners",
+      "allergy_note",
+      "ticket_number",
       "visit_id",
       "review_status",
       "risk_flags",
       "reviewed_by",
       "reviewed_at",
-      "review_note",
-      "kitchen_at",
-      "ready_at",
-      "diners",
-      "allergy_note",
-      "ticket_number"
+      "review_note"
     ],
     "organizations": [
       "id",
@@ -412,8 +412,8 @@
       "collected_by",
       "collector_staff_id",
       "reference",
-      "receipt_last_four",
-      "verification_status"
+      "verification_status",
+      "receipt_last_four"
     ],
     "plans": [
       "id",
@@ -468,6 +468,37 @@
       "active",
       "created_at"
     ],
+    "production_dispatches": [
+      "id",
+      "tenant_id",
+      "order_id",
+      "sector_id",
+      "printed_at",
+      "impresiones",
+      "closed_at",
+      "closed_by",
+      "created_at"
+    ],
+    "production_sectors": [
+      "id",
+      "tenant_id",
+      "name",
+      "mode",
+      "umbral_min",
+      "orden",
+      "active",
+      "created_at"
+    ],
+    "production_stations": [
+      "id",
+      "tenant_id",
+      "sector_id",
+      "name",
+      "short_name",
+      "orden",
+      "active",
+      "created_at"
+    ],
     "products": [
       "id",
       "tenant_id",
@@ -482,9 +513,9 @@
       "description",
       "image_url",
       "requires_age_gate",
-      "is_archived",
       "station",
-      "station_id"
+      "station_id",
+      "is_archived"
     ],
     "profiles": [
       "id",
@@ -548,17 +579,6 @@
       "created_at",
       "branch_id"
     ],
-    "service_reviews": [
-      "id",
-      "tenant_id",
-      "branch_id",
-      "order_id",
-      "staff_id",
-      "rating",
-      "comment",
-      "created_at",
-      "client_request_id"
-    ],
     "service_requests": [
       "id",
       "tenant_id",
@@ -576,6 +596,17 @@
       "resolved_at",
       "client_request_id",
       "created_at"
+    ],
+    "service_reviews": [
+      "id",
+      "tenant_id",
+      "branch_id",
+      "order_id",
+      "staff_id",
+      "rating",
+      "comment",
+      "created_at",
+      "client_request_id"
     ],
     "settings": [
       "tenant_id",
@@ -759,6 +790,34 @@
       "swap_taken_by",
       "created_at"
     ],
+    "store_credits": [
+      "id",
+      "tenant_id",
+      "code",
+      "customer_name",
+      "customer_phone",
+      "origin_order_id",
+      "amount",
+      "balance",
+      "status",
+      "created_at"
+    ],
+    "suppliers": [
+      "id",
+      "tenant_id",
+      "name",
+      "category",
+      "cuit",
+      "can_invoice",
+      "location",
+      "phone",
+      "email",
+      "notes",
+      "is_active",
+      "created_at",
+      "updated_at",
+      "scope"
+    ],
     "table_coverages": [
       "id",
       "tenant_id",
@@ -789,34 +848,6 @@
       "closed_at",
       "client_request_id",
       "created_at"
-    ],
-    "store_credits": [
-      "id",
-      "tenant_id",
-      "code",
-      "customer_name",
-      "customer_phone",
-      "origin_order_id",
-      "amount",
-      "balance",
-      "status",
-      "created_at"
-    ],
-    "suppliers": [
-      "id",
-      "tenant_id",
-      "name",
-      "category",
-      "cuit",
-      "can_invoice",
-      "location",
-      "phone",
-      "email",
-      "notes",
-      "is_active",
-      "created_at",
-      "updated_at",
-      "scope"
     ],
     "tenant_members": [
       "tenant_id",
@@ -919,37 +950,6 @@
       "date",
       "created_at",
       "client_request_id"
-    ],
-    "production_sectors": [
-      "id",
-      "tenant_id",
-      "name",
-      "mode",
-      "umbral_min",
-      "orden",
-      "active",
-      "created_at"
-    ],
-    "production_stations": [
-      "id",
-      "tenant_id",
-      "sector_id",
-      "name",
-      "short_name",
-      "orden",
-      "active",
-      "created_at"
-    ],
-    "production_dispatches": [
-      "id",
-      "tenant_id",
-      "order_id",
-      "sector_id",
-      "printed_at",
-      "impresiones",
-      "closed_at",
-      "closed_by",
-      "created_at"
     ]
   }
 }
