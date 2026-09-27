@@ -20,6 +20,10 @@ function authHeaders(key: string): Record<string, string> {
 }
 
 test.afterAll(async () => {
+  // Misma condicion que el skip de los tests: si no corrieron, no hay nada que
+  // limpiar. Sin esto, la limpieza tiraba por falta de env y Playwright le
+  // cargaba el error al ultimo test, que quedaba "flaky" sin haber corrido.
+  if (!SUPABASE_URL || !ANON_KEY || !SERVICE_ROLE) return
   await cleanupE2EOrders()
 })
 
