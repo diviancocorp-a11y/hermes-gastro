@@ -102,10 +102,9 @@ Deno.serve(async (req) => {
       .select("id, slug").eq("slug", slug).maybeSingle();
     if (!tenant) return new Response("OK", { status: 200 });
 
-    const { data: integ } = await supabase.from("payment_integrations")
-      .select("access_token, webhook_secret")
-      .eq("tenant_id", tenant.id).eq("provider", "mercadopago")
-      .eq("is_active", true).maybeSingle();
+    // Los secretos viven en Vault desde la 0076: la tabla ya no los tiene.
+    const { data: integ } = await supabase
+      .rpc("mp_credenciales", { p_tenant_id: tenant.id }).maybeSingle();
 
     if (!integ?.access_token) {
       console.error("mp-webhook: el negocio no tiene MP conectado", slug);
