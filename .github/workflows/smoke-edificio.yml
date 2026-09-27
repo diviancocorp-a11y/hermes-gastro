@@ -1,0 +1,67 @@
+name: Smoke del edificio
+
+# Abre produccion como un cliente: la landing, el catalogo de cada negocio real
+# y, con credenciales, el panel de un negocio de prueba. Solo lectura: no crea
+# pedidos. Ver smoke/edificio.spec.ts.
+#
+# Corre DESPUES de cada deploy de produccion y no en los PRs: mira lo
+# publicado, no el codigo de un PR. Un preview tampoco sirve: *.vercel.app no
+# resuelve un tenant real y los previews estan detras de SSO.
+#
+# Que evento manda Vercel no se pudo verificar al armarlo (27/sep), asi que
+# escucha los dos:
+#   - repository_dispatch vercel.deployment.success (el que recomienda Vercel)
+#   - deployment_status (el viejo)
+# Los filtros son tolerantes: si el payload no trae el campo, corre igual. Da
+# lo mismo que dispare de mas: siempre mira divianco.app, y `concurrency` se
+# queda con la ultima corrida. El cron diario asegura que corra aunque ninguno
+# de los dos llegue.
+on:
+  repository_dispatch:
+    types: [vercel.deployment.success]
+  deployment_status:
+  schedule:
+    - cron: '30 10 * * *' # 7:30 AR, media hora despues de morning-health
+  workflow_dispatch:
+
+concurrency:
+  group: smoke-edificio
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Smoke (produccion)
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'repository_dispatch' &&
+        (github.event.client_payload.environment || 'production') == 'production' &&
+        (github.event.client_payload.project.name || 'hermes-platform') == 'hermes-platform') ||
+      (github.event_name == 'deployment_status' &&
+        github.event.deployment_status.state == 'success' &&
+        contains(github.event.deployment.environment, 'Production') &&
+        (github.event.deployment.environment == 'Production' ||
+          contains(github.event.deployment.environment, 'hermes-platform')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Smoke
+        env:
+          # Variable (no secret): los slugs son publicos. Vacia, se saltean
+          # los catalogos.
+          SMOKE_TENANTS: ${{ vars.SMOKE_TENANTS }}
+          SMOKE_ADMIN_SLUG: ${{ secrets.SMOKE_ADMIN_SLUG }}
+          SMOKE_ADMIN_EMAIL: ${{ secrets.SMOKE_ADMIN_EMAIL }}
+          SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
+        run: npm run test:smoke
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: smoke-edificio
+          path: test-results/
+          retention-days: 7
