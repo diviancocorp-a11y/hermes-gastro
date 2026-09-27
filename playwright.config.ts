@@ -30,7 +30,10 @@ const TARGET = process.env.TARGET_URL || 'https://mala-miga.vercel.app'
 
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: ['**/_helpers/**'],
+  // qa-lite tiene su propio config (playwright.qa-lite.config.ts): corre contra
+  // un Supabase local con Docker y exige QA_FIXED_NOW. Levantado desde aca,
+  // contra un deploy remoto, cada spec cae en el fixture antes de probar nada.
+  testIgnore: ['**/_helpers/**', '**/qa-lite/**'],
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
