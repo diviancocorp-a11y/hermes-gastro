@@ -21,6 +21,9 @@
 //      anon/authenticated tiene su `using` y su `with check` ACOTADOS.
 //   3. Toda vista que anon/authenticated pueden leer es `security_invoker`.
 //      Una materializada no puede tener RLS: si la pueden leer, falla.
+//   4. Toda funcion SECURITY DEFINER que anon/authenticated pueden ejecutar
+//      esta en DEFINER_APROBADAS, y las que se aprobaron porque validan
+//      adentro siguen teniendo la validacion en el cuerpo.
 //
 // Acotada quiere decir que cada rama del OR llega a uno de ACOTADORES:
 // el negocio del usuario, su rol en ese negocio, su propia fila, o el staff
@@ -28,23 +31,25 @@
 // achica). Las policies RESTRICTIVAS no se miran: tambien solo achican.
 //
 // ── QUE NO VE ──
-// Las funciones SECURITY DEFINER (get_catalog, submit-order...) saltean RLS
-// a proposito y se cuidan solas: este guard no las puede juzgar. Tampoco entra
-// a subconsultas: `exists (select ... where o.user_id = auth.uid())` cuenta
-// como acotada por lo que tiene adentro, sin mirar si hay un OR mas abajo.
+// No entra a subconsultas: `exists (select ... where o.user_id = auth.uid())`
+// cuenta como acotada por lo que tiene adentro, sin mirar si hay un OR mas
+// abajo. De una funcion SECURITY DEFINER sabe que la validacion ESTA en el
+// cuerpo, no que este bien usada: eso lo sigue diciendo quien la revisa.
 //
 // ── USO ──
-//   npm run check:rls                          # contra la base
-//   node scripts/check-rls.mjs --snapshot x.json   # contra un archivo
+//   npm run check:rls                                   # contra la base
+//   node scripts/check-rls.mjs --snapshot t.json [--funciones f.json]
 //
-// Con --snapshot se juzga un JSON con la salida de `select public.rls_snapshot()`.
+// Con --snapshot se juzga un JSON con la salida de `select public.rls_snapshot()`
+// y, si se pasa, --funciones con la de `select public.function_snapshot()`.
 // Sirve para correrlo sin service role, por ejemplo desde una sesion con el
 // MCP de Supabase.
 //
 // Necesita PLATFORM_SUPABASE_URL + PLATFORM_SUPABASE_SERVICE_ROLE_KEY (o las
-// SUPABASE_* genericas) y que la base tenga public.rls_snapshot() — 0076.
-// SIN credenciales o SIN el RPC: saltea y devuelve 0, mismo criterio que
-// check-functions-drift. El que corre siempre es el de CI (morning-health).
+// SUPABASE_* genericas), public.rls_snapshot() (0076) y function_snapshot()
+// con permisos (0077). SIN credenciales o SIN los RPC: saltea y devuelve 0,
+// mismo criterio que check-functions-drift. El que corre siempre es el de CI
+// (morning-health).
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -231,20 +236,142 @@ export function desenvolver(crudo) {
   return snap.every(bienFormado) ? snap : null;
 }
 
-async function traerSnapshot() {
-  const i = process.argv.indexOf('--snapshot');
-  if (i !== -1) {
-    const archivo = process.argv[i + 1];
-    if (!archivo) return { error: '--snapshot necesita la ruta de un archivo' };
-    try {
-      const snap = desenvolver(JSON.parse(readFileSync(archivo, 'utf8')));
-      if (!snap) return { error: `${archivo} no tiene la forma de rls_snapshot()` };
-      return { snapshot: snap };
-    } catch (e) {
-      return { error: `no se pudo leer ${archivo} (${e.message})` };
+/* ══════════════════ Funciones SECURITY DEFINER ══════════════════ */
+
+/**
+ * Las SECURITY DEFINER que el front puede llamar, y por que esta bien.
+ *
+ *   se_cuida  valida adentro que el usuario sea del negocio (o staff de
+ *             Divianco). El guard exige que la validacion siga en el cuerpo.
+ *   abierta   la puede llamar cualquiera a proposito y no expone datos de un
+ *             negocio que el negocio no publique.
+ *
+ * Una funcion nueva que no esta aca hace fallar el guard. Las salidas son dos:
+ * revocarle el execute (`revoke execute on function ... from anon,
+ * authenticated`) si no la llama el front, o sumarla aca con el motivo. El
+ * motivo es para quien la revise despues: que se pueda leer y discutir.
+ */
+export const DEFINER_APROBADAS = {
+  // ── validan pertenencia al negocio ──
+  bajar_pedido_a_cocina: { tipo: 'se_cuida', porque: 'raise si p_tenant_id no es del usuario' },
+  cerrar_ticket_de_cocina: { tipo: 'se_cuida', porque: 'raise si p_tenant_id no es del usuario' },
+  marcar_comanda_impresa: { tipo: 'se_cuida', porque: 'raise si p_tenant_id no es del usuario' },
+  marcar_plato: { tipo: 'se_cuida', porque: 'raise si p_tenant_id no es del usuario' },
+  guardar_conteo_de_deposito: { tipo: 'se_cuida', porque: 'raise si p_tenant_id no es del usuario' },
+  mover_stock_de_insumo: { tipo: 'se_cuida', porque: 'raise si p_tenant_id no es del usuario' },
+  register_stock_movement: { tipo: 'se_cuida', porque: 'raise si p_tenant_id no es del usuario' },
+  count_push_subscriptions: { tipo: 'se_cuida', porque: 'raise si el slug no es de un negocio del usuario' },
+  crear_sectores_tipicos: { tipo: 'se_cuida', porque: 'pertenencia y rol owner/manager' },
+  complete_order: { tipo: 'se_cuida', porque: 'el pedido tiene que ser de un negocio del usuario, con rol de caja' },
+  comandas_abiertas: { tipo: 'se_cuida', porque: 'filtra por current_user_tenants: a otro le devuelve vacio' },
+  comandas_por_imprimir: { tipo: 'se_cuida', porque: 'filtra por current_user_tenants: a otro le devuelve vacio' },
+  consumo_diario_de_insumos: { tipo: 'se_cuida', porque: 'filtra por current_user_tenants: a otro le devuelve vacio' },
+  signup_tenant: { tipo: 'se_cuida', porque: 'exige sesion y crea el negocio de ESE usuario' },
+  upsert_push_subscription: { tipo: 'se_cuida', porque: 'cualquiera se suscribe como cliente; como admin solo si es miembro' },
+  // ── solo el dueno de Divianco ──
+  cambiar_puesto: { tipo: 'se_cuida', porque: 'raise si no es el dueno de Divianco' },
+  purgar_consola_log: { tipo: 'se_cuida', porque: 'raise si no es el dueno de Divianco' },
+  quitar_staff: { tipo: 'se_cuida', porque: 'raise si no es el dueno de Divianco' },
+  sumar_staff: { tipo: 'se_cuida', porque: 'raise si no es el dueno de Divianco' },
+  // ── publicas a proposito ──
+  get_catalog: { tipo: 'abierta', porque: 'el catalogo publico: lo que el negocio publica' },
+  get_tenant_brand: { tipo: 'abierta', porque: 'nombre y logo del negocio, para la pantalla de login' },
+  get_tenant_by_host: { tipo: 'abierta', porque: 'resuelve el dominio propio a un slug' },
+  get_info_page: { tipo: 'abierta', porque: 'solo paginas marcadas visibles' },
+  resolve_qr: { tipo: 'abierta', porque: 'solo QR activos; devuelve a donde redirige' },
+  slug_available: { tipo: 'abierta', porque: 'el alta pregunta si un slug esta libre' },
+  tenant_puede_operar: { tipo: 'abierta', porque: 'devuelve un booleano: si el negocio esta suspendido' },
+  submit_service_review: { tipo: 'abierta', porque: 'el order_id es un uuid que solo tiene quien recibio el pedido' },
+  get_tip_target: { tipo: 'abierta', porque: 'el order_id es un uuid que solo tiene quien recibio el pedido' },
+  delete_push_subscription: { tipo: 'abierta', porque: 'el endpoint es el secreto: solo lo conoce el navegador suscripto' },
+  legajo_completo: { tipo: 'abierta', porque: 'devuelve un booleano sobre la fila que le pasan' },
+};
+
+/** Lo que cuenta como "valida adentro". Se busca sin comentarios. */
+export const GUARDAS = [
+  /\bprivate\.current_user_tenants\(\)/i,
+  /\bprivate\.tiene_rol\(/i,
+  /\bprivate\.es_(?:owner|staff)_divianco\(\)/i,
+  /\bauth\.uid\(\)/i,
+];
+
+function sinComentarios(sql) {
+  return String(sql || '')
+    .replace(/--[^\n]*/g, ' ')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ');
+}
+
+/**
+ * Saca la lista de funciones de la salida de function_snapshot(): el mapa
+ * pelado (RPC), `[{ function_snapshot: {...} }]` (SQL por MCP) o
+ * `{ function_snapshot: {...} }`. Null si no tiene la forma, o si le faltan
+ * los permisos (la base no tiene la 0077): sin ellos no se puede juzgar nada
+ * y callarse seria dar verde.
+ */
+export function desenvolverFunciones(crudo) {
+  const mapa = crudo?.[0]?.function_snapshot ?? crudo?.function_snapshot ?? crudo;
+  if (!mapa || typeof mapa !== 'object' || Array.isArray(mapa)) return null;
+  const lista = Object.values(mapa);
+  const bienFormada = (f) => f
+    && typeof f.name === 'string'
+    && typeof f.body === 'string'
+    && typeof f.secdef === 'boolean'
+    && typeof f.anon_exec === 'boolean'
+    && typeof f.auth_exec === 'boolean';
+  return lista.every(bienFormada) ? lista : null;
+}
+
+/**
+ * Juzga las SECURITY DEFINER que el front puede llamar. Devuelve los
+ * problemas (vacio es verde) y las aprobadas que ya no aparecen, para podar
+ * la lista. Funcion pura: la usa el test sin base.
+ */
+export function revisarDefiner(funciones, aprobadas = DEFINER_APROBADAS) {
+  const problemas = [];
+  const vistas = new Set();
+
+  for (const f of funciones || []) {
+    if (!f.secdef || !(f.anon_exec || f.auth_exec)) continue;
+    vistas.add(f.name);
+    const firma = `${f.name}(${f.args || ''})`;
+    const quien = f.anon_exec ? 'anon' : 'authenticated';
+    const ok = aprobadas[f.name];
+
+    if (!ok) {
+      problemas.push({
+        objeto: firma,
+        que: `SECURITY DEFINER que ${quien} puede ejecutar y nadie aprobo`,
+        porque: 'saltea RLS: revocale el execute o sumala a DEFINER_APROBADAS con el motivo',
+      });
+      continue;
+    }
+
+    if (ok.tipo === 'se_cuida' && !GUARDAS.some((re) => re.test(sinComentarios(f.body)))) {
+      problemas.push({
+        objeto: firma,
+        que: 'se aprobo porque valida adentro, y ya no valida',
+        porque: `no llama a current_user_tenants, tiene_rol, es_*_divianco ni auth.uid (${ok.porque})`,
+      });
     }
   }
 
+  const sobran = Object.keys(aprobadas).filter((n) => !vistas.has(n));
+  return { problemas, sobran };
+}
+
+/* ══════════════════ Traer los datos ══════════════════ */
+
+function leerArchivo(archivo, desenvolverCon, nombreRpc) {
+  try {
+    const datos = desenvolverCon(JSON.parse(readFileSync(archivo, 'utf8')));
+    if (!datos) return { error: `${archivo} no tiene la forma de ${nombreRpc}()` };
+    return { datos };
+  } catch (e) {
+    return { error: `no se pudo leer ${archivo} (${e.message})` };
+  }
+}
+
+async function llamarRpc(nombre, migracion, desenvolverCon) {
   const url = (process.env.PLATFORM_SUPABASE_URL || process.env.SUPABASE_URL || '')
     .replace(/\/+$/, '');
   const key = process.env.PLATFORM_SUPABASE_SERVICE_ROLE_KEY
@@ -253,7 +380,7 @@ async function traerSnapshot() {
 
   let res;
   try {
-    res = await fetch(`${url}/rest/v1/rpc/rls_snapshot`, {
+    res = await fetch(`${url}/rest/v1/rpc/${nombre}`, {
       method: 'POST',
       headers: {
         apikey: key,
@@ -267,45 +394,108 @@ async function traerSnapshot() {
   }
 
   if (res.status === 404) {
-    return {
-      skip: 'la base no tiene public.rls_snapshot() — aplicale '
-        + 'platform/migrations/0076_rls_snapshot_rpc.sql',
-    };
+    return { skip: `la base no tiene public.${nombre}() — aplicale platform/migrations/${migracion}` };
   }
   if (!res.ok) return { skip: `HTTP ${res.status}` };
-  const snap = desenvolver(await res.json().catch(() => null));
-  if (!snap) return { error: 'rls_snapshot() devolvio algo que no tiene la forma esperada' };
-  return { snapshot: snap };
+  const datos = desenvolverCon(await res.json().catch(() => null));
+  if (!datos) {
+    return { error: `${nombre}() devolvio algo que no tiene la forma esperada (puede faltar ${migracion})` };
+  }
+  return { datos };
+}
+
+function argumento(flag) {
+  const i = process.argv.indexOf(flag);
+  if (i === -1) return undefined;
+  return process.argv[i + 1] || '';
+}
+
+async function traerTodo() {
+  const archivoTablas = argumento('--snapshot');
+  const archivoFunciones = argumento('--funciones');
+
+  if (archivoTablas === '' || archivoFunciones === '') {
+    return { error: '--snapshot y --funciones necesitan la ruta de un archivo' };
+  }
+
+  if (archivoTablas !== undefined) {
+    const tablas = leerArchivo(archivoTablas, desenvolver, 'rls_snapshot');
+    const funciones = archivoFunciones !== undefined
+      ? leerArchivo(archivoFunciones, desenvolverFunciones, 'function_snapshot')
+      : { skip: 'sin --funciones' };
+    return { tablas, funciones };
+  }
+
+  const [tablas, funciones] = await Promise.all([
+    llamarRpc('rls_snapshot', '0076_rls_snapshot_rpc.sql', desenvolver),
+    llamarRpc('function_snapshot', '0077_function_snapshot_con_permisos.sql', desenvolverFunciones),
+  ]);
+  return { tablas, funciones };
+}
+
+/* ══════════════════ Main ══════════════════ */
+
+const ok = (m) => console.log(`\x1b[32m✓\x1b[0m ${m}`);
+const mal = (m) => console.log(`\x1b[31m✗\x1b[0m ${m}`);
+const info = (m) => console.log(`  ${m}`);
+
+function reportar(problemas) {
+  for (const p of problemas) {
+    mal(`${p.objeto}: ${p.que}`);
+    info(p.porque);
+  }
 }
 
 async function main() {
-  const { skip, error, snapshot } = await traerSnapshot();
-
+  const { error, tablas, funciones } = await traerTodo();
   if (error) {
-    console.log(`\x1b[31m✗\x1b[0m ${error}`);
+    mal(error);
     return 1;
   }
-  if (skip) {
-    console.log(`· RLS: salteado (${skip})`);
-    return 0;
+
+  let rojos = 0;
+  let sinVerificar = 0;
+
+  if (tablas.error) {
+    mal(tablas.error);
+    sinVerificar++;
+  } else if (tablas.skip) {
+    console.log(`· RLS: salteado (${tablas.skip})`);
+  } else {
+    const problemas = revisar(tablas.datos);
+    const conTenant = tablas.datos.filter((o) => o.tenant_id).length;
+    reportar(problemas);
+    rojos += problemas.length;
+    if (!problemas.length) ok(`RLS: ${tablas.datos.length} objetos de public, ${conTenant} con tenant_id, ninguno abierto`);
   }
 
-  const problemas = revisar(snapshot);
-  const conTenant = snapshot.filter((o) => o.tenant_id).length;
+  if (funciones.error) {
+    mal(funciones.error);
+    sinVerificar++;
+  } else if (funciones.skip) {
+    console.log(`· funciones: salteado (${funciones.skip})`);
+  } else {
+    const { problemas, sobran } = revisarDefiner(funciones.datos);
+    const llamables = funciones.datos.filter((f) => f.secdef && (f.anon_exec || f.auth_exec)).length;
+    reportar(problemas);
+    rojos += problemas.length;
+    if (!problemas.length) ok(`funciones: ${llamables} SECURITY DEFINER llamables desde el front, todas aprobadas`);
+    // No falla: una aprobada de mas no abre nada. Pero la lista se pudre si
+    // nadie la poda, y una lista podrida se deja de leer.
+    if (sobran.length) info(`⚠ en DEFINER_APROBADAS y ya no llamables: ${sobran.join(', ')} — sacalas`);
+  }
 
-  if (problemas.length) {
-    for (const p of problemas) {
-      console.log(`\x1b[31m✗\x1b[0m ${p.objeto}: ${p.que}`);
-      console.log(`  ${p.porque}`);
-    }
+  if (rojos) {
     console.log('');
-    console.log(`\x1b[31m✗\x1b[0m ${problemas.length} problema(s) de aislamiento entre negocios`);
-    console.log('  Ninguno de estos falla: la app anda y los datos quedan a la vista.');
-    return 1;
+    mal(`${rojos} problema(s) de aislamiento entre negocios`);
+    info('Ninguno de estos falla: la app anda y los datos quedan a la vista.');
   }
-
-  console.log(`\x1b[32m✓\x1b[0m RLS: ${snapshot.length} objetos de public, ${conTenant} con tenant_id, ninguno abierto`);
-  return 0;
+  // Datos que no se pudieron juzgar tambien son rojo: callarse seria un verde.
+  if (sinVerificar && !rojos) {
+    console.log('');
+    mal('no se pudo verificar el aislamiento: ver arriba');
+  }
+  return rojos || sinVerificar ? 1 : 0;
 }
 
 if (ES_MAIN) {

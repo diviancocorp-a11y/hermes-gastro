@@ -8,7 +8,10 @@
 // rompen el aislamiento sin fallar.
 
 import { describe, it, expect } from 'vitest';
-import { acotada, desenvolver, partirEnNivelCero, revisar } from '../../scripts/check-rls.mjs';
+import {
+  acotada, desenvolver, partirEnNivelCero, revisar,
+  desenvolverFunciones, revisarDefiner, DEFINER_APROBADAS,
+} from '../../scripts/check-rls.mjs';
 
 const DEL_NEGOCIO = '(tenant_id IN ( SELECT private.current_user_tenants() AS current_user_tenants))';
 
@@ -191,5 +194,95 @@ describe('revisar', () => {
   it('vista materializada legible por el front', () => {
     const r = revisar([{ name: 'ventas_mes', kind: 'm', security_invoker: false, anon_select: true, authenticated_select: true, policies: [] }]);
     expect(r).toHaveLength(1);
+  });
+});
+
+/* ══════════════════ Funciones SECURITY DEFINER ══════════════════ */
+
+function fn(name, body, extra = {}) {
+  return { name, args: '', body, secdef: true, anon_exec: true, auth_exec: true, ...extra };
+}
+
+// El comienzo real de complete_order en produccion (26/sep).
+const COMPLETE_ORDER = `declare v_order public.orders; begin
+  select * into v_order from public.orders where id = p_order_id for update;
+  -- Antes lo hacia la RLS. Ahora que la funcion es definer, se dice a mano.
+  if v_order.tenant_id not in (select private.current_user_tenants()) then
+    raise exception 'pedido_no_encontrado' using errcode = 'P0002';
+  end if;`;
+
+describe('desenvolverFunciones', () => {
+  const f = fn('get_catalog', 'select 1');
+
+  it('acepta el mapa del RPC y la fila del SQL', () => {
+    expect(desenvolverFunciones({ 'get_catalog(p_tenant_slug text)': f })).toEqual([f]);
+    expect(desenvolverFunciones([{ function_snapshot: { 'get_catalog()': f } }])).toEqual([f]);
+  });
+
+  it('sin permisos (base sin la 0077) es null, no un verde', () => {
+    const sinPermisos = { name: 'x', args: '', body: 'select 1', secdef: true };
+    expect(desenvolverFunciones({ 'x()': sinPermisos })).toBeNull();
+  });
+
+  it('basura da null', () => {
+    expect(desenvolverFunciones(null)).toBeNull();
+    expect(desenvolverFunciones([1, 2])).toBeNull();
+    expect(desenvolverFunciones({ 'x()': { foo: 1 } })).toBeNull();
+  });
+});
+
+describe('revisarDefiner', () => {
+  const aprobadas = {
+    complete_order: { tipo: 'se_cuida', porque: 'valida pertenencia' },
+    get_catalog: { tipo: 'abierta', porque: 'catalogo publico' },
+  };
+
+  it('las aprobadas, con su validacion, dan verde', () => {
+    const r = revisarDefiner([fn('complete_order', COMPLETE_ORDER), fn('get_catalog', 'select 1')], aprobadas);
+    expect(r.problemas).toEqual([]);
+  });
+
+  it('una nueva que el front puede llamar y nadie aprobo', () => {
+    const r = revisarDefiner([fn('exportar_clientes', 'select * from public.profiles')], aprobadas);
+    expect(r.problemas).toHaveLength(1);
+    expect(r.problemas[0].que).toMatch(/nadie aprobo/);
+  });
+
+  it('una reescritura que se lleva la validacion', () => {
+    const r = revisarDefiner([fn('complete_order', 'begin update public.orders set status = 1; end;')], aprobadas);
+    expect(r.problemas).toHaveLength(1);
+    expect(r.problemas[0].que).toMatch(/ya no valida/);
+  });
+
+  it('la validacion en un comentario no cuenta', () => {
+    const body = '-- if not private.tiene_rol(...) then raise\nbegin delete from public.orders; end;';
+    const r = revisarDefiner([fn('complete_order', body)], aprobadas);
+    expect(r.problemas).toHaveLength(1);
+  });
+
+  it('las que el front no puede llamar, o que no son definer, no se juzgan', () => {
+    const r = revisarDefiner([
+      fn('interna', 'delete from public.orders', { anon_exec: false, auth_exec: false }),
+      fn('invoker', 'select * from public.orders', { secdef: false }),
+    ], aprobadas);
+    expect(r.problemas).toEqual([]);
+  });
+
+  it('solo authenticated tambien cuenta: cualquiera se registra', () => {
+    const r = revisarDefiner([fn('nueva', 'select 1', { anon_exec: false })], aprobadas);
+    expect(r.problemas).toHaveLength(1);
+    expect(r.problemas[0].que).toMatch(/authenticated/);
+  });
+
+  it('avisa las aprobadas que ya no aparecen, para podar la lista', () => {
+    const r = revisarDefiner([fn('get_catalog', 'select 1')], aprobadas);
+    expect(r.sobran).toEqual(['complete_order']);
+  });
+
+  it('la lista real: cada entrada tiene tipo valido y motivo', () => {
+    for (const [nombre, a] of Object.entries(DEFINER_APROBADAS)) {
+      expect(['se_cuida', 'abierta'], nombre).toContain(a.tipo);
+      expect(a.porque.length, nombre).toBeGreaterThan(10);
+    }
   });
 });
