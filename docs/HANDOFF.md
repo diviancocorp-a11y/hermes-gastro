@@ -11,6 +11,94 @@
 
 ---
 
+## 27-28/sep/2026 — Sin legacy: el edificio es Dico, los 3 negocios recargados y el guard de RLS (Claude)
+
+### Hecho
+- **Datos del edificio vaciados y recargados.** Se borraron todos los tenants
+  (la-nona-pato, cochi, mala-miga y los demos) para rehacer la carga. Antes se
+  exporto el catalogo a un CSV (64 productos) que se le paso a Ricky; no esta
+  en el repo porque el repo es publico. Despues se recrearon `la-nona-pato`,
+  `cochi` y `mala-miga` con un bloque SQL atomico que hace lo mismo que
+  `signup_tenant` (tenant, settings y medios de pago por trigger, sucursal
+  Principal, owner en `tenant_members`) y cargo los 64 productos.
+  - Duena de los tres: `ricardo.r@grupodivianco.com`, que ademas es el
+    **owner de la plataforma** (`platform_admins`). Consecuencia: entrando por
+    `divianco.app` va a `/consola`; a cada negocio se entra por
+    `<slug>.divianco.app/admin`. Una sola contrasena controla plataforma y
+    negocios: lo decidio Ricky sabiendolo.
+  - No se uso `create-owner` porque crea un usuario nuevo y falla si el mail
+    existe, ni `provision_owner` porque inserta el profile y ese ya existia.
+- **#1 check-rls** (`npm run check:rls`): tablas sin RLS, policies abiertas,
+  vistas sin `security_invoker`, `SECURITY DEFINER` llamables sin aprobar.
+  Migraciones `0077_rls_snapshot_rpc` y `0078_function_snapshot_con_permisos`
+  (eran 0076/0077; se renumeraron porque main tomo la 0076). Aplicadas.
+- **#12 E2E**: qa-lite fuera del config general, specs legacy borrados, job
+  E2E duplicado fuera de `ci.yml`. Verde por primera vez desde mayo, pero
+  **con 0 tests que corran** (ver pendientes).
+- **#13 sin clientes legacy**: `clients/hermes-cochi` pasa a `clients/edificio`
+  (default de vite); se borraron `clients/cochi`, `la-nona-pato`, `mala-miga`.
+  El build se presenta como Dico: antes `<title>` y manifest decian "Cochi" en
+  todos los tenants y los iconos del PWA daban 404.
+- **#14 smoke del edificio** (`smoke/edificio.spec.ts`, `npm run test:smoke`,
+  `.github/workflows/smoke-edificio.yml`): abre produccion como un cliente
+  despues de cada deploy y una vez por dia. Solo lectura.
+- **#15**: fuera la traduccion `CLIENT=hermes-cochi`. Ricky borro la variable
+  `CLIENT` del panel de Vercel; el build toma `edificio` por defecto.
+- **#16 y #17**: `morning-health` lee los negocios de `SMOKE_TENANTS` (la
+  misma variable que el smoke); vacia la marca como problema. El #17 arregla
+  un bug que meti en el #16: el aviso llevaba un `_` sin escapar, Telegram
+  rechazaba el Markdown (400) y el reporte no llegaba. Ahora se escapa y, si
+  Telegram rechaza igual, reintenta en texto plano.
+- **No es de esta sesion, pero esta en main:** `9ba3d34` (Ricky, otra sesion)
+  con la migracion `0080`: `get_catalog` devuelve el origen del envio desde la
+  sucursal por defecto. No hay `0079`.
+
+### Verificado
+- Produccion: deploys `READY` de #12 a #17; el ultimo es `f677c58`. El
+  manifest de produccion dice Dico y el build sale sin `CLIENT`.
+- `get_catalog` de los tres: 43, 10 y 8 productos (en mala-miga hay 3
+  inactivos, igual que en el export).
+- El smoke se dispara solo tras cada deploy de produccion (landing en verde).
+  **Los catalogos no se miraron nunca en CI**: `SMOKE_TENANTS` llega vacia.
+- `morning-health` corrido a mano el 27/sep 23:39: armo el mensaje y
+  Telegram lo rechazo (el bug del #17). El arreglo solo se probo contra un
+  Telegram simulado; **el primer envio real es el del lunes 28/sep 10:00 UTC**.
+
+### Pendiente inmediato
+1. Mirar si el reporte del 28/sep llego a Telegram y con que lista corrio.
+2. Con `SMOKE_TENANTS` bien cargada, correr el smoke a mano
+   (Actions → Smoke del edificio → Run workflow) y ver los 3 catalogos verdes.
+3. `e2e/delivery-persistence.spec.ts` habla con el schema legacy (`recipes`,
+   `orders.customer`) y se saltea siempre: reescribirlo contra el edificio o
+   borrarlo. Hoy E2E da verde sin probar nada.
+4. La `0075_la_comanda_sale_por_papel` no figura en la historia de
+   migraciones de produccion, pero sus funciones existen: se aplico sin
+   quedar registrada. Comparar lo desplegado con el archivo antes de tocarla.
+5. El panel legacy (`business.platform: false`) ya no lo sirve ningun build:
+   es codigo muerto, candidato a borrarse.
+6. Dependabot abrio PRs de versiones mayores (#3 a #11: vitest 5,
+   actions/checkout 7, etc.). Revisar `.github/dependabot.yml`: la idea era
+   solo parches de seguridad.
+7. Ideas que quedaron sin hacer: que la lista de negocios vigilados salga de
+   la base y no de una variable, y que `morning-health` marque en amarillo
+   las credenciales faltantes en vez de "salteado".
+
+### Bloqueado por Ricky
+- **`SMOKE_TENANTS` llega vacia a los dos workflows** (corridas del 27/sep
+  23:38 y 23:39). Tiene que estar en GitHub → Settings → Secrets and
+  variables → Actions → **Variables** (no Secrets), a nivel Repository, con
+  ese nombre exacto. Valor: `la-nona-pato,cochi,mala-miga`.
+- **Secrets de `morning-health`**: `PLATFORM_SUPABASE_URL` y
+  `PLATFORM_SUPABASE_SERVICE_ROLE_KEY`. Sin ellos no corren los chequeos de
+  schema, funciones ni **RLS** (el de #1 nunca corrio todavia). Opcionales:
+  `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`.
+- **Ubicacion de la sucursal de cada negocio** (`branches.lat/lng`): hoy
+  estan vacias y la `0080` cae al centro de Buenos Aires para cotizar envios.
+- **Fotos de los 64 productos**: se perdieron con los Supabase legacy.
+- Por negocio: logo, horarios, tarifas de envio y cuentas de MercadoPago.
+- Secrets `SMOKE_ADMIN_SLUG/EMAIL/PASSWORD` (un usuario de prueba) para el
+  test de admin del smoke.
+
 ## 26/sep/2026 (b) — Del codigo a la base en un comando, y el HANDOFF recortado (Claude)
 
 ### Lo que pidio Ricky
@@ -314,69 +402,5 @@ Suite 100 archivos / 1432 tests, gates, typecheck y build en cero.
 
 Expedicion (1c): el armado de bandejas y el pasador. El modelo ya lo sostiene
 con `orders.ready_at`.
-
----
-
-## 12/sep/2026 — Ejemplos vivos en QA Lite, y dos defectos que destaparon (Claude)
-
-### Lo que pidio Ricky
-
-*"Coloca ejemplos vivos en qa lite y pasame credenciales para ver la pantalla."*
-
-### Como se mira
-
-```bash
-npm run qa:lite:setup                              # Docker + reset + seed
-node scripts/qa-lite/cargar-productos-demo.mjs     # el catalogo, 17 productos
-node scripts/qa-lite/cargar-salon-demo.mjs         # mesas y mozo
-node scripts/qa-lite/cargar-produccion-demo.mjs    # sectores, estaciones y cocina
-node scripts/qa-lite/revision-phase4.mjs           # dev server en :5273
-```
-
-`http://127.0.0.1:5273/admin`, usuario `owner.qa-lite@local.test`. La clave
-esta en `.qa-lite/revision-phase4.txt` (gitignoreado) y en
-`~/.dico-qa-lite/owner-pass.txt`. No se imprime en ningun log.
-
-### Hecho: `cargar-produccion-demo.mjs`
-
-Dos sectores con sus estaciones, estacion para los 21 productos y seis tickets
-en cocina. Lo que la carga demuestra y no se puede ver de otra forma:
-
-- **Tickets mixtos.** El mismo pedido aparece en las dos pantallas con platos
-  distintos. Uno de un solo sector no probaria la separacion.
-- **El umbral es del sector.** Un ticket de 8 minutos esta tranquilo en cocina
-  (18) y en rojo en la barra (5).
-- **Un ticket a medio hacer**, con platos marcados y pendientes conviviendo.
-
-Los minutos son **relativos a ahora**, no fijos como en el seed: volver a
-correrla reinicia el servicio. No toca el fixture; `qa:lite:setup` lo devuelve.
-
-### Los dos defectos que solo se veian abriendo la pantalla
-
-1. **Cocina y Produccion no estaban en la navegacion de nadie.** La matriz de
-   `src/modules/roles.js` declara solo lo que cada rol ve, y lo que no figura
-   es `nada`. Las dos pantallas estaban publicadas, funcionaban, y no las
-   alcanzaba ni el dueño. Ningun test, build ni gate lo nota: el unico sintoma
-   es un boton que no esta. Hay un test nuevo que exige que el dueño llegue a
-   todo modulo implementado de todos los rubros.
-2. **`retiro` contaba como delivery.** `orders.delivery` es NOT NULL con
-   default `'retiro'`, asi que "tiene delivery cargado" era cierto para todos
-   los pedidos: cada ticket de mesa salia rotulado Delivery y el nombre de la
-   mesa no aparecia nunca. El fixture del test no ponia la columna, que en la
-   base no puede faltar.
-
-Ademas, Stock y Produccion escribian su titulo dos veces: el chrome ya dibuja
-el nombre de la seccion.
-
-### Estado
-
-`e8a9084` en `main`. Suite 99 archivos / 1405 tests en verde, gates y build en
-cero. La cocina abre ahora en `kds` y ya no en Pedidos.
-
-### Sigue pendiente
-
-La **comandera**: imprimir una comanda por sector en papel al bajar el pedido
-a cocina, y el boton de cerrar desde Salon. El modo ya vive en el sector y se
-elige en la pantalla; falta disparar la impresion.
 
 ---

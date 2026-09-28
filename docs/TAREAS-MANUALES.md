@@ -8,6 +8,31 @@
 
 ## A. TAREAS MANUALES (las haces vos, ~30 min total)
 
+### Despues de la recarga de los negocios (27/sep/2026)
+
+Los tres negocios se recrearon en el edificio con los 64 productos del export
+(ver HANDOFF del 27-28/sep). Lo que falta es tuyo:
+
+- [ ] **`SMOKE_TENANTS` en el lugar correcto.** Los workflows la leen vacia.
+  GitHub → Settings → Secrets and variables → Actions → pestana
+  **Variables** (no Secrets), a nivel Repository, nombre exacto
+  `SMOKE_TENANTS`, valor `la-nona-pato,cochi,mala-miga`. La usan el smoke y
+  el reporte de la manana.
+- [ ] **Secrets del reporte de la manana**, en la misma pantalla pero en
+  **Secrets**: `PLATFORM_SUPABASE_URL` y `PLATFORM_SUPABASE_SERVICE_ROLE_KEY`.
+  Sin ellos el chequeo de RLS (que ningun negocio lea datos de otro) no corre
+  nunca. Opcionales: `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`.
+  No pegarlos en el chat.
+- [ ] **Ubicacion de la sucursal de cada negocio.** El envio se cotiza desde
+  la sucursal por defecto (0080) y hoy las tres estan sin latitud/longitud:
+  cae al centro de Buenos Aires.
+- [ ] **Fotos de los 64 productos.** Las viejas estaban en los Supabase legacy
+  que se borraron.
+- [ ] **Por negocio**, en `<slug>.divianco.app/admin`: logo, horarios, tarifas
+  de envio y cuentas de MercadoPago.
+- [ ] **Usuario de prueba para el smoke**: secrets `SMOKE_ADMIN_SLUG`,
+  `SMOKE_ADMIN_EMAIL`, `SMOKE_ADMIN_PASSWORD`. Nunca uno de un cliente real.
+
 ### Hecho — la migracion 0075 (25/sep/2026)
 
 - [x] **`0075_la_comanda_sale_por_papel.sql` aplicada al edificio.** Verificado
