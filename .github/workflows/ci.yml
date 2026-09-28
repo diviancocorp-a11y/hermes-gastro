@@ -28,6 +28,11 @@ jobs:
       - run: npm ci
       - name: Lint — errores únicamente
         run: npx eslint . --quiet
+      # Toda SECURITY DEFINER que el front puede ejecutar, aprobada en
+      # scripts/check-rls.mjs. Lee archivos, no la base: frena en el PR lo que
+      # check-rls veria recien en el reporte del dia siguiente.
+      - name: Definer aprobadas
+        run: npm run check:definer
       - name: Lint — full (errors + warnings)
         run: npm run lint
 

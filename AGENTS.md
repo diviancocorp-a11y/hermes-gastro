@@ -97,7 +97,8 @@ ahi: `CLAUDE.md` (este), `AGENTS.md` (el mismo, para Codex) y `README.md`.
   manana): tabla sin RLS, policy abierta, vista sin `security_invoker` o
   funcion `SECURITY DEFINER` llamable desde el front sin aprobar. Funcion
   definer nueva: o `revoke execute ... from anon, authenticated`, o se suma
-  a `DEFINER_APROBADAS` en `scripts/check-rls.mjs` con el motivo.
+  a `DEFINER_APROBADAS` en `scripts/check-rls.mjs` con el motivo. El
+  pre-commit y el CI lo exigen leyendo las migraciones (`npm run check:definer`).
 - **El build (`CLIENT`):** quedan dos, `clients/edificio` (produccion, el
   default) y `clients/dico-qa-lite` (fixture local). Ninguno hornea el tenant:
   `business.slug` es solo el fallback de local y de las URLs `*.vercel.app`.
