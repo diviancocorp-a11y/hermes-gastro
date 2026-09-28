@@ -34,9 +34,10 @@ import OrderSentView from "../components/catalog/OrderSentView";
 import {
   avatarColors, CAT_GROUPS as FALLBACK_CAT_GROUPS, SUB_TO_PARENT as FALLBACK_SUB_TO_PARENT,
   DAILY_DEALS, DEAL_PCT,
-  fallbackSettings, fallbackProducts, STORE_LAT, STORE_LNG,
+  fallbackSettings, fallbackProducts,
   haversine, calcDeliveryCost, CHECKOUT_STEPS, DEFAULT_FORM
 } from "../constants/catalogConstants";
+import { origenDelEnvio, estimarEnvio } from "../modules/origenDelEnvio";
 import { fetchCategoryGroups, toClientFormat, buildSubToParent } from "../services/categories";
 import { computeAvailability } from "../lib/stockAvailability";
 import { applyTenantHead } from "../lib/tenantHead";
@@ -113,28 +114,40 @@ export default function Catalog() {
   const [calcingDelivery, setCalcingDelivery] = useState(false);
   const [confirmAnim, setConfirmAnim] = useState(false); // animación de confirmación
 
-  // STORE_LAT, STORE_LNG, haversine, calcDeliveryCost importados de constants
+  // Origen del envio: la sucursal del tenant (get_catalog -> store_lat/lng),
+  // business.geo solo si el negocio no cargo su ubicacion.
+  const origenEnvio = useMemo(
+    () => origenDelEnvio(sett),
+    [sett?.store_lat, sett?.store_lng], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // Costo por km con los escalones del tenant (settings.delivery_pricing). El
+  // checkout recibe esta y no la de constants: esa, llamada sin pricing,
+  // cobraba los escalones default al elegir una direccion guardada.
+  const costoDelEnvio = useCallback(
+    (km) => calcDeliveryCost(km, sett?.delivery_pricing),
+    [sett?.delivery_pricing],
+  );
 
   // Calcular envío cuando cambia la dirección
   const estimateDelivery = useCallback(async (address) => {
     if (!address || address.length < 5) { setDeliveryCost(0); setDeliveryKm(null); return; }
     setCalcingDelivery(true);
     try {
-      const q = encodeURIComponent(address + ", Buenos Aires, Argentina");
-      const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`);
-      const data = await r.json();
-      if (data?.[0]) {
-        const km = haversine(STORE_LAT, STORE_LNG, parseFloat(data[0].lat), parseFloat(data[0].lon));
-        // Escalones configurables por tenant (settings.delivery_pricing, Sprint 2)
-        const cost = calcDeliveryCost(km, sett?.delivery_pricing);
-        setDeliveryKm(Math.round(km * 10) / 10);
-        setDeliveryCost(cost);
+      const cotizado = await estimarEnvio(address, {
+        origen: origenEnvio,
+        country: sett?.country,
+        pricing: sett?.delivery_pricing,
+      });
+      if (cotizado) {
+        setDeliveryKm(cotizado.km);
+        setDeliveryCost(cotizado.cost);
       } else {
         setDeliveryCost(0); setDeliveryKm(null);
       }
     } catch { setDeliveryCost(0); setDeliveryKm(null); }
     setCalcingDelivery(false);
-  }, [sett?.delivery_pricing]);
+  }, [origenEnvio, sett?.country, sett?.delivery_pricing]);
 
   // Fecha mínima para agendamiento: hoy (siempre permite programar para hoy y mañana)
   const minDate = useMemo(() => {
@@ -820,9 +833,9 @@ export default function Catalog() {
         deliveryKm={deliveryKm}
         setDeliveryKm={setDeliveryKm}
         haversine={haversine}
-        STORE_LAT={STORE_LAT}
-        STORE_LNG={STORE_LNG}
-        calcDeliveryCost={calcDeliveryCost}
+        STORE_LAT={origenEnvio.lat}
+        STORE_LNG={origenEnvio.lng}
+        calcDeliveryCost={costoDelEnvio}
         mpConnected={mpConnected}
         paymentIcon={paymentIcon}
         paymentLabel={paymentLabel}
