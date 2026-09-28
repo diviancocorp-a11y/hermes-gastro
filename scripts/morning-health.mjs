@@ -74,7 +74,9 @@ async function main() {
   // Sin lista no hay "todo en verde": un reporte que no mira ningun negocio no
   // puede decir que andan.
   if (TENANTS.length === 0) {
-    problemas.push('SMOKE_TENANTS vacia: no se mira ningun negocio (GitHub → Settings → Secrets and variables → Actions → Variables)');
+    // La barra escapa el guion bajo: en el Markdown de Telegram uno suelto
+    // abre una cursiva que nunca se cierra y el mensaje entero se rechaza.
+    problemas.push('SMOKE\\_TENANTS vacia: no se mira ningun negocio (GitHub → Settings → Secrets and variables → Actions → Variables)');
   }
   const tenants = await Promise.all(TENANTS.map(async (slug) => {
     const [front, rpc] = await Promise.all([
@@ -262,16 +264,25 @@ async function checkSentry() {
 
 async function sendTelegram(text) {
   const url = `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`;
-  const r = await fetch(url, {
+  const enviar = (conMarkdown) => fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: TG_CHAT,
       text,
-      parse_mode: 'Markdown',
+      ...(conMarkdown ? { parse_mode: 'Markdown' } : {}),
       disable_web_page_preview: true,
     }),
   });
+  let r = await enviar(true);
+  // Un texto que no controlamos (el titulo de un issue de Sentry, un slug) con
+  // un `_` o un `*` sin cerrar rompe el Markdown y Telegram rechaza el mensaje
+  // ENTERO: el reporte no llegaba (27/sep). Se reintenta en texto plano, que
+  // se ve peor pero llega.
+  if (r.status === 400) {
+    console.error('Telegram rechazo el Markdown; reintento en texto plano:', await r.text());
+    r = await enviar(false);
+  }
   if (!r.ok) {
     const body = await r.text();
     console.error('Telegram API error:', r.status, body);
