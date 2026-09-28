@@ -246,7 +246,9 @@ async function checkSentry() {
   if (!token || !org || !project) return { rojo: false, texto: 'sin token — salteado' };
 
   const ruta = `/api/0/projects/${encodeURIComponent(org)}/${encodeURIComponent(project)}/issues/`
-    + `?query=${encodeURIComponent('is:unresolved')}&statsPeriod=24h&limit=5`;
+    // lastSeen en la query: statsPeriod solo arma las estadisticas, no filtra.
+    // Sin esto el reporte decia "en 24h" de un error de hace dos dias (28/sep).
+    + `?query=${encodeURIComponent('is:unresolved lastSeen:-24h')}&statsPeriod=24h&limit=5`;
   try {
     // Una org de la region europea vive en de.sentry.io: sentry.io le
     // contesta 404 aunque org y proyecto esten bien escritos.
