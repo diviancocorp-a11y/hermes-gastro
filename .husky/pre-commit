@@ -4,7 +4,7 @@
 # 3. Valida integridad GLOBAL de src/ (NULL bytes, EOF, JSON, JSX-en-.js)
 # 3b. node_modules coincide con package-lock.json
 # 4. Corre eslint sobre archivos staged (lint-staged)
-# 5. Schema ↔ DB sync
+# 5. Schema ↔ DB sync (y toda SECURITY DEFINER llamable, aprobada)
 # 6. Typecheck global
 # 7. Smoke unit tests
 # 8. Vite build (si hay cambios en src/) — atrapa missing exports / imports rotos
@@ -52,6 +52,9 @@ node scripts/check-supabase-columns.mjs --all
 # simplemente deja de proteger.
 echo "→ Frescura del snapshot del edificio..."
 node scripts/check-schema-freshness.mjs
+
+echo "→ Definer llamables desde el front, todas aprobadas..."
+node scripts/check-definer-aprobadas.mjs
 
 echo "→ Schema ↔ DB sync..."
 node scripts/check-schema-sync.mjs
