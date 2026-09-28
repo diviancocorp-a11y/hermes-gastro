@@ -13,12 +13,12 @@
 Los tres negocios se recrearon en el edificio con los 64 productos del export
 (ver HANDOFF del 27-28/sep). Lo que falta es tuyo:
 
-- [ ] **`SMOKE_TENANTS` en el lugar correcto.** Los workflows la leen vacia.
+- [x] **`SMOKE_TENANTS` en el lugar correcto** (hecho 28/sep). Los workflows la leian vacia.
   GitHub → Settings → Secrets and variables → Actions → pestana
   **Variables** (no Secrets), a nivel Repository, nombre exacto
   `SMOKE_TENANTS`, valor `la-nona-pato,cochi,mala-miga`. La usan el smoke y
   el reporte de la manana.
-- [ ] **Secrets del reporte de la manana**, en la misma pantalla pero en
+- [x] **Secrets del reporte de la manana** (hecho 28/sep, con los de Sentry), en la misma pantalla pero en
   **Secrets**: `PLATFORM_SUPABASE_URL` y `PLATFORM_SUPABASE_SERVICE_ROLE_KEY`.
   Sin ellos el chequeo de RLS (que ningun negocio lea datos de otro) no corre
   nunca. Opcionales: `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`.

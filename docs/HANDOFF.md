@@ -11,6 +11,83 @@
 
 ---
 
+## 28/sep/2026 — El reporte de la mañana en verde de punta a punta (Claude)
+
+Cierra los pendientes 1 y 2 y los dos primeros bloqueos de la sección del
+27-28/sep: Ricky cargó `SMOKE_TENANTS` y los secrets, y el reporte corre
+entero por primera vez.
+
+### Hecho
+- **#20 (incluye el #19)**:
+  - `DEFINER_APROBADAS` suma las 11 definer de caja, salón y facturación
+    (0067, 0069, 0070). Otra sesión aplicó esas migraciones el 27/sep sin
+    aprobarlas y el reporte dio "RLS ABIERTO". Antes de aprobarlas se leyó el
+    cuerpo desplegado de cada una (todas validan tenant y rol adentro) y sus
+    policies.
+  - `scripts/check-definer-aprobadas.mjs` (`npm run check:definer`): lee las
+    migraciones y frena, en el pre-commit y en el job Lint del CI, toda
+    definer de `public` llamable desde el front que no esté aprobada. Por qué:
+    check-rls mira la base y se entera al día siguiente; esto frena en el
+    commit y sin credenciales. Da los mismos 41 nombres que producción.
+    Límite: un revoke armado con `execute format(...)` no lo ve.
+  - Sentry en `morning-health`: `trim` de las tres variables, prueba la región
+    US y después la europea, y explica el 404 (org o proyecto mal escritos) y
+    el 401/403 (token sin permiso).
+- **Sentry configurado**: org `grupo-divianco`, proyecto `hermes-gastro`,
+  región US. El conector MCP de Sentry quedó conectado a las sesiones.
+- **#21**: la consulta de Sentry cuenta solo lo visto en las últimas 24 h
+  (`lastSeen:-24h`), porque `statsPeriod` arma estadísticas pero no filtra.
+  Salió de un falso positivo: HERMES-GASTRO-N, un evento único del deploy
+  legacy de mala-miga visto dos días antes; se marcó resuelto.
+- **Merge sin preguntar: descartado.** Se propuso que los PR de solo docs,
+  tests o scripts de chequeo se mergearan sin el OK de Ricky. El clasificador
+  de permisos bloqueó que el agente escribiera esa regla en `CLAUDE.md` (la
+  cuenta como ampliarse sus propios permisos), aun con el pedido explícito, y
+  Ricky decidió dejarlo como está: **todo merge sigue pidiendo su OK**. No
+  volver a intentarlo por el `CLAUDE.md`; si se retoma, es un ruleset de
+  GitHub sobre `main` que arma él.
+
+### Verificado
+- Producción: deploy `READY` de `f67c5ad` (merge del #21) en `hermes-platform`.
+- `morning-health` programado del lunes 28/sep (corrida 119, sobre `f67c5ad`),
+  leído del log: 3 negocios (43, 10 y 8 productos), schema al día, funciones
+  coinciden, RLS cerrado, Sentry sin errores en 24 h; enviado a Telegram.
+- Smoke programado del 28/sep: 5 pasan (la landing y los 3 catálogos) y 4 se
+  saltean a propósito (fotos de productos y admin, hasta que haya fotos y
+  usuario de prueba).
+- `check:definer` sobre `main` sin el #19 reproducía exactamente las 11.
+
+### Pendiente inmediato
+1. **Los cron de GitHub corrieron unas 8 h tarde**: `morning-health` está a las
+   10:00 UTC y corrió 17:57; el smoke, de 10:30 a 18:13. Si se repite, el
+   reporte "de la mañana" llega a la tarde. Mirar la corrida del martes antes
+   de tocar nada; si sigue, dispararlo desde afuera (una Routine o un cron
+   externo que llame a `workflow_dispatch`).
+2. `e2e/delivery-persistence.spec.ts` habla con el schema legacy y se saltea
+   siempre: reescribirlo contra el edificio o borrarlo. E2E da verde sin
+   probar nada.
+3. La `0075` no figura en la historia de migraciones de producción, pero sus
+   funciones existen: comparar lo desplegado con el archivo antes de tocarla.
+4. El panel legacy (`business.platform: false`) no lo sirve ningún build: es
+   código muerto, candidato a borrarse.
+5. Dependabot: PRs de versiones mayores #3 a #11. Revisar
+   `.github/dependabot.yml` (la idea era solo parches de seguridad). Los
+   workflows ya avisan que `actions/checkout@v4` y `setup-node@v4` corren
+   forzados en Node 24.
+6. Expedición (1c), que venía de la sección del 12/sep: el armado de bandejas
+   y el pasador. El modelo ya lo sostiene con `orders.ready_at`.
+7. Ideas sin hacer: una alerta de Sentry que avise a Telegram en el momento, y
+   que la lista de negocios vigilados salga de la base y no de una variable.
+
+### Bloqueado por Ricky
+Todo está en `docs/TAREAS-MANUALES.md`, sección "Despues de la recarga":
+ubicación de cada sucursal (`branches.lat/lng`, hoy el envío cotiza desde el
+centro de Buenos Aires), fotos de los 64 productos, logo, horarios, tarifas y
+MercadoPago por negocio, secrets `SMOKE_ADMIN_*` para el test de admin, y
+sectores y estaciones para que el KDS y la comandera muestren algo.
+
+---
+
 ## 27-28/sep/2026 — Sin legacy: el edificio es Dico, los 3 negocios recargados y el guard de RLS (Claude)
 
 ### Hecho
@@ -334,73 +411,5 @@ Suite 99 archivos / 1418 tests, gates, typecheck y build en cero.
 
 `831600d` en `main`. Sigue pendiente de Ricky la migracion 0075 de la
 comandera, que no esta aplicada al edificio.
-
----
-
-## 12/sep/2026 — La comandera: el sector que despacha en papel (Claude)
-
-### Lo que pidio Ricky
-
-*"Dale comandera, termina todo lo pendiente en esta pantalla para cerrar
-proceso hasta aca."* Es la otra mitad de su pregunta del dia anterior: si el
-KDS obliga a tener pantallas, que hace el que no las tiene.
-
-### FALTA APLICAR LA MIGRACION AL EDIFICIO
-
-`platform/migrations/0075_la_comanda_sale_por_papel.sql` esta en el repo y
-**no** esta aplicada: el clasificador bloqueo `apply_migration`. Hasta que
-Ricky la corra por el SQL Editor, en produccion un sector en comandera muestra
-la pantalla vacia. Esta en `docs/TAREAS-MANUALES.md`, arriba de todo.
-
-Lo que NO se rompe mientras tanto: cerrar el ticket entero desde el KDS sigue
-mandando dos argumentos, no tres con null, justamente para eso.
-
-### La restriccion que definio el diseño
-
-Una termica USB imprime desde la maquina donde esta enchufada y el navegador
-solo puede mandarle a la PREDETERMINADA de ese equipo. De ahi sale que la
-comandera sea una pantalla: no es para mirar, es la pagina que queda abierta en
-la computadora que tiene la impresora del sector. Dos sectores en papel son dos
-equipos. Una termica de red saca la restriccion sin tocar el modelo.
-
-**Y Chrome pide confirmacion salvo que se le diga.** `print()` abre la vista
-previa y espera. El equipo del sector tiene que abrir Chrome con
-`--kiosk-printing`. Esto se descubrio probando: al tocar Imprimir, el navegador
-quedo colgado en el dialogo. Es lo que decide si la funcion sirve en una cocina
-o es una demo, asi que lo dice la propia pantalla.
-
-### Hecho
-
-- **0075**: `production_dispatches` (una fila por pedido y sector),
-  `comandas_por_imprimir`, `comandas_abiertas`, `marcar_comanda_impresa` y
-  `cerrar_ticket_de_cocina` con sector opcional.
-- **`ComanderaPanel`**: cola de impresion, papel sin cerrar, ancho 58/80 mm,
-  impresion automatica que se enciende a mano una vez.
-- **Salon**: la ficha de la mesa muestra que le debe cada sector. El de papel
-  trae "Entregado"; el de pantalla se muestra y no se toca.
-- `npm run pantalla -- comandera` y la barra del demo de QA Lite pasa a papel.
-- `docs/plataforma/COMANDERA.md` con el circuito y el armado del equipo.
-
-### Lo que se arreglo de paso
-
-`cerrar_ticket_de_cocina` marcaba listos TODOS los platos del pedido. El
-cocinero que tocaba "Ticket listo" estaba diciendo que la barra ya sirvio los
-tragos. Ahora cierra solo su sector y el pedido se sella cuando no queda nada.
-
-### Verificado a mano en QA Lite
-
-Con la barra en papel: la cola trajo 4 comandas, el mozo cerro la de Mesa QA 5
-desde Salon, la cola bajo a 3 y la cocina mantuvo sus 3 platos. Las tres RPC
-se probaron con un JWT de usuario real: imprimir marca 1, repetir sin pedirlo
-deja 1, y la reimpresion explicita lleva a 2.
-
-### Estado
-
-Suite 100 archivos / 1432 tests, gates, typecheck y build en cero.
-
-### Sigue pendiente
-
-Expedicion (1c): el armado de bandejas y el pasador. El modelo ya lo sostiene
-con `orders.ready_at`.
 
 ---
