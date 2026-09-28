@@ -238,18 +238,32 @@ function checkRls() {
 
 /** Issues sin resolver vistos en las ultimas 24h. Sin token se saltea. */
 async function checkSentry() {
-  const token = process.env.SENTRY_AUTH_TOKEN;
-  const org = process.env.SENTRY_ORG;
-  const project = process.env.SENTRY_PROJECT;
+  // trim: al pegar un secret suele colarse un salto de linea al final, y con
+  // eso la URL ya no encuentra ni la org ni el proyecto (404).
+  const token = process.env.SENTRY_AUTH_TOKEN?.trim();
+  const org = process.env.SENTRY_ORG?.trim();
+  const project = process.env.SENTRY_PROJECT?.trim();
   if (!token || !org || !project) return { rojo: false, texto: 'sin token — salteado' };
 
+  const ruta = `/api/0/projects/${encodeURIComponent(org)}/${encodeURIComponent(project)}/issues/`
+    + `?query=${encodeURIComponent('is:unresolved')}&statsPeriod=24h&limit=5`;
   try {
-    const url = `https://sentry.io/api/0/projects/${org}/${project}/issues/`
-      + `?query=${encodeURIComponent('is:unresolved')}&statsPeriod=24h&limit=5`;
-    const r = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(15000),
-    });
+    // Una org de la region europea vive en de.sentry.io: sentry.io le
+    // contesta 404 aunque org y proyecto esten bien escritos.
+    let r;
+    for (const base of ['https://sentry.io', 'https://de.sentry.io']) {
+      r = await fetch(base + ruta, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (r.status !== 404) break;
+    }
+    if (r.status === 404) {
+      return { rojo: true, texto: 'org o proyecto no encontrados: SENTRY\\_ORG y SENTRY\\_PROJECT van con el nombre corto de la URL' };
+    }
+    if (r.status === 401 || r.status === 403) {
+      return { rojo: true, texto: `token sin permiso (HTTP ${r.status}): necesita event:read y project:read` };
+    }
     if (!r.ok) return { rojo: true, texto: `API HTTP ${r.status}` };
     const issues = await r.json();
     if (!Array.isArray(issues) || issues.length === 0) return { rojo: false, texto: '✓ sin errores en 24h' };
