@@ -135,16 +135,6 @@ const MiMiniCaja = lazy(() => import('../components/admin/platform/MiMiniCaja'))
 // Equipo: quien esta trabajando y cuanto cuesta el turno (6e).
 const PersonalPanel = lazy(() => import('../components/admin/platform/PersonalPanel'));
 
-// Lo que el edificio todavia no tiene tabla para sostener. Cada false se
-// convierte en true cuando llegue su etapa (docs/plataforma/PLAN-ERP.md).
-const CAPACIDADES_EDIFICIO = {
-  qrs: true,         // tabla dynamic_qrs (migracion 0037)
-  paginas: true,     // tabla info_pages (migracion 0037)
-  pasarelas: true,   // tabla payment_integrations (migracion 0051)
-  canales: false,    // tabla delivery_channels
-  riesgo: false,     // el reset borra tablas del ERP viejo
-};
-
 import '../styles/admin-tokens.css';
 import '../styles/admin-bg.css';
 import '../styles/admin-topbar.css';
@@ -1662,7 +1652,6 @@ export default function PlatformAdmin() {
                     setSettings={setSett}
                     showToast={msg}
                     onSave={guardarSettings}
-                    capacidades={CAPACIDADES_EDIFICIO}
                     onAbrirUsuarios={puedeAbrirDestino(roles, 'usuarios') ? () => setTab('usuarios') : null}
                     onAbrirPasarelas={puedeAbrirDestino(roles, 'cobros') ? () => setTab('cobros') : null}
                     onBack={() => setTab('products')}
