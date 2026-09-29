@@ -174,6 +174,13 @@ python3 -c "open('FILE','rb').read().decode('utf-8','strict')"
   `PLATFORM_PATHS` dentro del script — archivo nuevo que le hable al edificio,
   sumalo ahi. Si un archivo consulta una tabla que solo existe del otro lado,
   el check avisa que esta mal clasificado en vez de dar un error confuso.
+- `check-edificio-alcanzable.mjs` (`npm run check:alcanzable`) — recorre los
+  imports desde `src/main.jsx` y exige que cada `.from()`, `.rpc()` y
+  `functions.invoke()` alcanzable exista en `platform/migrations` o
+  `platform/functions`. Lo roto al nacer esta en
+  `scripts/llamadas-legacy-pendientes.json`, que solo se achica (`-- --podar`
+  saca lo resuelto). Nacio porque el catalogo tiraba 9 consultas legacy por
+  visita que caian en un fallback y ningun gate veia.
 - ESLint con max-warnings 200
 - `vite build` local (atrapa imports rotos)
 
@@ -250,12 +257,12 @@ como alta: quedo como guard que falla y explica por que.
 
 ## Lo que todavia no existe (no lo reportes como roto)
 
-- **El panel del edificio cubre productos, pedidos, caja y salon.** El resto
-  del ERP (recetas, stock, compras, gastos, CRM, P&L) sigue siendo exclusivo
-  del panel legacy. Los dos conviven y los decide `business.platform` en la
-  ruta `/admin`: no comparten ni una tabla, no intentes unificarlos. Ojo: hoy
-  ningun build tiene `platform: false`, asi que el panel legacy no lo sirve
-  nadie.
+- **No hay panel legacy.** `pages/Admin.jsx` (el ERP single-tenant) y las
+  ramas `business.platform` del catalogo se borraron el 29/sep: `/admin` es
+  solo `PlatformAdmin`. Lo que el ERP viejo tenia y el edificio no, no tiene
+  pantalla. Lo legacy que todavia es alcanzable esta listado en
+  `scripts/llamadas-legacy-pendientes.json`: se borra o se porta, no se
+  esquiva con un `if`.
 - **`unit_cost` va en 0**: el edificio no tiene modelo de costos, asi que el
   P&L no da.
 - **No hay con que cobrarle al cliente**: hay planes y precios, pero el

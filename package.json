@@ -25,6 +25,7 @@
     "check:freshness": "node scripts/check-schema-freshness.mjs",
     "check:rls": "node scripts/check-rls.mjs",
     "check:definer": "node scripts/check-definer-aprobadas.mjs",
+    "check:alcanzable": "node scripts/check-edificio-alcanzable.mjs",
     "schema:sync": "node scripts/schema-sync.mjs",
     "deploy": "npm run deploy:web && npm run deploy:functions",
     "deploy:web": "node scripts/deploy-web.mjs",

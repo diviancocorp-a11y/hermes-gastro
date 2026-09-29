@@ -1,14 +1,14 @@
 // src/pages/QrRedirect.jsx
 //
 // Página pública /q/:slug — punto de aterrizaje de los QR físicos.
-// Hace fetch del slug, registra la visita, y redirige al target_url.
+// Resuelve el slug (resolve_qr cuenta la visita) y redirige al target_url.
 //
 // Si el slug no existe o está inactivo, muestra una pantalla de "QR no
 // encontrado" con CTA al catálogo.
 
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { fetchQrBySlug, incrementQrVisit } from "../services/qrs";
+import { fetchQrBySlug } from "../services/qrs";
 import business from "@business";
 
 export default function QrRedirect() {
@@ -23,8 +23,7 @@ export default function QrRedirect() {
         const qr = await fetchQrBySlug(slug);
         if (cancelled) return;
         if (!qr || !qr.target_url) { setState("not-found"); return; }
-        // Fire-and-forget: no esperamos el increment para no demorar la redirección.
-        incrementQrVisit(slug);
+        // La visita ya la conto resolve_qr al entregar el destino.
         // Redirect del navegador (replace para que el back no vuelva acá).
         window.location.replace(qr.target_url);
       } catch (e) {

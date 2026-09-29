@@ -56,6 +56,12 @@ node scripts/check-schema-freshness.mjs
 echo "→ Definer llamables desde el front, todas aprobadas..."
 node scripts/check-definer-aprobadas.mjs
 
+# Lo que el build del edificio puede cargar le habla a algo que el edificio
+# tiene. Recorre los imports desde src/main.jsx; lo legacy que queda esta en
+# scripts/llamadas-legacy-pendientes.json y esa lista solo se achica.
+echo "→ Llamadas alcanzables vs objetos del edificio..."
+node scripts/check-edificio-alcanzable.mjs
+
 echo "→ Schema ↔ DB sync..."
 node scripts/check-schema-sync.mjs
 

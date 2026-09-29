@@ -55,6 +55,14 @@ const PLATFORM_PATHS = [
   'src/hooks/usePlatformTenant.js',
   'src/pages/PlatformAdmin.jsx',
   'src/components/admin/platform/',
+  // Duales hasta el 29/sep: se les borro la rama legacy.
+  'src/services/paymentIntegrations.js',
+  'src/services/account.js',
+  'src/services/infoPages.js',
+  'src/services/qrs.js',
+  'src/services/push.js',
+  'src/services/adminUsers.js',
+  'src/services/catalog.js',
 ];
 
 /* ── Archivos que le hablan a las DOS bases. No es un error de clasificacion:
@@ -69,11 +77,7 @@ const PLATFORM_PATHS = [
       que saltea el archivo ENTERO y no valida nada — y un archivo que bifurca
       es justamente donde mas facil se cuela una columna del schema
       equivocado. ── */
-const DUAL_PATHS = [
-  'src/services/paymentIntegrations.js',  // MP: una cuenta en legacy, una por tenant en el edificio
-  'src/services/account.js',
-  'src/services/infoPages.js',
-];
+const DUAL_PATHS = [];
 
 function loadSchema(file, label) {
   try {
