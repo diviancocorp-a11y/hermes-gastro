@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { supabase } from "../lib/supabase";
 import { formatOrderCode } from "../lib/utils";
 import { fmtAR } from "../lib/format";
 import business from "@business";
 import { cancelOwnOrder, useRegretCountdown } from "../catalog-pro/regretOrder";
+import usePedidoEnVivo from "../hooks/usePedidoEnVivo";
 
 // ─── Mapa de estados ──────────────────────────────────
 const STEPS = [
@@ -23,30 +23,31 @@ function Dots() {
 
 export default function OrderTracker() {
   const { id } = useParams();
-  const [order, setOrder]   = useState(null);
-  const [items, setItems]   = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [pulse, setPulse]   = useState(false); // feedback visual de actualización
-  const channelRef          = useRef(null);
+  // El pedido por el RPC publico get_order_tracker (0081), acotado al negocio
+  // del host. Se actualiza solo mientras puede cambiar (ver usePedidoEnVivo:
+  // polling, porque Realtime aplica la RLS y el comprador sin sesion no
+  // recibia nada).
+  const { pedido, cargando: loading, noEncontrado: notFound, cambio } = usePedidoEnVivo(id);
 
-  // ─── Carga inicial vía RPC `get_order_tracker` (SECURITY DEFINER) ──
-  // El select directo a `orders` falla para usuarios anon porque las RLS
-  // solo permiten leer el propio user_id. El RPC lo bypassa de forma segura.
-  // Para códigos cortos #XXXXXX seguimos haciendo el fallback contra la tabla,
-  // pero ahora resolvemos el UUID completo y delegamos al RPC.
-  const [resolvedId, setResolvedId] = useState(null);
+  // El cancelado del boton de arrepentimiento se ve al toque, sin esperar la
+  // proxima consulta.
+  const [canceladoAca, setCanceladoAca] = useState(false);
+  const order = pedido && (canceladoAca ? { ...pedido, status: "cancelled" } : pedido);
+  const items = pedido?.items || [];
 
-  // WhatsApp del local: settings.whatsapp (runtime, lo configura el tenant)
-  // con fallback al de build. Sin numero valido NO mostramos el boton de
-  // ayuda — un wa.me sin numero abre la pantalla "enviar a" de WhatsApp.
-  const [waNumber, setWaNumber] = useState((business?.whatsapp || "").replace(/\D/g, ""));
+  // Parpadeo cuando el estado cambia despues de la primera carga.
+  const [pulse, setPulse] = useState(false);
   useEffect(() => {
-    supabase.from("settings").select("whatsapp").eq("id", 1).single().then(({ data }) => {
-      const n = (data?.whatsapp || "").replace(/\D/g, "");
-      if (n) setWaNumber(n);
-    });
-  }, []);
+    if (!cambio) return undefined;
+    setPulse(true);
+    const t = setTimeout(() => setPulse(false), 1500);
+    return () => clearTimeout(t);
+  }, [cambio]);
+
+  // WhatsApp del local: el del negocio (viene con el pedido) y si no hay, el
+  // del build. Sin numero valido NO mostramos el boton de ayuda — un wa.me sin
+  // numero abre la pantalla "enviar a" de WhatsApp.
+  const waNumber = String(pedido?.whatsapp || business?.whatsapp || "").replace(/\D/g, "");
 
   // Arrepentimiento: 60s desde la creacion, solo pedidos "new"
   const [cancelling, setCancelling] = useState(false);
@@ -58,79 +59,8 @@ export default function OrderTracker() {
     setCancelling(true);
     const ok = await cancelOwnOrder(order.id);
     setCancelling(false);
-    if (ok) setOrder(prev => ({ ...prev, status: "cancelled" }));
+    if (ok) setCanceladoAca(true);
   };
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      const cleanId = (id || "").replace(/^#/, "").trim();
-      const looksLikeUuid = cleanId.includes("-") || cleanId.length > 20;
-
-      // Resolver UUID completo (si el usuario tipea el código corto)
-      let fullId = looksLikeUuid ? cleanId : null;
-      if (!fullId) {
-        // Código corto: lookup vía RPC dedicado o fallback a tabla pública (recipes ya es pública)
-        const { data: candidates } = await supabase
-          .from("orders")
-          .select("id")
-          .order("created_at", { ascending: false })
-          .limit(200);
-        const match = (candidates || []).find(o => {
-          const s = String(o.id).replace(/-/g, "");
-          return s.slice(-6).toUpperCase() === cleanId.toUpperCase();
-        });
-        if (!match) { setNotFound(true); setLoading(false); return; }
-        fullId = match.id;
-      }
-
-      const { data, error } = await supabase.rpc("get_order_tracker", { p_order_id: fullId });
-      const row = Array.isArray(data) ? data[0] : data;
-      if (error || !row) { setNotFound(true); setLoading(false); return; }
-      // Adaptar la forma para mantener compatibilidad con el render existente
-      setOrder({
-        id: row.id,
-        status: row.status,
-        customer: row.customer,
-        date: row.date,
-        total: row.total,
-        is_gift: row.is_gift,
-        note: row.note,
-        delivery: row.delivery,
-        created_at: row.created_at,
-      });
-      setItems((row.items || []).map(it => ({
-        qty: it.qty,
-        unit_price: it.unit_price,
-        recipes: { name: it.name },
-      })));
-      setResolvedId(row.id);
-      setLoading(false);
-    }
-    load();
-  }, [id]);
-
-  // ─── Suscripción Realtime ─────────────────────────
-  useEffect(() => {
-    const rid = resolvedId;
-    if (!rid) return;
-
-    const channel = supabase
-      .channel(`order-${rid}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${rid}` },
-        (payload) => {
-          setOrder(prev => ({ ...prev, ...payload.new }));
-          // Feedback visual: parpadeo al actualizar
-          setPulse(true);
-          setTimeout(() => setPulse(false), 1500);
-        }
-      )
-      .subscribe();
-
-    channelRef.current = channel;
-    return () => { supabase.removeChannel(channel); };
-  }, [resolvedId]);
 
   // ─── Loading ──────────────────────────────────────
   if (loading) return (
@@ -163,7 +93,7 @@ export default function OrderTracker() {
       <div className="tracker-header">
         <div>
           <h1 className="tracker-title">Seguí tu pedido en vivo</h1>
-          <p className="tracker-sub">Seguimiento en tiempo real</p>
+          <p className="tracker-sub">Se actualiza sola</p>
         </div>
       </div>
 
@@ -204,17 +134,17 @@ export default function OrderTracker() {
       <div className="tracker-summary">
         <div className="tracker-summary-hd" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span>📦 Tu pedido</span>
-          <span style={{fontSize:13,fontWeight:700,color:"var(--ac)",letterSpacing:1}}>{formatOrderCode(resolvedId||id)}</span>
+          <span style={{fontSize:13,fontWeight:700,color:"var(--ac)",letterSpacing:1}}>{formatOrderCode(order.id)}</span>
         </div>
         <div className="tracker-summary-info">
-          <span>👤 {order.customer}</span>
+          {order.customer_first_name && <span>👤 {order.customer_first_name}</span>}
           <span>{order.delivery === "envio" ? "🛵 Delivery" : "🏪 Retiro en local"}</span>
           {order.is_gift && <span>🎁 Pedido regalo</span>}
         </div>
         <div className="tracker-items">
           {items.map((it, i) => (
             <div key={i} className="tracker-item">
-              <span>{it.recipes?.name || "Producto"} × {it.qty}</span>
+              <span>{it.name || "Producto"} × {it.qty}</span>
               <span>{fmtAR(it.qty * it.unit_price)}</span>
             </div>
           ))}
@@ -232,7 +162,7 @@ export default function OrderTracker() {
       {!isCancelled && order.status !== "completed" && (
         <div className="tracker-live">
           <span className="tracker-live-dot" />
-          Actualización en tiempo real
+          Se actualiza sola
         </div>
       )}
 

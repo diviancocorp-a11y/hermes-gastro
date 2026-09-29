@@ -5,7 +5,8 @@
 //
 // 14/jun: en /pago/exitoso reconstruimos la pantalla completa de confirmacion
 // (OrderSentView, la misma del flujo in-app) trayendo el pedido por el RPC
-// get_order_tracker (SECURITY DEFINER, seguro para invitados).
+// get_order_tracker (0081: SECURITY DEFINER acotado al negocio del host,
+// seguro para invitados). La direccion de retiro viene con el pedido.
 //
 // IMPORTANTE: el back_url de MP NO prueba que el pago entro -> la verdad la
 // pone el webhook (mp-webhook), que promueve la orden de `pending_payment` a
@@ -18,7 +19,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { supabase } from "../lib/supabase";
+import { fetchOrderTracker } from "../services/orderTracker";
 import { getGuestUser } from "../lib/guestUser";
 import OrderSentView from "../components/catalog/OrderSentView";
 
@@ -41,19 +42,8 @@ export default function MpStatus({ status }) {
 
   const isSuccess = status === "exitoso";
   const [order, setOrder] = useState(null);
-  const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(isSuccess);
   const triesRef = useRef(0);
-
-  // Settings (direccion de retiro) una sola vez
-  useEffect(() => {
-    if (!isSuccess) return;
-    let alive = true;
-    supabase.from("settings").select("store_address").eq("id", 1).single()
-      .then(({ data }) => { if (alive) setSettings({ store_address: data?.store_address || "" }); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, [isSuccess]);
 
   // Trae el pedido y, si todavia esta "verificando", reintenta cada 3s (~36s).
   useEffect(() => {
@@ -61,11 +51,10 @@ export default function MpStatus({ status }) {
     let alive = true;
     let timer = null;
     const tick = async () => {
-      const { data, error } = await supabase.rpc("get_order_tracker", { p_order_id: orderId });
+      const { pedido: row } = await fetchOrderTracker(orderId);
       if (!alive) return;
       setLoading(false);
-      const row = Array.isArray(data) ? data[0] : data;
-      if (error || !row) { setOrder(null); return; }
+      if (!row) { setOrder(null); return; }
       setOrder(row);
       if (classify(row) === "verifying" && triesRef.current < 12) {
         triesRef.current += 1;
@@ -93,7 +82,7 @@ export default function MpStatus({ status }) {
       const form = {
         payment: "mercadopago",
         delivery: order.delivery,
-        name: order.customer || guest?.name || "",
+        name: guest?.name || order.customer_first_name || "",
         phone: guest?.phone || "",
         email: guest?.email || "",
         birth_date: guest?.birth_date || "",
@@ -102,7 +91,7 @@ export default function MpStatus({ status }) {
         <OrderSentView
           orderId={order.id}
           form={form}
-          settings={settings}
+          settings={{ store_address: order.store_address || "" }}
           paymentConfirmed
           onReset={() => navigate("/")}
         />
