@@ -29,8 +29,9 @@
 // edificio es la unica verdad, lo que no corre en el se borra.
 //
 // Uso: npm run check:alcanzable
+//      npm run check:alcanzable -- --podar   saca de la lista lo ya resuelto
 
-import { readFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative, sep } from 'node:path';
 import { indexar, llamadasEn, firmasVivas } from './mapa.mjs';
@@ -140,6 +141,16 @@ export function comparar(encontradas, pendientes) {
   return { nuevas, resueltas };
 }
 
+/** La lista de pendientes sin las entradas ya resueltas (nunca agrega). */
+export function podar(pendientes, resueltas) {
+  const out = {};
+  for (const [archivo, llamadas] of Object.entries(pendientes)) {
+    const quedan = llamadas.filter((c) => !resueltas.some((r) => r.archivo === archivo && r.llamada === c));
+    if (quedan.length) out[archivo] = quedan;
+  }
+  return out;
+}
+
 function cadena(padres, root, archivo) {
   const pasos = [];
   for (let x = join(root, archivo); x; x = padres.get(x)) pasos.push(posix(relative(root, x)));
@@ -147,6 +158,7 @@ function cadena(padres, root, archivo) {
 }
 
 const ES_MAIN = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+const PODAR = process.argv.includes('--podar');
 
 if (ES_MAIN) {
   const padres = grafo();
@@ -164,11 +176,17 @@ if (ES_MAIN) {
     console.error('\n  O el objeto se crea en platform/migrations, o el codigo legacy se borra.');
     console.error(`  No se agrega a ${PENDIENTES}: esa lista solo se achica.\n`);
   }
-  if (resueltas.length) {
+  if (resueltas.length && PODAR && !nuevas.length) {
+    const doc = JSON.parse(readFileSync(join(ROOT, PENDIENTES), 'utf8'));
+    doc.pendientes = podar(doc.pendientes, resueltas);
+    writeFileSync(join(ROOT, PENDIENTES), `${JSON.stringify(doc, null, 2)}\n`);
+    console.log(`✓ ${resueltas.length} entrada(s) resuelta(s) fuera de ${PENDIENTES}:`);
+    for (const { archivo, llamada } of resueltas) console.log(`  ${llamada}  en ${archivo}`);
+  } else if (resueltas.length) {
     console.error(`\n✗ ${resueltas.length} entrada(s) de ${PENDIENTES} que ya no pasan. Sacalas:\n`);
     for (const { archivo, llamada } of resueltas) console.error(`  ${llamada}  en ${archivo}`);
-    console.error('');
+    console.error('\n  npm run check:alcanzable -- --podar las saca (y nunca agrega nuevas).\n');
   }
-  if (nuevas.length || resueltas.length) process.exit(1);
+  if (nuevas.length || (resueltas.length && !PODAR)) process.exit(1);
   console.log(`✓ ${padres.size} modulos alcanzables desde ${ENTRADA}; ${total} llamada(s) legacy pendientes, ninguna nueva.`);
 }

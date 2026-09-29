@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import {
-  grafo, objetosDelEdificio, llamadasHuerfanas, comparar,
+  grafo, objetosDelEdificio, llamadasHuerfanas, comparar, podar,
 } from '../../scripts/check-edificio-alcanzable.mjs';
 
 const tmps = [];
@@ -98,5 +98,12 @@ describe('check-edificio-alcanzable', () => {
     );
     expect(nuevas).toEqual([{ archivo: 'a.js', llamada: 'rpc:y' }]);
     expect(resueltas).toEqual([{ archivo: 'b.js', llamada: 'rpc:z' }]);
+  });
+
+  it('podar saca lo resuelto, borra archivos vacios y nunca agrega', () => {
+    expect(podar(
+      { 'a.js': ['from:x', 'rpc:y'], 'b.js': ['rpc:z'] },
+      [{ archivo: 'a.js', llamada: 'rpc:y' }, { archivo: 'b.js', llamada: 'rpc:z' }, { archivo: 'c.js', llamada: 'from:w' }],
+    )).toEqual({ 'a.js': ['from:x'] });
   });
 });

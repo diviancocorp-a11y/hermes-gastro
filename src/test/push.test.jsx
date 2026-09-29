@@ -68,43 +68,5 @@ describe('Push service', () => {
   });
 });
 
-describe('PushNotifications admin component', () => {
-  beforeEach(() => {
-    // clearAllMocks (no restoreAllMocks): limpia llamadas pero conserva las
-    // implementaciones del vi.mock de supabase (rpc/invoke mockResolvedValue)
-    vi.clearAllMocks();
-  });
-
-  it('renders without crashing', async () => {
-    const React = await import('react');
-    const { render, screen } = await import('@testing-library/react');
-    const { default: PushNotifications } = await import('../components/admin/PushNotifications');
-
-    render(React.createElement(PushNotifications, { msg: vi.fn(), onClose: vi.fn() }));
-    expect(screen.getByText(/Notificaciones push/)).toBeTruthy();
-  });
-
-  it('renders send form fields', async () => {
-    const React = await import('react');
-    const { render } = await import('@testing-library/react');
-    const { default: PushNotifications } = await import('../components/admin/PushNotifications');
-
-    const { container } = render(React.createElement(PushNotifications, { msg: vi.fn(), onClose: vi.fn() }));
-    const inputs = container.querySelectorAll('input, textarea');
-    expect(inputs.length).toBeGreaterThanOrEqual(3);
-  });
-
-  it('submit button is disabled when title/body empty', async () => {
-    const React = await import('react');
-    const { render, screen } = await import('@testing-library/react');
-    const { default: PushNotifications } = await import('../components/admin/PushNotifications');
-
-    render(React.createElement(PushNotifications, { msg: vi.fn(), onClose: vi.fn() }));
-    // Puede haber mas de un boton con este texto (segments) — alcanza con que el primero este deshabilitado
-    const btns = screen.getAllByText(/Enviar a \d+ suscriptores/);
-    expect(btns.length).toBeGreaterThanOrEqual(1);
-    expect(btns[0].closest('button').disabled).toBe(true);
-  });
-});
-
 // PushBanner tests removed in Sprint 3 — componente muerto (el vivo es catalog-pro/PushOptInBanner).
+// PushNotifications (pantalla del ERP legacy) se borro el 29/sep con pages/Admin.

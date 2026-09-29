@@ -1,17 +1,10 @@
 /**
  * PlatformAdmin — el panel de un tenant del EDIFICIO.
  *
- * Por que no es pages/Admin.jsx:
- * el panel legacy carga recipes, ingredients, recipe_ingredients, combo_items,
- * sales, expenses, waste_log y settings. De todo eso el edificio tiene CERO
- * tablas. Bifurcarlo con `business.platform` habria puesto un `if` en cada
- * hook y cada pantalla para que la mitad quedara apagada igual. Este panel
- * arranca por lo minimo que desbloquea a un tenant nuevo — cargar productos y
- * atender pedidos — y crece desde ahi. El legacy queda intacto.
+ * Es el unico panel: el legacy (pages/Admin.jsx, sobre recipes, ingredients,
+ * sales y settings single-tenant) se borro el 29/sep. Ningun build lo servia.
  *
- * El chrome (topbar, nav, tokens) se reusa por CSS, no por componente:
- * AdminTopbar/AdminProfileMenu consultan `admin_users`, que en el edificio no
- * existe, y su menu apunta a pantallas legacy.
+ * El chrome (topbar, nav, tokens) se reusa por CSS, no por componente.
  */
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 

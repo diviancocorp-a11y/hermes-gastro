@@ -54,9 +54,6 @@ function lazyReload(importer) {
   )
 }
 
-const Admin = lazyReload(() => import('./pages/Admin'))
-// Panel del edificio: chunk aparte del admin legacy, para que un build de
-// plataforma no se traiga las pantallas del ERP viejo (ni al reves).
 const PlatformAdmin = lazyReload(() => import('./pages/PlatformAdmin'))
 const Personalizacion = lazyReload(() => import('./pages/Personalizacion'))
 const InfoPagesAdmin = lazyReload(() => import('./pages/admin/InfoPages'))
@@ -200,11 +197,9 @@ export default function App() {
               <Route path="/entrar" element={<Login />} />
               <Route path="/q/:slug" element={<QrRedirect />} />
               <Route path="/info/:slug" element={<InfoPage />} />
-              {/* /admin sirve dos paneles distintos, no uno con ifs adentro:
-                  el del edificio (products/orders con RLS por tenant) y el ERP
-                  legacy (recipes/ingredients/settings). Los decide el build,
-                  igual que fetchCatalog. */}
-              <Route path="/admin" element={business.platform ? <PlatformAdmin /> : <Admin />} />
+              {/* El panel del edificio. El ERP legacy (pages/Admin) se borro
+                  el 29/sep: ningun build lo servia y viajaba en el bundle. */}
+              <Route path="/admin" element={<PlatformAdmin />} />
               <Route path="/admin/personalizacion" element={<Personalizacion />} />
               <Route path="/admin/paginas" element={<InfoPagesAdmin />} />
               <Route path="/order/:id" element={<OrderTracker />} />

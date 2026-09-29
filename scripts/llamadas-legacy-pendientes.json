@@ -17,9 +17,6 @@
       "rpc:get_my_ranking",
       "rpc:get_weekly_top"
     ],
-    "src/components/admin/shared/AdminProfileMenu.jsx": [
-      "from:admin_users"
-    ],
     "src/hooks/useAdminGate.js": [
       "from:admin_users"
     ],
@@ -65,9 +62,6 @@
     ],
     "src/services/inventory.js": [
       "rpc:adjust_stock"
-    ],
-    "src/services/invoices.js": [
-      "from:invoices"
     ],
     "src/services/phoneAuth.js": [
       "rpc:lookup_customer_by_phone",
