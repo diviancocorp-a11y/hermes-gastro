@@ -47,6 +47,7 @@ describe('check-edificio-alcanzable', () => {
   const root = repoFalso({
     ...MIGRACIONES,
     'clients/edificio/business.js': 'export default { platform: true }',
+    'platform/functions/zz-cobro/index.ts': 'Deno.serve(() => new Response())',
     'src/main.jsx': `
       import business from '@business'
       import App from './App.jsx'
@@ -60,9 +61,11 @@ describe('check-edificio-alcanzable', () => {
     'src/services/pedidos.js': `
       export const traer = (s) => s.from('zz_pedidos').select('*')
       export const cobrar = (s) => s.rpc('zz_cobrar', {})
+      export const pagar = (s) => s.functions.invoke('zz-cobro', { body: {} })
+      // s.functions.invoke('zz-comentada')
     `,
     'src/pages/Panel.jsx': `
-      export default (s) => s.from('zz_vieja').select('*')
+      export default (s) => [s.from('zz_vieja').select('*'), s.functions.invoke("zz-borrada")]
     `,
     'src/pages/Huerfana.jsx': `
       export default (s) => s.rpc('zz_inexistente')
@@ -83,11 +86,12 @@ describe('check-edificio-alcanzable', () => {
     expect(vivos.has('from:zz_pedidos')).toBe(true);
     expect(vivos.has('from:zz_vieja')).toBe(false);
     expect(vivos.has('rpc:zz_cobrar')).toBe(true);
+    expect(vivos.has('fn:zz-cobro')).toBe(true);
   });
 
   it('reporta solo lo alcanzable que el edificio no tiene', () => {
     expect(llamadasHuerfanas({ root })).toEqual({
-      'src/pages/Panel.jsx': ['from:zz_vieja'],
+      'src/pages/Panel.jsx': ['fn:zz-borrada', 'from:zz_vieja'],
     });
   });
 

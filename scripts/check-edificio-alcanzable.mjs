@@ -4,7 +4,8 @@
 // Todo lo que el build del edificio puede ejecutar tiene que hablarle a algo
 // que el edificio tiene. Recorre los imports desde src/main.jsx (estaticos y
 // dinamicos, con los alias de vite) y cruza cada `.from('t')` y `.rpc('f')`
-// alcanzable contra lo que definen las migraciones de platform/migrations.
+// alcanzable contra lo que definen las migraciones de platform/migrations, y
+// cada `functions.invoke('x')` contra las edge functions de platform/functions.
 //
 // ── POR QUE EXISTE ──
 // El 28/sep el catalogo del edificio tiraba en cada visita un ERROR en
@@ -31,7 +32,7 @@
 // Uso: npm run check:alcanzable
 //      npm run check:alcanzable -- --podar   saca de la lista lo ya resuelto
 
-import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative, sep } from 'node:path';
 import { indexar, llamadasEn, firmasVivas } from './mapa.mjs';
@@ -48,6 +49,7 @@ const ALIAS = {
 };
 const EXTENSIONES = ['', '.js', '.jsx', '.mjs', '.ts', '.tsx', '/index.js', '/index.jsx'];
 const ES_CODIGO = /\.(m?jsx?|tsx?)$/;
+const RE_INVOKE = /functions\.invoke\(\s*['"`]([a-z0-9_-]+)['"`]/gi;
 const RE_IMPORT = /(?:import|export)\s[^'"`;]*?from\s*['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)|import\s+['"]([^'"]+)['"]/g;
 
 const posix = (p) => p.split(sep).join('/');
@@ -88,7 +90,10 @@ export function grafo(root = ROOT, entrada = ENTRADA) {
   return padres;
 }
 
-/** Tablas, vistas y funciones de public que las migraciones del edificio dejan vivas. */
+/**
+ * Tablas, vistas y funciones de public que las migraciones del edificio dejan
+ * vivas (`from:`/`rpc:`), mas las edge functions del repo (`fn:`).
+ */
 export function objetosDelEdificio(root = ROOT) {
   const { lados } = indexar({ root, codigo: [] });
   const eventos = lados.find((l) => l.lado === 'edificio').eventos.filter((e) => e.esquema === 'public');
@@ -107,16 +112,36 @@ export function objetosDelEdificio(root = ROOT) {
   for (const [nombre, evs] of funciones) {
     if (firmasVivas(evs).length) vivos.add(`rpc:${nombre}`);
   }
+  const dirFunciones = join(root, 'platform/functions');
+  if (existsSync(dirFunciones)) {
+    for (const e of readdirSync(dirFunciones, { withFileTypes: true })) {
+      if (e.isDirectory() && !e.name.startsWith('_')) vivos.add(`fn:${e.name}`);
+    }
+  }
   return vivos;
 }
 
-/** { 'src/x.js': ['from:t', 'rpc:f'] } con lo alcanzable que el edificio no tiene. */
+/** `supabase.functions.invoke('x')` de un archivo, salteando comentarios. */
+export function invocacionesEn(texto) {
+  const out = [];
+  RE_INVOKE.lastIndex = 0;
+  let m;
+  while ((m = RE_INVOKE.exec(texto))) {
+    const inicioLinea = texto.lastIndexOf('\n', m.index) + 1;
+    if (/^\s*(\/\/|\*)/.test(texto.slice(inicioLinea, m.index))) continue;
+    out.push({ nombre: m[1].toLowerCase(), via: 'fn' });
+  }
+  return out;
+}
+
+/** { 'src/x.js': ['from:t', 'rpc:f', 'fn:e'] } con lo alcanzable que el edificio no tiene. */
 export function llamadasHuerfanas({ root = ROOT, padres = grafo(root), vivos = objetosDelEdificio(root) } = {}) {
   const out = {};
   for (const abs of padres.keys()) {
     if (!ES_CODIGO.test(abs)) continue;
     const archivo = posix(relative(root, abs));
-    for (const c of llamadasEn(readFileSync(abs, 'utf8'), archivo)) {
+    const texto = readFileSync(abs, 'utf8');
+    for (const c of [...llamadasEn(texto, archivo), ...invocacionesEn(texto)]) {
       const clave = `${c.via}:${c.nombre}`;
       if (vivos.has(clave)) continue;
       (out[archivo] ||= new Set()).add(clave);
@@ -173,7 +198,7 @@ if (ES_MAIN) {
       console.error(`  ${llamada}  en ${archivo}`);
       console.error(`    se llega por: ${cadena(padres, ROOT, archivo)}`);
     }
-    console.error('\n  O el objeto se crea en platform/migrations, o el codigo legacy se borra.');
+    console.error('\n  O el objeto se crea en platform/migrations (o platform/functions), o el codigo legacy se borra.');
     console.error(`  No se agrega a ${PENDIENTES}: esa lista solo se achica.\n`);
   }
   if (resueltas.length && PODAR && !nuevas.length) {
