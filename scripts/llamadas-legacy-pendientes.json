@@ -4,24 +4,11 @@
     "src/catalog-pro/BirthdayGift.jsx": [
       "fn:birthday-gift"
     ],
-    "src/catalog-pro/OrderStatusCard.jsx": [
-      "rpc:get_order_tracker"
-    ],
-    "src/catalog-pro/regretOrder.js": [
-      "fn:cancel-order",
-      "rpc:cancel_own_order"
-    ],
     "src/hooks/useAdminGate.js": [
       "from:admin_users"
     ],
-    "src/pages/MpStatus.jsx": [
-      "rpc:get_order_tracker"
-    ],
     "src/pages/MyAccount.jsx": [
       "rpc:set_customer_avatar"
-    ],
-    "src/pages/OrderTracker.jsx": [
-      "rpc:get_order_tracker"
     ],
     "src/services/crm.js": [
       "from:customers"

@@ -10,46 +10,25 @@
 // Ilustracion: repartidor en bici (thiings.co, mismo asset del componente
 // original); si no carga cae al emoji 🛵 — nunca queda hueco roto.
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
 import { removeActiveOrder } from "../lib/activeOrders";
+import usePedidoEnVivo from "../hooks/usePedidoEnVivo";
+import { ESTADOS_FINALES } from "../services/orderTracker";
 import { cancelOwnOrder, useRegretCountdown } from "./regretOrder";
 
 const ILLUSTRATION = "https://www.thiings.co/_next/image?url=https%3A%2F%2Flftz25oez4aqbxpq.public.blob.vercel-storage.com%2Fimage-uBD2X8E9FMFPGgAZv0YYRXCMZbaJTt.png&w=320&q=75";
 
-/* El pedido sigue "vivo"? Fetch inicial + realtime: cuando pasa a
-   completed/cancelled la card del catalogo desaparece sola y se saca de la
-   lista de pedidos activos. Tambien expone created_at/status para la
-   ventana de arrepentimiento. */
+/* El pedido sigue "vivo"? Cuando pasa a completed/cancelled (o no existe en
+   este negocio) la card del catalogo desaparece sola y se saca de la lista de
+   pedidos activos. Un fallo de red la deja visible. Tambien expone
+   created_at/status para la ventana de arrepentimiento.
+   Polling y no Realtime: ver usePedidoEnVivo. */
 function useOrderAlive(orderId) {
-  const [state, setState] = useState({ alive: true, createdAt: null, status: null });
+  const { pedido, cargando, noEncontrado } = usePedidoEnVivo(orderId, { cadaMs: 30000 });
+  const muerto = !cargando && (noEncontrado || ESTADOS_FINALES.includes(pedido?.status));
   useEffect(() => {
-    if (!orderId) return;
-    let cancel = false;
-    const kill = () => {
-      if (cancel) return;
-      setState((s) => ({ ...s, alive: false }));
-      removeActiveOrder(orderId);
-    };
-    supabase.rpc("get_order_tracker", { p_order_id: orderId }).then(({ data, error }) => {
-      if (cancel) return;
-      const row = Array.isArray(data) ? data[0] : data;
-      if (error) return; // sin info: dejamos la card visible
-      if (!row || row.status === "completed" || row.status === "cancelled") { kill(); return; }
-      setState({ alive: true, createdAt: row.created_at, status: row.status });
-    });
-    const channel = supabase
-      .channel(`order-card-${orderId}`)
-      .on("postgres_changes",
-        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` },
-        (payload) => {
-          const st = payload?.new?.status;
-          if (st === "completed" || st === "cancelled") kill();
-          else if (st) setState((s) => ({ ...s, status: st }));
-        })
-      .subscribe();
-    return () => { cancel = true; supabase.removeChannel(channel); };
-  }, [orderId]);
-  return state;
+    if (orderId && muerto) removeActiveOrder(orderId);
+  }, [orderId, muerto]);
+  return { alive: !muerto, createdAt: pedido?.created_at ?? null, status: pedido?.status ?? null };
 }
 
 function Illu({ size = 110 }) {

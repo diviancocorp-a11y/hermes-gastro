@@ -1,27 +1,30 @@
 // src/catalog-pro/regretOrder.js
 // Boton de arrepentimiento: el cliente puede cancelar su pedido durante los
-// primeros 60 segundos (el server lo valida igual: status=new + <60s).
+// primeros 60 segundos. El server lo valida igual (cancel_own_order, 0082):
+// pedido de este negocio, status 'new' y menos de 60s.
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { resolveTenantSlug } from "../lib/activeTenant";
 import { removeActiveOrder } from "../lib/activeOrders";
 
 export const REGRET_WINDOW_MS = 60 * 1000;
 
-/** Cancela el pedido (server-side valida ventana y estado). true = cancelado */
+/**
+ * Cancela el pedido. true = cancelado.
+ * Va por la edge function cancel-order del edificio, que ademas le AVISA AL
+ * LOCAL por push (caso Ornela 5/jul: una cancelacion silenciosa es un pedido
+ * que se prepara igual). false si ya no se puede o si no se pudo preguntar.
+ */
 export async function cancelOwnOrder(orderId) {
-  // Via principal: edge function cancel-order — cancela con autoria 'customer'
-  // y AVISA AL ADMIN por push (caso Ornela 5/jul: cancelacion silenciosa).
   try {
-    const { data, error } = await supabase.functions.invoke("cancel-order", { body: { order_id: orderId } });
-    if (!error && data?.ok === true) { removeActiveOrder(orderId); return true; }
-    if (!error && data?.ok === false) return false; // ventana cerrada: el RPC diria lo mismo
-  } catch { /* function caida o chunk desfasado: probamos el RPC */ }
-  // Fallback (compat): mismo efecto server-side, sin push al admin.
-  try {
-    const { data, error } = await supabase.rpc("cancel_own_order", { p_order_id: orderId });
-    if (error) return false;
-    if (data === true) removeActiveOrder(orderId);
-    return data === true;
+    const slug = await resolveTenantSlug();
+    if (!slug || !orderId) return false;
+    const { data, error } = await supabase.functions.invoke("cancel-order", {
+      body: { tenant_slug: slug, order_id: orderId },
+    });
+    if (error || data?.ok !== true) return false;
+    removeActiveOrder(orderId);
+    return true;
   } catch { return false; }
 }
 
