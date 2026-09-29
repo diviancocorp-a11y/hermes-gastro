@@ -4,10 +4,6 @@
     "src/catalog-pro/BirthdayGift.jsx": [
       "fn:birthday-gift"
     ],
-    "src/catalog-pro/regretOrder.js": [
-      "fn:cancel-order",
-      "rpc:cancel_own_order"
-    ],
     "src/hooks/useAdminGate.js": [
       "from:admin_users"
     ],
