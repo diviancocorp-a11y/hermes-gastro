@@ -295,6 +295,7 @@ export const DEFINER_APROBADAS = {
   tenant_puede_operar: { tipo: 'abierta', porque: 'devuelve un booleano: si el negocio esta suspendido' },
   submit_service_review: { tipo: 'abierta', porque: 'el order_id es un uuid que solo tiene quien recibio el pedido' },
   get_tip_target: { tipo: 'abierta', porque: 'el order_id es un uuid que solo tiene quien recibio el pedido' },
+  get_order_tracker: { tipo: 'abierta', porque: 'el order_id es un uuid que solo tiene quien hizo el pedido; primer nombre, sin contacto' },
   delete_push_subscription: { tipo: 'abierta', porque: 'el endpoint es el secreto: solo lo conoce el navegador suscripto' },
   legajo_completo: { tipo: 'abierta', porque: 'devuelve un booleano sobre la fila que le pasan' },
 };
