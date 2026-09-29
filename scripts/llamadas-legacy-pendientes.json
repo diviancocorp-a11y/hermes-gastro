@@ -1,0 +1,91 @@
+{
+  "_comment": "Llamadas alcanzables desde el build del edificio a tablas o RPC que platform/migrations no define. Solo se achica: ver scripts/check-edificio-alcanzable.mjs",
+  "pendientes": {
+    "src/catalog-pro/OrderStatusCard.jsx": [
+      "rpc:get_order_tracker"
+    ],
+    "src/catalog-pro/SuperCombos.jsx": [
+      "rpc:get_combo_contents"
+    ],
+    "src/catalog-pro/TopPedidos.jsx": [
+      "from:recipe_sale_counts"
+    ],
+    "src/catalog-pro/regretOrder.js": [
+      "rpc:cancel_own_order"
+    ],
+    "src/catalog-pro/useTopCustomers.js": [
+      "rpc:get_my_ranking",
+      "rpc:get_weekly_top"
+    ],
+    "src/components/admin/shared/AdminProfileMenu.jsx": [
+      "from:admin_users"
+    ],
+    "src/hooks/useAdminGate.js": [
+      "from:admin_users"
+    ],
+    "src/pages/Catalog.jsx": [
+      "from:combo_items",
+      "from:customers",
+      "from:recipe_ingredients"
+    ],
+    "src/pages/MpStatus.jsx": [
+      "rpc:get_order_tracker"
+    ],
+    "src/pages/MyAccount.jsx": [
+      "rpc:set_customer_avatar"
+    ],
+    "src/pages/OrderTracker.jsx": [
+      "rpc:get_order_tracker"
+    ],
+    "src/services/account.js": [
+      "from:recipes",
+      "rpc:get_phone_customer_orders"
+    ],
+    "src/services/catalog.js": [
+      "from:recipe_sale_counts",
+      "from:recipes",
+      "rpc:get_server_time",
+      "rpc:upsert_customer"
+    ],
+    "src/services/categories.js": [
+      "from:category_groups"
+    ],
+    "src/services/crm.js": [
+      "from:customers"
+    ],
+    "src/services/deliveryChannels.js": [
+      "from:delivery_channels"
+    ],
+    "src/services/featureFlags.js": [
+      "from:feature_flags"
+    ],
+    "src/services/finance.js": [
+      "from:purchases",
+      "from:recipe_ingredients"
+    ],
+    "src/services/inventory.js": [
+      "rpc:adjust_stock"
+    ],
+    "src/services/invoices.js": [
+      "from:invoices"
+    ],
+    "src/services/phoneAuth.js": [
+      "rpc:lookup_customer_by_phone",
+      "rpc:upsert_customer"
+    ],
+    "src/services/qrs.js": [
+      "rpc:increment_qr_visit"
+    ],
+    "src/services/recipes.js": [
+      "from:combo_items",
+      "from:recipe_ingredients",
+      "from:recipes"
+    ],
+    "src/services/referrals.js": [
+      "from:referrals"
+    ],
+    "src/services/theme.js": [
+      "from:theme_config"
+    ]
+  }
+}
