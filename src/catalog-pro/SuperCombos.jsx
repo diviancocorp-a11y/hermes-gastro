@@ -12,32 +12,10 @@
 import { useEffect, useRef, useState } from "react";
 import { SectionHeader } from "./atoms";
 import { formatInt } from "../lib/utils";
-import { supabase } from "../lib/supabase";
-import business from "@business";
 
-/* Contenidos de cada combo (RPC get_combo_contents) → "2× Brownie · 1× Bebida".
-   Cache simple en memoria: no cambia durante la sesion. */
-let _contentsCache = null;
-function useComboContents() {
-  const [byCombo, setByCombo] = useState(_contentsCache || {});
-  useEffect(() => {
-    // El edificio no tiene get_combo_contents (404): los combos van sin detalle.
-    if (_contentsCache || business.platform) return;
-    let cancel = false;
-    supabase.rpc("get_combo_contents").then(({ data, error }) => {
-      if (cancel || error || !Array.isArray(data)) return;
-      const map = {};
-      data.forEach((row) => {
-        if (!map[row.combo_id]) map[row.combo_id] = [];
-        map[row.combo_id].push(`${Number(row.qty) || 1}× ${row.sub_name}`);
-      });
-      _contentsCache = map;
-      setByCombo(map);
-    });
-    return () => { cancel = true; };
-  }, []);
-  return byCombo;
-}
+/* El "Incluye: 2× Brownie · 1× Bebida" salia del RPC get_combo_contents, del
+   legacy. El edificio no lo tiene (era un 404 por visita): hasta que exista
+   un modelo de combos en el edificio, cada combo va sin ese detalle. */
 
 const ROTATE_MS = 6400;   // = duracion del loop de capas (sincronizados)
 const TOUCH_HOLD_MS = 15000;
@@ -81,7 +59,6 @@ function ClipShapes({ setIndex, clipId }) {
 export default function SuperCombos({ combos = [], onSelectProduct, onAddToCart }) {
   const [active, setActive] = useState(0);
   const pauseUntil = useRef(0);
-  const comboContents = useComboContents();
 
   // Auto-rotacion sincronizada con el loop de capas; pausa tras interaccion
   useEffect(() => {
@@ -97,7 +74,6 @@ export default function SuperCombos({ combos = [], onSelectProduct, onAddToCart 
   const safe = active % combos.length;
   const combo = combos[safe];
   const clipId = `cp-sc-clip-${safe}`;
-  const contents = comboContents[combo.id] || [];
 
   const pick = (i) => {
     pauseUntil.current = Date.now() + TOUCH_HOLD_MS;
@@ -166,12 +142,6 @@ export default function SuperCombos({ combos = [], onSelectProduct, onAddToCart 
                 {combo.soldOut ? "Agotado" : "Combo completo"}
               </div>
               <div style={{ fontSize: 22, fontWeight: 800, color: "#fff" }}>${formatInt(combo.price)}</div>
-              {/* Descripcion automatica desde las sub-recetas y sus cantidades */}
-              {contents.length > 0 && (
-                <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.65)", marginTop: 3, lineHeight: 1.4 }}>
-                  Incluye: {contents.join(" · ")}
-                </div>
-              )}
             </div>
             <button type="button" disabled={combo.soldOut}
               onClick={() => { pauseUntil.current = Date.now() + TOUCH_HOLD_MS; onAddToCart?.(combo._raw); }}

@@ -19,12 +19,8 @@ import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import { isPlatformRoot } from './lib/tenantHost'
 import { hardReload } from './lib/hardReload'
-import business from '@business'
 import { useEffect } from 'react'
-import { fetchSettings } from './services/settings'
-import { supabase } from './lib/supabase'
-import { fetchActiveTheme, applyTheme, clearAppliedTheme } from './services/theme'
-import { applyCatalogTheme } from './lib/tenantHead'
+import { applyTheme, clearAppliedTheme } from './services/theme'
 import { resolveThemeOwner, THEME_OWNERS } from './lib/themeOwnership'
 
 // lazy con auto-recuperacion (fix HERMES-GASTRO-8, 11/jun): si el usuario
@@ -59,7 +55,6 @@ const Personalizacion = lazyReload(() => import('./pages/Personalizacion'))
 const InfoPagesAdmin = lazyReload(() => import('./pages/admin/InfoPages'))
 const OrderTracker = lazyReload(() => import('./pages/OrderTracker'))
 const MyAccount = lazyReload(() => import('./pages/MyAccount'))
-const MpCallback = lazyReload(() => import('./pages/MpCallback'))
 const MpStatus = lazyReload(() => import('./pages/MpStatus'))
 
 const Loading = () => (
@@ -76,92 +71,15 @@ export default function App() {
   });
   useTheme(themeOwner);
 
+  // Variables de :root para las superficies del catalogo fuera de .cp-root.
+  // El tema de catalog-pro y el <head> del negocio (titulo, favicon, og) los
+  // pone Catalog con applyTenantHead(get_catalog). Hasta el 29/sep aca ademas
+  // se leia `settings` sin tenant ni sesion: para anon la policy cortaba con
+  // 42501 (un ERROR en Postgres por visita) y el null resultante pisaba con
+  // 'ambar' el tema del negocio y prendia la senial de listo antes de tiempo.
   useEffect(() => {
-    let cancelled = false;
-
-    if (themeOwner !== THEME_OWNERS.CATALOG) {
-      clearAppliedTheme();
-      return undefined;
-    }
-
-    fetchActiveTheme()
-      .then((theme) => {
-        if (!cancelled && document.body.getAttribute('data-ui-owner') === THEME_OWNERS.CATALOG) {
-          applyTheme(theme);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [themeOwner]);
-
-  useEffect(() => {
-    if (themeOwner !== THEME_OWNERS.CATALOG) return undefined;
-    // En el edificio esto es del modelo single-tenant: `settings` sin filtro
-    // de tenant y sin sesion. Para anon la policy corta con 42501 (un ERROR en
-    // Postgres por cada visita) y el null resultante pisaba con 'ambar' el
-    // tema del negocio y prendia la senial de listo antes de tiempo. El tema
-    // y el head del edificio los pone Catalog con applyTenantHead(get_catalog).
-    if (business.platform) return undefined;
-
-    let cancelled = false;
-    const apply = (sett) => {
-      // Una sola implementacion: esto duplicaba las tres lineas de
-      // `applyCatalogTheme` —validacion, atributo y cache— y ahora ademas
-      // tendria que duplicar la senial de listo. Cuando hay dos escritores del
-      // mismo atributo, tarde o temprano uno se olvida de algo.
-      const t = applyCatalogTheme(sett?.catalog_theme);
-      // Pestania del navegador: titulo y descripcion salen de settings
-      // (Personalizacion), no del business.js de build. Asi el slogan que
-      // carga el cliente afecta el catalogo Y la pestania, y en su idioma.
-      if (sett?.biz_name) {
-        document.title = sett.slogan ? `${sett.biz_name} — ${sett.slogan}` : sett.biz_name;
-      }
-      const desc = sett?.slogan || '';
-      if (desc) {
-        for (const sel of ["meta[name='description']", "meta[property='og:description']"]) {
-          let m = document.querySelector(sel);
-          if (!m) {
-            m = document.createElement('meta');
-            if (sel.includes('property')) m.setAttribute('property', 'og:description');
-            else m.setAttribute('name', 'description');
-            document.head.appendChild(m);
-          }
-          m.setAttribute('content', desc);
-        }
-      }
-      // Favicon: usa favicon_url si esta, sino el logo de la empresa
-      const faviconSrc = sett?.favicon_url || sett?.logo_url;
-      if (faviconSrc) {
-        let link = document.querySelector("link[rel~='icon']");
-        if (!link) {
-          link = document.createElement('link');
-          link.rel = 'icon';
-          document.head.appendChild(link);
-        }
-        link.href = faviconSrc;
-      }
-      // og:image (preview al compartir): siempre el logo de la empresa
-      if (sett?.logo_url) {
-        let og = document.querySelector("meta[property='og:image']");
-        if (!og) {
-          og = document.createElement('meta');
-          og.setAttribute('property', 'og:image');
-          document.head.appendChild(og);
-        }
-        og.setAttribute('content', sett.logo_url);
-      }
-    };
-    fetchSettings().then((sett) => { if (!cancelled) apply(sett); });
-
-    const channel = supabase
-      .channel('app-theme-watch')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'settings' },
-        (payload) => apply(payload?.new))
-      .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(channel); };
+    if (themeOwner === THEME_OWNERS.CATALOG) applyTheme();
+    else clearAppliedTheme();
   }, [themeOwner]);
 
   return (
@@ -204,7 +122,6 @@ export default function App() {
               <Route path="/admin/paginas" element={<InfoPagesAdmin />} />
               <Route path="/order/:id" element={<OrderTracker />} />
               <Route path="/mi-cuenta" element={<MyAccount />} />
-              <Route path="/mp-callback" element={<MpCallback />} />
               <Route path="/pago/exitoso" element={<MpStatus status="exitoso" />} />
               <Route path="/pago/fallido" element={<MpStatus status="fallido" />} />
               <Route path="/pago/pendiente" element={<MpStatus status="pendiente" />} />

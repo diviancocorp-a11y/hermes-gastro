@@ -1,26 +1,17 @@
 // src/services/adminUsers.js
 // Gestion del equipo que entra al panel.
 //
-// Dos funciones distintas, no una con ifs: en el legacy los permisos viven en
-// `admin_users` (una lista global del negocio); en el edificio, en
-// `tenant_members` (una fila por persona POR NEGOCIO). La misma persona puede
-// ser duena de un local y staff de otro, y eso el modelo viejo no lo expresa.
+// Los permisos viven en `tenant_members`: una fila por persona POR NEGOCIO.
+// La misma persona puede ser duena de un local y staff de otro. (El legacy
+// usaba `admin_users` y la function admin-users; se borro el 29/sep.)
 import { supabase } from '../lib/supabase';
-import business from '@business';
 import { resolveTenantSlug } from '../lib/activeTenant';
 
-const esPlataforma = () => business?.platform === true;
-
 async function call(action, payload = {}) {
-  const cuerpo = { action, ...payload };
-  let fn = 'admin-users';
-  if (esPlataforma()) {
-    fn = 'tenant-users';
-    const slug = await resolveTenantSlug();
-    if (!slug) return { ok: false, error: 'No se pudo identificar el negocio' };
-    cuerpo.tenant_slug = slug;
-  }
-  const { data, error } = await supabase.functions.invoke(fn, { body: cuerpo });
+  const slug = await resolveTenantSlug();
+  if (!slug) return { ok: false, error: 'No se pudo identificar el negocio' };
+  const cuerpo = { action, ...payload, tenant_slug: slug };
+  const { data, error } = await supabase.functions.invoke('tenant-users', { body: cuerpo });
   if (error) {
     // FunctionsHttpError: el body real viene en error.context
     let message = error.message || 'Error de conexion';
@@ -41,28 +32,13 @@ export async function listAdminUsers() {
   return call('list');
 }
 
+/* Una persona tiene VARIOS roles y puede tenerlos acotados a una sucursal. */
+
 /**
- * Da acceso al panel. Si el email YA tiene cuenta en la plataforma se lo suma
- * al equipo SIN tocarle la contrasena — entra con la que ya usaba. La
- * respuesta trae `reused: true` y un mensaje para avisarlo.
+ * Suma a alguien al equipo con nombre y roles. `branchId` null = todas.
+ * Si el email YA tiene cuenta en la plataforma se lo suma SIN tocarle la
+ * contrasena: la respuesta trae `reused: true` y un mensaje para avisarlo.
  */
-export async function createAdminUser(name, email, password, role = 'staff') {
-  return call('create', { name, email, password, role });
-}
-
-/** Cambia el rol owner/staff. Solo legacy: el edificio usa `setMemberRoles`. */
-export async function setAdminRole(userId, role) {
-  return call('set_role', { user_id: userId, role });
-}
-
-/* ─────────────────────────── Edificio (6f) ───────────────────────────
- *
- * Aca una persona tiene VARIOS roles y puede tenerlos acotados a una
- * sucursal. Son funciones aparte y no un parametro mas de las de arriba
- * porque el legacy no tiene ese modelo: alla el rol es uno solo y global.
- */
-
-/** Suma a alguien al equipo con nombre y roles. `branchId` null = todas. */
 export async function addMember(name, email, password, roles, branchId = null) {
   return call('create', { name, email, password, roles, branch_id: branchId });
 }

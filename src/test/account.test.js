@@ -1,14 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// business.platform decide contra que base habla el service. Es un objeto
-// mutable para poder probar LAS DOS ramas: el edificio no puede ganar la
-// suya rompiendo el catalogo de los 3 negocios legacy.
-const { mockBusiness, mockFrom, mockRpc } = vi.hoisted(() => ({
-  mockBusiness: { platform: false },
+const { mockFrom, mockRpc } = vi.hoisted(() => ({
   mockFrom: vi.fn(),
   mockRpc: vi.fn(),
 }));
-vi.mock('@business', () => ({ default: mockBusiness }));
 vi.mock('../lib/supabase', () => ({ supabase: { from: mockFrom, rpc: mockRpc } }));
 
 import {
@@ -20,12 +15,10 @@ const USER = '11111111-1111-1111-1111-111111111111';
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockBusiness.platform = false;
 });
 
-describe('favoritos: la columna cambia con la base', () => {
-  it('en el edificio son product_id', async () => {
-    mockBusiness.platform = true;
+describe('favoritos', () => {
+  it('son product_id', async () => {
     const c = chain({ data: null, error: null });
     mockFrom.mockReturnValue(c);
 
@@ -35,22 +28,12 @@ describe('favoritos: la columna cambia con la base', () => {
     expect(c.insert).toHaveBeenCalledWith({ user_id: USER, product_id: 'p1' });
   });
 
-  it('en el legacy siguen siendo recipe_id', async () => {
-    const c = chain({ data: null, error: null });
-    mockFrom.mockReturnValue(c);
-
-    await toggleFavorite(USER, 'r1', false);
-
-    expect(c.insert).toHaveBeenCalledWith({ user_id: USER, recipe_id: 'r1' });
-  });
-
   it('si el guardado falla devuelve false (el corazon no puede quedar pintado)', async () => {
     mockFrom.mockReturnValue(chain({ data: null, error: { message: 'nope' } }));
-    expect(await toggleFavorite(USER, 'r1', false)).toBe(false);
+    expect(await toggleFavorite(USER, 'p1', false)).toBe(false);
   });
 
-  it('desmarcar borra por la columna que corresponde', async () => {
-    mockBusiness.platform = true;
+  it('desmarcar borra por product_id', async () => {
     const c = chain({ data: null, error: null });
     mockFrom.mockReturnValue(c);
 
@@ -66,20 +49,13 @@ describe('favoritos: la columna cambia con la base', () => {
 });
 
 describe('fetchFavoriteProducts', () => {
-  it('el edificio traduce price -> sale_price para la pantalla', async () => {
-    mockBusiness.platform = true;
+  it('traduce price -> sale_price para la pantalla', async () => {
     mockFrom.mockReturnValue(chain({ data: [{ id: 'p1', name: 'Pan', price: 900 }], error: null }));
 
     const r = await fetchFavoriteProducts(['p1']);
 
     expect(mockFrom).toHaveBeenCalledWith('products');
     expect(r[0].sale_price).toBe(900);
-  });
-
-  it('el legacy lee recipes tal cual', async () => {
-    mockFrom.mockReturnValue(chain({ data: [{ id: 'r1', sale_price: 500 }], error: null }));
-    await fetchFavoriteProducts(['r1']);
-    expect(mockFrom).toHaveBeenCalledWith('recipes');
   });
 
   it('sin favoritos no consulta nada', async () => {
@@ -106,8 +82,7 @@ describe('fetchUserData', () => {
 });
 
 describe('updateProfile', () => {
-  it('en el edificio hace upsert: el comprador todavia no tiene fila', async () => {
-    mockBusiness.platform = true;
+  it('hace upsert: el comprador todavia no tiene fila', async () => {
     const c = chain({ data: null, error: null });
     mockFrom.mockReturnValue(c);
 
@@ -116,21 +91,10 @@ describe('updateProfile', () => {
     expect(c.upsert).toHaveBeenCalledWith(expect.objectContaining({ id: USER, name: 'Ana' }));
     expect(c.update).not.toHaveBeenCalled();
   });
-
-  it('en el legacy sigue siendo update por id', async () => {
-    const c = chain({ data: null, error: null });
-    mockFrom.mockReturnValue(c);
-
-    await updateProfile(USER, { name: 'Ana' });
-
-    expect(c.update).toHaveBeenCalled();
-    expect(c.upsert).not.toHaveBeenCalled();
-  });
 });
 
 describe('historial', () => {
   it('con cuenta filtra por user_id', async () => {
-    mockBusiness.platform = true;
     const c = chain({ data: [], error: null });
     mockFrom.mockReturnValue(c);
 
@@ -140,8 +104,7 @@ describe('historial', () => {
     expect(c.eq).toHaveBeenCalledWith('user_id', USER);
   });
 
-  it('el edificio traduce customer_name -> customer', async () => {
-    mockBusiness.platform = true;
+  it('traduce customer_name -> customer', async () => {
     mockFrom.mockReturnValue(chain({ data: [{ id: 'o1', customer_name: 'Ana' }], error: null }));
 
     const r = await fetchOrderHistory({ user: { id: USER } });
@@ -149,16 +112,11 @@ describe('historial', () => {
     expect(r[0].customer).toBe('Ana');
   });
 
-  // Decision explicita, no un olvido: el RPC del legacy matchea por telefono
-  // y cualquiera que escriba un numero ajeno ve esos pedidos. En el edificio
-  // eso seria el mismo agujero multiplicado por la cantidad de locales.
-  it('por telefono: el legacy usa el RPC, el edificio NO', async () => {
-    mockRpc.mockResolvedValue({ data: [{ id: 'o1' }], error: null });
-    expect(await fetchOrderHistory({ user: null, phone: '111' })).toHaveLength(1);
-
-    mockBusiness.platform = true;
-    mockRpc.mockClear();
+  // Decision explicita, no un olvido: el RPC del legacy matcheaba por
+  // telefono y cualquiera que escribiera un numero ajeno veia esos pedidos.
+  it('sin cuenta (solo telefono) no consulta nada', async () => {
     expect(await fetchOrderHistory({ user: null, phone: '111' })).toEqual([]);
     expect(mockRpc).not.toHaveBeenCalled();
+    expect(mockFrom).not.toHaveBeenCalled();
   });
 });

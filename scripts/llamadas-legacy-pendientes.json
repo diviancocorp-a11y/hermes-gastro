@@ -7,27 +7,12 @@
     "src/catalog-pro/OrderStatusCard.jsx": [
       "rpc:get_order_tracker"
     ],
-    "src/catalog-pro/SuperCombos.jsx": [
-      "rpc:get_combo_contents"
-    ],
-    "src/catalog-pro/TopPedidos.jsx": [
-      "from:recipe_sale_counts"
-    ],
     "src/catalog-pro/regretOrder.js": [
       "fn:cancel-order",
       "rpc:cancel_own_order"
     ],
-    "src/catalog-pro/useTopCustomers.js": [
-      "rpc:get_my_ranking",
-      "rpc:get_weekly_top"
-    ],
     "src/hooks/useAdminGate.js": [
       "from:admin_users"
-    ],
-    "src/pages/Catalog.jsx": [
-      "from:combo_items",
-      "from:customers",
-      "from:recipe_ingredients"
     ],
     "src/pages/MpStatus.jsx": [
       "rpc:get_order_tracker"
@@ -38,28 +23,11 @@
     "src/pages/OrderTracker.jsx": [
       "rpc:get_order_tracker"
     ],
-    "src/services/account.js": [
-      "from:recipes",
-      "rpc:get_phone_customer_orders"
-    ],
-    "src/services/catalog.js": [
-      "fn:notify-new-customer",
-      "from:recipe_sale_counts",
-      "from:recipes",
-      "rpc:get_server_time",
-      "rpc:upsert_customer"
-    ],
-    "src/services/categories.js": [
-      "from:category_groups"
-    ],
     "src/services/crm.js": [
       "from:customers"
     ],
     "src/services/deliveryChannels.js": [
       "from:delivery_channels"
-    ],
-    "src/services/featureFlags.js": [
-      "from:feature_flags"
     ],
     "src/services/finance.js": [
       "from:purchases",
@@ -76,9 +44,6 @@
       "rpc:lookup_customer_by_phone",
       "rpc:upsert_customer"
     ],
-    "src/services/qrs.js": [
-      "rpc:increment_qr_visit"
-    ],
     "src/services/recipes.js": [
       "from:combo_items",
       "from:recipe_ingredients",
@@ -86,9 +51,6 @@
     ],
     "src/services/referrals.js": [
       "from:referrals"
-    ],
-    "src/services/theme.js": [
-      "from:theme_config"
     ]
   }
 }
