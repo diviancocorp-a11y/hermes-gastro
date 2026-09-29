@@ -38,6 +38,7 @@ export default function MensajeDico({
   indice = 0,
   total = 1,
   accion,
+  accionClassName = '',
   onAccion,
   onSiguiente,
   onCerrar,
@@ -92,7 +93,7 @@ export default function MensajeDico({
       {hayPie && (
         <div className="dico-mensaje-pie">
           {accion && (
-            <button type="button" className="dico-mensaje-accion" onClick={onAccion}>
+            <button type="button" className={['dico-mensaje-accion', accionClassName].filter(Boolean).join(' ')} onClick={onAccion}>
               {accion}
             </button>
           )}

@@ -47,7 +47,7 @@ export const DICO_PET_FILAS = Object.freeze({
   saluda:         Object.freeze({ fila: 3,  cuadros: 4, fps: 10, bucle: true }),
   salta:          Object.freeze({ fila: 4,  cuadros: 5, fps: 12, bucle: true }),
   falla:          Object.freeze({ fila: 5,  cuadros: 8, fps: 10, bucle: true }),
-  espera:         Object.freeze({ fila: 6,  cuadros: 6, fps: 7,  bucle: true }),
+  espera:         Object.freeze({ fila: 6,  cuadros: 6, fps: 4,  bucle: false }),
   corre:          Object.freeze({ fila: 7,  cuadros: 6, fps: 14, bucle: true }),
   revisa:         Object.freeze({ fila: 8,  cuadros: 6, fps: 8,  bucle: true }),
   // Las dos filas de mirada NO se animan: cada celda es una direccion fija.
@@ -95,3 +95,25 @@ export const DICO_PET_POR_POSE = Object.freeze({
   pointUp:   Object.freeze({ mirada: 0 }),
   pointDown: Object.freeze({ mirada: 180 }),
 });
+
+/**
+ * Acciones cortas que el pet puede encadenar cuando no esta atendiendo una
+ * intervencion. No crean assets nuevos: componen las poses certificadas en
+ * una rutina con pausas humanas, en vez de dejarlo clavado en idle.
+ */
+export const DICO_PET_ACCIONES = Object.freeze({
+  respirar:    Object.freeze({ pose: 'idle', duracion: 3600 }),
+  mirarArriba: Object.freeze({ pose: 'pointUp', duracion: 900 }),
+  pausa:        Object.freeze({ pose: 'idle', duracion: 2400 }),
+  mirarAbajo:   Object.freeze({ pose: 'pointDown', duracion: 900 }),
+  pensar:      Object.freeze({ pose: 'thinking', duracion: 1800 }),
+});
+
+/** Orden de la rutina ambiental. Se detiene por completo con reduced motion. */
+export const DICO_PET_RUTINA_VIVA = Object.freeze([
+  'respirar',
+  'mirarArriba',
+  'pausa',
+  'mirarAbajo',
+  'pensar',
+]);

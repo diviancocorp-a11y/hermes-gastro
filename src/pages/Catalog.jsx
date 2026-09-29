@@ -37,7 +37,7 @@ import {
   fallbackSettings, fallbackProducts,
   haversine, calcDeliveryCost, CHECKOUT_STEPS, DEFAULT_FORM
 } from "../constants/catalogConstants";
-import { origenDelEnvio, estimarEnvio } from "../modules/origenDelEnvio";
+import { origenDelEnvio, estimarEnvio, catalogoActivo } from "../modules/origenDelEnvio";
 import { fetchCategoryGroups, toClientFormat, buildSubToParent } from "../services/categories";
 import { computeAvailability } from "../lib/stockAvailability";
 import { applyTenantHead } from "../lib/tenantHead";
@@ -114,12 +114,14 @@ export default function Catalog() {
   const [calcingDelivery, setCalcingDelivery] = useState(false);
   const [confirmAnim, setConfirmAnim] = useState(false); // animación de confirmación
 
-  // Origen del envio: la sucursal del tenant (get_catalog -> store_lat/lng),
-  // business.geo solo si el negocio no cargo su ubicacion.
+  // Origen del envio: la ubicacion que cargo el duenio (get_catalog ->
+  // store_lat/lng). No hay predeterminada: sin ella el catalogo no toma
+  // pedidos (lo rechaza la base, 0081) y aca no se abre el checkout.
   const origenEnvio = useMemo(
     () => origenDelEnvio(sett),
     [sett?.store_lat, sett?.store_lng], // eslint-disable-line react-hooks/exhaustive-deps
   );
+  const tomaPedidos = catalogoActivo(sett);
 
   // Costo por km con los escalones del tenant (settings.delivery_pricing). El
   // checkout recibe esta y no la de constants: esa, llamada sin pricing,
@@ -802,6 +804,32 @@ export default function Catalog() {
   // --- VISTA: PEDIDO ENVIADO ---
   if (sent) return <OrderSentView orderId={orderId} form={sentForm || form} receiptFile={receiptFile} settings={sett} onReset={() => { setSent(false); setOrderId(null); setShowCk(false); }} />;
 
+  // --- VISTA: CATALOGO SIN UBICACION ---
+  // El negocio no cargo desde donde sale el envio: no se arma un pedido que la
+  // base va a rechazar.
+  if (showCk && !tomaPedidos) {
+    return (
+      <div className="cp-root" style={{
+        minHeight: "100dvh", display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", gap: 12,
+        padding: 24, background: "var(--bg)", color: "var(--tx)", textAlign: "center",
+      }}>
+        <div style={{ fontFamily: "var(--font-heading)", fontSize: 20 }}>Todavía no tomamos pedidos</div>
+        <p style={{ margin: 0, maxWidth: 320, fontSize: 14, lineHeight: 1.5, color: "var(--t2)" }}>
+          {sett.biz_name || "Este local"} está terminando de configurar su local. Volvé a intentar más tarde.
+        </p>
+        <button
+          onClick={() => { setShowCk(false); setCkStep(0); }}
+          style={{
+            marginTop: 8, padding: "12px 20px", borderRadius: 12, border: "none",
+            background: "var(--ac)", color: "#fff", fontWeight: 700, fontSize: 14,
+            cursor: "pointer", fontFamily: "inherit",
+          }}
+        >Volver al catálogo</button>
+      </div>
+    );
+  }
+
   // --- VISTA: CHECKOUT STEPPER ---
   if (showCk) {
     return (
@@ -833,8 +861,8 @@ export default function Catalog() {
         deliveryKm={deliveryKm}
         setDeliveryKm={setDeliveryKm}
         haversine={haversine}
-        STORE_LAT={origenEnvio.lat}
-        STORE_LNG={origenEnvio.lng}
+        STORE_LAT={origenEnvio?.lat}
+        STORE_LNG={origenEnvio?.lng}
         calcDeliveryCost={costoDelEnvio}
         mpConnected={mpConnected}
         paymentIcon={paymentIcon}
@@ -888,7 +916,7 @@ export default function Catalog() {
     />
   );
 
-  const isOpen = sett.store_open === false ? false : storeStatus.open;
+  const isOpen = !tomaPedidos ? false : sett.store_open === false ? false : storeStatus.open;
 
   // --- VISTA PRINCIPAL: CATÁLOGO PRO (Fase 1) ---
   // Horario de HOY para el header ("Abierto · 18:00 a 23:00")
@@ -927,7 +955,7 @@ export default function Catalog() {
     name: sett.biz_name || fallbackSettings.biz_name,
     isOpen,
     hours: todayHours,
-    openHint: nextOpenHint,
+    openHint: tomaPedidos ? nextOpenHint : "todavía no toma pedidos",
     logoLetter: sett.logo_letter || fallbackSettings.logo_letter,
     logoColor: sett.logo_color || fallbackSettings.logo_color,
     logoUrl: sett.logo_url || null,

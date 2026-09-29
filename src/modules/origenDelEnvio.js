@@ -1,15 +1,13 @@
 // src/modules/origenDelEnvio.js
 // Desde donde sale el envio de cada negocio y como se cotiza.
 //
-// El origen es la sucursal por defecto del tenant (`branches.lat/lng`), que
-// get_catalog devuelve como `store_lat` / `store_lng` (platform/migrations/0080).
-// `business.geo` queda solo como respaldo: es UN punto para todos los negocios
-// del edificio, asi que cotizar contra el es cotizar contra un lugar inventado.
-//
-// Hasta el 27/sep ese respaldo eran las coordenadas de Cochi en Caracas y todo
-// negocio argentino caia en el tramo maximo de envio.
+// El origen es la ubicacion que el duenio cargo en su sucursal
+// (`branches.lat/lng`), que get_catalog devuelve como `store_lat` /
+// `store_lng`. NO hay ubicacion predeterminada: hasta el 27/sep habia una del
+// build (Caracas, despues el centro de Buenos Aires) y se cotizaban envios
+// desde un lugar donde el local no estaba. Sin ubicacion el catalogo no toma
+// pedidos, y eso lo hace cumplir la base (platform/migrations/0081).
 
-import business from '@business';
 import { haversine, calcDeliveryCost } from '../constants/catalogConstants.js';
 import { getPais } from './paises.js';
 
@@ -29,16 +27,20 @@ export function coordenadaValida(lat, lng) {
     && !(la === 0 && ln === 0);
 }
 
+/** El origen del envio de este negocio, o null si todavia no lo cargo. */
+export function origenDelEnvio(settings) {
+  if (!coordenadaValida(settings?.store_lat, settings?.store_lng)) return null;
+  return { lat: Number(settings.store_lat), lng: Number(settings.store_lng) };
+}
+
 /**
- * El origen del envio de este negocio. `propio` dice si salio de su sucursal
- * o del respaldo del build; el checkout lo puede usar para no presentar como
- * exacta una distancia medida contra un punto que no es el local.
+ * Si el catalogo puede tomar pedidos. Pide las dos cosas: que la base diga
+ * que esta activo y que haya un origen con el que cotizar el envio. La base
+ * es la que manda (rechaza el pedido igual); esto es para no dejar que el
+ * cliente arme un pedido que despues no va a entrar.
  */
-export function origenDelEnvio(settings, respaldo = business.geo) {
-  if (coordenadaValida(settings?.store_lat, settings?.store_lng)) {
-    return { lat: Number(settings.store_lat), lng: Number(settings.store_lng), propio: true };
-  }
-  return { lat: Number(respaldo.lat), lng: Number(respaldo.lng), propio: false };
+export function catalogoActivo(settings) {
+  return settings?.catalogo_activo === true && origenDelEnvio(settings) !== null;
 }
 
 /** Distancia (km, un decimal) y costo del envio desde `origen` hasta `destino`. */
@@ -51,7 +53,7 @@ export function cotizarEnvio(origen, destino, pricing = null) {
  * URLs de Nominatim para ubicar la direccion que escribio el cliente, en orden.
  * Antes se le pegaba ", Buenos Aires, Argentina" fijo: un negocio de Cordoba
  * ubicaba "San Martin 1234" en Capital. Ahora la busqueda se acota al pais del
- * negocio y, primero, a una caja alrededor de su origen. Si en la caja no hay
+ * negocio y, primero, a una caja alrededor de su local. Si en la caja no hay
  * nada se busca en todo el pais.
  */
 export function urlsBusquedaDireccion(address, { origen, country } = {}) {
@@ -66,10 +68,11 @@ export function urlsBusquedaDireccion(address, { origen, country } = {}) {
 }
 
 /**
- * Ubica la direccion y cotiza el envio. Devuelve null si Nominatim no la
- * encuentra. `fetchImpl` es inyectable para los tests.
+ * Ubica la direccion y cotiza el envio. Devuelve null si no hay origen o si
+ * Nominatim no la encuentra. `fetchImpl` es inyectable para los tests.
  */
 export async function estimarEnvio(address, { origen, country, pricing, fetchImpl = fetch } = {}) {
+  if (!origen) return null;
   for (const url of urlsBusquedaDireccion(address, { origen, country })) {
     const r = await fetchImpl(url);
     const data = await r.json();
@@ -79,4 +82,31 @@ export async function estimarEnvio(address, { origen, country, pricing, fetchImp
     }
   }
   return null;
+}
+
+/* ─────────────────── Para que el duenio cargue la suya ─────────────────── */
+
+/**
+ * Lee lo que se copia de Google Maps con clic derecho ("-34.4586, -58.9142").
+ * Acepta coma o punto y coma entre las dos, y espacios. Devuelve null si no
+ * son dos numeros validos.
+ */
+export function parsearCoordenadas(texto) {
+  const m = String(texto || '').trim()
+    .match(/^(-?\d{1,3}(?:\.\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:\.\d+)?)$/);
+  if (!m) return null;
+  const lat = Number(m[1]);
+  const lng = Number(m[2]);
+  return coordenadaValida(lat, lng) ? { lat, lng } : null;
+}
+
+/** Busqueda del local en Nominatim: varias opciones, para que el duenio elija. */
+export function urlBuscarLocal(address, country) {
+  const pais = getPais(country).id.toLowerCase();
+  return `${NOMINATIM_SEARCH}?q=${encodeURIComponent(address)}&format=json&limit=5&addressdetails=0&countrycodes=${pais}`;
+}
+
+/** Link para que el duenio vea en el mapa el punto que va a guardar. */
+export function urlVerEnMapa({ lat, lng }) {
+  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`;
 }

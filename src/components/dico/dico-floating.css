@@ -1,0 +1,65 @@
+.dico-presencia-fisica {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--ag-z-modal, 100) + 4);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.dico-presencia-fisica-escena {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 28px);
+  width: max-content;
+  max-width: min(94vw, 720px);
+  transform: translate(calc(-50% + var(--dico-guia-x, 0px)), calc(-50% + var(--dico-guia-y, 0px)));
+  opacity: 0;
+  animation: dico-presencia-fisica-entrada 520ms cubic-bezier(.2, .72, .25, 1) forwards;
+  transition: transform 900ms cubic-bezier(.2, .72, .25, 1);
+  will-change: transform, opacity;
+}
+
+.dico-physical--flotante {
+  flex: 0 0 clamp(150px, 18vw, 208px);
+  width: clamp(150px, 18vw, 208px);
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, .3));
+}
+
+.dico-presencia-fisica-mensaje { width: min(310px, 70vw); pointer-events: auto; }
+.dico-presencia-fisica .dico-mensaje { box-shadow: 0 18px 46px rgba(0, 0, 0, .22); }
+
+.dico-guia-target,
+.dico-mensaje-accion--guiado {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--ds-focus-ring, #e0ac3c);
+  outline-offset: 5px;
+  animation: dico-guia-pulso-dorado 1.55s ease-in-out infinite;
+}
+
+.dico-mensaje-accion--guiado { border-color: #e0ac3c; }
+
+@keyframes dico-presencia-fisica-entrada {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 18px)) scale(.94); }
+  to { opacity: 1; transform: translate(calc(-50% + var(--dico-guia-x, 0px)), calc(-50% + var(--dico-guia-y, 0px))) scale(1); }
+}
+
+@keyframes dico-guia-pulso-dorado {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 172, 60, .06); }
+  50% { box-shadow: 0 0 0 7px rgba(224, 172, 60, .3); }
+}
+
+@media (max-width: 640px) {
+  .dico-presencia-fisica-escena { flex-direction: column; gap: 0; max-width: 94vw; }
+  .dico-presencia-fisica-mensaje { width: min(340px, 88vw); }
+  .dico-physical--flotante { flex-basis: 156px; width: 156px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dico-presencia-fisica-escena,
+  .dico-guia-target,
+  .dico-mensaje-accion--guiado { animation: none; transition: none; }
+}

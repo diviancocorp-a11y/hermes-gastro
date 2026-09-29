@@ -276,10 +276,9 @@ describe('NavLateral — contrato de layout', () => {
     }
   });
 
-  it('la posicion de Dico deriva del ancho REAL de la sidebar', () => {
-    // Un solo numero: `--ag-sidebar-ancho`. Si el aviso y Physical repitieran
-    // 64 y 224 por su cuenta, cambiar el riel los dejaria desalineados y la
-    // unica forma de notarlo seria mirando.
+  it('el aviso 2D deriva del ancho de la sidebar y Physical queda desacoplado', () => {
+    // Native sigue siendo parte del riel; Physical sale por portal a una capa
+    // fija y no puede participar del hover que abre y cierra la sidebar.
     const desktop = sidebarCss.slice(sidebarCss.indexOf('@media (min-width: 769px)'));
     // Sin regex: se busca el selector y se lee el cuerpo hasta la llave.
     const cuerpoDe = (selector) => {
@@ -287,7 +286,7 @@ describe('NavLateral — contrato de layout', () => {
       if (abre < 0) return null;
       return desktop.slice(abre, desktop.indexOf('}', abre));
     };
-    for (const parte of ['.ag-sidebar .dico-avisos-mensaje', '.ag-sidebar .dico-slot']) {
+    for (const parte of ['.ag-sidebar .dico-avisos-mensaje']) {
       const cuerpo = cuerpoDe(parte);
       expect(cuerpo, 'no hay regla de posicion para ' + parte).not.toBeNull();
       expect(cuerpo, parte + ' no deriva del ancho de la sidebar').toContain('var(--ag-sidebar-ancho)');
@@ -295,6 +294,8 @@ describe('NavLateral — contrato de layout', () => {
       expect(cuerpo, parte + ' transiciona el eje vertical').not.toContain('top .');
       expect(cuerpo, parte + ' no acompania la expansion').toContain('transition: left');
     }
+    expect(desktop).not.toContain('.ag-sidebar .dico-slot {');
+    expect(desktop).not.toContain('--pose-ancho');
     // El ancho sale de las dos medidas declaradas, no de literales sueltos.
     expect(sidebarCss).toContain('--ag-sidebar-ancho: var(--ag-sidebar-riel)');
     expect(sidebarCss).toContain('--ag-sidebar-ancho: var(--ag-sidebar-abierta)');

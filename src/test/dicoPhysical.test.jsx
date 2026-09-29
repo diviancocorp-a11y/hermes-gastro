@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render } from '@testing-library/react';
-import DicoPhysical, { posicionDeCelda, planDePose } from '../components/dico/DicoPhysical';
+import DicoPhysical, { posicionDeCelda, planDeAnimacion, planDePose } from '../components/dico/DicoPhysical';
 import {
   DICO_PET_ATLAS, DICO_PET_FILAS, DICO_PET_POR_POSE, DICO_PET_PUBLIC_PATH, celdaDeMirada,
 } from '../../platform/brand/dico-pet-assets.mjs';
@@ -104,6 +104,14 @@ describe('el recorte cae donde tiene que caer', () => {
 });
 
 describe('la animacion no se sale de su fila', () => {
+  it('puede usar las caminatas certificadas del atlas', () => {
+    const plan = planDeAnimacion('correIzquierda');
+    expect(plan.fila).toBe(DICO_PET_FILAS.correIzquierda.fila);
+    expect(plan.cuadros).toBe(8);
+    expect(plan.fps).toBe(14);
+    expect(plan.bucle).toBe(true);
+  });
+
   it('avanza al ritmo de la fila y vuelve al principio', () => {
     const { container } = montar({ pose: 'idle' });
     const { cuadros, fps } = planDePose('idle');
@@ -129,6 +137,13 @@ describe('la animacion no se sale de su fila', () => {
       act(() => { vi.advanceTimersByTime(Math.round(1000 / fps)); });
       expect(cuadroVisible(container)).toBeLessThan(cuadros);
     }
+  });
+
+  it('thinking termina en el ultimo cuadro y no vuelve a empezar', () => {
+    const { container } = montar({ pose: 'thinking' });
+    const { cuadros, fps } = planDePose('thinking');
+    act(() => { vi.advanceTimersByTime(Math.round(1000 / fps) * (cuadros + 2)); });
+    expect(cuadroVisible(container)).toBe(cuadros - 1);
   });
 
   it('cambiar de pose vuelve al primer cuadro', () => {

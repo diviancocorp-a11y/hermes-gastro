@@ -11,6 +11,232 @@
 
 ---
 
+## 28/sep/2026 — Sala de control Dico y launcher silencioso (Codex)
+
+### Lo que pidio Ricky
+
+Que la pose `thinking` deje de sentirse como un GIF rapido y que el HTML
+`Dico PANTALLA.html` pase a ser una pantalla final dentro de Dico: un lugar
+persistente para avisos y acciones recomendadas que no se resolvieron al
+instante.
+
+### Hecho
+
+- Se agrego `DicoPanel` a la navegacion de `PlatformAdmin` como pantalla Sala
+  de control. El nombre aparece una sola vez dentro del card; el pequeno Dico
+  acompana la bienvenida del chat.
+  Toma los avisos 2D de `avisosDe`, las oportunidades y las intervenciones
+  3D, con el lenguaje visual del boceto: presencia 3D, chat y grupos de
+  pendientes. Se retiro el selector "Con avisos / Al dia": eran estados del
+  ejemplo, no una funcion de la pantalla final.
+- Las decisiones viven en `localStorage` con la clave
+  `dico:centro-decisiones:v1`: una intervencion cerrada queda pendiente en la
+  pantalla hasta que se resuelve, se pasa a tarea, se pospone o se descarta.
+  El historial de intervenciones 3D se conserva en
+  `dico:intervenciones:v1` desde `PlatformAdmin`.
+- El resumen superior dejo de mostrar ventas, margen, promedio y pedidos. Los
+  KPIs de prioridad tambien se retiraron para dejar una lista unica de tareas,
+  ordenada de prioridad alta a baja.
+- La fila `espera` del atlas bajo de 7 a 4 fps y cada cuadro reinicia el
+  crossfade de `physical.css`. En el panel, Dico permanece en `idle` y hace
+  una rutina corta `idle -> thinking -> idle` con pausas largas; no queda
+  trabado en thinking ni se muestra como un loop continuo.
+- Se corrigio el titileo: los cuadros ya no recrean el nodo ni reinician su
+  opacidad; solo cambia el recorte del atlas. El pequeno cambio de pose sigue
+  teniendo transicion, pero el idle queda presente.
+- Se abrio la referencia compartida `chatgpt.com/s/sharepet_...`: la Sala
+  ahora usa Dico pequeno junto a "¿En que te puedo ayudar?" y la conversacion
+  como foco. El chat usa una
+  capsula oscura larga, boton circular y foco con pulso dorado, adaptado al
+  stack JS/CSS del repo sin copiar el componente TypeScript del adjunto. Se
+  agregaron botones Volt para archivos e imagenes, con seleccion local y chips
+  removibles.
+- La burbuja Dico 2D externa abre directamente la Sala de control: no muestra
+  tarjeta ni contador y mantiene la cara neutral. Los avisos basicos quedan
+  en la Sala; el caso de catalogo vacio dejo de disparar Dico 3D flotante.
+- La composicion paso a una sola columna: el chat ocupa todo el ancho y las
+  tareas quedan debajo, con el mismo orden en mobile.
+- La segunda pasada de la Sala saco la descripcion bajo el titulo, los
+  contadores redundantes, los chips de sugerencias y la recomendacion urgente
+  del chat. El card conserva solo la bienvenida y el composer.
+- Dico ya no tiene fondo propio en la bienvenida: al pasar el mouse por encima
+  entra en la pose `explain` para saludar y al salir vuelve a su rutina.
+- Las respuestas del composer aparecen con escritura incremental. Se elimino el
+  desplazamiento de caminata: Dico tiene una sola presencia persistente dentro
+  del chat, piensa mientras responde y queda idle al terminar. Al crecer el
+  historial, esa presencia baja con el flujo sin crear mini Dicos por mensaje.
+- El texto escrito es blanco y el focus del composer deja solo un contorno
+  dorado exterior, sin recuadro interno ni glow. El boton de enviar conserva
+  su foco circular, pero no agrega un segundo rectangulo al input.
+- La caminata de respuesta usa las filas certificadas `correIzquierda` del
+  atlas (ocho cuadros) y desplaza el contenedor en 1800 ms; despues Dico queda
+  en idle al borde izquierdo. Durante la escritura queda en `thinking`. El
+  primitive acepta una fila de animacion sin contaminar el vocabulario de
+  poses publicas.
+- La bienvenida no desaparece durante la respuesta. Arriba a la izquierda
+  aparece `Nueva accion`, que corta la respuesta, limpia el composer y devuelve
+  a Dico al centro. Se retiro de las tarjetas la metadata `Dico 2D`/`nuevo` y
+  las acciones quedaron como burbujas redondeadas con simbolos: asignar,
+  posponer y descartar; la pantalla de destino queda en dorado a la derecha.
+- El composer tiene un saludo local para `hola`, con escritura progresiva
+  blanca y sin fondo ni borde azul. Queda listo para reemplazar esa funcion por
+  la respuesta de IA.
+- La Sala conserva ahora el historial de la conversacion en
+  `dico:sala-control:chat:v1`: mensajes del usuario alineados a la derecha y
+  respuestas de Dico alineadas a la izquierda. Despues del primer mensaje, la
+  presencia unica de Dico vive sobre el boton de enviar: queda idle esperando y
+  pasa a thinking con pulso azul mientras responde.
+- El composer ahora tiene solo un boton `+` a la izquierda; clip, camara y
+  `Nuevo chat` viven en su menu, con microfono a la derecha y hasta cinco conversaciones archivadas como
+  maximo en `dico:sala-control:conversaciones:v1`. Al crear un chat nuevo se
+  archiva el actual y se reinicia la conversacion; si ya hay cinco archivadas,
+  se descarta automaticamente la mas antigua. La camara usa
+  `capture=environment` y el microfono aprovecha SpeechRecognition cuando el
+  navegador lo soporta.
+- El historial de Sala de control ahora guarda hasta 5 conversaciones en
+  `dico:sala-control:conversaciones:v1`. Las conversaciones permanecen ocultas
+  hasta abrir el boton `Historial de chats` y usan como titulo el primer
+  mensaje del usuario.
+- Cada montaje de Sala de control empieza un chat nuevo. Al salir se archiva
+  la conversacion activa y se limpia el chat corriente; una recarga completa
+  tambien recupera el chat pendiente antes de abrir el nuevo. Si el historial
+  ya tiene 5 entradas, se descarta automaticamente la mas antigua al archivar
+  otra.
+- El chat queda por encima de las tareas. Se retiraron los KPIs y la lista de
+  tareas se ordena de prioridad alta a baja. Cada tarea muestra la zona arriba
+  del titulo y la descripcion a la izquierda; a la derecha queda la prioridad,
+  el CTA y un menu de tres puntos con asignar, descartar y posponer. La
+  prioridad alta usa un pulso rojo.
+- Sala de control se ubica al final del sidebar, despues de los modulos del
+  negocio; el mismo orden se conserva en la fuente compartida de navegacion.
+- Se bajo el peso visual de los controles: `+`, microfono, iconos del menu y
+  menu de acciones usan blanco; los tres puntos son verticales y sin burbuja.
+  El bloque paso a llamarse `Tareas asignadas`, y se retiro el boton de
+  historial del pie.
+- La pantalla de Sala de control ahora se llama `Habla con Dico` y deja solo
+  el chat y el bloque `Analisis Dico`. Las tareas asignadas viven en `Equipo`,
+  con las vistas `Me asignaron` y `Asignadas por mi`; el mismo registro local
+  conserva la jerarquia, el responsable directo, el estado del trabajo y la
+  evaluacion, asi una recomendacion pasa a los empleados sin duplicar el
+  flujo.
+- `admin-dico.css` ahora sigue el boceto: fondo #09090B, superficies #18181B,
+  borde #27272A, prioridades antes de la grilla y chat a la izquierda;
+  mobile conserva el orden chat, prioridades, pendientes.
+- Se agrego `src/test/dicoPanel.test.jsx` para validar el tablero, la tarea
+  persistente y la intervencion historica.
+
+### Verificado
+
+- 77/77 tests dirigidos del panel, avisos, Presence, Physical y motion en verde con
+  Vitest y `--pool=threads`.
+- Build de Vite en verde.
+- QA Lite abierto en `http://127.0.0.1:5273/admin`: la pantalla Sala de
+  control muestra el chat ancho, la respuesta incremental, Dico idle a la
+  izquierda y las tareas debajo.
+- `git diff --check` limpio. ESLint queda con warnings preexistentes del panel
+  grande y el warning nuevo de Fast Refresh por exportar el helper del panel;
+  no hay errores.
+
+### Pendiente inmediato
+
+1. QA visual con una intervencion 3D real en desktop y mobile para calibrar el
+   destino flotante y el pulso dorado; QA Lite ya confirma el estado idle de
+   Dico en la pantalla nueva.
+2. Si se quiere publicar, destrabar la escritura de `.git/index.lock` y hacer
+   un commit chico de este tema; no se hizo `git add -A` porque el arbol tiene
+   cambios concurrentes.
+
+## 27/sep/2026 — Dico 3D sale del Slot y queda flotante (Codex)
+
+### Lo que pidio Ricky
+
+Sacar Dico 3D de la sidebar porque el Slot provocaba ciclos infinitos de
+apertura y cierre; hacerlo aparecer centrado, moverlo para guiar acciones,
+reusar la burbuja de Dico 2D, marcar objetivos con un pulso dorado y evitar
+que la pose `thinking` se repita para siempre.
+
+### Hecho
+
+- `DicoPresence` ya no monta `DicoSlot` ni comparte el layout de la sidebar.
+  `DicoFloatingPhysical` porta Physical a `document.body`, entra desde el
+  centro y viaja hacia el nodo real de `objetivo` cuando la intervencion lo
+  publica. Esto elimina la cadena hover -> resize de sidebar -> desplazamiento.
+- `DicoFloatingPhysical` usa `MensajeDico`, el mismo componente de mensaje de
+  Dico 2D. Los objetivos reales y los CTA reciben `.dico-guia-target` o
+  `.dico-mensaje-accion--guiado`, con contorno y pulso dorado.
+- `DicoPhysical` respeta `bucle: false`; la fila `espera` del atlas termina en
+  su ultimo cuadro. El 3D no convive con Native durante una intervencion.
+- `PlatformAdmin` dejo de suprimir Physical en mobile y dejo de reservar
+  espacio para el Slot. Se retiraron las reglas de `.ag-sidebar .dico-slot`.
+
+### Verificado
+
+- 41/41 tests de Physical, Presence y expresiones.
+- 67/67 tests Dico adicionales, incluyendo avisos, intervenciones, Slot y
+  machineSoul.
+- Build de Vite en verde.
+- No se pudo inspeccionar el MP4 adjunto desde el sandbox; se implemento el
+  cambio a partir del comportamiento y el codigo existentes.
+
+### Pendiente inmediato
+
+1. QA visual en QA Lite con una intervencion `catalogo-vacio` y otra de Caja,
+   en desktop y mobile, para calibrar el destino y el tamano del conjunto.
+2. Confirmar en navegador que el pulso dorado no tapa botones en pantallas
+   chicas; si molesta, ajustar solo el offset del outline.
+
+### Bloqueado por Ricky
+
+El commit/push queda pendiente: el entorno rechazo la escritura de
+`.git/index.lock`. El arbol sigue compartido con cambios concurrentes ajenos;
+no se hizo `git add -A`, reset ni limpieza destructiva.
+
+## 27/sep/2026 — El pet Dico tiene una rutina ambiental (Codex)
+
+### Lo que pidio Ricky
+
+Retomar el chat **Visualize Pet Lineup** y llevar la mascota a un punto donde
+se sienta viva dentro de la app, con mas acciones y transiciones suaves.
+
+### Hecho
+
+- `platform/brand/dico-pet-assets.mjs` ahora declara acciones cortas y una
+  rutina viva: respira, mira arriba, pausa, mira abajo y piensa. No se
+  agregaron assets nuevos: se compone sobre el atlas oficial para mantener una
+  sola fuente de verdad de la geometria.
+- `src/components/dico/useDicoPetMotion.js` reproduce esa rutina solo cuando
+  el pet esta libre. Una intervencion con pose explicita conserva prioridad;
+  `prefers-reduced-motion` detiene la rutina.
+- `DicoSlot` y `DicoCuadro` usan el movimiento ambiental. Cambiar de pose
+  reinicia el cuadro y monta una entrada de 220ms en `physical.css`, para que
+  el cambio entre acciones no sea un corte seco.
+- `src/test/dicoPetMotion.test.jsx` cubre la secuencia, la prioridad de una
+  pose controlada y reduced motion.
+
+### Verificado
+
+- 13 archivos de tests Dico / 177 tests en verde con Vitest y
+  `--pool=threads`.
+- Build de Vite en verde.
+- ESLint sin warnings en el hook y el test nuevos. `git diff --check` limpio.
+- La suite completa se intento, pero se detuvo despues de mas de dos minutos
+  sin progreso y con el worker por encima de 1,5 GB; no se declara como verde.
+
+### Pendiente inmediato
+
+1. Hacer QA visual en QA Lite con el Physical abierto y confirmar el ritmo en
+   desktop y mobile; las duraciones actuales son una primera calibracion.
+2. Si el ritmo se siente bien, agregar acciones semanticas nuevas solo cuando
+   haya nuevos cuadros del atlas, en vez de inventar anatomia con recortes.
+3. Repetir la suite completa cuando el repo no este compartiendo recursos con
+   otra corrida o agente.
+
+### Bloqueado por Ricky
+
+Nada para esta iteracion. Quedaron cambios sin commitear de otro agente en
+`Catalog`, `origenDelEnvio`, una migracion y el snapshot de plataforma; no se
+mezclaron con esta tarea.
+
 ## 26/sep/2026 (b) — Del codigo a la base en un comando, y el HANDOFF recortado (Claude)
 
 ### Lo que pidio Ricky
@@ -183,200 +409,5 @@ Dico 3D ahora tiene piernas, asi que sale mas alto de la ranura: paso de unos
 127px a 188px de alto. La moneda conserva su tamanio exacto, 139,8px medidos en
 pantalla. Ricky lo vio en QA Lite y no lo objeto, pero no lo dio por bueno
 tampoco. Si molesta, se corrige con `--pose-ancho` en `dico-slot.css`.
-
----
-
-## 25/sep/2026 — Dico queda en dos versiones: la marca y el pet (Claude)
-
-### Lo que pidio Ricky
-
-Trajo un pet 3D generado con ChatGPT —`~/OneDrive/dico-pet-final/`— y pregunto
-si servia para reemplazar al Dico 3D y mantener una sola identidad. Despues de
-ver la comparacion: *"reemplaza el physical por esta version pet, dejemos solo
-2 versiones la pet y la marca, las otras 3 son cosas que fueron pruebas, van
-para afuera"*.
-
-### Lo que habia, y es el hallazgo
-
-**Cuatro cuerpos de Dico conviviendo, y tres NO reproducian la marca.**
-
-- la marca 2D: oro, aro azul, dos ovalos negros. La identidad.
-- el cuerpo Core (`poses/moneda.webp` + `CaraDeTinta`): perdio el aro azul, y
-  la cara de tinta tenia esclerotica, parpados y cejas.
-- el pack 3D de ocho poses: mostaza, ojos de dibujo con pestanias, nariz y
-  boca. **Era el que veian los clientes en el panel.**
-- siete escenas heredadas con galera y bigote.
-
-El pet es el unico 3D que reproduce la marca. Sumarlo no agrego un Dico mas:
-reemplazo al que mas se alejaba.
-
-### Hecho
-
-- `platform/brand/dico-pet-masters/` con el atlas y su QA. Master inmutable,
-  verificado por sha256; derivado lossless a `public/brand/dico/pet/`.
-- `platform/brand/dico-pet-assets.mjs` es la **unica fuente** de la geometria:
-  lo leen el derivador, el componente y el test.
-- `DicoPhysical` pasa de cruzar ocho WebP a animar el atlas por
-  `background-position`. Setenta y tres cuadros contra ocho imagenes fijas.
-- Afuera: `DicoCara`, `CaraDeTinta`, `DicoCoreEscena`, `DicoEscena`,
-  `poses/`, el pack 3D, sus scripts y `dico.css` entero (436 lineas muertas,
-  con cinco animaciones infinitas adentro).
-- `docs/marca/BRIEF-DICO-CUERPO.md` reescrito.
-
-### Dos cosas que hay que saber antes de tocar esto
-
-**Mirar no es senalar.** `pointUp` y `pointDown` no levantan el guante: el
-pack no tiene esa pose. Resuelven a una de las dieciseis direcciones de
-mirada. Por eso el Slot dejo de anclarse por la punta del dedo y ahora se
-centra sobre el objetivo.
-
-**La geometria del Slot se volvio a medir.** El pack viejo era un canvas de
-1600x1136 con el personaje ocupando el 40%; la celda del pet es 192x208 y la
-llena. La moneda pasa de 31,19% a 73,96% del ancho, asi que `--pose-ancho`
-baja de 448px a 189px para que la moneda quede del mismo tamanio en pantalla.
-
-### Verificado
-
-Hoja de contacto de las once filas recortadas con la misma formula del
-componente: el encuadre cae exacto en las 88 celdas y el mapa de poses se lee
-solo —`worried` es el cuadro de la lupa, `error` el de los ojos cerrados—.
-Suite 99 archivos / 1418 tests, gates, typecheck y build en cero.
-
-### Estado
-
-`831600d` en `main`. Sigue pendiente de Ricky la migracion 0075 de la
-comandera, que no esta aplicada al edificio.
-
----
-
-## 12/sep/2026 — La comandera: el sector que despacha en papel (Claude)
-
-### Lo que pidio Ricky
-
-*"Dale comandera, termina todo lo pendiente en esta pantalla para cerrar
-proceso hasta aca."* Es la otra mitad de su pregunta del dia anterior: si el
-KDS obliga a tener pantallas, que hace el que no las tiene.
-
-### FALTA APLICAR LA MIGRACION AL EDIFICIO
-
-`platform/migrations/0075_la_comanda_sale_por_papel.sql` esta en el repo y
-**no** esta aplicada: el clasificador bloqueo `apply_migration`. Hasta que
-Ricky la corra por el SQL Editor, en produccion un sector en comandera muestra
-la pantalla vacia. Esta en `docs/TAREAS-MANUALES.md`, arriba de todo.
-
-Lo que NO se rompe mientras tanto: cerrar el ticket entero desde el KDS sigue
-mandando dos argumentos, no tres con null, justamente para eso.
-
-### La restriccion que definio el diseño
-
-Una termica USB imprime desde la maquina donde esta enchufada y el navegador
-solo puede mandarle a la PREDETERMINADA de ese equipo. De ahi sale que la
-comandera sea una pantalla: no es para mirar, es la pagina que queda abierta en
-la computadora que tiene la impresora del sector. Dos sectores en papel son dos
-equipos. Una termica de red saca la restriccion sin tocar el modelo.
-
-**Y Chrome pide confirmacion salvo que se le diga.** `print()` abre la vista
-previa y espera. El equipo del sector tiene que abrir Chrome con
-`--kiosk-printing`. Esto se descubrio probando: al tocar Imprimir, el navegador
-quedo colgado en el dialogo. Es lo que decide si la funcion sirve en una cocina
-o es una demo, asi que lo dice la propia pantalla.
-
-### Hecho
-
-- **0075**: `production_dispatches` (una fila por pedido y sector),
-  `comandas_por_imprimir`, `comandas_abiertas`, `marcar_comanda_impresa` y
-  `cerrar_ticket_de_cocina` con sector opcional.
-- **`ComanderaPanel`**: cola de impresion, papel sin cerrar, ancho 58/80 mm,
-  impresion automatica que se enciende a mano una vez.
-- **Salon**: la ficha de la mesa muestra que le debe cada sector. El de papel
-  trae "Entregado"; el de pantalla se muestra y no se toca.
-- `npm run pantalla -- comandera` y la barra del demo de QA Lite pasa a papel.
-- `docs/plataforma/COMANDERA.md` con el circuito y el armado del equipo.
-
-### Lo que se arreglo de paso
-
-`cerrar_ticket_de_cocina` marcaba listos TODOS los platos del pedido. El
-cocinero que tocaba "Ticket listo" estaba diciendo que la barra ya sirvio los
-tragos. Ahora cierra solo su sector y el pedido se sella cuando no queda nada.
-
-### Verificado a mano en QA Lite
-
-Con la barra en papel: la cola trajo 4 comandas, el mozo cerro la de Mesa QA 5
-desde Salon, la cola bajo a 3 y la cocina mantuvo sus 3 platos. Las tres RPC
-se probaron con un JWT de usuario real: imprimir marca 1, repetir sin pedirlo
-deja 1, y la reimpresion explicita lleva a 2.
-
-### Estado
-
-Suite 100 archivos / 1432 tests, gates, typecheck y build en cero.
-
-### Sigue pendiente
-
-Expedicion (1c): el armado de bandejas y el pasador. El modelo ya lo sostiene
-con `orders.ready_at`.
-
----
-
-## 12/sep/2026 — Ejemplos vivos en QA Lite, y dos defectos que destaparon (Claude)
-
-### Lo que pidio Ricky
-
-*"Coloca ejemplos vivos en qa lite y pasame credenciales para ver la pantalla."*
-
-### Como se mira
-
-```bash
-npm run qa:lite:setup                              # Docker + reset + seed
-node scripts/qa-lite/cargar-productos-demo.mjs     # el catalogo, 17 productos
-node scripts/qa-lite/cargar-salon-demo.mjs         # mesas y mozo
-node scripts/qa-lite/cargar-produccion-demo.mjs    # sectores, estaciones y cocina
-node scripts/qa-lite/revision-phase4.mjs           # dev server en :5273
-```
-
-`http://127.0.0.1:5273/admin`, usuario `owner.qa-lite@local.test`. La clave
-esta en `.qa-lite/revision-phase4.txt` (gitignoreado) y en
-`~/.dico-qa-lite/owner-pass.txt`. No se imprime en ningun log.
-
-### Hecho: `cargar-produccion-demo.mjs`
-
-Dos sectores con sus estaciones, estacion para los 21 productos y seis tickets
-en cocina. Lo que la carga demuestra y no se puede ver de otra forma:
-
-- **Tickets mixtos.** El mismo pedido aparece en las dos pantallas con platos
-  distintos. Uno de un solo sector no probaria la separacion.
-- **El umbral es del sector.** Un ticket de 8 minutos esta tranquilo en cocina
-  (18) y en rojo en la barra (5).
-- **Un ticket a medio hacer**, con platos marcados y pendientes conviviendo.
-
-Los minutos son **relativos a ahora**, no fijos como en el seed: volver a
-correrla reinicia el servicio. No toca el fixture; `qa:lite:setup` lo devuelve.
-
-### Los dos defectos que solo se veian abriendo la pantalla
-
-1. **Cocina y Produccion no estaban en la navegacion de nadie.** La matriz de
-   `src/modules/roles.js` declara solo lo que cada rol ve, y lo que no figura
-   es `nada`. Las dos pantallas estaban publicadas, funcionaban, y no las
-   alcanzaba ni el dueño. Ningun test, build ni gate lo nota: el unico sintoma
-   es un boton que no esta. Hay un test nuevo que exige que el dueño llegue a
-   todo modulo implementado de todos los rubros.
-2. **`retiro` contaba como delivery.** `orders.delivery` es NOT NULL con
-   default `'retiro'`, asi que "tiene delivery cargado" era cierto para todos
-   los pedidos: cada ticket de mesa salia rotulado Delivery y el nombre de la
-   mesa no aparecia nunca. El fixture del test no ponia la columna, que en la
-   base no puede faltar.
-
-Ademas, Stock y Produccion escribian su titulo dos veces: el chrome ya dibuja
-el nombre de la seccion.
-
-### Estado
-
-`e8a9084` en `main`. Suite 99 archivos / 1405 tests en verde, gates y build en
-cero. La cocina abre ahora en `kds` y ya no en Pedidos.
-
-### Sigue pendiente
-
-La **comandera**: imprimir una comanda por sector en papel al bajar el pedido
-a cocina, y el boton de cerrar desde Salon. El modo ya vive en el sector y se
-elige en la pantalla; falta disparar la impresion.
 
 ---

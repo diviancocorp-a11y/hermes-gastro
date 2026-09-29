@@ -16,6 +16,7 @@
  * apurado, muchas veces desde un telefono con las manos ocupadas.
  */
 import { useMemo } from 'react';
+import DicoTareasAsignadas from './DicoTareasAsignadas';
 
 const money = (n) => new Intl.NumberFormat('es-AR', {
   style: 'currency', currency: 'ARS', maximumFractionDigits: 0,
@@ -45,6 +46,9 @@ export default function PersonalPanel({
   onFichar,          // (staffId, adentro) -> void
   onVerSemana,
   cargando = false,
+  roles = [],
+  currentUserId = null,
+  onIr,
 }) {
   const adentroPorStaff = useMemo(() => {
     const m = new Map();
@@ -87,6 +91,12 @@ export default function PersonalPanel({
           </div>
         </div>
       )}
+
+      <DicoTareasAsignadas
+        roles={roles}
+        currentUserId={currentUserId}
+        onIr={onIr}
+      />
 
       {/* ── Quien esta adentro ── */}
       <div>

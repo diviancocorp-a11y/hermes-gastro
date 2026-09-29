@@ -17,6 +17,7 @@
  */
 import BurbujaDico from './BurbujaDico';
 import DicoPhysical from './DicoPhysical';
+import useDicoPetMotion from './useDicoPetMotion';
 import './escena.css';
 
 export default function DicoCuadro({
@@ -27,13 +28,16 @@ export default function DicoCuadro({
   nivel = 'sugerencia',
   size = 170,
   title = 'Dico',
+  ambient = true,
 }) {
+  const movimiento = useDicoPetMotion({ pose, enabled: ambient });
+
   return (
     <section className={`dico-cuadro dico-cuadro--pet dico-cuadro--${pose}`}>
       {texto && <BurbujaDico texto={texto} nivel={nivel} cola="centro" />}
 
       <div className="dico-cuadro-personaje" style={{ '--dico-cuadro-size': `${size}px` }}>
-        <DicoPhysical pose={pose} title={title} />
+        <DicoPhysical pose={movimiento.pose} title={title} />
       </div>
 
       {accion && (

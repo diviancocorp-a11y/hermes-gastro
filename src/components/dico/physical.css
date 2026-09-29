@@ -32,6 +32,21 @@
   /* El atlas es lossless y cada celda entra justa. Si el navegador suaviza al
      escalar, el borde del cuadro de al lado se mete como un halo. */
   image-rendering: auto;
+  transform-origin: 50% 100%;
+  animation: dico-pose-cambio 180ms cubic-bezier(.2, .72, .25, 1) both;
+}
+
+/* El cambio de fila ya no cae de golpe: el pet se acomoda en el piso y toma
+   la nueva accion en un solo gesto corto. El atlas sigue siendo una imagen. */
+@keyframes dico-pose-cambio {
+  from {
+    opacity: .45;
+    transform: translateY(5px) scale(.975);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* ── Reduced Motion ──────────────────────────────────────────────────────
@@ -40,3 +55,7 @@
  * ninguno. Lo hace el componente, que no arranca el intervalo; esta clase
  * queda como marca legible desde QA. */
 .dico-pose--quieto { --dico-pose-quieto: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dico-pose-celda { animation: none; }
+}

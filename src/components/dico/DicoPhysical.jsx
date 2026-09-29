@@ -67,11 +67,18 @@ export function planDePose(pose) {
   const entrada = DICO_PET_POR_POSE[physicalPoseCanonica(pose)];
   if (entrada?.animacion) {
     const fila = DICO_PET_FILAS[entrada.animacion];
-    return { fila: fila.fila, cuadros: fila.cuadros, fps: fila.fps, columna: 0 };
+    return { fila: fila.fila, cuadros: fila.cuadros, fps: fila.fps, bucle: fila.bucle, columna: 0 };
   }
   // Mirada: una celda fija, sin ritmo.
   const celda = celdaDeMirada(entrada?.mirada ?? 0);
-  return { fila: celda.fila, cuadros: 1, fps: 0, columna: celda.columna };
+  return { fila: celda.fila, cuadros: 1, fps: 0, bucle: false, columna: celda.columna };
+}
+
+/** Resuelve una fila de movimiento del atlas sin convertirla en una pose publica. */
+export function planDeAnimacion(animacion) {
+  const fila = DICO_PET_FILAS[animacion];
+  if (!fila) return planDePose('idle');
+  return { fila: fila.fila, cuadros: fila.cuadros, fps: fila.fps, bucle: fila.bucle, columna: 0 };
 }
 
 export default function DicoPhysical({
@@ -80,31 +87,39 @@ export default function DicoPhysical({
   reducedMotion,
   className = '',
   title = 'Dico',
+  animacion = null,
 }) {
   const actual = physicalPoseCanonica(pose);
   const menosMovimiento = useMediaQuery('(prefers-reduced-motion: reduce)');
   const quieto = reducedMotion ?? menosMovimiento;
 
-  const plan = useMemo(() => planDePose(actual), [actual]);
+  const plan = useMemo(
+    () => (animacion ? planDeAnimacion(animacion) : planDePose(actual)),
+    [actual, animacion],
+  );
   const [cuadro, setCuadro] = useState(0);
 
   // El cuadro vuelve a cero al cambiar de pose. Entrar a `falla` por el cuadro
   // cinco porque el `idle` anterior iba por ahi arranca la animacion a la
   // mitad y se lee como un salto.
-  const poseAnterior = useRef(actual);
-  if (poseAnterior.current !== actual) {
-    poseAnterior.current = actual;
+  const movimientoActual = `${actual}:${animacion || ''}`;
+  const poseAnterior = useRef(movimientoActual);
+  if (poseAnterior.current !== movimientoActual) {
+    poseAnterior.current = movimientoActual;
     setCuadro(0);
   }
 
   useEffect(() => {
     if (quieto || plan.fps <= 0 || plan.cuadros <= 1) return undefined;
     const id = setInterval(
-      () => setCuadro((c) => (c + 1) % plan.cuadros),
+      () => setCuadro((c) => {
+        if (!plan.bucle && c >= plan.cuadros - 1) return c;
+        return (c + 1) % plan.cuadros;
+      }),
       Math.round(1000 / plan.fps),
     );
     return () => clearInterval(id);
-  }, [quieto, plan.fps, plan.cuadros]);
+  }, [quieto, plan.fps, plan.cuadros, plan.bucle]);
 
   const columna = plan.cuadros > 1 ? cuadro : plan.columna;
   const { x, y } = posicionDeCelda(columna, plan.fila);
@@ -118,6 +133,7 @@ export default function DicoPhysical({
       data-dico-physical-cuadro={columna}
     >
       <span
+        key={movimientoActual}
         className="dico-pose-celda"
         style={{
           backgroundImage: `url(${DICO_PET_PUBLIC_PATH})`,

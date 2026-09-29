@@ -31,6 +31,7 @@ const IngForm = lazy(() => import('../components/admin/Stock')
   .then(m => ({ default: m.IngForm })));
 import ConteoDeDeposito from '../components/admin/platform/ConteoDeDeposito';
 import DicoPresence from '../components/dico/DicoPresence';
+import DicoPanel from '../components/admin/platform/DicoPanel';
 import AdminPushBanner from '../components/admin/shared/AdminPushBanner';
 import NavInferior from '../components/admin/platform/NavInferior';
 import NavLateral from '../components/admin/platform/NavLateral';
@@ -166,6 +167,7 @@ import '../styles/admin-stock.css';
 import '../styles/admin-kds.css';
 import '../styles/admin-sectores.css';
 import '../styles/admin-comandera.css';
+import '../styles/admin-dico.css';
 // Machine Soul (Phase 3B): reemplaza la capa visual del shell. Va ultimo
 // a proposito, para pisar la de admin-topbar/bottomnav sin tocar su markup.
 import '../styles/admin-shell.css';
@@ -174,6 +176,7 @@ import '../styles/admin-sidebar.css';
 // El registry es data pura (sin JSX) para poder leerlo desde services y tests.
 // Los iconos se mapean aca, por id de modulo.
 const ICONOS = {
+  dico: DicoIcon,
   products: BoxIcon,
   orders: BagIcon,
   stock: StockIcon,
@@ -189,6 +192,16 @@ const ICONOS = {
   caja: CajaIcon,
   personal: PersonalIcon,
 };
+
+const CLAVE_DICO_HISTORIAL = 'dico:intervenciones:v1';
+
+function leerDicoHistorial() {
+  try { return JSON.parse(localStorage.getItem(CLAVE_DICO_HISTORIAL) || '[]'); } catch { return []; }
+}
+
+function guardarDicoHistorial(historial) {
+  try { localStorage.setItem(CLAVE_DICO_HISTORIAL, JSON.stringify(historial.slice(-30))); } catch { /* sin storage */ }
+}
 
 function Centered({ children }) {
   return (
@@ -842,8 +855,32 @@ export default function PlatformAdmin() {
    * se detectan los eventos y se guarda lo que devuelve. */
   const [intervencion, setIntervencion] = useState(null);
   const [anclaDico, setAnclaDico] = useState(null);
+  const [dicoHistorial, setDicoHistorial] = useState(leerDicoHistorial);
   // Una vez por sesion: entrar cinco veces al catalogo no lo trae cinco veces.
   const intervencionesVistas = useRef([]);
+
+  useEffect(() => { guardarDicoHistorial(dicoHistorial); }, [dicoHistorial]);
+
+  const registrarDicoIntervencion = useCallback((propuesta) => {
+    setDicoHistorial(prev => {
+      if (prev.some(item => item.id === propuesta.id && item.estado === 'pendiente')) return prev;
+      return [...prev, {
+        id: propuesta.id,
+        mensaje: propuesta.mensaje,
+        pose: propuesta.pose,
+        cta: propuesta.cta,
+        gravedad: propuesta.id === 'nada-visible' ? 'alta' : 'media',
+        estado: 'pendiente',
+        fecha: new Date().toISOString(),
+      }];
+    });
+  }, []);
+
+  const marcarDicoResuelta = useCallback((id) => {
+    setDicoHistorial(prev => prev.map(item => (
+      item.id === id ? { ...item, estado: 'resuelto' } : item
+    )));
+  }, []);
 
   const proponerIntervencion = useCallback((evento) => {
     const propuesta = intervencionDe(evento, {
@@ -852,8 +889,9 @@ export default function PlatformAdmin() {
     });
     if (!propuesta) return;
     intervencionesVistas.current = [...intervencionesVistas.current, propuesta.id];
+    registrarDicoIntervencion(propuesta);
     setIntervencion(propuesta);
-  }, [tenant?.vertical]);
+  }, [registrarDicoIntervencion, tenant?.vertical]);
 
   const handleToggleActive = useCallback(async (p) => {
     // Optimista: el toggle tiene que sentirse instantaneo. Si falla, se revierte.
@@ -979,7 +1017,7 @@ export default function PlatformAdmin() {
   /* ── Gates ── */
   // Memo y no un calculo suelto: el efecto de abajo depende de esta lista, y
   // un array nuevo en cada render lo haria correr para siempre.
-  const tabs = useMemo(() => modulosDe(tenant?.vertical)
+  const tabs = useMemo(() => [...modulosDe(tenant?.vertical)
     .filter(m => ICONOS[m.id])
     // 6f: y de esas, las que este rol puede ver. Un mozo no navega al P&L.
     // Esto es NAVEGACION, no seguridad: lo que de verdad protege los datos son
@@ -990,7 +1028,7 @@ export default function PlatformAdmin() {
       // El modulo de catalogo se llama distinto en cada rubro.
       label: m.id === 'products' ? terminologia(tenant?.vertical).plural : m.label,
       Icon: ICONOS[m.id],
-    })), [tenant?.vertical, roles]);
+    })), { id: 'dico', label: 'Habla con Dico', Icon: ICONOS.dico }], [tenant?.vertical, roles]);
 
   const resumenProductos = useMemo(() => {
     const visibles = products.filter(producto => producto.active !== false).length;
@@ -1009,15 +1047,6 @@ export default function PlatformAdmin() {
     };
   }, [products]);
 
-  // Entrar al catalogo es una ACCION del usuario, y es el disparador del caso
-  // 1. Se mira cuando cambia la pestania o cuando terminan de cargar los
-  // productos —antes de eso `products` esta vacio por no haber vuelto la
-  // consulta, no por estar vacio el catalogo—.
-  useEffect(() => {
-    if (tab !== 'products' || loadingProducts) return;
-    proponerIntervencion({ tipo: 'entro-al-catalogo', productos: products.length });
-  }, [tab, loadingProducts, products.length, proponerIntervencion]);
-
   // Se cierra sola cuando la accion que esperaba resolvio el estado. No hay
   // timers: las dos son "espera accion".
   useEffect(() => {
@@ -1028,8 +1057,11 @@ export default function PlatformAdmin() {
       operativo: sistemaOperativo,
       cajaAbierta: !!turno,
     });
-    if (!vigente) setIntervencion(null);
-  }, [intervencion, products, sistemaOperativo, turno]);
+    if (!vigente) {
+      marcarDicoResuelta(intervencion.id);
+      setIntervencion(null);
+    }
+  }, [intervencion, products, sistemaOperativo, turno, marcarDicoResuelta]);
 
   // Esta excepcion nace del reloj: al abrir el local, Caja tiene que estar
   // lista antes de iniciar el turno. `cajaCargada` evita el falso aviso de los
@@ -1106,7 +1138,7 @@ export default function PlatformAdmin() {
   // no un ref crudo porque el portal necesita que el nodo YA exista: un ref no
   // dispara re-render cuando se llena.
   const [huecoDico, setHuecoDico] = useState(null);
-  const [resumenDicoActivo, setResumenDicoActivo] = useState(false);
+  const [, setResumenDicoActivo] = useState(false);
 
   if (status === 'checking') return <Centered>Cargando...</Centered>;
   if (status === 'anon') return <LoginScreen onLogin={doLogin} />;
@@ -1156,25 +1188,8 @@ export default function PlatformAdmin() {
   // que todavia no estan implementadas, asi que declarar "agenda" para
   // barberia no ensucia la nav hasta que exista.
 
-  // `catalogo-vacio` es la UNICA intervencion con `anclaje: target`: el dedo
-  // de `pointDown` tiene que caer sobre el CTA de verdad, y ese CTA vive en
-  // una tarjeta que a <=768px no tiene los ~247px de aire que Physical
-  // necesita arriba (medido en Phase 9). Achicar o mover al personaje ahi
-  // rompe el contrato de geometria; cambiarlo a `presence` le saca el sentido
-  // a `pointDown`, que solo existe para senalar. La salida que no sacrifica
-  // ninguna de las dos cosas es la que ya usa el resto del panel: Physical es
-  // EXCEPCIONAL, asi que bajo el breakpoint no sale, y la pantalla se queda
-  // con la escena Native 2D que `ProductsPanel` ya sabe mostrar sola (ver
-  // `intervencionActiva` mas abajo). Nada-visible no tiene este problema
-  // —ancla en `presence`, no depende de un CTA ajeno— y sigue saliendo en
-  // cualquier ancho.
-  const catalogoVacioAngosto = intervencion?.id === 'catalogo-vacio' && !esDesktop;
-  // La advertencia de Caja tampoco tiene aire para Physical en mobile: la
-  // burbuja quedaria cortada por el ancho del Slot. El estado rojo de la barra
-  // permanece visible y Dico 3D conserva la intervencion para desktop.
-  const intervencionFisicaAngosta = !esDesktop && [
-    'catalogo-vacio', 'caja-cerrada-al-abrir',
-  ].includes(intervencion?.id);
+  // Los objetivos se publican como nodos reales. Physical sale al centro y
+  // viaja a ese nodo desde su capa fija, tambien en mobile.
 
   // Una sola instancia, montada en un lugar o en el otro. El elemento se arma
   // aca —no en cada rama— para que sea literalmente el mismo nodo de React.
@@ -1200,13 +1215,14 @@ export default function PlatformAdmin() {
       onIr={setTab}
       anclaje={esDesktop ? 'lateral' : 'arriba'}
       contenedorAvisos={esDesktop ? null : huecoDico}
-      intervencion={intervencionFisicaAngosta ? null : intervencion}
+      intervencion={intervencion}
       objetivo={anclaDico}
+      silenciarNative={tab === 'dico'}
+      onAbrirSala={() => setTab('dico')}
       onIntervencionCta={(i) => {
         // El CTA de la intervencion hace lo mismo que haria el usuario a mano.
         if (i.cta?.accion === 'crear-producto') setTab('products');
         if (i.cta?.accion === 'abrir-caja') setTab('caja');
-        setIntervencion(null);
       }}
       onIntervencionCerrada={() => setIntervencion(null)}
     />
@@ -1237,6 +1253,7 @@ export default function PlatformAdmin() {
         </header>
 
         <ContextoDeTrabajo session={session} timezone={timezone} />
+        {!esDesktop && huecoDico && presenciaDico}
 
         <div className="ag-workspace-stage">
           {/* `ag-main` es la superficie madre del trabajo. Phase 4 sigue usando
@@ -1262,7 +1279,7 @@ export default function PlatformAdmin() {
               habla Butler, y con escala contenida: una pantalla de trabajo no
               es una landing. El nombre sale de `tabs`, la misma fuente que la
               navegacion — no hay una segunda lista de rotulos. */}
-          {tab === 'products' ? (
+          {tab !== 'dico' && (tab === 'products' ? (
             <section className="ag-section-head ag-productos-head" aria-labelledby="ag-productos-titulo">
               <div className="ag-productos-head-superior">
                 <div>
@@ -1322,7 +1339,34 @@ export default function PlatformAdmin() {
                 <span className="ag-section-meta">{openCount} en curso</span>
               )}
             </div>
+          ))}
+          {tab === 'dico' && (
+            <DicoPanel
+              productos={products}
+              ventas={ventas}
+              pedidos={orders}
+              clientes={clientes}
+              utilizacion={utilizacion}
+              esperaPerdida={esperaPerdida}
+              gastos={gastos}
+              settings={sett}
+              turno={turno}
+              listo={!loadingProducts && recetas !== null}
+              vertical={tenant?.vertical}
+              historial={dicoHistorial}
+              intervencionActiva={intervencion}
+              personal={equipo}
+              roles={roles}
+              currentUserId={session?.user?.id}
+              currentUserName={session?.user?.user_metadata?.full_name || session?.user?.email || 'Vos'}
+              onIr={setTab}
+              onResolverIntervencion={(i) => {
+                if (i?.cta?.accion === 'crear-producto') setTab('products');
+                if (i?.cta?.accion === 'abrir-caja') setTab('caja');
+              }}
+            />
           )}
+
           {/* Dico vive en la pestania de entrada, que es donde cae el que
               abre el panel. `listo` evita el peor error posible: decirle
               "todavia no cargaste ningun producto" a alguien que tiene
@@ -1332,25 +1376,6 @@ export default function PlatformAdmin() {
               tocaba nadie y los 3 tenants tenian CERO suscripciones admin.
               Se suscribe ESTE dispositivo (la tablet del local). */}
           {tab === 'products' && <AdminPushBanner onShowToast={msg} />}
-          {/* Presence boundary — `advisor.top`: Slot arriba, Native debajo.
-              DicoPresence es la unica autoridad de Native/Notice/Physical.
-              El contrato de layout vive en `.ag-slot` y nunca flota sobre
-              navegacion, controles persistentes ni dialogos. */}
-          <div className="ag-slot">
-          {/* El Slot y Physical siguen aca: solo Native se va a la barra, por
-              portal. La geometria de Physical se midio contra este contenedor
-              y no se toca. */}
-          <div className="ag-dico-stack">
-            {/* `huecoDico &&` NO es defensivo: sin el, la presencia monta una
-                vez en su lugar (el hueco todavia no existe) y otra dentro del
-                portal cuando el ref se llena. Ese doble montaje se comia la
-                animacion de primera entrada — el primer montaje marcaba el
-                flag en localStorage y el segundo ya nacia sin ella, que es lo
-                que rompio `dico-native-message` bajo 769px. Se espera un frame
-                y se monta una sola vez, en su lugar definitivo. */}
-            {!esDesktop && !resumenDicoActivo && huecoDico && presenciaDico}
-          </div>
-          </div>
           {tab === 'products' && (
             <ProductsPanel
               ref={productsPanelRef}
@@ -1375,7 +1400,7 @@ export default function PlatformAdmin() {
               onArchive={handleArchiveProduct}
               onSubirImagen={subirImagenProducto}
               showToast={msg}
-              intervencionActiva={intervencion?.id === 'catalogo-vacio' && !catalogoVacioAngosto}
+              intervencionActiva={intervencion?.id === 'catalogo-vacio'}
               anclaDico={setAnclaDico}
             />
           )}
@@ -1558,6 +1583,9 @@ export default function PlatformAdmin() {
                 fichajesAbiertos={fichajes}
                 costoLaboral={costoLaboral}
                 onFichar={onFichar}
+                roles={roles}
+                currentUserId={session?.user?.id}
+                onIr={setTab}
               />
             </Suspense>
           )}
@@ -1694,7 +1722,7 @@ export default function PlatformAdmin() {
           tab={tab}
           onTab={setTab}
           openCount={openCount}
-          presencia={esDesktop && !resumenDicoActivo ? presenciaDico : null}
+          presencia={esDesktop ? presenciaDico : null}
           pie={esDesktop ? <PieDeSesion controles={controles.filter(c => c.id === 'config')} /> : null}
         />
         <NavInferior tabs={tabs} tab={tab} onTab={setTab} openCount={openCount} />
@@ -1704,6 +1732,17 @@ export default function PlatformAdmin() {
 }
 
 /* ─── Iconos ─── */
+function DicoIcon() {
+  return (
+    <svg className="ag-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M8.5 10.2c.8-1.1 1.8-1.6 3.5-1.6 1.7 0 2.7.5 3.5 1.6" />
+      <path d="M8.5 14.1c1 .9 2.1 1.3 3.5 1.3s2.5-.4 3.5-1.3" />
+      <circle cx="9.2" cy="11.4" r=".7" fill="currentColor" stroke="none" />
+      <circle cx="14.8" cy="11.4" r=".7" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
 function BoxIcon() {
   return (
     <svg className="ag-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -356,66 +356,6 @@
      y su caja la reserva `burbuja.css` a partir de `--dico-cara-reserva`. El
      minimo tactil de 44 sigue garantizado ahi, y aca lo supera de sobra. */
 
-  /* Physical emerge SOBRE el workspace, a la derecha del riel. Dentro de la
-     sidebar no entra: el escenario mide 184px. */
-  /* PASS 2 — EL DESACOPLE MINIMO DEL LOOP.
-   *
-   * Medido (`phase4-physical-loop.spec.ts`): con el puntero INMOVIL sobre
-   * Physical, el Slot ocupaba 8 posiciones distintas en X, de 203 a 259 —
-   * 56px de amplitud. La cadena, con sus tres eslabones confirmados:
-   *
-   *   el Slot es `fixed` pero sigue siendo DESCENDIENTE del <aside>, asi que
-   *   el hover sobre el personaje cuenta como hover de la sidebar; la sidebar
-   *   se expande; su `left` depende de `--ag-sidebar-ancho`; el personaje se
-   *   corre 160px y se escapa del puntero; la sidebar colapsa; el personaje
-   *   vuelve. Y otra vez.
-   *
-   * Esto corta el eslabon del medio SIN tocar motion, geometria ni el
-   * contrato de poses: el personaje deja de capturar el puntero, asi que no
-   * dispara el hover del riel. Los controles de su burbuja se reactivan uno
-   * por uno — el CTA y la X siguen siendo clickeables, que es lo unico con lo
-   * que se interactua ahi desde que Dico 2D dejo de invocarlo.
-   *
-   * Lo que esto NO resuelve esta en `PHASE-9.1-PHYSICAL-VISUAL.md`: que
-   * Physical siga anclado a la sidebar es el problema de fondo. */
-  .ag-sidebar .dico-slot .dico-burbuja-contenido,
-  .ag-sidebar .dico-slot .dico-burbuja-accion,
-  .ag-sidebar .dico-slot .dico-burbuja-cerrar {
-    pointer-events: auto;
-  }
-
-  .ag-sidebar .dico-slot {
-    /* El corte del loop (ver el bloque de arriba). Va DENTRO de esta regla y
-       no en una propia con el mismo selector: `navLateral.test.jsx` busca
-       `.ag-sidebar .dico-slot {` y lee el primer cuerpo que encuentra, asi que
-       un segundo bloque le escondia el `var(--ag-sidebar-ancho)` que ese
-       contrato exige. */
-    pointer-events: none;
-    position: fixed;
-    /* Se corre con la sidebar: mismo ancho, misma transicion. Physical mide
-       184px y antes salia clavado a la derecha del riel, asi que al
-       expandirse la sidebar le pasaba por encima. Ahora se reancla hacia el
-       workspace en vez de impedir la expansion. */
-    /* Que quede fuera del riel es lo que se ve, y lo que se ve es la TINTA,
-       no la caja: el canvas del pack tiene margen transparente a los lados.
-       Se corre media caja menos donde arranca la tinta, menos la mitad del
-       Slot sobre el que el escenario esta centrado. Con `explain`, que es la
-       pose mas ancha, la tinta empieza justo despues del riel en los dos
-       estados —colapsado y expandido— sin numeros magicos. */
-    left: calc(
-      var(--ag-sidebar-ancho) + 8px
-      + (var(--pose-ancho) / 2) - var(--pose-tinta-izq) - 64px
-    );
-    transition: left .18s var(--ag-ease);
-    /* El escenario de Physical mide 184px y CRECE HACIA ARRIBA desde
-       `bottom: 23px` del Slot. Con el Slot arriba del todo el personaje
-       quedaba en y=-79, o sea fuera de la pantalla. El piso tiene que estar
-       como minimo a 184 - 23 + alto del Slot para que la cabeza entre. */
-    top: 196px;
-    width: 128px;
-    z-index: calc(var(--ag-z-nav) + 1);
-  }
-
   /* El aviso se abre HACIA EL WORKSPACE: a la derecha y un poco mas abajo que
      Dico, nunca encima. Y con la cola lateral, porque una que baje apuntaria
      al vacio en vez de a quien habla. */
@@ -576,7 +516,6 @@
   .ag-sidebar-marca,
   .ag-sidebar-dic,
   .ag-sidebar-label,
-  .ag-sidebar .dico-slot,
   .ag-sidebar .dico-avisos-mensaje,
   .ag-sidebar .dico-native-caja {
     transition: none;

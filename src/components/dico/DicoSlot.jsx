@@ -6,6 +6,7 @@
  */
 import DicoPhysical from './DicoPhysical';
 import { physicalPoseCanonica } from './vocabulario';
+import useDicoPetMotion from './useDicoPetMotion';
 import './dico-slot.css';
 
 export default function DicoSlot({
@@ -48,6 +49,10 @@ export default function DicoSlot({
   }
 
   const poseSegura = physicalPoseCanonica(pose);
+  const movimiento = useDicoPetMotion({
+    pose: poseSegura,
+    enabled: visible && !intervencionId,
+  });
 
   const clases = [
     'dico-slot',
@@ -69,7 +74,7 @@ export default function DicoSlot({
                 Ya no hay cuerpo-sin-cara + capa de tinta que dirigir, y por eso
                 tampoco hay una cara canonica que montar encima: seria una cara
                 sobre otra cara. */}
-            <DicoPhysical pose={poseSegura} title="Dico Physical" />
+            <DicoPhysical pose={movimiento.pose} title="Dico Physical" />
           </div>
         )}
       </div>

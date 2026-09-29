@@ -64,6 +64,7 @@ export default function DicoAvisos({
   onAbrir,
   onCerrar,
   onIr,
+  mostrarBadge = true,
   /**
    * Si este rol puede ver los numeros del negocio. Las oportunidades hablan
    * de plata; a un mozo no le sirve saber que hay stock parado.
@@ -123,10 +124,11 @@ export default function DicoAvisos({
     : 0;
   const actual = avisos[indice];
   const tieneAvisos = avisos.length > 0;
+  const puedeAbrir = !mostrarBadge && typeof onAbrir === 'function';
 
   // EJE 1 — la cara. Solo la dicta el aviso; si no hay, Dico esta neutral
   // aunque el sistema este trabajando.
-  const cara = actual ? (CARA_POR_NIVEL[actual.nivel] || 'neutral') : 'neutral';
+  const cara = mostrarBadge && actual ? (CARA_POR_NIVEL[actual.nivel] || 'neutral') : 'neutral';
 
   // EJE 2 — la actividad. Solo la dicta el sistema; nunca la cara.
   // `attention` es finito por disenio: llama una vez y se queda quieto.
@@ -134,7 +136,7 @@ export default function DicoAvisos({
     ? 'processing'
     : abierto
       ? 'active'
-      : tieneAvisos
+      : mostrarBadge && tieneAvisos
         ? 'attention'
         : 'idle';
 
@@ -174,7 +176,7 @@ export default function DicoAvisos({
       state={cara}
       activity={actividad}
       className={entrada ? 'dico-native--entrada' : ''}
-      title={tieneAvisos
+      title={mostrarBadge && tieneAvisos
         ? `Dico: ${avisos.length} ${avisos.length === 1 ? 'aviso' : 'avisos'}`
         : 'Dico'}
     />
@@ -191,7 +193,7 @@ export default function DicoAvisos({
           se sienta Dico. Ver `MensajeDico`.
           `anclaje` ya no cambia el componente: la capa la ubica el CSS del
           chasis, que es quien sabe donde vive Dico. */}
-      {abierto && actual && (
+      {abierto && actual && mostrarBadge && (
         <div className={`dico-avisos-mensaje dico-avisos-mensaje--${anclaje}`}>
           <MensajeDico
             key={`${firma}:${indice}`}
@@ -233,7 +235,7 @@ export default function DicoAvisos({
          * teniendo su hit target de 44 como mínimo (`burbuja.css`) y el
          * número entra en el nombre accesible, que es donde tiene que estar
          * para quien no lo ve. */}
-        {tieneAvisos ? (
+        {tieneAvisos || puedeAbrir ? (
           <button
             type="button"
             className="dico-avisos-idle dico-avisos-trigger"
@@ -241,10 +243,12 @@ export default function DicoAvisos({
             aria-expanded={abierto}
             aria-label={abierto
               ? 'Cerrar el mensaje de Dico'
-              : `Ver lo que dice Dico (${avisos.length === 1 ? '1 aviso' : `${avisos.length} avisos`})`}
+              : mostrarBadge
+                ? `Ver lo que dice Dico (${avisos.length === 1 ? '1 aviso' : `${avisos.length} avisos`})`
+                : 'Abrir Habla con Dico'}
           >
             {personaje}
-            <span className="dico-avisos-badge" aria-hidden="true">{avisos.length}</span>
+            {mostrarBadge && <span className="dico-avisos-badge" aria-hidden="true">{avisos.length}</span>}
           </button>
         ) : (
           <span className="dico-avisos-idle">{personaje}</span>
