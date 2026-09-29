@@ -10,15 +10,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { fmtAR } from "../lib/format";
+import business from "@business";
 
 const TILES = 9; // grilla 3x3 del reveal
 
 export default function TopPedidos({ products = [], soldOutIds, onSelectProduct }) {
-  const [counts, setCounts] = useState(null);
+  // El edificio no tiene la vista recipe_sale_counts (era un 404 que
+  // terminaba en []): arranca vacio y la seccion no se muestra.
+  const [counts, setCounts] = useState(business.platform ? [] : null);
   const [active, setActive] = useState(0);
   const pausedUntil = useRef(0);
 
   useEffect(() => {
+    if (business.platform) return undefined;
     let cancelled = false;
     supabase
       .from("recipe_sale_counts")

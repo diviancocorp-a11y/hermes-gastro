@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { SectionHeader } from "./atoms";
 import { formatInt } from "../lib/utils";
 import { supabase } from "../lib/supabase";
+import business from "@business";
 
 /* Contenidos de cada combo (RPC get_combo_contents) → "2× Brownie · 1× Bebida".
    Cache simple en memoria: no cambia durante la sesion. */
@@ -20,7 +21,8 @@ let _contentsCache = null;
 function useComboContents() {
   const [byCombo, setByCombo] = useState(_contentsCache || {});
   useEffect(() => {
-    if (_contentsCache) return;
+    // El edificio no tiene get_combo_contents (404): los combos van sin detalle.
+    if (_contentsCache || business.platform) return;
     let cancel = false;
     supabase.rpc("get_combo_contents").then(({ data, error }) => {
       if (cancel || error || !Array.isArray(data)) return;

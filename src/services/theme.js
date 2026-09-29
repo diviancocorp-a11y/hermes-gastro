@@ -1,6 +1,7 @@
 // src/services/theme.js
 // Theme system: loads config from DB, applies CSS custom properties.
 import { supabase } from '../lib/supabase';
+import business from '@business';
 
 /** Default theme (matches legacy.css :root values) */
 const DEFAULT_THEME = {
@@ -23,6 +24,13 @@ let cachedTheme = null;
  */
 export async function fetchActiveTheme() {
   if (cachedTheme) return cachedTheme;
+  // El edificio no tiene tabla theme_config (el tema del catalogo sale de
+  // get_catalog): la consulta era un 404 que terminaba en DEFAULT_THEME.
+  if (business.platform) {
+    cachedTheme = { ...DEFAULT_THEME };
+    cachedTheme = { ...deriveDarkPalette(cachedTheme), ...cachedTheme };
+    return cachedTheme;
+  }
   try {
     const { data, error } = await supabase
       .from('theme_config')

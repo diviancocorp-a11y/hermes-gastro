@@ -358,7 +358,11 @@ export default function Catalog() {
 
   // Cargar data de stock en paralelo al catalogo (lectura publica RLS).
   // No bloquea el render: hasta que llega, ningun producto se marca agotado.
+  // En el edificio no existen recipe_ingredients ni combo_items (dos 404 por
+  // visita) y sin recetario computeAvailability no agota nada por stock: se
+  // queda vacio y solo rige sold_out_override.
   useEffect(() => {
+    if (business.platform) return undefined;
     let cancelled = false;
     async function loadStock() {
       try {

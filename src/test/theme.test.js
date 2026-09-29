@@ -1,5 +1,11 @@
 // src/test/theme.test.js
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { supabase } from '../lib/supabase';
+
+// El build por defecto de los tests es el edificio (platform: true), que no
+// tiene theme_config. Estos tests cubren el camino legacy salvo que digan otra cosa.
+const biz = vi.hoisted(() => ({ platform: false }));
+vi.mock('@business', () => ({ default: biz }));
 
 // Mock supabase
 vi.mock('../lib/supabase', () => ({
@@ -30,6 +36,8 @@ describe('theme service', () => {
   let service;
 
   beforeEach(async () => {
+    biz.platform = false;
+    supabase.from.mockClear();
     vi.resetModules();
     service = await import('../services/theme');
   });
@@ -47,10 +55,19 @@ describe('theme service', () => {
 
   it('fetchActiveTheme returns theme with defaults filled in', async () => {
     const t = await service.fetchActiveTheme();
+    expect(supabase.from).toHaveBeenCalledWith('theme_config');
     expect(t.color_bg).toBe('#FFFFFF'); // from DB mock
     expect(t.color_accent).toBe('#FF0000'); // from DB mock
     expect(t.dark_bg).toBeDefined(); // from defaults
     expect(t.radius_lg).toBe(24); // default, not in mock
+  });
+
+  it('fetchActiveTheme en el edificio no consulta theme_config y devuelve el default', async () => {
+    biz.platform = true;
+    const t = await service.fetchActiveTheme();
+    expect(supabase.from).not.toHaveBeenCalled();
+    expect(t.color_bg).toBe(service.DEFAULT_THEME.color_bg);
+    expect(t.dark_bg).toBeDefined();
   });
 
   it('deriveDarkPalette generates dark colors', () => {

@@ -1,6 +1,12 @@
 // src/test/featureFlags.test.jsx
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
+import { supabase } from '../lib/supabase';
+
+// El build por defecto de los tests es el edificio (platform: true), que no
+// tiene feature_flags. Estos tests cubren el camino legacy salvo que digan otra cosa.
+const biz = vi.hoisted(() => ({ platform: false }));
+vi.mock('@business', () => ({ default: biz }));
 
 // Mock supabase
 vi.mock('../lib/supabase', () => ({
@@ -31,8 +37,19 @@ describe('featureFlags service', () => {
   let service;
 
   beforeEach(async () => {
+    biz.platform = false;
+    supabase.from.mockClear();
     vi.resetModules();
     service = await import('../services/featureFlags');
+  });
+
+  it('loadFlags en el edificio no consulta feature_flags y usa los defaults', async () => {
+    biz.platform = true;
+    const cache = await service.loadFlags();
+    expect(supabase.from).not.toHaveBeenCalled();
+    expect(cache.get('GIFT_MODE')).toBe(true);
+    expect(cache.get('LOYALTY')).toBe(false);
+    expect(cache.get('DAILY_DEALS')).toBe(true);
   });
 
   it('isEnabled returns default when flags not loaded', () => {
@@ -44,6 +61,7 @@ describe('featureFlags service', () => {
 
   it('loadFlags fetches from DB and caches', async () => {
     const cache = await service.loadFlags();
+    expect(supabase.from).toHaveBeenCalledWith('feature_flags');
     expect(cache).toBeInstanceOf(Map);
     expect(cache.get('GIFT_MODE')).toBe(true);
     expect(cache.get('LOYALTY')).toBe(false);

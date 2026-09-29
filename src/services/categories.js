@@ -12,6 +12,8 @@ const FALLBACK_GROUPS = business.fallbackCategoryGroups || [];
  * Falls back to hardcoded defaults if the table doesn't exist or is empty.
  */
 export async function fetchCategoryGroups() {
+  // El edificio no tiene tabla category_groups: el 404 caia en el fallback.
+  if (business.platform) return FALLBACK_GROUPS;
   try {
     const { data, error } = await supabase
       .from('category_groups')

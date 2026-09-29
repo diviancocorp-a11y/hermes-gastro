@@ -11,6 +11,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { captureException } from "../lib/observability.js";
+import business from "@business";
+
+// El edificio no tiene get_weekly_top ni get_my_ranking: cada visita tiraba un
+// 404 y lo mandaba a Sentry para terminar mostrando el ranking vacio.
+const SIN_RANKING = !!business.platform;
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
 let _topCache = { data: null, fetchedAt: 0 };
@@ -18,9 +23,10 @@ let _myCache = { key: "", data: null, fetchedAt: 0 };
 
 export function useWeeklyTop() {
   const [top, setTop] = useState(_topCache.data);
-  const [loading, setLoading] = useState(!_topCache.data);
+  const [loading, setLoading] = useState(!_topCache.data && !SIN_RANKING);
 
   useEffect(() => {
+    if (SIN_RANKING) return;
     const fresh = Date.now() - _topCache.fetchedAt < CACHE_TTL_MS;
     if (_topCache.data && fresh) {
       setTop(_topCache.data);
@@ -54,6 +60,7 @@ export function useMyRanking({ email, phone } = {}) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (SIN_RANKING) return;
     if (!email && !phone) {
       setRanking(null);
       return;

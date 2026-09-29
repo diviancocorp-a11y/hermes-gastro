@@ -102,6 +102,12 @@ export default function App() {
 
   useEffect(() => {
     if (themeOwner !== THEME_OWNERS.CATALOG) return undefined;
+    // En el edificio esto es del modelo single-tenant: `settings` sin filtro
+    // de tenant y sin sesion. Para anon la policy corta con 42501 (un ERROR en
+    // Postgres por cada visita) y el null resultante pisaba con 'ambar' el
+    // tema del negocio y prendia la senial de listo antes de tiempo. El tema
+    // y el head del edificio los pone Catalog con applyTenantHead(get_catalog).
+    if (business.platform) return undefined;
 
     let cancelled = false;
     const apply = (sett) => {

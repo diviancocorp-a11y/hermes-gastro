@@ -2,6 +2,7 @@
 // Feature flag system backed by Supabase.
 // Flags are loaded once at app startup and cached in memory.
 import { supabase } from '../lib/supabase';
+import business from '@business';
 
 /** @type {Map<string, boolean>} */
 let flagCache = new Map();
@@ -31,6 +32,14 @@ export async function loadFlags() {
   if (loadPromise) return loadPromise;
 
   loadPromise = (async () => {
+    // El edificio no tiene tabla feature_flags: consultarla daba un 404 en
+    // cada carga del catalogo para terminar igual en los DEFAULTS.
+    if (business.platform) {
+      Object.entries(DEFAULTS).forEach(([k, v]) => flagCache.set(k, v));
+      loaded = true;
+      loadPromise = null;
+      return flagCache;
+    }
     try {
       const { data, error } = await supabase
         .from('feature_flags')
