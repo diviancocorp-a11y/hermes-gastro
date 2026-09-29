@@ -1,0 +1,43 @@
+name: Smoke del pedido
+
+# Pide, sigue y cancela un pedido real en produccion (smoke-pedido/pedido.spec.ts).
+# ESCRIBE en la base: por eso corre solo a mano, nunca en cada deploy ni en PRs.
+# Deja un pedido cancelado a nombre de "Smoke Test" en el negocio elegido.
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'Negocio donde pedir (tiene que tener productos activos)'
+        required: true
+        default: 'cochi'
+      otro_slug:
+        description: 'Otro negocio: el pedido NO se tiene que ver desde aca (vacio = no se chequea)'
+        required: false
+        default: 'mala-miga'
+
+concurrency:
+  group: smoke-pedido
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Pedir, seguir y cancelar (produccion)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Smoke
+        env:
+          SMOKE_PEDIDO_SLUG: ${{ inputs.slug }}
+          SMOKE_PEDIDO_OTRO_SLUG: ${{ inputs.otro_slug }}
+        run: npm run test:smoke-pedido
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: smoke-pedido
+          path: test-results/
+          retention-days: 7
