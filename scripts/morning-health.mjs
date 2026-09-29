@@ -74,7 +74,9 @@ async function main() {
   // Sin lista no hay "todo en verde": un reporte que no mira ningun negocio no
   // puede decir que andan.
   if (TENANTS.length === 0) {
-    problemas.push('SMOKE_TENANTS vacia: no se mira ningun negocio (GitHub → Settings → Secrets and variables → Actions → Variables)');
+    // La barra escapa el guion bajo: en el Markdown de Telegram uno suelto
+    // abre una cursiva que nunca se cierra y el mensaje entero se rechaza.
+    problemas.push('SMOKE\\_TENANTS vacia: no se mira ningun negocio (GitHub → Settings → Secrets and variables → Actions → Variables)');
   }
   const tenants = await Promise.all(TENANTS.map(async (slug) => {
     const [front, rpc] = await Promise.all([
@@ -236,18 +238,34 @@ function checkRls() {
 
 /** Issues sin resolver vistos en las ultimas 24h. Sin token se saltea. */
 async function checkSentry() {
-  const token = process.env.SENTRY_AUTH_TOKEN;
-  const org = process.env.SENTRY_ORG;
-  const project = process.env.SENTRY_PROJECT;
+  // trim: al pegar un secret suele colarse un salto de linea al final, y con
+  // eso la URL ya no encuentra ni la org ni el proyecto (404).
+  const token = process.env.SENTRY_AUTH_TOKEN?.trim();
+  const org = process.env.SENTRY_ORG?.trim();
+  const project = process.env.SENTRY_PROJECT?.trim();
   if (!token || !org || !project) return { rojo: false, texto: 'sin token — salteado' };
 
+  const ruta = `/api/0/projects/${encodeURIComponent(org)}/${encodeURIComponent(project)}/issues/`
+    // lastSeen en la query: statsPeriod solo arma las estadisticas, no filtra.
+    // Sin esto el reporte decia "en 24h" de un error de hace dos dias (28/sep).
+    + `?query=${encodeURIComponent('is:unresolved lastSeen:-24h')}&statsPeriod=24h&limit=5`;
   try {
-    const url = `https://sentry.io/api/0/projects/${org}/${project}/issues/`
-      + `?query=${encodeURIComponent('is:unresolved')}&statsPeriod=24h&limit=5`;
-    const r = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(15000),
-    });
+    // Una org de la region europea vive en de.sentry.io: sentry.io le
+    // contesta 404 aunque org y proyecto esten bien escritos.
+    let r;
+    for (const base of ['https://sentry.io', 'https://de.sentry.io']) {
+      r = await fetch(base + ruta, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (r.status !== 404) break;
+    }
+    if (r.status === 404) {
+      return { rojo: true, texto: 'org o proyecto no encontrados: SENTRY\\_ORG y SENTRY\\_PROJECT van con el nombre corto de la URL' };
+    }
+    if (r.status === 401 || r.status === 403) {
+      return { rojo: true, texto: `token sin permiso (HTTP ${r.status}): necesita event:read y project:read` };
+    }
     if (!r.ok) return { rojo: true, texto: `API HTTP ${r.status}` };
     const issues = await r.json();
     if (!Array.isArray(issues) || issues.length === 0) return { rojo: false, texto: '✓ sin errores en 24h' };
@@ -262,16 +280,25 @@ async function checkSentry() {
 
 async function sendTelegram(text) {
   const url = `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`;
-  const r = await fetch(url, {
+  const enviar = (conMarkdown) => fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: TG_CHAT,
       text,
-      parse_mode: 'Markdown',
+      ...(conMarkdown ? { parse_mode: 'Markdown' } : {}),
       disable_web_page_preview: true,
     }),
   });
+  let r = await enviar(true);
+  // Un texto que no controlamos (el titulo de un issue de Sentry, un slug) con
+  // un `_` o un `*` sin cerrar rompe el Markdown y Telegram rechaza el mensaje
+  // ENTERO: el reporte no llegaba (27/sep). Se reintenta en texto plano, que
+  // se ve peor pero llega.
+  if (r.status === 400) {
+    console.error('Telegram rechazo el Markdown; reintento en texto plano:', await r.text());
+    r = await enviar(false);
+  }
   if (!r.ok) {
     const body = await r.text();
     console.error('Telegram API error:', r.status, body);

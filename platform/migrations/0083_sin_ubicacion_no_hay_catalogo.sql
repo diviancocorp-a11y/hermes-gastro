@@ -1,4 +1,4 @@
--- 0081: sin la ubicacion del local no hay catalogo que tome pedidos.
+-- 0083: sin la ubicacion del local no hay catalogo que tome pedidos.
 --
 -- Hasta 0080 el checkout tenia una ubicacion predeterminada: si el negocio no
 -- habia cargado la suya, cotizaba el envio contra un punto del build (el
@@ -33,7 +33,7 @@ as $$
 $$;
 
 comment on function private.tiene_ubicacion(uuid) is
-  '0081: si el negocio cargo desde donde sale el envio. Sin esto el catalogo '
+  '0083: si el negocio cargo desde donde sale el envio. Sin esto el catalogo '
   'no toma pedidos (trigger orders_exige_ubicacion) y get_catalog devuelve '
   'catalogo_activo=false.';
 

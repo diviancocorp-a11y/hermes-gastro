@@ -1,17 +1,10 @@
 /**
  * PlatformAdmin — el panel de un tenant del EDIFICIO.
  *
- * Por que no es pages/Admin.jsx:
- * el panel legacy carga recipes, ingredients, recipe_ingredients, combo_items,
- * sales, expenses, waste_log y settings. De todo eso el edificio tiene CERO
- * tablas. Bifurcarlo con `business.platform` habria puesto un `if` en cada
- * hook y cada pantalla para que la mitad quedara apagada igual. Este panel
- * arranca por lo minimo que desbloquea a un tenant nuevo — cargar productos y
- * atender pedidos — y crece desde ahi. El legacy queda intacto.
+ * Es el unico panel: el legacy (pages/Admin.jsx, sobre recipes, ingredients,
+ * sales y settings single-tenant) se borro el 29/sep. Ningun build lo servia.
  *
- * El chrome (topbar, nav, tokens) se reusa por CSS, no por componente:
- * AdminTopbar/AdminProfileMenu consultan `admin_users`, que en el edificio no
- * existe, y su menu apunta a pantallas legacy.
+ * El chrome (topbar, nav, tokens) se reusa por CSS, no por componente.
  */
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 
@@ -142,16 +135,6 @@ const CajaPanel = lazy(() => import('../components/admin/platform/CajaPanel'));
 const MiMiniCaja = lazy(() => import('../components/admin/platform/MiMiniCaja'));
 // Equipo: quien esta trabajando y cuanto cuesta el turno (6e).
 const PersonalPanel = lazy(() => import('../components/admin/platform/PersonalPanel'));
-
-// Lo que el edificio todavia no tiene tabla para sostener. Cada false se
-// convierte en true cuando llegue su etapa (docs/plataforma/PLAN-ERP.md).
-const CAPACIDADES_EDIFICIO = {
-  qrs: true,         // tabla dynamic_qrs (migracion 0037)
-  paginas: true,     // tabla info_pages (migracion 0037)
-  pasarelas: true,   // tabla payment_integrations (migracion 0051)
-  canales: false,    // tabla delivery_channels
-  riesgo: false,     // el reset borra tablas del ERP viejo
-};
 
 import '../styles/admin-tokens.css';
 import '../styles/admin-bg.css';
@@ -1697,7 +1680,6 @@ export default function PlatformAdmin() {
                     setSettings={setSett}
                     showToast={msg}
                     onSave={guardarSettings}
-                    capacidades={CAPACIDADES_EDIFICIO}
                     onAbrirUsuarios={puedeAbrirDestino(roles, 'usuarios') ? () => setTab('usuarios') : null}
                     onAbrirPasarelas={puedeAbrirDestino(roles, 'cobros') ? () => setTab('cobros') : null}
                     onBack={() => setTab('products')}

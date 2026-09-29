@@ -5,7 +5,6 @@ import App from './App.jsx'
 import './index.css'
 import { initObservability, setTenantContext } from './lib/observability.js'
 import { initWebVitals } from './lib/webVitals.js'
-import { loadFlags } from './services/featureFlags.js'
 import business from '@business'
 import './lib/i18n.js' // Initialize i18next (must be before App render)
 
@@ -48,10 +47,6 @@ initWebVitals()
     })
   }
 })()
-
-// Pre-load feature flags before first render. Runtime theme loading is owned
-// by App and only runs for tenant/catalog surfaces.
-loadFlags().catch(() => {})
 
 // ── Dev mode: phone frame preview en desktop ────────────────
 // Wrap visual del #root con un iPhone frame cuando estás viendo

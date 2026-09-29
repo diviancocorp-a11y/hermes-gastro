@@ -7,7 +7,7 @@ export const THEME_OWNERS = Object.freeze({
 });
 
 const PLATFORM_PATHS = /^\/(registro|consola|bienvenido|entrar)(?:\/|$)/;
-const ADMIN_PATHS = /^\/(admin(?:\/|$)|mp-callback$)/;
+const ADMIN_PATHS = /^\/admin(?:\/|$)/;
 
 /**
  * Resolves the visual authority before any runtime theme is applied.

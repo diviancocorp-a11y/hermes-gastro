@@ -268,6 +268,18 @@ export const DEFINER_APROBADAS = {
   consumo_diario_de_insumos: { tipo: 'se_cuida', porque: 'filtra por current_user_tenants: a otro le devuelve vacio' },
   signup_tenant: { tipo: 'se_cuida', porque: 'exige sesion y crea el negocio de ESE usuario' },
   upsert_push_subscription: { tipo: 'se_cuida', porque: 'cualquiera se suscribe como cliente; como admin solo si es miembro' },
+  // ── caja, salon y facturacion (0067, 0069, 0070; aplicadas el 27/sep) ──
+  force_close_cash_session: { tipo: 'se_cuida', porque: 'solo el owner del negocio de esa sesion de caja' },
+  open_table_visit: { tipo: 'se_cuida', porque: 'rol de salon o caja en p_tenant_id' },
+  queue_fiscal_document: { tipo: 'se_cuida', porque: 'p_tenant_id del usuario y rol owner/manager/cashier' },
+  register_payment_evidence: { tipo: 'se_cuida', porque: 'quien presento la rendicion, o caja/encargado de ese negocio' },
+  report_cash_exception: { tipo: 'se_cuida', porque: 'raise si p_tenant_id no es del usuario' },
+  resolve_cash_exception: { tipo: 'se_cuida', porque: 'rol owner/manager/cashier en el negocio de la incidencia' },
+  review_staff_cash_settlement: { tipo: 'se_cuida', porque: 'rol owner/manager/cashier en el negocio de la rendicion' },
+  review_table_order: { tipo: 'se_cuida', porque: 'el pedido tiene que ser de un negocio del usuario' },
+  submit_staff_cash_settlement: { tipo: 'se_cuida', porque: 'el propio mozo, o caja/encargado de p_tenant_id' },
+  update_service_request: { tipo: 'se_cuida', porque: 'el pedido de servicio tiene que ser de un negocio del usuario' },
+  verify_payment_evidence: { tipo: 'se_cuida', porque: 'rol owner/manager/cashier en el negocio del comprobante' },
   // ── solo el dueno de Divianco ──
   cambiar_puesto: { tipo: 'se_cuida', porque: 'raise si no es el dueno de Divianco' },
   purgar_consola_log: { tipo: 'se_cuida', porque: 'raise si no es el dueno de Divianco' },
@@ -283,6 +295,7 @@ export const DEFINER_APROBADAS = {
   tenant_puede_operar: { tipo: 'abierta', porque: 'devuelve un booleano: si el negocio esta suspendido' },
   submit_service_review: { tipo: 'abierta', porque: 'el order_id es un uuid que solo tiene quien recibio el pedido' },
   get_tip_target: { tipo: 'abierta', porque: 'el order_id es un uuid que solo tiene quien recibio el pedido' },
+  get_order_tracker: { tipo: 'abierta', porque: 'el order_id es un uuid que solo tiene quien hizo el pedido; primer nombre, sin contacto' },
   delete_push_subscription: { tipo: 'abierta', porque: 'el endpoint es el secreto: solo lo conoce el navegador suscripto' },
   legajo_completo: { tipo: 'abierta', porque: 'devuelve un booleano sobre la fila que le pasan' },
 };

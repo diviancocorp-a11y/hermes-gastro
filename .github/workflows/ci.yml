@@ -28,6 +28,16 @@ jobs:
       - run: npm ci
       - name: Lint — errores únicamente
         run: npx eslint . --quiet
+      # Toda SECURITY DEFINER que el front puede ejecutar, aprobada en
+      # scripts/check-rls.mjs. Lee archivos, no la base: frena en el PR lo que
+      # check-rls veria recien en el reporte del dia siguiente.
+      - name: Definer aprobadas
+        run: npm run check:definer
+      # Todo .from()/.rpc() alcanzable desde src/main.jsx tiene que existir en
+      # las migraciones del edificio. El 28/sep el catalogo tiraba 9 consultas
+      # a tablas legacy por visita y ningun gate lo vio: caian en un fallback.
+      - name: Llamadas alcanzables vs edificio
+        run: npm run check:alcanzable
       - name: Lint — full (errors + warnings)
         run: npm run lint
 

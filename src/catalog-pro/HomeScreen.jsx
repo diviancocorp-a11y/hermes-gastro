@@ -26,7 +26,6 @@ import { mapProduct, buildStories, buildRecos } from "./homeHelpers";
 import DicoMark from "../components/DicoMark";
 import CatalogFooter from "./CatalogFooter";
 import BadgeTag from "../components/BadgeTag";
-import TopPedidos from "./TopPedidos";
 import PromoCarousel from "./PromoCarousel";
 import SuperCombos from "./SuperCombos";
 import OrderStatusCard from "./OrderStatusCard";
@@ -470,14 +469,6 @@ export default function HomeScreen({
         </div>
       </div>
 
-      {/* ===== LO MAS PEDIDO — top 3 real con reveal animado (lite, sin GSAP) ===== */}
-      {!searchQuery && (
-        <TopPedidos
-          products={products}
-          soldOutIds={soldOutIds}
-          onSelectProduct={onSelectProduct}
-        />
-      )}
 
       {/* ===== CARTA — TODOS los productos filtrados por categoria + busqueda ===== */}
       <SectionHeader title="Nuestra" em="carta" />

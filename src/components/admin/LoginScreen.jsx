@@ -7,8 +7,8 @@
 // El logo + nombre salen de la DB; caen a `business` (config compilada) si
 // todavía no respondió.
 //
-// En la PLATAFORMA no se puede leer `settings`: desde la migración 0025 tiene
-// RLS por tenant, y acá justamente no hay sesión todavía. El resultado era que
+// No se puede leer `settings`: desde la migración 0025 tiene RLS por tenant,
+// y acá justamente no hay sesión todavía. El resultado era que
 // todos los tenants mostraban la marca del build — tienda-nueva.divianco.app
 // decía "Cochi", con el logo y el color de Cochi. Por eso va por el RPC
 // público get_tenant_brand(slug), que devuelve sólo identidad visible.
@@ -23,7 +23,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { login } from "../../lib/adminService";
-import { supabase } from "../../lib/supabase";
 import business from "@business";
 import { getTenantSlugSync } from "../../lib/activeTenant";
 import { fetchTenantBrand } from "../../services/platformSettings";
@@ -82,30 +81,20 @@ export default function LoginScreen({ onLogin }) {
     const t = setTimeout(() => setStage("form"), TIEMPOS.intro);
     let mounted = true;
 
-    if (business.platform) {
-      // Subdominio -> slug sincrónico, sin red. En un host desconocido
-      // (local, preview) cae al slug del build, que es el comportamiento
-      // deseado en dev.
-      fetchTenantBrand(getTenantSlugSync())
-        .then((data) => {
-          if (mounted && data) {
-            setDbSet({
-              biz_name: data.name,
-              logo_letter: data.logo_letter,
-              logo_color: data.logo_color,
-              logo_url: data.logo_url,
-            });
-          }
-        })
-        .catch(() => {});
-    } else {
-      supabase
-        .from("settings")
-        .select("biz_name, logo_letter, logo_color, logo_url")
-        .limit(1)
-        .then(({ data }) => { if (mounted && data?.[0]) setDbSet(data[0]); })
-        .catch(() => {});
-    }
+    // Subdominio -> slug sincrónico, sin red. En un host desconocido (local,
+    // preview) cae al slug del build, que es el comportamiento deseado en dev.
+    fetchTenantBrand(getTenantSlugSync())
+      .then((data) => {
+        if (mounted && data) {
+          setDbSet({
+            biz_name: data.name,
+            logo_letter: data.logo_letter,
+            logo_color: data.logo_color,
+            logo_url: data.logo_url,
+          });
+        }
+      })
+      .catch(() => {});
 
     return () => { clearTimeout(t); mounted = false; };
   }, []);

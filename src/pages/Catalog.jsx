@@ -38,7 +38,6 @@ import {
   haversine, calcDeliveryCost, CHECKOUT_STEPS, DEFAULT_FORM
 } from "../constants/catalogConstants";
 import { origenDelEnvio, estimarEnvio, catalogoActivo } from "../modules/origenDelEnvio";
-import { fetchCategoryGroups, toClientFormat, buildSubToParent } from "../services/categories";
 import { computeAvailability } from "../lib/stockAvailability";
 import { applyTenantHead } from "../lib/tenantHead";
 import { resolveTenantSlug } from "../lib/activeTenant";
@@ -70,11 +69,10 @@ export default function Catalog() {
   const { toast, ToastContainer } = useToast();
   const [error, setError] = useState(null);
   const [serverNow, setServerNow] = useState(null); // hora del servidor para validar horarios
-  const [catGroups, setCatGroups] = useState(FALLBACK_CAT_GROUPS);
-  const [subToParent, setSubToParent] = useState(FALLBACK_SUB_TO_PARENT);
-  // Data de stock para marcar "Agotado" (recipe_ingredients + ingredients + combo_items).
-  // Si el fetch falla queda vacio → nada se marca agotado (fail-open a proposito).
-  const [stockData, setStockData] = useState({ recipeIngredients: [], ingredients: [], comboItems: [] });
+  // Grupos de categorias: salen del business.js del build (hoy vacios). La
+  // tabla category_groups era del legacy; el edificio no la tiene.
+  const catGroups = FALLBACK_CAT_GROUPS;
+  const subToParent = FALLBACK_SUB_TO_PARENT;
 
   // --- Estado de UI ---
   const [selCat, setSelCat] = useState("Todos");
@@ -116,7 +114,7 @@ export default function Catalog() {
 
   // Origen del envio: la ubicacion que cargo el duenio (get_catalog ->
   // store_lat/lng). No hay predeterminada: sin ella el catalogo no toma
-  // pedidos (lo rechaza la base, 0081) y aca no se abre el checkout.
+  // pedidos (lo rechaza la base, 0083) y aca no se abre el checkout.
   const origenEnvio = useMemo(
     () => origenDelEnvio(sett),
     [sett?.store_lat, sett?.store_lng], // eslint-disable-line react-hooks/exhaustive-deps
@@ -312,15 +310,7 @@ export default function Catalog() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
-      // Fetch catalog data and categories in parallel
-      const [data, dbCategories] = await Promise.all([
-        fetchCatalog(),
-        fetchCategoryGroups(),
-      ]);
-      // Apply dynamic categories
-      const clientCats = toClientFormat(dbCategories);
-      setCatGroups(clientCats);
-      setSubToParent(buildSubToParent(clientCats));
+      const data = await fetchCatalog();
 
       if (data) {
         setSett(data.settings);
@@ -358,39 +348,11 @@ export default function Catalog() {
     loadData();
   }, []);
 
-  // Cargar data de stock en paralelo al catalogo (lectura publica RLS).
-  // No bloquea el render: hasta que llega, ningun producto se marca agotado.
-  useEffect(() => {
-    let cancelled = false;
-    async function loadStock() {
-      try {
-        const [ri, ing, ci] = await Promise.all([
-          supabase.from("recipe_ingredients").select("recipe_id, ingredient_id, qty"),
-          supabase.from("ingredients").select("id, stock"),
-          supabase.from("combo_items").select("recipe_id, sub_recipe_id, qty"),
-        ]);
-        if (cancelled) return;
-        setStockData({
-          recipeIngredients: ri.data || [],
-          ingredients: ing.data || [],
-          comboItems: ci.data || [],
-        });
-      } catch (e) {
-        // Sin data de stock no marcamos nada como agotado
-        console.warn("No se pudo cargar data de stock (no bloquea):", e?.message);
-      }
-    }
-    loadStock();
-    return () => { cancelled = true; };
-  }, []);
-
-  // Recipe ids agotados segun stock de ingredientes (helper puro, ver stockAvailability.js)
-  const soldOutIds = useMemo(() => computeAvailability({
-    recipes: products,
-    recipeIngredients: stockData.recipeIngredients,
-    ingredients: stockData.ingredients,
-    comboItems: stockData.comboItems,
-  }), [products, stockData]);
+  // Agotados: solo el override manual (sold_out_override) de cada producto.
+  // La regla por stock de ingredientes necesitaba recipe_ingredients y
+  // combo_items, tablas del legacy que el edificio no tiene (eran dos 404 por
+  // visita que dejaban el calculo vacio).
+  const soldOutIds = useMemo(() => computeAvailability({ recipes: products }), [products]);
 
   // Restaurar carrito si vuelve del registro
   useEffect(() => {
@@ -662,25 +624,9 @@ export default function Catalog() {
     setSending(false);
 
     if (result?.ok) {
-      // Upsert a customers para guardar birth_date (si se completó) y otros datos
-      // estables del cliente. La tabla customers tiene email como UNIQUE → solo
-      // upserteamos si hay email. Fire-and-forget: no bloquea el éxito del pedido.
-      const customerEmail = user?.email || form.email;
-      if (customerEmail && form.birth_date) {
-        try {
-          await supabase.from("customers").upsert(
-            {
-              email: customerEmail,
-              name: form.name || null,
-              phone: normalizedPhone || null,
-              birth_date: form.birth_date,
-            },
-            { onConflict: "email" }
-          );
-        } catch (e) {
-          console.warn("No se pudo guardar birth_date del cliente (no bloquea):", e);
-        }
-      }
+      // OJO: la fecha de cumpleanos del form no se guarda. Hasta el 29/sep aca
+      // habia un upsert a `customers`, tabla del legacy que el edificio no
+      // tiene: fallaba en silencio. Si se quiere, va en submit-order.
 
       // ── MercadoPago Checkout Pro (pasarela) ──────────────────────────────
       // Si MP está conectada (payment_integrations) y el cliente eligió MP,

@@ -1,8 +1,8 @@
 // src/services/push.js
 // Web Push notifications.
 //
-// En el EDIFICIO cada suscripcion lleva ademas el negocio del host: sin eso,
-// un local le mandaria notificaciones a los clientes de otro. Viaja el SLUG
+// Cada suscripcion lleva ademas el negocio del host: sin eso, un local le
+// mandaria notificaciones a los clientes de otro. Viaja el SLUG
 // y no el uuid porque el slug ya esta en la URL — traducirlo a id habria
 // pedido un RPC publico nuevo solo para eso.
 //
@@ -12,7 +12,6 @@
 //   - role: 'customer' para el catalogo, 'admin' para el panel admin.
 // La edge function send-push usa esto para targetear especificos vs broadcast.
 import { supabase } from '../lib/supabase';
-import business from '@business';
 import { resolveTenantSlug } from '../lib/activeTenant';
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
@@ -72,13 +71,11 @@ export async function subscribeToPush({ role = 'customer', userId = null, phone 
     p_phone: phone,
     p_role: role,
   };
-  if (business?.platform) {
-    const slug = await resolveTenantSlug();
-    // Sin negocio no se guarda: una suscripcion suelta no le sirve a nadie y
-    // el RPC del edificio la rechaza igual.
-    if (!slug) { console.warn('push: no se pudo resolver el negocio'); return subscription; }
-    args.p_tenant_slug = slug;
-  }
+  const slug = await resolveTenantSlug();
+  // Sin negocio no se guarda: una suscripcion suelta no le sirve a nadie y
+  // el RPC la rechaza igual.
+  if (!slug) { console.warn('push: no se pudo resolver el negocio'); return subscription; }
+  args.p_tenant_slug = slug;
   const { error } = await supabase.rpc('upsert_push_subscription', args);
 
   if (error) console.error('Push subscription save error:', error);
@@ -112,12 +109,9 @@ export async function isSubscribed() {
  * @param {Object} [payload.target] - { role?, user_id?, phone? }
  */
 export async function sendPushNotification({ title, body, url, icon, target = { role: 'customer' } }) {
-  const cuerpo = { title, body, url, icon, target };
-  if (business?.platform) {
-    const slug = await resolveTenantSlug();
-    if (!slug) throw new Error('No se pudo resolver el negocio para el envio');
-    cuerpo.tenant_slug = slug;
-  }
+  const slug = await resolveTenantSlug();
+  if (!slug) throw new Error('No se pudo resolver el negocio para el envio');
+  const cuerpo = { title, body, url, icon, target, tenant_slug: slug };
   const { data, error } = await supabase.functions.invoke('send-push', { body: cuerpo });
   if (error) throw error;
   return data;
@@ -149,13 +143,9 @@ export async function notifyOrderStatusChange(phone, status) {
 }
 
 export async function getSubscriberCount(role = 'customer') {
-  const args = { p_role: role };
-  if (business?.platform) {
-    const slug = await resolveTenantSlug();
-    if (!slug) return 0;
-    args.p_tenant_slug = slug;
-  }
-  const { data, error } = await supabase.rpc('count_push_subscriptions', args);
+  const slug = await resolveTenantSlug();
+  if (!slug) return 0;
+  const { data, error } = await supabase.rpc('count_push_subscriptions', { p_role: role, p_tenant_slug: slug });
   if (error) return 0;
   return data || 0;
 }

@@ -6,7 +6,7 @@
 // `store_lng`. NO hay ubicacion predeterminada: hasta el 27/sep habia una del
 // build (Caracas, despues el centro de Buenos Aires) y se cotizaban envios
 // desde un lugar donde el local no estaba. Sin ubicacion el catalogo no toma
-// pedidos, y eso lo hace cumplir la base (platform/migrations/0081).
+// pedidos, y eso lo hace cumplir la base (platform/migrations/0083).
 
 import { haversine, calcDeliveryCost } from '../constants/catalogConstants.js';
 import { getPais } from './paises.js';

@@ -27,8 +27,6 @@ describe('Phase 2B theme ownership', () => {
       .toBe(THEME_OWNERS.PLATFORM);
     expect(resolveThemeOwner({ pathname: '/admin', hostname: 'mala-miga.divianco.app' }))
       .toBe(THEME_OWNERS.ADMIN);
-    expect(resolveThemeOwner({ pathname: '/mp-callback', hostname: 'mala-miga.divianco.app' }))
-      .toBe(THEME_OWNERS.ADMIN);
     expect(resolveThemeOwner({ pathname: '/', hostname: 'mala-miga.divianco.app' }))
       .toBe(THEME_OWNERS.CATALOG);
     expect(resolveThemeOwner({ pathname: '/info/envios', hostname: 'mitienda.com' }))

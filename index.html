@@ -52,7 +52,7 @@
         var path = window.location.pathname;
         var host = window.location.hostname.toLowerCase();
         var platformRoot = host === 'divianco.app' || host === 'www.divianco.app';
-        var owner = /^\/(admin(?:\/|$)|mp-callback$)/.test(path)
+        var owner = /^\/admin(?:\/|$)/.test(path)
           ? 'admin'
           : (/^\/(registro|consola|bienvenido|entrar)(?:\/|$)/.test(path) || platformRoot)
             ? 'platform'

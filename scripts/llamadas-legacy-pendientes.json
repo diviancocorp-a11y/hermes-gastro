@@ -1,0 +1,36 @@
+{
+  "_comment": "Llamadas alcanzables desde el build del edificio a tablas o RPC que platform/migrations no define. Solo se achica: ver scripts/check-edificio-alcanzable.mjs",
+  "pendientes": {
+    "src/catalog-pro/BirthdayGift.jsx": [
+      "fn:birthday-gift"
+    ],
+    "src/hooks/useAdminGate.js": [
+      "from:admin_users"
+    ],
+    "src/pages/MyAccount.jsx": [
+      "rpc:set_customer_avatar"
+    ],
+    "src/services/crm.js": [
+      "from:customers"
+    ],
+    "src/services/finance.js": [
+      "from:purchases",
+      "from:recipe_ingredients"
+    ],
+    "src/services/inventory.js": [
+      "rpc:adjust_stock"
+    ],
+    "src/services/phoneAuth.js": [
+      "rpc:lookup_customer_by_phone",
+      "rpc:upsert_customer"
+    ],
+    "src/services/recipes.js": [
+      "from:combo_items",
+      "from:recipe_ingredients",
+      "from:recipes"
+    ],
+    "src/services/referrals.js": [
+      "from:referrals"
+    ]
+  }
+}

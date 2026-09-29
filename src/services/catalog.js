@@ -4,120 +4,36 @@ import { OrderInputSchema, CouponValidateSchema, validateInput } from '../lib/sc
 import { setGuestUser } from '../lib/guestUser.js';
 import { resolveTenantSlug } from '../lib/activeTenant.js';
 import { claveDeIdempotencia, reiniciarClave } from '../lib/idempotencia.js';
-import business from '@business';
 
 /**
- * Trae los datos que necesita el catálogo público:
- * - La configuración del negocio (nombre, logo, color)
- * - Los productos/recetas que tienen visible = true
+ * Trae los datos que necesita el catálogo público: la configuración del
+ * negocio (nombre, logo, color, tema) y los productos visibles.
  *
- * Retorna: { settings: {...}, products: [...] }
- * Si hay error, retorna null
- */
-/**
- * Fetch catalog data: settings + visible products + server time.
- * Direct Supabase queries — la edge function get-catalog no se deployó,
- * y las queries directas son suficientemente rápidas con los indexes.
+ * Un solo RPC (get_catalog) devuelve settings+products ya con el shape de
+ * catalog-pro. El tenant sale del HOSTNAME, no del build: un mismo bundle
+ * sirve a todos. business.slug queda solo como fallback de dev/preview.
+ *
+ * Retorna: { settings, products, serverNow }, o null si no hay catalogo que
+ * mostrar o fallo el RPC.
  */
 export async function fetchCatalog() {
   try {
-    // Plataforma multi-tenant (edificio): un solo RPC devuelve settings+products
-    // ya con el shape que espera catalog-pro. El resto del archivo (modelo viejo
-    // single-tenant sobre `recipes`) queda intacto para los clients legacy.
-    if (business.platform) {
-      // El tenant sale del HOSTNAME, no del build: un mismo bundle sirve a
-      // todos. business.slug queda solo como fallback de dev/preview.
-      const slug = await resolveTenantSlug();
-      if (!slug) {
-        // Raiz de la plataforma (divianco.app): no hay catalogo que mostrar,
-        // va la landing. No es un error.
-        return null;
-      }
-      const { data, error } = await supabase.rpc('get_catalog', { p_tenant_slug: slug });
-      if (error || !data) {
-        console.error('get_catalog RPC error:', error?.message);
-        return null;
-      }
-      return {
-        settings: data.settings || {},
-        products: data.products || [],
-        serverNow: data.serverNow || new Date().toISOString(),
-      };
-    }
-
-    const { data: settingsRows, error: settErr } = await supabase
-      .from('settings')
-      .select('*')
-      .limit(1);
-
-    if (settErr) {
-      console.error('Error cargando settings:', settErr.message);
+    const slug = await resolveTenantSlug();
+    if (!slug) {
+      // Raiz de la plataforma (divianco.app): no hay catalogo que mostrar,
+      // va la landing. No es un error.
       return null;
     }
-
-    const settings = settingsRows?.[0] || {
-      biz_name: business.name,
-      logo_letter: business.logoLetter,
-      logo_color: business.logoColor,
-      cover_url: business.defaultSettings.cover_url,
+    const { data, error } = await supabase.rpc('get_catalog', { p_tenant_slug: slug });
+    if (error || !data) {
+      console.error('get_catalog RPC error:', error?.message);
+      return null;
+    }
+    return {
+      settings: data.settings || {},
+      products: data.products || [],
+      serverNow: data.serverNow || new Date().toISOString(),
     };
-
-    // Defense in depth: si alguna columna nueva no existe en un tenant,
-    // intentar el select completo PRIMERO; si falla, fallback al minimo
-    // garantizado. Asi el catalogo nunca queda vacio por una migration
-    // no aplicada en algun tenant.
-    let products = null;
-    let prodErr = null;
-    {
-      const res = await supabase
-        .from('recipes')
-        .select('id, name, category, sale_price, image_url, description, related_ids, is_vegetarian, requires_age_gate, is_combo, discount_pct, sold_out_override, created_at')
-        .eq('visible', true)
-        .eq('is_archived', false)
-        .order('category', { ascending: true });
-      products = res.data;
-      prodErr = res.error;
-    }
-    if (prodErr) {
-      console.warn('Fetch productos con columnas extra fallo, fallback al minimo:', prodErr.message);
-      const res = await supabase
-        .from('recipes')
-        .select('id, name, category, sale_price, image_url, description, related_ids')
-        .eq('visible', true)
-        .eq('is_archived', false)
-        .order('category', { ascending: true });
-      products = res.data;
-      if (res.error) {
-        console.error('Error cargando productos:', res.error.message);
-        return null;
-      }
-    }
-
-    // Enriquecer con sale_count desde la vista materializada (silently fail).
-    try {
-      const { data: counts } = await supabase
-        .from('recipe_sale_counts')
-        .select('recipe_id, sale_count');
-      if (counts && Array.isArray(counts)) {
-        const byId = new Map(counts.map(c => [c.recipe_id, c.sale_count]));
-        for (const p of products || []) {
-          p.sale_count = byId.get(p.id) || 0;
-        }
-      }
-    } catch (e) {
-      // Si la vista no existe en este tenant, no rompemos el catalogo.
-      console.warn('recipe_sale_counts no disponible:', e?.message);
-    }
-
-    let serverNow = new Date().toISOString();
-    try {
-      const { data: timeData, error: timeErr } = await supabase.rpc('get_server_time');
-      if (!timeErr && timeData) serverNow = timeData;
-    } catch {
-      console.warn('get_server_time RPC no disponible, usando hora local');
-    }
-
-    return { settings, products: products || [], serverNow };
   } catch (err) {
     console.error('Error inesperado en fetchCatalog:', err);
     return null;
@@ -161,16 +77,15 @@ export async function submitOrder(orderData) {
     }
     const validated = validation.data;
 
-    // Edificio multi-tenant: sin tenant_slug la function rechaza el pedido
-    // (400). Sale del hostname igual que el catalogo — si el pedido se armo
-    // mirando cochi.divianco.app, tiene que entrar en cochi. Los clients
-    // legacy no lo mandan y su submit-order lo ignora.
-    const tenantSlug = business.platform ? await resolveTenantSlug() : null;
+    // Sin tenant_slug la function rechaza el pedido (400). Sale del hostname
+    // igual que el catalogo — si el pedido se armo mirando
+    // cochi.divianco.app, tiene que entrar en cochi.
+    const tenantSlug = await resolveTenantSlug();
 
     // Llamar a la Edge Function que calcula todo server-side
     const { data, error } = await supabase.functions.invoke('submit-order', {
       body: {
-        ...(tenantSlug ? { tenant_slug: tenantSlug } : {}),
+        tenant_slug: tenantSlug,
         customer: validated.customer,
         phone: validated.phone,
         email: validated.email,
@@ -217,104 +132,23 @@ export async function submitOrder(orderData) {
     // pedido nuevo, aunque repita exactamente los mismos items.
     reiniciarClave('checkout');
 
-    // Upsert al CRM (tabla customers) con dedup-aware: busca por phone
-    // primero, despues por email. Centraliza la identidad para el guest
-    // y reusa la misma fila si el cliente vuelve con otro metodo.
-    let customerId = null;
-    try {
-      const { data: cid } = await supabase.rpc('upsert_customer', {
-        p_phone: validated.phone || null,
-        p_email: validated.email || null,
-        p_name:  validated.customer || null,
-        p_birth_date: orderData.birth_date || null,
-      });
-      customerId = cid || null;
-    } catch (e) {
-      console.warn('upsert_customer fallo (no bloquea):', e?.message);
-    }
-
-    // Persistir identidad guest: el usuario ya tiene al menos 1 pedido,
-    // queda "registrado" para ver ranking/preferencias sin volver a loguearse.
+    // Persistir identidad guest: el usuario ya tiene al menos 1 pedido y
+    // queda "registrado" sin volver a loguearse. Va sin id: la ficha del
+    // cliente la arma submit-order del lado del servidor. Hasta el 29/sep aca
+    // se llamaba a upsert_customer, notify-new-customer y un backup CSV de
+    // clientes: legacy que en el edificio fallaba en silencio en cada pedido.
     setGuestUser({
-      id: customerId,
+      id: null,
       name: validated.customer,
       phone: validated.phone,
       email: validated.email,
     });
-
-    // Sync backup de clientes — diferido 5s para no bloquear UI post-pedido
-    setTimeout(() => syncCustomerBackup(), 5000);
-
-    // Notificar cliente nuevo via Edge Function (silencioso, no bloquea)
-    supabase.functions.invoke('notify-new-customer', {
-      body: { orderId: data.orderId },
-    }).catch(() => {}); // fire-and-forget
 
     return { ok: true, orderId: data.orderId };
 
   } catch (err) {
     console.error('Error inesperado en submitOrder:', err);
     return { ok: false, orderId: null };
-  }
-}
-
-// ─── SYNC CUSTOMER BACKUP (automático, silencioso) ───
-// Consolida clientes desde orders y sube CSV al bucket privado "backups"
-// Se ejecuta después de cada pedido exitoso. Si falla, no bloquea nada.
-async function syncCustomerBackup() {
-  try {
-    const { data: orders } = await supabase
-      .from('orders')
-      .select('customer, phone, email, total, status, created_at, delivery, payment, delivery_address')
-      .order('created_at', { ascending: false });
-    if (!orders || orders.length === 0) return;
-
-    // Consolidar clientes únicos
-    const map = {};
-    orders.forEach(o => {
-      const key = (o.phone || o.email || o.customer || '').toLowerCase();
-      if (!key) return;
-      if (!map[key]) map[key] = {
-        nombre: '', telefono: '', email: '',
-        pedidos: 0, total_gastado: 0, ultimo_pedido: '',
-        direccion: '', metodo_pago: '', metodo_entrega: ''
-      };
-      const c = map[key];
-      c.pedidos++;
-      c.total_gastado += (o.total || 0);
-      if (!c.nombre && o.customer) c.nombre = o.customer;
-      if (!c.telefono && o.phone) c.telefono = o.phone;
-      if (!c.email && o.email) c.email = o.email;
-      if (!c.direccion && o.address) c.direccion = o.address;
-      if (o.created_at > c.ultimo_pedido) {
-        c.ultimo_pedido = o.created_at;
-        c.metodo_pago = o.payment || '';
-        c.metodo_entrega = o.delivery || '';
-      }
-    });
-
-    const customers = Object.values(map).sort((a, b) => b.total_gastado - a.total_gastado);
-
-    // Generar CSV con BOM para Excel
-    const esc = (v) => {
-      const s = String(v || '');
-      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const hdr = 'Nombre,Teléfono,Email,Pedidos,Total Gastado,Último Pedido,Dirección,Método Pago,Método Entrega';
-    const rows = customers.map(c =>
-      [esc(c.nombre), esc(c.telefono), esc(c.email), c.pedidos, c.total_gastado,
-       esc(c.ultimo_pedido?.split('T')[0] || ''), esc(c.direccion), esc(c.metodo_pago), esc(c.metodo_entrega)].join(',')
-    );
-    const csv = '\uFEFF' + hdr + '\n' + rows.join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-
-    // Subir al bucket privado "backups" (sobreescribe el anterior)
-    await supabase.storage
-      .from('backups')
-      .upload('clientes/clientes_export.csv', blob, { upsert: true, contentType: 'text/csv' });
-  } catch (e) {
-    // Silencioso — nunca debe bloquear el flujo del pedido
-    console.warn('syncCustomerBackup (non-blocking):', e?.message || e);
   }
 }
 
