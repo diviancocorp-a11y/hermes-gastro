@@ -53,6 +53,66 @@ export function esEnvioGratis(subtotal, umbral) {
   return Number.isFinite(u) && u > 0 && Number(subtotal) > u;
 }
 
+const sinTildes = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+/** "Partido del Pilar" y "pilar" son lo mismo: sin tildes, sin "Partido de", en minuscula. */
+export function normalizarLugar(s) {
+  return sinTildes(s).toLowerCase()
+    .replace(/\bpartido (de las|de los|de la|del|de)\b/g, ' ')
+    .replace(/[^a-z0-9 ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** `permitido` aparece en `campo` como palabra completa: "tigre" si, "tigres" no. */
+function contiene(campo, permitido) {
+  if (!campo || !permitido) return false;
+  return (` ${campo} `).includes(` ${permitido} `);
+}
+
+/**
+ * Si la direccion que ubico Nominatim cae dentro de la zona de entrega del
+ * negocio (`settings.delivery_zone.partidos`).
+ *
+ * Devuelve `{ estado, lugar }` con estado:
+ *   'sin_regla'    el negocio no limito la zona (o no hay direccion): no se valida
+ *   'dentro'       el partido esta en la lista
+ *   'fuera'        el partido se conoce y NO esta en la lista (o es otra provincia
+ *                  o la Ciudad de Buenos Aires)
+ *   'desconocida'  Nominatim no dio un partido reconocible: NO se bloquea. Un
+ *                  geocodificador incompleto no puede dejar sin venta a alguien
+ *                  que si esta en zona; ahi decide el negocio con el aviso.
+ *
+ * Nominatim no es consistente con la clave del partido: San Isidro lo trae como
+ * county y Pilar como state_district. Por eso se miran las tres que usa.
+ */
+export function evaluarZona(address, zona) {
+  const permitidos = (Array.isArray(zona?.partidos) ? zona.partidos : [])
+    .map(normalizarLugar).filter(Boolean);
+  if (!permitidos.length || !address || typeof address !== 'object') return { estado: 'sin_regla' };
+
+  const provincia = normalizarLugar(address.state);
+  const esCapital = provincia.includes('ciudad autonoma') || address['ISO3166-2-lvl4'] === 'AR-C';
+  if (esCapital) return { estado: 'fuera', lugar: 'Ciudad de Buenos Aires' };
+  if (provincia && provincia !== 'buenos aires') return { estado: 'fuera', lugar: address.state };
+
+  // 1) Los campos que Nominatim usa para el partido.
+  const partidos = [address.county, address.state_district, address.municipality].filter(Boolean);
+  if (partidos.length) {
+    if (partidos.some((p) => permitidos.some((ok) => contiene(normalizarLugar(p), ok)))) {
+      return { estado: 'dentro', lugar: partidos[0] };
+    }
+    return { estado: 'fuera', lugar: partidos[0] };
+  }
+
+  // 2) Sin partido: la localidad (algunas direcciones traen solo "town: Pilar").
+  const localidades = [address.city, address.town, address.village, address.suburb].filter(Boolean);
+  if (localidades.some((l) => permitidos.some((ok) => contiene(normalizarLugar(l), ok)))) {
+    return { estado: 'dentro', lugar: localidades[0] };
+  }
+  return { estado: 'desconocida', lugar: localidades[0] || null };
+}
+
 /** Distancia (km, un decimal) y costo del envio desde `origen` hasta `destino`. */
 export function cotizarEnvio(origen, destino, pricing = null) {
   const km = haversine(origen.lat, origen.lng, Number(destino.lat), Number(destino.lng));
@@ -68,7 +128,9 @@ export function cotizarEnvio(origen, destino, pricing = null) {
  */
 export function urlsBusquedaDireccion(address, { origen, country } = {}) {
   const pais = getPais(country).id.toLowerCase();
-  const base = `${NOMINATIM_SEARCH}?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=${pais}`;
+  // addressdetails=1: sin el no viene el partido, y con el el negocio puede
+  // limitar a que zonas entrega (evaluarZona).
+  const base = `${NOMINATIM_SEARCH}?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=1&countrycodes=${pais}`;
   if (!origen || !coordenadaValida(origen.lat, origen.lng)) return [base];
   const r = RADIO_BUSQUEDA_GRADOS;
   // viewbox es oeste,norte,este,sur (lon,lat,lon,lat)
@@ -88,7 +150,9 @@ export async function estimarEnvio(address, { origen, country, pricing, fetchImp
     const data = await r.json();
     const hit = data?.[0];
     if (hit && coordenadaValida(hit.lat, hit.lon)) {
-      return cotizarEnvio(origen, { lat: hit.lat, lng: hit.lon }, pricing);
+      // `address` es el desglose de Nominatim (partido, provincia...): lo usa
+      // evaluarZona para saber si la direccion cae dentro de lo que se entrega.
+      return { ...cotizarEnvio(origen, { lat: hit.lat, lng: hit.lon }, pricing), address: hit.address || null };
     }
   }
   return null;

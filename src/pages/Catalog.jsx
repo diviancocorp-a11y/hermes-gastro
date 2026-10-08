@@ -37,7 +37,7 @@ import {
   fallbackSettings, fallbackProducts,
   haversine, calcDeliveryCost, CHECKOUT_STEPS, DEFAULT_FORM
 } from "../constants/catalogConstants";
-import { origenDelEnvio, estimarEnvio, catalogoActivo, esEnvioGratis } from "../modules/origenDelEnvio";
+import { origenDelEnvio, estimarEnvio, catalogoActivo, esEnvioGratis, evaluarZona } from "../modules/origenDelEnvio";
 import { computeAvailability } from "../lib/stockAvailability";
 import { applyTenantHead } from "../lib/tenantHead";
 import { resolveTenantSlug } from "../lib/activeTenant";
@@ -109,6 +109,8 @@ export default function Catalog() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [deliveryCost, setDeliveryCost] = useState(0);
   const [deliveryKm, setDeliveryKm] = useState(null);
+  // Lugar (partido) de la direccion cuando cae fuera de la zona de entrega.
+  const [zonaFuera, setZonaFuera] = useState(null);
   const [calcingDelivery, setCalcingDelivery] = useState(false);
   const [confirmAnim, setConfirmAnim] = useState(false); // animación de confirmación
 
@@ -129,9 +131,29 @@ export default function Catalog() {
     [sett?.delivery_pricing],
   );
 
+  // Zona de entrega: guarda en que lugar cae la direccion si queda afuera.
+  // Solo 'fuera' bloquea; 'desconocida' (Nominatim sin partido) deja pasar y
+  // decide el negocio.
+  const aplicarZona = useCallback((detalle) => {
+    const zona = evaluarZona(detalle, sett?.delivery_zone);
+    setZonaFuera(zona.estado === 'fuera' ? (zona.lugar || 'esa zona') : null);
+  }, [sett?.delivery_zone]);
+
+  // Para direcciones que ya traen coordenadas (guardadas): ubica el texto y
+  // evalua la zona SIN tocar el costo ni los km.
+  const verificarZona = useCallback(async (address) => {
+    if (!sett?.delivery_zone?.partidos?.length || !address) return;
+    try {
+      const r = await estimarEnvio(address, {
+        origen: origenEnvio, country: sett?.country, pricing: sett?.delivery_pricing,
+      });
+      aplicarZona(r?.address);
+    } catch { /* sin red: no se bloquea */ }
+  }, [origenEnvio, sett?.country, sett?.delivery_pricing, sett?.delivery_zone, aplicarZona]);
+
   // Calcular envío cuando cambia la dirección
   const estimateDelivery = useCallback(async (address) => {
-    if (!address || address.length < 5) { setDeliveryCost(0); setDeliveryKm(null); return; }
+    if (!address || address.length < 5) { setDeliveryCost(0); setDeliveryKm(null); setZonaFuera(null); return; }
     setCalcingDelivery(true);
     try {
       const cotizado = await estimarEnvio(address, {
@@ -142,12 +164,16 @@ export default function Catalog() {
       if (cotizado) {
         setDeliveryKm(cotizado.km);
         setDeliveryCost(cotizado.cost);
+        // Solo 'fuera' bloquea: si Nominatim no dio un partido reconocible
+        // (estado 'desconocida') se deja pasar y decide el negocio.
+        const zona = evaluarZona(cotizado.address, sett?.delivery_zone);
+        setZonaFuera(zona.estado === 'fuera' ? (zona.lugar || 'esa zona') : null);
       } else {
-        setDeliveryCost(0); setDeliveryKm(null);
+        setDeliveryCost(0); setDeliveryKm(null); setZonaFuera(null);
       }
-    } catch { setDeliveryCost(0); setDeliveryKm(null); }
+    } catch { setDeliveryCost(0); setDeliveryKm(null); setZonaFuera(null); }
     setCalcingDelivery(false);
-  }, [origenEnvio, sett?.country, sett?.delivery_pricing]);
+  }, [origenEnvio, sett?.country, sett?.delivery_pricing, sett?.delivery_zone]);
 
   // Fecha mínima para agendamiento: hoy (siempre permite programar para hoy y mañana)
   const minDate = useMemo(() => {
@@ -553,6 +579,12 @@ export default function Catalog() {
 
   // Enviar pedido a Supabase
   const send = async () => {
+    // Zona de entrega: la direccion ya se ubico y cae fuera de lo que se
+    // entrega. El paso 1 ya no deja avanzar; esto cubre volver atras y cambiarla.
+    if (form.delivery === "envio" && zonaFuera) {
+      setOrderErr(`No entregamos en ${zonaFuera}. ${sett?.delivery_zone?.notice || ""}`.trim());
+      return;
+    }
     setSending(true); setOrderErr("");
 
     // Reintento MP: la orden ya existe de un intento anterior que no llego a
@@ -807,6 +839,10 @@ export default function Catalog() {
         calcingDelivery={calcingDelivery}
         deliveryCost={envioGratis ? 0 : deliveryCost}
         envioGratis={envioGratis && form.delivery === "envio"}
+        zonaFuera={zonaFuera}
+        zonaAviso={sett?.delivery_zone?.notice || null}
+        aplicarZona={aplicarZona}
+        verificarZona={verificarZona}
         setDeliveryCost={setDeliveryCost}
         deliveryKm={deliveryKm}
         setDeliveryKm={setDeliveryKm}

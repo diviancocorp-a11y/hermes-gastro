@@ -45,7 +45,7 @@ export default function CheckoutScreen(props) {
     scheduleMode, setScheduleMode, storeStatus, minDate, availableHours, selectedDayInfo,
     // entrega
     addresses, geoLoading, setGeoLoading, estimateDelivery, calcingDelivery,
-    deliveryCost, setDeliveryCost, deliveryKm, setDeliveryKm,
+    deliveryCost, setDeliveryCost, deliveryKm, setDeliveryKm, zonaFuera,
     haversine, STORE_LAT, STORE_LNG, calcDeliveryCost,
     // pago
     mpConnected, payments, paymentIcon, paymentLabel,
@@ -69,7 +69,9 @@ export default function CheckoutScreen(props) {
     form.phone.length >= 10 &&
     (!form.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) &&
     minOk;
-  const canNext1 = form.delivery === "retiro" || (form.delivery === "envio" && form.address.trim().length > 3);
+  // Fuera de la zona de entrega (settings.delivery_zone) no se avanza: la
+  // direccion ya se ubico y cae en un partido que el negocio no atiende.
+  const canNext1 = form.delivery === "retiro" || (form.delivery === "envio" && form.address.trim().length > 3 && !zonaFuera);
 
   // Cuentas de pago (settings.payment_accounts) = unica fuente. Efectivo implicito.
   const paymentAccounts = (Array.isArray(settings?.payment_accounts) ? settings.payment_accounts : [])
@@ -255,7 +257,7 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
 }
 
 // ─── PASO 1: Entrega ───────────────────────────────────────────────
-function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryKm, haversine, STORE_LAT, STORE_LNG, calcDeliveryCost, estimateDelivery, calcingDelivery, deliveryCost, deliveryKm, geoLoading, setGeoLoading, canNext, onNext, settings }) {
+function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryKm, haversine, STORE_LAT, STORE_LNG, calcDeliveryCost, estimateDelivery, calcingDelivery, deliveryCost, deliveryKm, zonaFuera, zonaAviso, aplicarZona, verificarZona, geoLoading, setGeoLoading, canNext, onNext, settings }) {
   // Si el local no tiene local fisico, forzamos delivery (sin chance de retiro).
   const hasPhysical = settings?.has_physical_store !== false;
   useEffect(() => {
@@ -302,6 +304,9 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
                         const km = haversine(STORE_LAT, STORE_LNG, a.lat, a.lng);
                         setDeliveryKm(Math.round(km * 10) / 10);
                         setDeliveryCost(calcDeliveryCost(km));
+                        // Tiene coordenadas, asi que no pasa por el geocodificador:
+                        // la zona se verifica aparte, sin tocar el costo.
+                        verificarZona?.(a.address);
                       } else { estimateDelivery(a.address); }
                     }} style={{
                       width: "100%", padding: "11px 14px",
@@ -356,6 +361,8 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
                 const km = haversine(STORE_LAT, STORE_LNG, latitude, longitude);
                 setDeliveryKm(Math.round(km * 10) / 10);
                 setDeliveryCost(calcDeliveryCost(km));
+                // El reverse geocoding ya trajo el desglose (partido, provincia).
+                aplicarZona?.(a);
               } catch {
                 alert("No pudimos obtener tu ubicacion. Permiti acceso en tu navegador.");
               }
@@ -372,6 +379,14 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
           <input style={{ ...input, marginTop: 10 }} value={form.address_piso} onChange={e => sf("address_piso", e.target.value)} placeholder="Piso / Depto (opcional)" />
           <input style={{ ...input, marginTop: 10 }} value={form.address_notas} onChange={e => sf("address_notas", e.target.value)} placeholder="Referencia para el delivery (timbre, esquina...)" />
 
+          {zonaAviso && (
+            <div style={{ marginTop: 10, fontSize: 12, color: "var(--t2)", lineHeight: 1.4 }}>{zonaAviso}</div>
+          )}
+          {!calcingDelivery && zonaFuera && (
+            <div role="alert" style={{ marginTop: 10, padding: "10px 12px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "var(--err, #C0392B)", background: "var(--b2)", border: "1px solid var(--line)" }}>
+              Esa dirección parece estar en {zonaFuera}, fuera de nuestra zona de entrega. Probá con otra dirección.
+            </div>
+          )}
           {calcingDelivery && <div style={{ marginTop: 10, fontSize: 13, color: "var(--ac)", fontWeight: 600 }}>Calculando costo...</div>}
           {!calcingDelivery && deliveryKm !== null && deliveryCost > 0 && (
             <div style={{ marginTop: 12, padding: "12px 14px", background: "var(--b2)", borderRadius: 12, border: "1px solid var(--line)" }}>
