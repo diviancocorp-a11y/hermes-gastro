@@ -10,6 +10,7 @@ import SkipToContent from './components/ui/SkipToContent'
 import OfflineBanner from './components/ui/OfflineBanner'
 import UpdateBanner from './components/ui/UpdateBanner'
 import useTheme from './hooks/useTheme'
+import useTelegramMiniApp from './hooks/useTelegramMiniApp'
 import Catalog from './pages/Catalog'
 import PlatformLanding from './pages/PlatformLanding'
 import Consola from './pages/Consola'
@@ -70,6 +71,8 @@ export default function App() {
     hostname: window.location.hostname,
   });
   useTheme(themeOwner);
+  // No-op fuera de Telegram: ni carga el SDK ni toca el DOM.
+  useTelegramMiniApp();
 
   // Variables de :root para las superficies del catalogo fuera de .cp-root.
   // El tema de catalog-pro y el <head> del negocio (titulo, favicon, og) los

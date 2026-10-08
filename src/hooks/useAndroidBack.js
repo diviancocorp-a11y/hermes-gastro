@@ -34,6 +34,9 @@ export default function useAndroidBack(layerCount, closeTop) {
 
   // Sincronizar la cantidad de guards con la cantidad de capas abiertas.
   useEffect(() => {
+    // Aviso para quien quiera saber si hay algo para volver (el boton Atras
+    // nativo de la mini app de Telegram). Nadie escucha: no cuesta nada.
+    window.dispatchEvent(new CustomEvent("hg-layers", { detail: layerCount }));
     const diff = layerCount - guardsRef.current;
     if (diff > 0) {
       // se abrieron capas → empujar guards
