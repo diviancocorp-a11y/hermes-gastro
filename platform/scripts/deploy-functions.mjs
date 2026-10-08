@@ -56,6 +56,9 @@ const NO_VERIFY_JWT = new Set([
   "staff-invite",   // auth interna: JWT de un staff de Divianco
   "table-assistance", // menu de mesa: rate limit + codigos opacos + RPCs acotadas
   "cancel-order",   // arrepentimiento del comprador: rate limit + uuid + regla en cancel_own_order
+  "tg-vincular",    // mini app de Telegram: firma HMAC del initData + rate limit
+  "tg-notificar",   // la llama el trigger de orders: firma compartida en Vault
+  "tg-webhook",     // la llama Telegram: secret_token derivado del token del bot
 ]);
 
 function parseArgs(argv) {
