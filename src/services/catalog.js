@@ -4,6 +4,7 @@ import { OrderInputSchema, CouponValidateSchema, validateInput } from '../lib/sc
 import { setGuestUser } from '../lib/guestUser.js';
 import { resolveTenantSlug } from '../lib/activeTenant.js';
 import { claveDeIdempotencia, reiniciarClave } from '../lib/idempotencia.js';
+import { vincularTelegram } from './telegramLink.js';
 
 /**
  * Trae los datos que necesita el catálogo público: la configuración del
@@ -143,6 +144,11 @@ export async function submitOrder(orderData) {
       phone: validated.phone,
       email: validated.email,
     });
+
+    // Si el pedido se hizo desde la mini app de Telegram, se vincula ese chat
+    // con el telefono para poder avisarle el estado. Sin esperar: no es parte
+    // del pedido y no puede demorar la pantalla de "listo".
+    void vincularTelegram(validated.phone);
 
     return { ok: true, orderId: data.orderId };
 
