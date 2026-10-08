@@ -43,6 +43,16 @@ export function catalogoActivo(settings) {
   return settings?.catalogo_activo === true && origenDelEnvio(settings) !== null;
 }
 
+/**
+ * Si el pedido se lleva el envio gratis: el subtotal de productos SUPERA el
+ * umbral del negocio. "Mayor a 60.000" no incluye 60.000. Un umbral de 0, vacio
+ * o invalido significa que el negocio no ofrece envio gratis.
+ */
+export function esEnvioGratis(subtotal, umbral) {
+  const u = Number(umbral);
+  return Number.isFinite(u) && u > 0 && Number(subtotal) > u;
+}
+
 /** Distancia (km, un decimal) y costo del envio desde `origen` hasta `destino`. */
 export function cotizarEnvio(origen, destino, pricing = null) {
   const km = haversine(origen.lat, origen.lng, Number(destino.lat), Number(destino.lng));

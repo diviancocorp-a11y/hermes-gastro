@@ -393,7 +393,7 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
 }
 
 // ─── PASO 2: Pago ──────────────────────────────────────────────────
-function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, accounts, selectedAccount, ct, ctWithDelivery, deliveryCost, deliveryKm, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, needsReceipt, cart, scheduleMode, settings, onSubmit, sending, orderErr }) {
+function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, accounts, selectedAccount, ct, ctWithDelivery, deliveryCost, envioGratis, deliveryKm, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, needsReceipt, cart, scheduleMode, settings, onSubmit, sending, orderErr }) {
   return (
     <>
       <div style={section}>
@@ -575,6 +575,12 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
           <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 13 }}>
             <span style={{ color: "var(--t2)" }}>Envío {deliveryKm ? `(~${deliveryKm} km)` : ""}</span>
             <span style={{ fontWeight: 700, color: "var(--tx)" }}>{fmtAR(deliveryCost)}</span>
+          </div>
+        )}
+        {envioGratis && (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 13 }}>
+            <span style={{ color: "var(--t2)" }}>Envío {deliveryKm ? `(~${deliveryKm} km)` : ""}</span>
+            <span style={{ fontWeight: 700, color: "var(--ok, #2A9D6E)" }}>Gratis</span>
           </div>
         )}
         {coupon && discount > 0 && (

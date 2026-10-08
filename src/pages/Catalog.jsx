@@ -37,7 +37,7 @@ import {
   fallbackSettings, fallbackProducts,
   haversine, calcDeliveryCost, CHECKOUT_STEPS, DEFAULT_FORM
 } from "../constants/catalogConstants";
-import { origenDelEnvio, estimarEnvio, catalogoActivo } from "../modules/origenDelEnvio";
+import { origenDelEnvio, estimarEnvio, catalogoActivo, esEnvioGratis } from "../modules/origenDelEnvio";
 import { computeAvailability } from "../lib/stockAvailability";
 import { applyTenantHead } from "../lib/tenantHead";
 import { resolveTenantSlug } from "../lib/activeTenant";
@@ -450,12 +450,15 @@ export default function Catalog() {
 
   // Totales del carrito (memoizado). Propina se decide en step 3 (Pago),
   // se calcula sobre subtotal sin descuentos.
-  const { cc, discount, ct, tipAmount, ctWithDelivery } = useMemo(() => {
+  const { cc, discount, ct, tipAmount, ctWithDelivery, envioGratis, costoEnvio } = useMemo(() => {
     const cc = cart.reduce((s, i) => s + i.qty, 0);
     const ctBase = cart.reduce((s, i) => s + i.qty * i.price, 0);
     const discount = coupon ? Math.round(ctBase * coupon.discount_pct / 100) : 0;
     const ct = ctBase - discount;
-    const baseTotal = ct + (form.delivery === "envio" ? deliveryCost : 0);
+    // Envio gratis: el pedido que SUPERA el umbral del negocio (0 = sin umbral).
+    const envioGratis = esEnvioGratis(ct, sett?.free_delivery_over);
+    const costoEnvio = form.delivery === "envio" && !envioGratis ? deliveryCost : 0;
+    const baseTotal = ct + costoEnvio;
     // Propina: monto fijo (cpTipCustom) tiene prioridad sobre el % (cpTip).
     const tipRaw = cpTipCustom != null
       ? cpTipCustom
@@ -463,8 +466,8 @@ export default function Catalog() {
     // Tope de seguridad: la propina no puede superar el total del pedido.
     const tipAmount = Math.max(0, Math.min(tipRaw, baseTotal));
     const ctWithDelivery = baseTotal + tipAmount;
-    return { cc, discount, ct, tipAmount, ctWithDelivery };
-  }, [cart, coupon, deliveryCost, form.delivery, cpTip, cpTipCustom]);
+    return { cc, discount, ct, tipAmount, ctWithDelivery, envioGratis, costoEnvio };
+  }, [cart, coupon, deliveryCost, form.delivery, cpTip, cpTipCustom, sett?.free_delivery_over]);
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -605,7 +608,7 @@ export default function Catalog() {
       gift_note: form.is_gift ? form.gift_note : '',
       coupon_id: coupon?.id || null,
       discount: discount,
-      delivery_cost: form.delivery === "envio" ? deliveryCost : 0,
+      delivery_cost: costoEnvio,
       tip_pct: cpTipCustom != null
         ? ((ct + discount) > 0 ? Math.round(tipAmount / (ct + discount) * 100) : 0)
         : (cpTip || 0),
@@ -802,7 +805,8 @@ export default function Catalog() {
         setGeoLoading={setGeoLoading}
         estimateDelivery={estimateDelivery}
         calcingDelivery={calcingDelivery}
-        deliveryCost={deliveryCost}
+        deliveryCost={envioGratis ? 0 : deliveryCost}
+        envioGratis={envioGratis && form.delivery === "envio"}
         setDeliveryCost={setDeliveryCost}
         deliveryKm={deliveryKm}
         setDeliveryKm={setDeliveryKm}
@@ -835,7 +839,7 @@ export default function Catalog() {
         setTip={setCpTip}
         tipCustom={cpTipCustom}
         setTipCustom={setCpTipCustom}
-        tipCap={ct + (form.delivery === "envio" ? deliveryCost : 0)}
+        tipCap={ct + costoEnvio}
         tipAmount={tipAmount}
         orderErr={orderErr}
         sending={sending}
