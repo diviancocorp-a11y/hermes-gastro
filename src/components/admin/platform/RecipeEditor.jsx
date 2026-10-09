@@ -30,6 +30,9 @@ export default function RecipeEditor({ lineas, ingredientes, precio, settings, o
   const ganancia = precioNum - costo;
   const pct = precioNum > 0 ? (ganancia / precioNum) * 100 : null;
 
+  // step=0.01: con mas decimales el navegador no deja guardar el formulario.
+  const aDosDecimales = (v) => v.replace(/^(\d*[.,]\d{0,2}).*$/, '$1');
+
   const set = (i, campo, valor) => {
     const next = lineas.map((l, idx) => (idx === i ? { ...l, [campo]: valor } : l));
     onChange(next);
@@ -76,7 +79,7 @@ export default function RecipeEditor({ lineas, ingredientes, precio, settings, o
             style={{ ...input, width: 90 }}
             type="number" inputMode="decimal" min="0" step="0.01"
             value={l.qty}
-            onChange={e => set(i, 'qty', e.target.value)}
+            onChange={e => set(i, 'qty', aDosDecimales(e.target.value))}
             placeholder="Cant."
             aria-label="Cantidad"
           />

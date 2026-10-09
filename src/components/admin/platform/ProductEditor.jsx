@@ -42,7 +42,11 @@ export default function ProductEditor({
   // configuro produccion y el campo no se muestra.
   sectores = [],
 }) {
-  const [lineas, setLineas] = useState(() => lineasReceta.map(l => ({ ...l })));
+  const [lineas, setLineas] = useState(() => lineasReceta.map(l => ({
+    ...l,
+    // Recetas viejas con 4 decimales: el input es step=0.01 y no dejaria guardar.
+    qty: l.qty === '' || l.qty == null ? l.qty : String(Math.round(Number(l.qty) * 100) / 100),
+  })));
   const [form, setForm] = useState(() => ({
     ...EMPTY,
     ...(product || {}),
