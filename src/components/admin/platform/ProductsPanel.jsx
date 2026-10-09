@@ -54,6 +54,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
   const [configAbierta, setConfigAbierta] = useState(false);
   const [minimoInput, setMinimoInput] = useState('30');
   const [menuProducto, setMenuProducto] = useState(null);
+  const [menuPos, setMenuPos] = useState(null);
   const [detalleProducto, setDetalleProducto] = useState(null);
   const esMobile = useMediaQuery('(max-width: 768px)');
 
@@ -64,13 +65,32 @@ const ProductsPanel = forwardRef(function ProductsPanel({
         setMenuProducto(null);
       }
     };
+    const cerrar = () => setMenuProducto(null);
     document.addEventListener('pointerdown', cerrarMenu);
     document.addEventListener('keydown', cerrarMenu);
+    window.addEventListener('scroll', cerrar, true);
+    window.addEventListener('resize', cerrar);
     return () => {
       document.removeEventListener('pointerdown', cerrarMenu);
       document.removeEventListener('keydown', cerrarMenu);
+      window.removeEventListener('scroll', cerrar, true);
+      window.removeEventListener('resize', cerrar);
     };
   }, [menuProducto]);
+
+  // El popover va en position:fixed: la categoria y la lista tienen overflow
+  // hidden y recortaban el menu de la primera y la ultima fila.
+  const abrirMenu = (event, id) => {
+    if (menuProducto === id) { setMenuProducto(null); return; }
+    const r = event.currentTarget.getBoundingClientRect();
+    const alto = 92;
+    const arriba = r.bottom + alto + 8 > window.innerHeight;
+    setMenuPos({
+      right: Math.max(8, window.innerWidth - r.right),
+      ...(arriba ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }),
+    });
+    setMenuProducto(id);
+  };
 
   useImperativeHandle(ref, () => ({
     nuevoProducto: () => setEditing('new'),
@@ -450,7 +470,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                         className="ag-producto-menu-trigger"
                         aria-label={`Más acciones para ${p.name}`}
                         aria-expanded={menuProducto === p.id}
-                        onClick={() => setMenuProducto(actual => actual === p.id ? null : p.id)}
+                        onClick={(event) => abrirMenu(event, p.id)}
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                           <circle cx="5" cy="12" r="1.6" />
@@ -459,7 +479,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                         </svg>
                       </button>
                       {menuProducto === p.id && (
-                        <div className="ag-producto-menu-popover" role="menu">
+                        <div className="ag-producto-menu-popover" role="menu" style={menuPos || undefined}>
                           <button type="button" role="menuitem" onClick={() => { setMenuProducto(null); setEditing(p); }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="M12 20h9" />

@@ -1181,10 +1181,8 @@
 .ag-producto-menu { position: relative; }
 
 .ag-producto-menu-popover {
-  position: absolute;
-  z-index: 30;
-  top: calc(100% - var(--ag-sp-1));
-  right: 0;
+  position: fixed;
+  z-index: 60;
   display: grid;
   min-width: 136px;
   padding: var(--ag-sp-1);
@@ -1377,11 +1375,6 @@
 
   .ag-fila-margen-celda { display: block; }
   .ag-fila-margen-track { width: 100%; margin-top: var(--ag-sp-2); }
-
-  .ag-producto-menu-popover {
-    top: calc(100% + var(--ag-sp-1));
-    right: 0;
-  }
 
   .ag-gestion-head {
     align-items: center;
