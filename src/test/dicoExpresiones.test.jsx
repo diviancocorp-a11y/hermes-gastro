@@ -14,19 +14,15 @@
  * escrito a mano en el JSX— sin que fallara nada.
  */
 import React from 'react';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
-import DicoSlot from '../components/dico/DicoSlot';
 import DicoNative from '../components/dico/DicoNative';
+import DicoPhysical from '../components/dico/DicoPhysical';
 import {
   NATIVE_STATES, PHYSICAL_POSES, ACTIVITIES,
   nativeStateCanonico, physicalPoseCanonica, activityCanonica,
 } from '../components/dico/vocabulario';
 
-const RAIZ = resolve(__dirname, '..', '..');
-const slotCss = readFileSync(resolve(RAIZ, 'src/components/dico/dico-slot.css'), 'utf8');
 
 beforeEach(() => {
   window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener() {}, removeEventListener() {} });
@@ -79,64 +75,21 @@ describe('la marca no queda clavada en neutral', () => {
 });
 
 describe('el pet no queda clavado en idle', () => {
-  it('cada pose llega al primitive a traves del Slot', () => {
+  it('cada pose llega al primitive', () => {
     for (const pose of PHYSICAL_POSES) {
-      const { container, unmount } = render(
-        React.createElement(DicoSlot, { estado: 'physical_open', pose }));
+      const { container, unmount } = render(React.createElement(DicoPhysical, { pose }));
       expect(container.querySelector('[data-dico-physical]').dataset.dicoPhysical, pose).toBe(pose);
       unmount();
     }
   });
 
-  it('el estado no se escribe a mano en el JSX del Slot', () => {
-    // Era literalmente `className="dico--idle"`: Physical no podia expresar
-    // nada y ningun test lo notaba.
-    const fuente = readFileSync(resolve(RAIZ, 'src/components/dico/DicoSlot.jsx'), 'utf8');
-    expect(fuente).not.toMatch(/className="dico--idle"/);
-  });
-
   it('un valor desconocido cae en idle en vez de pedir un cuadro que no existe', () => {
-    const { container } = render(
-      React.createElement(DicoSlot, { estado: 'physical_open', pose: 'inventado' }));
+    const { container } = render(React.createElement(DicoPhysical, { pose: 'inventado' }));
     expect(container.querySelector('[data-dico-physical]').dataset.dicoPhysical).toBe('idle');
   });
 
   it('no le monta una cara encima: el atlas ya la trae', () => {
-    const { container } = render(
-      React.createElement(DicoSlot, { estado: 'physical_open', pose: 'explain' }));
+    const { container } = render(React.createElement(DicoPhysical, { pose: 'explain' }));
     expect(container.querySelector('.dico-physical-cara')).toBeNull();
-  });
-});
-
-describe('la geometria del escenario se deriva, no se tantea', () => {
-  const declara = slotCss.slice(slotCss.lastIndexOf('.dico-slot {'));
-  const cuerpo = declara.slice(0, declara.indexOf('}'));
-
-  it('declara las constantes que consume quien posiciona el Slot', () => {
-    for (const v of ['--pose-ancho', '--pose-alto', '--pose-bajo-pies', '--pose-tinta-izq']) {
-      expect(cuerpo, `falta ${v}`).toContain(v);
-    }
-  });
-
-  it('el alto sale del aspecto de la celda del atlas, no de un numero suelto', () => {
-    expect(cuerpo).toContain('192 / 208');
-  });
-
-  it('ya no hay coordenadas del pack viejo', () => {
-    // El dedo de `pointDown` no existe: el pet mira, no senala. Si alguien
-    // repone esas variables es que volvio a anclar por una anatomia que el
-    // personaje no tiene.
-    expect(slotCss).not.toContain('--pose-dedo');
-  });
-
-  it('el escenario consume las variables en vez de fijar medidas', () => {
-    const bloque = slotCss.match(/^\.dico-slot-stage\s*\{([^}]*)\}/m);
-    expect(bloque).not.toBeNull();
-    const declaraciones = bloque[1].split(';').map((d) => d.trim());
-    for (const prop of ['width', 'height', 'bottom']) {
-      const decl = declaraciones.find((d) => d.startsWith(`${prop}:`));
-      expect(decl, `falta ${prop}`).toBeDefined();
-      expect(decl, `${prop} con valor fijo en vez de derivado`).toContain('var(--pose-');
-    }
   });
 });

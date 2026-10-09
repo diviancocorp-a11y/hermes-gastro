@@ -151,7 +151,7 @@ describe('el grafo productivo conoce dos Dicos', () => {
     expect(PRODUCTIVO.alcanzables.size).toBeGreaterThan(100);
     expect(PRODUCTIVO.alcanzables).toContain('src/components/dico/DicoPhysical.jsx');
     expect(PRODUCTIVO.alcanzables).toContain('src/components/dico/DicoNative.jsx');
-    expect(PRODUCTIVO.alcanzables).toContain('src/components/dico/DicoSlot.jsx');
+    expect(PRODUCTIVO.alcanzables).toContain('src/components/dico/DicoFloatingPhysical.jsx');
   });
 
   it('el pet entra por su manifiesto, que es la unica fuente de la geometria', () => {

@@ -290,15 +290,6 @@ describe('el contrato de Phase 3A sigue en pie', () => {
     expect(shell).toMatch(/\.ag-slot:has\(\.dico-avisos--abierto\) \{[^}]*max-height: 70vh/);
   });
 
-  it('DicoSlot es controlado y no gobierna Native ni avisos', () => {
-    const slot = leer('src/components/dico/DicoSlot.jsx');
-    expect(slot).not.toMatch(/useState|useReducer/);
-    expect(slot).not.toMatch(/DicoAvisos|dico-avisos|data-dico-core/);
-    expect(slot).toContain("estado === 'physical_opening'");
-    expect(slot).toContain("estado === 'physical_open'");
-    expect(slot).toContain("estado === 'physical_closing'");
-  });
-
   it('el trigger Native reserva un hit target de 44 por 44', () => {
     /* PASS 4 — el minimo pasa a ser un PISO y no una medida exacta.
      * El control dejo de ser una pastilla de 44 al lado del personaje: ahora
