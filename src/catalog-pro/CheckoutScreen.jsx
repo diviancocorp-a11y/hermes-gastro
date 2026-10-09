@@ -257,7 +257,7 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
 }
 
 // ─── PASO 1: Entrega ───────────────────────────────────────────────
-function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryKm, haversine, STORE_LAT, STORE_LNG, calcDeliveryCost, estimateDelivery, calcingDelivery, deliveryCost, deliveryKm, zonaFuera, zonaAviso, aplicarZona, verificarZona, geoLoading, setGeoLoading, canNext, onNext, settings }) {
+function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryKm, haversine, STORE_LAT, STORE_LNG, calcDeliveryCost, estimateDelivery, calcingDelivery, deliveryCost, deliveryKm, zonaFuera, zonaAviso, aplicarZona, verificarZona, geoLoading, setGeoLoading, canNext, onNext, settings, envioGratis }) {
   // Si el local no tiene local fisico, forzamos delivery (sin chance de retiro).
   const hasPhysical = settings?.has_physical_store !== false;
   useEffect(() => {
@@ -388,6 +388,18 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
             </div>
           )}
           {calcingDelivery && <div style={{ marginTop: 10, fontSize: 13, color: "var(--ac)", fontWeight: 600 }}>Calculando costo...</div>}
+          {/* Envio gratis: o ya se lo ganó, o se le avisa desde cuanto aplica. */}
+          {!calcingDelivery && envioGratis && (
+            <div style={{ marginTop: 12, padding: "12px 14px", background: "var(--b2)", borderRadius: 12, border: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)" }}>Costo de envío</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "var(--ok, #2A9D6E)" }}>Gratis</div>
+            </div>
+          )}
+          {!envioGratis && Number(settings?.free_delivery_over) > 0 && (
+            <div style={{ marginTop: 10, fontSize: 12.5, color: "var(--t2)", fontWeight: 600 }}>
+              Envío gratis en compras de más de {fmtAR(Number(settings.free_delivery_over))}
+            </div>
+          )}
           {!calcingDelivery && deliveryKm !== null && deliveryCost > 0 && (
             <div style={{ marginTop: 12, padding: "12px 14px", background: "var(--b2)", borderRadius: 12, border: "1px solid var(--line)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

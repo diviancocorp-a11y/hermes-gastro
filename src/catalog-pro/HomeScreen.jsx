@@ -170,6 +170,17 @@ export default function HomeScreen({
         </div>
       )}
 
+      {/* ===== ENVIO GRATIS (settings.free_delivery_over) ===== */}
+      {Number(settings?.free_delivery_over) > 0 && (
+        <div style={{
+          padding: "7px 16px", background: "var(--b2)", color: "var(--tx)",
+          borderBottom: "1px solid var(--line)",
+          fontSize: 12.5, fontWeight: 600, textAlign: "center", letterSpacing: 0.2,
+        }}>
+          Envío gratis en compras de más de {fmtAR(Number(settings.free_delivery_over))}
+        </div>
+      )}
+
       {/* ===== HEADER ===== */}
       <div style={{
         padding: "16px 16px 8px 22px", background: "var(--bg)",
