@@ -3,7 +3,6 @@ import { readFileSync, readdirSync } from 'node:fs';
 import {
   coordenadaValida, origenDelEnvio, cotizarEnvio, urlsBusquedaDireccion, estimarEnvio,
 } from '../modules/origenDelEnvio';
-import business from '@business';
 
 // Dos negocios del edificio en ciudades distintas. Antes los dos cotizaban
 // contra el mismo punto del build.
@@ -19,17 +18,19 @@ const PRICING = [
 
 describe('origenDelEnvio', () => {
   it('usa la sucursal del tenant cuando get_catalog la trae', () => {
-    expect(origenDelEnvio(CORDOBA)).toEqual({ lat: -31.4201, lng: -64.1888, propio: true });
+    expect(origenDelEnvio(CORDOBA)).toEqual({ lat: -31.4201, lng: -64.1888 });
   });
 
   it('acepta lat/lng como string (numeric de Postgres serializado)', () => {
     expect(origenDelEnvio({ store_lat: '-31.4201', store_lng: '-64.1888' }))
-      .toEqual({ lat: -31.4201, lng: -64.1888, propio: true });
+      .toEqual({ lat: -31.4201, lng: -64.1888 });
   });
 
-  it('cae en business.geo si el negocio no cargo su ubicacion', () => {
+  it('sin ubicacion cargada no hay origen: no se inventa uno', () => {
+    // El 27/sep se sacaron las ubicaciones del build; la base rechaza el pedido
+    // sin ubicacion (0083), asi que el cliente tampoco cotiza contra un punto ajeno.
     for (const s of [null, {}, { store_lat: null, store_lng: null }, { store_lat: -31.4 }]) {
-      expect(origenDelEnvio(s)).toEqual({ lat: business.geo.lat, lng: business.geo.lng, propio: false });
+      expect(origenDelEnvio(s)).toBeNull();
     }
   });
 
@@ -38,7 +39,7 @@ describe('origenDelEnvio', () => {
     expect(coordenadaValida(-91, 10)).toBe(false);
     expect(coordenadaValida(10, 181)).toBe(false);
     expect(coordenadaValida('', '')).toBe(false);
-    expect(origenDelEnvio({ store_lat: 0, store_lng: 0 }).propio).toBe(false);
+    expect(origenDelEnvio({ store_lat: 0, store_lng: 0 })).toBeNull();
   });
 });
 
@@ -50,12 +51,6 @@ describe('cotizarEnvio con un origen por tenant', () => {
     expect(desdeCordoba.cost).toBe(700);
     expect(desdeMontevideo.km).toBeGreaterThan(400);
     expect(desdeMontevideo.cost).toBe(9000);
-  });
-
-  it('el respaldo del build ya no deja a un negocio argentino en otro pais', () => {
-    // Regresion: con business.geo en Caracas esto daba ~5000 km.
-    const km = cotizarEnvio(origenDelEnvio(null), { lat: -34.62, lng: -58.40 }).km;
-    expect(km).toBeLessThan(10);
   });
 
   it('redondea a un decimal y acepta el destino como string (Nominatim)', () => {
