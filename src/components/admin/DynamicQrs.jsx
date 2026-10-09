@@ -13,7 +13,7 @@
  *   - Descargar PNG (para imprimir)
  *   - Copiar URL pública al clipboard
  *
- * Entry point: botón "QRs dinámicos" en BrandModal (sección Personalización).
+ * Entry point: fila "QRs dinámicos" en Configuración → Operación (Settings).
  */
 import { useState, useEffect, useRef } from "react";
 import QRCode from "qrcode";

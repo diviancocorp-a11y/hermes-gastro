@@ -31,6 +31,8 @@
 //
 // Uso: npm run check:alcanzable
 //      npm run check:alcanzable -- --podar   saca de la lista lo ya resuelto
+//      npm run check:alcanzable -- --huerfanos   lista los .jsx de src/components y src/pages
+//                                          que produccion no alcanza (informativo, no falla)
 
 import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -184,9 +186,32 @@ function cadena(padres, root, archivo) {
 
 const ES_MAIN = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 const PODAR = process.argv.includes('--podar');
+const HUERFANOS = process.argv.includes('--huerfanos');
+
+/** Componentes y paginas que existen en el repo pero ningun camino de produccion importa. */
+export function componentesHuerfanos(padres, root = ROOT) {
+  const salida = [];
+  const recorrer = (dir) => {
+    for (const nombre of readdirSync(dir)) {
+      const ruta = join(dir, nombre);
+      if (statSync(ruta).isDirectory()) recorrer(ruta);
+      else if (/\.jsx$/.test(nombre) && !padres.has(ruta)) salida.push(relative(root, ruta).split(sep).join('/'));
+    }
+  };
+  for (const base of ['src/components', 'src/pages']) {
+    if (existsSync(join(root, base))) recorrer(join(root, base));
+  }
+  return salida.sort();
+}
 
 if (ES_MAIN) {
   const padres = grafo();
+  if (HUERFANOS) {
+    const lista = componentesHuerfanos(padres);
+    console.log(lista.length ? lista.join('\n') : 'Sin componentes huerfanos.');
+    console.log(`\n${lista.length} componente(s) que produccion no alcanza (informativo).`);
+    process.exit(0);
+  }
   const encontradas = llamadasHuerfanas({ padres });
   const { pendientes } = JSON.parse(readFileSync(join(ROOT, PENDIENTES), 'utf8'));
   const { nuevas, resueltas } = comparar(encontradas, pendientes);
