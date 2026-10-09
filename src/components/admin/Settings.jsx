@@ -107,7 +107,7 @@ function Settings({
     <div className="ag-subpage-stack">
 
       {/* ── ROOT ── */}
-      <div className={`ag-subpage is-root ${page !== 'root' ? 'has-child' : ''}`}>
+      <div className={`ag-subpage is-root ${page !== 'root' || brandOpen ? 'has-child' : ''}`}>
         <div className="ag-subpage-body" style={{ paddingTop: 6 }}>
           <div style={{ padding: "0 4px 14px", display: "flex", alignItems: "center", gap: 10 }}>
             {onBack && (
@@ -321,17 +321,23 @@ function Settings({
         onBack={goBack}
       />
       {/* Personalizacion: BrandModal como pagina, con guardado y subida por tenant */}
+      {/* Va dentro de .ag-subpage: el stack es overflow:hidden y suelto
+          quedaba recortado debajo de la lista, sin verse. */}
       {brandOpen && (
-        <BrandModal
-          open
-          asPage
-          settings={settings}
-          setSettings={setSettings}
-          showToast={showToast}
-          onSave={onSave}
-          onSubirImagen={onSubirImagen}
-          onClose={() => setBrandOpen(false)}
-        />
+        <div className="ag-subpage is-child is-open">
+          <div className="ag-subpage-body">
+            <BrandModal
+              open
+              asPage
+              settings={settings}
+              setSettings={setSettings}
+              showToast={showToast}
+              onSave={onSave}
+              onSubirImagen={onSubirImagen}
+              onClose={() => setBrandOpen(false)}
+            />
+          </div>
+        </div>
       )}
 
       {/* Overlay de QRs dinamicos (componente autonomo a pantalla completa) */}
