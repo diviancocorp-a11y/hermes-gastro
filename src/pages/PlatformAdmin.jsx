@@ -976,6 +976,11 @@ export default function PlatformAdmin() {
     (file) => uploadTenantImage(tenantId, file, { prefix: 'producto' }),
     [tenantId]
   );
+  // Logo, portada, OG y favicon de Personalizacion: mismo bucket por tenant.
+  const subirImagenDeMarca = useCallback(
+    (file, tipo) => uploadTenantImage(tenantId, file, { prefix: tipo }),
+    [tenantId]
+  );
   const subirComprobante = useCallback(
     (file) => uploadTenantImage(tenantId, file, { prefix: 'ticket' }),
     [tenantId]
@@ -1680,6 +1685,7 @@ export default function PlatformAdmin() {
                     setSettings={setSett}
                     showToast={msg}
                     onSave={guardarSettings}
+                    onSubirImagen={subirImagenDeMarca}
                     onAbrirUsuarios={puedeAbrirDestino(roles, 'usuarios') ? () => setTab('usuarios') : null}
                     onAbrirPasarelas={puedeAbrirDestino(roles, 'cobros') ? () => setTab('cobros') : null}
                     onBack={() => setTab('products')}

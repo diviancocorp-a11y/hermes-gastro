@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import QrRedirect from './pages/QrRedirect'
 import InfoPage from './pages/InfoPage'
 import { lazy, Suspense } from 'react'
@@ -52,7 +52,6 @@ function lazyReload(importer) {
 }
 
 const PlatformAdmin = lazyReload(() => import('./pages/PlatformAdmin'))
-const Personalizacion = lazyReload(() => import('./pages/Personalizacion'))
 const InfoPagesAdmin = lazyReload(() => import('./pages/admin/InfoPages'))
 const OrderTracker = lazyReload(() => import('./pages/OrderTracker'))
 const MyAccount = lazyReload(() => import('./pages/MyAccount'))
@@ -121,7 +120,7 @@ export default function App() {
               {/* El panel del edificio. El ERP legacy (pages/Admin) se borro
                   el 29/sep: ningun build lo servia y viajaba en el bundle. */}
               <Route path="/admin" element={<PlatformAdmin />} />
-              <Route path="/admin/personalizacion" element={<Personalizacion />} />
+              <Route path="/admin/personalizacion" element={<Navigate to="/admin" replace />} />
               <Route path="/admin/paginas" element={<InfoPagesAdmin />} />
               <Route path="/order/:id" element={<OrderTracker />} />
               <Route path="/mi-cuenta" element={<MyAccount />} />

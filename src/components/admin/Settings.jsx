@@ -22,6 +22,7 @@ import SettingsRow from "./shared/forms/SettingsRow";
 import TimePicker from "./shared/forms/TimePicker";
 import CatChipsEditor from "../ui/CatChipsEditor";
 import DecimalInput from "../ui/DecimalInput";
+import BrandModal from "./shared/BrandModal";
 import DynamicQrs from "./DynamicQrs";
 import InfoPagesAdmin from "../../pages/admin/InfoPages";
 import PaymentAccountsEditor from "../ui/PaymentAccountsEditor";
@@ -63,12 +64,14 @@ const SECTION_TITLES = {
 function Settings({
   settings, setSettings, showToast, section = null, onBack,
   onSave,
+  onSubirImagen,
   onAbrirUsuarios = null,
   onAbrirPasarelas = null,
 }) {
   const confirmSlide = useConfirm();
   const [s, setS] = useState({ ...settings });
   const [page, setPage] = useState('root'); // 'root' | 'hours' | 'expCats' | 'ingCats' | 'costs' | 'usarTargets'
+  const [brandOpen, setBrandOpen] = useState(false); // Personalizacion (marca, logo, tema del catalogo)
   const [qrsOpen, setQrsOpen] = useState(false); // overlay QRs dinamicos (vive en Operacion)
   const [pagesOpen, setPagesOpen] = useState(false); // overlay Paginas informativas (debajo de QRs)
   const [accountsOpen, setAccountsOpen] = useState(false); // overlay Cuentas de pago (atajo en Finanzas)
@@ -141,6 +144,13 @@ function Settings({
           <>
           {!section && <div className="ag-settings-group-title">Operación</div>}
           <div className="ag-settings-group">
+            {onSubirImagen && <SettingsRow
+              state="recipes"
+              icon={<Icon d="M12 19l7-7 3 3-7 7-3-3z M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z M2 2l7.6 7.6" />}
+              label="Personalización"
+              hint="Nombre, logo, portada y tema del catálogo"
+              onClick={() => setBrandOpen(true)}
+            />}
             <SettingsRow
               state="stock"
               icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>}
@@ -310,6 +320,20 @@ function Settings({
         showToast={showToast}
         onBack={goBack}
       />
+      {/* Personalizacion: BrandModal como pagina, con guardado y subida por tenant */}
+      {brandOpen && (
+        <BrandModal
+          open
+          asPage
+          settings={settings}
+          setSettings={setSettings}
+          showToast={showToast}
+          onSave={onSave}
+          onSubirImagen={onSubirImagen}
+          onClose={() => setBrandOpen(false)}
+        />
+      )}
+
       {/* Overlay de QRs dinamicos (componente autonomo a pantalla completa) */}
       {qrsOpen && <DynamicQrs onClose={() => setQrsOpen(false)} showToast={showToast} />}
 

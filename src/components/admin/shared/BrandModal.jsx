@@ -14,14 +14,11 @@
  *   settings:    objeto settings actual
  *   setSettings: (s) => void  (refleja el save al state global)
  *   showToast:   (msg) => void
+ *   onSave:      (settings) => Promise<settingsGuardados|null>  (guarda por tenant)
+ *   onSubirImagen: (file, tipo) => Promise<url|{__error}>  tipo: logo|cover|og|favicon
  *   onCategories: opcional · abre overlay de gestión de categorías
  */
 import { memo, useEffect, useRef, useState } from "react";
-import {
-  updateSettings,
-  uploadCoverImage,
-  uploadLogoImage,
-} from "../../../lib/adminService";
 import { useConfirm } from "../../ConfirmSlideProvider";
 import ToggleSwitch from "./forms/ToggleSwitch";
 import DecimalInput from "../../ui/DecimalInput";
@@ -34,7 +31,7 @@ const COLORS = [
   { h: "#2D1B0E", l: "Negro" },
 ];
 
-function BrandModal({ open, onClose, settings, setSettings, showToast, asPage = false }) {
+function BrandModal({ open, onClose, settings, setSettings, showToast, onSave, onSubirImagen, asPage = false }) {
   const [s, setS] = useState({ ...settings });
   const confirmSlide = useConfirm();
   const [section, setSection] = useState('identity'); // 'identity' | 'catalog'
@@ -57,7 +54,7 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, asPage = 
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       const mySeq = ++saveSeq.current;
-      const saved = await updateSettings(s);
+      const saved = await onSave(s);
       if (mySeq !== saveSeq.current) return;
       if (saved) setSettings(saved);
       else showToast("Error al guardar");
@@ -83,7 +80,7 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, asPage = 
   const handleCoverFile = async (e) => {
     const file = e.target.files?.[0]; if (!file) return;
     setUploadingCover(true);
-    const result = await uploadCoverImage(file);
+    const result = await onSubirImagen(file, "cover");
     setUploadingCover(false);
     if (result?.__error) { showToast(result.__error); return; }
     if (result) { set("cover_url", result); showToast("Imagen cargada ✓"); } else { showToast("Error al subir"); }
@@ -91,20 +88,19 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, asPage = 
   const handleLogoFile = async (e) => {
     const file = e.target.files?.[0]; if (!file) return;
     setUploadingLogo(true);
-    const result = await uploadLogoImage(file);
+    const result = await onSubirImagen(file, "logo");
     setUploadingLogo(false);
     if (result?.__error) { showToast(result.__error); return; }
     if (result) { set("logo_url", result); showToast("Logo cargado ✓"); } else { showToast("Error al subir"); }
   };
 
-  // OG image y favicon: reusan uploadLogoImage (mismo bucket de assets de marca).
-  // En una iteración futura conviene tener uploadBrandAsset(file, kind) con bucket dedicado.
+  // OG image y favicon: mismo uploader, distinto prefijo para reconocerlos en Storage.
   const [uploadingOg, setUploadingOg] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const handleOgFile = async (e) => {
     const file = e.target.files?.[0]; if (!file) return;
     setUploadingOg(true);
-    const result = await uploadLogoImage(file);
+    const result = await onSubirImagen(file, "og");
     setUploadingOg(false);
     if (result?.__error) { showToast(result.__error); return; }
     if (result) { set("og_image_url", result); showToast("Imagen OG cargada ✓"); } else { showToast("Error al subir"); }
@@ -112,7 +108,7 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, asPage = 
   const handleFaviconFile = async (e) => {
     const file = e.target.files?.[0]; if (!file) return;
     setUploadingFavicon(true);
-    const result = await uploadLogoImage(file);
+    const result = await onSubirImagen(file, "favicon");
     setUploadingFavicon(false);
     if (result?.__error) { showToast(result.__error); return; }
     if (result) { set("favicon_url", result); showToast("Favicon cargado ✓"); } else { showToast("Error al subir"); }
@@ -401,7 +397,7 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, asPage = 
                       if (!ok) return;
                       // Save explícito (no esperamos debounce).
                       setS(p => ({ ...p, catalog_theme: t.id }));
-                      const saved = await updateSettings({ ...s, catalog_theme: t.id });
+                      const saved = await onSave({ ...s, catalog_theme: t.id });
                       if (saved) {
                         setSettings(saved);
                         try { showToast(`Tema aplicado: ${t.label} ✓`); } catch { /* opcional */ }
