@@ -312,10 +312,20 @@ export default function PlatformAdmin() {
   useEffect(() => {
     let vivo = true;
     const previo = document.title;
+    const linkIcono = document.head.querySelector('link[rel="icon"]');
+    const iconoPrevio = linkIcono?.getAttribute('href');
     fetchTenantBrand(getTenantSlugSync()).then((brand) => {
-      if (vivo && brand?.name) document.title = `${brand.name} · Panel`;
+      if (!vivo) return;
+      if (brand?.name) document.title = `${brand.name} · Panel`;
+      // Sin esto la pestania del panel llevaba el icono del build en todos los negocios.
+      const icono = brand?.favicon_url || brand?.logo_url;
+      if (icono && linkIcono) linkIcono.setAttribute('href', icono);
     });
-    return () => { vivo = false; document.title = previo; };
+    return () => {
+      vivo = false;
+      document.title = previo;
+      if (linkIcono && iconoPrevio) linkIcono.setAttribute('href', iconoPrevio);
+    };
   }, []);
 
   const toggleTheme = () => {

@@ -130,9 +130,11 @@ export function applyTenantHead(settings) {
     .forEach((n) => n.setAttribute('content', color));
   setMeta('name', 'theme-color', color);
 
-  const icon = settings.logo_url || letterFavicon(letter, color);
+  // El favicon propio manda en la pestania; sin el, el logo; sin logo, la letra.
+  // El icono de "Agregar a inicio" prefiere el logo: suele ser mas grande.
+  const icon = settings.favicon_url || settings.logo_url || letterFavicon(letter, color);
   setLink('icon', icon);
-  setLink('apple-touch-icon', icon);
+  setLink('apple-touch-icon', settings.logo_url || icon);
 
   // El manifest estatico (/manifest.json) trae el nombre y el icono del
   // build. Se apunta al endpoint por tenant para que "Agregar a inicio"

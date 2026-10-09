@@ -82,6 +82,12 @@ describe('tenantHead', () => {
         .toBe('https://cdn/logo.png');
     });
 
+    it('el favicon propio gana sobre el logo en la pestania', () => {
+      applyTenantHead({ biz_name: 'X', logo_url: 'https://cdn/logo.png', favicon_url: 'https://cdn/fav.png' });
+      expect(document.head.querySelector('link[rel="icon"]').getAttribute('href')).toBe('https://cdn/fav.png');
+      expect(document.head.querySelector('link[rel="apple-touch-icon"]').getAttribute('href')).toBe('https://cdn/logo.png');
+    });
+
     it('apunta el manifest al tenant cuando hay slug', () => {
       applyTenantHead({ biz_name: 'Mala Miga', __slug: 'mala-miga' });
       expect(document.head.querySelector('link[rel="manifest"]').getAttribute('href'))
