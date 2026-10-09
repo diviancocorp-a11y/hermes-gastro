@@ -34,6 +34,16 @@ describe('validarImagen', () => {
     expect(validarImagen(archivo({ name: 'truco.jpg', type: 'application/pdf' }))).toBeTruthy();
   });
 
+  it('el .ico solo vale para el favicon', () => {
+    const ico = archivo({ name: 'favicon.ico', type: 'image/x-icon' });
+    expect(validarImagen(ico)).toBeTruthy();
+    expect(validarImagen(ico, { permitirIco: true })).toBeNull();
+    // Windows a veces deja el type vacio y otras usa el nombre largo.
+    expect(validarImagen(archivo({ name: 'f.ico', type: '' }), { permitirIco: true })).toBeNull();
+    expect(validarImagen(archivo({ name: 'f.ico', type: 'image/vnd.microsoft.icon' }), { permitirIco: true })).toBeNull();
+    expect(validarImagen(archivo({ name: 'f.ico', type: 'application/pdf' }), { permitirIco: true })).toBeTruthy();
+  });
+
   it('rechaza lo que pasa el limite, con el peso en el mensaje', () => {
     const msg = validarImagen(archivo({ size: TAMANO_MAX + 1 }));
     expect(msg).toMatch(/5 MB/);

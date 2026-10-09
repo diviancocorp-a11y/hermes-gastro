@@ -21,6 +21,9 @@ const BUCKET = 'tenant-images';
 
 export const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 export const EXTS_PERMITIDAS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+// El favicon es el unico lugar donde un .ico tiene sentido (0091).
+const TIPOS_ICO = ['image/x-icon', 'image/vnd.microsoft.icon'];
+
 export const TAMANO_MAX = 5 * 1024 * 1024; // igual que el bucket
 
 function exigirTenant(tenantId, quien) {
@@ -28,9 +31,15 @@ function exigirTenant(tenantId, quien) {
 }
 
 /** Devuelve un mensaje de error, o null si el archivo sirve. */
-export function validarImagen(file) {
+export function validarImagen(file, { permitirIco = false } = {}) {
   if (!file) return 'No se eligió ningún archivo.';
   const ext = (file.name?.split('.').pop() || '').toLowerCase();
+  if (permitirIco && ext === 'ico') {
+    // Algunos sistemas dejan el type vacio para .ico: se acepta por extension.
+    if (file.type && !TIPOS_ICO.includes(file.type)) return 'Ese archivo no parece un .ico.';
+    if (file.size > TAMANO_MAX) return 'El archivo pesa más de 5 MB.';
+    return null;
+  }
   if (!EXTS_PERMITIDAS.includes(ext)) return 'Ese tipo de archivo no se puede usar. Sacá una foto o elegí un JPG o PNG.';
   if (!TIPOS_PERMITIDOS.includes(file.type)) return 'Ese tipo de archivo no se puede usar. Probá con una foto.';
   if (file.size > TAMANO_MAX) {
@@ -52,16 +61,18 @@ export function validarImagen(file) {
 export async function uploadTenantImage(tenantId, file, { prefix = 'img' } = {}) {
   exigirTenant(tenantId, 'uploadTenantImage');
 
-  const problema = validarImagen(file);
+  const limpio = String(prefix).toLowerCase().replace(/[^a-z0-9-]/g, '') || 'img';
+  const problema = validarImagen(file, { permitirIco: limpio === 'favicon' });
   if (problema) return { __error: problema };
 
   const ext = file.name.split('.').pop().toLowerCase();
-  const limpio = String(prefix).toLowerCase().replace(/[^a-z0-9-]/g, '') || 'img';
+  // Un .ico sin type se sube con el de siempre: el bucket rechaza el vacio.
+  const contentType = file.type || (ext === 'ico' ? 'image/x-icon' : undefined);
   const path = `${tenantId}/${limpio}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const { data, error } = await supabase.storage
     .from(BUCKET)
-    .upload(path, file, { contentType: file.type, cacheControl: '31536000', upsert: false });
+    .upload(path, file, { contentType, cacheControl: '31536000', upsert: false });
 
   if (error) {
     console.error('uploadTenantImage:', error.message);
