@@ -1,7 +1,11 @@
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import DicoPanel from '../components/admin/platform/DicoPanel';
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 beforeEach(() => {
   localStorage.clear();
@@ -26,6 +30,10 @@ const datos = {
 
 describe('DicoPanel', () => {
   it('muestra el centro de decisiones y conserva un aviso como tarea', () => {
+    // mesSinGastos solo avisa desde el dia 10: sin fijar la fecha el test
+    // depende del dia en que se corre.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-15T12:00:00'));
     render(React.createElement(DicoPanel, {
       ...datos,
       roles: ['owner'],
