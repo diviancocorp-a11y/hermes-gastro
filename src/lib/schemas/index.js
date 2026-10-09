@@ -265,6 +265,7 @@ export const SettingsInputSchema = z.object({
   youtube: optionalText(200),
   twitter: optionalText(100),
   linkedin: optionalText(200),
+  telegram: optionalText(100),
   favicon_url: optionalText(2000),
   cover_url: optionalText(2000),
   og_image_url: optionalText(2000),

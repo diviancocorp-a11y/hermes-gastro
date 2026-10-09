@@ -355,15 +355,15 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, onSave, o
                   />
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
-                  <label className="ag-field-lbl">LinkedIn</label>
+                  <label className="ag-field-lbl">Telegram</label>
                   <input
                     className="ag-field-input"
-                    value={s.linkedin || ""}
-                    onChange={e => set("linkedin", e.target.value.replace(/\s/g, '').slice(0, 80))}
-                    placeholder="company/tu-empresa o in/tu-usuario"
+                    value={s.telegram || ""}
+                    onChange={e => set("telegram", e.target.value.replace(/[@\s]/g, '').slice(0, 32))}
+                    placeholder="tu_usuario"
                   />
                   <div style={{ fontSize: 10.5, color: 'var(--ag-ink-3)', marginTop: 3 }}>
-                    Path completo después de linkedin.com/
+                    Usuario de Telegram, sin @ (t.me/tu_usuario)
                   </div>
                 </div>
               </div>

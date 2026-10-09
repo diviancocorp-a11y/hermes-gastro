@@ -181,7 +181,7 @@ export default function CatalogFooter({ settings = {} }) {
   const bizTiktok = settings.tiktok || "";
   const bizYoutube = settings.youtube || "";
   const bizTwitter = settings.twitter || "";
-  const bizLinkedin = settings.linkedin || "";
+  const bizTelegram = settings.telegram || "";
   // Color de marca del tenant — si no está, cae al ámbar de Dico
   const accentColor = settings.logo_color || "#F59E0B";
 
@@ -210,7 +210,7 @@ export default function CatalogFooter({ settings = {} }) {
             { key: "tt", url: bizTiktok ? `https://tiktok.com/@${bizTiktok}` : null, label: "TikTok", svg: <SvgTt /> },
             { key: "yt", url: bizYoutube ? (bizYoutube.startsWith("@") ? `https://youtube.com/${bizYoutube}` : `https://youtube.com/channel/${bizYoutube}`) : null, label: "YouTube", svg: <SvgYt /> },
             { key: "x", url: bizTwitter ? `https://x.com/${bizTwitter}` : null, label: "X", svg: <SvgX /> },
-            { key: "in", url: bizLinkedin ? `https://linkedin.com/${bizLinkedin}` : null, label: "LinkedIn", svg: <SvgIn /> },
+            { key: "tg", url: bizTelegram ? `https://t.me/${bizTelegram}` : null, label: "Telegram", svg: <SvgTg /> },
           ]}
         />
 
@@ -242,7 +242,7 @@ export default function CatalogFooter({ settings = {} }) {
             ...(bizTiktok ? [{ label: "TikTok", href: `https://tiktok.com/@${bizTiktok}`, external: true }] : []),
             ...(bizYoutube ? [{ label: "YouTube", href: bizYoutube.startsWith("@") ? `https://youtube.com/${bizYoutube}` : `https://youtube.com/channel/${bizYoutube}`, external: true }] : []),
             ...(bizTwitter ? [{ label: "X / Twitter", href: `https://x.com/${bizTwitter}`, external: true }] : []),
-            ...(bizLinkedin ? [{ label: "LinkedIn", href: `https://linkedin.com/${bizLinkedin}`, external: true }] : []),
+            ...(bizTelegram ? [{ label: "Telegram", href: `https://t.me/${bizTelegram}`, external: true }] : []),
           ]} />
         </div>
 
@@ -474,10 +474,10 @@ function SvgX() {
     </svg>
   );
 }
-function SvgIn() {
+function SvgTg() {
   return (
     <svg width={S} height={S} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.23 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.21 0 22.23 0z" />
+      <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
     </svg>
   );
 }
