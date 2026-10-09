@@ -949,7 +949,7 @@
 .ag-fila-columnas,
 .ag-fila {
   display: grid;
-  grid-template-columns: 38px minmax(100px, 1.5fr) minmax(48px, .65fr) minmax(54px, .75fr) minmax(56px, .75fr) minmax(62px, .75fr) auto;
+  grid-template-columns: 38px minmax(100px, 1.5fr) minmax(48px, .65fr) minmax(54px, .75fr) minmax(56px, .75fr) minmax(62px, .75fr) 88px;
   column-gap: var(--ag-sp-1);
   align-items: center;
 }
