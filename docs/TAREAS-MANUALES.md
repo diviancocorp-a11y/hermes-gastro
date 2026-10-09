@@ -23,9 +23,30 @@ Los tres negocios se recrearon en el edificio con los 64 productos del export
   Sin ellos el chequeo de RLS (que ningun negocio lea datos de otro) no corre
   nunca. Opcionales: `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`.
   No pegarlos en el chat.
-- [ ] **Ubicacion de la sucursal de cada negocio.** El envio se cotiza desde
-  la sucursal por defecto (0080) y hoy las tres estan sin latitud/longitud:
-  cae al centro de Buenos Aires.
+- [ ] **Actualizar `SMOKE_TENANTS`** (9/oct): el slug `mala-miga` ya no existe,
+  ahora es `crazy-miga`. Valor nuevo: `la-nona-pato,cochi,crazy-miga`. Mientras
+  tenga el viejo, el smoke y el reporte de la manana van a dar 404 en ese
+  negocio.
+- [ ] **Ubicacion de la sucursal de cochi y la-nona-pato.** Desde que se aplico
+  la 0083 (9/oct) **un negocio sin ubicacion NO puede tomar pedidos**: la base
+  los rechaza y el catalogo no abre el checkout. Crazy Miga ya la tiene (San
+  Fernando). El duenio la carga en el panel (Operacion).
+
+### Crazy Miga (alta del 7-9/oct/2026)
+
+- [ ] **Fotos de los 7 productos** (subir desde Recetas). Sin ellas el catalogo
+  del bot se ve pelado.
+- [ ] **Stock inicial de los 19 insumos** (hoy todos en 0, en Stock). La caja
+  microcorrugada se compro por 200.
+- [ ] **Usuario `ricardoars13@gmail.com`** para el equipo (Menu → Usuarios).
+- [ ] **Confirmar la lista de partidos de entrega**: hoy Vicente Lopez, San
+  Isidro, San Fernando, Tigre y Pilar. Si tambien van San Martin, Malvinas
+  Argentinas, Escobar o Tres de Febrero, decirselo a Claude (es un cambio en
+  `tenants.settings.delivery_zone`).
+- [ ] **Probar una transferencia por alias** y el boton **Rechazar** del bot: el
+  pedido de prueba fue en efectivo y solo se acepto.
+- [ ] **Revisar los costos de insumos una vez por mes** (los de la planilla son
+  del 8/oct/2026 y estan fijos en el sistema).
 - [ ] **Fotos de los 64 productos.** Las viejas estaban en los Supabase legacy
   que se borraron.
 - [ ] **Por negocio**, en `<slug>.divianco.app/admin`: logo, horarios, tarifas
