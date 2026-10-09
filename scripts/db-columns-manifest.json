@@ -39,6 +39,8 @@
         "store_address",
         "min_order_amount",
         "delivery_pricing",
+        "free_delivery_over",
+        "delivery_zone",
         "coupon_default_pct",
         "birthday_coupon_pct",
         "cat_groups",

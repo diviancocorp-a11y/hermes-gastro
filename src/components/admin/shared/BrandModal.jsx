@@ -76,6 +76,13 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, onSave, o
 
   const set = (k, v) => setS(p => ({ ...p, [k]: v }));
 
+  // Partidos de la zona de entrega: se escribe como texto libre separado por
+  // comas y se parte al salir del campo; si se partiera en cada tecla no se
+  // podria tipear la coma.
+  const [partidosTxt, setPartidosTxt] = useState(() => (settings?.delivery_zone?.partidos || []).join(', '));
+  const zona = s.delivery_zone || { partidos: [], notice: '' };
+  const setZona = (patch) => set("delivery_zone", { partidos: [], notice: '', ...zona, ...patch });
+
   // Upload handlers
   const handleCoverFile = async (e) => {
     const file = e.target.files?.[0]; if (!file) return;
@@ -539,6 +546,49 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, onSave, o
                       style={{ fontSize: 12, padding: '6px 10px', borderRadius: 8, border: '1px dashed var(--ag-line, rgba(127,127,127,0.35))', background: 'none', color: 'var(--ag-ink-2)', cursor: 'pointer' }}>
                       + Agregar escalón
                     </button>
+                  </div>
+
+                  {/* Envio gratis (settings.free_delivery_over) */}
+                  <div className="ag-cat-row" style={{ marginTop: 10 }}>
+                    <div className="ag-cat-row-main">
+                      <div className="ag-cat-row-label">Envío gratis desde</div>
+                      <div className="ag-cat-row-hint">Si el subtotal de productos supera este monto, el envío no se cobra. 0 = no ofrecés envío gratis.</div>
+                    </div>
+                    <div className="ag-cat-row-input">
+                      <span className="ag-cat-row-prefix">$</span>
+                      <DecimalInput
+                        step="1000"
+                        value={s.free_delivery_over ?? 0}
+                        onChange={(n) => set("free_delivery_over", Math.max(0, n || 0))}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Zona de entrega (settings.delivery_zone) */}
+                  <div style={{ paddingTop: 10 }}>
+                    <div className="ag-cat-row-label" style={{ marginBottom: 2 }}>Zona de entrega</div>
+                    <div className="ag-cat-row-hint" style={{ marginBottom: 8 }}>
+                      Partidos donde entregás, separados por coma. Si la dirección del cliente cae en otro partido, no puede pedir envío. Vacío = entregás en todos lados.
+                    </div>
+                    <input
+                      className="ag-field-input"
+                      value={partidosTxt}
+                      onChange={e => setPartidosTxt(e.target.value)}
+                      onBlur={() => {
+                        const lista = [...new Set(partidosTxt.split(',').map(x => x.trim()).filter(Boolean))].slice(0, 60);
+                        setPartidosTxt(lista.join(', '));
+                        setZona({ partidos: lista });
+                      }}
+                      placeholder="Vicente López, San Isidro, Tigre"
+                    />
+                    <label className="ag-field-lbl" style={{ marginTop: 8 }}>Aviso para el cliente</label>
+                    <input
+                      className="ag-field-input"
+                      value={zona.notice || ''}
+                      onChange={e => setZona({ notice: e.target.value.slice(0, 300) })}
+                      placeholder="Ej: Entregamos solo en Zona Norte. No entregamos dentro de villas."
+                    />
                   </div>
 
                 </div>

@@ -279,6 +279,13 @@ export const SettingsInputSchema = z.object({
     max_km: z.number().positive().nullable(),
     cost: z.number().min(0),
   })).max(12).nullable().optional(),
+  // Envio gratis: el subtotal de productos tiene que SUPERAR este monto. 0 = no ofrece.
+  free_delivery_over: z.number().min(0).nullable().optional(),
+  // Zona de entrega: { partidos: [...], notice } — partidos vacio = entrega en todos lados
+  delivery_zone: z.object({
+    partidos: z.array(z.string().max(80)).max(60),
+    notice: z.string().max(300).optional(),
+  }).nullable().optional(),
   // Descuento % default de cupones post-pedido (Sprint 2)
   coupon_default_pct: z.number().min(0).max(100).nullable().optional(),
   // Descuento % del cupon de cumpleanos, 0 = desactivado (se gestiona desde CRM)
