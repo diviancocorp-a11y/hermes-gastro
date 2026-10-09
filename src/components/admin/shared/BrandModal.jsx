@@ -632,7 +632,7 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, onSave, o
                   </div>
                 </div>
                 <div style={{ fontSize: 10.5, color: 'var(--ag-ink-3)', marginTop: 6 }}>
-                  Icono del navegador · ideal 32×32 px (ico, png o svg)
+                  Icono del navegador · ideal 32×32 px, en PNG
                 </div>
               </div>
             </div>
