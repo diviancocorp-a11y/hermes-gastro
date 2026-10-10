@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import AgeGate from "../catalog-pro/AgeGate";
 import { fetchPublicInfoPage } from "../services/infoPages";
+import "../styles/info-crazy-cookie.css";
 
 export default function InfoPage() {
   const { slug } = useParams();
@@ -57,7 +58,7 @@ export default function InfoPage() {
   }
 
   return (
-    <div className="cp-root cp-surface" style={{ minHeight: "100vh" }}>
+    <div className={`cp-root cp-surface info-theme-${slug}`} style={{ minHeight: "100vh" }}>
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "32px 20px 80px" }}>
         <h1 style={{ fontFamily: "var(--font-heading, 'DM Serif Display', serif)", fontSize: 30, lineHeight: 1.15, margin: "0 0 24px", color: "var(--tx)" }}>
           {page.title}

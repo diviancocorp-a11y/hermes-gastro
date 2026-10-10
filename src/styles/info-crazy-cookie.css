@@ -1,0 +1,107 @@
+/* Tema propio de /info/crazy-cookie (negro, verde lima, azul/cian y un toque violeta).
+   Se engancha por la clase info-theme-<slug> que pone InfoPage.jsx; las demas
+   paginas informativas no lo ven. Pisa los tokens del catalogo, asi los estilos
+   inline de InfoPage (que leen var(--ac), var(--tx), etc.) toman los colores solos. */
+body .cp-root.cp-surface.info-theme-crazy-cookie {
+  --bg: #04100c;
+  --b2: rgba(6, 22, 18, 0.78);
+  --b3: rgba(10, 34, 28, 0.9);
+  --tx: #f4ffe6;
+  --t2: #cfe8dc;
+  --t3: #7fb3a2;
+  --ac: #b6ff3b;
+  --line: rgba(60, 220, 200, 0.35);
+  --yl: rgba(182, 255, 59, 0.1);
+  --yw: #b6ff3b;
+  --font-heading: "Impact", "Arial Black", "Haettenschweiler", sans-serif;
+
+  position: relative;
+  overflow: hidden;
+  color: var(--tx);
+  background-color: #03100b;
+  background-image:
+    radial-gradient(60% 40% at 8% 6%, rgba(160, 80, 255, 0.45) 0%, transparent 70%),
+    radial-gradient(55% 38% at 96% 14%, rgba(30, 200, 255, 0.4) 0%, transparent 70%),
+    radial-gradient(60% 40% at 0% 62%, rgba(30, 220, 200, 0.28) 0%, transparent 70%),
+    radial-gradient(60% 45% at 100% 82%, rgba(160, 80, 255, 0.35) 0%, transparent 70%),
+    radial-gradient(70% 40% at 50% 104%, rgba(182, 255, 59, 0.22) 0%, transparent 70%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><g fill='none' stroke='%2318a58a' stroke-opacity='0.28' stroke-width='2' stroke-linecap='round'><path d='M10 80c0-38 40-50 62-28s2 52-20 40-6-36 12-28'/><path d='M150 80c0 38-40 50-62 28s-2-52 20-40 6 36-12 28'/><path d='M80 10c38 0 50 40 28 62s-52 2-40-20 36-6 28 12'/><path d='M80 150c-38 0-50-40-28-62s52-2 40 20-36 6-28-12'/></g></svg>");
+  background-attachment: fixed;
+  background-size: auto, auto, auto, auto, auto, 160px 160px;
+}
+
+/* Titulo grande, estilo cartel */
+.info-theme-crazy-cookie h1 {
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  font-size: clamp(34px, 9vw, 52px) !important;
+  line-height: 1.02 !important;
+  color: var(--tx) !important;
+  text-shadow: 3px 3px 0 #7a35e8, 0 0 28px rgba(182, 255, 59, 0.35);
+  transform: rotate(-1.5deg);
+}
+
+/* Titulos de seccion en verde lima */
+.info-theme-crazy-cookie h2,
+.info-theme-crazy-cookie h3 {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--ac) !important;
+  text-shadow: 0 0 18px rgba(182, 255, 59, 0.35);
+}
+
+/* Tarjetas de seccion: vidrio oscuro con borde cian y brillo */
+.info-theme-crazy-cookie section {
+  background: var(--b2) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 20px !important;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 0 1px rgba(160, 80, 255, 0.18), 0 10px 40px rgba(0, 0, 0, 0.55),
+    0 0 36px rgba(30, 200, 255, 0.12);
+}
+
+/* Items de lista */
+.info-theme-crazy-cookie li {
+  background: rgba(2, 10, 8, 0.7) !important;
+  border: 1px solid rgba(182, 255, 59, 0.28) !important;
+  border-left: 4px solid var(--ac) !important;
+  border-radius: 12px !important;
+}
+.info-theme-crazy-cookie li:nth-child(even) {
+  border-left-color: #35d4ff !important;
+}
+
+/* Nota destacada: cartel verde lima */
+.info-theme-crazy-cookie section > div[style*="border-left"],
+.info-theme-crazy-cookie section > div[style*="borderLeft"] {
+  background: var(--ac) !important;
+  color: #04100c !important;
+  font-weight: 700;
+  border-left: 0 !important;
+  border-radius: 10px !important;
+  transform: rotate(-0.6deg);
+  box-shadow: 4px 4px 0 #7a35e8;
+}
+
+/* La intro (hero) tambien con aire de cartel */
+.info-theme-crazy-cookie > div > div:first-of-type p {
+  font-size: 16.5px !important;
+  color: var(--tx) !important;
+}
+
+/* Pie legal */
+.info-theme-crazy-cookie footer {
+  border-top-color: var(--line) !important;
+  color: var(--t3) !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .info-theme-crazy-cookie h1 {
+    animation: info-cc-flota 5s ease-in-out infinite;
+  }
+  @keyframes info-cc-flota {
+    0%, 100% { transform: rotate(-1.5deg) translateY(0); }
+    50% { transform: rotate(-0.5deg) translateY(-4px); }
+  }
+}
