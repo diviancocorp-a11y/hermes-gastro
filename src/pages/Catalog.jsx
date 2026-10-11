@@ -18,7 +18,7 @@ import "../catalog-pro/tokens.css";
 import HomeScreenPro from "../catalog-pro/HomeScreen";
 import AgeGate from "../catalog-pro/AgeGate";
 import WhatsAppFloat from "../catalog-pro/WhatsAppFloat";
-import { ensureMusic, stopMusic } from "../catalog-pro/catalogMusic";
+import { ensureMusic, stopMusic, configureMusic } from "../catalog-pro/catalogMusic";
 import ProductDetailScreenPro from "../catalog-pro/ProductDetailScreen";
 import SearchScreenPro from "../catalog-pro/SearchScreen";
 import CategoryScreenPro from "../catalog-pro/CategoryScreen";
@@ -732,9 +732,10 @@ export default function Catalog() {
 
   // Musica ambiente del catalogo (loop bajo). Se pausa al salir del catalogo.
   useEffect(() => {
+    configureMusic({ url: sett?.music_url, enabled: sett?.catalog_music !== false });
     ensureMusic();
-    return () => stopMusic();
-  }, []);
+  }, [sett?.music_url, sett?.catalog_music]);
+  useEffect(() => () => stopMusic(), []);
 
   // --- VISTA: CARGANDO ---
   // Splash de bienvenida arriba del catalogo durante el primer load.

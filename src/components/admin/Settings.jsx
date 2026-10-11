@@ -65,6 +65,7 @@ function Settings({
   settings, setSettings, showToast, section = null, onBack,
   onSave,
   onSubirImagen,
+  onSubirAudio,
   onAbrirUsuarios = null,
   onAbrirPasarelas = null,
 }) {
@@ -334,6 +335,7 @@ function Settings({
               showToast={showToast}
               onSave={onSave}
               onSubirImagen={onSubirImagen}
+              onSubirAudio={onSubirAudio}
               onClose={() => setBrandOpen(false)}
             />
           </div>

@@ -63,7 +63,7 @@ function SlideVisual({ slide }) {
 }
 
 /* ---------- Carrusel circular ---------- */
-export default function PromoCarousel({ onOpenAccount }) {
+export default function PromoCarousel({ onOpenAccount, cumple = true, programados = true }) {
   const slides = [
     {
       id: "cumple", emoji: "🎂", label: "Regalo de cumple",
@@ -74,7 +74,7 @@ export default function PromoCarousel({ onOpenAccount }) {
       id: "programados", emoji: "📅", label: "Pedidos programados",
       desc: "Elegí día y horario en el checkout. Tu pedido sale justo a tiempo.",
     },
-  ];
+  ].filter((sl) => (sl.id === "cumple" ? cumple : sl.id === "programados" ? programados : true));
   const len = slides.length;
 
   // El slide actual se recuerda por ID, no por indice: si la lista cambia, el

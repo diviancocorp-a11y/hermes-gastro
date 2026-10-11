@@ -4,7 +4,9 @@
 // autoplay con sonido. REINTENTA en cada gesto hasta que play() funciona (no se
 // rinde al primer intento). Singleton a nivel modulo: NO se corta al cambiar de
 // pantalla (catalogo -> carrito -> checkout).
-const SRC = "/catalog-music.mp3";
+const DEFAULT_SRC = "/catalog-music.mp3";
+let src = DEFAULT_SRC;       // cada negocio puede traer la suya (configureMusic)
+let disabled = false;        // settings.catalog_music === false
 const KEY = "cp_music";   // 'on' | 'off' (default: on)
 const VOL = 0.06;
 
@@ -26,7 +28,7 @@ function notify() { subs.forEach(fn => { try { fn(wantOn); } catch {} }); }
 
 function el() {
   if (!audio) {
-    audio = new Audio(SRC);
+    audio = new Audio(src);
     audio.loop = true;
     audio.preload = "auto";
     audio.volume = 0;
@@ -66,8 +68,31 @@ function bindUnlock() {
 
 export function musicOn() { return readWant(); }
 
+/**
+ * La musica del negocio: `url` propia (o la de Dico si falta) y `enabled`.
+ * Se llama cuando llegan los settings; si el audio ya existia y la fuente
+ * cambio, se cambia sobre la marcha sin cortar el singleton.
+ */
+export function configureMusic({ url, enabled = true } = {}) {
+  disabled = enabled === false;
+  const next = url || DEFAULT_SRC;
+  if (next !== src) {
+    src = next;
+    if (audio) {
+      const sonaba = !audio.paused;
+      audio.src = src;
+      audio.load();
+      if (sonaba && wantOn && !disabled) tryPlay();
+    }
+  }
+  if (disabled) stopMusic();
+}
+
+export function musicDisabled() { return disabled; }
+
 export function ensureMusic() {
   readWant();
+  if (disabled) return;
   if (!inited) {
     inited = true;
     if (wantOn) { tryPlay(); bindUnlock(); }

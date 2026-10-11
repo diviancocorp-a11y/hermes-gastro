@@ -10,7 +10,7 @@ vi.mock('../lib/supabase', () => ({
   },
 }));
 
-import { uploadTenantImage, validarImagen, TAMANO_MAX } from '../services/platformStorage';
+import { uploadTenantImage, validarImagen, validarAudio, TAMANO_MAX } from '../services/platformStorage';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -47,6 +47,22 @@ describe('validarImagen', () => {
   it('rechaza lo que pasa el limite, con el peso en el mensaje', () => {
     const msg = validarImagen(archivo({ size: TAMANO_MAX + 1 }));
     expect(msg).toMatch(/5 MB/);
+  });
+});
+
+describe('validarAudio', () => {
+  it('acepta un mp3 y sus variantes de tipo', () => {
+    expect(validarAudio(archivo({ name: 'tema.mp3', type: 'audio/mpeg' }))).toBeNull();
+    expect(validarAudio(archivo({ name: 'tema.m4a', type: 'audio/x-m4a' }))).toBeNull();
+    // Algunos sistemas dejan el type vacio: se acepta por extension.
+    expect(validarAudio(archivo({ name: 'tema.mp3', type: '' }))).toBeNull();
+  });
+  it('rechaza lo que no es audio, aunque la extension sea valida', () => {
+    expect(validarAudio(archivo({ name: 'foto.jpg', type: 'image/jpeg' }))).toBeTruthy();
+    expect(validarAudio(archivo({ name: 'truco.mp3', type: 'application/pdf' }))).toBeTruthy();
+  });
+  it('rechaza lo que pasa el limite, con el peso en el mensaje', () => {
+    expect(validarAudio(archivo({ name: 'largo.mp3', type: 'audio/mpeg', size: TAMANO_MAX + 1 }))).toMatch(/5 MB/);
   });
 });
 

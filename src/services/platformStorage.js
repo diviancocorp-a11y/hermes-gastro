@@ -24,6 +24,10 @@ export const EXTS_PERMITIDAS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 // El favicon es el unico lugar donde un .ico tiene sentido (0091).
 const TIPOS_ICO = ['image/x-icon', 'image/vnd.microsoft.icon'];
 
+// Musica del catalogo (migracion 0094). Mismo bucket y mismo tope que las fotos.
+export const TIPOS_AUDIO = ['audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/ogg', 'audio/wav', 'audio/x-wav'];
+export const EXTS_AUDIO = ['mp3', 'm4a', 'aac', 'ogg', 'wav'];
+
 export const TAMANO_MAX = 5 * 1024 * 1024; // igual que el bucket
 
 function exigirTenant(tenantId, quien) {
@@ -90,4 +94,42 @@ export async function uploadTenantImage(tenantId, file, { prefix = 'img' } = {})
 
   const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(data.path);
   return urlData.publicUrl;
+}
+
+/** Devuelve un mensaje de error, o null si el archivo de audio sirve. */
+export function validarAudio(file) {
+  if (!file) return 'No se eligió ningún archivo.';
+  const ext = (file.name?.split('.').pop() || '').toLowerCase();
+  if (!EXTS_AUDIO.includes(ext)) return 'Ese tipo de archivo no se puede usar. Subí un MP3, M4A, OGG o WAV.';
+  if (file.type && !TIPOS_AUDIO.includes(file.type)) return 'Ese archivo no parece un audio. Probá con un MP3.';
+  if (file.size > TAMANO_MAX) {
+    return `La canción pesa ${(file.size / 1024 / 1024).toFixed(1)} MB y el máximo es 5 MB. Comprimila o recortala.`;
+  }
+  return null;
+}
+
+/** Sube la musica del catalogo y devuelve su URL publica, o `{ __error }`. */
+export async function uploadTenantAudio(tenantId, file) {
+  exigirTenant(tenantId, 'uploadTenantAudio');
+  const problema = validarAudio(file);
+  if (problema) return { __error: problema };
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  const path = `${tenantId}/musica-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  // Sin type (algunos sistemas lo dejan vacio) el bucket lo rechazaria.
+  const tipos = { mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', ogg: 'audio/ogg', wav: 'audio/wav' };
+  const contentType = file.type || tipos[ext];
+
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, file, { contentType, cacheControl: '31536000', upsert: false });
+
+  if (error) {
+    console.error('uploadTenantAudio:', error.message);
+    const m = error.message.toLowerCase();
+    if (m.includes('exceeded') || m.includes('too large')) return { __error: 'La canción es muy pesada. El máximo es 5 MB.' };
+    if (m.includes('mime') || m.includes('not allowed')) return { __error: 'Ese tipo de archivo no se puede usar. Probá con un MP3.' };
+    return { __error: 'No se pudo subir la canción. Probá de nuevo.' };
+  }
+  return supabase.storage.from(BUCKET).getPublicUrl(data.path).data.publicUrl;
 }

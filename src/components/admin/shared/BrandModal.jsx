@@ -31,7 +31,7 @@ const COLORS = [
   { h: "#2D1B0E", l: "Negro" },
 ];
 
-function BrandModal({ open, onClose, settings, setSettings, showToast, onSave, onSubirImagen, asPage = false }) {
+function BrandModal({ open, onClose, settings, setSettings, showToast, onSave, onSubirImagen, onSubirAudio, asPage = false }) {
   const [s, setS] = useState({ ...settings });
   const confirmSlide = useConfirm();
   const [section, setSection] = useState('identity'); // 'identity' | 'catalog'
@@ -99,6 +99,18 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, onSave, o
     setUploadingLogo(false);
     if (result?.__error) { showToast(result.__error); return; }
     if (result) { set("logo_url", result); showToast("Logo cargado ✓"); } else { showToast("Error al subir"); }
+  };
+
+  // Musica del catalogo: archivo propio del negocio (mp3, hasta 5 MB).
+  const [uploadingMusic, setUploadingMusic] = useState(false);
+  const handleMusicFile = async (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    e.target.value = "";
+    setUploadingMusic(true);
+    const result = await onSubirAudio(file);
+    setUploadingMusic(false);
+    if (result?.__error) { showToast(result.__error); return; }
+    if (result) { set("music_url", result); showToast("Música cargada ✓"); } else { showToast("Error al subir"); }
   };
 
   // OG image y favicon: mismo uploader, distinto prefijo para reconocerlos en Storage.
@@ -616,6 +628,46 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, onSave, o
               {/* Metodos de pago: ELIMINADO de Personalizacion. Las cuentas
                   de Finanzas (Gastos → 🏦 Cuentas) son la unica verdad y el
                   checkout deriva de ellas. */}
+
+              {/* Musica del catalogo (settings.music_url / catalog_music) */}
+              {onSubirAudio && (
+                <div className="ag-catalog-group">
+                  <div className="ag-catalog-group-title">Música</div>
+                  <div style={{ fontSize: 11, color: 'var(--ag-ink-3)', marginBottom: 10 }}>
+                    Suena en bajito mientras tus clientes miran el catálogo. Subí la canción que represente a tu negocio: usá una que tengas derecho a usar.
+                  </div>
+                  <ToggleSwitch
+                    checked={s.catalog_music !== false}
+                    onChange={(v) => set("catalog_music", v)}
+                    label="Música en el catálogo"
+                    hint="Si la desactivás, el catálogo no reproduce nada y no aparece el botón de silenciar."
+                  />
+                  {s.catalog_music !== false && (
+                    <div style={{ marginTop: 12 }}>
+                      <label className="ag-field-lbl">Tu canción</label>
+                      {s.music_url ? (
+                        <audio controls preload="none" src={s.music_url} style={{ width: '100%', marginBottom: 8 }} />
+                      ) : (
+                        <div style={{ fontSize: 12, color: 'var(--ag-ink-3)', marginBottom: 8 }}>
+                          Ahora suena la música de Dico. Subí una canción para reemplazarla.
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <label className="ag-btn-ghost" style={{ cursor: 'pointer', flex: 1, textAlign: 'center' }}>
+                          {uploadingMusic ? 'Subiendo…' : '🎵 Subir canción'}
+                          <input type="file" accept="audio/*,.mp3,.m4a,.ogg,.wav" style={{ display: 'none' }} onChange={handleMusicFile} disabled={uploadingMusic} />
+                        </label>
+                        {s.music_url && (
+                          <button type="button" className="ag-btn-ghost" onClick={() => set('music_url', '')} style={{ flex: 0 }}>Quitar</button>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 10.5, color: 'var(--ag-ink-3)', marginTop: 6 }}>
+                        MP3, M4A, OGG o WAV · hasta 5 MB. Se repite en bucle.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Favicon */}
               <div className="ag-catalog-group">

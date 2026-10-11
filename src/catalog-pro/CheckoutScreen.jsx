@@ -198,22 +198,6 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
               <p style={hint("err")}>Minimo 10 digitos · ({form.phone.length}/10)</p>
             )}
           </div>
-
-          {/* Banner Top de la semana — el guest se crea solo al confirmar el pedido (#79),
-              asi que no hace falta promover registro. Mejor cautivar con el sistema de puntos. */}
-          <div style={section}>
-            <div style={{ padding: 18, background: "var(--ac-soft, var(--b2))", borderRadius: 14, border: "1px solid var(--line)" }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ac-soft-fg, var(--tx))", marginBottom: 6 }}>
-                Sumás puntos con este pedido
-              </div>
-              <div style={{ fontSize: 13, color: "var(--t2)", lineHeight: 1.6, marginBottom: 4 }}>
-                Cada $10.000 = 1 punto. Cada lunes premiamos al podio de la semana.
-              </div>
-              <div style={{ fontSize: 12, color: "var(--t3)", lineHeight: 1.5 }}>
-                Mira el ranking en la home del catalogo.
-              </div>
-            </div>
-          </div>
         </>
       )}
 

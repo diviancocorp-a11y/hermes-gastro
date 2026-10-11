@@ -251,7 +251,7 @@ export default function HomeScreen({
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <CatalogMusicToggle />
+            {settings?.catalog_music !== false && <CatalogMusicToggle />}
             <AccountMenu
               session={session}
               onSelect={onOpenAccount}
@@ -578,7 +578,13 @@ export default function HomeScreen({
       )}
 
       {/* ===== PROMOS (carrusel: ranking semanal, cumple, programados) ===== */}
-      {!searchQuery && <PromoCarousel onOpenAccount={onOpenAccount} />}
+      {!searchQuery && (settings?.promo_cumple !== false || settings?.promo_programados !== false) && (
+        <PromoCarousel
+          onOpenAccount={onOpenAccount}
+          cumple={settings?.promo_cumple !== false}
+          programados={settings?.promo_programados !== false}
+        />
+      )}
 
       {/* cierre del wrapper que se difumina durante la busqueda */}
       </div>

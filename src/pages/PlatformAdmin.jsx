@@ -42,7 +42,7 @@ import {
 import { fetchSales, createSale, completeOrder } from '../services/platformSales';
 import { fetchCustomerStats } from '../services/platformCrm';
 import { fetchWaste, registerWaste } from '../services/platformWaste';
-import { uploadTenantImage } from '../services/platformStorage';
+import { uploadTenantImage, uploadTenantAudio } from '../services/platformStorage';
 import {
   fetchResources, moveResource, saveResource, archiveResource, siguienteNombre,
   fetchAppointments, fetchUtilization, fetchWaitlist,
@@ -987,6 +987,11 @@ export default function PlatformAdmin() {
     [tenantId]
   );
   // Logo, portada, OG y favicon de Personalizacion: mismo bucket por tenant.
+  // Musica del catalogo: mismo bucket por tenant.
+  const subirAudioDeMarca = useCallback(
+    (file) => uploadTenantAudio(tenantId, file),
+    [tenantId]
+  );
   const subirImagenDeMarca = useCallback(
     (file, tipo) => uploadTenantImage(tenantId, file, { prefix: tipo }),
     [tenantId]
@@ -1665,6 +1670,7 @@ export default function PlatformAdmin() {
                 permiteUsar={usaContabilidadUsar(tenant?.vertical)}
                 onCrearVenta={crearVenta}
                 onFetchClientes={traerClientes}
+                onGuardarSettings={guardarSettings}
               />
             </Suspense>
           )}
@@ -1696,6 +1702,7 @@ export default function PlatformAdmin() {
                     showToast={msg}
                     onSave={guardarSettings}
                     onSubirImagen={subirImagenDeMarca}
+                    onSubirAudio={subirAudioDeMarca}
                     onAbrirUsuarios={puedeAbrirDestino(roles, 'usuarios') ? () => setTab('usuarios') : null}
                     onAbrirPasarelas={puedeAbrirDestino(roles, 'cobros') ? () => setTab('cobros') : null}
                     onBack={() => setTab('products')}

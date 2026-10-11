@@ -18,6 +18,7 @@ import { useMemo, useState } from 'react';
 import { SalesView } from '../Finance';
 import MonthSummary from '../MonthSummary';
 import CRM from '../CRM';
+import PromosDelCatalogo from './PromosDelCatalogo';
 import { productosComoRecetas, pedidosParaVentas } from '../../../services/platformSales';
 import { pedidosParaCrm } from '../../../services/platformCrm';
 import { costoBruto, indexarInsumos } from '../../../services/platformRecipes';
@@ -69,6 +70,8 @@ export default function VentasPanel({
   onCrearVenta,
   // Clientes agregados desde los pedidos del tenant (Etapa 5a).
   onFetchClientes,
+  // Guarda settings (las promos del catalogo se prenden y apagan en Clientes).
+  onGuardarSettings,
 }) {
   const [solapa, setSolapa] = useState('ventas');
   const [ov, setOv] = useState(null);
@@ -127,6 +130,10 @@ export default function VentasPanel({
           showToast={showToast}
           onCreate={crearVentaConCosto}
         />
+      )}
+
+      {solapa === 'clientes' && (
+        <PromosDelCatalogo settings={settings} onGuardar={onGuardarSettings} showToast={showToast} />
       )}
 
       {solapa === 'clientes' && (
