@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
 import SchedulePicker from "./SchedulePicker";
-import { leadHoras as leerLeadHoras } from "../modules/pedidosProgramados";
+import { leadHoras as leerLeadHoras, entregaReal } from "../modules/pedidosProgramados";
 
 const STEPS = ["Datos", "Entrega", "Pago"];
 
@@ -660,7 +660,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
         <div style={summaryVal}>{form.delivery === "retiro" ? `Retiro en local${settings?.store_address ? ` — ${settings.store_address}` : ""}` : `Delivery — ${form.address}`}</div>
         {scheduleMode === "later" && (
           <div style={{ ...summaryVal, fontSize: 12, color: "var(--ac)" }}>
-            Programado: {form.delivery_date}{form.delivery_time ? ` a las ${form.delivery_time}` : ""}
+            Programado: {entregaReal(form.delivery_date, form.delivery_time).fechaISO}{form.delivery_time ? ` a las ${entregaReal(form.delivery_date, form.delivery_time).hhmm}` : ""}
           </div>
         )}
       </div>

@@ -40,7 +40,7 @@ import {
 import { origenDelEnvio, estimarEnvio, catalogoActivo, esEnvioGratis, evaluarZona } from "../modules/origenDelEnvio";
 import { computeAvailability } from "../lib/stockAvailability";
 import { applyTenantHead } from "../lib/tenantHead";
-import { leadHoras, fechaYMinutos, estadoDelLocal, horasDisponibles } from "../modules/pedidosProgramados";
+import { leadHoras, fechaYMinutos, estadoDelLocal, horasDisponibles, entregaReal } from "../modules/pedidosProgramados";
 import { resolveTenantSlug } from "../lib/activeTenant";
 import useFeature from "../hooks/useFeature";
 
@@ -587,8 +587,10 @@ export default function Catalog() {
 
     // Construir nota con hora programada si aplica
     let finalNote = form.note || "";
-    if (scheduleMode === "later" && form.delivery_time) {
-      const timeTag = `[Hora programada: ${form.delivery_time}]`;
+    // La madrugada del dia siguiente se guarda con su fecha real (ver entregaReal).
+    const entrega = scheduleMode === "later" ? entregaReal(form.delivery_date, form.delivery_time) : null;
+    if (entrega && form.delivery_time) {
+      const timeTag = `[Hora programada: ${entrega.hhmm}]`;
       finalNote = finalNote ? `${timeTag} ${finalNote}` : timeTag;
     }
     // Agregar monto de cambio para efectivo
@@ -623,7 +625,7 @@ export default function Catalog() {
         : (cpTip || 0),
       tip_amount: tipAmount,
       total: ctWithDelivery,
-      delivery_date: scheduleMode === "later" ? (form.delivery_date || null) : null,
+      delivery_date: entrega ? (entrega.fechaISO || null) : null,
       user_id: user?.id || null,
       items: cart.map(i => ({
         recipeId: i.id,

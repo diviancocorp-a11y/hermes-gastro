@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  leadHoras, fechaYMinutos, estadoDelLocal, horasDisponibles, LEAD_MAX_HORAS,
+  leadHoras, fechaYMinutos, estadoDelLocal, horasDisponibles, entregaReal, LEAD_MAX_HORAS,
 } from '../modules/pedidosProgramados';
 
 const TZ = 'America/Argentina/Buenos_Aires'; // UTC-3 todo el año
@@ -49,7 +49,7 @@ describe('horasDisponibles por encargo (4 h, 12:00 a 01:00)', () => {
   const horas = (dia, ahora) => horasDisponibles({ settings: CRAZY, fechaISO: dia, ahora, timezone: TZ });
 
   it('de manana pide con 4 h de margen: 10:00 -> desde las 14', () => {
-    expect(horas('2026-10-10', art('2026-10-10', '10:00'))).toEqual([14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
+    expect(horas('2026-10-10', art('2026-10-10', '10:00'))).toEqual([14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]);
   });
   it('a las 10:30 el primer horario entero posible es las 15', () => {
     expect(horas('2026-10-10', art('2026-10-10', '10:30'))[0]).toBe(15);
@@ -57,21 +57,43 @@ describe('horasDisponibles por encargo (4 h, 12:00 a 01:00)', () => {
   it('de madrugada (fuera de horario) se puede pedir: a las 03:00 hoy se entrega desde las 12', () => {
     expect(horas('2026-10-10', art('2026-10-10', '03:00'))[0]).toBe(12);
   });
-  it('de noche ya no queda nada hoy y manana arranca a las 12', () => {
-    const ahora = art('2026-10-10', '21:00');
+  it('a las 21:00 queda justo la 01:00 (21 + 4 h); a las 22:00 ya no queda nada hoy y manana arranca a las 12', () => {
+    expect(horas('2026-10-10', art('2026-10-10', '21:00'))).toEqual([25]);
+    const ahora = art('2026-10-10', '22:00');
     expect(horas('2026-10-10', ahora)).toEqual([]);
     expect(horas('2026-10-11', ahora)[0]).toBe(12);
   });
-  it('nunca ofrece una hora anterior a la apertura ni la de la madrugada siguiente', () => {
+  it('acepta justo la apertura (12:00) y justo el cierre (01:00 del dia siguiente)', () => {
     const lista = horas('2026-10-11', art('2026-10-10', '09:00'));
-    expect(Math.min(...lista)).toBe(12);
-    expect(Math.max(...lista)).toBe(23);
+    expect(lista[0]).toBe(12);
+    expect(lista[lista.length - 1]).toBe(25); // 01:00 de la madrugada siguiente
+    expect(lista).toContain(24); // 00:00
+    expect(lista).not.toContain(11);
+    expect(lista).not.toContain(26);
+  });
+  it('a las 20:00 todavia se puede pedir para las 00:00 y la 01:00 de esa noche', () => {
+    expect(horas('2026-10-10', art('2026-10-10', '20:00'))).toEqual([24, 25]);
   });
   it('mide el margen en la zona del negocio, no en UTC', () => {
     // 22:30 ART del sabado es 01:30 UTC del domingo: el dia de hoy sigue siendo el 10.
     const ahora = new Date('2026-10-11T01:30:00Z');
-    expect(horas('2026-10-10', ahora)).toEqual([]);
+    expect(horas('2026-10-10', ahora)).toEqual([]); // 22:30 + 4 h = 02:30: ya paso el cierre
     expect(horas('2026-10-11', ahora)[0]).toBe(12);
+  });
+});
+
+describe('entregaReal', () => {
+  it('una hora normal queda en su dia', () => {
+    expect(entregaReal('2026-10-10', '13:00')).toEqual({ fechaISO: '2026-10-10', hhmm: '13:00', diaSiguiente: false });
+  });
+  it('25:00 es la 01:00 del dia siguiente, tambien al cruzar de mes y de anio', () => {
+    expect(entregaReal('2026-10-10', '25:00')).toEqual({ fechaISO: '2026-10-11', hhmm: '01:00', diaSiguiente: true });
+    expect(entregaReal('2026-10-31', '24:00')).toEqual({ fechaISO: '2026-11-01', hhmm: '00:00', diaSiguiente: true });
+    expect(entregaReal('2026-12-31', '25:00').fechaISO).toBe('2027-01-01');
+  });
+  it('sin datos no rompe', () => {
+    expect(entregaReal('', '').hhmm).toBe('');
+    expect(entregaReal('2026-10-10', undefined).diaSiguiente).toBe(false);
   });
 });
 

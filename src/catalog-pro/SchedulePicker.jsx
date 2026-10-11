@@ -10,7 +10,7 @@
 //   - Horarios por hora segun getAvailableHours(fecha) (misma logica de Catalog).
 //
 // Props:
-//   dateValue / timeValue   — form.delivery_date ("YYYY-MM-DD") / form.delivery_time ("HH:00")
+//   dateValue / timeValue   — form.delivery_date ("YYYY-MM-DD") / form.delivery_time ("HH:00"; 24 o mas = madrugada del dia siguiente)
 //   onSelectDate(dateStr)   — setea fecha (y la hora se resetea en el caller)
 //   onSelectTime(time)      — setea hora
 //   storeHours              — settings.store_hours (array idx 0=Lun..6=Dom) o null
@@ -18,6 +18,7 @@
 //   daysWindow              — dias hacia adelante habilitados (default 7)
 
 import { useMemo, useState } from "react";
+import { entregaReal } from "../modules/pedidosProgramados";
 
 const DAY_NAMES = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 const DAY_NAMES_FULL = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
@@ -71,10 +72,12 @@ export default function SchedulePicker({
   // Resumen "Tu pedido queda programado para el jueves 12 de junio a las 10:00"
   const summary = useMemo(() => {
     if (!dateValue || !timeValue) return null;
-    const [y, m, d] = dateValue.split("-").map(Number);
+    // La madrugada del dia siguiente (25:00) se muestra con su fecha real.
+    const real = entregaReal(dateValue, timeValue);
+    const [y, m, d] = real.fechaISO.split("-").map(Number);
     const dt = new Date(y, m - 1, d);
     const dow = DAY_NAMES_FULL[(dt.getDay() + 6) % 7];
-    return `${dow} ${d} de ${MONTH_NAMES[m - 1]} a las ${timeValue}`;
+    return `${dow} ${d} de ${MONTH_NAMES[m - 1]} a las ${real.hhmm}`;
   }, [dateValue, timeValue]);
 
   const navBtn = (disabled) => ({
@@ -154,7 +157,10 @@ export default function SchedulePicker({
           ) : (
             <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
               {hours.map(h => {
+                // El valor guarda la hora tal cual ("25:00" = 01:00 del dia
+                // siguiente); la etiqueta muestra el reloj.
                 const t = `${String(h).padStart(2, "0")}:00`;
+                const etiqueta = h >= 24 ? `${String(h % 24).padStart(2, "0")}:00 (madrugada)` : t;
                 const on = timeValue === t;
                 return (
                   <button
@@ -167,7 +173,7 @@ export default function SchedulePicker({
                       fontSize: 13, fontWeight: on ? 800 : 600, cursor: "pointer",
                     }}
                   >
-                    {t}
+                    {etiqueta}
                   </button>
                 );
               })}

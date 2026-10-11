@@ -59,10 +59,14 @@ export function estadoDelLocal(settings, ahora, timezone) {
 }
 
 /**
- * Horas (enteras, 0-23) en que se puede entregar el dia `fechaISO`.
- * Ver el encabezado para las dos reglas. Un horario que pasa de la medianoche
- * se corta en las 23:00: la entrega de la madrugada del dia siguiente queda
- * fuera para no guardar una fecha ambigua.
+ * Horas enteras en que se puede entregar el dia `fechaISO`.
+ * Ver el encabezado para las dos reglas.
+ *
+ * Una hora puede ser 24 o mas: es la madrugada del dia SIGUIENTE dentro del
+ * mismo horario (25 = 01:00 del dia siguiente). Asi un negocio 12:00 a 01:00
+ * ofrece de 12 a 25. Por encargo los extremos son inclusivos: se entrega
+ * justo a la apertura y justo al cierre. Al momento se conserva el margen de
+ * una hora antes de cerrar. `entregaReal` traduce la hora a fecha y reloj.
  */
 export function horasDisponibles({ settings, fechaISO, ahora, timezone }) {
   if (!fechaISO) return [];
@@ -86,9 +90,9 @@ export function horasDisponibles({ settings, fechaISO, ahora, timezone }) {
   const ahoraAbs = diaEnMinutos(iso) + minutos;
   const minimo = ahoraAbs + (encargo > 0 ? encargo * 60 : 60);
   // Al momento: una hora despues de abrir (preparacion). Por encargo: el
-  // margen ya lo da el lead, se entrega desde que abre.
+  // margen ya lo da el lead, se entrega desde que abre hasta que cierra.
   const primera = Math.ceil((encargo > 0 ? desde : desde + 60) / 60);
-  const ultima = Math.min(23, Math.floor((hasta - 60) / 60));
+  const ultima = Math.floor((hasta - (encargo > 0 ? 0 : 60)) / 60);
 
   const base = diaEnMinutos(fechaISO);
   const horas = [];
@@ -96,4 +100,25 @@ export function horasDisponibles({ settings, fechaISO, ahora, timezone }) {
     if (base + h * 60 >= minimo) horas.push(h);
   }
   return horas;
+}
+
+const dos = (n) => String(n).padStart(2, '0');
+
+/**
+ * La fecha y la hora de reloj reales de una entrega elegida como (dia, hora).
+ * `hora` es "HH:MM" o "25:00" (madrugada del dia siguiente). Devuelve
+ * { fechaISO, hhmm, diaSiguiente }.
+ */
+export function entregaReal(fechaISO, hora) {
+  const [h, m] = String(hora || '').split(':').map(Number);
+  if (!fechaISO || !Number.isFinite(h)) return { fechaISO, hhmm: hora || '', diaSiguiente: false };
+  const minutos = Number.isFinite(m) ? m : 0;
+  if (h < 24) return { fechaISO, hhmm: `${dos(h)}:${dos(minutos)}`, diaSiguiente: false };
+  const [y, mes, d] = fechaISO.split('-').map(Number);
+  const f = new Date(Date.UTC(y, mes - 1, d + Math.floor(h / 24)));
+  return {
+    fechaISO: `${f.getUTCFullYear()}-${dos(f.getUTCMonth() + 1)}-${dos(f.getUTCDate())}`,
+    hhmm: `${dos(h % 24)}:${dos(minutos)}`,
+    diaSiguiente: true,
+  };
 }
