@@ -732,9 +732,9 @@ export default function Catalog() {
 
   // Musica ambiente del catalogo (loop bajo). Se pausa al salir del catalogo.
   useEffect(() => {
-    configureMusic({ url: sett?.music_url, enabled: sett?.catalog_music !== false });
+    configureMusic({ url: sett?.music_url, enabled: sett?.catalog_music !== false, volume: sett?.music_volume });
     ensureMusic();
-  }, [sett?.music_url, sett?.catalog_music]);
+  }, [sett?.music_url, sett?.catalog_music, sett?.music_volume]);
   useEffect(() => () => stopMusic(), []);
 
   // --- VISTA: CARGANDO ---

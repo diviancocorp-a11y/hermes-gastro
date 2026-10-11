@@ -8,7 +8,9 @@ const DEFAULT_SRC = "/catalog-music.mp3";
 let src = DEFAULT_SRC;       // cada negocio puede traer la suya (configureMusic)
 let disabled = false;        // settings.catalog_music === false
 const KEY = "cp_music";   // 'on' | 'off' (default: on)
-const VOL = 0.06;
+const VOL_MAX = 0.12;       // volumen 100 del negocio
+const VOL_DEFAULT = 50;     // el de siempre (0.06): pensado para la cancion de Dico, -17 LUFS
+let vol = VOL_DEFAULT / 100 * VOL_MAX;
 
 let audio = null;
 let wantOn = null;
@@ -50,7 +52,7 @@ function fadeTo(target, ms) {
 
 function tryPlay() {
   const a = el();
-  return a.play().then(() => { fadeTo(VOL, 1400); return true; }).catch(() => false);
+  return a.play().then(() => { fadeTo(vol, 1400); return true; }).catch(() => false);
 }
 
 function bindUnlock() {
@@ -61,7 +63,7 @@ function bindUnlock() {
     if (!wantOn) { done(); return; }
     const a = el();
     if (!a.paused) { done(); return; }
-    a.play().then(() => { fadeTo(VOL, 1400); done(); }).catch(() => { /* sigue escuchando el proximo gesto */ });
+    a.play().then(() => { fadeTo(vol, 1400); done(); }).catch(() => { /* sigue escuchando el proximo gesto */ });
   };
   EVENTS.forEach(e => window.addEventListener(e, handler, { capture: true, passive: true }));
 }
@@ -73,8 +75,12 @@ export function musicOn() { return readWant(); }
  * Se llama cuando llegan los settings; si el audio ya existia y la fuente
  * cambio, se cambia sobre la marcha sin cortar el singleton.
  */
-export function configureMusic({ url, enabled = true } = {}) {
+export function configureMusic({ url, enabled = true, volume } = {}) {
   disabled = enabled === false;
+  const pct = Number.isFinite(Number(volume)) && volume !== null && volume !== '' ? Math.min(100, Math.max(0, Number(volume))) : VOL_DEFAULT;
+  vol = pct / 100 * VOL_MAX;
+  // Si ya esta sonando, el cambio se escucha de inmediato.
+  if (audio && !audio.paused && !disabled) fadeTo(vol, 300);
   const next = url || DEFAULT_SRC;
   if (next !== src) {
     src = next;

@@ -664,6 +664,19 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, onSave, o
                       <div style={{ fontSize: 10.5, color: 'var(--ag-ink-3)', marginTop: 6 }}>
                         MP3, M4A, OGG o WAV · hasta 5 MB. Se repite en bucle.
                       </div>
+                      <div style={{ marginTop: 14 }}>
+                        <label className="ag-field-lbl">Volumen en el catálogo · {s.music_volume ?? 50}%</label>
+                        <input
+                          type="range" min="0" max="100" step="5"
+                          value={s.music_volume ?? 50}
+                          onChange={e => set("music_volume", Number(e.target.value))}
+                          aria-label="Volumen de la música en el catálogo"
+                          style={{ width: '100%' }}
+                        />
+                        <div style={{ fontSize: 10.5, color: 'var(--ag-ink-3)', marginTop: 2 }}>
+                          Es siempre bajito de fondo. Si tu canción suena fuerte, bajalo. El reproductor de arriba no cambia: es solo para escucharla.
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

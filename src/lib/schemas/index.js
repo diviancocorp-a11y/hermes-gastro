@@ -282,6 +282,8 @@ export const SettingsInputSchema = z.object({
   // Musica propia del catalogo (URL del audio subido) y si suena. Promos del carrusel.
   music_url: optionalText(2000),
   catalog_music: z.boolean().nullable().optional(),
+  // Volumen de la musica, 0-100. Vacio = 50 (el de siempre).
+  music_volume: z.number().int().min(0).max(100).nullable().optional(),
   promo_cumple: z.boolean().nullable().optional(),
   promo_programados: z.boolean().nullable().optional(),
   // Pedidos por encargo: horas de anticipacion minima. 0/vacio = al momento.

@@ -43,6 +43,7 @@
         "lead_time_hours",
         "music_url",
         "catalog_music",
+        "music_volume",
         "promo_cumple",
         "promo_programados",
         "delivery_zone",
