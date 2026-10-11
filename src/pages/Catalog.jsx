@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon, formatInt, optimizeImage, originalImageUrl, disableImageTransforms, probeImageTransforms, waPhoneAr } from "../lib/utils";
 import { preloadImages } from "../lib/preloadImages";
@@ -40,6 +40,7 @@ import {
 import { origenDelEnvio, estimarEnvio, catalogoActivo, esEnvioGratis, evaluarZona } from "../modules/origenDelEnvio";
 import { computeAvailability } from "../lib/stockAvailability";
 import { applyTenantHead } from "../lib/tenantHead";
+import { leadHoras, fechaYMinutos, estadoDelLocal, horasDisponibles } from "../modules/pedidosProgramados";
 import { resolveTenantSlug } from "../lib/activeTenant";
 import useFeature from "../hooks/useFeature";
 
@@ -69,6 +70,13 @@ export default function Catalog() {
   const { toast, ToastContainer } = useToast();
   const [error, setError] = useState(null);
   const [serverNow, setServerNow] = useState(null); // hora del servidor para validar horarios
+  // serverNow se fija al cargar; el reloj tiene que seguir corriendo si el
+  // cliente deja el catalogo abierto (la mini app de Telegram queda minimizada).
+  const serverNowCargadoEn = useRef(0);
+  const ahoraDelServidor = useCallback(
+    () => (serverNow ? new Date(serverNow.getTime() + (Date.now() - serverNowCargadoEn.current)) : new Date()),
+    [serverNow],
+  );
   // Grupos de categorias: salen del business.js del build (hoy vacios). La
   // tabla category_groups era del legacy; el edificio no la tiene.
   const catGroups = FALLBACK_CAT_GROUPS;
@@ -175,11 +183,12 @@ export default function Catalog() {
     setCalcingDelivery(false);
   }, [origenEnvio, sett?.country, sett?.delivery_pricing, sett?.delivery_zone]);
 
-  // Fecha mínima para agendamiento: hoy (siempre permite programar para hoy y mañana)
-  const minDate = useMemo(() => {
-    const now = serverNow || new Date();
-    return now.toISOString().split("T")[0];
-  }, [serverNow]);
+  // Fecha minima para agendamiento: hoy EN LA ZONA DEL NEGOCIO (toISOString daba
+  // la fecha UTC: pasadas las 21:00 en Buenos Aires ya era "manana").
+  const minDate = useMemo(
+    () => fechaYMinutos(ahoraDelServidor(), sett?.timezone).iso,
+    [ahoraDelServidor, sett?.timezone],
+  );
 
   // --- Per-client catalog theming ---
   const catalogTheme = useMemo(() => {
@@ -248,55 +257,23 @@ export default function Catalog() {
     }
   }, [showCk, user, profile]);
 
-  // --- Verificar si el local está abierto ahora según store_hours ---
-  // Usa hora del servidor (serverNow) para evitar que el cliente manipule su reloj
-  const storeStatus = useMemo(() => {
-    const hrs = sett?.store_hours;
-    if (!hrs) return { open: true, msg: "" }; // sin horarios configurados = siempre abierto
-    const now = serverNow || new Date();
-    const dayIdx = (now.getDay() + 6) % 7; // JS: 0=Dom → nuestro: 0=Lun
-    const today = hrs[dayIdx];
-    if (!today || today.closed) return { open: false, msg: "Hoy no abrimos" };
-    if (!today.open || !today.close) return { open: true, msg: "" };
-    const nowMins = now.getHours() * 60 + now.getMinutes();
-    const [oh, om] = today.open.split(":").map(Number);
-    const [ch, cm] = today.close.split(":").map(Number);
-    const openMins = oh * 60 + om;
-    const closeMins = ch * 60 + cm;
-    if (nowMins < openMins) return { open: false, msg: `Abrimos a las ${today.open}` };
-    if (nowMins >= closeMins) return { open: false, msg: `Cerramos a las ${today.close}. Podés programar tu pedido.` };
-    return { open: true, msg: `Abierto hasta las ${today.close}` };
-  }, [sett, serverNow]);
+  // --- Estado del local y horarios de entrega ---
+  // Los calcula src/modules/pedidosProgramados.js en la zona horaria del negocio
+  // y entiende horarios que cruzan la medianoche (12:00 a 01:00). Un negocio
+  // "por encargo" (settings.lead_time_hours > 0) no ofrece "Ahora": el cliente
+  // programa la entrega con esa anticipacion, aunque el local este cerrado.
+  const encargoHoras = leadHoras(sett);
+  const storeStatus = useMemo(
+    () => estadoDelLocal(sett, ahoraDelServidor(), sett?.timezone),
+    [sett, ahoraDelServidor],
+  );
 
-  // Generar horas disponibles para una fecha según horario del local
-  const getAvailableHours = useCallback((dateStr) => {
-    if (!dateStr || !sett?.store_hours) return [];
-    // Calcular día de semana de la fecha seleccionada
-    const [y, m, d] = dateStr.split("-").map(Number);
-    const selectedDate = new Date(y, m - 1, d);
-    const jsDow = selectedDate.getDay(); // 0=Dom
-    const dayIdx = (jsDow + 6) % 7; // → 0=Lun
-    const dayHrs = sett.store_hours[dayIdx];
-    if (!dayHrs || dayHrs.closed || !dayHrs.open || !dayHrs.close) return [];
-
-    const [oh] = dayHrs.open.split(":").map(Number);
-    const [ch] = dayHrs.close.split(":").map(Number);
-    const firstHour = oh + 1; // +1h después de abrir (preparación)
-    const lastHour = ch - 1;  // -1h antes de cerrar
-    if (firstHour > lastHour) return [];
-
-    const now = serverNow || new Date();
-    const isToday = dateStr === now.toISOString().split("T")[0];
-    const currentHour = now.getHours();
-
-    const hours = [];
-    for (let h = firstHour; h <= lastHour; h++) {
-      // Si es hoy, solo mostrar horas futuras (+1h de margen)
-      if (isToday && h <= currentHour + 1) continue;
-      hours.push(h);
-    }
-    return hours;
-  }, [sett, serverNow]);
+  const getAvailableHours = useCallback(
+    (dateStr) => horasDisponibles({
+      settings: sett, fechaISO: dateStr, ahora: ahoraDelServidor(), timezone: sett?.timezone,
+    }),
+    [sett, ahoraDelServidor],
+  );
 
   // Horas disponibles para la fecha seleccionada (reactivo)
   const availableHours = useMemo(() => getAvailableHours(form.delivery_date), [form.delivery_date, getAvailableHours]);
@@ -316,8 +293,8 @@ export default function Catalog() {
 
   // Si el local está cerrado, forzar modo "Programar" (también al abrir checkout)
   useEffect(() => {
-    if (!storeStatus.open && scheduleMode === "now") setScheduleMode("later");
-  }, [storeStatus.open, showCk]);
+    if ((!storeStatus.open || encargoHoras > 0) && scheduleMode === "now") setScheduleMode("later");
+  }, [storeStatus.open, encargoHoras, showCk]);
 
   // FASE 3: the 60s countdown + receipt-verification poll were removed.
   // Mercado Pago pasarela will replace this flow.
@@ -354,7 +331,7 @@ export default function Catalog() {
           }));
         } catch { /* empty */ }
         setProducts(data.products);
-        if (data.serverNow) setServerNow(new Date(data.serverNow));
+        if (data.serverNow) { serverNowCargadoEn.current = Date.now(); setServerNow(new Date(data.serverNow)); }
         // Probe if Supabase image transforms are available (Pro plan feature)
         probeImageTransforms(data.settings?.cover_url);
         // Preload hero + first 4 product images for fast LCP
@@ -831,6 +808,7 @@ export default function Catalog() {
         availableHours={availableHours}
         selectedDayInfo={selectedDayInfo}
         storeHours={sett?.store_hours}
+        leadHoras={encargoHoras}
         getAvailableHours={getAvailableHours}
         addresses={addresses}
         geoLoading={geoLoading}
@@ -941,7 +919,7 @@ export default function Catalog() {
     name: sett.biz_name || fallbackSettings.biz_name,
     isOpen,
     hours: todayHours,
-    openHint: tomaPedidos ? nextOpenHint : "todavía no toma pedidos",
+    openHint: !tomaPedidos ? "todavía no toma pedidos" : encargoHoras > 0 ? "pedidos por encargo" : nextOpenHint,
     logoLetter: sett.logo_letter || fallbackSettings.logo_letter,
     logoColor: sett.logo_color || fallbackSettings.logo_color,
     logoUrl: sett.logo_url || null,

@@ -279,6 +279,8 @@ export const SettingsInputSchema = z.object({
     max_km: z.number().positive().nullable(),
     cost: z.number().min(0),
   })).max(12).nullable().optional(),
+  // Pedidos por encargo: horas de anticipacion minima. 0/vacio = al momento.
+  lead_time_hours: z.number().min(0).max(72).nullable().optional(),
   // Envio gratis: el subtotal de productos tiene que SUPERAR este monto. 0 = no ofrece.
   free_delivery_over: z.number().min(0).nullable().optional(),
   // Zona de entrega: { partidos: [...], notice } — partidos vacio = entrega en todos lados

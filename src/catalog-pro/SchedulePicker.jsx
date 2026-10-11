@@ -108,7 +108,10 @@ export default function SchedulePicker({
             if (!d) return <div key={`x${i}`} />;
             const iso = toISO(d);
             const closed = isClosedDay(d);
-            const enabled = inWindow(d) && !closed;
+            // Dia abierto pero sin horario posible (p. ej. hoy a la noche en un
+            // negocio por encargo): se deshabilita sin tacharlo.
+            const sinHoras = !closed && inWindow(d) && getAvailableHours && getAvailableHours(iso).length === 0;
+            const enabled = inWindow(d) && !closed && !sinHoras;
             const selected = dateValue === iso;
             const isToday = iso === toISO(today);
             return (

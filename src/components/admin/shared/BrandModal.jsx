@@ -485,6 +485,25 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, onSave, o
                     </div>
                   </div>
 
+                  {/* Pedidos por encargo (settings.lead_time_hours) */}
+                  <div className="ag-cat-row">
+                    <div className="ag-cat-row-main">
+                      <div className="ag-cat-row-label">Pedidos por encargo (horas de anticipación)</div>
+                      <div className="ag-cat-row-hint">
+                        0 = lo hacés al momento. Si tu producto tarda (ej. 4), el cliente no ve "Ahora": elige día y hora de entrega con esa anticipación y puede pedir aunque el local esté cerrado. La entrega cae dentro de los horarios del local (Configuración → Horarios).
+                      </div>
+                    </div>
+                    <div className="ag-cat-row-input">
+                      <DecimalInput
+                        step="1"
+                        value={s.lead_time_hours ?? 0}
+                        onChange={(n) => set("lead_time_hours", Math.min(72, Math.max(0, n || 0)))}
+                        placeholder="0"
+                      />
+                      <span className="ag-cat-row-prefix">h</span>
+                    </div>
+                  </div>
+
                   {/* Costo de envio por distancia (settings.delivery_pricing, Sprint 2) */}
                   <div style={{ paddingTop: 10 }}>
                     <div className="ag-cat-row-label" style={{ marginBottom: 2 }}>Costo de envío por distancia</div>

@@ -18,6 +18,7 @@ import Icon from "./Icon";
 import AccountMenu from "./AccountMenu";
 import CatalogMusicToggle from "./CatalogMusicToggle";
 import { fmtAR } from "./format";
+import { leadHoras } from "../modules/pedidosProgramados";
 import {
   ProductPhoto, PriceTag, Rating, StickyCart, SectionHeader, AddRound, SoldOutBadge,
   abrible,
@@ -167,6 +168,17 @@ export default function HomeScreen({
           letterSpacing: 0.2,
         }}>
           {settings.banner_text}
+        </div>
+      )}
+
+      {/* ===== POR ENCARGO (settings.lead_time_hours) ===== */}
+      {leadHoras(settings) > 0 && (
+        <div style={{
+          padding: "7px 16px", background: "var(--b2)", color: "var(--tx)",
+          borderBottom: "1px solid var(--line)",
+          fontSize: 12.5, fontWeight: 600, textAlign: "center", letterSpacing: 0.2,
+        }}>
+          Pedidos por encargo: elegí tu entrega con al menos {leadHoras(settings)} {leadHoras(settings) === 1 ? "hora" : "horas"} de anticipación
         </div>
       )}
 

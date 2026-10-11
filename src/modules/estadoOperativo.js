@@ -19,7 +19,7 @@ function partesLocales(fecha, timezone) {
   };
 }
 
-function horarioDelDia(horarios, indiceJs) {
+export function horarioDelDia(horarios, indiceJs) {
   const indiceLunes = (indiceJs + 6) % 7;
   const dia = horarios?.[indiceLunes]
     ?? horarios?.[DIAS[indiceJs]]
@@ -45,7 +45,7 @@ function horarioDelDia(horarios, indiceJs) {
   };
 }
 
-function aMinutos(valor) {
+export function aMinutos(valor) {
   if (!/^\d{1,2}:\d{2}$/.test(valor || '')) return null;
   const [hora, minuto] = valor.split(':').map(Number);
   if (hora > 23 || minuto > 59) return null;

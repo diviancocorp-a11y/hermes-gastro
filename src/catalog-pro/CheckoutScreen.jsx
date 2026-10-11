@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
 import SchedulePicker from "./SchedulePicker";
+import { leadHoras as leerLeadHoras } from "../modules/pedidosProgramados";
 
 const STEPS = ["Datos", "Entrega", "Pago"];
 
@@ -152,7 +153,8 @@ export default function CheckoutScreen(props) {
 }
 
 // ─── PASO 0: Datos ─────────────────────────────────────────────────
-function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, setScheduleMode, storeStatus, minDate, availableHours, selectedDayInfo, storeHours, getAvailableHours, canNext, onNext, minOrder, minOk, ct }) {
+function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, setScheduleMode, storeStatus, minDate, availableHours, selectedDayInfo, storeHours, getAvailableHours, canNext, onNext, minOrder, minOk, ct, settings }) {
+  const encargo = leerLeadHoras(settings);
   return (
     <>
       {minOrder > 0 && !minOk && (
@@ -218,17 +220,27 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
       {/* Cuando lo necesitas */}
       <div style={section}>
         <label style={labelStyle}>¿Para cuando?</label>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Chip
-            disabled={!storeStatus.open}
-            active={scheduleMode === "now" && storeStatus.open}
-            onClick={() => { if (!storeStatus.open) return; setScheduleMode("now"); sf("delivery_date", ""); sf("delivery_time", ""); }}
-            label="Ahora"
-          />
-          <Chip active={scheduleMode === "later"} onClick={() => setScheduleMode("later")} label="Programar" />
-        </div>
-        {!storeStatus.open && <p style={hint("err")}>{storeStatus.msg}</p>}
-        {storeStatus.open && storeStatus.msg && scheduleMode === "now" && <p style={hint("ok")}>✓ {storeStatus.msg}</p>}
+        {encargo > 0 ? (
+          // Por encargo: no existe "Ahora". Se pide a cualquier hora y se elige
+          // cuando entregar, con la anticipacion que necesita el negocio.
+          <p style={{ ...hint("neutral"), marginTop: 0 }}>
+            Trabajamos por encargo: elegí el día y la hora de entrega, con al menos {encargo} {encargo === 1 ? "hora" : "horas"} de anticipación.
+          </p>
+        ) : (
+          <>
+            <div style={{ display: "flex", gap: 10 }}>
+              <Chip
+                disabled={!storeStatus.open}
+                active={scheduleMode === "now" && storeStatus.open}
+                onClick={() => { if (!storeStatus.open) return; setScheduleMode("now"); sf("delivery_date", ""); sf("delivery_time", ""); }}
+                label="Ahora"
+              />
+              <Chip active={scheduleMode === "later"} onClick={() => setScheduleMode("later")} label="Programar" />
+            </div>
+            {!storeStatus.open && <p style={hint("err")}>{storeStatus.msg}</p>}
+            {storeStatus.open && storeStatus.msg && scheduleMode === "now" && <p style={hint("ok")}>✓ {storeStatus.msg}</p>}
+          </>
+        )}
       </div>
 
       {scheduleMode === "later" && (
