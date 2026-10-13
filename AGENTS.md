@@ -21,6 +21,52 @@ de `clients/` y los tenants que los reemplazaban en el edificio: los negocios
 se vuelven a cargar desde cero como tenants del edificio.
 Todo documento que describa ese mundo vive en `docs/historico/` y no cuenta.
 
+## Negocio: clientes y nombres (actualizado 13/oct/2026)
+
+- **El producto se llama DICO.** Antes se llamo Hermes. Las carpetas, el repo
+  (`hermes-gastro`) y el proyecto Vercel (`hermes-platform`) mantienen el
+  nombre viejo a proposito: no se ven al publico y renombrarlos rompe cosas.
+  **No renombrar nada de `hermes` a `dico`** salvo que Ricky lo pida.
+- Divianco arma los nombres de producto con divianco, magnus, dante y paris.
+  DICO = "di" + "co" de Divianco. Diconomy = DICO + economia (repo `FOCUS`).
+- **Clientes que corren sobre DICO** (cada uno es un tenant del edificio, no
+  un proyecto aparte). Todos pagan un porcentaje de la ganancia neta despues
+  de gastos, al cierre de cada mes:
+  - **La Nona Pato** (panaderia) — 33%. Activo.
+  - **MiaEstudio** — 33%. Activo.
+  - **Monare** (licores, mayorista y minorista, sin local; duena Mariana
+    Marcano, CABA) — 13% durante 9 meses contados desde que el sistema tiene
+    todos los datos cargados; despues paga la mensualidad normal.
+    Implementacion $0. Cierre el dia 1, vence el dia 13; con mora se bloquea
+    a partir del mes siguiente. Sin modulo de recetas.
+  - **Cochi** — pausado. El legacy esta cerrado; va a vivir aca cuando Ricky
+    le de curso.
+- **Mascota DICO:** el personaje vigente se hizo con ChatGPT y se va a conectar
+  a la API de Claude para que tenga vida dentro de la app. El diseno anterior
+  (sistema de poses nativo, estados de cara) **ya no esta vigente**: no
+  retomarlo.
+- Proyectos cerrados que no hay que revivir: Pandora/Thor (ASGARD), la oficina
+  virtual integrada a DICO, Mala Miga (la marca de Ricky ahora es Crazy Miga y
+  no corre sobre DICO).
+
+## Orden de archivos (regla de Ricky, 13/oct/2026)
+
+Ricky no quiere archivos regados. Cumplir siempre:
+
+- **Nada fuera del repo.** No escribir en `C:\Users\ricar\Proyectos` ni en
+  ninguna carpeta hermana: ni bundles, ni zips, ni patches, ni backups.
+- **Un respaldo es una rama**, no un archivo: `git branch respaldo/<tema>-<fecha>`
+  y push. Nunca `git bundle`, nunca zip de una worktree.
+- **Temporales en el temp del sistema** (`os.tmpdir()`, `/tmp`), nunca en la
+  raiz del repo. Si un script necesita una carpeta de salida dentro del repo,
+  tiene que estar en `.gitignore` y se vacia al terminar.
+- **Worktrees:** solo en `.claude/worktrees/`. Al cerrar la sesion, si la rama
+  ya se mergeo, `git worktree remove` + `git worktree prune`.
+- **Docs de negocio** (propuestas, contratos, Word) no van al repo: van a
+  Google Drive.
+- Al cerrar con `/cerrardico`, decir en el resumen si se creo algun archivo
+  fuera de `src/`, `docs/`, `platform/` o `scripts/`, y por que.
+
 ## Donde esta escrito todo
 
 `docs/` es la carpeta madre. Se empieza por **`docs/README.md`**, que dice
