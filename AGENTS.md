@@ -39,6 +39,11 @@ Todo documento que describa ese mundo vive en `docs/historico/` y no cuenta.
     todos los datos cargados; despues paga la mensualidad normal.
     Implementacion $0. Cierre el dia 1, vence el dia 13; con mora se bloquea
     a partir del mes siguiente. Sin modulo de recetas.
+  - **Crazy Miga** (gastro, marca de Ricky) — tenant `crazy-miga`, activo en
+    el edificio desde el 27/sep/2026 (primer pedido 9/oct). Delivery Zona
+    Norte, tema `noche`, sin local fisico. Condiciones comerciales: sin
+    definir aca. Hay un workspace dedicado: los cambios van solo a este
+    tenant y tocar Dico u otros tenants requiere autorizacion de Ricky.
   - **Cochi** — pausado. El legacy esta cerrado; va a vivir aca cuando Ricky
     le de curso.
 - **Mascota DICO:** el personaje vigente se hizo con ChatGPT y se va a conectar
@@ -46,8 +51,8 @@ Todo documento que describa ese mundo vive en `docs/historico/` y no cuenta.
   (sistema de poses nativo, estados de cara) **ya no esta vigente**: no
   retomarlo.
 - Proyectos cerrados que no hay que revivir: Pandora/Thor (ASGARD), la oficina
-  virtual integrada a DICO, Mala Miga (la marca de Ricky ahora es Crazy Miga y
-  no corre sobre DICO).
+  virtual integrada a DICO, Mala Miga (el proyecto legacy; la marca ahora es
+  Crazy Miga y vive como tenant del edificio).
 
 ## Orden de archivos (regla de Ricky, 13/oct/2026)
 
