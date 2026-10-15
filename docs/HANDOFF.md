@@ -11,15 +11,26 @@
 
 ---
 
-## 15/oct/2026 — Gate de diseño y pulido de la landing de divianco.app (Claude)
+## 15/oct/2026 — Gate de diseño, /diseno siempre activo y pulido de la landing de divianco.app (Claude)
 
-Todo vive en la rama **`claude/diseno-impeccable`**, pusheada pero **sin
-mergear a `main`**. Mergear publica la landing en producción, y eso espera el
-OK de Ricky. Son 3 commits de un solo tema cada uno:
+**Publicado.** Ricky dio el OK y el PR #26 se mergeó a `main` como merge
+commit `441c799`. El deploy de producción de `hermes-platform` quedó `READY`
+en ese SHA. Son commits de un solo tema cada uno, revertibles por separado:
 
 - `a29ba2a`: el gate.
 - `d3e86fc`: la skill.
 - `0d9a277`: la landing.
+- `1081171`: `/diseno` siempre activo.
+
+**`/diseno` siempre activo** (pedido de Ricky): toda mejora que toque UI pasa
+por la skill, que maneja la línea de skills. Está en tres lugares, porque uno
+solo se pierde:
+
+- la regla en `CLAUDE.md`/`AGENTS.md`;
+- un hook `UserPromptSubmit` en `.claude/settings.json`
+  (`scripts/hooks/linea-diseno.mjs`) que la recuerda en cada turno;
+- la skill, que se declara obligatoria aunque nadie la nombre y cierra pasando
+  el link del preview de Vercel de la rama.
 
 ### Hecho
 
@@ -99,8 +110,10 @@ OK de Ricky. Son 3 commits de un solo tema cada uno:
 
 ### Pendiente inmediato
 
-1. **Que Ricky revise la rama y dé el OK para mergear a `main`.** Sin eso, nada
-   de esto está en divianco.app.
+1. **Verificar que el hook corre en la máquina de Ricky** (Windows, Claude Code):
+   la primera sesión en el repo tiene que mostrar el aviso de `/diseno`. Acá
+   solo se probó el script a mano. Si Claude Code pide aprobar el hook del
+   proyecto, aprobarlo.
 2. **Números de ejemplo de la landing**: no se tocaron porque son contenido.
    - **Son inconsistentes entre sí.** El pilar dice bife a $1.200 con $340 de
      insumos. El aviso de Dico dice que el costo pasó a $520 y que el margen es
@@ -123,7 +136,6 @@ OK de Ricky. Son 3 commits de un solo tema cada uno:
 
 ### Bloqueado por Ricky
 
-- El merge de `claude/diseno-impeccable` a `main`.
 - Los números de ejemplo y el WhatsApp de la landing (puntos 2 y 3).
 
 ---
