@@ -9,7 +9,6 @@
 
 .pl-root {
   --pl-bg: #08090b;              /* VOID  — manual 03 */
-  --pl-bg-2: #16141200;
   --pl-carbon: #0e1013;          /* CARBON — manual 03 */
   --pl-panel: rgba(255, 255, 255, 0.035);
   --pl-panel-2: rgba(255, 255, 255, 0.055);
@@ -17,9 +16,11 @@
   --pl-line-2: rgba(255, 255, 255, 0.16);
   --pl-tx: var(--ds-color-neutral-50, #faf5ee);
   --pl-t2: rgba(250, 245, 238, 0.68);
-  --pl-t3: rgba(250, 245, 238, 0.42);
+  /* 0.56 da ~6:1 sobre el fondo y sobre la tarjeta: con 0.42 quedaba en
+     3.8:1 y no pasaba AA para texto chico. */
+  --pl-t3: rgba(250, 245, 238, 0.56);
   --pl-gold: var(--ds-color-brand-gold-500, #e0ac3c);
-  --pl-gold-ink: #1a1206;
+  --pl-gold-ink: var(--ds-color-action-primary-text, #1a1206);
   --pl-volt: var(--ds-color-intelligence-label, #93b4ff);
   --pl-ok: var(--ds-color-status-success, #4fa87f);
   --pl-warn: var(--ds-color-status-warning, #f0803c);
@@ -61,11 +62,33 @@
   line-height: 1.12;
 }
 
-.pl-mono {
-  font-family: var(--ds-font-technical, 'JetBrains Mono', monospace);
-  font-size: 11px;
-  letter-spacing: 0.14em;
+.pl-root ::selection {
+  background: var(--pl-gold);
+  color: var(--pl-gold-ink);
+}
+
+/* Etiqueta corta (1 a 3 palabras): estado, plan, label de KPI, firma.
+   Overused con tracking moderado, como pide el manual para las mayusculas
+   tecnicas. Texto mas largo que eso va en caja normal, nunca aca.
+   La mono no se usa en esta pagina: JetBrains Mono no esta autoalojada y el
+   manual la reserva para codigos e identificadores. */
+.pl-etiqueta {
+  font-family: var(--ds-font-ui, 'Overused Grotesk', system-ui, sans-serif);
+  font-size: var(--ds-type-xs, 11px);
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+/* Foco de teclado: el mismo anillo de oro en todo lo que se puede tocar. */
+.pl-root .pl-btn:focus-visible,
+.pl-logo:focus-visible,
+.pl-nav-links a:focus-visible,
+.pl-pie-links a:focus-visible,
+.pl-contacto a:focus-visible {
+  outline: 2px solid var(--pl-gold);
+  outline-offset: 2px;
 }
 
 /* ─────────────── Barra superior ─────────────── */
@@ -86,6 +109,11 @@
   min-height: 64px;
 }
 
+.pl-logo {
+  display: block;
+  border-radius: var(--ds-radius-1, 4px);
+}
+
 .pl-logo img {
   display: block;
   height: 26px;
@@ -102,6 +130,7 @@
   color: var(--pl-t2);
   text-decoration: none;
   font-size: 14px;
+  border-radius: var(--ds-radius-1, 4px);
 }
 
 .pl-nav-links a:hover {
@@ -178,20 +207,30 @@
     radial-gradient(90% 55% at 50% 8%, rgba(61, 107, 255, 0.06), transparent 70%);
 }
 
+/* Son cuatro palabras: van en caja normal. El punto es inline y no un item
+   de flex, asi que si alguna vez la frase parte en dos renglones el punto
+   queda pegado a la primera palabra en vez de flotar al costado. */
 .pl-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+  display: inline-block;
+  max-width: 100%;
+  margin: 0;
   padding: 7px 16px;
-  border-radius: 999px;
+  border-radius: var(--ds-radius-pill, 999px);
   border: 1px solid var(--pl-line);
   background: var(--pl-panel);
   color: var(--pl-t2);
+  font-size: var(--ds-type-sm, 13px);
+  font-weight: 500;
+  line-height: 1.4;
+  text-wrap: balance;
 }
 
 .pl-pill-dot {
+  display: inline-block;
   width: 7px;
   height: 7px;
+  margin-right: var(--ds-space-2, 8px);
+  vertical-align: 0.1em;
   border-radius: 50%;
   background: var(--pl-ok);
 }
@@ -238,7 +277,9 @@
 
 .pl-hero-nota {
   margin-top: 16px;
-  color: var(--pl-t3);
+  font-size: var(--ds-type-md, 15px);
+  color: var(--pl-t2);
+  text-wrap: balance;
 }
 
 /* ─────────────── Mockup del panel ─────────────── */
@@ -261,9 +302,19 @@
   padding: 12px 18px;
   border-bottom: 1px solid var(--pl-line);
   color: var(--pl-t3);
+  font-size: var(--ds-type-sm, 13px);
+}
+
+.pl-mock-url {
+  min-width: 0;
+  margin-left: var(--ds-space-2, 8px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pl-mock-luz {
+  flex: none;
   width: 9px;
   height: 9px;
   border-radius: 50%;
@@ -292,20 +343,21 @@
 }
 
 .pl-kpi {
-  background: #16141200;
-  background-color: #121519;
+  background: #121519;
   padding: 14px 16px;
 }
 
 .pl-kpi-label { color: var(--pl-t3); }
 
+/* Regla de metricas del manual: Overused 700 con numeros tabulares. */
 .pl-kpi-valor {
   margin-top: 6px;
   font-size: 20px;
-  font-weight: 650;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.pl-kpi-delta { font-size: 12px; margin-top: 2px; }
+.pl-kpi-delta { font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }
 .pl-kpi-delta.sube { color: var(--pl-ok); }
 .pl-kpi-delta.baja { color: var(--pl-warn); }
 
@@ -319,7 +371,7 @@
 .pl-pend h3 {
   margin: 0 0 12px;
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .pl-pend li {
@@ -338,10 +390,8 @@
   padding: 2px 7px;
   border-radius: 5px;
   border: 1px solid currentColor;
-  font-family: var(--ds-font-technical, monospace);
-  font-size: 9px;
-  letter-spacing: 0.1em;
 }
+
 
 .pl-tag.alta { color: var(--pl-warn); }
 .pl-tag.media { color: var(--pl-t3); }
@@ -380,6 +430,13 @@
   margin-top: 14px;
 }
 
+/* El mockup es aria-hidden: estos botones son dibujo. Sin puntero, sin hover
+   y sin hundirse, para que nadie intente tocarlos. */
+.pl-dico-acciones .pl-btn {
+  pointer-events: none;
+  cursor: default;
+}
+
 /* ─────────────── Tira de reemplazo ─────────────── */
 
 .pl-tira {
@@ -391,15 +448,13 @@
 .pl-tira-in {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   gap: 12px 30px;
   color: var(--pl-t3);
+  font-size: var(--ds-type-sm, 13px);
 }
 
-.pl-tira-in strong {
-  color: var(--pl-t3);
-  font-weight: 400;
-}
+.pl-tira-in strong { color: var(--pl-t3); }
 
 /* ─────────────── Secciones ─────────────── */
 
@@ -413,20 +468,29 @@
   display: grid;
   grid-template-columns: minmax(min(300px, 100%), 1.6fr) minmax(min(260px, 100%), 1fr);
   gap: 24px;
-  align-items: end;
+  /* Linea de base y no 'end': sin rotulo arriba, el h2 es mas bajo que una
+     bajada de tres renglones y con 'end' la bajada arrancaba por encima del
+     titulo. Asi el h2 abre la fila y la bajada lee en su misma linea. */
+  align-items: baseline;
 }
 
+/* Apilada, la cabecera en fila tiene que medir lo mismo que una simple: la
+   bajada queda a space-3 (12px) del h2 por su propio margen, sin sumarle el
+   gap. */
 @media (max-width: 780px) {
-  .pl-sec-head.pl-row { grid-template-columns: 1fr; align-items: start; }
+  .pl-sec-head.pl-row { grid-template-columns: 1fr; align-items: start; gap: 0; }
 }
 
+/* Sin rotulo encima, el h2 abre la cabecera: arriba lo separa el padding
+   de la seccion, abajo la bajada o la grilla. */
 .pl-sec-head h2 {
-  margin: 12px 0 0;
+  margin: 0;
   font-size: clamp(26px, 4vw, 38px);
+  text-wrap: balance;
 }
 
 .pl-sec-head p {
-  margin: 12px 0 0;
+  margin: var(--ds-space-3, 12px) 0 0;
   max-width: 62ch;
   color: var(--pl-t2);
 }
@@ -447,7 +511,7 @@
 .pl-card h3 {
   margin: 0;
   font-size: 17px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .pl-card p {
@@ -494,62 +558,12 @@
   flex: none;
   padding: 3px 8px;
   border-radius: 5px;
-  font-family: var(--ds-font-technical, monospace);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   border: 1px solid currentColor;
 }
 
 .pl-estado.activo { color: var(--pl-ok); }
 .pl-estado.pruebas { color: var(--pl-gold); }
 .pl-estado.roadmap { color: var(--pl-volt); }
-
-/* ─────────────── Comparativa ─────────────── */
-
-.pl-tabla-scroll {
-  overflow-x: auto;
-  border: 1px solid var(--pl-line);
-  border-radius: 14px;
-}
-
-.pl-tabla {
-  width: 100%;
-  min-width: 640px;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.pl-tabla th,
-.pl-tabla td {
-  padding: 14px 18px;
-  text-align: left;
-  border-bottom: 1px solid var(--pl-line);
-  vertical-align: top;
-}
-
-.pl-tabla tr:last-child th,
-.pl-tabla tr:last-child td { border-bottom: 0; }
-
-.pl-tabla thead th {
-  background: var(--pl-panel-2);
-  color: var(--pl-t3);
-  font-family: var(--ds-font-technical, monospace);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-weight: 400;
-}
-
-.pl-tabla thead th.dico { color: var(--pl-gold); }
-
-.pl-tabla tbody th {
-  font-weight: 550;
-  color: var(--pl-tx);
-}
-
-.pl-tabla td { color: var(--pl-t2); }
-.pl-tabla td.dico { color: var(--pl-gold); }
 
 /* ─────────────── Precios ─────────────── */
 
@@ -566,24 +580,31 @@
   background: rgba(240, 200, 104, 0.05);
 }
 
-.pl-precio-monto {
+/* .pl-card .x y no .x a secas: .pl-card p (0,1,1) le ganaba a una clase
+   sola y el monto salia a 14px. */
+.pl-card .pl-precio-monto {
   margin: 14px 0 0;
   font-size: 32px;
-  font-weight: 650;
+  font-weight: 700;
   letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--pl-tx);
+  font-variant-numeric: tabular-nums;
 }
 
-.pl-precio-monto span {
-  font-size: 13px;
+.pl-card .pl-precio-monto span {
+  margin-left: var(--ds-space-2, 8px);
+  font-size: var(--ds-type-sm, 13px);
   font-weight: 400;
   color: var(--pl-t3);
   letter-spacing: 0;
 }
 
-.pl-precio-anual {
+.pl-card .pl-precio-anual {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: var(--ds-type-sm, 13px);
   color: var(--pl-t3);
+  font-variant-numeric: tabular-nums;
 }
 
 .pl-precio-card ul { flex: 1; margin-bottom: 20px; }
@@ -623,9 +644,6 @@
 
 .pl-pie-in {
   padding-block: 28px;
-}
-
-.pl-pie-in {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -647,6 +665,7 @@
   color: var(--pl-t3);
   font-size: 13px;
   text-decoration: none;
+  border-radius: var(--ds-radius-1, 4px);
 }
 
 .pl-pie-links a:hover { color: var(--pl-tx); }
@@ -680,39 +699,24 @@
   padding: 26px;
 }
 
-.pl-pilar-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-.pl-pilar-indice {
-  flex: none;
-  font-size: 12px;
-  color: var(--pl-gold);
-  border: 1px solid var(--pl-line-2);
-  border-radius: 6px;
-  padding: 4px 7px;
-  line-height: 1;
-}
-
-.pl-pilar-sub {
-  margin: 3px 0 0;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+/* Repite el tamano de .pl-etiqueta porque .pl-card p (0,1,1) lo pisaria. */
+.pl-card .pl-pilar-sub {
+  margin: var(--ds-space-1, 4px) 0 0;
+  font-size: var(--ds-type-xs, 11px);
   color: var(--pl-t3);
 }
 
-/* El ejemplo numerico es el argumento de la seccion: va en la tipografia
-   tecnica y alineado a la derecha para que se lea como un ticket. */
+/* El ejemplo numerico es el argumento de la seccion: filas con el valor a la
+   derecha para que se lea como un ticket. Numeros tabulares en Overused, que
+   es la regla de metricas del manual: las cifras quedan en columna sin mono. */
 .pl-ejemplo {
   margin: 20px 0 0;
   padding: 14px 16px;
   border: 1px solid var(--pl-line);
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.22);
-  font-size: 12.5px;
+  font-size: var(--ds-type-sm, 13px);
+  font-variant-numeric: tabular-nums;
 }
 
 .pl-ejemplo-fila {
@@ -728,11 +732,10 @@
 .pl-ejemplo dt { color: var(--pl-t2); margin: 0; }
 .pl-ejemplo dd { margin: 0; color: var(--pl-tx); white-space: nowrap; }
 
-.pl-ejemplo-tipo {
+/* El tipo de fila es metadata del ticket: va como etiqueta, en t3. */
+.pl-ejemplo .pl-ejemplo-tipo {
+  margin-left: var(--ds-space-1, 4px);
   color: var(--pl-t3);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 /* La ultima fila del ejemplo es el resultado: es lo unico en oro. */
@@ -771,9 +774,11 @@
   border: 1px solid var(--pl-line-2);
   color: var(--pl-gold);
   font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
-.pl-paso h3 { margin: 3px 0 0; font-size: 16px; font-weight: 650; }
+.pl-paso h3 { margin: 3px 0 0; font-size: 16px; font-weight: 600; }
 .pl-paso p { margin: 7px 0 0; color: var(--pl-t2); font-size: 14px; max-width: 70ch; }
 
 /* ─────────────── Los avisos de Dico ─────────────── */
@@ -784,14 +789,17 @@
 
 .pl-aviso { background: var(--pl-panel-2); }
 
-.pl-aviso-firma {
+/* La firma es el titulo del aviso y tiene hasta cinco palabras: va en caja
+   normal. Mayusculas solo para etiquetas de una a tres. Es un h3: el
+   .pl-card delante gana a .pl-card h3 y le saca el margen y el tamano. */
+.pl-card .pl-aviso-firma {
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--pl-gold);
+  font-size: var(--ds-type-sm, 13px);
+  font-weight: 600;
 }
 
 .pl-aviso-firma img { width: 22px; height: 22px; display: block; }
@@ -878,21 +886,53 @@
 
 .pl-contacto > div { background: var(--pl-bg); padding: 16px 18px; }
 
-.pl-contacto dt {
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--pl-t3);
+.pl-contacto dt { color: var(--pl-t3); }
+
+.pl-contacto dd { margin: 6px 0 0; font-size: var(--ds-type-md, 15px); color: var(--pl-tx); }
+
+.pl-contacto a {
+  color: var(--pl-gold);
+  text-decoration: none;
+  text-underline-offset: var(--ds-space-1, 4px);
+  border-radius: var(--ds-radius-1, 4px);
 }
 
-.pl-contacto dd { margin: 6px 0 0; font-size: 13.5px; color: var(--pl-tx); }
-.pl-contacto a { color: var(--pl-gold); text-decoration: none; }
 .pl-contacto a:hover { text-decoration: underline; }
 
 /* El KPI que cierra el mockup es el unico que lleva el oro: es el numero del
    que habla toda la pagina. */
-.pl-kpi.destacado { border-color: rgba(224, 172, 60, 0.45); }
 .pl-kpi.destacado .pl-kpi-valor { color: var(--pl-gold); }
+
+/* ─────────────── Pantalla tactil: area de 44px ─────────────── */
+
+/* Por tipo de puntero y no por ancho: una tablet apaisada pasa los 860px,
+   muestra la navegacion completa y se sigue tocando con el dedo. 44px es el
+   minimo de WCAG 2.5.5; la escala no tiene ese valor (touch es 48, para POS). */
+@media (pointer: coarse) {
+  .pl-btn { min-height: 44px; }
+
+  .pl-logo,
+  .pl-nav-links a { padding-block: var(--ds-space-3, 12px); }
+
+  .pl-pie-links { row-gap: 0; }
+
+  .pl-pie-links a {
+    display: inline-block;
+    min-width: 44px;
+    padding-block: var(--ds-space-3, 12px);
+    text-align: center;
+  }
+
+  /* El area tactil la pone un pseudo-elemento: el link no cambia de caja, asi
+     que ni la celda crece ni el anillo de foco tapa la etiqueta de arriba. */
+  .pl-contacto a { position: relative; }
+
+  .pl-contacto a::after {
+    content: '';
+    position: absolute;
+    inset: calc(-1 * var(--ds-space-3, 12px)) calc(-1 * var(--ds-space-1, 4px));
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .pl-root * { transition: none !important; animation: none !important; }

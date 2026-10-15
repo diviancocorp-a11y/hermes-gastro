@@ -38,6 +38,10 @@ jobs:
       # a tablas legacy por visita y ningun gate lo vio: caian en un fallback.
       - name: Llamadas alcanzables vs edificio
         run: npm run check:alcanzable
+      # Hallazgos de impeccable detect contra scripts/diseno-deuda.json, que
+      # solo se achica. Mismo check que el pre-commit, por si alguien lo salteo.
+      - name: Diseno vs deuda conocida
+        run: npm run check:diseno
       - name: Lint — full (errors + warnings)
         run: npm run lint
 

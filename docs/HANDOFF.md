@@ -11,6 +11,123 @@
 
 ---
 
+## 15/oct/2026 — Gate de diseño y pulido de la landing de divianco.app (Claude)
+
+Todo vive en la rama **`claude/diseno-impeccable`**, pusheada pero **sin
+mergear a `main`**. Mergear publica la landing en producción, y eso espera el
+OK de Ricky. Son 3 commits de un solo tema cada uno:
+
+- `a29ba2a`: el gate.
+- `d3e86fc`: la skill.
+- `0d9a277`: la landing.
+
+### Hecho
+
+**Gate de diseño.**
+- `scripts/check-diseno.mjs` (`npm run check:diseno`) corre `impeccable detect`
+  sobre `src/` e `index.html` y lo compara contra `scripts/diseno-deuda.json`.
+- Va en el pre-commit y en el CI.
+- Tiene el mismo contrato que `llamadas-legacy-pendientes.json`: un hallazgo
+  nuevo frena el commit y uno resuelto obliga a `-- --podar`.
+- Cuenta por archivo y regla, no por línea, así editar arriba de un hallazgo
+  viejo no lo vuelve nuevo.
+- Nació con **17 hallazgos**: 12 bordes laterales de color, 4 bordes de acento
+  sobre esquinas redondeadas e Inter cargada en `src/catalog-pro/tokens.css`,
+  aunque el manual la excluye.
+- `impeccable` entra como devDependency fija (4.5.2).
+
+**Skill `/diseno` y subagentes.**
+- Están en `.claude/skills/diseno/` y `.claude/agents/disenador.md` +
+  `auditor-diseno.md`.
+- Decisiones que no se deducen leyendo la skill:
+  - **En este repo no se usa ui-ux-pro-max.** Su trabajo es inventar un sistema
+    de diseño y DICO ya tiene uno en `docs/marca/`.
+  - **Una sola skill estética por tarea**: taste-skill para pantallas nuevas,
+    impeccable para pulir las existentes.
+  - **El auditor es de solo lectura** y no ve el razonamiento del constructor.
+- Las skills de terceros (`impeccable`, `design-taste-frontend`) **no se
+  commitean**: están en `.gitignore` y las baja `npm run skills:diseno`
+  fijadas a un commit.
+
+**Landing (`src/pages/PlatformLanding.jsx` + `src/styles/platform-landing.css`).**
+- **El monto de los planes salía a 14px en vez de 32px.** `.pl-card p` le
+  ganaba en especificidad a `.pl-precio-monto`, y también a `.pl-pilar-sub`.
+- **`.pl-mono` pedía JetBrains Mono, que no está autoalojada** (en
+  `public/fonts/dico` solo hay Overused y Butler). Unas 40 etiquetas caían en
+  la mono del sistema, que es el "fallback accidental" del manual 02.
+  - Pasaron a `.pl-etiqueta`, en Overused a `--ds-type-xs`.
+  - Los textos largos van en caja normal.
+  - Los números van en Overused con `tabular-nums`, siguiendo la regla de
+    métricas del DS v0.1.
+- **`--pl-t3` subió de 0.42 a 0.56 de opacidad** (contraste de 3.8:1 a ~6:1).
+- **Sin eyebrows ni índices 01/02/03.** El craft floor de impeccable los
+  prohíbe y la nav ya nombra las secciones.
+- **Táctil, foco y superficies del navegador.**
+  - Targets de 44px bajo `@media (pointer: coarse)` y no por ancho, así cubre
+    también las tablets.
+  - Foco en oro, `::selection` y `color-scheme: dark` mientras se ve la
+    landing. Se restaura al salir.
+- **El `<main>` de la landing pasó a `<div>`**, porque `App.jsx` ya envuelve
+  todo en `<main id="main-content">`.
+- **Único cambio de texto**: la etiqueta del plan Digital pasó de "Gratis" a
+  "Para empezar", porque repetía el monto "Gratis".
+
+### Verificado
+
+- Pre-commit completo en verde al commitear la landing, **incluido el gate
+  nuevo**.
+- `check:diseno`: 17 → 17, ninguno nuevo. La landing tenía 0 hallazgos del
+  detector antes y después: sus defectos salieron de mirarla renderizada, no
+  del detector.
+- Build en verde, y **1560/1560 tests** con `--pool=threads`. Los 7 rojos
+  preexistentes de la sección del 7-9/oct ya no fallan sobre esta rama.
+- Renderizada en Chromium headless a 320, 390, 768, 1024 y 1280:
+  - sin scroll horizontal;
+  - sin monospace dentro de `.pl-root`;
+  - montos a 32px;
+  - con puntero táctil emulado a 390 y 820, ningún target por debajo de 44px;
+  - el móvil quedó 532px más corto.
+- **Auditoría independiente**: 0 P0, 1 P1 (tamaños y espacios a mano fuera de
+  la escala `--ds-*`) y 3 P2. Todo se corrigió en la segunda ronda del
+  constructor. Esa segunda ronda la verificaron los gates y las capturas, **no
+  una segunda auditoría**.
+- **NO verificado**:
+  - la página en producción, porque no está publicada;
+  - un dispositivo táctil real;
+  - `npx impeccable detect <url>`, porque su Chromium no corre como root en el
+    sandbox.
+
+### Pendiente inmediato
+
+1. **Que Ricky revise la rama y dé el OK para mergear a `main`.** Sin eso, nada
+   de esto está en divianco.app.
+2. **Números de ejemplo de la landing**: no se tocaron porque son contenido.
+   - **Son inconsistentes entre sí.** El pilar dice bife a $1.200 con $340 de
+     insumos. El aviso de Dico dice que el costo pasó a $520 y que el margen es
+     14%; con esos números da ~41%.
+   - **Están en una escala que no cierra con los precios del plan.** Una noche
+     de $4.200 de venta contra un plan de $59.000 por mes.
+   - Un gastronómico lo nota, y es justo la promesa de la página
+     ("Sin suposiciones. Números"). Hay que alinearlos a precios de 2026.
+3. **WhatsApp del CTA con número de EE. UU. (+1 786)** para un público
+   argentino. Es decisión de Ricky.
+4. **Fuera de alcance, preexistentes**:
+   - `SkipToContent.jsx` usa blanco sobre `#C45D3E`, que da 4.21:1, y está en
+     DM Sans.
+   - El `<main>` de `App.jsx` debería salir por ruta.
+5. **Deuda del gate**: los 12 `side-tab` del panel son el siguiente bloque
+   natural para `/diseno`, y cada uno que se resuelve se poda.
+6. **Heredado del 28/sep, no verificado en esta sesión**: los cron de GitHub
+   (`morning-health` y el smoke) corrían unas 8 h tarde. Mirar las últimas
+   corridas antes de tocar nada.
+
+### Bloqueado por Ricky
+
+- El merge de `claude/diseno-impeccable` a `main`.
+- Los números de ejemplo y el WhatsApp de la landing (puntos 2 y 3).
+
+---
+
 ## 7-9/oct/2026 — Crazy Miga: del alta a vender por Telegram (Claude)
 
 Crazy Miga es una dark kitchen (cookies) que cobra por alias o efectivo, sin la
@@ -398,79 +515,3 @@ se sienta viva dentro de la app, con mas acciones y transiciones suaves.
 Nada para esta iteracion. Quedaron cambios sin commitear de otro agente en
 `Catalog`, `origenDelEnvio`, una migracion y el snapshot de plataforma; no se
 mezclaron con esta tarea.
-## 28/sep/2026 — El reporte de la mañana en verde de punta a punta (Claude)
-
-Cierra los pendientes 1 y 2 y los dos primeros bloqueos de la sección del
-27-28/sep: Ricky cargó `SMOKE_TENANTS` y los secrets, y el reporte corre
-entero por primera vez.
-
-### Hecho
-- **#20 (incluye el #19)**:
-  - `DEFINER_APROBADAS` suma las 11 definer de caja, salón y facturación
-    (0067, 0069, 0070). Otra sesión aplicó esas migraciones el 27/sep sin
-    aprobarlas y el reporte dio "RLS ABIERTO". Antes de aprobarlas se leyó el
-    cuerpo desplegado de cada una (todas validan tenant y rol adentro) y sus
-    policies.
-  - `scripts/check-definer-aprobadas.mjs` (`npm run check:definer`): lee las
-    migraciones y frena, en el pre-commit y en el job Lint del CI, toda
-    definer de `public` llamable desde el front que no esté aprobada. Por qué:
-    check-rls mira la base y se entera al día siguiente; esto frena en el
-    commit y sin credenciales. Da los mismos 41 nombres que producción.
-    Límite: un revoke armado con `execute format(...)` no lo ve.
-  - Sentry en `morning-health`: `trim` de las tres variables, prueba la región
-    US y después la europea, y explica el 404 (org o proyecto mal escritos) y
-    el 401/403 (token sin permiso).
-- **Sentry configurado**: org `grupo-divianco`, proyecto `hermes-gastro`,
-  región US. El conector MCP de Sentry quedó conectado a las sesiones.
-- **#21**: la consulta de Sentry cuenta solo lo visto en las últimas 24 h
-  (`lastSeen:-24h`), porque `statsPeriod` arma estadísticas pero no filtra.
-  Salió de un falso positivo: HERMES-GASTRO-N, un evento único del deploy
-  legacy de mala-miga visto dos días antes; se marcó resuelto.
-- **Merge sin preguntar: descartado.** Se propuso que los PR de solo docs,
-  tests o scripts de chequeo se mergearan sin el OK de Ricky. El clasificador
-  de permisos bloqueó que el agente escribiera esa regla en `CLAUDE.md` (la
-  cuenta como ampliarse sus propios permisos), aun con el pedido explícito, y
-  Ricky decidió dejarlo como está: **todo merge sigue pidiendo su OK**. No
-  volver a intentarlo por el `CLAUDE.md`; si se retoma, es un ruleset de
-  GitHub sobre `main` que arma él.
-
-### Verificado
-- Producción: deploy `READY` de `f67c5ad` (merge del #21) en `hermes-platform`.
-- `morning-health` programado del lunes 28/sep (corrida 119, sobre `f67c5ad`),
-  leído del log: 3 negocios (43, 10 y 8 productos), schema al día, funciones
-  coinciden, RLS cerrado, Sentry sin errores en 24 h; enviado a Telegram.
-- Smoke programado del 28/sep: 5 pasan (la landing y los 3 catálogos) y 4 se
-  saltean a propósito (fotos de productos y admin, hasta que haya fotos y
-  usuario de prueba).
-- `check:definer` sobre `main` sin el #19 reproducía exactamente las 11.
-
-### Pendiente inmediato
-1. **Los cron de GitHub corrieron unas 8 h tarde**: `morning-health` está a las
-   10:00 UTC y corrió 17:57; el smoke, de 10:30 a 18:13. Si se repite, el
-   reporte "de la mañana" llega a la tarde. Mirar la corrida del martes antes
-   de tocar nada; si sigue, dispararlo desde afuera (una Routine o un cron
-   externo que llame a `workflow_dispatch`).
-2. `e2e/delivery-persistence.spec.ts` habla con el schema legacy y se saltea
-   siempre: reescribirlo contra el edificio o borrarlo. E2E da verde sin
-   probar nada.
-3. La `0075` no figura en la historia de migraciones de producción, pero sus
-   funciones existen: comparar lo desplegado con el archivo antes de tocarla.
-4. El panel legacy (`business.platform: false`) no lo sirve ningún build: es
-   código muerto, candidato a borrarse.
-5. Dependabot: PRs de versiones mayores #3 a #11. Revisar
-   `.github/dependabot.yml` (la idea era solo parches de seguridad). Los
-   workflows ya avisan que `actions/checkout@v4` y `setup-node@v4` corren
-   forzados en Node 24.
-6. Expedición (1c), que venía de la sección del 12/sep: el armado de bandejas
-   y el pasador. El modelo ya lo sostiene con `orders.ready_at`.
-7. Ideas sin hacer: una alerta de Sentry que avise a Telegram en el momento, y
-   que la lista de negocios vigilados salga de la base y no de una variable.
-
-### Bloqueado por Ricky
-Todo está en `docs/TAREAS-MANUALES.md`, sección "Despues de la recarga":
-ubicación de cada sucursal (`branches.lat/lng`, hoy el envío cotiza desde el
-centro de Buenos Aires), fotos de los 64 productos, logo, horarios, tarifas y
-MercadoPago por negocio, secrets `SMOKE_ADMIN_*` para el test de admin, y
-sectores y estaciones para que el KDS y la comandera muestren algo.
-
----

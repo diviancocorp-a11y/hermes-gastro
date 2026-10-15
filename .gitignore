@@ -41,6 +41,10 @@ coverage/
 
 # Claude Code: las skills se comparten, la config local no
 .claude/settings.local.json
+# Skills de diseno de terceros: las baja `npm run skills:diseno` fijadas a un
+# commit. Se comparten las propias (diseno, dico, cerrardico), no estas.
+.claude/skills/impeccable/
+.claude/skills/design-taste-frontend/
 
 # Temporales del CLI de Supabase (los deja el deploy de functions)
 supabase/.temp/

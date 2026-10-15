@@ -41,7 +41,6 @@ const WHATSAPP_URL = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(WHATSA
 const PILARES = [
   {
     id: 'receta',
-    indice: '01',
     nombre: 'Receta',
     sub: 'Costo + margen',
     detalle: 'Cargás los insumos de cada plato una vez. Dico calcula el costo '
@@ -56,7 +55,6 @@ const PILARES = [
   },
   {
     id: 'horario',
-    indice: '02',
     nombre: 'Horario',
     sub: 'Nómina + rentabilidad',
     detalle: 'Cada puesto tiene un valor por hora. La gente ficha entrada y '
@@ -71,7 +69,6 @@ const PILARES = [
   },
   {
     id: 'pl',
-    indice: '03',
     nombre: 'P&L',
     sub: 'Número real',
     detalle: 'Cerrás la caja y el reporte ya está hecho: ventas, insumos, '
@@ -243,7 +240,7 @@ const PLANES = [
   {
     id: 'digital',
     nombre: 'Digital',
-    etiqueta: 'Gratis',
+    etiqueta: 'Para empezar',
     mensual: 0,
     descripcion: 'Todo el sistema, sin pagar.',
     items: [
@@ -304,6 +301,14 @@ function useMetaDeLaPlataforma() {
     set('meta[name="description"]', 'content', DESCRIPCION);
     set('meta[property="og:title"]', 'content', TITULO);
     set('meta[property="og:description"]', 'content', DESCRIPCION);
+
+    // La landing es oscura aunque el resto de la app no lo sea: con
+    // color-scheme dark la barra de scroll, el autocompletado y los controles
+    // nativos no aparecen claros. Se devuelve el valor previo al desmontar.
+    const raiz = document.documentElement;
+    const esquemaPrevio = raiz.style.colorScheme;
+    raiz.style.colorScheme = 'dark';
+    return () => { raiz.style.colorScheme = esquemaPrevio; };
   }, []);
 }
 
@@ -333,13 +338,15 @@ export default function PlatformLanding() {
         </div>
       </header>
 
-      <main>
+      {/* div y no main: App.jsx ya envuelve todas las rutas en
+          <main id="main-content">, y un main adentro de otro rompe el landmark. */}
+      <div>
         {/* ── 1. HERO ── */}
         <section className="pl-hero">
           <div className="pl-wrap">
-            <p className="pl-pill pl-mono">
+            <p className="pl-pill">
               <span className="pl-pill-dot" aria-hidden="true" />
-              Gestión para gastronomía · Argentina
+              Gestión para gastronomía&nbsp;· Argentina
             </p>
 
             <h1 className="pl-titular">
@@ -359,17 +366,17 @@ export default function PlatformLanding() {
               <a className="pl-btn pl-btn-ghost" href="/registro">Probar gratis</a>
             </div>
 
-            <p className="pl-hero-nota pl-mono">
-              El plan Digital es gratis · Sin tarjeta · Tu carta online en un minuto
+            <p className="pl-hero-nota">
+              El plan Digital es gratis&nbsp;· Sin tarjeta&nbsp;· Tu carta online en un minuto
             </p>
 
             <MockupPanel />
           </div>
         </section>
 
-        <section className="pl-tira" aria-label="Lo que reemplaza">
-          <div className="pl-wrap pl-tira-in pl-mono">
-            <strong>Lo que reemplaza</strong>
+        <section className="pl-tira" aria-labelledby="pl-tira-titulo">
+          <div className="pl-wrap pl-tira-in">
+            <strong id="pl-tira-titulo" className="pl-etiqueta">Lo que reemplaza</strong>
             <span>Planillas de Excel</span>
             <span>Cuaderno de caja</span>
             <span>Grupo de WhatsApp</span>
@@ -382,7 +389,6 @@ export default function PlatformLanding() {
         <section className="pl-sec pl-problema">
           <div className="pl-wrap">
             <div className="pl-sec-head">
-              <p className="pl-mono">El problema</p>
               <h2 className="pl-serif">Vendiste $10.000. ¿Ganaste cuánto?</h2>
             </div>
             <div className="pl-grid pl-grid-2">
@@ -413,7 +419,6 @@ export default function PlatformLanding() {
         <section className="pl-sec" id="pilares">
           <div className="pl-wrap">
             <div className="pl-sec-head">
-              <p className="pl-mono">Cómo lo calcula</p>
               <h2 className="pl-serif">Receta por receta, turno por turno</h2>
               <p>
                 Dico junta tres datos que en cualquier otro lado viven separados.
@@ -423,19 +428,14 @@ export default function PlatformLanding() {
             <div className="pl-grid pl-pilares">
               {PILARES.map((p) => (
                 <article className="pl-card pl-pilar" key={p.id}>
-                  <div className="pl-pilar-head">
-                    <span className="pl-pilar-indice pl-mono">{p.indice}</span>
-                    <div>
-                      <h3>{p.nombre}</h3>
-                      <p className="pl-pilar-sub pl-mono">{p.sub}</p>
-                    </div>
-                  </div>
+                  <h3>{p.nombre}</h3>
+                  <p className="pl-pilar-sub pl-etiqueta">{p.sub}</p>
                   <p>{p.detalle}</p>
-                  <dl className="pl-ejemplo pl-mono">
+                  <dl className="pl-ejemplo">
                     {p.ejemplo.map(([concepto, tipo, valor]) => (
                       <div className="pl-ejemplo-fila" key={concepto}>
                         <dt>
-                          {concepto} <span className="pl-ejemplo-tipo">{tipo}</span>
+                          {concepto} <span className="pl-ejemplo-tipo pl-etiqueta">{tipo}</span>
                         </dt>
                         <dd>{valor}</dd>
                       </div>
@@ -455,10 +455,7 @@ export default function PlatformLanding() {
         <section className="pl-sec" id="flujo">
           <div className="pl-wrap">
             <div className="pl-sec-head pl-row">
-              <div>
-                <p className="pl-mono">Cómo funciona</p>
-                <h2 className="pl-serif">Cinco pasos, de la mesa al número</h2>
-              </div>
+              <h2 className="pl-serif">Cinco pasos, de la mesa al número</h2>
               <p>
                 Cada paso funciona solo. Conectados, el último sale sin que nadie
                 tenga que sentarse a calcularlo.
@@ -467,7 +464,7 @@ export default function PlatformLanding() {
             <ol className="pl-pasos">
               {PASOS.map((p) => (
                 <li className="pl-paso" key={p.n}>
-                  <span className="pl-paso-n pl-mono">{p.n}</span>
+                  <span className="pl-paso-n">{p.n}</span>
                   <div>
                     <h3>{p.titulo}</h3>
                     <p>{p.detalle}</p>
@@ -482,10 +479,7 @@ export default function PlatformLanding() {
         <section className="pl-sec" id="modulos">
           <div className="pl-wrap">
             <div className="pl-sec-head pl-row">
-              <div>
-                <p className="pl-mono">Módulos</p>
-                <h2 className="pl-serif">Lo que tenés hoy y lo que falta</h2>
-              </div>
+              <h2 className="pl-serif">Lo que tenés hoy y lo que falta</h2>
               <p>
                 Usás lo que necesitás. Lo que todavía no está terminado figura
                 como tal, no como promesa.
@@ -496,7 +490,7 @@ export default function PlatformLanding() {
                 <article className="pl-card" key={m.nombre}>
                   <div className="pl-card-head">
                     <h3>{m.nombre}</h3>
-                    <span className={`pl-estado ${m.estado}`}>{ESTADO_TEXTO[m.estado]}</span>
+                    <span className={`pl-estado pl-etiqueta ${m.estado}`}>{ESTADO_TEXTO[m.estado]}</span>
                   </div>
                   <p>{m.detalle}</p>
                 </article>
@@ -509,10 +503,7 @@ export default function PlatformLanding() {
         <section className="pl-sec" id="integraciones">
           <div className="pl-wrap">
             <div className="pl-sec-head pl-row">
-              <div>
-                <p className="pl-mono">Integraciones</p>
-                <h2 className="pl-serif">Se lleva bien con lo que ya usás</h2>
-              </div>
+              <h2 className="pl-serif">Se lleva bien con lo que ya usás</h2>
               <p>¿Necesitás conectar otra cosa? Escribime y lo vemos.</p>
             </div>
             <div className="pl-grid">
@@ -520,7 +511,7 @@ export default function PlatformLanding() {
                 <article className="pl-card" key={i.nombre}>
                   <div className="pl-card-head">
                     <h3>{i.nombre}</h3>
-                    <span className={`pl-estado ${i.estado}`}>{ESTADO_TEXTO[i.estado]}</span>
+                    <span className={`pl-estado pl-etiqueta ${i.estado}`}>{ESTADO_TEXTO[i.estado]}</span>
                   </div>
                   <p>{i.detalle}</p>
                 </article>
@@ -533,7 +524,6 @@ export default function PlatformLanding() {
         <section className="pl-sec pl-copiloto">
           <div className="pl-wrap">
             <div className="pl-sec-head">
-              <p className="pl-mono">Dico</p>
               <h2 className="pl-serif">No decide por vos. Te avisa.</h2>
               <p>
                 Dico mira tus números y levanta la mano cuando algo se sale de lo
@@ -544,10 +534,10 @@ export default function PlatformLanding() {
             <div className="pl-grid pl-avisos">
               {AVISOS.map((a) => (
                 <article className="pl-card pl-aviso" key={a.titulo}>
-                  <div className="pl-aviso-firma pl-mono">
+                  <h3 className="pl-aviso-firma">
                     <img src="/brand/dico/dico-2d-neutral.png" alt="" width="256" height="256" />
                     {a.titulo}
-                  </div>
+                  </h3>
                   <p>{a.texto}</p>
                 </article>
               ))}
@@ -559,7 +549,6 @@ export default function PlatformLanding() {
         <section className="pl-sec pl-precios" id="precios">
           <div className="pl-wrap">
             <div className="pl-sec-head">
-              <p className="pl-mono">Precios</p>
               <h2 className="pl-serif">Empezás gratis. Pagás si te sirve.</h2>
             </div>
             <div className="pl-grid">
@@ -567,7 +556,7 @@ export default function PlatformLanding() {
                 <article className={`pl-card pl-precio-card${p.destacado ? ' destacado' : ''}`} key={p.id}>
                   <div className="pl-card-head">
                     <h3>{p.nombre}</h3>
-                    <span className="pl-mono">{p.etiqueta}</span>
+                    <span className="pl-etiqueta">{p.etiqueta}</span>
                   </div>
                   <p className="pl-precio-monto">
                     {p.mensual === 0 ? 'Gratis' : pesos(p.mensual)}
@@ -600,10 +589,7 @@ export default function PlatformLanding() {
         <section className="pl-sec" id="seguridad">
           <div className="pl-wrap">
             <div className="pl-sec-head pl-row">
-              <div>
-                <p className="pl-mono">Seguridad</p>
-                <h2 className="pl-serif">Tu data es tuya</h2>
-              </div>
+              <h2 className="pl-serif">Tu data es tuya</h2>
               <p>
                 Lo que sigue no son buenas intenciones: son reglas escritas en la
                 base de datos, que es donde tienen que estar.
@@ -624,7 +610,6 @@ export default function PlatformLanding() {
         <section className="pl-sec" id="preguntas">
           <div className="pl-wrap">
             <div className="pl-sec-head">
-              <p className="pl-mono">Preguntas</p>
               <h2 className="pl-serif">Lo que todos preguntan</h2>
             </div>
             <div className="pl-faq">
@@ -656,30 +641,30 @@ export default function PlatformLanding() {
               </a>
               <a className="pl-btn pl-btn-ghost" href="/registro">Probar gratis</a>
             </div>
-            <dl className="pl-contacto pl-mono">
+            <dl className="pl-contacto">
               <div>
-                <dt>WhatsApp</dt>
+                <dt className="pl-etiqueta">WhatsApp</dt>
                 <dd><a href={WHATSAPP_URL} target="_blank" rel="noreferrer">+1 786 960 8110</a></dd>
               </div>
               <div>
-                <dt>Horario</dt>
+                <dt className="pl-etiqueta">Horario</dt>
                 <dd>Lunes a viernes, 11 a 23 h (Buenos Aires)</dd>
               </div>
               <div>
-                <dt>Mail</dt>
+                <dt className="pl-etiqueta">Mail</dt>
                 <dd><a href="mailto:hola@divianco.app">hola@divianco.app</a></dd>
               </div>
               <div>
-                <dt>Atiende</dt>
+                <dt className="pl-etiqueta">Atiende</dt>
                 <dd>Ricardo Rodríguez · Grupo Divianco</dd>
               </div>
             </dl>
           </div>
         </section>
-      </main>
+      </div>
 
-      {/* La trama de puntos cierra la pagina y entrega el pie: es decoracion,
-          asi que va fuera de <main> y no aporta nada al lector de pantalla. */}
+      {/* La trama de puntos cierra la pagina y entrega el pie: es decoracion
+          (el componente es aria-hidden) y no aporta nada al lector de pantalla. */}
       <FooterAscii />
 
       <footer className="pl-pie">
@@ -710,33 +695,33 @@ function MockupPanel() {
       role="img"
       aria-label="Vista del panel de Dico con las ventas de la noche, el costo de insumos y de nómina, la merma y la ganancia neta"
     >
-      <div className="pl-mock-bar pl-mono">
+      <div className="pl-mock-bar">
         <span className="pl-mock-luz" />
         <span className="pl-mock-luz" />
         <span className="pl-mock-luz" />
-        <span style={{ marginLeft: 10 }}>divianco.app · cierre del viernes</span>
+        <span className="pl-mock-url">divianco.app · cierre del viernes</span>
       </div>
 
       <div className="pl-mock-body" aria-hidden="true">
         <div>
           <div className="pl-kpis">
             <div className="pl-kpi">
-              <div className="pl-kpi-label pl-mono">Ventas</div>
+              <div className="pl-kpi-label pl-etiqueta">Ventas</div>
               <div className="pl-kpi-valor">$4.200</div>
               <div className="pl-kpi-delta sube">+6%</div>
             </div>
             <div className="pl-kpi">
-              <div className="pl-kpi-label pl-mono">Insumos</div>
+              <div className="pl-kpi-label pl-etiqueta">Insumos</div>
               <div className="pl-kpi-valor">$1.050</div>
               <div className="pl-kpi-delta">25% de la venta</div>
             </div>
             <div className="pl-kpi">
-              <div className="pl-kpi-label pl-mono">Nómina</div>
+              <div className="pl-kpi-label pl-etiqueta">Nómina</div>
               <div className="pl-kpi-valor">$650</div>
               <div className="pl-kpi-delta">15% de la venta</div>
             </div>
             <div className="pl-kpi destacado">
-              <div className="pl-kpi-label pl-mono">Ganancia neta</div>
+              <div className="pl-kpi-label pl-etiqueta">Ganancia neta</div>
               <div className="pl-kpi-valor">$2.360</div>
               <div className="pl-kpi-delta sube">56% de margen</div>
             </div>
@@ -745,15 +730,15 @@ function MockupPanel() {
           <div className="pl-pend">
             <h3>Pendientes de decidir</h3>
             <ul>
-              <li><span className="pl-tag alta">Alta</span> El bife de chorizo pasó de $380 a $520 de costo.</li>
-              <li><span className="pl-tag alta">Alta</span> Agua mineral 500 ml sin stock cargado.</li>
-              <li><span className="pl-tag media">Media</span> Merma del viernes: $140, casi toda en verdulería.</li>
+              <li><span className="pl-tag pl-etiqueta alta">Alta</span> El bife de chorizo pasó de $380 a $520 de costo.</li>
+              <li><span className="pl-tag pl-etiqueta alta">Alta</span> Agua mineral 500 ml sin stock cargado.</li>
+              <li><span className="pl-tag pl-etiqueta media">Media</span> Merma del viernes: $140, casi toda en verdulería.</li>
             </ul>
           </div>
         </div>
 
         <div className="pl-dico-card">
-          <div className="pl-dico-firma pl-mono">
+          <div className="pl-dico-firma pl-etiqueta">
             <img src="/brand/dico/dico-2d-neutral.png" alt="" width="256" height="256" />
             Dico
           </div>
