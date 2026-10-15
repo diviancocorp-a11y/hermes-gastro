@@ -232,6 +232,12 @@ python3 -c "open('FILE','rb').read().decode('utf-8','strict')"
   `scripts/llamadas-legacy-pendientes.json`, que solo se achica (`-- --podar`
   saca lo resuelto). Nacio porque el catalogo tiraba 9 consultas legacy por
   visita que caian en un fallback y ningun gate veia.
+- `check-diseno.mjs` (`npm run check:diseno`) — corre `impeccable detect`
+  sobre `src/` e `index.html` y compara contra `scripts/diseno-deuda.json`,
+  que solo se achica (`-- --podar` saca lo resuelto). Nacio el 15/oct con 17
+  hallazgos (bordes laterales de color, Inter en el catalogo) que ningun test
+  veia. El flujo completo de diseno es la skill `/diseno`; las skills de
+  terceros que usa se bajan con `npm run skills:diseno`.
 - ESLint con max-warnings 200
 - `vite build` local (atrapa imports rotos)
 

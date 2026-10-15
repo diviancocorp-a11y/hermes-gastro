@@ -1,0 +1,49 @@
+{
+  "_que_es": "Hallazgos de impeccable detect (sin advisory) que ya existian el 15/oct/2026 en src/ e index.html. Solo se achica: arreglar el codigo y correr `npm run check:diseno -- --podar`. Nunca agregar entradas a mano.",
+  "deuda": {
+    "src/catalog-pro/tokens.css": {
+      "overused-font": 1
+    },
+    "src/components/admin/MenuEngineering.jsx": {
+      "side-tab": 1
+    },
+    "src/components/admin/MonthSummary.jsx": {
+      "side-tab": 1
+    },
+    "src/components/admin/TheoreticalFoodCost.jsx": {
+      "side-tab": 1
+    },
+    "src/components/admin/platform/oportunidades.css": {
+      "side-tab": 1
+    },
+    "src/components/dico/mensaje.css": {
+      "side-tab": 1
+    },
+    "src/legacy.css": {
+      "side-tab": 1
+    },
+    "src/lib/monthReport.jsx": {
+      "border-accent-on-rounded": 1,
+      "side-tab": 1
+    },
+    "src/pages/InfoPage.jsx": {
+      "side-tab": 1
+    },
+    "src/styles/admin-caja.css": {
+      "side-tab": 2
+    },
+    "src/styles/admin-cards.css": {
+      "border-accent-on-rounded": 1
+    },
+    "src/styles/admin-comandera.css": {
+      "side-tab": 1
+    },
+    "src/styles/admin-kds.css": {
+      "border-accent-on-rounded": 1,
+      "side-tab": 1
+    },
+    "src/styles/admin-shared.css": {
+      "border-accent-on-rounded": 1
+    }
+  }
+}

@@ -5,6 +5,7 @@
 # 3b. node_modules coincide con package-lock.json
 # 4. Corre eslint sobre archivos staged (lint-staged)
 # 5. Schema ↔ DB sync (y toda SECURITY DEFINER llamable, aprobada)
+# 5b. Diseno: hallazgos de impeccable contra la deuda conocida
 # 6. Typecheck global
 # 7. Smoke unit tests
 # 8. Vite build (si hay cambios en src/) — atrapa missing exports / imports rotos
@@ -61,6 +62,11 @@ node scripts/check-definer-aprobadas.mjs
 # scripts/llamadas-legacy-pendientes.json y esa lista solo se achica.
 echo "→ Llamadas alcanzables vs objetos del edificio..."
 node scripts/check-edificio-alcanzable.mjs
+
+# Diseno: el detector de impeccable sobre src/ e index.html contra
+# scripts/diseno-deuda.json, que solo se achica. Tarda ~1s.
+echo "→ Diseno (impeccable detect) vs deuda conocida..."
+node scripts/check-diseno.mjs
 
 echo "→ Schema ↔ DB sync..."
 node scripts/check-schema-sync.mjs
