@@ -28,6 +28,7 @@
     "check:definer": "node scripts/check-definer-aprobadas.mjs",
     "check:alcanzable": "node scripts/check-edificio-alcanzable.mjs",
     "check:diseno": "node scripts/check-diseno.mjs",
+    "skills:diseno": "node scripts/instalar-skills-diseno.mjs",
     "schema:sync": "node scripts/schema-sync.mjs",
     "deploy": "npm run deploy:web && npm run deploy:functions",
     "deploy:web": "node scripts/deploy-web.mjs",
