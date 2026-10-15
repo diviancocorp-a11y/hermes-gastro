@@ -1,9 +1,13 @@
 ---
 name: diseno
-description: Flujo de diseño con medición para DICO y los demás repos de Divianco — línea base, autoridad del sistema, una skill estética por tarea, construcción y auditoría con subagentes separados, y comparación antes/después. Usar cuando se toca UI, pantallas, estilos, CSS, layout, tipografía, colores, animaciones o accesibilidad, o cuando Ricky escribe /diseno.
+description: Flujo de diseño con medición para DICO y los demás repos de Divianco — línea base, autoridad del sistema, una skill estética por tarea, construcción y auditoría con subagentes separados, y comparación antes/después. Obligatorio para toda mejora que toque UI (pantallas, componentes, estilos, CSS, layout, tipografía, colores, animaciones, accesibilidad, la landing), aunque nadie la nombre; también cuando Ricky escribe /diseno.
 ---
 
 # Diseño con medición
+
+Regla de Ricky (15/oct/2026): **esta skill corre en toda mejora que toque UI**,
+la pida o no por nombre. Ella decide qué skill de diseño entra y en qué orden;
+no se carga impeccable ni taste-skill sueltas por fuera de esta línea.
 
 Tres reglas que no se negocian:
 
@@ -119,6 +123,11 @@ commit). Si no pasa, la tarea no está cerrada. Después borrá los JSON del tem
 
 En DICO, los números van al HANDOFF vía `/cerrardico`. Push a `main` publica
 producción en `divianco.app`: no se pushea sin OK explícito de Ricky.
+
+Para pedir ese OK, el trabajo va en una rama y se le pasa a Ricky el **link del
+preview de Vercel** de esa rama (MCP de Vercel, `list_deployments` con
+`branch`; en `*.vercel.app` la landing se ve en `/landing`). Él decide mirando
+la página real en su celular, no las capturas.
 
 ## Requisitos
 

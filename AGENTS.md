@@ -165,6 +165,25 @@ Toda edge function publica va con **`verify_jwt=false`**: las keys
 `sb_publishable_` no son JWT y el gateway las rechaza. La proteccion real es
 rate-limit mas validacion interna.
 
+### Diseno: toda mejora de UI pasa por /diseno (regla de Ricky, 15/oct/2026)
+
+- Toda mejora que toque UI (pantallas, componentes `.jsx`, CSS, `index.html`,
+  la landing) se hace con la skill `/diseno` **antes de editar**. Ella maneja
+  la linea de skills, no se elige a mano:
+  1. autoridad de `docs/marca/`;
+  2. linea base medida;
+  3. UNA skill estetica (`impeccable` para pulir, `design-taste-frontend` para
+     pantallas nuevas; `ui-ux-pro-max` nunca en este repo, DICO ya tiene
+     sistema);
+  4. subagente `disenador` construye, `auditor-diseno` audita en solo lectura;
+  5. medicion antes/despues y link del preview de Vercel para que Ricky lo vea.
+- `.claude/settings.json` registra un hook `UserPromptSubmit`
+  (`scripts/hooks/linea-diseno.mjs`) que recuerda la regla en cada turno: en
+  una sesion larga lo escrito aca se pierde, el hook no.
+- Codex no tiene ese hook ni subagentes: lee `.claude/skills/diseno/SKILL.md`
+  y sigue los mismos pasos, haciendo la auditoria como pasada aparte.
+- Lo que no toca UI (migraciones, edge functions, scripts) no pasa por `/diseno`.
+
 ## Bugs recurrentes (workarounds documentados)
 
 ### 1. Corrupcion Cowork↔Linux mount (REGLA DURA)
