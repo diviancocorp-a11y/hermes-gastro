@@ -411,9 +411,11 @@ funciones con mas de una firma viva. Es lectura de archivos, no de la base.
 
 **La funcion DESPLEGADA puede no ser la que dice la migracion.** Paso con
 `signup_tenant()`: la de produccion era mas nueva que cualquier archivo del
-repo y leia un campo que no escribe nadie. Ningun gate lo detecta, porque
-`check-schema-freshness.mjs` compara hasta que migracion dice estar al dia el
-snapshot, no si lo desplegado coincide con lo que esa migracion produce.
+repo y leia un campo que no escribe nadie. `check-functions-drift.mjs` lo mira
+cada manana en morning-health: el cuerpo de las 7 funciones criticas y las
+firmas de TODAS las de `public` (desplegadas vs las que dejan vivas las
+migraciones). Una firma de mas en la base es una migracion sin aplicar o algo
+aplicado fuera del repo. Para una funcion puntual, lo directo:
 
 ```sql
 select pg_get_functiondef('public.signup_tenant'::regproc);

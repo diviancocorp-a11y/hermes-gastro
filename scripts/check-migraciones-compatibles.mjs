@@ -83,10 +83,24 @@ const ALIAS = {
   int: 'integer', int4: 'integer', int8: 'bigint', bool: 'boolean',
   varchar: 'character varying', timestamptz: 'timestamp with time zone',
 };
+// Sin typmod: Postgres no lo guarda en la firma (numeric(10,2) es numeric).
 const tipo = (s) => {
-  const t = s.toLowerCase().replace(/"/g, '').replace(/\bpublic\./g, '').replace(/\s+/g, ' ').trim();
+  const t = s.toLowerCase().replace(/"/g, '').replace(/\bpublic\./g, '')
+    .replace(/\s*\(\s*\d+(?:\s*,\s*\d+)?\s*\)/g, '').replace(/\s+/g, ' ').trim();
   return ALIAS[t] ?? t;
 };
+
+/** `p_x numeric(10,2) default 0` → { nombre: 'p_x', tipo: 'numeric', conDefault: true } */
+export function parseArg(a) {
+  const conDefault = /\s(?:default|=)\s/i.test(` ${a} `);
+  const sinDefault = a.replace(/\s(?:default|=)\s[\s\S]*$/i, '').replace(/^\s*(?:in|variadic)\s+/i, '').trim();
+  const m = sinDefault.match(/^"?(\w+)"?\s+([\s\S]+)$/);
+  return m ? { nombre: m[1].toLowerCase(), tipo: tipo(m[2]), conDefault } : { nombre: undefined, tipo: tipo(sinDefault), conDefault };
+}
+
+/** `nombre(p_a uuid, p_b text)`: la misma forma que pg_get_function_identity_arguments. */
+export const etiqueta = (nombre, args) =>
+  `${nombre}(${args.map((a) => [a.nombre, a.tipo].filter(Boolean).join(' ')).join(', ')})`;
 
 /** Texto entre el `(` de `desde` y su `)`, cortado por las comas de primer nivel. */
 function argumentos(sql, desde) {
@@ -124,11 +138,7 @@ function eventosDeFunciones(limpio) {
       if (tipoEv === 'drop') {
         ev.clave = `${nombre}(${items.map(tipo).join(',')})`;
       } else {
-        ev.args = items.map((a) => {
-          const conDefault = /\s(?:default|=)\s/i.test(` ${a} `);
-          const [, n, ty] = a.replace(/\s(?:default|=)\s[\s\S]*$/i, '').match(/^(?:in\s+)?"?(\w+)"?\s+([\s\S]+)$/i) || [];
-          return { nombre: n?.toLowerCase(), tipo: ty ? tipo(ty) : null, conDefault };
-        });
+        ev.args = items.map(parseArg);
         ev.clave = `${nombre}(${ev.args.map((a) => a.tipo).join(',')})`;
         ev.returns = tipo((limpio.slice(fin).match(RETURNS) || [])[1] || '');
       }
@@ -136,6 +146,24 @@ function eventosDeFunciones(limpio) {
     }
   }
   return eventos.sort((a, b) => a.pos - b.pos);
+}
+
+/**
+ * Firmas de `public` que quedan vivas segun las migraciones (sin las de
+ * trigger, igual que function_snapshot). Para compararlas con lo desplegado.
+ * @returns {Set<string>} etiquetas `nombre(p_a uuid, ...)`
+ */
+export function firmasSegunElRepo(migraciones) {
+  const firmas = new Map();
+  for (const { sql } of migraciones) {
+    for (const ev of eventosDeFunciones(soloEsquema(sql))) {
+      if (!ev.nombre.startsWith('public.')) continue;
+      if (ev.tipo === 'drop') firmas.delete(ev.clave);
+      else if (ev.returns === 'trigger') firmas.delete(ev.clave);
+      else firmas.set(ev.clave, etiqueta(ev.nombre.slice('public.'.length), ev.args));
+    }
+  }
+  return new Set(firmas.values());
 }
 
 function firmaCompatible(vieja, nueva) {
@@ -184,7 +212,7 @@ export function hallazgos(migraciones, desde = PRIMERA_REVISADA) {
   return salida.sort((a, b) => a.archivo.localeCompare(b.archivo) || a.linea - b.linea);
 }
 
-function leerMigraciones(dir = MIGRACIONES) {
+export function leerMigraciones(dir = MIGRACIONES) {
   return readdirSync(dir)
     .filter((f) => f.endsWith('.sql'))
     .sort()

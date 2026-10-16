@@ -37,6 +37,9 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import {
+  firmasSegunElRepo, leerMigraciones, parseArg, etiqueta,
+} from './check-migraciones-compatibles.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -198,6 +201,29 @@ export function overloadsDe(snapshot, fn) {
     .map(([, v]) => v);
 }
 
+/**
+ * Firmas de TODAS las funciones de public: las desplegadas contra las que
+ * dejan vivas las migraciones. Lo de arriba compara cuerpos de 7 criticas;
+ * esto mira nombres y argumentos de todas, que es lo que rompe a un caller.
+ *
+ * - solo en la base: se aplico fuera del repo, o una migracion que la borra
+ *   no se aplico (el 16/oct: `sumar_staff(p_email text)`, que borra la 0062).
+ * - solo en el repo: una migracion que la crea no se aplico.
+ *
+ * @param {Record<string, { name: string, args: string }>} snapshot de function_snapshot()
+ * @param {Set<string>} repo de firmasSegunElRepo()
+ */
+export function driftDeFirmas(snapshot, repo) {
+  const base = new Set(Object.values(snapshot || {}).map((v) => etiqueta(
+    v.name,
+    String(v.args || '').split(', ').filter(Boolean).map(parseArg),
+  )));
+  return {
+    soloEnBase: [...base].filter((f) => !repo.has(f)).sort(),
+    soloEnRepo: [...repo].filter((f) => !base.has(f)).sort(),
+  };
+}
+
 /** Primer tramo donde difieren, para no imprimir cuerpos enteros. */
 export function primeraDiferencia(a, b) {
   let i = 0;
@@ -262,6 +288,20 @@ async function main() {
       }
       problemas++;
     }
+  }
+
+  const { soloEnBase, soloEnRepo } = driftDeFirmas(funciones, firmasSegunElRepo(leerMigraciones()));
+  for (const f of soloEnBase) {
+    mal(`${f}: desplegada y ninguna migracion la deja viva`);
+    info('se aplico fuera del repo, o no se aplico la migracion que la borra');
+    problemas++;
+  }
+  for (const f of soloEnRepo) {
+    mal(`${f}: la crea una migracion y no esta desplegada`);
+    problemas++;
+  }
+  if (!soloEnBase.length && !soloEnRepo.length) {
+    ok(`${Object.keys(funciones || {}).length} firma(s) de public: las mismas en la base y en el repo`);
   }
 
   if (problemas) {

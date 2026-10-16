@@ -13,8 +13,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import {
-  normalizar, cuerpoSegunElRepo, primeraDiferencia, overloadsDe, CRITICAS,
+  normalizar, cuerpoSegunElRepo, primeraDiferencia, overloadsDe, CRITICAS, driftDeFirmas,
 } from '../../scripts/check-functions-drift.mjs';
+import { firmasSegunElRepo, leerMigraciones } from '../../scripts/check-migraciones-compatibles.mjs';
 
 const tmps = [];
 function migracionesFalsas(archivos) {
@@ -172,5 +173,43 @@ describe('overloads: el caso sumar_staff', () => {
   it('tolera un snapshot vacio o nulo', () => {
     expect(overloadsDe(null, 'sumar_staff')).toEqual([]);
     expect(overloadsDe({}, 'sumar_staff')).toEqual([]);
+  });
+});
+
+describe('driftDeFirmas: todas las firmas de public, base contra repo', () => {
+  // Lo que devuelve function_snapshot(): clave `nombre(args)`, args con nombres.
+  const snap = (...firmas) => Object.fromEntries(firmas.map((f) => {
+    const i = f.indexOf('(');
+    return [f, { name: f.slice(0, i), args: f.slice(i + 1, -1) }];
+  }));
+
+  it('mismas firmas: sin drift, aunque el repo escriba los tipos distinto', () => {
+    const repo = new Set(['cobrar(p_t uuid, p_monto numeric, p_cuando timestamp with time zone)']);
+    expect(driftDeFirmas(snap('cobrar(p_t uuid, p_monto numeric, p_cuando timestamp with time zone)'), repo))
+      .toEqual({ soloEnBase: [], soloEnRepo: [] });
+  });
+
+  it('una firma vieja que la migracion borra y sigue viva (sumar_staff, 16/oct)', () => {
+    const repo = new Set(['sumar_staff(p_email text, p_puesto text)']);
+    const base = snap('sumar_staff(p_email text)', 'sumar_staff(p_email text, p_puesto text)');
+    expect(driftDeFirmas(base, repo)).toEqual({ soloEnBase: ['sumar_staff(p_email text)'], soloEnRepo: [] });
+  });
+
+  it('una funcion de una migracion que no se aplico', () => {
+    expect(driftDeFirmas(snap(), new Set(['nueva(p_x uuid)']))).toEqual({ soloEnBase: [], soloEnRepo: ['nueva(p_x uuid)'] });
+  });
+
+  it('un argumento renombrado cuenta como firma distinta: PostgREST llama por nombre', () => {
+    const r = driftDeFirmas(snap('cobrar(p_importe numeric)'), new Set(['cobrar(p_monto numeric)']));
+    expect(r).toEqual({ soloEnBase: ['cobrar(p_importe numeric)'], soloEnRepo: ['cobrar(p_monto numeric)'] });
+  });
+});
+
+describe('firmasSegunElRepo contra las migraciones de verdad', () => {
+  it('lee las firmas con nombres y tipos canonicos, sin las de trigger', () => {
+    const repo = firmasSegunElRepo(leerMigraciones());
+    expect(repo.has('register_payment(p_tenant_id uuid, p_order_id uuid, p_method_id uuid, p_amount numeric, p_reference text, p_receipt_last_four text, p_client_request_id uuid)')).toBe(true);
+    expect(repo.has('sumar_staff(p_email text)')).toBe(false); // la borra la 0062
+    expect([...repo].some((f) => f.startsWith('tg_') && f !== 'tg_secreto_de_aviso()')).toBe(false);
   });
 });

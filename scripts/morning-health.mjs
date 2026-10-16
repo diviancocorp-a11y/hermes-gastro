@@ -206,7 +206,8 @@ function checkSchemaDrift() {
 }
 
 /**
- * El cuerpo de las funciones criticas vs lo que dicen las migraciones.
+ * El cuerpo de las funciones criticas, y las firmas de todas las de public,
+ * vs lo que dicen las migraciones.
  *
  * Distinto de checkSchemaDrift: ese compara COLUMNAS y este el CODIGO. Una
  * funcion que drifteo no falla —hace algo distinto de lo que dice el repo— y
