@@ -184,6 +184,25 @@ rate-limit mas validacion interna.
   y sigue los mismos pasos, haciendo la auditoria como pasada aparte.
 - Lo que no toca UI (migraciones, edge functions, scripts) no pasa por `/diseno`.
 
+### Migraciones: expandir y despues contraer (16/oct/2026)
+
+Vercel ya hace blue-green: cada deploy queda vivo y el Instant Rollback del
+panel vuelve al anterior en segundos, sin build. Lo que no vuelve es la base:
+hay UNA y la comparten todos los deploys, y ademas hay clientes con el chunk
+viejo en cache (HERMES-GASTRO-G). Por eso:
+
+- **Una migracion nunca rompe al codigo que esta en produccion.** Se aplica
+  antes del push a `main`, asi que el deploy anterior corre contra ella un
+  rato, y despues de un rollback, todo el tiempo que dure.
+- **Renombrar o borrar** columna, tabla o RPC, cambiar una firma o volver algo
+  `NOT NULL` va en dos pasos. Expandir: se agrega lo nuevo, el codigo lee lo
+  nuevo y lo viejo, se hace el backfill. Contraer: lo viejo se borra en una
+  migracion aparte, cuando el deploy que ya no lo usa lleva dias en produccion.
+- **Edge functions**: se deployan aparte (`npm run deploy:functions`); misma
+  regla con los campos que reciben y devuelven.
+- **Si hay que volver atras**, rollback en Vercel, no revert + push: el revert
+  rebuildea y tarda; el rollback es cambiar a donde apunta el dominio.
+
 ## Bugs recurrentes (workarounds documentados)
 
 ### 1. Corrupcion Cowork↔Linux mount (REGLA DURA)
@@ -340,6 +359,14 @@ Ya evaluadas (no reabrir sin un motivo nuevo):
 | OmniRoute | No | Gateway que ve prompts y credenciales; el respaldo ya es Codex |
 | Graphify | No | Se pisa con `npm run mapa` y `check:alcanzable`; el grafo envejece |
 | Agent Skills (addyosmani) | No | Se pisa con `/diseno`, `/code-review`, `/simplify`, `/cerrardico` |
+| claude-mem (memoria persistente) | No | Se pisa con HANDOFF + `/dico`/`/cerrardico`; Codex no la ve y gasta tokens comprimiendo |
+| Task Observer | Adaptada (paso en `/cerrardico`) | Solo instrucciones: convertir correcciones repetidas en reglas |
+| Headroom | No (por ahora) | Reescribe lo que ve el modelo; ahorro en codigo chico (15-20%, autodeclarado) |
+| claude-code-setup (oficial) | Correrlo una vez, no dejarlo | Solo recomienda; cada recomendacion pasa por este criterio |
+| Blue-green (concepto) | Adaptado (expandir y contraer) | Vercel ya lo hace; lo que faltaba era la regla de la base compartida |
+| Anti-slop (varias) | No | Se pisa con `impeccable` + `check:diseno` |
+| Thermos (ports de Cursor) | No | Se pisa con `/code-review`; ports no oficiales |
+| ECC (everything-claude-code) | No | Cientos de skills y hooks: ruido de contexto y superficie de hooks ajenos |
 
 ## Antes de razonar sobre una RPC, traela
 

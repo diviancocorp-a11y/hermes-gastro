@@ -67,6 +67,13 @@ decisión de arquitectura, una trampa de infraestructura— actualizá el archiv
 correspondiente en el directorio de memoria. No dupliques ahí lo que ya está
 en el repo.
 
+### Correcciones de Ricky → regla
+
+Repasá la sesión: si Ricky corrigió lo mismo dos veces, o una corrección vale
+para sesiones futuras, proponé la regla en el resumen (dónde iría: `CLAUDE.md`
++ `AGENTS.md`, o la skill que corresponda). No la escribas hasta que diga que
+sí: una regla nueva cuesta contexto en todas las sesiones.
+
 ## Paso 5 — El resumen en el chat
 
 Recién ahora, y corto. A Ricky le sirve:
