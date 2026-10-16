@@ -137,7 +137,8 @@ async function main() {
   if (enBuild.rojo) problemas.push(`Sentry: ${enBuild.texto}`);
   const sentry = await checkSentry();
   if (sentry.rojo) problemas.push(`Sentry: ${sentry.texto}`);
-  else detalles.push(`sentry: ${sentry.texto}`);
+  // Sin Sentry en el build, "sin errores" no dice nada: no llega nada.
+  else detalles.push(`sentry: ${enBuild.rojo ? 'sin datos (no esta en el build)' : sentry.texto}`);
 
   /* ── Mensaje: lo roto primero, el verde corto ────────── */
   const date = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -380,8 +381,9 @@ async function explicarConCerebro(problemas) {
       return `(el cerebro no respondio: HTTP ${r.status})`;
     }
     const data = await r.json();
-    // Sin Markdown: un _ o * de la respuesta romperia el mensaje entero.
-    return String(data.choices?.[0]?.message?.content || '').replace(/[_*`[\]]/g, '').trim() || null;
+    // Un _ o * suelto rompe el Markdown de Telegram y el mensaje entero se
+    // rechaza: se escapan (borrarlos dejaba VITE_SENTRY_DSN como VITESENTRYDSN).
+    return String(data.choices?.[0]?.message?.content || '').replace(/[_*`[]/g, '\\$&').trim() || null;
   } catch (e) {
     return `(el cerebro no respondio: ${e.name})`;
   }
