@@ -515,8 +515,10 @@ reporta** (commit chico a `main`, con el SHA en el resumen):
 Si algo no entra claro en ninguna de las dos listas, se pregunta.
 
 **Despues de cada push a `main`, mirar el CI antes de dar el trabajo por
-terminado** (MCP de GitHub: `actions_list` del run de `ci.yml` con ese SHA,
-y los jobs si dio rojo). El pre-commit verde no alcanza: el 16/oct se
+terminado**: `npm run ci:esperar` espera el run de `ci.yml` de ese SHA y
+lista los jobs (sale 0 verde, 1 rojo, 2 sin respuesta). En la nube de
+Claude Code: `NODE_USE_ENV_PROXY=1 npm run ci:esperar` (sin el proxy, Node
+consulta sin token y el limite es 60 por hora). El pre-commit verde no alcanza: el 16/oct se
 pushearon 12 commits sin mirarlo. Un rojo que ya estaba antes del primer
 commit de la sesion no es de la sesion, pero se dice en el resumen. Desde el
 16/oct (`6e055c8`) el CI esta entero en verde, *Security Audit* incluido.

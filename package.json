@@ -27,6 +27,7 @@
     "check:rls": "node scripts/check-rls.mjs",
     "check:definer": "node scripts/check-definer-aprobadas.mjs",
     "check:expandir": "node scripts/check-migraciones-compatibles.mjs",
+    "ci:esperar": "node scripts/ci-esperar.mjs",
     "check:alcanzable": "node scripts/check-edificio-alcanzable.mjs",
     "check:diseno": "node scripts/check-diseno.mjs",
     "skills:diseno": "node scripts/instalar-skills-diseno.mjs",
