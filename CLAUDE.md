@@ -205,13 +205,14 @@ viejo en cache (HERMES-GASTRO-G). Por eso:
 - **Lo frena `npm run check:expandir`** (pre-commit y CI): drop, rename,
   `set not null` o cambio de tipo en una migracion desde la 0096. El paso de
   contraer se declara en el archivo con `-- contraer: <por que ya no lo usa
-  nadie>`. De la 0001 a la 0095, 10 migraciones lo habrian necesitado.
+  nadie>`. De la 0001 a la 0095, 6 migraciones lo habrian necesitado.
 
 **Sumar un argumento a una RPC** es el caso mas comun, y no hace falta partirlo
-en dos deploys. El patron es el de la 0068 (`register_payment`):
+en dos deploys ni marca: `check:expandir` lo reconoce solo, buscando la firma
+vieja en las migraciones anteriores. El patron es el de la 0068
+(`register_payment`):
 
 ```sql
--- contraer: firma compatible, los argumentos nuevos tienen default
 drop function if exists public.register_payment(uuid, uuid, uuid, numeric, uuid);
 create function public.register_payment(
   p_tenant_id uuid, p_order_id uuid, p_method_id uuid, p_amount numeric,
@@ -220,8 +221,8 @@ create function public.register_payment(
 ) returns public.payments ...
 ```
 
-- **`drop` + `create` en la misma migracion**: corre en una transaccion, no
-  hay un momento sin funcion.
+- **`drop` + `create` en la misma migracion** (en cualquier orden): corre en
+  una transaccion, no hay un momento sin funcion.
 - **NO `create or replace` sin el `drop`**: con otros argumentos crea una
   SEGUNDA firma al lado, y la llamada vieja falla por ambigua (Postgres
   "is not unique", PostgREST `PGRST203`). `npm run mapa` sin argumentos lista
