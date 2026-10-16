@@ -489,6 +489,31 @@ rotas cosas que estaban hechas y costo sesiones enteras de planificar al pedo.
 - Habla en español argentino. El codigo va en español (sin tildes en comments
   por temas de encoding)
 
+## Que se hace sin preguntar (regla de Ricky, 16/oct/2026)
+
+Para no frenar en cada "propongo -> dale". **Se hace, se verifica y se
+reporta** (commit chico a `main`, con el SHA en el resumen):
+
+- **Checks y gates que solo leen**: `scripts/check-*`, morning-health, sus
+  tests, y ajustarlos cuando dan falso positivo.
+- **Docs del repo**: `CLAUDE.md` + `AGENTS.md` (siempre los dos), `docs/`, y la
+  tabla de herramientas evaluadas.
+- **Rescatar al repo lo que ya corre en la base**: archivo de migracion
+  copiado tal cual de `schema_migrations` o `pg_get_functiondef`, sin
+  aplicarlo.
+- **Consultas de solo lectura a la base** (MCP `execute_sql` con `select`).
+
+**Pide el ok de Ricky antes:**
+
+- **Todo lo que se aplica a la base**: migraciones y datos. Lo destructivo lo
+  aplica el desde el panel (ver "Como se aplica una migracion").
+- **Codigo que cambia lo que ve o hace un cliente**: `src/`, edge functions,
+  `npm run deploy:functions`. La UI ademas pasa por `/diseno`.
+- **Un tenant puntual** (Crazy Miga tiene su workspace), secrets, config de
+  Vercel o Supabase, y dependencias nuevas.
+
+Si algo no entra claro en ninguna de las dos listas, se pregunta.
+
 ## Como se trabaja entre dos agentes
 
 Codex y Claude trabajan sobre el mismo repo, a veces al mismo tiempo.
