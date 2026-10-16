@@ -1,29 +1,32 @@
 // src/components/DicoMark.jsx
-// Marca Dico reutilizable. Renderiza el PNG de /brand/.
-// Si la imagen no carga (404), cae al placeholder (inicial del negocio).
+// Marca Dico reutilizable. Renderiza un PNG de /brand/dico/.
+// Si la imagen no carga (404), cae al placeholder (inicial).
 //
 // Props:
-//   as:       'logo' (default · ícono + nombre) | 'wordmark' (solo nombre)
+//   as:       'logo' (default · la moneda sola, cuadrada) | 'wordmark' (DICO + moneda)
 //   size:     altura en px (default 64 para logo, 22 para wordmark)
-//   fallback: texto inicial si falla la imagen (default 'H')
-//   color:    color del fallback (default ámbar)
+//   fallback: texto inicial si falla la imagen (default 'D')
+//   color:    color del fallback (default oro de marca)
 
 import { useState } from "react";
 
+// La moneda se lee igual sobre fondo claro y oscuro: no cambia con el tema.
+const MONEDA = "/brand/dico/dico-2d-neutral.png";
+
 const SRC_DARK_BG = {
-  logo: "/brand/dico-logo.png",        // contraste para fondos oscuros (página 5 ámbar)
-  wordmark: "/brand/dico-wordmark.png",
+  logo: MONEDA,
+  wordmark: "/brand/dico/logo/dico-oscuro.png", // letras blancas
 };
 const SRC_LIGHT_BG = {
-  logo: "/brand/dico-logo-on-light.png", // contraste para fondos claros (página 4 negro)
-  wordmark: "/brand/dico-wordmark.png",  // mismo (runner ámbar funciona en ambos)
+  logo: MONEDA,
+  wordmark: "/brand/dico/logo/dico-claro.png",  // letras negras
 };
 
 export default function DicoMark({
   as = "logo",
   size,
-  fallback = "H",
-  color = "#F59E0B",
+  fallback = "D",
+  color = "#E8B947",
   alt = "Dico",
   style = {},
   theme = "dark", // "dark" = fondo oscuro (default); "light" = fondo claro

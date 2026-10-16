@@ -270,7 +270,7 @@ export default function CatalogFooter({ settings = {} }) {
         >
           {/* Logo de Dico a la izquierda, fondo claro */}
           <div style={{ flexShrink: 0 }}>
-            <DicoMark as="logo" size={56} fallback="H" theme="light" color="#000" />
+            <DicoMark as="logo" size={56} fallback="D" theme="light" color="#000" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx, #2D1B0E)", lineHeight: 1.3 }}>
