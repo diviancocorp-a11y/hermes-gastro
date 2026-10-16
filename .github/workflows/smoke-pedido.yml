@@ -35,7 +35,7 @@ jobs:
           SMOKE_PEDIDO_SLUG: ${{ inputs.slug }}
           SMOKE_PEDIDO_OTRO_SLUG: ${{ inputs.otro_slug }}
         run: npm run test:smoke-pedido
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: smoke-pedido
