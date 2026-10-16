@@ -96,6 +96,30 @@ por MCP de Vercel).
   cerebro respondió y **llegó a Telegram**.
 - `/dico` ahora arranca mirando el CI de `main` y el último morning-health.
 
+### Sentry (16/oct, tarde)
+
+- **El build de producción no tiene Sentry**: el bundle publicado no contiene
+  ni la palabra (falta `VITE_SENTRY_DSN` en Vercel `hermes-platform`). Desde
+  el 27/sep llegaron **0** eventos y Sentry no descartó nada: no llega nada.
+  Confirmado con un build local con el DSN, que sí lo incluye. Detalle y pasos
+  en `docs/plataforma/SENTRY.md`.
+- morning-health ahora lo detecta (`checkSentryEnBuild`): da rojo y deja de
+  decir "sin errores en 24h". Run manual `38964529421`: rojo por Sentry,
+  explicado por DICO_BRAIN, llegó a Telegram.
+- **`sentry-alerta` desplegada** (versión 1, `verify_jwt=false`). Probada desde
+  la base con `pg_net`: sin firma válida contesta 401. Falta el alta en Sentry
+  y los secrets (pasos en `SENTRY.md`).
+- Pendiente con ok de Ricky (toca `src/`): el tag `tenant` de Sentry sale de
+  `__CLIENT__`, que en el edificio siempre vale `edificio`. Tendría que salir
+  del hostname. Mientras tanto, `sentry-alerta` saca el negocio de la URL del
+  error.
+
+**Bloqueado por Ricky (Sentry):** cargar en Vercel `VITE_SENTRY_DSN`,
+`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` y redeployar; crear la
+integración interna GerenteDico en Sentry; cargar en Supabase
+`SENTRY_ALERTA_SECRET`, `GERENTEDICOBOT`, `TELEGRAM_CHAT_ID` y `DICO_BRAIN`;
+crear la regla de alerta y mandar la notificación de prueba.
+
 Lo de abajo quedó como estaba escrito al cerrar; los puntos 1 y 2 ya no
 aplican.
 
