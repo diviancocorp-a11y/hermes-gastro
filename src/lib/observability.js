@@ -10,6 +10,7 @@
  */
 
 import { RELEASE } from './release.js';
+import { classifyHost } from './tenantHost.js';
 
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN || '';
 const ANALYTICS_ID = import.meta.env.VITE_ANALYTICS_ID || '';
@@ -27,8 +28,24 @@ export function setUserContext(user) {
 }
 
 export function setTenantContext(tenant) {
-  // tenant: { code: "lnp" | "cochi" | "malamiga", name: "La Nona Pato" }
+  // tenant: { code: "crazy-miga", build: "edificio" }
   _tenant = tenant || null;
+}
+
+/**
+ * Tag `tenant` de Sentry: el negocio sale del hostname, como en la app. El
+ * build (`__CLIENT__`) es "edificio" para todos, asi que solo sirve de
+ * respaldo fuera de *.divianco.app (local, *.vercel.app, dominio propio).
+ */
+export function tenantDelHost(host, build) {
+  const { kind, slug } = classifyHost(host);
+  if (kind === 'tenant') return slug;
+  if (kind === 'root') return 'raiz';
+  return build || 'unknown';
+}
+
+function tagsDeTenant() {
+  return _tenant ? { tenant: _tenant.code, build: _tenant.build } : {};
 }
 
 
@@ -69,7 +86,7 @@ function buildSentryEnvelope(error, context = {}) {
         stacktrace: error.stack ? { frames: parseStack(error.stack) } : undefined,
       }],
     },
-    tags: { ..._tenant ? { tenant: _tenant.code, tenant_name: _tenant.name } : {}, ...(context.tags || {}) },
+    tags: { ...tagsDeTenant(), ...(context.tags || {}) },
     extra: context.extra || {},
     user: context.user || _user || undefined,
   });
@@ -141,7 +158,7 @@ export function captureException(error, context = {}) {
   if (window.__SENTRY_FULL__) {
     try {
       window.__SENTRY_FULL__.captureException(error, {
-        tags: { ..._tenant ? { tenant: _tenant.code, tenant_name: _tenant.name } : {}, ...(context.tags || {}) },
+        tags: { ...tagsDeTenant(), ...(context.tags || {}) },
         extra: context.extra || {},
         user: context.user || _user || undefined,
       });

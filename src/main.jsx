@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './index.css'
-import { initObservability, setTenantContext } from './lib/observability.js'
+import { initObservability, setTenantContext, tenantDelHost } from './lib/observability.js'
 import { initWebVitals } from './lib/webVitals.js'
 import business from '@business'
 import './lib/i18n.js' // Initialize i18next (must be before App render)
@@ -17,8 +17,9 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     setTimeout(() => import('./lib/sentryFull.js').catch(() => {}), 1500)
   })
 }
-// Tenant context: cada error reportado a Sentry incluye qué cliente lo disparó
-setTenantContext({ code: __CLIENT__, name: business.name })
+// Tenant context: cada error reportado a Sentry dice qué negocio lo disparó
+// (sale del subdominio; __CLIENT__ es "edificio" para todos)
+setTenantContext({ code: tenantDelHost(window.location.hostname, __CLIENT__), build: __CLIENT__ })
 // Core Web Vitals (LCP, CLS, INP, FCP, TTFB) → console + analytics endpoint
 initWebVitals()
 

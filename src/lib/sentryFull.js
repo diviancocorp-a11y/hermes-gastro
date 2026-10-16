@@ -12,8 +12,8 @@
 // Privacidad (Ley 25.326): maskAllText enmascara todos los textos del replay
 // — se ve QUE toco el cliente, no SUS datos.
 import * as Sentry from '@sentry/react';
-import business from '@business';
 import { RELEASE } from './release.js';
+import { tenantDelHost } from './observability.js';
 
 const dsn = import.meta.env.VITE_SENTRY_DSN || '';
 
@@ -47,8 +47,8 @@ if (dsn) {
     beforeSend(event) {
       event.tags = {
         ...event.tags,
-        tenant: typeof __CLIENT__ !== 'undefined' ? __CLIENT__ : 'unknown',
-        tenant_name: business?.name || '',
+        tenant: tenantDelHost(window.location.hostname, typeof __CLIENT__ !== 'undefined' ? __CLIENT__ : ''),
+        build: typeof __CLIENT__ !== 'undefined' ? __CLIENT__ : 'unknown',
         screen: window.location.pathname,
         checkout_step: window.__HG_CHECKOUT_STEP ?? 'none',
       };
