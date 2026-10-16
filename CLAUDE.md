@@ -207,6 +207,32 @@ viejo en cache (HERMES-GASTRO-G). Por eso:
   contraer se declara en el archivo con `-- contraer: <por que ya no lo usa
   nadie>`. De la 0001 a la 0095, 10 migraciones lo habrian necesitado.
 
+**Sumar un argumento a una RPC** es el caso mas comun, y no hace falta partirlo
+en dos deploys. El patron es el de la 0068 (`register_payment`):
+
+```sql
+-- contraer: firma compatible, los argumentos nuevos tienen default
+drop function if exists public.register_payment(uuid, uuid, uuid, numeric, uuid);
+create function public.register_payment(
+  p_tenant_id uuid, p_order_id uuid, p_method_id uuid, p_amount numeric,
+  p_reference text default null,          -- nuevo, con default
+  p_client_request_id uuid default null
+) returns public.payments ...
+```
+
+- **`drop` + `create` en la misma migracion**: corre en una transaccion, no
+  hay un momento sin funcion.
+- **NO `create or replace` sin el `drop`**: con otros argumentos crea una
+  SEGUNDA firma al lado, y la llamada vieja falla por ambigua (Postgres
+  "is not unique", PostgREST `PGRST203`). `npm run mapa` sin argumentos lista
+  las funciones con mas de una firma viva.
+- **Es compatible solo si** cada argumento nuevo tiene `default`, los viejos
+  conservan nombre y tipo (PostgREST llama por nombre, asi que el orden no
+  importa) y lo que devuelve no cambia de forma.
+- Si no se cumple alguna (sacar un argumento, renombrarlo, cambiar el
+  retorno): funcion nueva con otro nombre, el front migra, y la vieja se borra
+  despues con su `-- contraer:`.
+
 ## Bugs recurrentes (workarounds documentados)
 
 ### 1. Corrupcion Cowork↔Linux mount (REGLA DURA)
