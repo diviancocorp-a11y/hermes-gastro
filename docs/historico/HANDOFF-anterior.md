@@ -9,6 +9,54 @@
 
 ---
 
+## 27/sep/2026 — El pet Dico tiene una rutina ambiental (Codex)
+
+### Lo que pidio Ricky
+
+Retomar el chat **Visualize Pet Lineup** y llevar la mascota a un punto donde
+se sienta viva dentro de la app, con mas acciones y transiciones suaves.
+
+### Hecho
+
+- `platform/brand/dico-pet-assets.mjs` ahora declara acciones cortas y una
+  rutina viva: respira, mira arriba, pausa, mira abajo y piensa. No se
+  agregaron assets nuevos: se compone sobre el atlas oficial para mantener una
+  sola fuente de verdad de la geometria.
+- `src/components/dico/useDicoPetMotion.js` reproduce esa rutina solo cuando
+  el pet esta libre. Una intervencion con pose explicita conserva prioridad;
+  `prefers-reduced-motion` detiene la rutina.
+- `DicoSlot` y `DicoCuadro` usan el movimiento ambiental. Cambiar de pose
+  reinicia el cuadro y monta una entrada de 220ms en `physical.css`, para que
+  el cambio entre acciones no sea un corte seco.
+- `src/test/dicoPetMotion.test.jsx` cubre la secuencia, la prioridad de una
+  pose controlada y reduced motion.
+
+### Verificado
+
+- 13 archivos de tests Dico / 177 tests en verde con Vitest y
+  `--pool=threads`.
+- Build de Vite en verde.
+- ESLint sin warnings en el hook y el test nuevos. `git diff --check` limpio.
+- La suite completa se intento, pero se detuvo despues de mas de dos minutos
+  sin progreso y con el worker por encima de 1,5 GB; no se declara como verde.
+
+### Pendiente inmediato
+
+1. Hacer QA visual en QA Lite con el Physical abierto y confirmar el ritmo en
+   desktop y mobile; las duraciones actuales son una primera calibracion.
+2. Si el ritmo se siente bien, agregar acciones semanticas nuevas solo cuando
+   haya nuevos cuadros del atlas, en vez de inventar anatomia con recortes.
+3. Repetir la suite completa cuando el repo no este compartiendo recursos con
+   otra corrida o agente.
+
+### Bloqueado por Ricky
+
+Nada para esta iteracion. Quedaron cambios sin commitear de otro agente en
+`Catalog`, `origenDelEnvio`, una migracion y el snapshot de plataforma; no se
+mezclaron con esta tarea.
+
+---
+
 ## 28/sep/2026 — El reporte de la mañana en verde de punta a punta (Claude)
 
 Cierra los pendientes 1 y 2 y los dos primeros bloqueos de la sección del

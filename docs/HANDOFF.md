@@ -11,6 +11,103 @@
 
 ---
 
+## 16/oct/2026 — La base y el repo vuelven a decir lo mismo; morning-health vigila lo que no veía (Claude)
+
+**Publicado.** Todo en `main`, de `b0c3416` a `cd82ca5`, en commits de un
+solo tema. Producción de `hermes-platform` `READY` en `cd82ca5` (verificado
+por MCP de Vercel).
+
+### Hecho
+
+- **Reglas nuevas en `CLAUDE.md`/`AGENTS.md`**:
+  - "la escalera" antes de escribir código (adaptada de Ponytail);
+  - criterio de entrada para skills/plugins/MCPs de terceros, con tabla de
+    las 12 ya evaluadas (no reabrir sin motivo nuevo);
+  - migraciones "expandir y después contraer" (Vercel ya es blue-green, la
+    base no vuelve con el rollback) y patrón para sumar un argumento a una RPC
+    (`drop` + `create` con `default`, como la 0068; **no** `create or replace`
+    con otra firma: deja dos vivas);
+  - "cómo se aplica una migración": archivo en el mismo commit; lo
+    destructivo lo aplica Ricky desde el panel (por MCP el `drop` se cuelga a
+    los 60s, pasó 3 veces);
+  - "qué se hace sin preguntar" y qué pide el ok de Ricky.
+- `/cerrardico` suma un paso: proponer reglas a partir de correcciones
+  repetidas (adaptado de Task Observer).
+- **`check:expandir`** (`scripts/check-migraciones-compatibles.mjs`,
+  pre-commit + CI): frena drop/rename/`set not null`/cambio de tipo desde la
+  0096 salvo `-- contraer: <motivo>`; reconoce solo el cambio de firma
+  compatible buscando la firma vieja en las migraciones anteriores.
+- **`check-functions-drift.mjs`** ahora compara cuerpo **y** firma de las 83
+  funciones de `public`, no solo las críticas. `CRITICAS` (9) quedan como las
+  que no pueden faltar. Encuentra también `create function` sin `or replace`.
+- **`check-migraciones-sin-archivo.mjs`** (nuevo, en morning-health): toda
+  fila de `supabase_migrations.schema_migrations` tiene que tener archivo.
+  Lee vía el RPC `migrations_snapshot` (**0097**, definer, solo
+  `service_role`). Lo histórico que no coincide por nombre (24) está en
+  `scripts/migraciones-sin-archivo.json` con el veredicto de cada una.
+- **Base**:
+  - **0062** aplicada por Ricky desde el panel: queda una sola
+    `sumar_staff(text,text)`.
+  - **0097** aplicada por MCP.
+- **Rescatadas al repo** (lo que corría en la base sin archivo, copiado de
+  `schema_migrations`):
+  - **0096**: `provision_owner`/`attach_owner` escriben `roles`. La versión
+    del repo fallaba por `roles` NOT NULL desde la 0050.
+  - **0018**: el cron `release-dormant-tenants`.
+  - **0079**: `schema_snapshot` con vistas. El original vive en la worktree
+    `claude/recursing-gauss-acdbb9` (`08f82ba`): si se mergea, tiene que ser
+    igual; si difiere, vale el del repo.
+  - **0098**: `register_waste`/`register_purchase` que asientan en el libro.
+    El repo decía que corría la de la 0040.
+- `_migrations_through` en `0098`.
+
+### Verificado
+
+- Contra producción (MCP, solo lectura): las 83 firmas de `public` coinciden
+  con el repo. Los 83 cuerpos también: el único que daba distinto
+  (`crear_sectores_tipicos`) es idéntico con el normalizador real. Era un
+  artefacto de normalizar en Postgres, donde `[a-z]` incluye letras con tilde.
+- Coinciden con el repo: constraint `entry_time_valid`, índices
+  `inv_mov_client_request_uniq` y `suppliers_tenant_name_uniq`, policies de
+  `sales`/`expenses`/`suppliers`.
+- **No** se compararon una por una las policies del resto de las tablas que
+  tocan las `roles_*`: solo se sabe que `check:rls` las da cerradas.
+- Tests de los checks (103) y pre-commit completo con build en cada commit.
+- **CI**: lint, tests, typecheck, build y los checks nuevos en verde. El job
+  **Security Audit da rojo y ya daba rojo antes** de esta sesión: `npm audit`
+  marca 4 high, `braces` (via `lint-staged`, el fix es lint-staged 16.4.0,
+  major) y `source-map-js` (`npm audit fix` sin breaking). No se tocó:
+  cambiar dependencias pide ok.
+- Los checks nuevos de morning-health **no corrieron todavía contra la base**
+  desde CI: ver bloqueado.
+
+### Bloqueado por Ricky
+
+1. **Morning-health falla desde el 14/oct y no manda nada a Telegram**:
+   `Telegram API error: 401 Unauthorized`. El `TELEGRAM_BOT_TOKEN` de los
+   secrets de GitHub ya no es válido. Cargar el token del bot nuevo
+   (GerenteDico) y su `TELEGRAM_CHAT_ID` en Settings → Secrets → Actions.
+2. **`SMOKE_TENANTS`** (variable de Actions) dice
+   `la-nona-pato,cochi,mala-miga`: `mala-miga` ya no existe (da "catálogo
+   VACÍO" todos los días). Cambiar por los tenants vivos (al menos
+   `crazy-miga`).
+3. Ok para `npm audit fix` (sin breaking) y para subir `lint-staged` a 16.
+4. Ok y `ANTHROPIC_API_KEY` (la carga él) para el bot GerenteDico.
+
+### Pendiente inmediato
+
+1. Después de 1 y 2: correr morning-health a mano (`workflow_dispatch`) y
+   confirmar que llega y que los 3 checks nuevos dan verde.
+2. GerenteDico (propuesta en el chat del 16/oct, no hay código):
+   - etapa 1, el resumen de la mañana con los errores de Sentry explicados en
+     castellano;
+   - etapa 2, edge function `gerente-webhook` (solo el chat de Ricky,
+     herramientas de solo lectura, Claude API);
+   - etapa 3, "anotá que hay que arreglar X" → issue de GitHub → Claude Code
+     abre el PR → link del preview para aprobar desde el teléfono.
+3. Comparar una por una las policies de las tablas que tocan
+   `roles_y_alcance_policies` / `roles_barrido_de_policies_viejas`.
+
 ## 15/oct/2026 — Gate de diseño, /diseno siempre activo y pulido de la landing de divianco.app (Claude)
 
 **Publicado.** Ricky dio el OK y el PR #26 se mergeó a `main` como merge
@@ -481,49 +578,3 @@ que la pose `thinking` se repita para siempre.
 El commit/push queda pendiente: el entorno rechazo la escritura de
 `.git/index.lock`. El arbol sigue compartido con cambios concurrentes ajenos;
 no se hizo `git add -A`, reset ni limpieza destructiva.
-
-## 27/sep/2026 — El pet Dico tiene una rutina ambiental (Codex)
-
-### Lo que pidio Ricky
-
-Retomar el chat **Visualize Pet Lineup** y llevar la mascota a un punto donde
-se sienta viva dentro de la app, con mas acciones y transiciones suaves.
-
-### Hecho
-
-- `platform/brand/dico-pet-assets.mjs` ahora declara acciones cortas y una
-  rutina viva: respira, mira arriba, pausa, mira abajo y piensa. No se
-  agregaron assets nuevos: se compone sobre el atlas oficial para mantener una
-  sola fuente de verdad de la geometria.
-- `src/components/dico/useDicoPetMotion.js` reproduce esa rutina solo cuando
-  el pet esta libre. Una intervencion con pose explicita conserva prioridad;
-  `prefers-reduced-motion` detiene la rutina.
-- `DicoSlot` y `DicoCuadro` usan el movimiento ambiental. Cambiar de pose
-  reinicia el cuadro y monta una entrada de 220ms en `physical.css`, para que
-  el cambio entre acciones no sea un corte seco.
-- `src/test/dicoPetMotion.test.jsx` cubre la secuencia, la prioridad de una
-  pose controlada y reduced motion.
-
-### Verificado
-
-- 13 archivos de tests Dico / 177 tests en verde con Vitest y
-  `--pool=threads`.
-- Build de Vite en verde.
-- ESLint sin warnings en el hook y el test nuevos. `git diff --check` limpio.
-- La suite completa se intento, pero se detuvo despues de mas de dos minutos
-  sin progreso y con el worker por encima de 1,5 GB; no se declara como verde.
-
-### Pendiente inmediato
-
-1. Hacer QA visual en QA Lite con el Physical abierto y confirmar el ritmo en
-   desktop y mobile; las duraciones actuales son una primera calibracion.
-2. Si el ritmo se siente bien, agregar acciones semanticas nuevas solo cuando
-   haya nuevos cuadros del atlas, en vez de inventar anatomia con recortes.
-3. Repetir la suite completa cuando el repo no este compartiendo recursos con
-   otra corrida o agente.
-
-### Bloqueado por Ricky
-
-Nada para esta iteracion. Quedaron cambios sin commitear de otro agente en
-`Catalog`, `origenDelEnvio`, una migracion y el snapshot de plataforma; no se
-mezclaron con esta tarea.
