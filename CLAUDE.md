@@ -518,8 +518,8 @@ Si algo no entra claro en ninguna de las dos listas, se pregunta.
 terminado** (MCP de GitHub: `actions_list` del run de `ci.yml` con ese SHA,
 y los jobs si dio rojo). El pre-commit verde no alcanza: el 16/oct se
 pushearon 12 commits sin mirarlo. Un rojo que ya estaba antes del primer
-commit de la sesion no es de la sesion, pero se dice en el resumen. Al 16/oct
-el unico rojo heredado es *Security Audit* (`npm audit`, ver HANDOFF).
+commit de la sesion no es de la sesion, pero se dice en el resumen. Desde el
+16/oct (`6e055c8`) el CI esta entero en verde, *Security Audit* incluido.
 
 ## Como se trabaja entre dos agentes
 

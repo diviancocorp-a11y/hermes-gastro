@@ -73,11 +73,11 @@ por MCP de Vercel).
 - **No** se compararon una por una las policies del resto de las tablas que
   tocan las `roles_*`: solo se sabe que `check:rls` las da cerradas.
 - Tests de los checks (103) y pre-commit completo con build en cada commit.
-- **CI**: lint, tests, typecheck, build y los checks nuevos en verde. El job
-  **Security Audit da rojo y ya daba rojo antes** de esta sesión: `npm audit`
-  marca 4 high, `braces` (via `lint-staged`, el fix es lint-staged 16.4.0,
-  major) y `source-map-js` (`npm audit fix` sin breaking). No se tocó:
-  cambiar dependencias pide ok.
+- **CI entero en verde desde `6e055c8`** (los 5 jobs). *Security Audit*
+  daba rojo desde antes de esta sesión: se arregló con `npm audit fix` y
+  `lint-staged` 15 → 16.4.0 (pide node ≥ 20.17). Verificado: suite completa
+  (116 archivos, 1594 tests), build, y lint-staged 16 corriendo eslint e
+  integridad en el pre-commit.
 - Los checks nuevos de morning-health **no corrieron todavía contra la base**
   desde CI: ver bloqueado.
 
@@ -91,8 +91,7 @@ por MCP de Vercel).
    `la-nona-pato,cochi,mala-miga`: `mala-miga` ya no existe (da "catálogo
    VACÍO" todos los días). Cambiar por los tenants vivos (al menos
    `crazy-miga`).
-3. Ok para `npm audit fix` (sin breaking) y para subir `lint-staged` a 16.
-4. Ok y `ANTHROPIC_API_KEY` (la carga él) para el bot GerenteDico.
+3. Ok y `ANTHROPIC_API_KEY` (la carga él) para el bot GerenteDico.
 
 ### Pendiente inmediato
 
