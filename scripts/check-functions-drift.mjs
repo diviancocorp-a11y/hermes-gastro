@@ -62,6 +62,8 @@ export const CRITICAS = [
   'suspender_impagos',  // apaga negocios
   'tenant_puede_operar',
   'slug_available',     // decide que slug se puede tomar
+  'provision_owner',    // crea el negocio y su duenio (create-owner)
+  'attach_owner',       // da acceso de duenio o encargado a un negocio
 ];
 
 const ok = (m) => console.log(`\x1b[32m✓\x1b[0m ${m}`);

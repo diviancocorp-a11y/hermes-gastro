@@ -1,5 +1,6 @@
 -- 0062 Se va el `sumar_staff` de un argumento.
--- NO APLICADA TODAVIA.
+-- Aplicada por Ricky desde el editor SQL del panel el 16/oct/2026: el `drop`
+-- por MCP se colgaba (60s, sin aplicar). Por eso no figura en schema_migrations.
 --
 -- ══════════════════ POR QUE HAY DOS ══════════════════
 --
