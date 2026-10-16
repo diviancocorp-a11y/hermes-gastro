@@ -56,6 +56,16 @@ llevás puesto el working tree del otro.
    deployar y nadie vuelve a corregirla, así que dice "atrasada" para siempre.
    Ya hizo perder una sesión.
 
+5. **Salud del edificio**, también en paralelo:
+   - **CI de `main`**: `npm run ci:esperar` (en la nube de Claude Code,
+     `NODE_USE_ENV_PROXY=1 npm run ci:esperar`). Si el último run ya terminó,
+     vuelve enseguida con el veredicto y los jobs.
+   - **Último morning-health**: MCP de GitHub, `actions_list` sobre
+     `morning-health.yml` (`perPage: 1`). Si dio `failure`, `get_job_logs`
+     con `failed_only` y `tail_lines` ~30: ahí está el reporte que se mandó o
+     el error de Telegram (el 16/oct era un 401 de token que llevaba 3 días
+     sin avisar a nadie).
+
 Después, según lo que vayas a tocar:
 - Migraciones aplicadas: `ls platform/migrations/`
 - Estado de la base: MCP de Supabase, proyecto **`wwwzdgprsooyjgkuyoav`**
@@ -64,8 +74,11 @@ Después, según lo que vayas a tocar:
 
 ## Paso 2 — Decirle a Ricky dónde está parado
 
-Resumile en pocas líneas: última tarea cerrada, qué quedó pendiente y si hay
-algo sin commitear. No le recites la arquitectura: ya la conoce.
+Resumile en pocas líneas: **primero lo rojo** (CI de `main`, morning-health
+fallido, drift, algo sin commitear o sin pushear), después la última tarea
+cerrada y qué quedó pendiente, con "Bloqueado por Ricky" del HANDOFF bien a la
+vista. Si todo está en verde, una línea alcanza. No le recites la
+arquitectura: ya la conoce.
 
 ---
 
@@ -104,7 +117,6 @@ Pivot de un SaaS gastronómico single-tenant a **plataforma multi-rubro**
 | Front | Vercel `hermes-platform` (nombre viejo, no renombrar) |
 | Correo | Resend, dominio `send.divianco.app`, SMTP en Supabase Auth |
 | DNS | Cloudflare, zona `divianco.app` |
-| Legacy dormidos | 3 proyectos Supabase + 3 Vercel, sin migrar |
 
 Los nombres `hermes-*` de la infraestructura **se dejan como están**:
 renombrarlos rompe deploys a cambio de nada, no los ve ningún cliente.
@@ -140,9 +152,6 @@ renombrarlos rompe deploys a cambio de nada, no los ve ningún cliente.
   El 10/sep `hermes-platform` había quedado sin integración de GitHub y un push
   no produjo deployment, mientras la API seguía sin listarlo entre los
   linkeados. Lo único que decide es si un push produjo o no un deployment.
-- **`npm audit --audit-level=high` esta rojo** (undici, vite 8.0.0-8.0.15,
-  launch-editor: son dev-deps, no llegan al browser). `npm audit fix` toca
-  `package-lock.json`: coordinar con quien lo tenga tomado.
 - **No deducir ausencia de un `grep`.** Un `grep -ril` sobre binarios solo
   matchea los que contienen la cadena adentro. Se reportaron tres PNGs de marca
   como inexistentes y estaban versionados. Para "existe este archivo?" va `ls`
@@ -176,15 +185,13 @@ renombrarlos rompe deploys a cambio de nada, no los ve ningún cliente.
   snapshot.
 
 ### Lo que NO funciona todavía (no lo reportes como roto)
-- **El panel del edificio cubre productos, pedidos, caja y salón.** El resto
-  del ERP (recetas, stock, compras, gastos, CRM, P&L) sigue siendo exclusivo
-  del legacy. Los dos
-  paneles conviven y los decide `business.platform` en la ruta `/admin`: no
-  intentes unificarlos, no comparten ni una tabla.
-- **El camino completo se recorrió una sola vez.** Al 10/sep hay 7 tenants,
-  todos con dueño en `tenant_members`, pero `first_value_at` sólo está cargado
-  en la-nona-pato (3 pedidos). Dos de los 7 son basura de prueba
-  (`prueba-disco`, `tienda-nueva`): sin productos ni pedidos.
+- **No hay panel legacy**: se borró el 29/sep, `/admin` es solo
+  `PlatformAdmin`. Lo que el ERP viejo tenía y el edificio no, no tiene
+  pantalla (detalle en `CLAUDE.md`, "Lo que todavia no existe").
+- **Qué negocios hay, no lo leas de acá**: consultalo
+  (`select slug, status from tenants`). Al 16/oct eran 4: crazy-miga,
+  la-nona-pato y cochi activos, monare en `trial`. MiaEstudio figura como
+  cliente en `CLAUDE.md` pero todavía no tiene tenant.
 - **`unit_cost` va en 0**: el edificio no tiene modelo de costos, así que el
   P&L no da.
 - **No hay con qué cobrarle al cliente todavía**: hay planes y precios, pero el
