@@ -50,11 +50,16 @@ jobs:
         with: { node-version: '22', cache: 'npm' }
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      # Los negocios activos salen de la base: un cliente nuevo entra solo. Sin
+      # service role (o si la base no contesta) queda la variable SMOKE_TENANTS.
+      - name: Negocios a mirar
+        env:
+          PLATFORM_SUPABASE_URL: ${{ secrets.PLATFORM_SUPABASE_URL }}
+          PLATFORM_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PLATFORM_SUPABASE_SERVICE_ROLE_KEY }}
+          SMOKE_TENANTS: ${{ vars.SMOKE_TENANTS }}
+        run: echo "SMOKE_TENANTS=$(node scripts/tenants-vivos.mjs)" >> "$GITHUB_ENV"
       - name: Smoke
         env:
-          # Variable (no secret): los slugs son publicos. Vacia, se saltean
-          # los catalogos.
-          SMOKE_TENANTS: ${{ vars.SMOKE_TENANTS }}
           SMOKE_ADMIN_SLUG: ${{ secrets.SMOKE_ADMIN_SLUG }}
           SMOKE_ADMIN_EMAIL: ${{ secrets.SMOKE_ADMIN_EMAIL }}
           SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}

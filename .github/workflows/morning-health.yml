@@ -12,6 +12,11 @@ on:
   schedule:
     - cron: '0 10 * * 1-6'
   workflow_dispatch: # permite correrlo manualmente desde la UI
+    inputs:
+      probar_cerebro:
+        description: 'Llamar a DICO_BRAIN con un problema de ejemplo aunque todo este en verde'
+        type: boolean
+        default: false
 
 jobs:
   health:
@@ -27,9 +32,12 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          # Variable (no secret): los negocios que se miran. La misma que usa
-          # smoke-edificio.yml. Vacia, el reporte lo marca como problema.
+          # Los negocios salen de la base (scripts/tenants-vivos.mjs). La
+          # variable queda de respaldo si falta la service role.
           SMOKE_TENANTS: ${{ vars.SMOKE_TENANTS }}
+          # Opcional: API key de OpenAI que explica los problemas en castellano.
+          DICO_BRAIN: ${{ secrets.DICO_BRAIN }}
+          PROBAR_CEREBRO: ${{ inputs.probar_cerebro }}
           # Opcional: habilita el check de drift del snapshot del edificio.
           PLATFORM_SUPABASE_URL: ${{ secrets.PLATFORM_SUPABASE_URL }}
           PLATFORM_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PLATFORM_SUPABASE_SERVICE_ROLE_KEY }}

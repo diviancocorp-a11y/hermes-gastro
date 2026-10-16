@@ -29,13 +29,15 @@
 // Criterio del mensaje: lo roto va PRIMERO y el verde es corto. Secrets que
 // espera el workflow: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, y opcionales
 // PLATFORM_SUPABASE_URL / PLATFORM_SUPABASE_SERVICE_ROLE_KEY (drift) y
-// SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT (errores). Los negocios
-// salen de la VARIABLE del repo SMOKE_TENANTS (no es secret).
+// SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT (errores) y DICO_BRAIN
+// (explica los problemas). Los negocios salen de la BASE (tenants-vivos.mjs);
+// la variable SMOKE_TENANTS queda de respaldo si no hay service role.
 // ─────────────────────────────────────────────────────────
 
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { tenantsAMirar } from './tenants-vivos.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -46,13 +48,9 @@ const PLATFORM_ANON = 'sb_publishable_8gMlo42jYdK8epcD-Zr9TQ_eKmY2nW-';
 
 const LANDING = 'https://divianco.app';
 
-// Negocios reales andando: un demo que se cae no despierta a nadie. Salen de
-// SMOKE_TENANTS, la misma variable del repo que lee el smoke
-// (smoke/edificio.spec.ts): una sola lista para los dos. Antes estaba fija aca
-// y el 27/sep, con los tenants vaciados para rehacer la carga, el reporte iba
-// a dar rojo por slugs que ya no existian.
-const TENANTS = (process.env.SMOKE_TENANTS || '')
-  .split(',').map((s) => s.trim()).filter(Boolean);
+// Los negocios salen de la base (tenants-vivos.mjs): un cliente nuevo entra
+// solo el dia que se activa. Antes salian de SMOKE_TENANTS, y el 16/oct esa
+// lista todavia tenia mala-miga (borrado) y no tenia crazy-miga.
 
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TG_CHAT = process.env.TELEGRAM_CHAT_ID;
@@ -73,12 +71,15 @@ async function main() {
   if (landing !== '✓') problemas.push(`Landing divianco.app: ${landing}`);
 
   /* ── 2. Tenants: subdominio + catalogo por RPC ───────── */
+  const lista = await tenantsAMirar();
+  const TENANTS = lista.activos;
+  if (lista.aviso) detalles.push(`negocios: ${lista.aviso}`);
   // Sin lista no hay "todo en verde": un reporte que no mira ningun negocio no
   // puede decir que andan.
   if (TENANTS.length === 0) {
     // La barra escapa el guion bajo: en el Markdown de Telegram uno suelto
     // abre una cursiva que nunca se cierra y el mensaje entero se rechaza.
-    problemas.push('SMOKE\\_TENANTS vacia: no se mira ningun negocio (GitHub → Settings → Secrets and variables → Actions → Variables)');
+    problemas.push('Ningun negocio para mirar: la base no dio ninguno activo y SMOKE\\_TENANTS esta vacia');
   }
   const tenants = await Promise.all(TENANTS.map(async (slug) => {
     const [front, rpc] = await Promise.all([
@@ -92,6 +93,7 @@ async function main() {
     if (!ok) problemas.push(`*${t.slug}* — front: ${t.front} · catalogo: ${t.rpc}`);
     detalles.push(`${ok ? '🟢' : '🔴'} ${t.slug} · ${t.rpc}`);
   }
+  for (const slug of lista.enCarga) detalles.push(`🟡 ${slug} · en carga (sin activar)`);
 
   /* ── 3. submit-order viva ────────────────────────────── */
   const fn = await checkSubmitOrder();
@@ -143,6 +145,19 @@ async function main() {
     lines.push(...problemas.map(p => `• ${p}`));
     lines.push('');
     lines.push(...detalles.map(d => `  ${d}`));
+  }
+
+  /* ── Cerebro (opcional): que significa lo roto y que hacer ── */
+  if (problemas.length) {
+    const cerebro = await explicarConCerebro(problemas);
+    if (cerebro) lines.push('', '🧠 *Que significa*', cerebro);
+  } else if (process.env.PROBAR_CEREBRO === 'true') {
+    // Corrida manual con probar_cerebro: un dia en verde no llama al cerebro,
+    // asi que sin esto no hay como saber si la key anda hasta que algo se rompa.
+    const cerebro = await explicarConCerebro([
+      'Sentry: 1 issue(s) en 24h — TypeError: e is not a function (Settings, crazy-miga)',
+    ]);
+    lines.push('', '🧪 *Prueba del cerebro* (problema de ejemplo, no real)', cerebro || '(sin DICO\\_BRAIN cargada)');
   }
 
   const msg = lines.join('\n');
@@ -295,6 +310,54 @@ async function checkSentry() {
     return { rojo: true, texto: `${issues.length} issue(s) en 24h — ${top.join(' · ')}` };
   } catch (e) {
     return { rojo: true, texto: `error: ${e.name}` };
+  }
+}
+
+/* ─────────────────────── Cerebro ────────────────────── */
+
+/**
+ * DICO_BRAIN es la API key de OpenAI (secret de GitHub, la cargo Ricky el
+ * 16/oct). Solo se llama si hay problemas: un dia en verde no gasta nada. Si
+ * falla, el reporte sale igual, sin la explicacion.
+ *
+ * Lo que viaja a OpenAI: los renglones de "problemas" (titulos de issues de
+ * Sentry, slugs, nombres de checks). No viajan datos de clientes ni pedidos.
+ */
+async function explicarConCerebro(problemas) {
+  const key = process.env.DICO_BRAIN?.trim();
+  if (!key) return null;
+  const model = process.env.DICO_BRAIN_MODEL?.trim() || 'gpt-4o-mini';
+  try {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(30000),
+      body: JSON.stringify({
+        model,
+        temperature: 0.2,
+        max_tokens: 400,
+        messages: [
+          {
+            role: 'system',
+            content: 'Sos el gerente tecnico de Dico, una plataforma de catalogos y pedidos para negocios '
+              + '(cada negocio vive en <slug>.divianco.app). Le explicas al dueno, que no es programador, '
+              + 'el reporte matutino. En espanol argentino, maximo 5 renglones cortos, sin Markdown: '
+              + 'que se rompio, a que negocio o cliente afecta, que tan urgente es (hoy / esta semana / '
+              + 'puede esperar) y que hacer. No inventes datos que no esten en el reporte.',
+          },
+          { role: 'user', content: problemas.join('\n') },
+        ],
+      }),
+    });
+    if (!r.ok) {
+      console.error('DICO_BRAIN: OpenAI respondio', r.status, (await r.text()).slice(0, 200));
+      return `(el cerebro no respondio: HTTP ${r.status})`;
+    }
+    const data = await r.json();
+    // Sin Markdown: un _ o * de la respuesta romperia el mensaje entero.
+    return String(data.choices?.[0]?.message?.content || '').replace(/[_*`[\]]/g, '').trim() || null;
+  } catch (e) {
+    return `(el cerebro no respondio: ${e.name})`;
   }
 }
 
