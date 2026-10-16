@@ -18,6 +18,8 @@
 //   4. Drift de schema del edificio (schema-sync --check) — con service role
 //      en secrets; sin ella se saltea. Un snapshot viejo no falla: deja de
 //      proteger en silencio (la familia de bug del Zod, 4 veces).
+//   4c. Migraciones aplicadas sin archivo en el repo (check-migraciones-sin-
+//       archivo) — misma service role; sin ella se saltea.
 //   4b. RLS: ninguna tabla con tenant_id abierta entre negocios, ni una
 //      SECURITY DEFINER llamable sin aprobar (check-rls) — misma service
 //      role; sin ella se saltea.
@@ -111,6 +113,14 @@ async function main() {
   /* ── 5b. RLS (opcional, exige service role) ────────────
      El unico que mira el aislamiento entre negocios. Una tabla abierta no
      falla: la app anda y los datos de todos quedan a la vista. */
+  /* ── 5c. Migraciones sin archivo (opcional, exige service role) ─
+     Lo aplicado al edificio que el repo no tiene: el 16/oct aparecio
+     alta_de_duenio_con_roles (14/oct) y el repo decia que corria la version
+     rota de provision_owner. */
+  const sinArchivo = checkMigracionesSinArchivo();
+  if (sinArchivo.rojo) problemas.push(`Migraciones APLICADAS sin archivo en el repo — node scripts/check-migraciones-sin-archivo.mjs`);
+  detalles.push(`migraciones: ${sinArchivo.texto}`);
+
   const rls = checkRls();
   if (rls.rojo) problemas.push(`RLS ABIERTO entre negocios — npm run check:rls`);
   detalles.push(`rls: ${rls.texto}`);
@@ -221,6 +231,17 @@ function checkFunctionsDrift() {
   if (/salteado/.test(salida)) return { rojo: false, texto: 'sin credenciales — salteado' };
   if (r.status === 0) return { rojo: false, texto: '✓ coinciden' };
   return { rojo: true, texto: 'DRIFT' };
+}
+
+/** Historial de migraciones del edificio vs archivos de platform/migrations. */
+function checkMigracionesSinArchivo() {
+  const r = spawnSync(process.execPath, [join(HERE, 'check-migraciones-sin-archivo.mjs')], {
+    encoding: 'utf-8', timeout: 60000,
+  });
+  const salida = `${r.stdout || ''}${r.stderr || ''}`;
+  if (r.status !== 0) return { rojo: true, texto: 'SIN ARCHIVO' };
+  if (/salteado/.test(salida)) return { rojo: false, texto: 'sin credenciales — salteado' };
+  return { rojo: false, texto: '✓ todas con archivo' };
 }
 
 /** Tablas, policies, vistas y SECURITY DEFINER contra la regla de check-rls.mjs. */

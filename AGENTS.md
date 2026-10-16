@@ -249,6 +249,11 @@ create function public.register_payment(
   (`pg_proc` o la tabla), y actualiza la cabecera del archivo.
 - **Lo aditivo** (create, add column, create or replace) va por MCP
   `apply_migration` como siempre.
+- **Lo vigila morning-health** (`check-migraciones-sin-archivo.mjs`, via el
+  RPC `migrations_snapshot`, 0097): toda fila de
+  `supabase_migrations.schema_migrations` tiene que tener archivo, comparando
+  sin el numero adelante. Las 27 historicas que no coinciden por nombre estan
+  en `scripts/migraciones-sin-archivo.json`, que solo se achica (`--podar`).
 
 ## Bugs recurrentes (workarounds documentados)
 

@@ -1,0 +1,32 @@
+{
+  "_nota": "Migraciones aplicadas al edificio (supabase_migrations.schema_migrations) cuyo nombre no coincide con ningun archivo de platform/migrations al 16/oct/2026. La mayoria son partes de un archivo con otro nombre (roles_y_alcance_* salen de 0050_roles_y_alcance), pero ninguna se verifico una por una. Esta lista solo se achica: check-migraciones-sin-archivo.mjs falla con cualquier nombre nuevo que no tenga archivo, y --podar saca las que ya lo tienen.",
+  "conocidas": [
+    "0018_schedule_dormancy_sweep",
+    "get_catalog_min_order_fix",
+    "suppliers_name_uniq_trim",
+    "register_purchase_food_default_por_rubro",
+    "0036b_push_rpcs_por_slug",
+    "merma_y_compra_asientan_en_el_libro",
+    "ledger_clave_unica_por_linea",
+    "fichaje_de_duracion_cero",
+    "roles_y_alcance_estructura",
+    "roles_y_alcance_helpers",
+    "roles_y_alcance_policies",
+    "roles_barrido_de_policies_viejas",
+    "complete_order_definer_con_guard",
+    "planes_policies_de_staff",
+    "staff_divianco_gestionable",
+    "staff_solo_correo_de_la_empresa",
+    "el_staff_no_crea_negocios",
+    "puestos_de_consola",
+    "legajo_del_staff",
+    "bucket_privado_del_legajo",
+    "alta_de_staff_con_puesto",
+    "legajo_completo_por_pais",
+    "foto_de_perfil_del_staff",
+    "el_staff_entra_con_su_correo_personal",
+    "primer_valor_y_organizacion",
+    "registro_de_la_consola",
+    "0079_schema_snapshot_incluye_vistas"
+  ]
+}
