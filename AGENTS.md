@@ -234,6 +234,22 @@ create function public.register_payment(
   retorno): funcion nueva con otro nombre, el front migra, y la vieja se borra
   despues con su `-- contraer:`.
 
+**Como se aplica una migracion (16/oct/2026):**
+
+- **Archivo y base en la misma sesion.** Todo SQL que se aplica al edificio
+  (MCP, panel, script) tiene su archivo en `platform/migrations/` en el mismo
+  commit, con la cabecera `-- Aplicada via <MCP|panel> el <fecha>`. El 16/oct
+  aparecio `alta_de_duenio_con_roles` (14/oct) aplicada sin archivo: el repo
+  decia que `provision_owner` y `attach_owner` eran la version rota. Se
+  rescato como 0096 copiando `statements` de `supabase_migrations.schema_migrations`.
+- **Lo destructivo (`drop`, el paso de contraer) lo aplica Ricky desde el
+  editor SQL del panel.** Por MCP un `drop` se cuelga a los 60s sin aplicar
+  (paso 3 veces con la 0062). El agente prepara el SQL exacto, verifica antes
+  (quien lo usa: repo, `pg_proc.prosrc`, vistas, triggers, policies) y despues
+  (`pg_proc` o la tabla), y actualiza la cabecera del archivo.
+- **Lo aditivo** (create, add column, create or replace) va por MCP
+  `apply_migration` como siempre.
+
 ## Bugs recurrentes (workarounds documentados)
 
 ### 1. Corrupcion Cowork↔Linux mount (REGLA DURA)
