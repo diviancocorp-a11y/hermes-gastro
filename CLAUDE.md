@@ -252,8 +252,9 @@ create function public.register_payment(
 - **Lo vigila morning-health** (`check-migraciones-sin-archivo.mjs`, via el
   RPC `migrations_snapshot`, 0097): toda fila de
   `supabase_migrations.schema_migrations` tiene que tener archivo, comparando
-  sin el numero adelante. Las 27 historicas que no coinciden por nombre estan
-  en `scripts/migraciones-sin-archivo.json`, que solo se achica (`--podar`).
+  sin el numero adelante. Las 24 historicas que no coinciden por nombre estan
+  en `scripts/migraciones-sin-archivo.json`, revisadas una por una el 16/oct
+  (ninguna deja la base distinta del repo); solo se achica (`--podar`).
 
 ## Bugs recurrentes (workarounds documentados)
 
