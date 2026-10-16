@@ -30,7 +30,9 @@ jobs:
       - name: Run health check
         run: node scripts/morning-health.mjs
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          # El bot es GerenteDico: su token esta en el secret GERENTEDICOBOT
+          # (16/oct). TELEGRAM_BOT_TOKEN queda de respaldo.
+          TELEGRAM_BOT_TOKEN: ${{ secrets.GERENTEDICOBOT || secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           # Los negocios salen de la base (scripts/tenants-vivos.mjs). La
           # variable queda de respaldo si falta la service role.

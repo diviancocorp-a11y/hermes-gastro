@@ -52,8 +52,10 @@ const LANDING = 'https://divianco.app';
 // solo el dia que se activa. Antes salian de SMOKE_TENANTS, y el 16/oct esa
 // lista todavia tenia mala-miga (borrado) y no tenia crazy-miga.
 
-const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TG_CHAT = process.env.TELEGRAM_CHAT_ID;
+// trim: al pegar un secret suele colarse un salto de linea al final (paso con
+// TELEGRAM_CHAT_ID el 16/oct), y Telegram no reconoce el chat.
+const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN?.trim();
+const TG_CHAT = process.env.TELEGRAM_CHAT_ID?.trim();
 
 if (!TG_TOKEN || !TG_CHAT) {
   console.error('❌ Faltan TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID');
