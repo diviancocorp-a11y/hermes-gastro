@@ -59,6 +59,11 @@ de las dos cosas, y así se corrompieron archivos antes.
 - Si algo no se puede commitear (roto a medias), decilo en el HANDOFF y
   avisale a Ricky explícitamente antes de que limpie el chat.
 - Nunca dejes secretos en el repo: `.env*` está ignorado, verificá que siga así.
+- **Esperá el CI del último push** con `npm run ci:esperar` (en la nube de
+  Claude Code: `NODE_USE_ENV_PROXY=1 npm run ci:esperar`). Recién con `exit 0`
+  se puede decir en el resumen que quedó funcionando. Si da rojo, se arregla o
+  se anota en el HANDOFF qué job falla y por qué; si ya estaba rojo antes de
+  la sesión, se dice igual.
 
 ## Paso 4 — Actualizar la memoria si cambió algo estructural
 
@@ -87,4 +92,5 @@ Cerrá confirmando que `/dico` en un chat nuevo va a levantar todo esto.
 ## Lo que NO hay que hacer
 - No inventes que algo funciona si no lo probaste en esta sesión.
 - No declares la sesión cerrada con trabajo sin pushear.
+- No declares la sesión cerrada con el CI del último push sin terminar.
 - No escribas un HANDOFF que repita lo que ya dice `CLAUDE.md`: sumá lo nuevo.
