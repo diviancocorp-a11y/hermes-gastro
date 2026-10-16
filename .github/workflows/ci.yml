@@ -33,6 +33,10 @@ jobs:
       # check-rls veria recien en el reporte del dia siguiente.
       - name: Definer aprobadas
         run: npm run check:definer
+      # Ninguna migracion nueva borra o renombra lo que usa el deploy anterior:
+      # comparte la base y vuelve con un rollback. Expandir y despues contraer.
+      - name: Migraciones compatibles
+        run: npm run check:expandir
       # Todo .from()/.rpc() alcanzable desde src/main.jsx tiene que existir en
       # las migraciones del edificio. El 28/sep el catalogo tiraba 9 consultas
       # a tablas legacy por visita y ningun gate lo vio: caian en un fallback.

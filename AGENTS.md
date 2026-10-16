@@ -202,6 +202,10 @@ viejo en cache (HERMES-GASTRO-G). Por eso:
   regla con los campos que reciben y devuelven.
 - **Si hay que volver atras**, rollback en Vercel, no revert + push: el revert
   rebuildea y tarda; el rollback es cambiar a donde apunta el dominio.
+- **Lo frena `npm run check:expandir`** (pre-commit y CI): drop, rename,
+  `set not null` o cambio de tipo en una migracion desde la 0096. El paso de
+  contraer se declara en el archivo con `-- contraer: <por que ya no lo usa
+  nadie>`. De la 0001 a la 0095, 10 migraciones lo habrian necesitado.
 
 ## Bugs recurrentes (workarounds documentados)
 
@@ -276,6 +280,9 @@ python3 -c "open('FILE','rb').read().decode('utf-8','strict')"
   hallazgos (bordes laterales de color, Inter en el catalogo) que ningun test
   veia. El flujo completo de diseno es la skill `/diseno`; las skills de
   terceros que usa se bajan con `npm run skills:diseno`.
+- `check-migraciones-compatibles.mjs` (`npm run check:expandir`) — ninguna
+  migracion nueva rompe al deploy anterior. Ver "Migraciones: expandir y
+  despues contraer".
 - ESLint con max-warnings 200
 - `vite build` local (atrapa imports rotos)
 

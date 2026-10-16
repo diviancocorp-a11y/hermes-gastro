@@ -57,6 +57,12 @@ node scripts/check-schema-freshness.mjs
 echo "→ Definer llamables desde el front, todas aprobadas..."
 node scripts/check-definer-aprobadas.mjs
 
+# Migraciones que rompen al deploy anterior (drop, rename, not null): la base
+# es una sola y el rollback de Vercel no la vuelve atras. Expandir y despues
+# contraer; el paso de contraer se declara con `-- contraer: <motivo>`.
+echo "→ Migraciones compatibles con el deploy anterior..."
+node scripts/check-migraciones-compatibles.mjs
+
 # Lo que el build del edificio puede cargar le habla a algo que el edificio
 # tiene. Recorre los imports desde src/main.jsx; lo legacy que queda esta en
 # scripts/llamadas-legacy-pendientes.json y esa lista solo se achica.
