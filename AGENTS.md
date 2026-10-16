@@ -295,6 +295,52 @@ npm run schema:sync -- --check               # no escribe: falla si difiere
 fallar. El lado legacy (`--target=legacy`, con los `LEGACY_*`) ya no tiene
 contra que correr: esos proyectos se borraron.
 
+## Antes de escribir codigo nuevo: la escalera (16/oct/2026)
+
+Adaptada de Ponytail (`DietrichGebert/ponytail`) sin instalar el plugin: son
+solo instrucciones, y aca las leen Claude y Codex. Primero se lee el codigo que
+el cambio toca y se sigue el flujo real; despues se sube en orden y se frena en
+el primer escalon que resuelve:
+
+1. **Hace falta?** Si se resuelve sin codigo (config, un dato en la base,
+   borrar algo), no se escribe.
+2. **Ya existe en el repo?** `npm run mapa -- <rpc o tabla>` para la base,
+   grep en `src/lib/`, `src/components/` y `platform/functions/` para el resto.
+   Una RPC o un helper que duplica uno vivo es deuda desde el primer dia.
+3. **Lo da el lenguaje o la plataforma?** JS y Web APIs; Postgres (constraint,
+   default, trigger, policy); Supabase (Auth, Storage).
+4. **Lo hace una dependencia ya instalada?** Mirar `package.json`. Sumar una
+   dependencia nueva se le pregunta a Ricky.
+5. **Recien ahi, lo minimo que funciona.**
+
+Lo que NO se recorta para escribir menos: validacion en el borde de confianza
+(RLS, `tenant_id`, edge functions publicas), manejo de errores que pierde
+datos, seguridad y accesibilidad.
+
+## Skills, plugins y MCPs de terceros: criterio de entrada
+
+Antes de sumar una herramienta, responder:
+
+- **Que bug o friccion documentada resuelve** (HANDOFF, "Bugs recurrentes")?
+  Si no resuelve ninguna, no entra.
+- **Se pisa con algo que ya hay** (`/diseno`, `npm run mapa`, los `check:*`,
+  `/code-review`, `/simplify`)? Si se pisa, no entra, o reemplaza lo viejo y
+  se dice cual.
+- **Si son solo instrucciones**, se copian aca y en `AGENTS.md` en vez de
+  instalarlas (asi tambien las usa Codex).
+- **Si es software**, se prueba en una rama `prueba/<herramienta>` con una
+  tarea real y se compara el diff contra la misma tarea sin ella.
+- **Nunca** un proxy o gateway de modelos que vea prompts o guarde credenciales.
+
+Ya evaluadas (no reabrir sin un motivo nuevo):
+
+| Herramienta | Decision | Por que |
+|---|---|---|
+| Ponytail | Adaptada (escalera de arriba) | Solo instrucciones; ataca el codigo duplicado |
+| OmniRoute | No | Gateway que ve prompts y credenciales; el respaldo ya es Codex |
+| Graphify | No | Se pisa con `npm run mapa` y `check:alcanzable`; el grafo envejece |
+| Agent Skills (addyosmani) | No | Se pisa con `/diseno`, `/code-review`, `/simplify`, `/cerrardico` |
+
 ## Antes de razonar sobre una RPC, traela
 
 Primero `npm run mapa -- <rpc o tabla>`: dice que migraciones la tocan, en
