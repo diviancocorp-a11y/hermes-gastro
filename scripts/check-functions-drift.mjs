@@ -52,8 +52,12 @@ const VERBOSE = process.argv.includes('--verbose');
 const ES_MAIN = process.argv[1]
   && fileURLToPath(import.meta.url) === process.argv[1];
 
-// Las funciones que, si driftean, rompen plata o el alta. No es toda la base:
-// una lista larga se vuelve ruido y se termina ignorando.
+// Las que no pueden faltar: si una no esta desplegada, falla aunque ninguna
+// otra cosa la nombre. El CUERPO se compara para TODAS las de public, no solo
+// estas: hasta el 16/oct eran solo estas (una lista larga "se vuelve ruido"),
+// y ese dia aparecieron 4 funciones con el repo diciendo otra cosa —
+// provision_owner, attach_owner, register_waste, register_purchase— que
+// ninguna lista corta habria visto. Rescatadas esas, dio 83 de 83 limpio.
 export const CRITICAS = [
   'signup_tenant',      // el alta entera
   'complete_order',     // cierra el pedido y asienta la venta
@@ -135,9 +139,11 @@ export function cuerpoSegunElRepo(fn, dir = MIGRACIONES) {
 
   let ultimo = null;
   for (const { archivo, texto } of migracionesDe(dir)) {
-    // `create or replace function public.fn(` — con o sin `public.`
+    // `create [or replace] function public.fn(` — con o sin `public.`. Sin el
+    // `or replace` tambien: es el patron de cambio de firma (drop + create,
+    // 0068) y sin esto se comparaba contra una version anterior.
     const re = new RegExp(
-      `create\\s+or\\s+replace\\s+function\\s+(?:public\\.)?${fn}\\s*\\(`,
+      `create\\s+(?:or\\s+replace\\s+)?function\\s+(?:public\\.)?${fn}\\s*\\(`,
       'gi',
     );
     let m;
@@ -205,7 +211,7 @@ export function overloadsDe(snapshot, fn) {
 
 /**
  * Firmas de TODAS las funciones de public: las desplegadas contra las que
- * dejan vivas las migraciones. Lo de arriba compara cuerpos de 7 criticas;
+ * dejan vivas las migraciones. Lo de arriba compara cuerpos;
  * esto mira nombres y argumentos de todas, que es lo que rompe a un caller.
  *
  * - solo en la base: se aplico fuera del repo, o una migracion que la borra
@@ -248,7 +254,12 @@ async function main() {
   let problemas = 0;
   let comparadas = 0;
 
-  for (const fn of CRITICAS) {
+  const nombres = [...new Set([
+    ...CRITICAS,
+    ...Object.values(funciones || {}).map((v) => v.name),
+  ])].sort();
+
+  for (const fn of nombres) {
     // La clave del snapshot es `nombre(args)`, asi que una funcion con varias
     // firmas aparece varias veces. Se juntan todas: cual corre en produccion
     // lo decide el caller (PostgREST resuelve por argumentos), asi que basta
@@ -315,7 +326,7 @@ async function main() {
     return 1;
   }
 
-  ok(`${comparadas} funcion(es) criticas: lo desplegado coincide con las migraciones`);
+  ok(`${comparadas} funcion(es) de public: el cuerpo desplegado coincide con las migraciones`);
   return 0;
 }
 

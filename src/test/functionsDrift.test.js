@@ -68,6 +68,16 @@ describe('cuerpoSegunElRepo', () => {
     expect(normalizar(r.cuerpo)).toBe('select 3');
   });
 
+  it('tambien encuentra `create function` sin `or replace` (drop + create, 0068)', () => {
+    const dir = migracionesFalsas({
+      '0001_a.sql': 'create or replace function public.p(a uuid) returns int language sql as $$ select 1 $$;',
+      '0002_b.sql': 'drop function public.p(uuid);\ncreate function public.p(a uuid, b text default null) returns int language sql as $$ select 2 $$;',
+    });
+    const r = cuerpoSegunElRepo('p', dir);
+    expect(r.archivo).toBe('0002_b.sql');
+    expect(normalizar(r.cuerpo)).toBe('select 2');
+  });
+
   it('ordena 0009 antes que 0010 (lexicografico == cronologico con padding)', () => {
     const dir = migracionesFalsas({
       '0010_nueva.sql': 'create or replace function public.g() returns int language sql as $$ select 10 $$;',

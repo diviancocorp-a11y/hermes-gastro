@@ -434,9 +434,9 @@ funciones con mas de una firma viva. Es lectura de archivos, no de la base.
 **La funcion DESPLEGADA puede no ser la que dice la migracion.** Paso con
 `signup_tenant()`: la de produccion era mas nueva que cualquier archivo del
 repo y leia un campo que no escribe nadie. `check-functions-drift.mjs` lo mira
-cada manana en morning-health: el cuerpo de las 7 funciones criticas y las
-firmas de TODAS las de `public` (desplegadas vs las que dejan vivas las
-migraciones). Una firma de mas en la base es una migracion sin aplicar o algo
+cada manana en morning-health: el cuerpo y la firma de TODAS las funciones
+de `public` (desplegadas vs las que dejan vivas las migraciones; el 16/oct
+dio 83 de 83 despues de rescatar 4 que no coincidian). Una firma de mas en la base es una migracion sin aplicar o algo
 aplicado fuera del repo. Para una funcion puntual, lo directo:
 
 ```sql

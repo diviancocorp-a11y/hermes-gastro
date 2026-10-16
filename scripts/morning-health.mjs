@@ -103,8 +103,8 @@ async function main() {
   detalles.push(`schema: ${drift.texto}`);
 
   /* ── 5. Drift de funciones (opcional, exige service role) ─
-     El de schema mira COLUMNAS; este mira el CUERPO de las funciones
-     criticas. Es el unico que habria visto que `signup_tenant` desplegada no
+     El de schema mira COLUMNAS; este mira el CUERPO y la firma de todas las
+     funciones de public. Es el unico que habria visto que `signup_tenant` desplegada no
      la producia ninguna migracion del repo (29/ago). */
   const fnDrift = checkFunctionsDrift();
   if (fnDrift.rojo) problemas.push(`Funciones DRIFTEADAS vs migraciones — node scripts/check-functions-drift.mjs --verbose`);
@@ -216,7 +216,7 @@ function checkSchemaDrift() {
 }
 
 /**
- * El cuerpo de las funciones criticas, y las firmas de todas las de public,
+ * El cuerpo y las firmas de todas las funciones de public,
  * vs lo que dicen las migraciones.
  *
  * Distinto de checkSchemaDrift: ese compara COLUMNAS y este el CODIGO. Una
