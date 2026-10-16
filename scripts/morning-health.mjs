@@ -130,6 +130,11 @@ async function main() {
   detalles.push(`rls: ${rls.texto}`);
 
   /* ── 6. Sentry (opcional) ────────────────────────────── */
+  // Primero, que el build publicado tenga Sentry adentro. Sin el DSN la app
+  // no reporta nada y "sin errores en 24h" sale verde igual: paso del 27/sep
+  // al 16/oct sin que nadie se enterara.
+  const enBuild = await checkSentryEnBuild();
+  if (enBuild.rojo) problemas.push(`Sentry: ${enBuild.texto}`);
   const sentry = await checkSentry();
   if (sentry.rojo) problemas.push(`Sentry: ${sentry.texto}`);
   else detalles.push(`sentry: ${sentry.texto}`);
@@ -273,6 +278,25 @@ function checkRls() {
   if (r.status !== 0) return { rojo: true, texto: 'ABIERTO' };
   if (/salteado/.test(salida)) return { rojo: false, texto: 'sin credenciales — salteado' };
   return { rojo: false, texto: '✓ cerrado' };
+}
+
+/**
+ * El JS que se sirve en produccion tiene el DSN de Sentry? Se busca el host de
+ * ingesta en el bundle principal de la landing. Vite saca el codigo de Sentry
+ * entero cuando VITE_SENTRY_DSN no esta al compilar, asi que no aparece ni la
+ * palabra.
+ */
+async function checkSentryEnBuild() {
+  try {
+    const html = await (await fetch(LANDING, { signal: AbortSignal.timeout(10000) })).text();
+    const js = html.match(/src="(\/assets\/index-[^"]+\.js)"/)?.[1];
+    if (!js) return { rojo: true, texto: 'no encontre el bundle principal en la landing' };
+    const codigo = await (await fetch(LANDING + js, { signal: AbortSignal.timeout(15000) })).text();
+    if (/ingest(\.[a-z]+)?\.sentry\.io/.test(codigo)) return { rojo: false, texto: '✓ en el build' };
+    return { rojo: true, texto: 'NO esta en el build publicado: falta VITE\\_SENTRY\\_DSN en Vercel (hermes-platform). Los errores de la app no llegan a ningun lado.' };
+  } catch (e) {
+    return { rojo: true, texto: `no pude revisar el build (${e.name})` };
+  }
 }
 
 /** Issues sin resolver vistos en las ultimas 24h. Sin token se saltea. */
