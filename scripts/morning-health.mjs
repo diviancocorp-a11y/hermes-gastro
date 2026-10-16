@@ -290,10 +290,14 @@ function checkRls() {
 async function checkSentryEnBuild() {
   try {
     const html = await (await fetch(LANDING, { signal: AbortSignal.timeout(10000) })).text();
-    const js = html.match(/src="(\/assets\/index-[^"]+\.js)"/)?.[1];
-    if (!js) return { rojo: true, texto: 'no encontre el bundle principal en la landing' };
-    const codigo = await (await fetch(LANDING + js, { signal: AbortSignal.timeout(15000) })).text();
-    if (/ingest(\.[a-z]+)?\.sentry\.io/.test(codigo)) return { rojo: false, texto: '✓ en el build' };
+    // El DSN no queda en index-*.js sino en el chunk de observability, que la
+    // landing precarga: se miran todos los .js que nombra el HTML.
+    const chunks = [...new Set([...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)].map((m) => m[1]))];
+    if (!chunks.length) return { rojo: true, texto: 'no encontre el bundle principal en la landing' };
+    for (const js of chunks) {
+      const codigo = await (await fetch(LANDING + js, { signal: AbortSignal.timeout(15000) })).text();
+      if (/ingest(\.[a-z]+)?\.sentry\.io/.test(codigo)) return { rojo: false, texto: '✓ en el build' };
+    }
     return { rojo: true, texto: 'NO esta en el build publicado: falta VITE\\_SENTRY\\_DSN en Vercel (hermes-platform). Los errores de la app no llegan a ningun lado.' };
   } catch (e) {
     return { rojo: true, texto: `no pude revisar el build (${e.name})` };
