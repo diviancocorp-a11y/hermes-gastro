@@ -514,6 +514,13 @@ reporta** (commit chico a `main`, con el SHA en el resumen):
 
 Si algo no entra claro en ninguna de las dos listas, se pregunta.
 
+**Despues de cada push a `main`, mirar el CI antes de dar el trabajo por
+terminado** (MCP de GitHub: `actions_list` del run de `ci.yml` con ese SHA,
+y los jobs si dio rojo). El pre-commit verde no alcanza: el 16/oct se
+pushearon 12 commits sin mirarlo. Un rojo que ya estaba antes del primer
+commit de la sesion no es de la sesion, pero se dice en el resumen. Al 16/oct
+el unico rojo heredado es *Security Audit* (`npm audit`, ver HANDOFF).
+
 ## Como se trabaja entre dos agentes
 
 Codex y Claude trabajan sobre el mismo repo, a veces al mismo tiempo.
