@@ -81,6 +81,24 @@ por MCP de Vercel).
 - Los checks nuevos de morning-health **no corrieron todavía contra la base**
   desde CI: ver bloqueado.
 
+### Resuelto al final del 16/oct (verificado con un morning-health manual)
+
+- Token del bot en el secret **`GERENTEDICOBOT`** (el workflow lo toma de ahí,
+  `TELEGRAM_BOT_TOKEN` de respaldo) y `TELEGRAM_CHAT_ID` cargado; el script
+  recorta espacios (el chat id traía un salto de línea).
+- **Los negocios a mirar salen de la base** (`scripts/tenants-vivos.mjs`):
+  `active` se mira, `trial` sale como "en carga" sin rojo. Lo usan
+  morning-health y el smoke. `SMOKE_TENANTS` queda de respaldo sin service role.
+- **DICO_BRAIN** (API key de OpenAI, secret de GitHub): si hay problemas, los
+  explica en castellano. `workflow_dispatch` con `probar_cerebro` lo prueba.
+- Run `38962476797`: todo en verde (cochi, crazy-miga, la-nona-pato; monare
+  en carga), los 3 checks nuevos en verde contra la base, la prueba del
+  cerebro respondió y **llegó a Telegram**.
+- `/dico` ahora arranca mirando el CI de `main` y el último morning-health.
+
+Lo de abajo quedó como estaba escrito al cerrar; los puntos 1 y 2 ya no
+aplican.
+
 ### Bloqueado por Ricky
 
 1. **Morning-health falla desde el 14/oct y no manda nada a Telegram**:
