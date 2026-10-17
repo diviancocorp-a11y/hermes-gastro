@@ -486,6 +486,13 @@ rotas cosas que estaban hechas y costo sesiones enteras de planificar al pedo.
 - **Siempre ofrecer una mejora al proceso que esta haciendo**
 - **No pegar secrets en el chat** (especialmente service role). Las carga el
   en el panel que corresponda; nunca se las pidas
+- **Cuando Ricky tiene que hacer algo en un panel externo** (Vercel, Sentry,
+  Supabase, GitHub, Telegram): pasos numerados clic por clic, con el nombre
+  exacto de cada boton, los valores listos para copiar (sin comillas) y que
+  tiene que ver al final para saber que salio bien. Lo que olvida seguido
+  (redeploy despues de una variable, un token no se edita: se crea otro) va
+  marcado aparte. Nacio el 16/oct: las instrucciones de Sentry en prosa no
+  alcanzaron y hubo que rehacerlas paso a paso
 - Habla en español argentino. El codigo va en español (sin tildes en comments
   por temas de encoding)
 
