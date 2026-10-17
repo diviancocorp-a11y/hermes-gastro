@@ -523,7 +523,10 @@ Si algo no entra claro en ninguna de las dos listas, se pregunta.
 
 **Despues de cada push a `main`, mirar el CI antes de dar el trabajo por
 terminado**: `npm run ci:esperar` espera el run de `ci.yml` de ese SHA y
-lista los jobs (sale 0 verde, 1 rojo, 2 sin respuesta). En la nube de
+lista los jobs (sale 0 verde, 1 rojo, 2 sin veredicto: sin respuesta, o run
+cancelado por un push posterior). Corre hasta 15 min y escribe una linea por
+consulta: no envolverlo en `timeout` ni filtrarlo con `tail`, que lo hacen
+parecer colgado y tiran el exit code. En la nube de
 Claude Code: `NODE_USE_ENV_PROXY=1 npm run ci:esperar` (sin el proxy, Node
 consulta sin token y el limite es 60 por hora). El pre-commit verde no alcanza: el 16/oct se
 pushearon 12 commits sin mirarlo. Un rojo que ya estaba antes del primer

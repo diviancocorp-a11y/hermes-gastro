@@ -11,7 +11,14 @@
 // correrlo con NODE_USE_ENV_PROXY=1.
 //
 // Sale con 0 si el CI dio verde, 1 si dio rojo (lista los jobs que fallaron)
-// y 2 si no termino en el tiempo de espera o no se pudo consultar.
+// y 2 si no termino en el tiempo de espera, no se pudo consultar o el run se
+// cancelo. ci.yml tiene `cancel-in-progress`: un push encima cancela el run del
+// commit anterior, y eso no es rojo, es que ese commit no tiene veredicto
+// propio (lo cubre el CI del push nuevo).
+//
+// Mientras espera escribe una linea por consulta con el tiempo que lleva: el
+// 17/oct un `timeout 100 ... | tail` lo hizo parecer colgado cuando el CI
+// seguia corriendo.
 //
 // Uso:
 //   npm run ci:esperar                 # el HEAD local
@@ -36,6 +43,14 @@ const MAX_MS = 15 * 60_000;
 export function veredicto(run, jobs = []) {
   if (!run || run.status !== 'completed') {
     return { terminado: false, codigo: 2, lineas: [`· CI ${run ? run.status : 'sin arrancar'}`] };
+  }
+  if (run.conclusion === 'cancelled') {
+    return {
+      terminado: true,
+      codigo: 2,
+      lineas: ['· CI cancelled: lo cancelo un push posterior, este commit no tiene veredicto propio',
+        '  mirar el CI del ultimo commit de la rama (npm run ci:esperar -- origin/main)'],
+    };
   }
   const verde = run.conclusion === 'success';
   const lineas = [`${verde ? '✓' : '✗'} CI ${run.conclusion}`];
@@ -74,11 +89,18 @@ async function api(ruta) {
   throw new Error(`GitHub ${res.status} en ${ruta}`);
 }
 
+/** 95000 -> '1m35s' */
+export function transcurrido(ms) {
+  const seg = Math.round(ms / 1000);
+  return seg < 60 ? `${seg}s` : `${Math.floor(seg / 60)}m${String(seg % 60).padStart(2, '0')}s`;
+}
+
 async function main() {
   const arg = process.argv[2];
   const sha = execSync(`git rev-parse ${arg || 'HEAD'}`, { encoding: 'utf8' }).trim();
   console.log(`Esperando el CI de ${sha.slice(0, 7)}...`);
-  const hasta = Date.now() + MAX_MS;
+  const desde = Date.now();
+  const hasta = desde + MAX_MS;
   let ultimo = null;
   while (Date.now() < hasta) {
     try {
@@ -91,7 +113,7 @@ async function main() {
         if (run.html_url) console.log(`  ${run.html_url}`);
         return v.codigo;
       }
-      if (v.lineas[0] !== ultimo) console.log(v.lineas[0]);
+      console.log(`${v.lineas[0]} (${transcurrido(Date.now() - desde)})`);
       ultimo = v.lineas[0];
     } catch (e) {
       if (e instanceof ErrorPermanente) {
