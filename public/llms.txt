@@ -1,0 +1,41 @@
+# Dico
+
+> Dico es un sistema de gestión para gastronomía (restaurantes, parrillas, cafés y cocinas de delivery) hecho por Divianco. Su promesa: sabé cuánto ganás, no solo cuánto vendés. Junta en un solo lugar la receta con costo por insumo, el costo por hora del equipo con fichaje y el P&L con merma y gastos, y muestra la ganancia neta de cada noche.
+
+Cada negocio tiene su catálogo público en su propio subdominio (`<nombre>.divianco.app`) que el dueño crea solo desde /registro, en minutos. Dejarlo completo (recetas costeadas, equipo y horarios) se hace en una puesta en marcha acompañada.
+
+## Qué hace hoy
+
+- Catálogo público con link propio y QR para la mesa (activo)
+- Pedidos y salón: mapa de mesas, comandas y pedidos para llevar (activo)
+- Caja y arqueo: cobros por medio de pago y cierre con control del encargado (activo)
+- Stock y compras: insumos, compras, recepciones y merma (activo)
+- Recetas con costo real: costo automático por plato y margen al lado del precio (activo)
+- Reportes y P&L: ganancia por día, por mes y por categoría (activo)
+- Equipo y horarios: legajos, fichaje, costo por hora y costo laboral sobre venta (activo)
+- Cocina en pantalla: comanda digital por sector (en pruebas)
+- Integraciones activas: MercadoPago (Checkout Pro, solo Argentina), respuesta de pedidos por WhatsApp, avisos push, exportar a CSV o PDF
+
+## Qué todavía no hace
+
+- Facturación electrónica ARCA: en desarrollo
+- Rappi y Pedidos Ya: sin fecha
+- Modo offline: no hay; sin conexión no se cargan pedidos
+
+## Planes (pesos argentinos, por local, sin IVA)
+
+- Digital: gratis. Todo el sistema, sin pagar.
+- Local: $59.000 por mes por local, o $47.200 por mes pagando el año.
+- Cadena: $99.000 por mes por local, o $79.200 por mes pagando el año. Varias sucursales con consolidado.
+
+## Seguridad
+
+- Cada rol ve lo suyo, y el permiso se aplica en la base de datos.
+- Cada negocio es un inquilino separado con seguridad por fila.
+- Los avisos de Dico son cálculos deterministas sobre los datos cargados, no un modelo entrenado con la información del negocio.
+
+## Links
+
+- [Sitio](https://divianco.app/): landing con módulos, planes y preguntas frecuentes
+- [Crear un negocio](https://divianco.app/registro): alta gratis
+- [Entrar](https://divianco.app/entrar): acceso al panel
