@@ -17,6 +17,10 @@ on:
         description: 'Llamar a DICO_BRAIN con un problema de ejemplo aunque todo este en verde'
         type: boolean
         default: false
+      probar_alerta:
+        description: 'Mandar un error de prueba a Sentry: tiene que llegar el aviso de GerenteDico'
+        type: boolean
+        default: false
 
 jobs:
   health:
@@ -40,6 +44,7 @@ jobs:
           # Opcional: API key de OpenAI que explica los problemas en castellano.
           DICO_BRAIN: ${{ secrets.DICO_BRAIN }}
           PROBAR_CEREBRO: ${{ inputs.probar_cerebro }}
+          PROBAR_ALERTA: ${{ inputs.probar_alerta }}
           # Opcional: habilita el check de drift del snapshot del edificio.
           PLATFORM_SUPABASE_URL: ${{ secrets.PLATFORM_SUPABASE_URL }}
           PLATFORM_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PLATFORM_SUPABASE_SERVICE_ROLE_KEY }}

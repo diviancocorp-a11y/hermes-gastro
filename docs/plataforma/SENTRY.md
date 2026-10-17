@@ -55,3 +55,15 @@ del subdominio y la explicación de DICO_BRAIN.
 
 Sin `SENTRY_ALERTA_SECRET` la function contesta 401 a todo: no hay forma de
 que alguien sin el secreto le mande alertas falsas.
+
+## Probar la cadena entera
+
+GitHub → Actions → **Morning Health Check** → **Run workflow** → tildar
+**probar_alerta**. Manda un error de prueba con el DSN del build publicado;
+en 1-2 minutos tiene que llegar aparte "🚨 Error nuevo en Dico · prueba".
+Cada prueba es un issue nuevo con el tag `prueba:alerta`, que el resumen
+diario no cuenta. Probado de punta a punta el 16/oct (HERMES-GASTRO-Q).
+
+La regla "Error nuevo → Telegram" avisa por issue nuevo, reaparecido o
+regresion. No por resuelto: el 16/oct se le saco ese disparador, que mandaba
+"Error nuevo" al cerrar un error.

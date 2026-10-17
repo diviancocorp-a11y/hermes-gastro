@@ -24,7 +24,8 @@
 //      SECURITY DEFINER llamable sin aprobar (check-rls) — misma service
 //      role; sin ella se saltea.
 //   5. Sentry: issues nuevos en 24h — con SENTRY_AUTH_TOKEN; sin token se
-//      saltea.
+//      saltea. Con PROBAR_ALERTA=true (input probar_alerta, a mano) manda un
+//      error de prueba que tiene que llegar por GerenteDico (sentry-prueba.mjs).
 //
 // Criterio del mensaje: lo roto va PRIMERO y el verde es corto. Secrets que
 // espera el workflow: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, y opcionales
@@ -38,6 +39,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { tenantsAMirar } from './tenants-vivos.mjs';
+import { armarPrueba, dsnDelCodigo } from './sentry-prueba.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -139,6 +141,7 @@ async function main() {
   if (sentry.rojo) problemas.push(`Sentry: ${sentry.texto}`);
   // Sin Sentry en el build, "sin errores" no dice nada: no llega nada.
   else detalles.push(`sentry: ${enBuild.rojo ? 'sin datos (no esta en el build)' : sentry.texto}`);
+  const pruebaAlerta = process.env.PROBAR_ALERTA === 'true' ? await probarAlerta(enBuild.dsn) : null;
 
   /* ── Mensaje: lo roto primero, el verde corto ────────── */
   const date = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -167,6 +170,7 @@ async function main() {
     ]);
     lines.push('', '🧪 *Prueba del cerebro* (problema de ejemplo, no real)', cerebro || '(sin DICO\\_BRAIN cargada)');
   }
+  if (pruebaAlerta) lines.push('', '🧪 *Prueba de alerta*', pruebaAlerta);
 
   const msg = lines.join('\n');
   console.log(msg);
@@ -296,7 +300,8 @@ async function checkSentryEnBuild() {
     if (!chunks.length) return { rojo: true, texto: 'no encontre el bundle principal en la landing' };
     for (const js of chunks) {
       const codigo = await (await fetch(LANDING + js, { signal: AbortSignal.timeout(15000) })).text();
-      if (/ingest(\.[a-z]+)?\.sentry\.io/.test(codigo)) return { rojo: false, texto: '✓ en el build' };
+      const dsn = dsnDelCodigo(codigo);
+      if (dsn) return { rojo: false, texto: '✓ en el build', dsn };
     }
     return { rojo: true, texto: 'NO esta en el build publicado: falta VITE\\_SENTRY\\_DSN en Vercel (hermes-platform). Los errores de la app no llegan a ningun lado.' };
   } catch (e) {
@@ -316,7 +321,8 @@ async function checkSentry() {
   const ruta = `/api/0/projects/${encodeURIComponent(org)}/${encodeURIComponent(project)}/issues/`
     // lastSeen en la query: statsPeriod solo arma las estadisticas, no filtra.
     // Sin esto el reporte decia "en 24h" de un error de hace dos dias (28/sep).
-    + `?query=${encodeURIComponent('is:unresolved lastSeen:-24h')}&statsPeriod=24h&limit=5`;
+    // !prueba:alerta: los errores de probar_alerta no son de la app.
+    + `?query=${encodeURIComponent('is:unresolved lastSeen:-24h !prueba:alerta')}&statsPeriod=24h&limit=5`;
   try {
     // Una org de la region europea vive en de.sentry.io: sentry.io le
     // contesta 404 aunque org y proyecto esten bien escritos.
@@ -341,6 +347,24 @@ async function checkSentry() {
     return { rojo: true, texto: `${issues.length} issue(s) en 24h — ${top.join(' · ')}` };
   } catch (e) {
     return { rojo: true, texto: `error: ${e.name}` };
+  }
+}
+
+/**
+ * probar_alerta: manda un error de prueba con el DSN del build publicado. La
+ * llegada a Telegram no se puede ver desde aca: el mensaje dice que esperar.
+ */
+async function probarAlerta(dsn) {
+  if (!dsn) return '✗ no se mando: el build publicado no tiene el DSN de Sentry.';
+  const { url, headers, body } = armarPrueba(dsn);
+  try {
+    const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) });
+    if (!r.ok) return `✗ Sentry rechazo el error de prueba (HTTP ${r.status}).`;
+    return 'Sentry recibio un error de prueba. En 1 o 2 minutos tiene que llegar aparte '
+      + 'un "🚨 Error nuevo en Dico · prueba". Si no llega, fallo la regla de Sentry, '
+      + 'la function sentry-alerta o sus secrets en Supabase.';
+  } catch (e) {
+    return `✗ no pude mandar el error de prueba (${e.name}).`;
   }
 }
 
