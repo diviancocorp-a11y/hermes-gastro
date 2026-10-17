@@ -22,9 +22,23 @@
 //                                      sobre venta por dia operativo
 //   - P&L con merma y gastos        -> migraciones 0030 a 0033
 // Si alguna de esas tres deja de ser cierta, esta pagina miente.
+//
+// REDISENO (17/oct/2026, rama landing/rediseno): direccion "la frase es el
+// layout" de design-taste-frontend. La idea: la ganancia neta del cierre de
+// caja es la palabra que falta en la frase. El titular lleva adentro, en el
+// lugar de una palabra, la ficha del cierre del viernes ($2.360 neto). Lo
+// vivo de la pagina es la cuenta de la seccion #cuenta: el visitante escribe
+// cuanto vendio y ve insumos, nomina, merma y ganancia neta.
+//
+// Primero el alta, despues la reunion: la accion principal en toda la pagina
+// es "Probar gratis" (/registro) y la secundaria "Agendá una reunión" (Cal.com).
+//
+// PRUEBA SOCIAL: solo nombres y fotos reales de productos de clientes que
+// corren sobre Dico (La Nona Pato, Crazy Miga, MiaEstudio). Sin cifras de
+// resultados: no hay datos firmes. Cada foto lleva el nombre del negocio al
+// pie y nunca se presenta como "un plato de ejemplo de Dico".
 
-import { useEffect } from 'react';
-import FooterAscii from '../components/landing/FooterAscii.jsx';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import '../styles/platform-landing.css';
 
@@ -33,162 +47,90 @@ const DESCRIPCION = 'El sistema de gestión para restaurantes, parrillas, cafés
   + 'cocinas de delivery que te muestra la ganancia real de cada plato, cada '
   + 'turno y cada noche. Recetas con costo, nómina por hora y P&L en tiempo real.';
 
-// El telefono de Ricardo. Va en el CTA principal a proposito: a esta escala
-// el primer contacto es una persona, no un formulario.
-const WHATSAPP = '17869608110';
+// El telefono de Ricardo (17/oct/2026). El numero de EE.UU. ya no va.
+const WHATSAPP = '5491121829893';
+const WHATSAPP_VISIBLE = '+54 9 11 2182-9893';
 const WHATSAPP_TEXTO = 'Hola Ricardo, quiero conocer Dico para mi negocio.';
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(WHATSAPP_TEXTO)}`;
 const marcarWhatsApp = () => marcarEvento('whatsapp');
 
-const PILARES = [
+// La reunion: una hora en la oficina virtual (WorkAdventure), lun a vie 10-18.
+const AGENDA_URL = 'https://cal.com/ricardo.r/reunion';
+const marcarAgenda = () => marcarEvento('agenda');
+
+const pesos = (n) => `$${Math.round(n).toLocaleString('es-AR')}`;
+const porcentaje = (n) => n.toLocaleString('es-AR', { maximumFractionDigits: 1 });
+
+// ── La noche del viernes ──
+// Es la misma noche en toda la pagina: la ficha del titular y el estado
+// inicial de la cuenta. Con estos porcentajes, $4.200 de venta dan
+// 1.050 + 651 + 139 = 1.840 de costos y 2.360 de ganancia neta.
+const VIERNES = { venta: 4200, insumos: '25', nomina: '15,5', merma: '3,3' };
+
+const EJEMPLOS = [
+  { nombre: 'Un martes flojo', venta: 1900 },
+  { nombre: 'El viernes', venta: 4200 },
+  { nombre: 'Un sábado lleno', venta: 7800 },
+];
+
+// Modulos activos: una banda por modulo. La consecuencia con cifras sale de
+// los ejemplos que la pagina ya usaba (bife, martes, merma, cierre); donde no
+// hay cifra, se dice lo que hace sin inventar una.
+const MODULOS = [
   {
-    id: 'receta',
-    nombre: 'Receta',
-    sub: 'Costo + margen',
-    detalle: 'Cargás los insumos de cada plato una vez. Dico calcula el costo '
-      + 'solo y lo vuelve a calcular cuando el proveedor cambia el precio. Al '
-      + 'lado del precio de venta ves el margen que te dejó.',
-    ejemplo: [
-      ['Bife de chorizo', 'venta', '$1.200'],
-      ['Insumos', 'costo', '$340'],
-      ['Hora de trabajo', 'costo', '$185'],
-      ['Margen', 'neto', '$675'],
-    ],
+    id: 'catalogo',
+    nombre: 'Catálogo público',
+    frase: 'Tu carta online, con QR en cada mesa.',
+    consecuencia: 'Queda en tu-nombre.divianco.app. El pedido lo hace el cliente '
+      + 'desde el QR o lo carga el mozo, y aparece en el mismo lugar.',
   },
   {
-    id: 'horario',
-    nombre: 'Horario',
-    sub: 'Nómina + rentabilidad',
-    detalle: 'Cada puesto tiene un valor por hora. La gente ficha entrada y '
-      + 'salida, y las horas que cuentan son las fichadas, no las programadas. '
-      + 'Dico te dice qué porcentaje de la venta se fue en sueldos, día por día.',
-    ejemplo: [
-      ['Martes 14 a 17', 'venta', '$4.900'],
-      ['Mozo + cocinero', 'nómina', '$1.850'],
-      ['Sobre la venta', 'costo', '38%'],
-      ['Ese turno', 'veredicto', 'No paga'],
-    ],
+    id: 'salon',
+    nombre: 'Pedidos y salón',
+    frase: 'El salón entero, mesa por mesa.',
+    consecuencia: 'Mapa de mesas, comandas, estado de cada mesa y pedidos para '
+      + 'llevar. Cuando la cocina marca listo, el salón se entera.',
+  },
+  {
+    id: 'caja',
+    nombre: 'Caja y arqueo',
+    frase: 'La caja que se cuadra sola.',
+    consecuencia: 'Efectivo, tarjeta o MercadoPago. Al cierre, el arqueo compara '
+      + 'lo declarado con lo registrado y la diferencia aparece sola.',
+  },
+  {
+    id: 'recetas',
+    nombre: 'Recetas con costo real',
+    frase: 'El costo de cada plato, siempre al día.',
+    consecuencia: 'Bife de chorizo a $1.200: insumos $340, hora de trabajo $185. '
+      + 'Te deja $675. Si el proveedor sube, el costo se recalcula solo.',
+  },
+  {
+    id: 'stock',
+    nombre: 'Stock y compras',
+    frase: 'El stock que baja con cada venta.',
+    consecuencia: 'Esta semana tiraste $1.200, casi el triple del promedio del '
+      + 'mes, casi todo en verdulería. Y te avisa antes de que algo falte.',
+  },
+  {
+    id: 'equipo',
+    nombre: 'Equipo y horarios',
+    frase: 'Las horas fichadas, contra lo vendido.',
+    consecuencia: 'Martes de 14 a 17: vendiste $4.900 y la nómina fue $1.850. '
+      + 'Es el 38 % de la venta: ese turno no paga.',
   },
   {
     id: 'pl',
-    nombre: 'P&L',
-    sub: 'Número real',
-    detalle: 'Cerrás la caja y el reporte ya está hecho: ventas, insumos, '
-      + 'nómina, merma y margen neto. Eso es lo que ganaste esa noche. No hay '
-      + '"veníamos bien", hay un número.',
-    ejemplo: [
-      ['Viernes', 'ventas', '$4.200'],
-      ['Insumos', 'costo', '$1.050'],
-      ['Nómina', 'costo', '$650'],
-      ['Merma', 'costo', '$140'],
-      ['Ganancia', 'neta', '$2.360'],
-    ],
+    nombre: 'Reportes y P&L',
+    frase: 'La ganancia de la noche, al cerrar.',
+    consecuencia: 'Viernes: ventas $4.200, insumos $1.050, nómina $650, merma '
+      + '$140. Ganancia neta $2.360, esa misma noche y no a fin de mes.',
   },
 ];
 
-const PASOS = [
-  {
-    n: '1',
-    titulo: 'Entra el pedido',
-    detalle: 'Lo carga el mozo desde el salón, o lo hace el cliente solo desde '
-      + 'el QR de la mesa. Aparece en el mismo lugar para los dos.',
-  },
-  {
-    n: '2',
-    titulo: 'La cocina lo ve',
-    detalle: 'El pedido aprobado baja a producción. Cuando sale, se marca listo '
-      + 'y el salón se entera sin que nadie grite.',
-  },
-  {
-    n: '3',
-    titulo: 'El stock se descuenta',
-    detalle: 'Cada venta baja los insumos que usó esa receta. Si algo queda por '
-      + 'debajo del mínimo, Dico avisa antes de que falte a mitad del servicio.',
-  },
-  {
-    n: '4',
-    titulo: 'Se cobra y se cierra',
-    detalle: 'Efectivo, tarjeta o MercadoPago. Al final del turno, el arqueo '
-      + 'compara lo declarado con lo registrado y la diferencia aparece sola.',
-  },
-  {
-    n: '5',
-    titulo: 'Aparece la ganancia',
-    detalle: 'Dico ya sabe qué costaron los insumos, cuánto se pagó en horas y '
-      + 'qué se tiró. Te muestra el neto de esa noche, no a fin de mes.',
-  },
-];
+const ENCENDIDOS_AL_CARGAR = ['recetas', 'equipo'];
 
-const MODULOS = [
-  { nombre: 'Catálogo público', estado: 'activo', detalle: 'Tu carta online en tu-nombre.divianco.app, con QR para la mesa.' },
-  { nombre: 'Pedidos y salón', estado: 'activo', detalle: 'Mapa de mesas, comandas, estado por mesa y pedidos para llevar.' },
-  { nombre: 'Caja y arqueo', estado: 'activo', detalle: 'Apertura, cobros por medio de pago y cierre con control del encargado.' },
-  { nombre: 'Stock y compras', estado: 'activo', detalle: 'Insumos, compras, recepciones y merma. Cada movimiento queda asentado.' },
-  { nombre: 'Recetas con costo real', estado: 'activo', detalle: 'Insumos por plato, costo automático y margen al lado del precio.' },
-  { nombre: 'Reportes y P&L', estado: 'activo', detalle: 'Ganancia por día, por mes y por categoría, con costos reales.' },
-  { nombre: 'Equipo y horarios', estado: 'activo', detalle: 'Legajos, puestos, fichaje, costo por hora y costo laboral sobre venta.' },
-  { nombre: 'Cocina en pantalla', estado: 'pruebas', detalle: 'La comanda digital por sector. Está construida y se termina de probar.' },
-  { nombre: 'Facturación ARCA', estado: 'roadmap', detalle: 'Factura electrónica desde el mismo pedido. En desarrollo, todavía no.' },
-];
-
-const INTEGRACIONES = [
-  { nombre: 'MercadoPago', estado: 'activo', detalle: 'Checkout Pro con la cuenta del propio negocio. Por ahora solo Argentina.' },
-  { nombre: 'WhatsApp', estado: 'activo', detalle: 'Los pedidos del catálogo se responden por wa.me desde el panel.' },
-  { nombre: 'Avisos push', estado: 'activo', detalle: 'Pedido nuevo, stock bajo y cierre de turno, en el celular.' },
-  { nombre: 'Exportar a Excel', estado: 'activo', detalle: 'Bajás en CSV o PDF lo que ves en pantalla, para tu contador.' },
-  { nombre: 'Facturación ARCA', estado: 'roadmap', detalle: 'En desarrollo. No la ofrecemos hasta que emita una factura de verdad.' },
-  { nombre: 'Rappi y Pedidos Ya', estado: 'roadmap', detalle: 'Está en la lista y no tiene fecha. Preferimos decirlo así.' },
-];
-
-const ESTADO_TEXTO = { activo: 'Activo', pruebas: 'En pruebas', roadmap: 'En desarrollo' };
-
-// Lo que Dico dice son AVISOS sobre datos que ya estan en el sistema, no
-// respuestas de un modelo de lenguaje. La diferencia importa y esta seccion
-// existe para dejarla clara antes de que alguien la asuma al reves.
-const AVISOS = [
-  {
-    titulo: 'Food cost alto',
-    texto: 'El bife de chorizo te sale $520 hoy. La semana pasada salía $380: '
-      + 'subió el proveedor. ¿Ajustás el precio o cambiás el corte?',
-  },
-  {
-    titulo: 'Turno que no paga',
-    texto: 'Los martes de 14 a 17 la nómina se come el 38% de la venta. Es el '
-      + 'único turno de la semana arriba del 30%.',
-  },
-  {
-    titulo: 'Merma fuera de lo normal',
-    texto: 'Esta semana tiraste $1.200, casi el triple del promedio del mes. '
-      + 'Casi todo en verdulería.',
-  },
-];
-
-const SEGURIDAD = [
-  {
-    titulo: 'Cada rol ve lo suyo',
-    detalle: 'Un mozo no ve el P&L ni la nómina. Un cocinero no ve el precio de '
-      + 'venta ni el costo. No es una pantalla escondida: el permiso se aplica '
-      + 'en la base de datos, así que tampoco se llega por otro lado.',
-  },
-  {
-    titulo: 'Un negocio no ve al otro',
-    detalle: 'Cada local es un inquilino separado con seguridad por fila. Si '
-      + 'tenés dos sucursales, cada una ve su data. Si sumás un contador, ve '
-      + 'reportes sin ver la operación.',
-  },
-  {
-    titulo: 'Dico no lee tus datos',
-    detalle: 'Dico es determinista: calcula sobre lo que ya está cargado, con '
-      + 'reglas que se pueden leer. No es un modelo entrenado con tu '
-      + 'información ni la manda a ningún lado.',
-  },
-  {
-    titulo: 'Respaldo y cifrado',
-    detalle: 'Los datos viajan cifrados y se respaldan a diario. Nadie de '
-      + 'Divianco entra a tu operación sin que vos lo pidas.',
-  },
-];
-
+// Las preguntas de siempre, mas dos de seguridad resumidas.
 const FAQ = [
   {
     p: '¿Qué pasa si se cae el sistema en pleno servicio?',
@@ -207,9 +149,10 @@ const FAQ = [
   },
   {
     p: 'No entiendo nada de tecnología. ¿Igual lo puedo usar?',
-    r: 'Por eso el alta la hacemos juntos. Te muestro cada módulo y lo practicás '
-      + 'con tus propios datos. Después es cargar pedidos y mirar el número al '
-      + 'cierre. Si algo no se entiende, WhatsApp.',
+    r: 'Por eso la puesta en marcha la hacemos juntos. Te muestro cada módulo y '
+      + 'lo practicás con tus propios datos. Después es cargar pedidos y mirar '
+      + 'el número al cierre. Si algo no se entiende, WhatsApp.',
+    whatsapp: true,
   },
   {
     p: '¿Cuánto tarda la puesta en marcha?',
@@ -234,6 +177,19 @@ const FAQ = [
       + 'digital y esa la reemplaza. Si cobrás con terminal de MercadoPago, eso '
       + 'sí entra solo.',
   },
+  {
+    p: '¿Quién ve qué adentro de mi local?',
+    r: 'Cada rol ve lo suyo. Un mozo no ve el P&L ni la nómina; un cocinero no '
+      + 've el precio de venta ni el costo. No es una pantalla escondida: el '
+      + 'permiso se aplica en la base de datos, así que tampoco se llega por '
+      + 'otro lado.',
+  },
+  {
+    p: '¿Otro negocio puede ver mis números?',
+    r: 'No. Un negocio no ve al otro: cada local es un inquilino separado con '
+      + 'seguridad por fila. Si tenés dos sucursales, cada una ve su data, y si '
+      + 'sumás un contador, ve reportes sin ver la operación.',
+  },
 ];
 
 // Los precios salen de la tabla `plans` del edificio (migracion 0052). El plan
@@ -242,52 +198,31 @@ const PLANES = [
   {
     id: 'digital',
     nombre: 'Digital',
-    etiqueta: 'Para empezar',
     mensual: 0,
-    descripcion: 'Todo el sistema, sin pagar.',
-    items: [
-      'Catálogo público con link propio',
-      'Pedidos, caja y arqueo',
-      'Recetas con costo y margen',
-      'Stock e insumos',
-      'Equipo, horarios y costo por hora',
-      'P&L con números reales',
-    ],
+    texto: 'Todo el sistema, sin pagar: catálogo público con link propio, '
+      + 'pedidos, caja y arqueo, recetas con costo y margen, stock e insumos, '
+      + 'equipo con costo por hora y P&L con números reales.',
+    accion: 'Empezar con Digital',
   },
   {
     id: 'local',
     nombre: 'Local',
-    etiqueta: 'Más elegido',
-    destacado: true,
     mensual: 59000,
     anual: 47200,
-    descripcion: 'Un local, con todo lo que llega.',
-    items: [
-      'Todo lo del plan Digital',
-      'Facturación ARCA cuando salga',
-      'Cocina en pantalla cuando salga',
-      'Soporte por mail y chat',
-      'Una sucursal',
-    ],
+    texto: 'Un local, con todo lo del plan Digital y lo que llega: facturación '
+      + 'ARCA y cocina en pantalla cuando salgan. Soporte por mail y chat.',
+    accion: 'Hablar del plan Local',
   },
   {
     id: 'cadena',
     nombre: 'Cadena',
-    etiqueta: 'Multi-local',
     mensual: 99000,
     anual: 79200,
-    descripcion: 'Varias sucursales en un solo lugar.',
-    items: [
-      'Todo lo del plan Local',
-      'Sucursales sin tope',
-      'Consolidado y comparativa entre locales',
-      'Roles por local',
-      'Soporte por teléfono',
-    ],
+    texto: 'Todo lo del plan Local, con sucursales sin tope, consolidado y '
+      + 'comparativa entre locales, roles por local y soporte por teléfono.',
+    accion: 'Hablar del plan Cadena',
   },
 ];
-
-const pesos = (n) => `$${n.toLocaleString('es-AR')}`;
 
 /** Escribe el titulo y los meta de la raiz. El index.html del build lleva los
  *  del cliente que se horneo (clients/edificio), asi que sin esto la pestania de
@@ -315,446 +250,569 @@ function useMetaDeLaPlataforma() {
   }, []);
 }
 
+const sinMovimiento = () => typeof window !== 'undefined'
+  && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+/** Entradas por seccion: cada [data-reveal] entra una sola vez cuando aparece.
+ *  El estado oculto solo existe bajo .pl-anim, que se pone aca: sin script,
+ *  sin IntersectionObserver o con movimiento reducido, todo esta a la vista. */
+function useEntradas(raizRef) {
+  // useLayoutEffect: la clase entra antes del primer pintado, asi el titular
+  // no aparece entero y despues desaparece para animarse.
+  useLayoutEffect(() => {
+    const raiz = raizRef.current;
+    if (!raiz || sinMovimiento() || typeof IntersectionObserver === 'undefined') return undefined;
+    raiz.classList.add('pl-anim');
+    const io = new IntersectionObserver((entradas) => {
+      for (const e of entradas) {
+        if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+      }
+    }, { rootMargin: '0px 0px -10% 0px', threshold: 0.08 });
+    raiz.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [raizRef]);
+}
+
 export default function PlatformLanding() {
   useMetaDeLaPlataforma();
+  const raizRef = useRef(null);
+  useEntradas(raizRef);
 
   return (
-    <div className="pl-root">
-      <header className="pl-nav">
-        <div className="pl-wrap pl-nav-in">
-          <a className="pl-logo" href="/" aria-label="Dico">
-            <img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
-          </a>
-          <nav className="pl-nav-links">
-            <a href="#pilares">Cómo lo calcula</a>
-            <a href="#flujo">Cómo funciona</a>
-            <a href="#modulos">Módulos</a>
-            <a href="#precios">Precios</a>
-            <a href="#preguntas">Preguntas</a>
-          </nav>
-          <div className="pl-nav-cta">
-            <a className="pl-btn pl-btn-ghost pl-btn-sm" href="/entrar">Entrar</a>
-            <a className="pl-btn pl-btn-gold pl-btn-sm" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
-              Agendá 20 minutos
-            </a>
-          </div>
-        </div>
-      </header>
-
+    <div className="pl-root" ref={raizRef}>
       {/* div y no main: App.jsx ya envuelve todas las rutas en
           <main id="main-content">, y un main adentro de otro rompe el landmark. */}
-      <div>
-        {/* ── 1. HERO ── */}
-        <section className="pl-hero">
-          <div className="pl-wrap">
-            <p className="pl-pill">
-              <span className="pl-pill-dot" aria-hidden="true" />
-              Gestión para gastronomía&nbsp;· Argentina
-            </p>
-
-            <h1 className="pl-titular">
-              <span className="pl-titular-fijo">Sabé cuánto ganás,</span>
-              <span className="pl-titular-alma pl-serif">no solo cuánto vendés.</span>
-            </h1>
-
-            <p className="pl-hero-sub">
-              La ganancia real de cada plato, de cada turno y de cada noche.
-              Sin suposiciones. Números.
-            </p>
-
-            <div className="pl-hero-cta">
-              <a className="pl-btn pl-btn-gold" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
-                Agendá 20 minutos conmigo
-              </a>
-              <a className="pl-btn pl-btn-ghost" href="/registro">Probar gratis</a>
-            </div>
-
-            <p className="pl-hero-nota">
-              El plan Digital es gratis&nbsp;· Sin tarjeta&nbsp;· Tu carta online en un minuto
-            </p>
-
-            <MockupPanel />
-          </div>
-        </section>
-
-        <section className="pl-tira" aria-labelledby="pl-tira-titulo">
-          <div className="pl-wrap pl-tira-in">
-            <strong id="pl-tira-titulo" className="pl-etiqueta">Lo que reemplaza</strong>
-            <span>Planillas de Excel</span>
-            <span>Cuaderno de caja</span>
-            <span>Grupo de WhatsApp</span>
-            <span>Comandera aparte</span>
-            <span>Conteo de stock a ojo</span>
-          </div>
-        </section>
-
-        {/* ── 2. EL PROBLEMA ── */}
-        <section className="pl-sec pl-problema">
-          <div className="pl-wrap">
-            <div className="pl-sec-head">
-              <h2 className="pl-serif">Vendiste $10.000. ¿Ganaste cuánto?</h2>
-            </div>
-            <div className="pl-grid pl-grid-2">
-              <article className="pl-card">
-                <h3>Sin sistema</h3>
-                <p>
-                  Anotás a mano, sumás en papel y a fin de mes calculás si diste
-                  vuelta o no. Si el resultado es malo, ya pasó.
-                </p>
-              </article>
-              <article className="pl-card">
-                <h3>Con un sistema que solo vende</h3>
-                <p>
-                  Ves que vendiste $10.000 y no sabés cuánto pagaste de insumos,
-                  cuánto costó el equipo de esa noche, ni si ese plato de $500 te
-                  deja $200 o te sale negativo.
-                </p>
-              </article>
-            </div>
-            <p className="pl-remate">
-              En los dos casos decidís a ciegas. ¿Cambio la carta? ¿Subo precios?
-              ¿Abro un turno más? Sin costos reales, es adivinar.
-            </p>
-          </div>
-        </section>
-
-        {/* ── 3 y 4. LA SOLUCIÓN / LOS TRES PILARES ── */}
-        <section className="pl-sec" id="pilares">
-          <div className="pl-wrap">
-            <div className="pl-sec-head">
-              <h2 className="pl-serif">Receta por receta, turno por turno</h2>
-              <p>
-                Dico junta tres datos que en cualquier otro lado viven separados.
-                Juntos dejan de ser tres planillas y pasan a ser una ganancia.
-              </p>
-            </div>
-            <div className="pl-grid pl-pilares">
-              {PILARES.map((p) => (
-                <article className="pl-card pl-pilar" key={p.id}>
-                  <h3>{p.nombre}</h3>
-                  <p className="pl-pilar-sub pl-etiqueta">{p.sub}</p>
-                  <p>{p.detalle}</p>
-                  <dl className="pl-ejemplo">
-                    {p.ejemplo.map(([concepto, tipo, valor]) => (
-                      <div className="pl-ejemplo-fila" key={concepto}>
-                        <dt>
-                          {concepto} <span className="pl-ejemplo-tipo pl-etiqueta">{tipo}</span>
-                        </dt>
-                        <dd>{valor}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </article>
-              ))}
-            </div>
-            <p className="pl-remate">
-              Una sola base de datos. El dato se carga una vez y aparece donde
-              haga falta. Nada se duplica y nada se pierde entre planillas.
-            </p>
-          </div>
-        </section>
-
-        {/* ── 5. CÓMO FUNCIONA ── */}
-        <section className="pl-sec" id="flujo">
-          <div className="pl-wrap">
-            <div className="pl-sec-head pl-row">
-              <h2 className="pl-serif">Cinco pasos, de la mesa al número</h2>
-              <p>
-                Cada paso funciona solo. Conectados, el último sale sin que nadie
-                tenga que sentarse a calcularlo.
-              </p>
-            </div>
-            <ol className="pl-pasos">
-              {PASOS.map((p) => (
-                <li className="pl-paso" key={p.n}>
-                  <span className="pl-paso-n">{p.n}</span>
-                  <div>
-                    <h3>{p.titulo}</h3>
-                    <p>{p.detalle}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
-        {/* ── 6. MÓDULOS ── */}
-        <section className="pl-sec" id="modulos">
-          <div className="pl-wrap">
-            <div className="pl-sec-head pl-row">
-              <h2 className="pl-serif">Lo que tenés hoy y lo que falta</h2>
-              <p>
-                Usás lo que necesitás. Lo que todavía no está terminado figura
-                como tal, no como promesa.
-              </p>
-            </div>
-            <div className="pl-grid">
-              {MODULOS.map((m) => (
-                <article className="pl-card" key={m.nombre}>
-                  <div className="pl-card-head">
-                    <h3>{m.nombre}</h3>
-                    <span className={`pl-estado pl-etiqueta ${m.estado}`}>{ESTADO_TEXTO[m.estado]}</span>
-                  </div>
-                  <p>{m.detalle}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 7. INTEGRACIONES ── */}
-        <section className="pl-sec" id="integraciones">
-          <div className="pl-wrap">
-            <div className="pl-sec-head pl-row">
-              <h2 className="pl-serif">Se lleva bien con lo que ya usás</h2>
-              <p>¿Necesitás conectar otra cosa? Escribime y lo vemos.</p>
-            </div>
-            <div className="pl-grid">
-              {INTEGRACIONES.map((i) => (
-                <article className="pl-card" key={i.nombre}>
-                  <div className="pl-card-head">
-                    <h3>{i.nombre}</h3>
-                    <span className={`pl-estado pl-etiqueta ${i.estado}`}>{ESTADO_TEXTO[i.estado]}</span>
-                  </div>
-                  <p>{i.detalle}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 8. DICO, TU COPILOTO ── */}
-        <section className="pl-sec pl-copiloto">
-          <div className="pl-wrap">
-            <div className="pl-sec-head">
-              <h2 className="pl-serif">No decide por vos. Te avisa.</h2>
-              <p>
-                Dico mira tus números y levanta la mano cuando algo se sale de lo
-                normal. No manda a la cocina, no cambia precios y no gasta plata.
-                Te pone el dato adelante para que decidas vos.
-              </p>
-            </div>
-            <div className="pl-grid pl-avisos">
-              {AVISOS.map((a) => (
-                <article className="pl-card pl-aviso" key={a.titulo}>
-                  <h3 className="pl-aviso-firma">
-                    <img src="/brand/dico/dico-2d-neutral.png" alt="" width="256" height="256" />
-                    {a.titulo}
-                  </h3>
-                  <p>{a.texto}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 9. PLANES ── */}
-        <section className="pl-sec pl-precios" id="precios">
-          <div className="pl-wrap">
-            <div className="pl-sec-head">
-              <h2 className="pl-serif">Empezás gratis. Pagás si te sirve.</h2>
-            </div>
-            <div className="pl-grid">
-              {PLANES.map((p) => (
-                <article className={`pl-card pl-precio-card${p.destacado ? ' destacado' : ''}`} key={p.id}>
-                  <div className="pl-card-head">
-                    <h3>{p.nombre}</h3>
-                    <span className="pl-etiqueta">{p.etiqueta}</span>
-                  </div>
-                  <p className="pl-precio-monto">
-                    {p.mensual === 0 ? 'Gratis' : pesos(p.mensual)}
-                    {p.mensual > 0 && <span>/ mes por local</span>}
-                  </p>
-                  <p className="pl-precio-anual">
-                    {p.anual ? `${pesos(p.anual)} por mes si pagás el año` : p.descripcion}
-                  </p>
-                  <ul>
-                    {p.items.map((i) => <li key={i}>{i}</li>)}
-                  </ul>
-                  <a
-                    className={`pl-btn pl-btn-block ${p.destacado ? 'pl-btn-gold' : 'pl-btn-ghost'}`}
-                    href={p.mensual === 0 ? '/registro' : WHATSAPP_URL}
-                    {...(p.mensual === 0 ? {} : { target: '_blank', rel: 'noreferrer', onClick: marcarWhatsApp })}
-                  >
-                    {p.mensual === 0 ? 'Empezar gratis' : `Hablar de ${p.nombre}`}
-                  </a>
-                </article>
-              ))}
-            </div>
-            <p className="pl-precio-pie">
-              Sin cargo por usuario, por pedido ni por factura procesada. Lo que
-              ves en la tarjeta es lo que pagás. Precios en pesos, por local, sin IVA.
-            </p>
-          </div>
-        </section>
-
-        {/* ── 10. SEGURIDAD ── */}
-        <section className="pl-sec" id="seguridad">
-          <div className="pl-wrap">
-            <div className="pl-sec-head pl-row">
-              <h2 className="pl-serif">Tu data es tuya</h2>
-              <p>
-                Lo que sigue no son buenas intenciones: son reglas escritas en la
-                base de datos, que es donde tienen que estar.
-              </p>
-            </div>
-            <div className="pl-grid pl-grid-2">
-              {SEGURIDAD.map((s) => (
-                <article className="pl-card" key={s.titulo}>
-                  <h3>{s.titulo}</h3>
-                  <p>{s.detalle}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 11. FAQ ── */}
-        <section className="pl-sec" id="preguntas">
-          <div className="pl-wrap">
-            <div className="pl-sec-head">
-              <h2 className="pl-serif">Lo que todos preguntan</h2>
-            </div>
-            <div className="pl-faq">
-              {FAQ.map((f) => (
-                <details className="pl-faq-item" key={f.p}>
-                  <summary>
-                    <span>{f.p}</span>
-                    <span className="pl-faq-signo" aria-hidden="true" />
-                  </summary>
-                  <p>{f.r}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 12. CIERRE Y CONTACTO ── */}
-        <section className="pl-cierre" id="contacto">
-          <div className="pl-wrap">
-            <h2 className="pl-serif">Empecemos</h2>
-            <p>
-              Veinte minutos alcanzan para mirar juntos los números de tu local y
-              que veas si esto te sirve. Si preferís probarlo solo primero, el
-              plan Digital es gratis y no pide tarjeta.
-            </p>
-            <div className="pl-hero-cta">
-              <a className="pl-btn pl-btn-gold" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
-                Agendá 20 minutos conmigo
-              </a>
-              <a className="pl-btn pl-btn-ghost" href="/registro">Probar gratis</a>
-            </div>
-            <dl className="pl-contacto">
-              <div>
-                <dt className="pl-etiqueta">WhatsApp</dt>
-                <dd><a href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>+1 786 960 8110</a></dd>
-              </div>
-              <div>
-                <dt className="pl-etiqueta">Horario</dt>
-                <dd>Lunes a viernes, 11 a 23 h (Buenos Aires)</dd>
-              </div>
-              <div>
-                <dt className="pl-etiqueta">Mail</dt>
-                <dd><a href="mailto:hola@divianco.app">hola@divianco.app</a></dd>
-              </div>
-              <div>
-                <dt className="pl-etiqueta">Atiende</dt>
-                <dd>Ricardo Rodríguez · Grupo Divianco</dd>
-              </div>
-            </dl>
-          </div>
-        </section>
-      </div>
-
-      {/* La trama de puntos cierra la pagina y entrega el pie: es decoracion
-          (el componente es aria-hidden) y no aporta nada al lector de pantalla. */}
-      <FooterAscii />
-
-      <footer className="pl-pie">
-        <div className="pl-wrap pl-pie-in">
-          <img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
-          <span className="pl-pie-legal">© {new Date().getFullYear()} Grupo Divianco</span>
-          <div className="pl-pie-links">
-            <a href="#pilares">Cómo lo calcula</a>
-            <a href="#modulos">Módulos</a>
-            <a href="#precios">Precios</a>
-            <a href="#preguntas">Preguntas</a>
-            <a href="/entrar">Entrar</a>
-          </div>
-        </div>
-      </footer>
+      <Hero />
+      <Intro />
+      <Cuenta />
+      <Tramos />
+      <Clientes />
+      <Modulos />
+      <Planes />
+      <Preguntas />
+      <Cierre />
+      <Pie />
     </div>
   );
 }
 
-/* El mockup no es una captura: es la propia UI en miniatura, con datos de
-   ejemplo de un restaurante chico. Una captura envejece con cada deploy; esto
-   no. Los numeros son los mismos del pilar de P&L a proposito: la pagina
-   cuenta una sola noche, no cinco ejemplos sueltos. */
-function MockupPanel() {
+/* ─────────────── 1. Hero: la frase con la ficha adentro ─────────────── */
+
+function Hero() {
   return (
-    <div
-      className="pl-mock"
-      role="img"
-      aria-label="Vista del panel de Dico con las ventas de la noche, el costo de insumos y de nómina, la merma y la ganancia neta"
-    >
-      <div className="pl-mock-bar">
-        <span className="pl-mock-luz" />
-        <span className="pl-mock-luz" />
-        <span className="pl-mock-luz" />
-        <span className="pl-mock-url">divianco.app · cierre del viernes</span>
+    <section className="pl-hero" aria-labelledby="pl-hero-titulo">
+      <header className="pl-cabecera">
+        <a className="pl-marca" href="/">
+          <img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
+        </a>
+        <nav className="pl-cabecera-links" aria-label="Principal">
+          <a className="pl-enlace" href="#precios">Precios</a>
+          <a className="pl-enlace" href="/entrar">Entrar</a>
+        </nav>
+      </header>
+
+      <div className="pl-hero-centro">
+        <h1 id="pl-hero-titulo" className="pl-frase">
+          <span className="pl-frase-palabras">Sabé cuánto</span>
+          <FichaCierre />
+          <span className="pl-frase-palabras">ganás.</span>
+        </h1>
+        <div className="pl-acciones">
+          <a className="pl-boton" href="/registro">Probar gratis</a>
+          <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
+            Agendá una reunión
+          </a>
+        </div>
       </div>
 
-      <div className="pl-mock-body" aria-hidden="true">
-        <div>
-          <div className="pl-kpis">
-            <div className="pl-kpi">
-              <div className="pl-kpi-label pl-etiqueta">Ventas</div>
-              <div className="pl-kpi-valor">$4.200</div>
-              <div className="pl-kpi-delta sube">+6%</div>
-            </div>
-            <div className="pl-kpi">
-              <div className="pl-kpi-label pl-etiqueta">Insumos</div>
-              <div className="pl-kpi-valor">$1.050</div>
-              <div className="pl-kpi-delta">25% de la venta</div>
-            </div>
-            <div className="pl-kpi">
-              <div className="pl-kpi-label pl-etiqueta">Nómina</div>
-              <div className="pl-kpi-valor">$650</div>
-              <div className="pl-kpi-delta">15% de la venta</div>
-            </div>
-            <div className="pl-kpi destacado">
-              <div className="pl-kpi-label pl-etiqueta">Ganancia neta</div>
-              <div className="pl-kpi-valor">$2.360</div>
-              <div className="pl-kpi-delta sube">56% de margen</div>
-            </div>
-          </div>
+      <p className="pl-hero-apoyo">
+        Dico junta la receta con costo, las horas del equipo y la merma, y al
+        cerrar la caja te da la ganancia neta de esa noche.
+      </p>
+    </section>
+  );
+}
 
-          <div className="pl-pend">
-            <h3>Pendientes de decidir</h3>
-            <ul>
-              <li><span className="pl-tag pl-etiqueta alta">Alta</span> El bife de chorizo pasó de $380 a $520 de costo.</li>
-              <li><span className="pl-tag pl-etiqueta alta">Alta</span> Agua mineral 500 ml sin stock cargado.</li>
-              <li><span className="pl-tag pl-etiqueta media">Media</span> Merma del viernes: $140, casi toda en verdulería.</li>
-            </ul>
-          </div>
+/* La ficha no es una captura: es el cierre de caja de Dico en miniatura, con
+   los numeros del viernes. Ocupa el lugar de una palabra del titular y es
+   aria-hidden: el titular se lee "Sabé cuánto ganás." y la bajada dice lo que
+   la ficha muestra. */
+function FichaCierre() {
+  const filas = [
+    ['Ventas', '$4.200'],
+    ['Insumos', '−$1.050'],
+    ['Nómina', '−$650'],
+    ['Merma', '−$140'],
+  ];
+  return (
+    <span className="pl-ficha" data-ui aria-hidden="true">
+      <span className="pl-ficha-in">
+        <span className="pl-ficha-cab">Cierre de caja · viernes</span>
+        {filas.map(([concepto, valor]) => (
+          <span className="pl-ficha-fila" key={concepto}>
+            <span className="pl-ficha-concepto">{concepto}</span>
+            <span className="pl-ficha-valor">{valor}</span>
+          </span>
+        ))}
+        <span className="pl-ficha-fila pl-ficha-neto">
+          <span className="pl-ficha-concepto">Ganancia neta</span>
+          <span className="pl-ficha-valor">$2.360</span>
+        </span>
+      </span>
+    </span>
+  );
+}
+
+/* ─────────────── 2. Intro: la frase fija y las fotos que pasan ─────────────── */
+
+function Intro() {
+  return (
+    <section className="pl-intro" aria-label="Vender no es ganar">
+      <div className="pl-intro-fija">
+        <p className="pl-intro-frase" data-reveal>
+          Vendiste $10.000. ¿Cuánto te quedó después de insumos, sueldos y lo
+          que se tiró?
+        </p>
+      </div>
+      <div className="pl-intro-fotos">
+        <figure className="pl-foto pl-foto-retrato" data-reveal>
+          <img
+            src="/brand/landing/crazy-orbita-blanca.webp"
+            alt="Cookie con chips de chocolate blanco sobre una piedra oscura"
+            width="900" height="900" loading="lazy"
+          />
+          <figcaption>Órbita Blanca, de Crazy Miga</figcaption>
+        </figure>
+        <figure className="pl-foto pl-foto-apaisada" data-reveal>
+          <span className="pl-foto-marco">
+            <img
+              className="pl-foto-lenta"
+              src="/brand/landing/lnp-picada.webp"
+              alt="Tabla de picada con fiambres, quesos, aceitunas y palta"
+              width="789" height="374" loading="lazy"
+            />
+          </span>
+          <figcaption>Picada de La Nona Pato</figcaption>
+        </figure>
+        <figure className="pl-foto pl-foto-cuadrada" data-reveal>
+          <img
+            src="/brand/landing/lnp-empanadas.webp"
+            alt="Fuente blanca con empanadas horneadas sobre una tabla de madera"
+            width="789" height="374" loading="lazy"
+          />
+          <figcaption>Empanadas de La Nona Pato</figcaption>
+        </figure>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────── 3. La cuenta: lo vivo de la pagina ─────────────── */
+
+const numeroDe = (texto) => {
+  const n = parseFloat(String(texto).replace(',', '.'));
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(100, Math.max(0, n));
+};
+
+const CONCEPTOS = [
+  { id: 'insumos', nombre: 'Insumos' },
+  { id: 'nomina', nombre: 'Nómina' },
+  { id: 'merma', nombre: 'Merma' },
+];
+
+function Cuenta() {
+  const [venta, setVenta] = useState(VIERNES.venta);
+  const [pct, setPct] = useState({
+    insumos: VIERNES.insumos, nomina: VIERNES.nomina, merma: VIERNES.merma,
+  });
+
+  const costos = CONCEPTOS.map((c) => ({
+    ...c, pct: numeroDe(pct[c.id]), monto: Math.round((venta * numeroDe(pct[c.id])) / 100),
+  }));
+  const neto = venta - costos.reduce((s, c) => s + c.monto, 0);
+  const margen = venta > 0 ? (neto / venta) * 100 : 0;
+  const nomina = costos.find((c) => c.id === 'nomina');
+
+  let aviso = null;
+  if (venta > 0 && neto < 0) aviso = 'Esa noche perdiste plata: los costos superan la venta.';
+  else if (nomina.pct > 30) aviso = `La nómina se lleva el ${porcentaje(nomina.pct)} % de la venta. Arriba del 30 %, ese turno no paga.`;
+
+  const cambiarVenta = (e) => {
+    const digitos = e.target.value.replace(/\D/g, '').slice(0, 9);
+    setVenta(digitos ? Number(digitos) : 0);
+  };
+
+  return (
+    <section className="pl-cuenta" id="cuenta" aria-labelledby="pl-cuenta-titulo">
+      <h2 id="pl-cuenta-titulo" className="pl-cuenta-linea" data-reveal>
+        <label htmlFor="pl-venta">Vendí $</label>
+        <input
+          id="pl-venta"
+          className="pl-cuenta-input"
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          value={venta ? venta.toLocaleString('es-AR') : ''}
+          placeholder="0"
+          onChange={cambiarVenta}
+        />
+      </h2>
+
+      <div className="pl-cuenta-cuerpo">
+        <div className="pl-cierre-ui" data-ui data-reveal>
+          <table className="pl-cierre-tabla">
+            <caption>Cierre de la noche</caption>
+            <tbody>
+              <tr>
+                <th scope="row">Ventas</th>
+                <td />
+                <td className="pl-cierre-monto">{pesos(venta)}</td>
+              </tr>
+              {costos.map((c) => (
+                <tr key={c.id}>
+                  <th scope="row">{c.nombre}</th>
+                  <td className="pl-cierre-pct">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      autoComplete="off"
+                      aria-label={`Porcentaje de ${c.nombre.toLowerCase()} sobre la venta`}
+                      value={pct[c.id]}
+                      onChange={(e) => setPct((p) => ({ ...p, [c.id]: e.target.value.replace(/[^\d.,]/g, '').slice(0, 5) }))}
+                    />
+                    <span aria-hidden="true">%</span>
+                  </td>
+                  <td className="pl-cierre-monto">−{pesos(c.monto)}</td>
+                </tr>
+              ))}
+              <tr className={`pl-cierre-neto${neto < 0 ? ' negativo' : ''}`}>
+                <th scope="row">Ganancia neta</th>
+                <td className="pl-cierre-margen">{porcentaje(margen)} %</td>
+                <td className="pl-cierre-monto" aria-live="polite">{neto < 0 ? `−${pesos(-neto)}` : pesos(neto)}</td>
+              </tr>
+            </tbody>
+          </table>
+          {aviso && (
+            <p className="pl-cierre-aviso">
+              <img src="/brand/dico/dico-2d-neutral.png" alt="" width="256" height="256" />
+              {aviso}
+            </p>
+          )}
         </div>
 
-        <div className="pl-dico-card">
-          <div className="pl-dico-firma pl-etiqueta">
-            <img src="/brand/dico/dico-2d-neutral.png" alt="" width="256" height="256" />
-            Dico
-          </div>
-          <p className="pl-dico-dice">
-            El bife de chorizo te está dejando 14% de margen. A $1.450 volvés al
-            objetivo sin tocar el resto de la carta.
+        <div className="pl-cuenta-lado">
+          <p className="pl-cuenta-nota" data-reveal>
+            Escribí cuánto vendiste en una noche y mirá lo que queda. Los
+            porcentajes son de ejemplo y se pueden cambiar: en Dico salen de
+            tus recetas y de las horas que fichó tu equipo.
           </p>
-          <div className="pl-dico-acciones">
-            <span className="pl-btn pl-btn-gold pl-btn-sm">Aplicar</span>
-            <span className="pl-btn pl-btn-ghost pl-btn-sm">Ahora no</span>
+          <div className="pl-cuenta-ejemplos" data-reveal>
+            {EJEMPLOS.map((e) => (
+              <button
+                key={e.nombre}
+                type="button"
+                className="pl-ejemplo"
+                aria-pressed={venta === e.venta}
+                onClick={() => setVenta(e.venta)}
+              >
+                {e.nombre}: {pesos(e.venta)}
+              </button>
+            ))}
           </div>
         </div>
       </div>
-    </div>
+    </section>
+  );
+}
+
+/* ─────────────── 4. Cuanto lleva: las etapas como una barra ─────────────── */
+
+function Tramos() {
+  return (
+    <section className="pl-tramos" id="como" aria-labelledby="pl-tramos-titulo">
+      <h2 id="pl-tramos-titulo" className="pl-titulo" data-reveal>Lo que lleva empezar</h2>
+      <ol className="pl-barra" data-ui>
+        <li className="pl-tramo pl-tramo-minutos" data-reveal>
+          <span className="pl-tramo-bloque"><span className="pl-tramo-dur">Unos minutos</span></span>
+          <span className="pl-tramo-texto">
+            Primero creás la cuenta y tu carta queda online. Lo hacés solo,
+            desde <a href="/registro">Probar gratis</a>.
+          </span>
+        </li>
+        <li className="pl-tramo pl-tramo-horas" data-reveal>
+          <span className="pl-tramo-bloque"><span className="pl-tramo-dur">Un par de horas</span></span>
+          <span className="pl-tramo-texto">
+            Después cargamos juntos las recetas, el equipo y los horarios.
+          </span>
+        </li>
+        <li className="pl-tramo pl-tramo-dias" data-reveal>
+          <span className="pl-tramo-bloque"><span className="pl-tramo-dur">Todos los días</span></span>
+          <span className="pl-tramo-texto">
+            Desde ahí, Dico calcula la ganancia solo cada vez que cerrás la caja.
+          </span>
+        </li>
+      </ol>
+    </section>
+  );
+}
+
+/* ─────────────── 5. Quienes ya lo usan: nombres como una frase ─────────────── */
+
+const CLIENTES = ['La Nona Pato', 'Crazy Miga', 'MiaEstudio'];
+
+const FOTOS_CLIENTES = [
+  { src: '/brand/landing/crazy-choco-eclipse.webp', ancho: 900, alto: 900, alt: 'Cookie con chips de chocolate negro sobre una piedra oscura', pie: 'Choco Eclipse, de Crazy Miga' },
+  { src: '/brand/landing/lnp-alfajores.webp', ancho: 789, alto: 374, alt: 'Alfajores de maicena con dulce de leche y coco rallado', pie: 'Alfajores de La Nona Pato' },
+  { src: '/brand/landing/crazy-dulce-nebulosa.webp', ancho: 900, alto: 900, alt: 'Cookie con chips de dulce de leche sobre una piedra oscura', pie: 'Dulce Nebulosa, de Crazy Miga' },
+  { src: '/brand/landing/lnp-bruschettas.webp', ancho: 789, alto: 374, alt: 'Bruschettas con jamón crudo, morrones asados y cebolla caramelizada', pie: 'Bruschettas de La Nona Pato' },
+];
+
+function Clientes() {
+  const [encendido, setEncendido] = useState(0);
+
+  useEffect(() => {
+    if (sinMovimiento()) return undefined;
+    const t = setInterval(() => {
+      if (!document.hidden) setEncendido((i) => (i + 1) % CLIENTES.length);
+    }, 2000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <section className="pl-clientes" aria-label="Quiénes ya usan Dico">
+      <p className="pl-clientes-frase" data-reveal>
+        Ya trabajan con Dico{' '}
+        {CLIENTES.map((nombre, i) => (
+          <Fragment key={nombre}>
+            <span className={`pl-cliente${i === encendido ? ' encendido' : ''}`}>{nombre}</span>
+            {i < CLIENTES.length - 2 ? ', ' : i === CLIENTES.length - 2 ? ' y ' : '.'}
+          </Fragment>
+        ))}
+      </p>
+      <ul className="pl-clientes-fotos">
+        {FOTOS_CLIENTES.map((f) => (
+          <li key={f.src} data-reveal>
+            <figure className="pl-foto">
+              <img src={f.src} alt={f.alt} width={f.ancho} height={f.alto} loading="lazy" />
+              <figcaption>{f.pie}</figcaption>
+            </figure>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/* ─────────────── 6. Modulos: frases con interruptor ─────────────── */
+
+function Modulos() {
+  const [encendidos, setEncendidos] = useState(() => new Set(ENCENDIDOS_AL_CARGAR));
+
+  const alternar = (id) => setEncendidos((prev) => {
+    const sig = new Set(prev);
+    if (sig.has(id)) sig.delete(id); else sig.add(id);
+    return sig;
+  });
+
+  return (
+    <section className="pl-modulos" id="modulos" aria-label="Lo que hace Dico hoy">
+      <ul className="pl-bandas">
+        {MODULOS.map((m) => {
+          const on = encendidos.has(m.id);
+          return (
+            <li className={`pl-banda pl-banda-${m.id}${on ? ' on' : ''}`} key={m.id} data-reveal>
+              <div className="pl-banda-texto">
+                <p className="pl-banda-frase" id={`pl-banda-${m.id}`}>{m.frase}</p>
+                <p className="pl-banda-consecuencia" hidden={!on}>{m.consecuencia}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={on}
+                aria-labelledby={`pl-banda-${m.id}`}
+                title={m.nombre}
+                className="pl-interruptor"
+                data-ui
+                onClick={() => alternar(m.id)}
+              >
+                <span className="pl-interruptor-perilla" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="pl-modulos-honesto">
+        <p data-reveal>
+          Todo eso funciona hoy. Se conecta con MercadoPago (Checkout Pro con la
+          cuenta de tu negocio, por ahora solo Argentina), responde los pedidos
+          por WhatsApp, avisa al celular cuando entra un pedido o falta stock y
+          exporta a Excel o PDF lo que ves en pantalla, para tu contador.
+        </p>
+        <p data-reveal>
+          Lo que todavía no está, dicho así: <strong>Cocina en pantalla</strong>,
+          la comanda digital por sector, está construida y se termina de probar.{' '}
+          <strong>Facturación ARCA</strong> está en desarrollo y no la ofrecemos
+          hasta que emita una factura de verdad. <strong>Rappi y Pedidos Ya</strong>{' '}
+          están en la lista y no tienen fecha.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────── 7. Planes: los nombres y una cifra viva ─────────────── */
+
+function Planes() {
+  const [elegido, setElegido] = useState('local');
+
+  return (
+    <section className="pl-planes" id="precios" aria-label="Planes y precios">
+      <div className="pl-planes-grilla">
+        {PLANES.map((p) => {
+          const abierto = elegido === p.id;
+          const pago = p.mensual > 0;
+          return (
+            <Fragment key={p.id}>
+              <h2 className={`pl-plan-nombre pl-plan-nombre-${p.id}`}>
+                <button
+                  type="button"
+                  aria-expanded={abierto}
+                  aria-controls={`pl-plan-${p.id}`}
+                  onClick={() => setElegido(p.id)}
+                  onFocus={() => setElegido(p.id)}
+                >
+                  {p.nombre}
+                </button>
+              </h2>
+              <div className="pl-plan-escena" id={`pl-plan-${p.id}`} hidden={!abierto}>
+                <p className="pl-plan-precio">
+                  <span className="pl-plan-cifra">{pago ? pesos(p.mensual) : 'Gratis'}</span>
+                  <span className="pl-plan-periodo">{pago ? 'por mes y por local' : 'sin tarjeta'}</span>
+                </p>
+                {pago && <p className="pl-plan-anual">O {pesos(p.anual)} por mes pagando el año.</p>}
+                <p className="pl-plan-texto">{p.texto}</p>
+                {pago ? (
+                  <a className="pl-boton" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
+                    {p.accion}
+                  </a>
+                ) : (
+                  <a className="pl-boton" href="/registro">{p.accion}</a>
+                )}
+              </div>
+            </Fragment>
+          );
+        })}
+      </div>
+      <p className="pl-planes-nota" data-reveal>
+        Precios en pesos, por local, sin IVA. Sin cargo por usuario, por pedido
+        ni por factura procesada.
+      </p>
+    </section>
+  );
+}
+
+/* ─────────────── 8. Preguntas ─────────────── */
+
+function Preguntas() {
+  return (
+    <section className="pl-preguntas" id="preguntas" aria-labelledby="pl-preguntas-titulo">
+      <h2 id="pl-preguntas-titulo" className="pl-titulo" data-reveal>Lo que todos preguntan</h2>
+      <div className="pl-preguntas-lista">
+        {FAQ.map((f) => (
+          <details className="pl-pregunta" key={f.p} data-reveal>
+            <summary>
+              <span>{f.p}</span>
+              <span className="pl-pregunta-signo" aria-hidden="true" />
+            </summary>
+            <p>
+              {f.r}
+              {f.whatsapp && (
+                <>
+                  {' '}
+                  <a className="pl-enlace" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
+                    Escribime al {WHATSAPP_VISIBLE}
+                  </a>
+                  .
+                </>
+              )}
+            </p>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────── 9. Cierre: la frase con un hueco ─────────────── */
+
+/* Es un form GET a /registro: sin script igual llega con ?negocio=<nombre>, y
+   Signup precarga ese nombre. */
+function Cierre() {
+  return (
+    <section className="pl-cierre" aria-labelledby="pl-cierre-frase">
+      <form className="pl-cierre-form" action="/registro" method="get">
+        <h2 id="pl-cierre-frase" className="pl-cierre-frase" data-reveal>
+          <span>Creá</span>{' '}
+          <input
+            className="pl-cierre-input"
+            type="text"
+            name="negocio"
+            maxLength={80}
+            autoComplete="organization"
+            placeholder="tu negocio"
+            aria-label="Nombre de tu negocio"
+          />{' '}
+          <span>en Dico</span>{' '}
+          <button type="submit" className="pl-cierre-boton" aria-label="Crear mi negocio hoy">hoy</button>
+          <span>.</span>
+        </h2>
+        <p className="pl-cierre-nota" data-reveal>
+          Te lleva al alta con el nombre ya cargado. El plan Digital es gratis y
+          no pide tarjeta. Si preferís armarlo juntos,{' '}
+          <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
+            agendá una reunión
+          </a>
+          .
+        </p>
+      </form>
+    </section>
+  );
+}
+
+/* ─────────────── 10. Pie: el contacto es el titular ─────────────── */
+
+function Pie() {
+  return (
+    <footer className="pl-pie">
+      <div className="pl-pie-arriba">
+        <img className="pl-pie-marca" src="/brand/dico/logo/dico-claro.png" alt="Dico" width="1368" height="452" />
+        <p>Divianco, Buenos Aires.</p>
+        <p>Atiende Ricardo Rodríguez, de lunes a viernes, de 10 a 18&nbsp;h.</p>
+        <a className="pl-enlace pl-pie-arriba-link" href="#pl-hero-titulo">Volver arriba</a>
+      </div>
+
+      <a
+        className="pl-pie-telefono"
+        href={WHATSAPP_URL}
+        target="_blank"
+        rel="noreferrer"
+        onClick={marcarWhatsApp}
+        aria-label={`Escribir por WhatsApp al ${WHATSAPP_VISIBLE}`}
+      >
+        {WHATSAPP_VISIBLE}
+      </a>
+
+      <div className="pl-pie-meta">
+        <p className="pl-pie-links">
+          <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>Agendá una reunión</a>
+          <a className="pl-enlace" href="mailto:hola@divianco.app">hola@divianco.app</a>
+          <a className="pl-enlace" href="/entrar">Entrar</a>
+        </p>
+        <p>Fotos: productos de La Nona Pato y Crazy Miga.</p>
+        <p>© {new Date().getFullYear()} Grupo Divianco</p>
+      </div>
+    </footer>
   );
 }

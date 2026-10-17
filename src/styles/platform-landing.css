@@ -1,38 +1,69 @@
 /* ────────────────────────────────────────────────────────
  * Landing de la plataforma (divianco.app).
  *
- * Vive fuera del admin y fuera del catalogo: es la unica pantalla que ve
- * alguien que todavia no tiene negocio. Usa los tokens --ds-* y las dos
- * fuentes de marca ya self-hosted (Butler para titulos, Overused Grotesk
- * para el resto). No trae CDN: el manual de marca lo prohibe.
+ * Direccion (17/oct/2026): "la frase es el layout". Cada seccion es una frase
+ * con su prueba al lado. Todo sale de los tokens --ds-* de dico-tokens.css:
+ * el suelo oscuro, la tinta crema y el oro, que va en la accion (y en la cifra
+ * neta de la ficha del titular, que es de lo que habla la pagina).
+ *
+ * Tipografia del manual 02: Overused Grotesk para todo, Butler solo en la
+ * frase editorial de la intro, nunca dentro de un titular. Autoalojadas.
+ *
+ * Cinco tamanos y ninguno mas (--pl-t1 a --pl-t5). Un solo radio (--pl-radio).
+ * Las superficies se separan por un paso de tono, no por lineas.
+ *
+ * Los fragmentos de interfaz (ficha del cierre, la cuenta, la barra de etapas,
+ * los interruptores) llevan data-ui y sus reglas cuelgan de [data-ui]: son
+ * la interfaz de Dico y conservan sus propios bordes y tamanos.
  * ──────────────────────────────────────────────────────── */
 
 .pl-root {
-  --pl-bg: #08090b;              /* VOID  — manual 03 */
-  --pl-carbon: #0e1013;          /* CARBON — manual 03 */
-  --pl-panel: rgba(255, 255, 255, 0.035);
-  --pl-panel-2: rgba(255, 255, 255, 0.055);
-  --pl-line: rgba(255, 255, 255, 0.09);
-  --pl-line-2: rgba(255, 255, 255, 0.16);
-  --pl-tx: var(--ds-color-neutral-50, #faf5ee);
-  --pl-t2: rgba(250, 245, 238, 0.68);
-  /* 0.56 da ~6:1 sobre el fondo y sobre la tarjeta: con 0.42 quedaba en
-     3.8:1 y no pasaba AA para texto chico. */
-  --pl-t3: rgba(250, 245, 238, 0.56);
-  --pl-gold: var(--ds-color-brand-gold-500, #e0ac3c);
-  --pl-gold-ink: var(--ds-color-action-primary-text, #1a1206);
-  --pl-volt: var(--ds-color-intelligence-label, #93b4ff);
-  --pl-ok: var(--ds-color-status-success, #4fa87f);
-  --pl-warn: var(--ds-color-status-warning, #f0803c);
-  --pl-max: 1120px;
+  /* Color: roles mapeados sobre la paleta de marca */
+  --pl-suelo: var(--ds-color-neutral-950);
+  --pl-paso: var(--ds-color-neutral-900);
+  --pl-paso-2: var(--ds-color-neutral-800);
+  --pl-tinta: var(--ds-color-neutral-50);
+  --pl-tinta-suave: var(--ds-color-neutral-400);
+  /* Nombres en espera de la prueba social: mas de 3:1 sobre el suelo. */
+  --pl-tinta-tenue: color-mix(in srgb, var(--ds-color-neutral-50) 44%, var(--ds-color-neutral-950));
+  --pl-oro: var(--ds-color-brand-gold-500);
+  --pl-oro-claro: var(--ds-color-brand-gold-300);
+  --pl-oro-tinta: var(--ds-color-neutral-950);
+  --pl-crema: var(--ds-color-neutral-100);
+  --pl-campo-oro: var(--ds-color-brand-gold-900);
+  --pl-campo-oro-2: var(--ds-color-brand-gold-700);
+  --pl-alerta: var(--ds-color-status-error);
+
+  /* Tipo: cinco pasos */
+  --pl-maquina: var(--ds-font-ui);
+  --pl-alma: var(--ds-font-soul);
+  --pl-t1: clamp(60px, 7.2vw, 128px);
+  --pl-t2: clamp(36px, 5.2vw, 88px);
+  --pl-t3: clamp(22px, 2.5vw, 36px);
+  --pl-t4: clamp(17px, 1.3vw, 20px);
+  --pl-t5: 15px;
+
+  /* Espacio: un par de margenes, un hueco entre secciones */
+  --pl-m: clamp(16px, 2vw, 28px);
+  --pl-col: clamp(12px, 1.6vw, 24px);
+  --pl-hueco: clamp(112px, 12vw, 184px);
+  --pl-radio: var(--ds-radius-3);
+
+  /* Movimiento */
+  --pl-sale: cubic-bezier(0.22, 1, 0.36, 1);
+  --pl-viaja: cubic-bezier(0.76, 0, 0.24, 1);
+  --pl-suave: cubic-bezier(0.33, 1, 0.68, 1);
+  --pl-presion: 140ms;
+  --pl-hover: 180ms;
 
   min-height: 100dvh;
-  background: var(--pl-bg);
-  color: var(--pl-tx);
-  font-family: var(--ds-font-ui, 'Overused Grotesk', system-ui, sans-serif);
-  font-size: 16px;
-  line-height: 1.55;
+  background: var(--pl-suelo);
+  color: var(--pl-tinta);
+  font-family: var(--pl-maquina);
+  font-size: var(--pl-t4);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
 }
 
 .pl-root *,
@@ -41,899 +72,1248 @@
   box-sizing: border-box;
 }
 
-/* min-width:0 en todo lo que vive en grid o flex: sin esto una celda con
-   texto largo empuja la fila y la pagina scrollea de costado. */
-.pl-root .pl-grid > *,
-.pl-root .pl-row > * {
-  min-width: 0;
+/* Sin especificidad: cualquier clase de la pagina puede poner su margen. */
+:where(.pl-root) :where(p, h1, h2, figure, ul, ol) {
+  margin: 0;
 }
 
-.pl-wrap {
-  width: 100%;
-  max-width: var(--pl-max);
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-.pl-serif {
-  font-family: var(--ds-font-soul, 'Butler', Georgia, serif);
-  font-weight: 400;
-  letter-spacing: -0.015em;
-  line-height: 1.12;
+.pl-root img {
+  display: block;
+  max-width: 100%;
 }
 
 .pl-root ::selection {
-  background: var(--pl-gold);
-  color: var(--pl-gold-ink);
+  background: var(--pl-oro);
+  color: var(--pl-oro-tinta);
 }
 
-/* Etiqueta corta (1 a 3 palabras): estado, plan, label de KPI, firma.
-   Overused con tracking moderado, como pide el manual para las mayusculas
-   tecnicas. Texto mas largo que eso va en caja normal, nunca aca.
-   La mono no se usa en esta pagina: JetBrains Mono no esta autoalojada y el
-   manual la reserva para codigos e identificadores. */
-.pl-etiqueta {
-  font-family: var(--ds-font-ui, 'Overused Grotesk', system-ui, sans-serif);
-  font-size: var(--ds-type-xs, 11px);
-  font-weight: 500;
-  line-height: 1.35;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.pl-root :focus-visible {
+  outline: 2px solid var(--pl-oro);
+  outline-offset: 3px;
+  border-radius: var(--ds-radius-1);
 }
 
-/* Foco de teclado: el mismo anillo de oro en todo lo que se puede tocar. */
-.pl-root .pl-btn:focus-visible,
-.pl-logo:focus-visible,
-.pl-nav-links a:focus-visible,
-.pl-pie-links a:focus-visible,
-.pl-contacto a:focus-visible {
-  outline: 2px solid var(--pl-gold);
-  outline-offset: 2px;
+/* ─────────────── Piezas comunes ─────────────── */
+
+.pl-titulo {
+  font-size: var(--pl-t2);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  text-wrap: balance;
 }
 
-/* ─────────────── Barra superior ─────────────── */
-
-.pl-nav {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: rgba(15, 14, 13, 0.86);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--pl-line);
-}
-
-.pl-nav-in {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  min-height: 64px;
-}
-
-.pl-logo {
-  display: block;
-  border-radius: var(--ds-radius-1, 4px);
-}
-
-.pl-logo img {
-  display: block;
-  height: 26px;
-  width: auto;
-}
-
-.pl-nav-links {
-  display: flex;
-  gap: 22px;
-  margin-left: auto;
-}
-
-.pl-nav-links a {
-  color: var(--pl-t2);
-  text-decoration: none;
-  font-size: 14px;
-  border-radius: var(--ds-radius-1, 4px);
-}
-
-.pl-nav-links a:hover {
-  color: var(--pl-tx);
-}
-
-.pl-nav-cta {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-@media (max-width: 860px) {
-  .pl-nav-links { display: none; }
-  .pl-nav-cta { margin-left: auto; }
-}
-
-/* Debajo de 520px los dos botones y el logo no entran en una linea sin
-   partir el texto en tres renglones. Se achica el logo y se va el secundario:
-   quien ya tiene cuenta entra desde el pie, quien no es a quien le hablamos. */
-@media (max-width: 520px) {
-  .pl-nav-in { gap: 12px; }
-  .pl-logo img { height: 20px; }
-  .pl-nav-cta .pl-btn-ghost { display: none; }
-  .pl-nav-cta .pl-btn-sm { padding: 8px 13px; font-size: 13px; }
-}
-
-/* ─────────────── Botones ─────────────── */
-
-.pl-btn {
+.pl-boton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 22px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  font-size: 15px;
+  min-height: 52px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: var(--pl-radio);
+  background: var(--pl-oro);
+  color: var(--pl-oro-tinta);
+  font: inherit;
+  font-size: var(--pl-t4);
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
-  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+  transition: transform var(--pl-presion) var(--pl-sale), background-color var(--pl-hover) ease;
 }
 
-.pl-btn:active { transform: translateY(1px); }
+.pl-boton:active { transform: scale(0.97); }
 
-.pl-btn-gold {
-  background: var(--pl-gold);
-  color: var(--pl-gold-ink);
+.pl-enlace {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.22em;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  transition: text-decoration-color var(--pl-hover) ease, color var(--pl-hover) ease;
 }
 
-.pl-btn-gold:hover { background: var(--ds-color-brand-gold-300, #f0c868); }
-
-.pl-btn-ghost {
-  background: transparent;
-  border-color: var(--pl-line-2);
-  color: var(--pl-tx);
+@media (hover: hover) and (pointer: fine) {
+  .pl-boton:hover { background: var(--pl-oro-claro); }
+  .pl-enlace:hover { text-decoration-color: currentColor; }
 }
 
-.pl-btn-ghost:hover { border-color: rgba(255, 255, 255, 0.34); }
+.pl-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--pl-radio);
+}
 
-.pl-btn-sm { padding: 9px 16px; font-size: 14px; }
+.pl-foto figcaption {
+  margin-top: 12px;
+  color: var(--pl-tinta-suave);
+  font-size: var(--pl-t5);
+}
 
-.pl-btn-block { width: 100%; }
-
-/* ─────────────── Hero ─────────────── */
+/* ─────────────── 1. Hero ─────────────── */
 
 .pl-hero {
-  padding: 88px 0 0;
-  text-align: center;
-  background:
-    radial-gradient(120% 70% at 50% 0%, rgba(240, 200, 104, 0.07), transparent 62%),
-    radial-gradient(90% 55% at 50% 8%, rgba(61, 107, 255, 0.06), transparent 70%);
-}
-
-/* Son cuatro palabras: van en caja normal. El punto es inline y no un item
-   de flex, asi que si alguna vez la frase parte en dos renglones el punto
-   queda pegado a la primera palabra en vez de flotar al costado. */
-.pl-pill {
-  display: inline-block;
-  max-width: 100%;
-  margin: 0;
-  padding: 7px 16px;
-  border-radius: var(--ds-radius-pill, 999px);
-  border: 1px solid var(--pl-line);
-  background: var(--pl-panel);
-  color: var(--pl-t2);
-  font-size: var(--ds-type-sm, 13px);
-  font-weight: 500;
-  line-height: 1.4;
-  text-wrap: balance;
-}
-
-.pl-pill-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-right: var(--ds-space-2, 8px);
-  vertical-align: 0.1em;
-  border-radius: 50%;
-  background: var(--pl-ok);
-}
-
-.pl-titular {
+  min-height: 100svh;
   display: grid;
-  justify-items: center;
-  gap: 2px;
-  margin: 26px auto 0;
-  max-width: 18ch;
-  font-size: clamp(30px, 5.6vw, 56px);
+  grid-template-rows: auto 1fr auto;
+  padding: 0 var(--pl-m) clamp(32px, 6vh, 64px);
+}
+
+.pl-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 76px;
+}
+
+.pl-marca img {
+  height: 24px;
+  width: auto;
+}
+
+.pl-cabecera-links {
+  display: flex;
+  gap: 28px;
+  font-size: var(--pl-t5);
+}
+
+.pl-cabecera-links .pl-enlace { text-decoration-color: transparent; }
+
+.pl-hero-centro {
+  align-self: center;
+  display: grid;
+  justify-items: start;
+  gap: clamp(48px, 10vh, 132px);
+  padding-top: 4vh;
+}
+
+.pl-frase {
+  justify-self: stretch;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.2em;
+  font-size: var(--pl-t1);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.pl-frase-palabras { display: block; }
+
+.pl-hero-apoyo {
+  max-width: 44ch;
+  padding-top: 32px;
+  font-size: var(--pl-t4);
+}
+
+.pl-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 32px;
+}
+
+/* La ficha del cierre: el lugar de una palabra en el titular. Mide lo que
+   mide una mayuscula y llena el resto de la linea. */
+.pl-ficha[data-ui] {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 0.72em;
+  margin-bottom: 0.1em;
+  overflow: hidden;
+  border-radius: var(--pl-radio);
+  background: var(--pl-paso-2);
+  color: var(--pl-tinta);
+  letter-spacing: 0;
+  white-space: normal;
+}
+
+/* Escritorio: dos renglones, los conceptos arriba y las cifras abajo, cada
+   par en su columna (las filas son display: contents). */
+[data-ui] .pl-ficha-in {
+  display: grid;
+  grid-template-rows: auto auto;
+  grid-auto-flow: column;
+  grid-template-columns: repeat(4, auto) 1.3fr;
+  align-content: end;
+  align-items: baseline;
+  gap: 6px clamp(14px, 1.6vw, 28px);
+  height: 100%;
+  padding: 8px clamp(16px, 1.6vw, 24px) clamp(10px, 1vw, 14px);
+  font-size: var(--pl-t5);
+  font-weight: 500;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-ui] .pl-ficha-cab { display: none; }
+
+[data-ui] .pl-ficha-fila {
+  display: contents;
+  white-space: nowrap;
+}
+
+[data-ui] .pl-ficha-concepto,
+[data-ui] .pl-ficha-valor { white-space: nowrap; }
+
+[data-ui] .pl-ficha-concepto {
+  color: var(--pl-tinta-suave);
+  font-size: 13px;
+}
+
+[data-ui] .pl-ficha-valor {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+[data-ui] .pl-ficha-neto > span { justify-self: end; text-align: right; }
+
+[data-ui] .pl-ficha-neto .pl-ficha-valor {
+  color: var(--pl-oro);
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 1180px) {
+  [data-ui] .pl-ficha-fila:nth-child(4),
+  [data-ui] .pl-ficha-fila:nth-child(5) { display: none; }
+  [data-ui] .pl-ficha-in { grid-template-columns: repeat(2, auto) 1.3fr; }
+}
+
+/* Telefono y tablet: la frase se parte en dos y la ficha va en el medio,
+   a todo el ancho, como el cierre de caja que es. */
+@media (max-width: 900px) {
+  .pl-frase {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.14em;
+    white-space: normal;
+  }
+
+  .pl-ficha[data-ui] {
+    flex: none;
+    height: auto;
+    margin: 0.06em 0;
+  }
+
+  [data-ui] .pl-ficha-in {
+    display: grid;
+    grid-auto-flow: row;
+    grid-template-rows: none;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 6px;
+    padding: 16px 18px;
+    font-size: 15px;
+  }
+
+  [data-ui] .pl-ficha-cab {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--pl-tinta-suave);
+  }
+
+  [data-ui] .pl-ficha-fila,
+  [data-ui] .pl-ficha-fila:nth-child(4),
+  [data-ui] .pl-ficha-fila:nth-child(5) {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  [data-ui] .pl-ficha-concepto { font-size: 15px; }
+  [data-ui] .pl-ficha-valor { font-size: 15px; }
+
+  [data-ui] .pl-ficha-neto { padding-top: 6px; }
+
+  [data-ui] .pl-ficha-neto .pl-ficha-concepto { color: var(--pl-tinta); font-weight: 600; }
+  [data-ui] .pl-ficha-neto .pl-ficha-valor { font-size: 17px; }
+}
+
+@media (max-width: 900px) {
+  .pl-hero-centro { gap: 32px; padding-top: 0; }
+}
+
+@media (max-width: 520px) {
+  .pl-cabecera-links { gap: 20px; }
+  .pl-acciones .pl-boton { width: 100%; }
+}
+
+/* ─────────────── 2. Intro: frase fija, fotos que pasan ─────────────── */
+
+.pl-intro {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--pl-col);
+  padding: var(--pl-hueco) var(--pl-m) 0;
+}
+
+.pl-intro-fija { grid-column: 1 / span 6; }
+
+.pl-intro-frase {
+  position: sticky;
+  top: 38svh;
+  max-width: 21em;
+  font-family: var(--pl-alma);
+  font-size: var(--pl-t3);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.pl-intro-fotos {
+  grid-column: 7 / -1;
+  display: grid;
+  row-gap: 14svh;
+  padding-block: 0 4svh;
+}
+
+.pl-foto-retrato { width: 58%; }
+.pl-foto-retrato img { aspect-ratio: 4 / 5; }
+
+.pl-foto-apaisada { width: 100%; }
+.pl-foto-apaisada img { aspect-ratio: 2 / 1; }
+
+/* El marco recorta el acercamiento lento de la picada. */
+.pl-foto-marco {
+  display: block;
+  overflow: hidden;
+  border-radius: var(--pl-radio);
+}
+
+.pl-foto-cuadrada { width: 44%; margin-left: 22%; }
+.pl-foto-cuadrada img { aspect-ratio: 1; }
+
+@media (max-width: 900px) {
+  .pl-intro { grid-template-columns: 1fr; }
+  .pl-intro-fija,
+  .pl-intro-fotos { grid-column: 1; }
+
+  .pl-intro-frase {
+    position: static;
+    font-size: var(--pl-t3);
+  }
+
+  .pl-intro-fotos {
+    row-gap: 56px;
+    padding-block: 56px 0;
+  }
+
+  .pl-foto-retrato { width: 64%; }
+  .pl-foto-apaisada { width: 86%; margin-left: auto; }
+  .pl-foto-cuadrada { width: 56%; margin-left: 0; }
+}
+
+/* ─────────────── 3. La cuenta ─────────────── */
+
+.pl-cuenta {
+  margin-top: var(--pl-hueco);
+  padding: clamp(72px, 9vw, 136px) var(--pl-m);
+  background: var(--pl-paso);
+}
+
+.pl-cuenta-linea {
+  display: flex;
+  align-items: baseline;
+  font-size: var(--pl-t1);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.pl-cuenta-linea label { flex: none; padding-right: 0.08em; }
+
+.pl-cuenta-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ds-radius-1);
+  background: transparent;
+  color: var(--pl-tinta);
+  caret-color: var(--pl-oro);
+  font: inherit;
+  letter-spacing: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.pl-cuenta-input::placeholder { color: var(--pl-tinta-suave); }
+
+.pl-cuenta-cuerpo {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--pl-col);
+  row-gap: 40px;
+  margin-top: 48px;
+}
+
+.pl-cierre-ui[data-ui] {
+  grid-column: 1 / span 6;
+  max-width: 560px;
+  padding: 20px 24px 22px;
+  border-radius: var(--pl-radio);
+  background: var(--pl-suelo);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-ui] .pl-cierre-tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+[data-ui] .pl-cierre-tabla caption {
+  padding-bottom: 10px;
+  color: var(--pl-tinta-suave);
+  font-size: var(--pl-t5);
+  text-align: left;
+}
+
+[data-ui] .pl-cierre-tabla th,
+[data-ui] .pl-cierre-tabla td {
+  padding: 7px 0;
+  vertical-align: middle;
+}
+
+[data-ui] .pl-cierre-tabla th {
+  font-weight: 400;
+  text-align: left;
+  color: var(--pl-tinta-suave);
+}
+
+[data-ui] .pl-cierre-tabla tr + tr th,
+[data-ui] .pl-cierre-tabla tr + tr td {
+  border-top: 1px solid var(--pl-paso-2);
+}
+
+[data-ui] .pl-cierre-pct {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding-right: 18px;
+  color: var(--pl-tinta-suave);
+}
+
+[data-ui] .pl-cierre-pct input {
+  width: 5.6ch;
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 1px solid var(--pl-paso-2);
+  border-radius: var(--ds-radius-2);
+  background: var(--pl-paso);
+  color: var(--pl-tinta);
+  font: inherit;
+  text-align: right;
+  transition: border-color var(--pl-hover) ease;
+}
+
+[data-ui] .pl-cierre-pct input:focus-visible {
+  border-color: var(--pl-oro);
+  outline: 0;
+}
+
+[data-ui] .pl-cierre-monto {
+  text-align: right;
+  white-space: nowrap;
+}
+
+[data-ui] .pl-cierre-margen {
+  padding-right: 18px;
+  text-align: right;
+  color: var(--pl-tinta-suave);
+}
+
+[data-ui] .pl-cierre-neto th { color: var(--pl-tinta); font-weight: 600; }
+
+[data-ui] .pl-cierre-neto .pl-cierre-monto {
+  color: var(--pl-oro);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+[data-ui] .pl-cierre-neto.negativo .pl-cierre-monto { color: var(--pl-alerta); }
+
+[data-ui] .pl-cierre-aviso {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--ds-radius-2);
+  background: var(--pl-paso);
+  font-size: 15px;
+}
+
+[data-ui] .pl-cierre-aviso img {
+  flex: none;
+  width: 28px;
+  height: 28px;
+}
+
+.pl-cuenta-lado {
+  grid-column: 8 / -1;
+  display: grid;
+  align-content: start;
+  gap: 32px;
+}
+
+.pl-cuenta-nota { max-width: 40ch; }
+
+.pl-cuenta-ejemplos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 28px;
+}
+
+.pl-ejemplo {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pl-tinta-suave);
+  font: inherit;
+  font-size: var(--pl-t4);
+  text-decoration: underline;
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.22em;
+  text-decoration-color: transparent;
+  cursor: pointer;
+  transition: color var(--pl-hover) ease, text-decoration-color var(--pl-hover) ease, transform var(--pl-presion) var(--pl-sale);
+}
+
+.pl-ejemplo[aria-pressed='true'] {
+  color: var(--pl-tinta);
+  text-decoration-color: var(--pl-oro);
+}
+
+.pl-ejemplo:active { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .pl-ejemplo:hover { color: var(--pl-tinta); }
+}
+
+@media (max-width: 900px) {
+  .pl-cuenta-linea { font-size: var(--pl-t2); }
+  .pl-cuenta-cuerpo { grid-template-columns: 1fr; margin-top: 28px; }
+  .pl-cierre-ui[data-ui],
+  .pl-cuenta-lado { grid-column: 1; max-width: none; }
+  [data-ui] .pl-cierre-pct input { min-height: 44px; }
+
+  .pl-cuenta-ejemplos { gap: 8px; }
+
+  .pl-ejemplo {
+    padding: 0 16px;
+    border-radius: var(--pl-radio);
+    background: var(--pl-paso-2);
+    text-decoration: none;
+  }
+
+  .pl-ejemplo[aria-pressed='true'] {
+    background: var(--pl-tinta);
+    color: var(--pl-oro-tinta);
+  }
+}
+
+@media (max-width: 420px) {
+  .pl-cierre-ui[data-ui] { padding: 16px; font-size: 15px; }
+  [data-ui] .pl-cierre-pct { padding-right: 10px; }
+  [data-ui] .pl-cierre-margen { padding-right: 10px; }
+}
+
+/* ─────────────── 4. Lo que lleva empezar ─────────────── */
+
+.pl-tramos { padding: var(--pl-hueco) var(--pl-m) 0; }
+
+.pl-barra[data-ui] {
+  display: flex;
+  gap: 6px;
+  margin-top: 64px;
+  padding: 0;
+  list-style: none;
+}
+
+[data-ui] .pl-tramo {
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: start;
+  gap: 20px;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+[data-ui] .pl-tramo-minutos { flex-grow: 16; }
+[data-ui] .pl-tramo-horas { flex-grow: 30; }
+[data-ui] .pl-tramo-dias { flex-grow: 54; }
+
+[data-ui] .pl-tramo-bloque {
+  display: block;
+  height: 22vh;
+  min-height: 150px;
+  padding: 20px;
+  border-radius: var(--pl-radio);
+}
+
+[data-ui] .pl-tramo-minutos .pl-tramo-bloque { background: var(--pl-crema); color: var(--pl-oro-tinta); }
+[data-ui] .pl-tramo-horas .pl-tramo-bloque { background: var(--pl-paso-2); color: var(--pl-tinta); }
+[data-ui] .pl-tramo-dias .pl-tramo-bloque { background: var(--pl-campo-oro); color: var(--pl-tinta); }
+
+[data-ui] .pl-tramo-dur {
+  display: block;
+  font-size: clamp(20px, 2vw, 30px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
-/* El titular es una sola frase partida en dos: la maquina afirma y el alma
-   remata. La primera mitad va en Overused Grotesk y la segunda en Butler, que
-   es el unico contraste tipografico que se permite en la pagina. */
-.pl-titular-fijo {
-  font-family: var(--ds-font-ui, 'Overused Grotesk', system-ui, sans-serif);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.pl-titular-alma {
-  font-size: 1.06em;
-  line-height: 1.08;
-  color: var(--pl-gold);
-}
-
-.pl-hero-sub {
-  margin: 20px auto 0;
-  max-width: 56ch;
-  font-size: clamp(16px, 2.2vw, 19px);
-  color: var(--pl-t2);
-}
-
-.pl-hero-cta {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 30px;
-}
-
-.pl-hero-nota {
-  margin-top: 16px;
-  font-size: var(--ds-type-md, 15px);
-  color: var(--pl-t2);
-  text-wrap: balance;
-}
-
-/* ─────────────── Mockup del panel ─────────────── */
-
-.pl-mock {
-  margin: 52px auto 0;
-  max-width: 940px;
-  border: 1px solid var(--pl-line);
-  border-radius: 16px 16px 0 0;
-  border-bottom: 0;
-  background: var(--pl-carbon, #0e1013);
-  text-align: left;
-  overflow: hidden;
-}
-
-.pl-mock-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--pl-line);
-  color: var(--pl-t3);
-  font-size: var(--ds-type-sm, 13px);
-}
-
-.pl-mock-url {
-  min-width: 0;
-  margin-left: var(--ds-space-2, 8px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pl-mock-luz {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.pl-mock-body {
-  display: grid;
-  grid-template-columns: minmax(min(300px, 100%), 1.35fr) minmax(min(260px, 100%), 1fr);
-  gap: 18px;
-  padding: 20px;
-}
-
-@media (max-width: 780px) {
-  .pl-mock-body { grid-template-columns: 1fr; }
-}
-
-.pl-kpis {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  background: var(--pl-line);
-  border: 1px solid var(--pl-line);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.pl-kpi {
-  background: #121519;
-  padding: 14px 16px;
-}
-
-.pl-kpi-label { color: var(--pl-t3); }
-
-/* Regla de metricas del manual: Overused 700 con numeros tabulares. */
-.pl-kpi-valor {
-  margin-top: 6px;
-  font-size: 20px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.pl-kpi-delta { font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }
-.pl-kpi-delta.sube { color: var(--pl-ok); }
-.pl-kpi-delta.baja { color: var(--pl-warn); }
-
-.pl-pend {
-  margin-top: 16px;
-  border: 1px solid var(--pl-line);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.pl-pend h3 {
-  margin: 0 0 12px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.pl-pend li {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding: 7px 0;
-  font-size: 13px;
-  color: var(--pl-t2);
-}
-
-.pl-pend ul { margin: 0; padding: 0; list-style: none; }
-
-.pl-tag {
-  flex: none;
-  padding: 2px 7px;
-  border-radius: 5px;
-  border: 1px solid currentColor;
-}
-
-
-.pl-tag.alta { color: var(--pl-warn); }
-.pl-tag.media { color: var(--pl-t3); }
-
-.pl-dico-card {
-  align-self: start;
-  border: 1px solid var(--pl-line);
-  border-radius: 12px;
-  padding: 16px;
-  background: rgba(61, 107, 255, 0.05);
-}
-
-.pl-dico-firma {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: var(--pl-volt);
-}
-
-.pl-dico-firma img {
-  width: 26px;
-  height: 26px;
-  display: block;
-}
-
-.pl-dico-dice {
-  margin: 12px 0 0;
-  font-size: 13px;
-  color: var(--pl-t2);
-  line-height: 1.5;
-}
-
-.pl-dico-acciones {
-  display: flex;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-/* El mockup es aria-hidden: estos botones son dibujo. Sin puntero, sin hover
-   y sin hundirse, para que nadie intente tocarlos. */
-.pl-dico-acciones .pl-btn {
-  pointer-events: none;
-  cursor: default;
-}
-
-/* ─────────────── Tira de reemplazo ─────────────── */
-
-.pl-tira {
-  border-top: 1px solid var(--pl-line);
-  border-bottom: 1px solid var(--pl-line);
-  padding: 18px 0;
-}
-
-.pl-tira-in {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 12px 30px;
-  color: var(--pl-t3);
-  font-size: var(--ds-type-sm, 13px);
-}
-
-.pl-tira-in strong { color: var(--pl-t3); }
-
-/* ─────────────── Secciones ─────────────── */
-
-.pl-sec { padding: 84px 0; }
-
-.pl-sec + .pl-sec { border-top: 1px solid var(--pl-line); }
-
-.pl-sec-head { margin-bottom: 36px; }
-
-.pl-sec-head.pl-row {
-  display: grid;
-  grid-template-columns: minmax(min(300px, 100%), 1.6fr) minmax(min(260px, 100%), 1fr);
-  gap: 24px;
-  /* Linea de base y no 'end': sin rotulo arriba, el h2 es mas bajo que una
-     bajada de tres renglones y con 'end' la bajada arrancaba por encima del
-     titulo. Asi el h2 abre la fila y la bajada lee en su misma linea. */
-  align-items: baseline;
-}
-
-/* Apilada, la cabecera en fila tiene que medir lo mismo que una simple: la
-   bajada queda a space-3 (12px) del h2 por su propio margen, sin sumarle el
-   gap. */
-@media (max-width: 780px) {
-  .pl-sec-head.pl-row { grid-template-columns: 1fr; align-items: start; gap: 0; }
-}
-
-/* Sin rotulo encima, el h2 abre la cabecera: arriba lo separa el padding
-   de la seccion, abajo la bajada o la grilla. */
-.pl-sec-head h2 {
-  margin: 0;
-  font-size: clamp(26px, 4vw, 38px);
-  text-wrap: balance;
-}
-
-.pl-sec-head p {
-  margin: var(--ds-space-3, 12px) 0 0;
-  max-width: 62ch;
-  color: var(--pl-t2);
-}
-
-.pl-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
-  gap: 16px;
-}
-
-.pl-card {
-  border: 1px solid var(--pl-line);
-  border-radius: 14px;
-  padding: 22px;
-  background: var(--pl-panel);
-}
-
-.pl-card h3 {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 600;
-}
-
-.pl-card p {
-  margin: 10px 0 0;
-  color: var(--pl-t2);
-  font-size: 14px;
-}
-
-.pl-card ul {
-  margin: 14px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pl-card li {
-  position: relative;
-  padding-left: 15px;
-  margin-top: 7px;
-  font-size: 14px;
-  color: var(--pl-t2);
-}
-
-.pl-card li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 9px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--pl-gold);
-}
-
-.pl-card-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-/* ─────────────── Integraciones ─────────────── */
-
-.pl-estado {
-  flex: none;
-  padding: 3px 8px;
-  border-radius: 5px;
-  border: 1px solid currentColor;
-}
-
-.pl-estado.activo { color: var(--pl-ok); }
-.pl-estado.pruebas { color: var(--pl-gold); }
-.pl-estado.roadmap { color: var(--pl-volt); }
-
-/* ─────────────── Precios ─────────────── */
-
-.pl-precios { text-align: center; }
-
-.pl-precio-card {
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-}
-
-.pl-precio-card.destacado {
-  border-color: rgba(240, 200, 104, 0.42);
-  background: rgba(240, 200, 104, 0.05);
-}
-
-/* .pl-card .x y no .x a secas: .pl-card p (0,1,1) le ganaba a una clase
-   sola y el monto salia a 14px. */
-.pl-card .pl-precio-monto {
-  margin: 14px 0 0;
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  color: var(--pl-tx);
-  font-variant-numeric: tabular-nums;
-}
-
-.pl-card .pl-precio-monto span {
-  margin-left: var(--ds-space-2, 8px);
-  font-size: var(--ds-type-sm, 13px);
-  font-weight: 400;
-  color: var(--pl-t3);
-  letter-spacing: 0;
-}
-
-.pl-card .pl-precio-anual {
-  margin: 6px 0 0;
-  font-size: var(--ds-type-sm, 13px);
-  color: var(--pl-t3);
-  font-variant-numeric: tabular-nums;
-}
-
-.pl-precio-card ul { flex: 1; margin-bottom: 20px; }
-
-.pl-precio-pie {
-  margin-top: 26px;
-  color: var(--pl-t3);
-  font-size: 14px;
-}
-
-/* ─────────────── Cierre ─────────────── */
-
-.pl-cierre {
-  padding: 96px 0;
-  text-align: center;
-  border-top: 1px solid var(--pl-line);
-  background: radial-gradient(90% 100% at 50% 100%, rgba(240, 200, 104, 0.07), transparent 65%);
-}
-
-.pl-cierre h2 {
-  margin: 0 auto;
-  max-width: 18ch;
-  font-size: clamp(28px, 4.6vw, 42px);
-}
-
-.pl-cierre p {
-  margin: 18px auto 0;
-  max-width: 52ch;
-  color: var(--pl-t2);
-}
-
-.pl-pie {
-  /* Sin borde: quien separa el pie del resto es la trama de puntos, que
-     termina difuminada. Una linea recta debajo se lee como un corte. */
-  background: var(--pl-carbon, #0e1013);
-}
-
-.pl-pie-in {
-  padding-block: 28px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px 24px;
-}
-
-.pl-pie img { height: 20px; width: auto; display: block; }
-
-.pl-pie-legal { color: var(--pl-t3); font-size: 13px; }
-
-.pl-pie-links {
-  margin-left: auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.pl-pie-links a {
-  color: var(--pl-t3);
-  font-size: 13px;
-  text-decoration: none;
-  border-radius: var(--ds-radius-1, 4px);
-}
-
-.pl-pie-links a:hover { color: var(--pl-tx); }
-
-/* ─────────────── Grillas y remates de seccion ─────────────── */
-
-/* Dos columnas anchas, para bloques de texto en vez de tarjetas chicas. */
-.pl-grid-2 {
-  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
-}
-
-/* La linea que cierra una seccion y la ata a la siguiente. */
-.pl-remate {
-  margin: 28px 0 0;
-  max-width: 68ch;
-  font-size: clamp(15px, 2vw, 17px);
-  color: var(--pl-t2);
-}
-
-.pl-problema .pl-card h3 { color: var(--pl-t3); font-weight: 600; }
-
-/* ─────────────── Los tres pilares ─────────────── */
-
-.pl-pilares {
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
-}
-
-.pl-pilar {
-  display: flex;
-  flex-direction: column;
-  padding: 26px;
-}
-
-/* Repite el tamano de .pl-etiqueta porque .pl-card p (0,1,1) lo pisaria. */
-.pl-card .pl-pilar-sub {
-  margin: var(--ds-space-1, 4px) 0 0;
-  font-size: var(--ds-type-xs, 11px);
-  color: var(--pl-t3);
-}
-
-/* El ejemplo numerico es el argumento de la seccion: filas con el valor a la
-   derecha para que se lea como un ticket. Numeros tabulares en Overused, que
-   es la regla de metricas del manual: las cifras quedan en columna sin mono. */
-.pl-ejemplo {
-  margin: 20px 0 0;
-  padding: 14px 16px;
-  border: 1px solid var(--pl-line);
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.22);
-  font-size: var(--ds-type-sm, 13px);
-  font-variant-numeric: tabular-nums;
-}
-
-.pl-ejemplo-fila {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 5px 0;
-}
-
-.pl-ejemplo-fila + .pl-ejemplo-fila { border-top: 1px solid var(--pl-line); }
-
-.pl-ejemplo dt { color: var(--pl-t2); margin: 0; }
-.pl-ejemplo dd { margin: 0; color: var(--pl-tx); white-space: nowrap; }
-
-/* El tipo de fila es metadata del ticket: va como etiqueta, en t3. */
-.pl-ejemplo .pl-ejemplo-tipo {
-  margin-left: var(--ds-space-1, 4px);
-  color: var(--pl-t3);
-}
-
-/* La ultima fila del ejemplo es el resultado: es lo unico en oro. */
-.pl-ejemplo-fila:last-child dd { color: var(--pl-gold); font-weight: 600; }
-
-/* ─────────────── Los cinco pasos ─────────────── */
-
-.pl-pasos {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 0;
-  border: 1px solid var(--pl-line);
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.pl-paso {
-  display: flex;
-  align-items: flex-start;
-  gap: 18px;
-  padding: 22px 24px;
-  background: var(--pl-panel);
-}
-
-.pl-paso + .pl-paso { border-top: 1px solid var(--pl-line); }
-
-.pl-paso-n {
-  flex: none;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  border: 1px solid var(--pl-line-2);
-  color: var(--pl-gold);
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.pl-paso h3 { margin: 3px 0 0; font-size: 16px; font-weight: 600; }
-.pl-paso p { margin: 7px 0 0; color: var(--pl-t2); font-size: 14px; max-width: 70ch; }
-
-/* ─────────────── Los avisos de Dico ─────────────── */
-
-.pl-avisos {
-  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
-}
-
-.pl-aviso { background: var(--pl-panel-2); }
-
-/* La firma es el titulo del aviso y tiene hasta cinco palabras: va en caja
-   normal. Mayusculas solo para etiquetas de una a tres. Es un h3: el
-   .pl-card delante gana a .pl-card h3 y le saca el margen y el tamano. */
-.pl-card .pl-aviso-firma {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: var(--pl-gold);
-  font-size: var(--ds-type-sm, 13px);
-  font-weight: 600;
-}
-
-.pl-aviso-firma img { width: 22px; height: 22px; display: block; }
-
-.pl-aviso p { margin-top: 12px; color: var(--pl-tx); font-size: 14.5px; }
-
-/* ─────────────── Preguntas ─────────────── */
-
-.pl-faq {
-  border: 1px solid var(--pl-line);
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.pl-faq-item { background: var(--pl-panel); }
-.pl-faq-item + .pl-faq-item { border-top: 1px solid var(--pl-line); }
-
-.pl-faq-item summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 20px 24px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 15.5px;
-  list-style: none;
-}
-
-.pl-faq-item summary::-webkit-details-marker { display: none; }
-
-.pl-faq-item summary:hover { color: var(--pl-gold); }
-
-.pl-faq-item summary:focus-visible {
-  outline: 2px solid var(--pl-gold);
-  outline-offset: -2px;
-}
-
-/* El signo es una cruz que gira a menos cuando la pregunta se abre: dos
-   pseudo-elementos, sin icono ni dependencia. */
-.pl-faq-signo {
-  flex: none;
-  position: relative;
-  width: 14px;
-  height: 14px;
-}
-
-.pl-faq-signo::before,
-.pl-faq-signo::after {
-  content: '';
-  position: absolute;
-  inset: 50% 0 auto 0;
-  height: 1.5px;
-  background: var(--pl-gold);
-  transition: transform 0.18s ease;
-}
-
-.pl-faq-signo::after { transform: rotate(90deg); }
-
-.pl-faq-item[open] .pl-faq-signo::after { transform: rotate(0deg); }
-
-.pl-faq-item > p {
-  margin: 0;
-  padding: 0 24px 22px;
-  max-width: 78ch;
-  color: var(--pl-t2);
-  font-size: 14.5px;
-}
-
-/* ─────────────── Contacto del cierre ─────────────── */
-
-.pl-contacto {
-  margin: 40px auto 0;
-  max-width: 720px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
-  gap: 1px;
-  background: var(--pl-line);
-  border: 1px solid var(--pl-line);
-  border-radius: 12px;
-  overflow: hidden;
-  text-align: left;
-}
-
-.pl-contacto > div { background: var(--pl-bg); padding: 16px 18px; }
-
-.pl-contacto dt { color: var(--pl-t3); }
-
-.pl-contacto dd { margin: 6px 0 0; font-size: var(--ds-type-md, 15px); color: var(--pl-tx); }
-
-.pl-contacto a {
-  color: var(--pl-gold);
-  text-decoration: none;
-  text-underline-offset: var(--ds-space-1, 4px);
-  border-radius: var(--ds-radius-1, 4px);
-}
-
-.pl-contacto a:hover { text-decoration: underline; }
-
-/* El KPI que cierra el mockup es el unico que lleva el oro: es el numero del
-   que habla toda la pagina. */
-.pl-kpi.destacado .pl-kpi-valor { color: var(--pl-gold); }
-
-/* ─────────────── Pantalla tactil: area de 44px ─────────────── */
-
-/* Por tipo de puntero y no por ancho: una tablet apaisada pasa los 860px,
-   muestra la navegacion completa y se sigue tocando con el dedo. 44px es el
-   minimo de WCAG 2.5.5; la escala no tiene ese valor (touch es 48, para POS). */
-@media (pointer: coarse) {
-  .pl-btn { min-height: 44px; }
-
-  .pl-logo,
-  .pl-nav-links a { padding-block: var(--ds-space-3, 12px); }
-
-  .pl-pie-links { row-gap: 0; }
-
-  .pl-pie-links a {
-    display: inline-block;
-    min-width: 44px;
-    padding-block: var(--ds-space-3, 12px);
-    text-align: center;
+[data-ui] .pl-tramo-texto {
+  max-width: 26ch;
+  font-size: var(--pl-t4);
+  line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+  .pl-barra[data-ui] {
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 40px;
   }
 
-  /* El area tactil la pone un pseudo-elemento: el link no cambia de caja, asi
-     que ni la celda crece ni el anillo de foco tapa la etiqueta de arriba. */
-  .pl-contacto a { position: relative; }
+  [data-ui] .pl-tramo { gap: 14px; margin-bottom: 18px; }
+  [data-ui] .pl-tramo-bloque { height: auto; padding: 18px; }
+  [data-ui] .pl-tramo-minutos .pl-tramo-bloque { min-height: 72px; }
+  [data-ui] .pl-tramo-horas .pl-tramo-bloque { min-height: 136px; }
+  [data-ui] .pl-tramo-dias .pl-tramo-bloque { min-height: 200px; }
+  [data-ui] .pl-tramo-dur { font-size: 22px; }
+  [data-ui] .pl-tramo-texto { max-width: 40ch; }
+}
 
-  .pl-contacto a::after {
-    content: '';
-    position: absolute;
-    inset: calc(-1 * var(--ds-space-3, 12px)) calc(-1 * var(--ds-space-1, 4px));
+/* ─────────────── 5. Quienes ya lo usan ─────────────── */
+
+.pl-clientes { padding: var(--pl-hueco) var(--pl-m) 0; }
+
+.pl-clientes-frase {
+  max-width: 34em;
+  font-size: var(--pl-t3);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.pl-cliente {
+  color: var(--pl-tinta-tenue);
+  transition: color 400ms ease;
+}
+
+.pl-cliente.encendido { color: var(--pl-tinta); }
+
+.pl-clientes-fotos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 56px;
+  padding: 0;
+  list-style: none;
+}
+
+.pl-clientes-fotos img { aspect-ratio: 1; }
+
+@media (max-width: 900px) {
+  .pl-clientes-fotos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 24px;
+    margin-top: 40px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pl-root * { transition: none !important; animation: none !important; }
+  .pl-cliente { color: var(--pl-tinta); }
+}
+
+/* ─────────────── 6. Modulos: frases con interruptor ─────────────── */
+
+.pl-modulos { margin-top: var(--pl-hueco); }
+
+.pl-bandas {
+  padding: 0;
+  list-style: none;
+}
+
+.pl-banda {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 24px;
+  min-height: 20vh;
+  padding: 24px var(--pl-m);
+  background: var(--pl-suelo);
+  transition: background-color 260ms ease;
+}
+
+/* El texto va por encima del area tactil estirada del interruptor (que no
+   lo tapa) y deja pasar el toque hacia ella. */
+.pl-banda-texto {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.pl-banda-frase {
+  color: var(--pl-tinta-suave);
+  font-size: var(--pl-t3);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  transition: color 260ms ease;
+}
+
+.pl-banda-consecuencia {
+  max-width: 62ch;
+  font-size: var(--pl-t4);
+}
+
+.pl-banda.on .pl-banda-frase { color: var(--pl-tinta); }
+
+/* Cada banda encendida tiene su campo: dos vecinas nunca comparten color. */
+.pl-banda.on:nth-child(4n + 1) { background: var(--pl-paso-2); }
+.pl-banda.on:nth-child(4n + 2) { background: var(--pl-campo-oro); }
+.pl-banda.on:nth-child(4n + 3) { background: var(--pl-paso); }
+.pl-banda.on:nth-child(4n + 4) { background: var(--pl-campo-oro-2); }
+
+/* El interruptor es el de la interfaz de Dico. Su area tactil se estira a
+   toda la banda: tocar la frase tambien lo prende. */
+.pl-interruptor[data-ui] {
+  display: flex;
+  align-items: center;
+  width: 76px;
+  height: 42px;
+  padding: 5px;
+  border: 0;
+  border-radius: var(--ds-radius-pill);
+  background: var(--pl-paso-2);
+  cursor: pointer;
+  transition: background-color var(--pl-hover) ease;
+}
+
+.pl-interruptor[data-ui]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+[data-ui] .pl-interruptor-perilla {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--pl-tinta-suave);
+  transition: transform 220ms var(--pl-sale), background-color var(--pl-hover) ease;
+}
+
+.pl-interruptor[data-ui][aria-checked='true'] { background: var(--pl-oro); }
+
+.pl-interruptor[data-ui][aria-checked='true'] .pl-interruptor-perilla {
+  transform: translateX(34px);
+  background: var(--pl-oro-tinta);
+}
+
+.pl-interruptor[data-ui]:active .pl-interruptor-perilla { transform: scale(0.9); }
+.pl-interruptor[data-ui][aria-checked='true']:active .pl-interruptor-perilla { transform: translateX(34px) scale(0.9); }
+
+.pl-modulos-honesto {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--pl-col);
+  row-gap: 20px;
+  padding: 72px var(--pl-m) 0;
+}
+
+.pl-modulos-honesto p {
+  grid-column: 1 / span 6;
+  max-width: 54ch;
+}
+
+.pl-modulos-honesto p + p { grid-column: 7 / -1; }
+
+.pl-modulos-honesto p + p { color: var(--pl-tinta-suave); }
+.pl-modulos-honesto strong { color: var(--pl-tinta); font-weight: 600; }
+
+@media (max-width: 900px) {
+  .pl-banda { min-height: 132px; padding-block: 22px; }
+  .pl-modulos-honesto { grid-template-columns: 1fr; padding-top: 48px; }
+  .pl-modulos-honesto p,
+  .pl-modulos-honesto p + p { grid-column: 1; }
+}
+
+/* ─────────────── 7. Planes ─────────────── */
+
+.pl-planes {
+  margin-top: var(--pl-hueco);
+  padding: clamp(72px, 9vw, 136px) var(--pl-m);
+  background: var(--pl-paso);
+}
+
+.pl-planes-grilla {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: auto auto auto 1fr;
+  column-gap: var(--pl-col);
+}
+
+.pl-plan-nombre {
+  grid-column: 1 / span 6;
+  font-size: var(--pl-t2);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.pl-plan-nombre-digital { grid-row: 1; }
+.pl-plan-nombre-local { grid-row: 2; }
+.pl-plan-nombre-cadena { grid-row: 3; }
+
+.pl-plan-nombre button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22em;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pl-tinta-suave);
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  transition: color var(--pl-hover) ease;
+}
+
+.pl-plan-nombre button::before {
+  content: '';
+  width: 0.3em;
+  height: 0.3em;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity var(--pl-hover) ease, transform 220ms var(--pl-sale);
+}
+
+.pl-plan-nombre button[aria-expanded='true'] { color: var(--pl-tinta); }
+
+.pl-plan-nombre button[aria-expanded='true']::before {
+  opacity: 1;
+  transform: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pl-plan-nombre button:hover { color: var(--pl-tinta); }
+}
+
+.pl-plan-escena {
+  grid-column: 8 / -1;
+  grid-row: 1 / span 4;
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 18px;
+}
+
+.pl-plan-precio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+.pl-plan-cifra {
+  font-size: var(--pl-t1);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pl-plan-periodo,
+.pl-plan-anual { color: var(--pl-tinta-suave); }
+
+.pl-plan-texto {
+  max-width: 44ch;
+  margin-bottom: 10px;
+}
+
+.pl-planes-nota {
+  margin-top: 64px;
+  max-width: 62ch;
+  color: var(--pl-tinta-suave);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pl-plan-escena:not([hidden]) { animation: pl-aparece 220ms ease both; }
+}
+
+@keyframes pl-aparece {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 900px) {
+  .pl-planes-grilla { grid-template-columns: 1fr; grid-template-rows: none; }
+
+  .pl-plan-nombre,
+  .pl-plan-escena {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .pl-plan-escena { padding: 12px 0 88px; }
+  .pl-plan-escena .pl-boton { width: 100%; }
+}
+
+/* ─────────────── 8. Preguntas ─────────────── */
+
+.pl-preguntas {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--pl-col);
+  padding: var(--pl-hueco) var(--pl-m) 0;
+}
+
+.pl-preguntas .pl-titulo { grid-column: 1 / -1; }
+
+.pl-preguntas-lista {
+  grid-column: 5 / -1;
+  display: grid;
+  gap: 12px;
+  margin-top: 80px;
+}
+
+.pl-pregunta {
+  margin-inline: -24px;
+  padding: 12px 24px;
+  border-radius: var(--pl-radio);
+  transition: background-color var(--pl-hover) ease;
+}
+
+.pl-pregunta[open] {
+  padding-bottom: 24px;
+  background: var(--pl-paso);
+}
+
+.pl-pregunta summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 48px;
+  font-size: var(--pl-t4);
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+
+.pl-pregunta summary::-webkit-details-marker { display: none; }
+
+/* El chevron: dos trazos de 2px que giran al abrir. */
+.pl-pregunta-signo {
+  position: relative;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  transition: transform 220ms var(--pl-sale);
+}
+
+.pl-pregunta-signo::before,
+.pl-pregunta-signo::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  width: 9px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--pl-oro);
+}
+
+.pl-pregunta-signo::before { left: 1px; transform: rotate(45deg); }
+.pl-pregunta-signo::after { right: 1px; transform: rotate(-45deg); }
+
+.pl-pregunta[open] .pl-pregunta-signo { transform: rotate(180deg); }
+
+.pl-pregunta > p {
+  max-width: 60ch;
+  padding-top: 8px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pl-pregunta:not([open]):hover { background: var(--pl-paso); }
+}
+
+@media (max-width: 900px) {
+  .pl-preguntas { grid-template-columns: 1fr; }
+  .pl-preguntas-lista { grid-column: 1; margin-top: 40px; gap: 4px; }
+
+  .pl-pregunta {
+    margin-inline: calc(-1 * var(--pl-m));
+    padding-inline: var(--pl-m);
+    border-radius: 0;
+  }
+}
+
+/* ─────────────── 9. Cierre: la frase con un hueco ─────────────── */
+
+.pl-cierre { padding: var(--pl-hueco) var(--pl-m); }
+
+.pl-cierre-frase {
+  max-width: 15em;
+  font-size: var(--pl-t2);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.12;
+}
+
+.pl-cierre-input {
+  display: inline-block;
+  width: 6.6em;
+  height: 1.08em;
+  padding: 0 0.18em;
+  border: 0;
+  border-radius: var(--pl-radio);
+  background: var(--pl-paso-2);
+  color: var(--pl-tinta);
+  font: inherit;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  vertical-align: baseline;
+}
+
+.pl-cierre-input::placeholder { color: var(--pl-tinta-suave); }
+
+.pl-cierre-boton {
+  display: inline-block;
+  height: 1.08em;
+  padding: 0 0.22em;
+  border: 0;
+  border-radius: var(--pl-radio);
+  background: var(--pl-oro);
+  color: var(--pl-oro-tinta);
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: 1.08;
+  vertical-align: baseline;
+  cursor: pointer;
+  transition: transform var(--pl-presion) var(--pl-sale), background-color var(--pl-hover) ease;
+}
+
+.pl-cierre-boton:active { transform: scale(0.96); }
+
+@media (hover: hover) and (pointer: fine) {
+  .pl-cierre-boton:hover { background: var(--pl-oro-claro); }
+}
+
+.pl-cierre-nota {
+  max-width: 58ch;
+  margin-top: 40px;
+  color: var(--pl-tinta-suave);
+}
+
+.pl-cierre-nota .pl-enlace { color: var(--pl-tinta); }
+
+@media (max-width: 900px) {
+  .pl-cierre-input {
+    display: block;
+    width: 100%;
+    margin: 0.12em 0;
+    vertical-align: baseline;
+  }
+
+  .pl-cierre-nota { margin-top: 28px; }
+}
+
+/* ─────────────── 10. Pie: el contacto es el titular ─────────────── */
+
+.pl-pie {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  min-height: 90svh;
+  padding: 40px var(--pl-m) 28px;
+  background: var(--pl-oro);
+  color: var(--pl-oro-tinta);
+  font-size: var(--pl-t5);
+}
+
+.pl-pie :focus-visible { outline-color: var(--pl-oro-tinta); }
+
+.pl-pie ::selection {
+  background: var(--pl-oro-tinta);
+  color: var(--pl-oro);
+}
+
+.pl-pie-arriba {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 28px;
+}
+
+.pl-pie-marca { height: 20px; width: auto; }
+
+.pl-pie-arriba-link { margin-left: auto; }
+
+.pl-pie-telefono {
+  grid-row: 3;
+  justify-self: start;
+  color: inherit;
+  font-size: var(--pl-t1);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline;
+  text-decoration-thickness: 0.05em;
+  text-underline-offset: 0.12em;
+  text-decoration-color: transparent;
+  transition: text-decoration-color var(--pl-hover) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pl-pie-telefono:hover { text-decoration-color: currentColor; }
+}
+
+.pl-pie-meta {
+  grid-row: 4;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px 24px;
+  margin-top: 36px;
+}
+
+.pl-pie-meta p:last-child { justify-self: end; }
+
+.pl-pie-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+}
+
+@media (max-width: 900px) {
+  .pl-pie { min-height: 80svh; padding-top: 28px; }
+  .pl-pie-arriba { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .pl-pie-arriba-link { margin-left: 0; }
+  .pl-pie-telefono { font-size: var(--pl-t2); }
+
+  .pl-pie-meta { grid-template-columns: 1fr; }
+  .pl-pie-meta p:last-child { justify-self: start; }
+}
+
+/* ─────────────── Pantalla tactil: area de 44px ─────────────── */
+
+@media (pointer: coarse) {
+  .pl-cabecera-links .pl-enlace,
+  .pl-pie-links .pl-enlace,
+  .pl-pie-arriba-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+/* ─────────────── Movimiento ───────────────
+ * Todo lo oculto vive bajo .pl-anim, que el script pone solo si hay
+ * IntersectionObserver y nadie pidio menos movimiento. Sin eso, la pagina
+ * esta entera a la vista. Transform, opacity y clip-path y nada mas. */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* El titular entra al cargar, sin esperar al scroll: las palabras suben,
+     la ficha se abre como un obturador y despues llegan la bajada y la accion. */
+  .pl-anim .pl-frase-palabras { animation: pl-sube 900ms var(--pl-sale) both; }
+  .pl-anim .pl-frase-palabras:last-child { animation-delay: 140ms; }
+
+  .pl-anim .pl-ficha[data-ui] { animation: pl-obturador 1100ms var(--pl-viaja) 260ms both; }
+
+  .pl-anim .pl-ficha[data-ui] .pl-ficha-in {
+    transform-origin: left center;
+    animation: pl-asienta 1500ms var(--pl-suave) 260ms both;
+  }
+
+  .pl-anim .pl-hero-apoyo { animation: pl-entra 800ms var(--pl-sale) 520ms both; }
+  .pl-anim .pl-hero-centro .pl-acciones { animation: pl-entra 800ms var(--pl-sale) 610ms both; }
+
+  /* Entradas por seccion: titulo, texto, prueba, escalonados. */
+  .pl-anim [data-reveal] {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 700ms var(--pl-sale), transform 900ms var(--pl-sale);
+  }
+
+  .pl-anim [data-reveal].is-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  .pl-anim .pl-acciones[data-reveal],
+  .pl-anim .pl-cuenta-ejemplos[data-reveal],
+  .pl-anim .pl-cierre-nota[data-reveal] { transition-delay: 90ms; }
+
+  .pl-anim .pl-cierre-ui[data-reveal] { transition-delay: 80ms; }
+  .pl-anim .pl-cuenta-nota[data-reveal] { transition-delay: 160ms; }
+  .pl-anim .pl-cuenta-ejemplos[data-reveal] { transition-delay: 240ms; }
+
+  .pl-anim .pl-tramo:nth-child(2) { transition-delay: 80ms; }
+  .pl-anim .pl-tramo:nth-child(3) { transition-delay: 160ms; }
+
+  .pl-anim .pl-clientes-fotos li:nth-child(2) { transition-delay: 70ms; }
+  .pl-anim .pl-clientes-fotos li:nth-child(3) { transition-delay: 140ms; }
+  .pl-anim .pl-clientes-fotos li:nth-child(4) { transition-delay: 210ms; }
+
+  /* Las fotos de los clientes se asientan desde una escala apenas mayor. */
+  .pl-anim .pl-clientes-fotos li img {
+    transform: scale(1.06);
+    transition: transform 1200ms var(--pl-suave);
+  }
+
+  .pl-anim .pl-clientes-fotos li.is-in img { transform: none; }
+
+  .pl-anim .pl-foto-apaisada[data-reveal],
+  .pl-anim .pl-pregunta[data-reveal]:nth-child(even) { transition-delay: 70ms; }
+
+  /* La foto que se mueve: la picada se acerca despacio mientras pasa. */
+  @supports (animation-timeline: view()) {
+    .pl-foto-lenta {
+      animation: pl-acerca linear both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
+    }
+  }
+}
+
+@keyframes pl-sube {
+  from { opacity: 0; transform: translateY(0.18em); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes pl-entra {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes pl-obturador {
+  from { clip-path: inset(0 100% 0 0 round var(--pl-radio)); }
+  to { clip-path: inset(0 0 0 0 round var(--pl-radio)); }
+}
+
+@keyframes pl-asienta {
+  from { transform: scale(1.12); }
+  to { transform: none; }
+}
+
+@keyframes pl-acerca {
+  from { transform: scale(1); }
+  to { transform: scale(1.12); }
 }
