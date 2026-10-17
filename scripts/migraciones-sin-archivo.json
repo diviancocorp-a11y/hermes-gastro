@@ -49,7 +49,7 @@
     "fichaje_de_duracion_cero": "pisada: el constraint entry_time_valid desplegado es el de 0048",
     "ledger_clave_unica_por_linea": "pisada: el indice inv_mov_client_request_uniq desplegado es el de 0042",
     "suppliers_name_uniq_trim": "pisada: el indice suppliers_tenant_name_uniq desplegado es el de 0030",
-    "roles_barrido_de_policies_viejas": "pisada: policies de sales/expenses/suppliers coinciden con 0050; el resto de las tablas no se comparo una por una (check:rls las da cerradas)",
-    "roles_y_alcance_policies": "pisada: idem roles_barrido_de_policies_viejas"
+    "roles_barrido_de_policies_viejas": "pisada: comparadas el 17/oct las 28 policies vivas de expenses, suppliers, sales, settings, staff, audit_log, cash_sessions y tenant_members, una por una: todas coinciden con 0050, salvo cash_sessions_select, que coincide con 0070. RLS activa en las 8",
+    "roles_y_alcance_policies": "pisada: idem roles_barrido_de_policies_viejas. Esta fila dejaba insertar sales a cashier y attendant; 0050 y la base solo a owner y manager"
   }
 }
