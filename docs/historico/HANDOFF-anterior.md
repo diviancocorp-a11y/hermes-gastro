@@ -9,6 +9,149 @@
 
 ---
 
+## 28/sep/2026 — Sala de control Dico y launcher silencioso (Codex)
+
+### Lo que pidio Ricky
+
+Que la pose `thinking` deje de sentirse como un GIF rapido y que el HTML
+`Dico PANTALLA.html` pase a ser una pantalla final dentro de Dico: un lugar
+persistente para avisos y acciones recomendadas que no se resolvieron al
+instante.
+
+### Hecho
+
+- Se agrego `DicoPanel` a la navegacion de `PlatformAdmin` como pantalla Sala
+  de control. El nombre aparece una sola vez dentro del card; el pequeno Dico
+  acompana la bienvenida del chat.
+  Toma los avisos 2D de `avisosDe`, las oportunidades y las intervenciones
+  3D, con el lenguaje visual del boceto: presencia 3D, chat y grupos de
+  pendientes. Se retiro el selector "Con avisos / Al dia": eran estados del
+  ejemplo, no una funcion de la pantalla final.
+- Las decisiones viven en `localStorage` con la clave
+  `dico:centro-decisiones:v1`: una intervencion cerrada queda pendiente en la
+  pantalla hasta que se resuelve, se pasa a tarea, se pospone o se descarta.
+  El historial de intervenciones 3D se conserva en
+  `dico:intervenciones:v1` desde `PlatformAdmin`.
+- El resumen superior dejo de mostrar ventas, margen, promedio y pedidos. Los
+  KPIs de prioridad tambien se retiraron para dejar una lista unica de tareas,
+  ordenada de prioridad alta a baja.
+- La fila `espera` del atlas bajo de 7 a 4 fps y cada cuadro reinicia el
+  crossfade de `physical.css`. En el panel, Dico permanece en `idle` y hace
+  una rutina corta `idle -> thinking -> idle` con pausas largas; no queda
+  trabado en thinking ni se muestra como un loop continuo.
+- Se corrigio el titileo: los cuadros ya no recrean el nodo ni reinician su
+  opacidad; solo cambia el recorte del atlas. El pequeno cambio de pose sigue
+  teniendo transicion, pero el idle queda presente.
+- Se abrio la referencia compartida `chatgpt.com/s/sharepet_...`: la Sala
+  ahora usa Dico pequeno junto a "¿En que te puedo ayudar?" y la conversacion
+  como foco. El chat usa una
+  capsula oscura larga, boton circular y foco con pulso dorado, adaptado al
+  stack JS/CSS del repo sin copiar el componente TypeScript del adjunto. Se
+  agregaron botones Volt para archivos e imagenes, con seleccion local y chips
+  removibles.
+- La burbuja Dico 2D externa abre directamente la Sala de control: no muestra
+  tarjeta ni contador y mantiene la cara neutral. Los avisos basicos quedan
+  en la Sala; el caso de catalogo vacio dejo de disparar Dico 3D flotante.
+- La composicion paso a una sola columna: el chat ocupa todo el ancho y las
+  tareas quedan debajo, con el mismo orden en mobile.
+- La segunda pasada de la Sala saco la descripcion bajo el titulo, los
+  contadores redundantes, los chips de sugerencias y la recomendacion urgente
+  del chat. El card conserva solo la bienvenida y el composer.
+- Dico ya no tiene fondo propio en la bienvenida: al pasar el mouse por encima
+  entra en la pose `explain` para saludar y al salir vuelve a su rutina.
+- Las respuestas del composer aparecen con escritura incremental. Se elimino el
+  desplazamiento de caminata: Dico tiene una sola presencia persistente dentro
+  del chat, piensa mientras responde y queda idle al terminar. Al crecer el
+  historial, esa presencia baja con el flujo sin crear mini Dicos por mensaje.
+- El texto escrito es blanco y el focus del composer deja solo un contorno
+  dorado exterior, sin recuadro interno ni glow. El boton de enviar conserva
+  su foco circular, pero no agrega un segundo rectangulo al input.
+- La caminata de respuesta usa las filas certificadas `correIzquierda` del
+  atlas (ocho cuadros) y desplaza el contenedor en 1800 ms; despues Dico queda
+  en idle al borde izquierdo. Durante la escritura queda en `thinking`. El
+  primitive acepta una fila de animacion sin contaminar el vocabulario de
+  poses publicas.
+- La bienvenida no desaparece durante la respuesta. Arriba a la izquierda
+  aparece `Nueva accion`, que corta la respuesta, limpia el composer y devuelve
+  a Dico al centro. Se retiro de las tarjetas la metadata `Dico 2D`/`nuevo` y
+  las acciones quedaron como burbujas redondeadas con simbolos: asignar,
+  posponer y descartar; la pantalla de destino queda en dorado a la derecha.
+- El composer tiene un saludo local para `hola`, con escritura progresiva
+  blanca y sin fondo ni borde azul. Queda listo para reemplazar esa funcion por
+  la respuesta de IA.
+- La Sala conserva ahora el historial de la conversacion en
+  `dico:sala-control:chat:v1`: mensajes del usuario alineados a la derecha y
+  respuestas de Dico alineadas a la izquierda. Despues del primer mensaje, la
+  presencia unica de Dico vive sobre el boton de enviar: queda idle esperando y
+  pasa a thinking con pulso azul mientras responde.
+- El composer ahora tiene solo un boton `+` a la izquierda; clip, camara y
+  `Nuevo chat` viven en su menu, con microfono a la derecha y hasta cinco conversaciones archivadas como
+  maximo en `dico:sala-control:conversaciones:v1`. Al crear un chat nuevo se
+  archiva el actual y se reinicia la conversacion; si ya hay cinco archivadas,
+  se descarta automaticamente la mas antigua. La camara usa
+  `capture=environment` y el microfono aprovecha SpeechRecognition cuando el
+  navegador lo soporta.
+- El historial de Sala de control ahora guarda hasta 5 conversaciones en
+  `dico:sala-control:conversaciones:v1`. Las conversaciones permanecen ocultas
+  hasta abrir el boton `Historial de chats` y usan como titulo el primer
+  mensaje del usuario.
+- Cada montaje de Sala de control empieza un chat nuevo. Al salir se archiva
+  la conversacion activa y se limpia el chat corriente; una recarga completa
+  tambien recupera el chat pendiente antes de abrir el nuevo. Si el historial
+  ya tiene 5 entradas, se descarta automaticamente la mas antigua al archivar
+  otra.
+- El chat queda por encima de las tareas. Se retiraron los KPIs y la lista de
+  tareas se ordena de prioridad alta a baja. Cada tarea muestra la zona arriba
+  del titulo y la descripcion a la izquierda; a la derecha queda la prioridad,
+  el CTA y un menu de tres puntos con asignar, descartar y posponer. La
+  prioridad alta usa un pulso rojo.
+- Sala de control se ubica al final del sidebar, despues de los modulos del
+  negocio; el mismo orden se conserva en la fuente compartida de navegacion.
+- Se bajo el peso visual de los controles: `+`, microfono, iconos del menu y
+  menu de acciones usan blanco; los tres puntos son verticales y sin burbuja.
+  El bloque paso a llamarse `Tareas asignadas`, y se retiro el boton de
+  historial del pie.
+- La pantalla de Sala de control ahora se llama `Habla con Dico` y deja solo
+  el chat y el bloque `Analisis Dico`. Las tareas asignadas viven en `Equipo`,
+  con las vistas `Me asignaron` y `Asignadas por mi`; el mismo registro local
+  conserva la jerarquia, el responsable directo, el estado del trabajo y la
+  evaluacion, asi una recomendacion pasa a los empleados sin duplicar el
+  flujo.
+- `admin-dico.css` ahora sigue el boceto: fondo #09090B, superficies #18181B,
+  borde #27272A, prioridades antes de la grilla y chat a la izquierda;
+  mobile conserva el orden chat, prioridades, pendientes.
+- Se agrego `src/test/dicoPanel.test.jsx` para validar el tablero, la tarea
+  persistente y la intervencion historica.
+
+### Verificado
+
+- Tests dirigidos del panel y Equipo: 23/23 en verde con Vitest y
+  `--pool=threads`.
+- El hook de cierre pasó typecheck, 87 smoke tests, build de Vite, integridad,
+  schema sync y `git diff --check`; commit local `84cddb3` creado.
+- La migración local de ubicación quedó renumerada como `0083` porque `origin`
+  ya usa `0081` y `0082` para seguimiento y cancelación de pedidos.
+- QA Lite no quedó verificado en navegador en este cierre: Docker no está
+  disponible en el PATH, por lo que no se pudo bootstrapear la membresía local.
+
+### Pendiente inmediato
+
+1. Iniciar Docker Desktop y ejecutar `node scripts/qa-lite/revision-phase4.mjs`
+   para abrir una sesión local con acceso a QA Lite y validar visualmente
+   `Habla con Dico` y `Equipo`.
+2. Revisar el merge resultante y publicar a `origin/main` cuando QA Lite esté
+   disponible; no se hizo deploy desde este cierre.
+
+### Bloqueado por Ricky
+
+Docker Desktop no está instalado o no está en el PATH. Sin el Supabase local
+de QA Lite no se puede generar una sesión autenticada de navegador ni hacer
+la verificación visual final. La clave, si el bootstrap vuelve a ejecutarse,
+seguirá quedando sólo en `.qa-lite/revision-phase4.txt` y
+`~/.dico-qa-lite/owner-pass.txt`; no se copia al chat.
+
+---
+
 ## 27/sep/2026 — Dico 3D sale del Slot y queda flotante (Codex)
 
 ### Lo que pidio Ricky
