@@ -62,7 +62,8 @@ GitHub → Actions → **Morning Health Check** → **Run workflow** → tildar
 **probar_alerta**. Manda un error de prueba con el DSN del build publicado;
 en 1-2 minutos tiene que llegar aparte "🚨 Error nuevo en Dico · prueba".
 Cada prueba es un issue nuevo con el tag `prueba:alerta`, que el resumen
-diario no cuenta. Probado de punta a punta el 16/oct (HERMES-GASTRO-Q).
+diario no cuenta y que la corrida siguiente resuelve sola (necesita
+`event:write` en `SENTRY_AUTH_TOKEN`; si falta, el reporte lo dice). Probado de punta a punta el 16/oct (HERMES-GASTRO-Q).
 
 La regla "Error nuevo → Telegram" avisa por issue nuevo, reaparecido o
 regresion. No por resuelto: el 16/oct se le saco ese disparador, que mandaba

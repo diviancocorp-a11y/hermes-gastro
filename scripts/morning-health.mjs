@@ -141,6 +141,10 @@ async function main() {
   if (sentry.rojo) problemas.push(`Sentry: ${sentry.texto}`);
   // Sin Sentry en el build, "sin errores" no dice nada: no llega nada.
   else detalles.push(`sentry: ${enBuild.rojo ? 'sin datos (no esta en el build)' : sentry.texto}`);
+  // Las pruebas viejas se cierran en cada corrida, haya prueba nueva o no:
+  // si quedan abiertas se acumulan en Sentry.
+  const pruebasViejas = await cerrarPruebasViejas();
+  if (pruebasViejas) detalles.push(`pruebas de alerta: ${pruebasViejas}`);
   const pruebaAlerta = process.env.PROBAR_ALERTA === 'true' ? await probarAlerta(enBuild.dsn) : null;
 
   /* ── Mensaje: lo roto primero, el verde corto ────────── */
@@ -324,16 +328,7 @@ async function checkSentry() {
     // !prueba:alerta: los errores de probar_alerta no son de la app.
     + `?query=${encodeURIComponent('is:unresolved lastSeen:-24h !prueba:alerta')}&statsPeriod=24h&limit=5`;
   try {
-    // Una org de la region europea vive en de.sentry.io: sentry.io le
-    // contesta 404 aunque org y proyecto esten bien escritos.
-    let r;
-    for (const base of ['https://sentry.io', 'https://de.sentry.io']) {
-      r = await fetch(base + ruta, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(15000),
-      });
-      if (r.status !== 404) break;
-    }
+    const r = await sentryApi(token, ruta);
     if (r.status === 404) {
       return { rojo: true, texto: 'org o proyecto no encontrados: SENTRY\\_ORG y SENTRY\\_PROJECT van con el nombre corto de la URL' };
     }
@@ -347,6 +342,54 @@ async function checkSentry() {
     return { rojo: true, texto: `${issues.length} issue(s) en 24h — ${top.join(' · ')}` };
   } catch (e) {
     return { rojo: true, texto: `error: ${e.name}` };
+  }
+}
+
+/**
+ * Pide a la API de Sentry. Una org de la region europea vive en de.sentry.io:
+ * sentry.io le contesta 404 aunque org y proyecto esten bien escritos.
+ */
+async function sentryApi(token, ruta, init = {}) {
+  let r;
+  for (const base of ['https://sentry.io', 'https://de.sentry.io']) {
+    r = await fetch(base + ruta, {
+      ...init,
+      headers: { Authorization: `Bearer ${token}`, ...(init.headers || {}) },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (r.status !== 404) break;
+  }
+  return r;
+}
+
+/**
+ * Resuelve los issues de probar_alerta que quedaron abiertos. Necesita
+ * event:write en SENTRY_AUTH_TOKEN; sin el permiso lo dice y sigue.
+ * Devuelve null cuando no hay nada que contar.
+ */
+async function cerrarPruebasViejas() {
+  const token = process.env.SENTRY_AUTH_TOKEN?.trim();
+  const org = process.env.SENTRY_ORG?.trim();
+  const project = process.env.SENTRY_PROJECT?.trim();
+  if (!token || !org || !project) return null;
+  const base = `/api/0/projects/${encodeURIComponent(org)}/${encodeURIComponent(project)}/issues/`;
+  try {
+    const r = await sentryApi(token, `${base}?query=${encodeURIComponent('is:unresolved prueba:alerta')}&limit=25`);
+    if (!r.ok) return null;
+    const ids = (await r.json()).map((i) => i.id).filter(Boolean);
+    if (!ids.length) return null;
+    const put = await sentryApi(token, `${base}?${ids.map((id) => `id=${encodeURIComponent(id)}`).join('&')}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'resolved' }),
+    });
+    if (put.status === 401 || put.status === 403) {
+      return `${ids.length} abierta(s), el token no puede cerrarlas (le falta event:write)`;
+    }
+    if (!put.ok) return `${ids.length} abierta(s), Sentry no las cerro (HTTP ${put.status})`;
+    return `✓ ${ids.length} cerrada(s)`;
+  } catch (e) {
+    return `no pude cerrarlas (${e.name})`;
   }
 }
 
