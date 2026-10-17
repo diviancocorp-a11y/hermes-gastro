@@ -100,9 +100,10 @@ export default function App() {
                   es: `127.0.0.1` clasifica como desconocido y cae al catalogo
                   del tenant. Esta ruta existe para poder mirarla en QA Lite
                   sin tocar la resolucion de hosts ni el archivo hosts de
-                  Windows. `import.meta.env.DEV` es constante en build, asi que
-                  el bundle de produccion no la incluye. */}
-              {import.meta.env.DEV && (
+                  Windows. Tambien en los previews *.vercel.app, que es donde
+                  Ricky mira una rama antes del merge (ahi `/` cae al catalogo
+                  de respaldo). Ningun cliente entra por *.vercel.app. */}
+              {(import.meta.env.DEV || window.location.hostname.endsWith('.vercel.app')) && (
                 <Route path="/landing" element={<PlatformLanding />} />
               )}
               {/* Alta self-service: solo tiene sentido en la raiz. En el
