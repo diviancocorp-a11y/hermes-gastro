@@ -60,6 +60,7 @@ const NO_VERIFY_JWT = new Set([
   "tg-notificar",   // la llama el trigger de orders: firma compartida en Vault
   "tg-webhook",     // la llama Telegram: secret_token derivado del token del bot
   "sentry-alerta",  // la llama Sentry: firma sentry-hook-signature con el Client Secret
+  "gerente-webhook", // la llama Telegram: secret_token derivado del token + solo el chat de Ricky
 ]);
 
 function parseArgs(argv) {

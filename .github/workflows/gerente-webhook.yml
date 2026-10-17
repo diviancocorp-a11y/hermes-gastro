@@ -1,0 +1,37 @@
+name: GerenteDico webhook
+
+# Conecta el bot GerenteDico con la edge function gerente-webhook (o muestra
+# como esta). Solo a mano: Actions -> GerenteDico webhook -> Run workflow.
+# El token sale del secret GERENTEDICOBOT, el mismo que usa morning-health.
+
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: 'registrar | info | borrar'
+        type: choice
+        options: [registrar, info, borrar]
+        default: registrar
+
+permissions:
+  contents: read
+
+jobs:
+  webhook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Telegram
+        env:
+          GERENTEDICOBOT: ${{ secrets.GERENTEDICOBOT }}
+          ACCION: ${{ inputs.accion }}
+        run: |
+          case "$ACCION" in
+            info)   node platform/scripts/gerente-webhook.mjs --info ;;
+            borrar) node platform/scripts/gerente-webhook.mjs --borrar ;;
+            *)      node platform/scripts/gerente-webhook.mjs && node platform/scripts/gerente-webhook.mjs --info ;;
+          esac
