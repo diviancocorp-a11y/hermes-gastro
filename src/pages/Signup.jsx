@@ -6,6 +6,7 @@ import { slugify, validateSlug } from '../lib/slugify';
 import { slugDisponible, registrarNegocio } from '../services/signup';
 import { modosDisponibles, canalesSugeridos } from '../modules/registry';
 import { paisesDisponibles, monedaDe, zonaDe, PAIS_POR_DEFECTO } from '../modules/paises';
+import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import '../styles/signup.css';
 
 const VERTICALES = [
@@ -102,7 +103,10 @@ export default function Signup() {
 
   const debounce = useRef(null);
 
-  useEffect(() => { document.title = 'Crear mi negocio — Dico'; }, []);
+  useEffect(() => {
+    document.title = 'Crear mi negocio — Dico';
+    cargarAnalitica();
+  }, []);
 
   useEffect(() => {
     if (!slugTocado) setSlug(slugify(bizName));
@@ -144,6 +148,7 @@ export default function Signup() {
     });
     setEnviando(false);
     if (!r.ok) { setError(r.error); return; }
+    marcarEvento('registro-enviado');
     setListo(true);
   }, [puedeEnviar, email, password, bizName, vertical, slug, fullName, modo, country]);
 
