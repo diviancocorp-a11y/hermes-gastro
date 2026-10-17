@@ -25,6 +25,7 @@
 
 import { useEffect } from 'react';
 import FooterAscii from '../components/landing/FooterAscii.jsx';
+import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import '../styles/platform-landing.css';
 
 const TITULO = 'Dico — Sabé cuánto ganás, no solo cuánto vendés';
@@ -37,6 +38,7 @@ const DESCRIPCION = 'El sistema de gestión para restaurantes, parrillas, cafés
 const WHATSAPP = '17869608110';
 const WHATSAPP_TEXTO = 'Hola Ricardo, quiero conocer Dico para mi negocio.';
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(WHATSAPP_TEXTO)}`;
+const marcarWhatsApp = () => marcarEvento('whatsapp');
 
 const PILARES = [
   {
@@ -293,6 +295,7 @@ const pesos = (n) => `$${n.toLocaleString('es-AR')}`;
  *  pasan por aca: a esos los atiende `api/og.js`. */
 function useMetaDeLaPlataforma() {
   useEffect(() => {
+    cargarAnalitica();
     document.title = TITULO;
     const set = (sel, attr, valor) => {
       const el = document.head.querySelector(sel);
@@ -331,7 +334,7 @@ export default function PlatformLanding() {
           </nav>
           <div className="pl-nav-cta">
             <a className="pl-btn pl-btn-ghost pl-btn-sm" href="/entrar">Entrar</a>
-            <a className="pl-btn pl-btn-gold pl-btn-sm" href={WHATSAPP_URL} target="_blank" rel="noreferrer">
+            <a className="pl-btn pl-btn-gold pl-btn-sm" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
               Agendá 20 minutos
             </a>
           </div>
@@ -360,7 +363,7 @@ export default function PlatformLanding() {
             </p>
 
             <div className="pl-hero-cta">
-              <a className="pl-btn pl-btn-gold" href={WHATSAPP_URL} target="_blank" rel="noreferrer">
+              <a className="pl-btn pl-btn-gold" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
                 Agendá 20 minutos conmigo
               </a>
               <a className="pl-btn pl-btn-ghost" href="/registro">Probar gratis</a>
@@ -571,7 +574,7 @@ export default function PlatformLanding() {
                   <a
                     className={`pl-btn pl-btn-block ${p.destacado ? 'pl-btn-gold' : 'pl-btn-ghost'}`}
                     href={p.mensual === 0 ? '/registro' : WHATSAPP_URL}
-                    {...(p.mensual === 0 ? {} : { target: '_blank', rel: 'noreferrer' })}
+                    {...(p.mensual === 0 ? {} : { target: '_blank', rel: 'noreferrer', onClick: marcarWhatsApp })}
                   >
                     {p.mensual === 0 ? 'Empezar gratis' : `Hablar de ${p.nombre}`}
                   </a>
@@ -636,7 +639,7 @@ export default function PlatformLanding() {
               plan Digital es gratis y no pide tarjeta.
             </p>
             <div className="pl-hero-cta">
-              <a className="pl-btn pl-btn-gold" href={WHATSAPP_URL} target="_blank" rel="noreferrer">
+              <a className="pl-btn pl-btn-gold" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
                 Agendá 20 minutos conmigo
               </a>
               <a className="pl-btn pl-btn-ghost" href="/registro">Probar gratis</a>
@@ -644,7 +647,7 @@ export default function PlatformLanding() {
             <dl className="pl-contacto">
               <div>
                 <dt className="pl-etiqueta">WhatsApp</dt>
-                <dd><a href={WHATSAPP_URL} target="_blank" rel="noreferrer">+1 786 960 8110</a></dd>
+                <dd><a href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>+1 786 960 8110</a></dd>
               </div>
               <div>
                 <dt className="pl-etiqueta">Horario</dt>

@@ -5,7 +5,7 @@
       "destination": "/api/:path*"
     },
     {
-      "source": "/((?!api/|assets/|brand/|clients/|icons.svg|favicon|apple-touch-icon|manifest.json|admin-manifest.json|sw.js|robots.txt|offline.html|quack.).*)",
+      "source": "/((?!api/|assets/|brand/|clients/|icons.svg|favicon|apple-touch-icon|manifest.json|admin-manifest.json|sw.js|robots.txt|sitemap.xml|llms.txt|_vercel/|offline.html|quack.).*)",
       "destination": "/index.html"
     }
   ],

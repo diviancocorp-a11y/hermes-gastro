@@ -83,10 +83,26 @@ function businessHtmlPlugin() {
         const title = biz.name || 'Hermes Gastro'
         const desc = biz.description || ''
         const themeColor = biz.branding?.themeColorLight || '#C45D3E'
+        const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
+        const attr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+        // Los marcadores que quedaban sin reemplazar llegaban asi a produccion:
+        // un JSON-LD con un comentario adentro (Google lo marca como datos
+        // estructurados rotos) y un preconnect a un comentario. og:image y el
+        // JSON-LD se sacan: el index.html es el mismo para todos los hosts y
+        // la vista previa por host la arma api/og.js.
         return html
           .replace(/<title>.*?<\/title>/, `<title>${title}</title>`)
           .replace(/<meta name="description" content=".*?"/, `<meta name="description" content="${desc}"`)
           .replace(/<meta name="theme-color" content=".*?"/, `<meta name="theme-color" content="${themeColor}"`)
+          .replaceAll('<!-- __BIZ_TITLE__ -->', attr(title))
+          .replaceAll('<!-- __BIZ_DESCRIPTION__ -->', attr(desc))
+          .replaceAll('<!-- __BIZ_THEME_DARK__ -->', attr(biz.branding?.themeColorDark || themeColor))
+          .replaceAll('<!-- __BIZ_LOCALE__ -->', 'es_AR')
+          .replaceAll('<!-- __BIZ_FAVICON_SVG__ -->', attr(biz.faviconUrl || '/favicon.svg'))
+          .replace(/\s*<meta property="og:image" content="<!-- __BIZ_OG_IMAGE__ -->" \/>/, '')
+          .replace(/\s*<!-- Structured Data -->\s*<script type="application\/ld\+json">\s*<!-- __BIZ_STRUCTURED_DATA__ -->\s*<\/script>/, '')
+          .replace(/\s*<link rel="(preconnect|dns-prefetch)" href="<!-- __BIZ_SUPABASE_URL__ -->"[^>]*\/>/g,
+            (tag) => (supabaseUrl ? tag.replace('<!-- __BIZ_SUPABASE_URL__ -->', attr(supabaseUrl)) : ''))
       },
     },
     configureServer(server) {

@@ -12,6 +12,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import { crearTenantPendiente, urlDelNegocio } from '../services/signup';
 
 const C = {
@@ -34,6 +35,7 @@ export default function Bienvenido() {
 
   useEffect(() => {
     document.title = 'Activando tu negocio — Dico';
+    cargarAnalitica();
     // StrictMode monta dos veces en dev: sin esto se dispara el alta dos
     // veces y la segunda choca contra "ya tiene un negocio".
     if (yaCorrio.current) return;
@@ -49,7 +51,7 @@ export default function Bienvenido() {
       // fallar. Por eso aca no hay rama por texto de error ni consulta extra.
       const r = await crearTenantPendiente();
 
-      if (r.ok) { setSlug(r.slug); setEstado('ok'); return; }
+      if (r.ok) { marcarEvento('alta-confirmada'); setSlug(r.slug); setEstado('ok'); return; }
 
       setError(r.error);
       setEstado('error');
