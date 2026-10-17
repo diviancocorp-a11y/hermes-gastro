@@ -13,8 +13,9 @@
 
 ## 17/oct/2026 — GerenteDico conversa (etapa 2), policies de roles comparadas y limpieza (Claude)
 
-**En `main`, sin deployar la function.** `4324c38` a `b77d083`. El front no
-cambio: lo que hay que publicar es la edge function `gerente-webhook`.
+**Publicado y verificado.** `4324c38` a `b77d083`, CI verde en `f03e231`. El
+front no cambio. `gerente-webhook` la deployo Ricky el 17/oct y el webhook
+quedo registrado (run `39001644500`: "Coincide con la esperada: si").
 
 ### Hecho
 
@@ -44,14 +45,24 @@ cambio: lo que hay que publicar es la edge function `gerente-webhook`.
   Se registra con el workflow **GerenteDico webhook** (secret `GERENTEDICOBOT`
   de GitHub). La key de Anthropic ya no hace falta para esta etapa.
 
-### Para publicar GerenteDico (Ricky)
+### Verificado (en produccion)
+
+- `/start` llego (POST 200, sin errores en `function_logs`) y Ricky recibio
+  la bienvenida.
+- "como viene crazy-miga": contesto 3 pedidos completados, $ 161.000, ultimo
+  el 10/10 y los 8 productos con precio. Coincide con la base.
+
+### Como se publico (por si hay que repetirlo)
+
 
 1. En la terminal del repo: `npm run deploy:functions -- --only gerente-webhook`
    (o `node platform/scripts/deploy-functions.mjs --only gerente-webhook`).
    Tiene que terminar con `gerente-webhook (no-verify-jwt) ... ok`.
-2. GitHub → repo `hermes-gastro` → **Actions** → **GerenteDico webhook** →
-   **Run workflow** → accion `registrar` → **Run workflow**. Al final del log:
-   `Coincide con la esperada: si`.
+2. `gh workflow run gerente-webhook.yml -f accion=registrar` desde la terminal
+   de Ricky (o GitHub → **Actions** → **GerenteDico webhook** → **Run
+   workflow**, con sesion iniciada). Al final del log:
+   `Coincide con la esperada: si`. El clasificador no deja que el agente lo
+   dispare.
 3. En Telegram, a GerenteDico: `/start`. Contesta con lo que sabe hacer.
    Despues: `como viene crazy-miga esta semana?`
 
