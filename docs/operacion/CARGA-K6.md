@@ -40,6 +40,7 @@ rotas.
 npm run carga:catalogo
 npm run carga:catalogo -- --vus=50 --meseta=5m
 npm run carga:catalogo -- --tenants=crazy-miga --imagenes
+npm run carga:catalogo -- --sin-mp           # la visita sin mp-status
 ```
 
 El wrapper (`scripts/carga/correr.mjs`) lee la URL y la key publicable del
@@ -110,6 +111,32 @@ llamo a `get_catalog` en esas ventanas.
   `mp-status`, nada contra la cuota mensual del free tier.
 - Todo medido desde una sola PC en Argentina: la red de esa PC entra en los
   numeros de punta a punta.
+
+## mp-status: antes y despues simulado (17/oct/2026)
+
+`--sin-mp` corre la visita sin `mp-status`, como quedaria si se pide recien
+cuando hay carrito. `visita_ms` es lo que espera la visita: el mas lento de
+los pedidos que salen juntos. 100 usuarios, 2m de meseta, una corrida pegada a
+la otra:
+
+| | Requests | Invocaciones de edge | `visita_ms` med / p95 / max | Errores |
+|---|---|---|---|---|
+| Antes (con `mp-status`) | 1736 | 868 | 248 / 340 / 1780 ms | 0 |
+| Despues (`--sin-mp`) | 880 | 0 | 111 / 183 / 1200 ms | 0 |
+
+La mitad de los requests por visita y ninguna invocacion de edge function. Los
+tiempos son de los pedidos de red: **el render de la home no espera a
+`mp-status`** (es un `useEffect` aparte en `Catalog.jsx`), asi que lo que se
+gana es cuota y una conexion menos compitiendo en el primer segundo (pesa en
+datos moviles), no que la home pinte 130 ms antes.
+
+**Incidente de red en la primera corrida "antes":** 19% de visitas rotas, p90
+de 19 s. No fue la base ni un 429: fueron conexiones TCP que no se abrieron o
+se cortaron (`connectex`, `EOF`) contra las IPs de Cloudflare que estan delante
+de Supabase. La corrida siguiente dio 0 errores y la repeticion del "antes"
+tambien. No se sabe si fue la red de la PC o el borde de Supabase. Si vuelve a
+pasar, mirar si los clientes reales tuvieron errores en esa ventana (Sentry,
+logs de la API).
 
 ## Lo que salio para mejorar
 

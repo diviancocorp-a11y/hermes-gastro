@@ -30,9 +30,14 @@ const VUS = Number(__ENV.CARGA_VUS || 20);
 const MESETA = __ENV.CARGA_MESETA || '3m';
 const TENANTS = (__ENV.CARGA_TENANTS || 'la-nona-pato,crazy-miga,cochi').split(',').map((s) => s.trim()).filter(Boolean);
 const IMAGENES = __ENV.CARGA_IMAGENES === '1';
+// CARGA_MP=0 simula el catalogo sin mp-status en la visita (se pediria recien
+// con carrito). Sirve para medir el antes y el despues de sacarlo.
+const CON_MP = __ENV.CARGA_MP !== '0';
 
 const tCatalogo = new Trend('get_catalog_ms', true);
 const tMpStatus = new Trend('mp_status_ms', true);
+// Lo que espera la visita: el mas lento de los pedidos que salen juntos.
+const tVisita = new Trend('visita_ms', true);
 const visitaRota = new Rate('visita_rota');
 
 export const options = {
@@ -51,7 +56,7 @@ export const options = {
   // Si se pasa de estos umbrales k6 sale con codigo distinto de 0, como un gate.
   thresholds: {
     get_catalog_ms: ['p(95)<800'],
-    mp_status_ms: ['p(95)<1500'],
+    ...(CON_MP && { mp_status_ms: ['p(95)<1500'] }),
     visita_rota: ['rate<0.01'],
     http_req_failed: ['rate<0.01'],
   },
@@ -67,15 +72,19 @@ const HEADERS = {
 export default function () {
   const slug = TENANTS[Math.floor(Math.random() * TENANTS.length)];
 
-  const [rCat, rMp] = http.batch([
+  const pedidos = [
     ['POST', `${URL}/rest/v1/rpc/get_catalog`, JSON.stringify({ p_tenant_slug: slug }),
       { headers: HEADERS, tags: { name: 'get_catalog', tenant: slug } }],
-    ['POST', `${URL}/functions/v1/mp-status`, JSON.stringify({ tenant_slug: slug }),
-      { headers: HEADERS, tags: { name: 'mp-status', tenant: slug } }],
-  ]);
+  ];
+  if (CON_MP) {
+    pedidos.push(['POST', `${URL}/functions/v1/mp-status`, JSON.stringify({ tenant_slug: slug }),
+      { headers: HEADERS, tags: { name: 'mp-status', tenant: slug } }]);
+  }
+  const [rCat, rMp] = http.batch(pedidos);
 
   tCatalogo.add(rCat.timings.duration, { tenant: slug });
-  tMpStatus.add(rMp.timings.duration, { tenant: slug });
+  if (rMp) tMpStatus.add(rMp.timings.duration, { tenant: slug });
+  tVisita.add(Math.max(rCat.timings.duration, rMp ? rMp.timings.duration : 0), { tenant: slug });
 
   let productos = [];
   const ok = check(rCat, {
@@ -88,7 +97,7 @@ export default function () {
         return false;
       }
     },
-  }) && check(rMp, { 'mp-status 200': (r) => r.status === 200 });
+  }) && (!rMp || check(rMp, { 'mp-status 200': (r) => r.status === 200 }));
   visitaRota.add(!ok);
 
   if (IMAGENES) {

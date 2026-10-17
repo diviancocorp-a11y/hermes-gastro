@@ -79,6 +79,7 @@ const r = spawnSync(k6, ['run', '--summary-export', resumen, script], {
     ...(flags.meseta && { CARGA_MESETA: flags.meseta }),
     ...(flags.tenants && { CARGA_TENANTS: flags.tenants }),
     ...(flags.imagenes && { CARGA_IMAGENES: '1' }),
+    ...(flags['sin-mp'] && { CARGA_MP: '0' }),
   },
 });
 
