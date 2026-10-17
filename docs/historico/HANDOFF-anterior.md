@@ -9,6 +9,162 @@
 
 ---
 
+## 7-9/oct/2026 — Crazy Miga: del alta a vender por Telegram (Claude)
+
+Crazy Miga es una dark kitchen (cookies) que cobra por alias o efectivo, sin la
+API de MercadoPago. Su dueno es `@Crazymiga` en Telegram; el bot es
+`@Crazymigabot`. Plan gratis. Detalle tecnico de Telegram en
+`docs/plataforma/TELEGRAM.md`.
+
+### Hecho
+
+**El negocio.** No se creo un tenant: se **reutilizo el de `mala-miga`**
+(`eb7a0184-bb22-4f70-a87f-abd7fa81f08d`) y se renombro. El nombre vive en TRES
+lugares (`tenants.name`, `tenants.settings.biz_name`, `settings.biz_name`);
+`get_tenant_brand` lee la tercera, y por eso la pestana del panel siguio
+diciendo "Mala Miga" despues del primer renombre. Ahora lo hace
+`rename_tenant(slug, nombre, slug_nuevo)` (0084, solo service role). Quedo en
+modo `virtual`, canales `delivery/pickup/whatsapp`, slug `crazy-miga`. La URL
+vieja `mala-miga.divianco.app` ya no resuelve (sin redireccion).
+
+**El catalogo** (cargado por SQL, no por la UI): 7 productos activos (3 sabores
+x grande y pack x4 de minis, mas **La Nave Crazy**, 16 minis: 5 choco, 5 blanco,
+6 dulce de leche, $59.000), 19 insumos, recetas y costos tomados de la planilla
+de costeo de Ricky (Drive, 8/oct). Los 11 productos viejos de Mala Miga quedaron
+**archivados, no borrados**. Decisiones que no se deducen del codigo:
+- La receta manda la **planilla**, no el JSON de recetas que paso primero
+  (manteca 120 g por tanda, **sin melaza**, y las flores).
+- **Flores a $10.000 por gramo**: Ricky confirmo que son caras. Bajaron de 2 g a
+  **1,5 g cada 50 g de manteca** (3,6 g por tanda) para aliviar el costo.
+- **Cookie grande de 35 g** (antes 45): una tanda rinde 19 grandes, no 15. El
+  precio ($9.000) no se toco; deja ~$3.700 de margen vs ~$2.050 de la planilla.
+- **Packaging como insumos** (categoria Packaging) dentro de cada receta, con
+  la **merma del 10% aplicada a las cantidades** (una grande descuenta 1,1
+  cajas), asi el costo coincide con la planilla y el stock cuenta las roturas.
+- Papel parafinado 25x40 ($66,53) unifico el de las grandes y el del combo; la
+  faja es $299,68 (papel kraft $49,68 + impresion $250 de Diseniobar, del
+  propio relevamiento); caja del combo microcorrugada 20x17x5 ($266,99).
+- La planilla da la cookie grande al 77% de costo con 45 g y flores a 2 g; hoy
+  da ~58%. Los packs de minis estan en ~28%; **empujar packs y combo**.
+
+**Telegram, tres etapas** (ver TELEGRAM.md):
+1. Boton de menu del bot -> `https://crazy-miga.divianco.app` (sin codigo).
+2. `src/lib/telegram.js` + `useTelegramMiniApp`: expandida, colores del negocio,
+   Atras nativo (apoyado en `history.back()` y el evento `hg-layers` que emite
+   `useAndroidBack`). El SDK se carga solo si se abrio desde Telegram.
+3. Avisos: trigger `tg_avisar_pedido` en `orders` (0085) -> pg_net ->
+   `tg-notificar`. **Se eligio el trigger y no tocar `submit-order`/`mp-webhook`**
+   porque cubre cualquier origen del cambio de estado (checkout, panel, bot) y
+   no exige redeployar la function critica. Nunca bloquea un pedido (todo en
+   EXCEPTION) y no llama a nadie si el negocio no tiene chats activos.
+   `tg-webhook` recibe `/start` y los botones Aceptar/Rechazar; `tg-vincular`
+   valida el HMAC del `initData` y ata el chat al **telefono** (ultimos 10
+   digitos). **El dueno nunca se auto-asigna**: `kind='owner'` se marca a mano.
+   Rechazar un pedido pagado por MP desde el bot esta bloqueado; por
+   transferencia se deja y se recuerda devolver a mano.
+   Cada function lleva **su copia de `validar.ts`** (se despliegan solas y no ven
+   la carpeta de otra); hay un test que falla si las copias difieren.
+
+**Catalogo y envio** (migraciones 0083 a 0088; todas reescriben `get_catalog` y
+cada una es identica a la anterior mas una linea):
+- **0083 aplicada hoy** (ver "Correccion" abajo).
+- **0086** emite `has_physical_store` (el checkout solo oculta el retiro con
+  `=== false` y la funcion nunca lo mandaba: `undefined` contaba como "tiene
+  local"). Default `true`: nadie mas cambia. Crazy Miga solo entrega.
+- **0087** emite `free_delivery_over`; envio gratis si el subtotal **supera**
+  $60.000 (los $60.000 justos no). `esEnvioGratis` en `origenDelEnvio.js`.
+- **0088** emite `delivery_zone = {partidos, notice}`. `evaluarZona` mira
+  `county`, `state_district` y `municipality` (Nominatim no es consistente: San
+  Isidro lo trae en county, Pilar en state_district) y la Capital por
+  `state`/`ISO3166-2-lvl4 = AR-C`. **Solo 'fuera' bloquea**; si Nominatim no da
+  un partido reconocible se deja pasar (fail-open), porque un geocodificador
+  incompleto no puede dejar sin venta a quien si esta en zona. Cubre texto, GPS
+  y direcciones guardadas (antes dos de los tres caminos se saltaban la regla).
+- Datos de Crazy Miga: punto base **San Fernando** (-34.4420, -58.5590, centro
+  aproximado), **$3.700 cada 10 km** en bloques (10/20/30/40 km y "el resto"
+  $18.500), partidos Vicente Lopez, San Isidro, San Fernando, Tigre y Pilar, y
+  un aviso visible ("de General Paz a Pilar, no dentro de villas").
+
+### Correccion: la 0083 nunca se habia aplicado
+
+Afirme que "la base rechaza los pedidos sin ubicacion" leyendo el comentario de
+la 0083. **No estaba aplicada** (no existia `private.tiene_ubicacion` ni el
+trigger) y, peor, el front publicado exige `catalogo_activo === true` y
+`get_catalog` no lo devolvia: **ningun negocio podia tomar pedidos en
+produccion**, no solo Crazy Miga. La aplique tal cual estaba en el repo. Efecto:
+**cochi y la-nona-pato siguen sin poder pedir hasta cargar su ubicacion**, y
+ahora tambien lo impide la base. Dos rarezas del registro de migraciones: la
+0083 figura con version posterior a la 0085 (se aplico despues), y la base
+tiene aplicada la **0079** cuyo archivo **no esta en `main`**: vive en la
+worktree paralela `claude/recursing-gauss-acdbb9` (commit `08f82ba`, sin
+mergear). No se toco.
+
+### Verificado
+
+- **En produccion, con un pedido real** (envio, efectivo, $12.700 con $3.700 de
+  envio): el trigger llamo a `tg-notificar` tres veces, las tres **HTTP 200 con
+  `enviados: 1`** (nuevo -> dueno; preparando y listo -> cliente). Ricky reporto
+  que pasaron las tres pruebas de checkout: direccion de Pilar (pasa), de
+  Palermo (frena) y pedido de mas de $60.000 (envio gratis).
+- Tests: 26 de Telegram, 6 de envio gratis/tramos, 10 de zona; typecheck, build
+  y los 87 de humo del pre-commit en verde en cada commit.
+- **NO verificado**: que Ricky haya visto llegar los mensajes en el celular
+  (Telegram los acepto, nada mas); una transferencia por alias; el boton
+  **Rechazar**; el Atras nativo y el color de la barra dentro de Telegram; nada
+  se vio en el navegador (no hay tests que rendericen el checkout).
+- **Rojos que ya estaban**: 7 tests fallan igual sobre `HEAD` limpio (se
+  comprobo con un stash): `origenDelEnvio` (5, esperan un campo `propio` que el
+  codigo no devuelve), `dicoPanel` (1) y `dicoIdentidad` (1). No se tocaron.
+
+### Pendiente inmediato
+
+1. **`SMOKE_TENANTS` (variable de GitHub) todavia dice `mala-miga`**: el smoke y
+   el reporte de la manana dan 404 en ese negocio. Hay que cambiarla a
+   `crazy-miga` (esta en `TAREAS-MANUALES.md`). `smoke-pedido.yml` ya se
+   corrigio. Ojo: el `slug` por defecto de ese workflow es `cochi`, que **hoy no
+   puede pedir** (sin ubicacion); y si se corre contra `crazy-miga`, el pedido
+   de prueba dispara los avisos de Telegram al dueno.
+2. **`submit-order` no revalida zona, retiro ni envio gratis**: el costo y la
+   zona se deciden en el cliente (el geocoding es client-side) y la function solo
+   acota el costo al escalon mas caro. Alguien que la llame a mano se los
+   saltea. Cerrarlo exige tocarla y redeployarla.
+3. **El numero de ticket sale vacio en los mensajes** (`ticket_number` es null en
+   pedidos del catalogo): dicen "Pedido nuevo " sin numero. Cosmetico; usar los
+   ultimos caracteres del id como respaldo.
+4. **Telegram Web no abre la mini app**: `vercel.json` manda
+   `X-Frame-Options: SAMEORIGIN` y `frame-ancestors 'self'`. Celular y
+   escritorio no se ven afectados. Relajarlo toca la seguridad de todos los
+   negocios; no se decidio.
+5. Las villas no se excluyen por geografia (no hay poligonos): solo el aviso y el
+   criterio del dueno al aceptar. Si se quiere, una lista de barrios por nombre.
+6. Los 7 tests rojos de arriba.
+7. **Heredados de secciones archivadas que no se revisaron hoy**:
+   `e2e/delivery-persistence.spec.ts` habla con el schema legacy y se saltea
+   siempre; la `0075_la_comanda_sale_por_papel` no figura en las migraciones
+   aplicadas pero sus funciones existen; el panel legacy es codigo muerto;
+   Dependabot abrio PRs de versiones mayores (#3 a #11) y la idea era solo
+   parches de seguridad; la propuesta (sin respuesta) de que un push de solo
+   docs no publique (Ignored Build Step).
+
+### Bloqueado por Ricky
+
+- **Variable `SMOKE_TENANTS`** en GitHub: `la-nona-pato,cochi,crazy-miga`.
+- **Confirmar que le llegaron los mensajes** del bot, con el texto y los botones
+  bien, y probar **Rechazar** y una **transferencia por alias**.
+- **Fotos de los 7 productos y stock inicial de los 19 insumos.**
+- **Usuario `ricardoars13@gmail.com`** (Menu → Usuarios): crearlo requiere la
+  service role o el panel; no se hizo.
+- **Confirmar la lista de partidos** (hoy 5; quiza San Martin, Malvinas
+  Argentinas, Escobar, Tres de Febrero) y el punto exacto de San Fernando.
+- **Ubicacion de cochi y la-nona-pato**, o no pueden tomar pedidos.
+- Las **credenciales** (token del bot, service role) las cargo siempre Ricky;
+  el alias/CBU tambien: es un dato bancario y no se ingresa desde aca. El deploy
+  de las edge functions (`node platform/scripts/deploy-functions.mjs --only ...`)
+  y el registro del webhook (`platform/scripts/telegram-webhook.mjs`) los corre
+  el, porque el clasificador bloquea el primero.
+
+---
+
 ## 28/sep/2026 — Sala de control Dico y launcher silencioso (Codex)
 
 ### Lo que pidio Ricky
