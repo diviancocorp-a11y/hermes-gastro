@@ -85,8 +85,16 @@ function BrandPanel() {
   );
 }
 
+// La landing manda /registro?negocio=<nombre> desde la frase del cierre.
+// Solo precarga el nombre: el resto del alta no cambia.
+function negocioDeLaUrl() {
+  if (typeof window === 'undefined') return '';
+  const nombre = new URLSearchParams(window.location.search).get('negocio') || '';
+  return nombre.trim().slice(0, 80);
+}
+
 export default function Signup() {
-  const [bizName, setBizName] = useState('');
+  const [bizName, setBizName] = useState(negocioDeLaUrl);
   const [slug, setSlug] = useState('');
   const [slugTocado, setSlugTocado] = useState(false);
   const [vertical, setVertical] = useState('gastro');

@@ -14,6 +14,17 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import { crearTenantPendiente, urlDelNegocio } from '../services/signup';
+import '../styles/bienvenido.css';
+
+// La puesta en marcha: una hora con Ricardo para cargar recetas, equipo y
+// horarios. Mismo link que la landing.
+const AGENDA_URL = 'https://cal.com/ricardo.r/reunion';
+
+// Antes eran 2200 ms: alcanzaba para leer "te llevamos" y nada mas. Con el
+// link de la agenda hace falta tiempo para leerlo y tocarlo; el link abre en
+// otra pestania, asi que la redireccion no lo pisa, y "Entrar ahora" sigue
+// para quien no quiere esperar.
+const ESPERA_REDIRECCION_MS = 6000;
 
 const C = {
   bg: '#0f0e0d', tx: '#f5f1ea', t2: 'rgba(245,241,234,0.6)',
@@ -60,7 +71,7 @@ export default function Bienvenido() {
 
   useEffect(() => {
     if (estado !== 'ok' || !slug) return;
-    const t = setTimeout(() => { window.location.href = urlDelNegocio(slug); }, 2200);
+    const t = setTimeout(() => { window.location.href = urlDelNegocio(slug); }, ESPERA_REDIRECCION_MS);
     return () => clearTimeout(t);
   }, [estado, slug]);
 
@@ -127,6 +138,17 @@ export default function Bienvenido() {
         >
           Entrar ahora
         </a>
+        <p>
+          <a
+            className="bv-agenda"
+            href={AGENDA_URL}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => marcarEvento('agenda')}
+          >
+            Agendá tu puesta en marcha
+          </a>
+        </p>
       </div>
     </main>
   );
