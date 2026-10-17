@@ -423,6 +423,7 @@ Ya evaluadas (no reabrir sin un motivo nuevo):
 | Anti-slop (varias) | No | Se pisa con `impeccable` + `check:diseno` |
 | Thermos (ports de Cursor) | No | Se pisa con `/code-review`; ports no oficiales |
 | ECC (everything-claude-code) | No | Cientos de skills y hooks: ruido de contexto y superficie de hooks ajenos |
+| k6 (Grafana, carga) | En prueba (rama `prueba/k6`) | Mide la carga sobre Supabase; no se pisa con ningun check. Binario aparte, no toca `package.json`. Ver `docs/operacion/CARGA-K6.md` |
 
 ## Antes de razonar sobre una RPC, traela
 

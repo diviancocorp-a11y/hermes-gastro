@@ -25,6 +25,7 @@ se contradicen, gana el que esta fuera de `historico/`.
 | `plataforma/PORTAR-UNA-PANTALLA.md` | El orden para rehacer una pantalla desde un render | **Antes de tocar la primera linea** |
 | `marca/` | Dico como identidad: design system, tipografia, el personaje | Al tocar cualquier cosa visual |
 | `operacion/` | Runbooks, seguridad, cobros, performance | Cuando algo falla en produccion |
+| `operacion/CARGA-K6.md` | Pruebas de carga con k6 y la linea base | Antes de un pico o de sumar tenants |
 | `historico/` | Cerrado. Se conserva para entender el porque, no el que | Solo para arqueologia |
 | `historico/HANDOFF-anterior.md` | Las secciones viejas del HANDOFF | Para saber por que se decidio algo |
 
