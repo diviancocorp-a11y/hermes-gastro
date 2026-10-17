@@ -15,6 +15,8 @@
 // previa de mas vale mas que un 500.
 
 const PLATFORM_ROOTS = ['divianco.app'];
+// Version de public/brand/og/dico.png (la genera scripts/generar-og-landing.mjs).
+const OG_VERSION = 1;
 
 function slugFromHost(host) {
   const h = String(host || '').toLowerCase().replace(/:\d+$/, '');
@@ -42,7 +44,16 @@ export default async function handler(req, res) {
   let title = 'Dico — Sabé cuánto ganás, no solo cuánto vendés';
   let description = 'Gestión para gastronomía: recetas con costo real, nómina por '
     + 'hora y la ganancia neta de cada noche.';
-  let image = null;
+  // La imagen de la raiz la genera scripts/generar-og-landing.mjs. Medidas
+  // fijas: con width/height declarados WhatsApp la muestra grande al primer
+  // envio, sin esperar a bajarla para saber el tamano.
+  // URL fija y versionada: los previews *.vercel.app tienen proteccion y el
+  // bot recibiria 401, y WhatsApp cachea por URL (subir la version al
+  // regenerarla).
+  let image = slug ? null : `https://divianco.app/brand/og/dico.png?v=${OG_VERSION}`;
+  const imageMeta = slug ? '' : '<meta property="og:image:width" content="1200">\n'
+    + '<meta property="og:image:height" content="630">\n'
+    + '<meta property="og:image:alt" content="Dico: sabé cuánto ganás, no solo cuánto vendés">';
   let color = '#0f0e0d';
 
   if (slug) {
@@ -87,10 +98,12 @@ export default async function handler(req, res) {
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(url)}">
 ${image ? `<meta property="og:image" content="${esc(image)}">` : ''}
+${imageMeta}
 <meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}">
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 ${image ? `<meta name="twitter:image" content="${esc(image)}">` : ''}
+${slug ? '' : '<meta name="twitter:image:alt" content="Dico: sabé cuánto ganás, no solo cuánto vendés">'}
 </head>
 <body>
 <h1>${esc(title)}</h1>
