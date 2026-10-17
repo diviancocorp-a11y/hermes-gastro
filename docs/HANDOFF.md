@@ -13,9 +13,9 @@
 
 ## 17/oct/2026 (tarde) — GerenteDico etapa 3: memoria de la charla y "anotar" (Claude)
 
-**La base ya tiene la 0099 y el código está en `main`, pero la function NO está
-publicada.** Falta que Ricky cargue el token de GitHub y redeploye
-`gerente-webhook` (pasos abajo). Hasta entonces el bot sigue como en la etapa 2.
+**Publicado y verificado.** `2aadfe3` a `b119081`, CI verde en `b119081`.
+Ricky cargó `GERENTE_GITHUB_TOKEN`, redeployó `gerente-webhook` e hizo la
+prueba del paso D el 17/oct. El front no cambió.
 
 ### Hecho
 
@@ -98,13 +98,21 @@ Si en el paso 3 dice "falta el secret GERENTE_GITHUB_TOKEN", el paso B no
 quedó guardado. Si en el 4 dice "no tiene permiso de Issues", el paso A.6 o
 A.5 quedaron mal: hay que crear un token nuevo.
 
+### Verificado (en producción)
+
+- `gerente_notas`: una nota `creada`, "Probar la función anotar", con
+  `issue_number` 29. El issue #29 existe en GitHub con el label `gerentedico`
+  y el cuerpo esperado (detalle, pedido original citado, pie con la fecha).
+- `gerente_mensajes` vacía después del `/olvidar` del final, como corresponde.
+  La memoria (paso D.2) no se puede ver en la base por eso; Ricky la probó en
+  el chat.
+- `function_logs` de 04:56 a 05:01 UTC: solo boot/shutdown, ningún warning de
+  guardado ni error de OpenAI o GitHub.
+
 ### Pendiente
 
-1. Ricky: pasos A a D de arriba.
-2. Después del paso D, verificar en la base (`gerente_mensajes`,
-   `gerente_notas` con estado `creada` e `issue_url`) y marcar esta sección
-   como publicada.
-3. Próxima etapa: que un issue `gerentedico` se convierta en PR y preview sin
+1. Cerrar el issue #29 (era de prueba).
+2. Próxima etapa: que un issue `gerentedico` se convierta en PR y preview sin
    pasar por una sesión a mano.
 
 ## 17/oct/2026 — GerenteDico conversa (etapa 2), policies de roles comparadas y limpieza (Claude)
