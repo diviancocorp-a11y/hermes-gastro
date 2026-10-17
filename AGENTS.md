@@ -177,12 +177,46 @@ rate-limit mas validacion interna.
      sistema);
   4. subagente `disenador` construye, `auditor-diseno` audita en solo lectura;
   5. medicion antes/despues y link del preview de Vercel para que Ricky lo vea.
-- `.claude/settings.json` registra un hook `UserPromptSubmit`
-  (`scripts/hooks/linea-diseno.mjs`) que recuerda la regla en cada turno: en
-  una sesion larga lo escrito aca se pierde, el hook no.
-- Codex no tiene ese hook ni subagentes: lee `.claude/skills/diseno/SKILL.md`
+- La regla la recuerda el orquestador de skills (abajo): en una sesion larga
+  lo escrito aca se pierde, el hook no.
+- Codex no tiene hooks ni subagentes: lee `.claude/skills/diseno/SKILL.md`
   y sigue los mismos pasos, haciendo la auditoria como pasada aparte.
 - Lo que no toca UI (migraciones, edge functions, scripts) no pasa por `/diseno`.
+
+### Orquestador de skills: cual va y cuando (17/oct/2026)
+
+Para que Ricky no tenga que activar ni acordarse de cada skill. Las reglas
+viven en `scripts/hooks/orquestador-reglas.json` (regex sobre el prompt sin
+tildes, sin LLM; se editan ahi) y las corre `scripts/hooks/orquestador.mjs`.
+**Codex no tiene hooks**: estas mismas reglas, en texto, son las que tiene que
+seguir solo.
+
+| Si el pedido habla de... | Antes de hacer nada |
+|---|---|
+| UI: pantalla, componente, css, jsx, estilos, colores, botones, la landing | `/diseno`. Skill estetica: `design-taste-frontend` si es pantalla nueva o rediseno, `impeccable` si es pulir lo que hay |
+| La base: RPC, tabla, migracion, columna, policy, RLS, trigger | `npm run mapa -- <nombre>` antes de razonar; migraciones con expandir y contraer |
+| Cerrar la sesion, terminar por hoy, guardar el trabajo | `/cerrardico` |
+| Retomar, en que quedamos, que hay pendiente | `/dico` |
+| Competencia, un competidor | skill `analisis-competencia` |
+
+- **Ruteo** (hook `UserPromptSubmit`, `orquestador.mjs ruteo`): inyecta solo
+  la indicacion que aplica; si no aplica ninguna, no dice nada. Una skill que
+  ya se cargo en la sesion no se vuelve a pedir.
+- **Candado** (hook `PreToolUse` sobre `Edit|Write|MultiEdit`,
+  `orquestador.mjs candado`): al editar `src/**/*.jsx`, `src/**/*.css` o
+  `index.html` (tests aparte) sin `/diseno` cargado en la sesion, le agrega
+  al modelo el aviso de cargarla. Lo cargado sale del transcript leido como
+  JSON por linea (tool `Skill`, su resultado o el `/diseno` que escribio
+  Ricky), no de un grep: el texto aparece en cualquier salida que lo busque.
+  Los subagentes `disenador` y `auditor-diseno` estan exentos.
+- **Aviso y no bloqueo**: la deteccion es confiable en el hilo principal,
+  pero un subagente que no sea de la linea de diseno no ve las skills del
+  padre, y hay ediciones de UI chicas que Ricky pide sin la linea. Si se
+  quiere que frene, `"modo": "bloqueo"` en el JSON y la edicion se rechaza
+  hasta cargar la skill.
+- Nunca rompe un turno: JSON roto, transcript ilegible o entrada rara terminan
+  en salida vacia y exit 0. Tests en `src/test/orquestadorSkills.test.js`
+  (los prompts de ejemplo de cada regla): si tocas una regla, corre ese test.
 
 ### Migraciones: expandir y despues contraer (16/oct/2026)
 
