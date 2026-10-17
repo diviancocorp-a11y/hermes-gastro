@@ -9,6 +9,53 @@
 
 ---
 
+## 27/sep/2026 — Dico 3D sale del Slot y queda flotante (Codex)
+
+### Lo que pidio Ricky
+
+Sacar Dico 3D de la sidebar porque el Slot provocaba ciclos infinitos de
+apertura y cierre; hacerlo aparecer centrado, moverlo para guiar acciones,
+reusar la burbuja de Dico 2D, marcar objetivos con un pulso dorado y evitar
+que la pose `thinking` se repita para siempre.
+
+### Hecho
+
+- `DicoPresence` ya no monta `DicoSlot` ni comparte el layout de la sidebar.
+  `DicoFloatingPhysical` porta Physical a `document.body`, entra desde el
+  centro y viaja hacia el nodo real de `objetivo` cuando la intervencion lo
+  publica. Esto elimina la cadena hover -> resize de sidebar -> desplazamiento.
+- `DicoFloatingPhysical` usa `MensajeDico`, el mismo componente de mensaje de
+  Dico 2D. Los objetivos reales y los CTA reciben `.dico-guia-target` o
+  `.dico-mensaje-accion--guiado`, con contorno y pulso dorado.
+- `DicoPhysical` respeta `bucle: false`; la fila `espera` del atlas termina en
+  su ultimo cuadro. El 3D no convive con Native durante una intervencion.
+- `PlatformAdmin` dejo de suprimir Physical en mobile y dejo de reservar
+  espacio para el Slot. Se retiraron las reglas de `.ag-sidebar .dico-slot`.
+
+### Verificado
+
+- 41/41 tests de Physical, Presence y expresiones.
+- 67/67 tests Dico adicionales, incluyendo avisos, intervenciones, Slot y
+  machineSoul.
+- Build de Vite en verde.
+- No se pudo inspeccionar el MP4 adjunto desde el sandbox; se implemento el
+  cambio a partir del comportamiento y el codigo existentes.
+
+### Pendiente inmediato
+
+1. QA visual en QA Lite con una intervencion `catalogo-vacio` y otra de Caja,
+   en desktop y mobile, para calibrar el destino y el tamano del conjunto.
+2. Confirmar en navegador que el pulso dorado no tapa botones en pantallas
+   chicas; si molesta, ajustar solo el offset del outline.
+
+### Bloqueado por Ricky
+
+El commit/push queda pendiente: el entorno rechazo la escritura de
+`.git/index.lock`. El arbol sigue compartido con cambios concurrentes ajenos;
+no se hizo `git add -A`, reset ni limpieza destructiva.
+
+---
+
 ## 27/sep/2026 — El pet Dico tiene una rutina ambiental (Codex)
 
 ### Lo que pidio Ricky

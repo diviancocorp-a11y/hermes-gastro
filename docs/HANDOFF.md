@@ -11,6 +11,85 @@
 
 ---
 
+## 16-17/oct/2026 (noche) — Sentry vivo de punta a punta y alerta a GerenteDico (Claude)
+
+**Publicado.** Todo en `main`, de `2e5957f` a `7962a7c`. Producción de
+`hermes-platform` `READY` en `7962a7c` (redeploy de Ricky de las 02:28 UTC
+del 17/oct, ya con las variables de Sentry). CI verde en el último push.
+
+### Hecho
+
+- **Ricky cargó todo lo de Sentry** (pasos en `docs/plataforma/SENTRY.md`):
+  - en Vercel: `VITE_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT` y
+    `SENTRY_AUTH_TOKEN`;
+  - la integración interna GerenteDico en Sentry y la regla "Error nuevo →
+    Telegram";
+  - los secrets de `sentry-alerta` en Supabase;
+  - un token de Sentry nuevo con `event:write` en el secret de GitHub
+    `SENTRY_AUTH_TOKEN`.
+- `2e5957f` — **el tag `tenant` de Sentry sale del subdominio**
+  (`tenantDelHost` en `src/lib/observability.js`; lo usan el reporter liviano
+  y `sentryFull.js`). Antes decía `edificio` para todos y no se podía filtrar
+  por negocio. En la landing vale `raiz`; fuera de `*.divianco.app`, el build.
+  El build quedó en su propio tag `build` y se sacó `tenant_name`, que siempre
+  decía "Dico".
+- `5665c0f` — `checkSentryEnBuild` mira **todos** los chunks que nombra la
+  landing. El DSN queda en `observability-*.js`, no en `index-*.js`: con todo
+  bien cargado iba a seguir dando rojo.
+- `8f7cae9` — **`probar_alerta`** (input de morning-health a mano, módulo
+  `scripts/sentry-prueba.mjs`). Manda un error de prueba con el DSN del build
+  publicado. Cada prueba lleva un fingerprint nuevo porque la regla avisa
+  solo por issue nuevo; con el mismo fingerprint, la segunda prueba no
+  avisaría. El tag `prueba:alerta` lo excluye del resumen diario.
+- `7962a7c` — cada corrida de morning-health **cierra sola las pruebas
+  viejas** (issues abiertos con `prueba:alerta`). Si el token no tiene
+  `event:write`, lo dice en el reporte en vez de fallar.
+- **Regla de Sentry** (MCP): se le sacó el disparador "issue resuelto", que
+  mandaba "🚨 Error nuevo" al cerrar un error. Quedan tres: issue nuevo,
+  reaparecido y regresión.
+
+### Verificado (en producción)
+
+- El bundle publicado trae el DSN y la función del tenant por subdominio.
+  Release `dico@2e5957f1`, después `dico@7962a7cd`.
+- Cadena entera, dos veces:
+  - **16/oct:** error mandado desde la base por `pg_net` (`HERMES-GASTRO-Q`).
+  - **17/oct:** con `probar_alerta`, run `38992938659` (`HERMES-GASTRO-R`).
+  - El camino fue el mismo: Sentry lo recibió, la regla se disparó y
+    `sentry-alerta` arrancó 2-3 s después. **Ricky confirmó que llegó a
+    Telegram** las dos veces.
+- Run `38995065906`: "pruebas de alerta: ✓ 1 cerrada(s)", así que el token
+  nuevo escribe. El filtro `!prueba:alerta` se comprobó en Sentry: el issue
+  de prueba aparece sin el filtro y desaparece con él.
+- **Sourcemaps:** el build de las 02:28 corrió `sentry-vite-plugin`, Sentry
+  registró el release `dico@7962a7cd` con deploy `vercel-production`, y los
+  `.map` dan 404 en el sitio (se borran después de subirlos).
+  - **No verificado:** cuántos archivos recibió el release, porque el log del
+    build vino cortado. La prueba real es que el primer error real llegue con
+    archivo y línea, no minificado.
+
+### Pendiente inmediato
+
+1. Cuando entre el primer error real: confirmar que llega des-minificado y
+   con `tenant` = el negocio. Si llega minificado, revisar los artifacts del
+   release en Sentry.
+2. GerenteDico conversacional (sigue sin código). Etapa 2: edge function
+   `gerente-webhook`, solo el chat de Ricky, herramientas de solo lectura.
+   Etapa 3: "anotá que hay que arreglar X" → issue → PR → preview. Necesita
+   el ok y la `ANTHROPIC_API_KEY` de Ricky.
+3. Comparar una por una las policies que tocan `roles_y_alcance_policies` y
+   `roles_barrido_de_policies_viejas`. Hoy solo se sabe que `check:rls` las da
+   cerradas.
+4. Por mirar, sin verificar en esta sesión: crazy-miga muestra 8 productos en
+   el catálogo y en la base parecían 19; MiaEstudio no tiene tenant en el
+   edificio.
+
+### Bloqueado por Ricky
+
+- Nada de Sentry. Los puntos 1 y 2 del "Bloqueado" del 16/oct (Telegram y
+  `SMOKE_TENANTS`) quedaron resueltos ese mismo día.
+- Lo de GerenteDico (punto 2 de arriba): el ok y la key.
+
 ## 16/oct/2026 — La base y el repo vuelven a decir lo mismo; morning-health vigila lo que no veía (Claude)
 
 **Publicado.** Todo en `main`, de `b0c3416` a `cd82ca5`, en commits de un
@@ -574,48 +653,3 @@ de QA Lite no se puede generar una sesión autenticada de navegador ni hacer
 la verificación visual final. La clave, si el bootstrap vuelve a ejecutarse,
 seguirá quedando sólo en `.qa-lite/revision-phase4.txt` y
 `~/.dico-qa-lite/owner-pass.txt`; no se copia al chat.
-
-## 27/sep/2026 — Dico 3D sale del Slot y queda flotante (Codex)
-
-### Lo que pidio Ricky
-
-Sacar Dico 3D de la sidebar porque el Slot provocaba ciclos infinitos de
-apertura y cierre; hacerlo aparecer centrado, moverlo para guiar acciones,
-reusar la burbuja de Dico 2D, marcar objetivos con un pulso dorado y evitar
-que la pose `thinking` se repita para siempre.
-
-### Hecho
-
-- `DicoPresence` ya no monta `DicoSlot` ni comparte el layout de la sidebar.
-  `DicoFloatingPhysical` porta Physical a `document.body`, entra desde el
-  centro y viaja hacia el nodo real de `objetivo` cuando la intervencion lo
-  publica. Esto elimina la cadena hover -> resize de sidebar -> desplazamiento.
-- `DicoFloatingPhysical` usa `MensajeDico`, el mismo componente de mensaje de
-  Dico 2D. Los objetivos reales y los CTA reciben `.dico-guia-target` o
-  `.dico-mensaje-accion--guiado`, con contorno y pulso dorado.
-- `DicoPhysical` respeta `bucle: false`; la fila `espera` del atlas termina en
-  su ultimo cuadro. El 3D no convive con Native durante una intervencion.
-- `PlatformAdmin` dejo de suprimir Physical en mobile y dejo de reservar
-  espacio para el Slot. Se retiraron las reglas de `.ag-sidebar .dico-slot`.
-
-### Verificado
-
-- 41/41 tests de Physical, Presence y expresiones.
-- 67/67 tests Dico adicionales, incluyendo avisos, intervenciones, Slot y
-  machineSoul.
-- Build de Vite en verde.
-- No se pudo inspeccionar el MP4 adjunto desde el sandbox; se implemento el
-  cambio a partir del comportamiento y el codigo existentes.
-
-### Pendiente inmediato
-
-1. QA visual en QA Lite con una intervencion `catalogo-vacio` y otra de Caja,
-   en desktop y mobile, para calibrar el destino y el tamano del conjunto.
-2. Confirmar en navegador que el pulso dorado no tapa botones en pantallas
-   chicas; si molesta, ajustar solo el offset del outline.
-
-### Bloqueado por Ricky
-
-El commit/push queda pendiente: el entorno rechazo la escritura de
-`.git/index.lock`. El arbol sigue compartido con cambios concurrentes ajenos;
-no se hizo `git add -A`, reset ni limpieza destructiva.
