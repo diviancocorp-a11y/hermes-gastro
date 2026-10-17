@@ -12,6 +12,12 @@
 // de ruta (clic en WhatsApp, alta enviada) se mandan como visita virtual a
 // /evento/<nombre>: en el panel aparecen como una pagina mas. Si la cuenta
 // pasa a Pro, esto se puede cambiar por va('event', ...).
+//
+// OJO: despues de una visita virtual el script de Vercel se queda con ese
+// path para las visitas siguientes que hagan pushState. Hoy no pasa porque
+// landing, registro y bienvenida salen siempre con recarga completa (<a href>
+// o location.href), que reinicia el script. Si alguna pasa a navegar con
+// react-router, esto cuenta mal.
 
 import { classifyHost } from './tenantHost';
 
