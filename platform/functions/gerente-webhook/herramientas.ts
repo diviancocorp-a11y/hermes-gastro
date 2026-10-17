@@ -1,8 +1,10 @@
 // Lo que GerenteDico puede consultar, y la logica pura que lo resume.
 //
-// Todo es de SOLO LECTURA: ninguna herramienta escribe en la base. Se le pasan
-// a OpenAI como `tools` (function calling); el modelo elige cual llamar y con
-// que argumentos, y index.ts las ejecuta con la service role.
+// Las de consulta son de SOLO LECTURA. La unica que escribe es `anotar`, y no
+// crea nada afuera: deja una nota pendiente en gerente_notas y el issue sale
+// recien cuando Ricky contesta SI (anotar.ts). Se le pasan a OpenAI como
+// `tools` (function calling); el modelo elige cual llamar y con que
+// argumentos, y index.ts las ejecuta con la service role.
 //
 // Lo que sale de aca no lleva datos personales de los clientes de cada negocio
 // (nombre, telefono, direccion): solo conteos, montos y estados.
@@ -47,6 +49,28 @@ export const HERRAMIENTAS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "anotar",
+      description: "Propone anotar algo para arreglar o hacer como issue de GitHub. NO lo crea: "
+        + "el sistema le muestra a Ricky el texto y lo crea solo si el contesta SI. Usala cuando "
+        + "Ricky pida anotar, agendar o dejar registrado un arreglo o una tarea.",
+      parameters: {
+        type: "object",
+        properties: {
+          titulo: { type: "string", description: "titulo corto y concreto, hasta 80 caracteres" },
+          detalle: {
+            type: "string",
+            description: "que hay que hacer y por que, en 2 a 5 lineas. Sin montos, sin datos de "
+              + "clientes (nombres, telefonos, direcciones): el repo es publico",
+          },
+        },
+        required: ["titulo", "detalle"],
+        additionalProperties: false,
+      },
+    },
+  },
 ] as const;
 
 export const PROMPT_SISTEMA = [
@@ -54,7 +78,9 @@ export const PROMPT_SISTEMA = [
   "Cada negocio vive en <slug>.divianco.app. Le contestas a Ricky, el dueno de Divianco, por Telegram.",
   "Espanol argentino, breve y directo, sin Markdown (Telegram lo muestra crudo).",
   "Solo afirmas lo que sale de las herramientas. Si para responder necesitas un dato que ninguna",
-  "herramienta da, decilo y no lo inventes. No podes cambiar nada: solo consultar.",
+  "herramienta da, decilo y no lo inventes. No podes cambiar nada de los negocios: solo consultar.",
+  "Si Ricky te pide anotar un arreglo o una tarea, usa la herramienta anotar. Eso no crea el issue:",
+  "el sistema le muestra el texto y espera su SI. Nunca digas que ya quedo anotado.",
   "Montos en pesos argentinos, con separador de miles (ej: $ 59.000).",
 ].join(" ");
 
