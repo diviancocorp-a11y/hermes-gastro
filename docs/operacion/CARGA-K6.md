@@ -158,3 +158,17 @@ logs de la API).
   segundos caen todos en el mismo momento.
 - Escenario de panel (logueado): ahi pegan las policies de los advisors.
 - Escenario de checkout contra un tenant de prueba, a ritmo bajo.
+
+## Historial
+
+Lo corre la skill `/carga` (`.claude/skills/carga/SKILL.md`) cada 15 dias, los
+dias 1 y 16 a las 10:00, desde una tarea programada de la app de Claude en la
+PC de Ricky. Si la app esta cerrada a esa hora, corre al abrirla. Una fila por
+corrida; se compara contra la anterior con los mismos usuarios.
+
+| Fecha | Usuarios | Meseta | Visitas | Errores | `get_catalog` med / p95 | `mp-status` med / p95 | `visita_ms` p95 | Postgres por llamada |
+|---|---|---|---|---|---|---|---|---|
+| 2026-10-17 | 20 | 3m | 239 | 0 | 116 / 204 ms | 273 / 375 ms | - | ~3 ms |
+| 2026-10-17 | 50 | 3m | 576 | 0 | 112 / 250 ms | 260 / 454 ms | - | 2,7 ms |
+| 2026-10-17 | 100 | 3m | 1153 | 0 | 112 / 261 ms | 253 / 462 ms | - | 2,6 ms |
+| 2026-10-17 | 100 | 2m | 868 | 0 | 111 / 175 ms | 248 / 337 ms | 340 ms | - |
