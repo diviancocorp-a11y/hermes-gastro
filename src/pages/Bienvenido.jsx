@@ -14,17 +14,14 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import { crearTenantPendiente, urlDelNegocio } from '../services/signup';
+import { AGENDA_URL } from '../lib/contactoPlataforma';
 import '../styles/bienvenido.css';
 
-// La puesta en marcha: una hora con Ricardo para cargar recetas, equipo y
-// horarios. Mismo link que la landing.
-const AGENDA_URL = 'https://cal.com/ricardo.r/reunion';
-
-// Antes eran 2200 ms: alcanzaba para leer "te llevamos" y nada mas. Con el
-// link de la agenda hace falta tiempo para leerlo y tocarlo; el link abre en
-// otra pestania, asi que la redireccion no lo pisa, y "Entrar ahora" sigue
-// para quien no quiere esperar.
-const ESPERA_REDIRECCION_MS = 6000;
+// Antes eran 2,2 s: alcanzaba para leer "te llevamos" y nada mas. Ahora hay
+// una cuenta regresiva visible de 6 s para leer y tocar el link de la
+// puesta en marcha. Tocar o enfocar ese link, o "Quedarme acá", cancela la
+// redireccion; "Entrar ahora" sigue para quien no quiere esperar.
+const ESPERA_REDIRECCION_S = 6;
 
 const C = {
   bg: '#0f0e0d', tx: '#f5f1ea', t2: 'rgba(245,241,234,0.6)',
@@ -42,6 +39,8 @@ export default function Bienvenido() {
   const [estado, setEstado] = useState('cargando'); // cargando | ok | sin-sesion | error
   const [slug, setSlug] = useState(null);
   const [error, setError] = useState(null);
+  const [restan, setRestan] = useState(ESPERA_REDIRECCION_S);
+  const [quedarse, setQuedarse] = useState(false);
   const yaCorrio = useRef(false);
 
   useEffect(() => {
@@ -70,10 +69,18 @@ export default function Bienvenido() {
   }, []);
 
   useEffect(() => {
-    if (estado !== 'ok' || !slug) return;
-    const t = setTimeout(() => { window.location.href = urlDelNegocio(slug); }, ESPERA_REDIRECCION_MS);
-    return () => clearTimeout(t);
-  }, [estado, slug]);
+    if (estado !== 'ok' || !slug || quedarse) return undefined;
+    const t = setInterval(() => setRestan((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [estado, slug, quedarse]);
+
+  useEffect(() => {
+    if (estado === 'ok' && slug && !quedarse && restan === 0) {
+      window.location.href = urlDelNegocio(slug);
+    }
+  }, [estado, slug, quedarse, restan]);
+
+  const cancelar = () => setQuedarse(true);
 
   if (estado === 'cargando') {
     return <main style={wrap}><p style={{ color: C.t2 }}>Activando tu negocio…</p></main>;
@@ -126,8 +133,14 @@ export default function Bienvenido() {
         <h1 style={{ fontSize: 25, margin: '14px 0 10px' }}>¡Tu local ya existe!</h1>
         <p style={{ color: C.t2, fontSize: 15, lineHeight: 1.55 }}>
           Está en <strong style={{ color: C.ac }}>{slug}.divianco.app</strong>
-          <br />Te llevamos para allá…
+          <br />
+          {quedarse ? 'Te quedás acá: entrá cuando quieras.' : `En ${restan} s te llevamos para allá.`}
         </p>
+        {!quedarse && (
+          <button type="button" className="bv-quedarme" onClick={cancelar}>
+            Quedarme acá
+          </button>
+        )}
         <a
           href={urlDelNegocio(slug)}
           style={{
@@ -144,7 +157,9 @@ export default function Bienvenido() {
             href={AGENDA_URL}
             target="_blank"
             rel="noreferrer"
-            onClick={() => marcarEvento('agenda')}
+            onPointerDown={cancelar}
+            onFocus={cancelar}
+            onClick={() => { cancelar(); marcarEvento('agenda'); }}
           >
             Agendá tu puesta en marcha
           </a>

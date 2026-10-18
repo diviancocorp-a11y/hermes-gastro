@@ -24,14 +24,11 @@
   --pl-paso-2: var(--ds-color-neutral-800);
   --pl-tinta: var(--ds-color-neutral-50);
   --pl-tinta-suave: var(--ds-color-neutral-400);
-  /* Nombres en espera de la prueba social: mas de 3:1 sobre el suelo. */
-  --pl-tinta-tenue: color-mix(in srgb, var(--ds-color-neutral-50) 44%, var(--ds-color-neutral-950));
   --pl-oro: var(--ds-color-brand-gold-500);
   --pl-oro-claro: var(--ds-color-brand-gold-300);
   --pl-oro-tinta: var(--ds-color-neutral-950);
   --pl-crema: var(--ds-color-neutral-100);
   --pl-campo-oro: var(--ds-color-brand-gold-900);
-  --pl-campo-oro-2: var(--ds-color-brand-gold-700);
   --pl-alerta: var(--ds-color-status-error);
 
   /* Tipo: cinco pasos */
@@ -41,7 +38,7 @@
   --pl-t2: clamp(36px, 5.2vw, 88px);
   --pl-t3: clamp(22px, 2.5vw, 36px);
   --pl-t4: clamp(17px, 1.3vw, 20px);
-  --pl-t5: 15px;
+  --pl-t5: var(--ds-type-md);
 
   /* Espacio: un par de margenes, un hueco entre secciones */
   --pl-m: clamp(16px, 2vw, 28px);
@@ -260,26 +257,38 @@
 
 [data-ui] .pl-ficha-concepto {
   color: var(--pl-tinta-suave);
-  font-size: 13px;
+  font-size: var(--ds-type-sm);
 }
 
 [data-ui] .pl-ficha-valor {
-  font-size: 19px;
+  font-size: var(--ds-type-lg);
   font-weight: 700;
 }
+
+[data-ui] .pl-ficha-resumen { display: none; }
 
 [data-ui] .pl-ficha-neto > span { justify-self: end; text-align: right; }
 
 [data-ui] .pl-ficha-neto .pl-ficha-valor {
   color: var(--pl-oro);
-  font-size: 26px;
+  font-size: var(--ds-type-xl);
   letter-spacing: -0.02em;
 }
 
+/* Hasta 1320 px no entran los tres costos: se juntan en uno y la cuenta
+   sigue cerrando (4.200 − 1.840 = 2.360). Hasta 1180 la ficha mide menos
+   que un renglon de rotulos y cifras: quedan las cifras, que se leen como
+   la resta que son. */
+@media (max-width: 1320px) {
+  [data-ui] .pl-ficha-detalle { display: none; }
+  [data-ui] .pl-ficha-resumen { display: contents; }
+  [data-ui] .pl-ficha-in { grid-template-columns: repeat(2, auto) 1.3fr; padding-top: 4px; }
+  [data-ui] .pl-ficha-neto .pl-ficha-valor { font-size: var(--ds-type-lg); }
+}
+
 @media (max-width: 1180px) {
-  [data-ui] .pl-ficha-fila:nth-child(4),
-  [data-ui] .pl-ficha-fila:nth-child(5) { display: none; }
-  [data-ui] .pl-ficha-in { grid-template-columns: repeat(2, auto) 1.3fr; }
+  [data-ui] .pl-ficha-concepto { display: none; }
+  [data-ui] .pl-ficha-in { grid-template-rows: auto; align-content: center; padding-block: 0; }
 }
 
 /* Telefono y tablet: la frase se parte en dos y la ficha va en el medio,
@@ -306,7 +315,7 @@
     align-items: stretch;
     gap: 6px;
     padding: 16px 18px;
-    font-size: 15px;
+    font-size: var(--pl-t5);
   }
 
   [data-ui] .pl-ficha-cab {
@@ -316,20 +325,21 @@
   }
 
   [data-ui] .pl-ficha-fila,
-  [data-ui] .pl-ficha-fila:nth-child(4),
-  [data-ui] .pl-ficha-fila:nth-child(5) {
+  [data-ui] .pl-ficha-detalle {
     display: flex;
     justify-content: space-between;
     gap: 12px;
   }
 
-  [data-ui] .pl-ficha-concepto { font-size: 15px; }
-  [data-ui] .pl-ficha-valor { font-size: 15px; }
+  [data-ui] .pl-ficha-resumen { display: none; }
+  [data-ui] .pl-ficha-concepto { display: inline; }
+  [data-ui] .pl-ficha-concepto,
+  [data-ui] .pl-ficha-valor { font-size: var(--pl-t5); }
 
   [data-ui] .pl-ficha-neto { padding-top: 6px; }
 
   [data-ui] .pl-ficha-neto .pl-ficha-concepto { color: var(--pl-tinta); font-weight: 600; }
-  [data-ui] .pl-ficha-neto .pl-ficha-valor { font-size: 17px; }
+  [data-ui] .pl-ficha-neto .pl-ficha-valor { font-size: var(--ds-type-lg); }
 }
 
 @media (max-width: 900px) {
@@ -432,7 +442,9 @@
   width: 100%;
   padding: 0;
   border: 0;
-  border-radius: var(--ds-radius-1);
+  /* Subrayado del campo: neutral-400 sobre neutral-900, mas de 3:1. */
+  border-bottom: 0.04em solid var(--pl-tinta-suave);
+  border-radius: 0;
   background: transparent;
   color: var(--pl-tinta);
   caret-color: var(--pl-oro);
@@ -442,6 +454,8 @@
 }
 
 .pl-cuenta-input::placeholder { color: var(--pl-tinta-suave); }
+
+.pl-cuenta-input:focus-visible { border-bottom-color: var(--pl-oro); }
 
 .pl-cuenta-cuerpo {
   display: grid;
@@ -457,7 +471,7 @@
   padding: 20px 24px 22px;
   border-radius: var(--pl-radio);
   background: var(--pl-suelo);
-  font-size: 16px;
+  font-size: var(--pl-t4);
   font-variant-numeric: tabular-nums;
 }
 
@@ -500,10 +514,11 @@
 }
 
 [data-ui] .pl-cierre-pct input {
-  width: 5.6ch;
-  min-height: 36px;
+  width: 7ch;
+  min-height: 44px;
   padding: 4px 8px;
-  border: 1px solid var(--pl-paso-2);
+  /* neutral-400 sobre neutral-900: el borde del campo pasa 3:1. */
+  border: 1px solid var(--pl-tinta-suave);
   border-radius: var(--ds-radius-2);
   background: var(--pl-paso);
   color: var(--pl-tinta);
@@ -512,10 +527,7 @@
   transition: border-color var(--pl-hover) ease;
 }
 
-[data-ui] .pl-cierre-pct input:focus-visible {
-  border-color: var(--pl-oro);
-  outline: 0;
-}
+[data-ui] .pl-cierre-pct input:focus-visible { border-color: var(--pl-oro); }
 
 [data-ui] .pl-cierre-monto {
   text-align: right;
@@ -532,7 +544,7 @@
 
 [data-ui] .pl-cierre-neto .pl-cierre-monto {
   color: var(--pl-oro);
-  font-size: 24px;
+  font-size: var(--ds-type-xl);
   font-weight: 700;
 }
 
@@ -546,7 +558,7 @@
   padding: 10px 12px;
   border-radius: var(--ds-radius-2);
   background: var(--pl-paso);
-  font-size: 15px;
+  font-size: var(--pl-t5);
 }
 
 [data-ui] .pl-cierre-aviso img {
@@ -602,7 +614,7 @@
   .pl-cuenta-cuerpo { grid-template-columns: 1fr; margin-top: 28px; }
   .pl-cierre-ui[data-ui],
   .pl-cuenta-lado { grid-column: 1; max-width: none; }
-  [data-ui] .pl-cierre-pct input { min-height: 44px; }
+  [data-ui] .pl-cierre-pct input { min-height: 48px; }
 
   .pl-cuenta-ejemplos { gap: 8px; }
 
@@ -620,7 +632,7 @@
 }
 
 @media (max-width: 420px) {
-  .pl-cierre-ui[data-ui] { padding: 16px; font-size: 15px; }
+  .pl-cierre-ui[data-ui] { padding: 16px; font-size: var(--pl-t5); }
   [data-ui] .pl-cierre-pct { padding-right: 10px; }
   [data-ui] .pl-cierre-margen { padding-right: 10px; }
 }
@@ -664,7 +676,7 @@
 
 [data-ui] .pl-tramo-dur {
   display: block;
-  font-size: clamp(20px, 2vw, 30px);
+  font-size: var(--ds-type-xl);
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -688,7 +700,7 @@
   [data-ui] .pl-tramo-minutos .pl-tramo-bloque { min-height: 72px; }
   [data-ui] .pl-tramo-horas .pl-tramo-bloque { min-height: 136px; }
   [data-ui] .pl-tramo-dias .pl-tramo-bloque { min-height: 200px; }
-  [data-ui] .pl-tramo-dur { font-size: 22px; }
+
   [data-ui] .pl-tramo-texto { max-width: 40ch; }
 }
 
@@ -705,7 +717,8 @@
 }
 
 .pl-cliente {
-  color: var(--pl-tinta-tenue);
+  /* neutral-400 sobre el suelo: 6,5:1. El encendido va en tinta plena. */
+  color: var(--pl-tinta-suave);
   transition: color 400ms ease;
 }
 
@@ -781,31 +794,52 @@
 
 .pl-banda.on .pl-banda-frase { color: var(--pl-tinta); }
 
-/* Cada banda encendida tiene su campo: dos vecinas nunca comparten color. */
-.pl-banda.on:nth-child(4n + 1) { background: var(--pl-paso-2); }
-.pl-banda.on:nth-child(4n + 2) { background: var(--pl-campo-oro); }
-.pl-banda.on:nth-child(4n + 3) { background: var(--pl-paso); }
-.pl-banda.on:nth-child(4n + 4) { background: var(--pl-campo-oro-2); }
+/* Cada banda encendida tiene su campo: dos vecinas nunca comparten color.
+   Son tres campos oscuros a proposito: sobre los tres el oro de la pista y
+   la tinta del foco pasan 3:1 (gold-700 quedaba en 2,6:1). */
+.pl-banda.on:nth-child(3n + 1) { background: var(--pl-paso-2); }
+.pl-banda.on:nth-child(3n + 2) { background: var(--pl-campo-oro); }
+.pl-banda.on:nth-child(3n + 3) { background: var(--pl-paso); }
 
-/* El interruptor es el de la interfaz de Dico. Su area tactil se estira a
-   toda la banda: tocar la frase tambien lo prende. */
+/* El boton muestra el nombre del modulo y una pista como la de la interfaz
+   de Dico. No prende el modulo: abre la consecuencia (aria-expanded). Su
+   area tactil se estira a toda la banda. */
 .pl-interruptor[data-ui] {
   display: flex;
   align-items: center;
-  width: 76px;
-  height: 42px;
-  padding: 5px;
+  gap: 16px;
+  min-height: 48px;
+  padding: 0;
   border: 0;
-  border-radius: var(--ds-radius-pill);
-  background: var(--pl-paso-2);
+  background: none;
+  color: var(--pl-tinta-suave);
+  font: inherit;
+  font-size: var(--pl-t5);
+  text-align: right;
   cursor: pointer;
-  transition: background-color var(--pl-hover) ease;
+  transition: color var(--pl-hover) ease;
 }
+
+.pl-interruptor[data-ui]:focus-visible { outline-color: var(--pl-tinta); }
 
 .pl-interruptor[data-ui]::after {
   content: '';
   position: absolute;
   inset: 0;
+}
+
+[data-ui] .pl-interruptor-pista {
+  display: flex;
+  align-items: center;
+  flex: none;
+  width: 76px;
+  height: 42px;
+  padding: 3px;
+  /* Apagada: borde neutral-400, 6,5:1 sobre el suelo. */
+  border: 2px solid var(--pl-tinta-suave);
+  border-radius: var(--ds-radius-pill);
+  background: var(--pl-paso-2);
+  transition: background-color var(--pl-hover) ease, border-color var(--pl-hover) ease;
 }
 
 [data-ui] .pl-interruptor-perilla {
@@ -816,15 +850,20 @@
   transition: transform 220ms var(--pl-sale), background-color var(--pl-hover) ease;
 }
 
-.pl-interruptor[data-ui][aria-checked='true'] { background: var(--pl-oro); }
+.pl-interruptor[data-ui][aria-expanded='true'] { color: var(--pl-tinta); }
 
-.pl-interruptor[data-ui][aria-checked='true'] .pl-interruptor-perilla {
+.pl-interruptor[data-ui][aria-expanded='true'] .pl-interruptor-pista {
+  border-color: var(--pl-oro);
+  background: var(--pl-oro);
+}
+
+.pl-interruptor[data-ui][aria-expanded='true'] .pl-interruptor-perilla {
   transform: translateX(34px);
   background: var(--pl-oro-tinta);
 }
 
 .pl-interruptor[data-ui]:active .pl-interruptor-perilla { transform: scale(0.9); }
-.pl-interruptor[data-ui][aria-checked='true']:active .pl-interruptor-perilla { transform: translateX(34px) scale(0.9); }
+.pl-interruptor[data-ui][aria-expanded='true']:active .pl-interruptor-perilla { transform: translateX(34px) scale(0.9); }
 
 .pl-modulos-honesto {
   display: grid;
@@ -845,7 +884,14 @@
 .pl-modulos-honesto strong { color: var(--pl-tinta); font-weight: 600; }
 
 @media (max-width: 900px) {
-  .pl-banda { min-height: 132px; padding-block: 22px; }
+  .pl-banda {
+    grid-template-columns: 1fr;
+    row-gap: 12px;
+    min-height: 132px;
+    padding-block: 22px;
+  }
+
+  .pl-interruptor[data-ui] { justify-self: start; text-align: left; }
   .pl-modulos-honesto { grid-template-columns: 1fr; padding-top: 48px; }
   .pl-modulos-honesto p,
   .pl-modulos-honesto p + p { grid-column: 1; }
@@ -1082,6 +1128,8 @@
   height: 1.08em;
   padding: 0 0.18em;
   border: 0;
+  /* Subrayado del campo: neutral-400 sobre neutral-800, mas de 3:1. */
+  border-bottom: 0.05em solid var(--pl-tinta-suave);
   border-radius: var(--pl-radio);
   background: var(--pl-paso-2);
   color: var(--pl-tinta);
@@ -1127,9 +1175,12 @@
   .pl-cierre-input {
     display: block;
     width: 100%;
+    min-height: 48px;
     margin: 0.12em 0;
     vertical-align: baseline;
   }
+
+  .pl-cierre-boton { min-height: 44px; }
 
   .pl-cierre-nota { margin-top: 28px; }
 }
@@ -1172,7 +1223,6 @@
   font-weight: 600;
   letter-spacing: -0.045em;
   line-height: 1;
-  white-space: nowrap;
   font-variant-numeric: tabular-nums;
   text-decoration: underline;
   text-decoration-thickness: 0.05em;
@@ -1180,6 +1230,10 @@
   text-decoration-color: transparent;
   transition: text-decoration-color var(--pl-hover) ease;
 }
+
+/* Cada mitad del numero no se parte; si no entra (320 px), corta entre
+   las dos. */
+.pl-pie-telefono span { white-space: nowrap; }
 
 @media (hover: hover) and (pointer: fine) {
   .pl-pie-telefono:hover { text-decoration-color: currentColor; }
@@ -1216,8 +1270,9 @@
 
 @media (pointer: coarse) {
   .pl-cabecera-links .pl-enlace,
+  .pl-acciones .pl-enlace,
   .pl-pie-links .pl-enlace,
-  .pl-pie-arriba-link {
+  .pl-pie-arriba .pl-enlace {
     display: inline-flex;
     align-items: center;
     min-height: 44px;

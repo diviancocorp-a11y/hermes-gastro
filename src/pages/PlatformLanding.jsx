@@ -34,12 +34,16 @@
 // es "Probar gratis" (/registro) y la secundaria "Agendá una reunión" (Cal.com).
 //
 // PRUEBA SOCIAL: solo nombres y fotos reales de productos de clientes que
-// corren sobre Dico (La Nona Pato, Crazy Miga, MiaEstudio). Sin cifras de
+// corren sobre Dico (La Nona Pato y Crazy Miga). Sin cifras de
 // resultados: no hay datos firmes. Cada foto lleva el nombre del negocio al
 // pie y nunca se presenta como "un plato de ejemplo de Dico".
 
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
+import {
+  AGENDA_HORARIO, AGENDA_URL, WHATSAPP_HORARIO, WHATSAPP_URL,
+  WHATSAPP_VISIBLE, WHATSAPP_VISIBLE_PARTES,
+} from '../lib/contactoPlataforma';
 import '../styles/platform-landing.css';
 
 const TITULO = 'Dico — Sabé cuánto ganás, no solo cuánto vendés';
@@ -47,15 +51,8 @@ const DESCRIPCION = 'El sistema de gestión para restaurantes, parrillas, cafés
   + 'cocinas de delivery que te muestra la ganancia real de cada plato, cada '
   + 'turno y cada noche. Recetas con costo, nómina por hora y P&L en tiempo real.';
 
-// El telefono de Ricardo (17/oct/2026). El numero de EE.UU. ya no va.
-const WHATSAPP = '5491121829893';
-const WHATSAPP_VISIBLE = '+54 9 11 2182-9893';
-const WHATSAPP_TEXTO = 'Hola Ricardo, quiero conocer Dico para mi negocio.';
-const WHATSAPP_URL = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(WHATSAPP_TEXTO)}`;
+// Telefono, agenda y horarios: src/lib/contactoPlataforma.js.
 const marcarWhatsApp = () => marcarEvento('whatsapp');
-
-// La reunion: una hora en la oficina virtual (WorkAdventure), lun a vie 10-18.
-const AGENDA_URL = 'https://cal.com/ricardo.r/reunion';
 const marcarAgenda = () => marcarEvento('agenda');
 
 const pesos = (n) => `$${Math.round(n).toLocaleString('es-AR')}`;
@@ -64,8 +61,9 @@ const porcentaje = (n) => n.toLocaleString('es-AR', { maximumFractionDigits: 1 }
 // ── La noche del viernes ──
 // Es la misma noche en toda la pagina: la ficha del titular y el estado
 // inicial de la cuenta. Con estos porcentajes, $4.200 de venta dan
-// 1.050 + 651 + 139 = 1.840 de costos y 2.360 de ganancia neta.
-const VIERNES = { venta: 4200, insumos: '25', nomina: '15,5', merma: '3,3' };
+// 1.050 + 650 + 140 = 1.840 de costos y 2.360 de ganancia neta, los mismos
+// numeros que la ficha del titular.
+const VIERNES = { venta: 4200, insumos: '25', nomina: '15,48', merma: '3,33' };
 
 const EJEMPLOS = [
   { nombre: 'Un martes flojo', venta: 1900 },
@@ -94,7 +92,7 @@ const MODULOS = [
   {
     id: 'caja',
     nombre: 'Caja y arqueo',
-    frase: 'La caja que se cuadra sola.',
+    frase: 'La caja que te muestra la diferencia.',
     consecuencia: 'Efectivo, tarjeta o MercadoPago. Al cierre, el arqueo compara '
       + 'lo declarado con lo registrado y la diferencia aparece sola.',
   },
@@ -313,8 +311,8 @@ function Hero() {
 
       <div className="pl-hero-centro">
         <h1 id="pl-hero-titulo" className="pl-frase">
-          <span className="pl-frase-palabras">Sabé cuánto</span>
-          <FichaCierre />
+          <span className="pl-frase-palabras">Sabé cuánto</span>{' '}
+          <FichaCierre />{' '}
           <span className="pl-frase-palabras">ganás.</span>
         </h1>
         <div className="pl-acciones">
@@ -338,18 +336,21 @@ function Hero() {
    aria-hidden: el titular se lee "Sabé cuánto ganás." y la bajada dice lo que
    la ficha muestra. */
 function FichaCierre() {
+  // "resumen" junta los tres costos para los anchos donde no entran los tres
+  // (la cuenta tiene que cerrar a cualquier ancho: 4.200 − 1.840 = 2.360).
   const filas = [
-    ['Ventas', '$4.200'],
-    ['Insumos', '−$1.050'],
-    ['Nómina', '−$650'],
-    ['Merma', '−$140'],
+    ['Ventas', '$4.200', ''],
+    ['Insumos', '−$1.050', ' pl-ficha-detalle'],
+    ['Nómina', '−$650', ' pl-ficha-detalle'],
+    ['Merma', '−$140', ' pl-ficha-detalle'],
+    ['Costos', '−$1.840', ' pl-ficha-resumen'],
   ];
   return (
     <span className="pl-ficha" data-ui aria-hidden="true">
       <span className="pl-ficha-in">
         <span className="pl-ficha-cab">Cierre de caja · viernes</span>
-        {filas.map(([concepto, valor]) => (
-          <span className="pl-ficha-fila" key={concepto}>
+        {filas.map(([concepto, valor, clase]) => (
+          <span className={`pl-ficha-fila${clase}`} key={concepto}>
             <span className="pl-ficha-concepto">{concepto}</span>
             <span className="pl-ficha-valor">{valor}</span>
           </span>
@@ -493,12 +494,14 @@ function Cuenta() {
               </tr>
             </tbody>
           </table>
-          {aviso && (
-            <p className="pl-cierre-aviso">
-              <img src="/brand/dico/dico-2d-neutral.png" alt="" width="256" height="256" />
-              {aviso}
-            </p>
-          )}
+          <div aria-live="polite">
+            {aviso && (
+              <p className="pl-cierre-aviso">
+                <img src="/brand/dico/dico-2d-neutral.png" alt="" width="256" height="256" />
+                {aviso}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="pl-cuenta-lado">
@@ -537,7 +540,7 @@ function Tramos() {
           <span className="pl-tramo-bloque"><span className="pl-tramo-dur">Unos minutos</span></span>
           <span className="pl-tramo-texto">
             Primero creás la cuenta y tu carta queda online. Lo hacés solo,
-            desde <a href="/registro">Probar gratis</a>.
+            desde <a className="pl-enlace" href="/registro">Probar gratis</a>.
           </span>
         </li>
         <li className="pl-tramo pl-tramo-horas" data-reveal>
@@ -559,7 +562,8 @@ function Tramos() {
 
 /* ─────────────── 5. Quienes ya lo usan: nombres como una frase ─────────────── */
 
-const CLIENTES = ['La Nona Pato', 'Crazy Miga', 'MiaEstudio'];
+// Solo tenants reales del edificio (verificado en la base el 17/oct/2026).
+const CLIENTES = ['La Nona Pato', 'Crazy Miga'];
 
 const FOTOS_CLIENTES = [
   { src: '/brand/landing/crazy-choco-eclipse.webp', ancho: 900, alto: 900, alt: 'Cookie con chips de chocolate negro sobre una piedra oscura', pie: 'Choco Eclipse, de Crazy Miga' },
@@ -568,24 +572,46 @@ const FOTOS_CLIENTES = [
   { src: '/brand/landing/lnp-bruschettas.webp', ancho: 789, alto: 374, alt: 'Bruschettas con jamón crudo, morrones asados y cebolla caramelizada', pie: 'Bruschettas de La Nona Pato' },
 ];
 
+// Los nombres se encienden de a uno UNA sola vuelta, cuando la seccion entra
+// en pantalla, y despues quedan todos en tinta plena. Con movimiento reducido
+// (o si alguien lo activa a mitad de camino) quedan todos encendidos de una.
+const TODOS = -1;
+
 function Clientes() {
-  const [encendido, setEncendido] = useState(0);
+  const [encendido, setEncendido] = useState(TODOS);
+  const seccionRef = useRef(null);
 
   useEffect(() => {
-    if (sinMovimiento()) return undefined;
-    const t = setInterval(() => {
-      if (!document.hidden) setEncendido((i) => (i + 1) % CLIENTES.length);
-    }, 2000);
-    return () => clearInterval(t);
+    const seccion = seccionRef.current;
+    if (!seccion || typeof IntersectionObserver === 'undefined' || !window.matchMedia) return undefined;
+    const reducido = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let reloj = null;
+    const frenar = () => { clearInterval(reloj); reloj = null; setEncendido(TODOS); };
+    const arrancar = () => {
+      if (reducido.matches) return;
+      let i = 0;
+      setEncendido(0);
+      reloj = setInterval(() => {
+        i += 1;
+        if (i >= CLIENTES.length) frenar(); else setEncendido(i);
+      }, 2000);
+    };
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { io.disconnect(); arrancar(); }
+    }, { threshold: 0.4 });
+    io.observe(seccion);
+    const alCambiar = () => { if (reducido.matches) frenar(); };
+    reducido.addEventListener('change', alCambiar);
+    return () => { io.disconnect(); clearInterval(reloj); reducido.removeEventListener('change', alCambiar); };
   }, []);
 
   return (
-    <section className="pl-clientes" aria-label="Quiénes ya usan Dico">
+    <section className="pl-clientes" aria-label="Quiénes ya usan Dico" ref={seccionRef}>
       <p className="pl-clientes-frase" data-reveal>
         Ya trabajan con Dico{' '}
         {CLIENTES.map((nombre, i) => (
           <Fragment key={nombre}>
-            <span className={`pl-cliente${i === encendido ? ' encendido' : ''}`}>{nombre}</span>
+            <span className={`pl-cliente${encendido === TODOS || i === encendido ? ' encendido' : ''}`}>{nombre}</span>
             {i < CLIENTES.length - 2 ? ', ' : i === CLIENTES.length - 2 ? ' y ' : '.'}
           </Fragment>
         ))}
@@ -623,20 +649,23 @@ function Modulos() {
           return (
             <li className={`pl-banda pl-banda-${m.id}${on ? ' on' : ''}`} key={m.id} data-reveal>
               <div className="pl-banda-texto">
-                <p className="pl-banda-frase" id={`pl-banda-${m.id}`}>{m.frase}</p>
-                <p className="pl-banda-consecuencia" hidden={!on}>{m.consecuencia}</p>
+                <p className="pl-banda-frase">{m.frase}</p>
+                <p className="pl-banda-consecuencia" id={`pl-banda-${m.id}-detalle`} hidden={!on}>{m.consecuencia}</p>
               </div>
+              {/* Muestra u oculta la consecuencia: no prende ni apaga el modulo,
+                  por eso es un boton con aria-expanded y no un switch. */}
               <button
                 type="button"
-                role="switch"
-                aria-checked={on}
-                aria-labelledby={`pl-banda-${m.id}`}
-                title={m.nombre}
+                aria-expanded={on}
+                aria-controls={`pl-banda-${m.id}-detalle`}
                 className="pl-interruptor"
                 data-ui
                 onClick={() => alternar(m.id)}
               >
-                <span className="pl-interruptor-perilla" />
+                <span className="pl-interruptor-nombre">{m.nombre}</span>
+                <span className="pl-interruptor-pista" aria-hidden="true">
+                  <span className="pl-interruptor-perilla" />
+                </span>
               </button>
             </li>
           );
@@ -648,7 +677,7 @@ function Modulos() {
           Todo eso funciona hoy. Se conecta con MercadoPago (Checkout Pro con la
           cuenta de tu negocio, por ahora solo Argentina), responde los pedidos
           por WhatsApp, avisa al celular cuando entra un pedido o falta stock y
-          exporta a Excel o PDF lo que ves en pantalla, para tu contador.
+          te deja bajar en CSV o PDF lo que ves en pantalla, para tu contador.
         </p>
         <p data-reveal>
           Lo que todavía no está, dicho así: <strong>Cocina en pantalla</strong>,
@@ -732,7 +761,7 @@ function Preguntas() {
                 <>
                   {' '}
                   <a className="pl-enlace" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
-                    Escribime al {WHATSAPP_VISIBLE}
+                    Escribime al {WHATSAPP_VISIBLE}, {WHATSAPP_HORARIO}
                   </a>
                   .
                 </>
@@ -789,7 +818,13 @@ function Pie() {
       <div className="pl-pie-arriba">
         <img className="pl-pie-marca" src="/brand/dico/logo/dico-claro.png" alt="Dico" width="1368" height="452" />
         <p>Divianco, Buenos Aires.</p>
-        <p>Atiende Ricardo Rodríguez, de lunes a viernes, de 10 a 18&nbsp;h.</p>
+        <p>WhatsApp con Ricardo Rodríguez, {WHATSAPP_HORARIO}.</p>
+        <p>
+          <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
+            Agendá una reunión
+          </a>
+          , {AGENDA_HORARIO}.
+        </p>
         <a className="pl-enlace pl-pie-arriba-link" href="#pl-hero-titulo">Volver arriba</a>
       </div>
 
@@ -801,12 +836,12 @@ function Pie() {
         onClick={marcarWhatsApp}
         aria-label={`Escribir por WhatsApp al ${WHATSAPP_VISIBLE}`}
       >
-        {WHATSAPP_VISIBLE}
+        <span>{WHATSAPP_VISIBLE_PARTES[0]}</span>{' '}
+        <span>{WHATSAPP_VISIBLE_PARTES[1]}</span>
       </a>
 
       <div className="pl-pie-meta">
         <p className="pl-pie-links">
-          <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>Agendá una reunión</a>
           <a className="pl-enlace" href="mailto:hola@divianco.app">hola@divianco.app</a>
           <a className="pl-enlace" href="/entrar">Entrar</a>
         </p>
