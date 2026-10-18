@@ -34,7 +34,7 @@ describe('reglas', () => {
   });
 });
 
-describe('ruteo: 12 prompts de ejemplo', () => {
+describe('ruteo: 14 prompts de ejemplo', () => {
   const casos = [
     ['Mejorá el espaciado de los botones del checkout', ['diseno-pulir']],
     ['El header del catálogo se ve feo en el celular', ['diseno-pulir']],
@@ -48,6 +48,8 @@ describe('ruteo: 12 prompts de ejemplo', () => {
     ['Corré los tests y decime si pasa el CI', []],
     ['La tabla de pedidos se ve mal en la pantalla de stock', ['diseno-pulir', 'mapa-base']],
     ['/diseno pulí el botón de pagar', []],
+    ['Corré la prueba de carga del catálogo con k6', ['carga']],
+    ['¿Cuántos usuarios aguanta el sistema?', ['carga']],
   ];
   for (const [prompt, esperado] of casos) {
     it(prompt, () => expect(ids(prompt)).toEqual(esperado));
