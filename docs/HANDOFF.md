@@ -11,6 +11,30 @@
 
 ---
 
+## 19/oct/2026 — La Nona Pato: acceso y ubicacion de despacho (Codex)
+
+- El acceso fallaba por el enlace con doble n (`la-nonna-pato`). El tenant
+  existente es `la-nona-pato`; catalogo y `/admin` muestran La Nona Pato.
+  No se creo ni renombro ningun tenant. Estado `active`, 43 productos activos,
+  sin imagenes y sin pedidos al consultar; Ricardo figura como owner.
+- Solo datos de `c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb`: direccion de despacho
+  confirmada por Ricky en `settings.store_address` y en la sucursal Principal
+  (`10a833ea-0f8e-4b9f-9505-1259f30a15ba`). Coordenadas del pin que compartio
+  Ricky: `-34.4097901, -58.857199`. La sucursal sigue activa y default.
+- Verificado por readback SQL: direccion guardada, tenant activo y
+  `get_catalog('la-nona-pato')` devuelve `catalogo_activo=true`, esas coordenadas
+  y 43 productos. Browser de produccion muestra La Nona Pato y "Abierto".
+  No se envio pedido de prueba ni se verifico una venta completa.
+- Pendiente para terminar la configuracion comercial: horarios, WhatsApp,
+  medios/cuentas de pago y condiciones de envio. Siguen vacios; no se
+  inventaron valores. Sin horarios el catalogo muestra Abierto por defecto.
+- Sin cambios de codigo ni schema ni otros tenants. Solo documentacion en
+  `docs/`; no se crearon archivos fuera de `src/`, `docs/`, `platform/` o
+  `scripts/`. Preservados los archivos sin seguimiento y el trabajo paralelo.
+- Pendientes que siguen vigentes de las secciones a archivar: primer error
+  real desminificado de Sentry y existencia/alta de MiaEstudio no verificados
+  en esta tarea. GerenteDico etapas 2/3 se describen en las secciones siguientes.
+
 ## 19/oct/2026 — Carga inicial de Monare (Codex)
 
 ### Hecho y verificado en el edificio
@@ -361,68 +385,3 @@ A.5 quedaron mal: hay que crear un token nuevo.
 1. Cerrar el issue #29 (era de prueba).
 2. Próxima etapa: que un issue `gerentedico` se convierta en PR y preview sin
    pasar por una sesión a mano.
-
-## 17/oct/2026 — GerenteDico conversa (etapa 2), policies de roles comparadas y limpieza (Claude)
-
-**Publicado y verificado.** `4324c38` a `b77d083`, CI verde en `f03e231`. El
-front no cambio. `gerente-webhook` la deployo Ricky el 17/oct y el webhook
-quedo registrado (run `39001644500`: "Coincide con la esperada: si").
-
-### Hecho
-
-- `4324c38` — **`ci:esperar`**: un run cancelado por un push posterior
-  (`cancel-in-progress` de ci.yml) ya no sale rojo (exit 1), sale 2 y dice que
-  mire el CI del ultimo commit. Escribe una linea por consulta con el tiempo.
-  No estaba colgado: un `timeout 100 | tail` escondia que el CI seguia
-  corriendo. CLAUDE.md/AGENTS.md lo dicen.
-- `2dd1636` — **policies de `roles_y_alcance_policies` y
-  `roles_barrido_de_policies_viejas`**: las 28 policies vivas de expenses,
-  suppliers, sales, settings, staff, audit_log, cash_sessions y tenant_members
-  coinciden una por una con la 0050 (`cash_sessions_select` con la 0070). RLS
-  activa en las 8. La fila vieja dejaba a cashier/attendant insertar `sales`;
-  la base no. Veredicto en `scripts/migraciones-sin-archivo.json`.
-- **Crazy Miga** (ok de Ricky en el chat): se borraron los 11 productos de la
-  epoca Mala Miga (todos `active=false`, `is_archived=true`, del 27/sep, sin
-  pedidos, ventas, variantes, recetas ni favoritos). Quedan los 8 activos.
-- **Worktree `recursing-gauss-acdbb9`** borrada, y su rama local
-  `claude/beautiful-bun-4a9817`. Su unico commit (`6288f29`) es la 0096 con
-  otros comentarios; el SQL es el mismo. La rama sigue en origin como respaldo.
-- `b77d083` — **`gerente-webhook`** (etapa 2 de GerenteDico). Ricky le
-  escribe al bot y contesta OpenAI (`DICO_BRAIN`, `gpt-4o-mini`) con tres
-  herramientas de solo lectura: `negocios`, `pedidos`, `productos`. Sin datos
-  personales de clientes. Solo el chat `TELEGRAM_CHAT_ID`, secret_token
-  derivado del token. Si se contesta a un mensaje (un aviso de Sentry), ese
-  texto va de contexto. No guarda historia: cada mensaje es una charla nueva.
-  Se registra con el workflow **GerenteDico webhook** (secret `GERENTEDICOBOT`
-  de GitHub). La key de Anthropic ya no hace falta para esta etapa.
-
-### Verificado (en produccion)
-
-- `/start` llego (POST 200, sin errores en `function_logs`) y Ricky recibio
-  la bienvenida.
-- "como viene crazy-miga": contesto 3 pedidos completados, $ 161.000, ultimo
-  el 10/10 y los 8 productos con precio. Coincide con la base.
-
-### Como se publico (por si hay que repetirlo)
-
-
-1. En la terminal del repo: `npm run deploy:functions -- --only gerente-webhook`
-   (o `node platform/scripts/deploy-functions.mjs --only gerente-webhook`).
-   Tiene que terminar con `gerente-webhook (no-verify-jwt) ... ok`.
-2. `gh workflow run gerente-webhook.yml -f accion=registrar` desde la terminal
-   de Ricky (o GitHub → **Actions** → **GerenteDico webhook** → **Run
-   workflow**, con sesion iniciada). Al final del log:
-   `Coincide con la esperada: si`. El clasificador no deja que el agente lo
-   dispare.
-3. En Telegram, a GerenteDico: `/start`. Contesta con lo que sabe hacer.
-   Despues: `como viene crazy-miga esta semana?`
-
-Los secrets (`GERENTEDICOBOT`, `TELEGRAM_CHAT_ID`, `DICO_BRAIN`) ya estan en
-Supabase desde `sentry-alerta`: no hay que cargar nada.
-
-### Pendiente
-
-1. Primer error real en Sentry: des-minificado y con `tenant` (Ricky: esperar).
-2. GerenteDico etapa 3: "anota que hay que arreglar X" → issue → PR →
-   preview. Y memoria de la charla (necesita tabla y migracion).
-3. MiaEstudio sigue sin tenant en el edificio.
