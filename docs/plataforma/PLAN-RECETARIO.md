@@ -52,8 +52,20 @@ permisivas se combinan con OR).
 
 | Tabla | select | insert / update | delete |
 |---|---|---|---|
-| `product_ingredients` | a definir (ver abajo) | owner, manager | owner, manager (el guardado es borrar + insertar, `platformRecipes.js:151`) |
-| `ingredients` | miembros | a definir (ver abajo) | owner |
+| `product_ingredients` | miembros (sin cambio) | owner, manager | owner, manager (el guardado es borrar + insertar, `platformRecipes.js:151`) |
+| `ingredients` | miembros (sin cambio) | owner, manager, kitchen | owner |
+
+Resultado de las verificaciones (19/oct): el panel carga las líneas de receta
+para todos los roles, así que el select queda como está. La cocina da de alta
+insumos y carga merma desde StockPanel, y `register_waste` es invoker, así que
+la cocina mantiene la escritura. SQL listo en
+`platform/migrations/0102_recetas_e_insumos_por_rol.sql` y test por rol en
+`platform/tests/recetas_por_rol.sql`: antes de aplicar dio 23/56 (rojo
+esperado) y después, 56/56.
+
+**Fase 0 hecha el 19/oct/2026:** 0102 aplicada por MCP, test 56/56.
+Pendiente para la fase 2: StockPanel no esconde "Nuevo insumo" ni "Registrar
+merma" a los roles sin permiso; hoy les muestra el error genérico al guardar.
 
 Antes de escribir el SQL, verificar:
 
