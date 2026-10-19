@@ -51,14 +51,14 @@
   cargados, cero errores JS; la página pública de compras muestra Boedo,
   lunes a sábado y domingo cerrado (exit 0).
 
-### Filtros preparados, publicación pendiente de aprobación visual
+### Filtros publicados y verificados
 
 - 15 grupos en `settings.cat_groups`: Cajas, Espumantes, Vinos tintos,
   Vinos blancos, Hielo, Mauricio Lorca, Chandon, Salentein, Mumm, Freixenet,
   Malbec, Cabernet Sauvignon, Chardonnay, Syrah, Rosé. Categorías hoja por
   producto/presentación permiten pertenecer a varios grupos sin duplicarlo.
-- El catálogo ignoraba `settings.cat_groups`; corregido en la rama
-  `codex/monare-catalogo`, worktree `.claude/worktrees/monare-catalogo`, PR #38.
+- El catálogo ignoraba `settings.cat_groups`; corregido en PR #38, integrado
+  en main `905be1370a92757c152f57707aff320e8dd35977` con OK explícito de Ricky.
   Solo UI/helpers/tests: Catalog.jsx, HomeScreen.jsx, catalogCategories.js y
   catalogCategories.test.js. El fallback del edificio no cambió en ese PR.
 - Preview Vercel READY `dpl_4tYS8NJMF1M15oMWzL6AaJmxiLei`, rama temporal
@@ -77,9 +77,17 @@
   aria-pressed y foco de teclado. Todos 20, Cajas 4, Hielo 4, Espumantes 9.
   Sin imágenes rotas en la vista de Hielo. Detector de archivos tocados [];
   global 17 -> 17 (deuda previa). Sin pedido ni pago de prueba.
-- Pendiente inmediato: OK visual de Ricky para publicar los filtros en main;
-  después verificar SHA de producción y limpiar rama de preview/worktree.
-  Las imágenes y los datos ya están aplicados aunque el código siga en PR.
+- CI final del PR `0840512`: lint, typecheck,  unit tests, audit, build y
+  Playwright aprobados. Vercel producción READY
+  `dpl_FRtUES9XsmF99QTTGRh9YwAyznaH`, SHA `905be137`.
+  Verificado ahora en `monare.divianco.app`: version.json buildId `905be137`,
+  Cajas 4 / Hielo 4 / Espumantes 9 / Todos 20, chips 48 px y selección correcta;
+  26 imágenes cargadas, cero desborde y cero errores JS. Dirección y horario
+  correctos en la página pública de compras (Playwright exit 0).
+- Eliminadas worktree y ramas propias de revisión/preview después del merge,
+  sin tocar las de los demás chats. Temporales de imágenes limpios; los 40
+  WebP finales y el fondo maestro permanecen en Storage. La URL de preview
+  anterior queda solo como registro de la revisión; la tienda ya es pública.
 - Falta de negocio: 32 precios, precio de caja Ópalo, fotos definitivas y
   datos bancarios reales. No se inventaron. Sin recetas.
 - Archivos temporales en `.preview/monare-assets/` (ignorado) y temp del sistema
