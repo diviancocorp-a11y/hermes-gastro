@@ -9,6 +9,112 @@
 
 ---
 
+## 17/oct/2026 (tarde) — GerenteDico etapa 3: memoria de la charla y "anotar" (Claude)
+
+**Publicado y verificado.** `2aadfe3` a `b119081`, CI verde en `b119081`.
+Ricky cargó `GERENTE_GITHUB_TOKEN`, redeployó `gerente-webhook` e hizo la
+prueba del paso D el 17/oct. El front no cambió.
+
+### Hecho
+
+- **0099 `gerente_memoria_y_notas`**, aplicada por MCP con ok de Ricky. Crea
+  `gerente_mensajes` (la charla) y `gerente_notas` (los issues propuestos).
+  Son tablas de plataforma, **sin `tenant_id`**: es la charla de Ricky con el
+  bot, no datos de un negocio. RLS activa, cero policies y sin grants para
+  anon/authenticated (verificado en la base). Snapshot del edificio al día
+  hasta 0099.
+- **Memoria:** a OpenAI le llegan los últimos 10 mensajes de las últimas 12 h.
+  Se guarda solo el texto de Ricky y la respuesta final, nunca los resultados
+  de las herramientas. Se borra lo de más de 30 días. `/olvidar` borra la
+  charla.
+- **Herramienta `anotar`** (`platform/functions/gerente-webhook/anotar.ts`):
+  el modelo no crea el issue. Deja una nota `pendiente` y el código muestra el
+  título y el cuerpo exactos, con el pedido de "Contestá SI". El SI lo revisa
+  el código (`esSi`), no el modelo. La nota vence a los 15 min y cualquier
+  otro mensaje la descarta. El paso `pendiente` → `creando` es un update
+  condicionado, así un SI repetido no crea dos issues. El issue lleva el label
+  `gerentedico` (si GitHub lo rechaza, se crea sin label). **El repo es
+  público**: el prompt prohíbe montos y datos de clientes, y la vista previa
+  muestra todo antes del SI.
+- Tests: `src/test/gerenteWebhook.test.js` (25, con historia, SI, cuerpo del
+  issue y `crearIssue` con fetch simulado).
+
+### Lo que tiene que hacer Ricky (en este orden)
+
+**A. Crear el token de GitHub** (permisos mínimos, solo issues de este repo)
+
+1. Entrá a https://github.com/settings/personal-access-tokens/new (es
+   **Settings** → **Developer settings** → **Personal access tokens** →
+   **Fine-grained tokens** → **Generate new token**).
+2. **Token name:** `GerenteDico issues`
+3. **Resource owner:** `diviancocorp-a11y`
+4. **Expiration:** **Custom** y elegí una fecha a un año. Anotala en el
+   calendario: cuando vence, el bot contesta "GitHub rechazó el token".
+5. **Repository access:** **Only select repositories** → elegí `hermes-gastro`.
+6. **Permissions** → **Repository permissions** → **Issues** → **Access:
+   Read and write**. *Metadata: Read-only* aparece solo; no toques nada más.
+7. **Generate token** y copiá el valor (empieza con `github_pat_`). GitHub lo
+   muestra **una sola vez**.
+
+> Ojo: un token **no se edita**. Si se vence o se pierde, se crea otro y se
+> reemplaza el secret. Si `diviancocorp-a11y` es una organización, puede
+> quedar "pending approval": se aprueba en la organización → **Settings** →
+> **Personal access tokens** → **Pending requests**.
+
+**B. Cargarlo en Supabase**
+
+1. Entrá a
+   https://supabase.com/dashboard/project/wwwzdgprsooyjgkuyoav/functions/secrets
+   (**Edge Functions** → **Secrets**).
+2. En **Add new secret**:
+   - **Name:** `GERENTE_GITHUB_TOKEN`
+   - **Value:** el token del paso A
+3. **Save**. Tiene que aparecer en la lista `GERENTE_GITHUB_TOKEN`, al lado de
+   `GERENTEDICOBOT` y `DICO_BRAIN`.
+
+**C. Redeployar la function** (en la terminal del repo, en `main` actualizado)
+
+```bash
+node platform/scripts/deploy-functions.mjs --only gerente-webhook
+```
+
+Tiene que terminar con `gerente-webhook (no-verify-jwt) ... ok`. **No** hace
+falta volver a registrar el webhook: sigue recibiendo los mismos mensajes.
+
+**D. Probarlo en Telegram, con GerenteDico**
+
+1. `/ayuda` → la bienvenida ahora menciona "anotar" y `/olvidar`.
+2. `como viene crazy-miga?` y después `y cuantos productos tiene?` → la segunda
+   respuesta tiene que hablar de crazy-miga sin que lo repitas (memoria).
+3. `anota que hay que probar el anotar de GerenteDico` → te muestra
+   "Issue para anotar en GitHub", el título, el cuerpo y "Contesta SI…".
+4. `SI` → contesta `Anotado: issue #N` con el link. En GitHub, el issue tiene
+   el label `gerentedico`. Cerralo: era de prueba.
+5. `/olvidar` → "Listo, me olvide de la charla".
+
+Si en el paso 3 dice "falta el secret GERENTE_GITHUB_TOKEN", el paso B no
+quedó guardado. Si en el 4 dice "no tiene permiso de Issues", el paso A.6 o
+A.5 quedaron mal: hay que crear un token nuevo.
+
+### Verificado (en producción)
+
+- `gerente_notas`: una nota `creada`, "Probar la función anotar", con
+  `issue_number` 29. El issue #29 existe en GitHub con el label `gerentedico`
+  y el cuerpo esperado (detalle, pedido original citado, pie con la fecha).
+- `gerente_mensajes` vacía después del `/olvidar` del final, como corresponde.
+  La memoria (paso D.2) no se puede ver en la base por eso; Ricky la probó en
+  el chat.
+- `function_logs` de 04:56 a 05:01 UTC: solo boot/shutdown, ningún warning de
+  guardado ni error de OpenAI o GitHub.
+
+### Pendiente
+
+1. Cerrar el issue #29 (era de prueba).
+2. Próxima etapa: que un issue `gerentedico` se convierta en PR y preview sin
+   pasar por una sesión a mano.
+
+---
+
 ## 17/oct/2026 — GerenteDico conversa (etapa 2), policies de roles comparadas y limpieza (Claude)
 
 **Publicado y verificado.** `4324c38` a `b77d083`, CI verde en `f03e231`. El
