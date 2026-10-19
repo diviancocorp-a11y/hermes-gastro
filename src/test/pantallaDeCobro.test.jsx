@@ -222,3 +222,68 @@ describe('PantallaDeCobro — lo que puede salir mal se dice', () => {
     expect(caja.cobrar).not.toHaveBeenCalled();
   });
 });
+
+// Auditoria de Caja (19/oct): Number(String(x).replace(',', '.')) || 0 leia
+// "1.500,50" como 0 y "12.500" como 12.5.
+describe('PantallaDeCobro — montos en formato argentino', () => {
+  it('cobra centavos escritos con coma y punto de miles', async () => {
+    montar();
+    const monto = await screen.findByDisplayValue('6500');
+    fireEvent.click(screen.getByRole('button', { name: /Efectivo/ }));
+    fireEvent.change(monto, { target: { value: '1.500,50' } });
+    fireEvent.click(screen.getByRole('button', { name: /Cobrar \$/ }));
+    await waitFor(() => expect(caja.cobrar).toHaveBeenCalledWith('t1', 'o1', 'm-efe', 1500.5));
+  });
+
+  it('el vuelto lee el punto de miles', async () => {
+    montar();
+    fireEvent.click(await screen.findByRole('button', { name: /Efectivo/ }));
+    fireEvent.change(screen.getByPlaceholderText('Para calcular el vuelto'), {
+      target: { value: '10.000' },
+    });
+    expect(screen.getByText(/Vuelto \$3\.500/)).toBeInTheDocument();
+  });
+
+  it('el saldo con centavos viene cargado en formato argentino y se cobra', async () => {
+    caja.saldoDelPedido.mockResolvedValue(6500.5);
+    montar();
+    expect(await screen.findByDisplayValue('6500,5')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Efectivo/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Cobrar \$/ }));
+    await waitFor(() => expect(caja.cobrar).toHaveBeenCalledWith('t1', 'o1', 'm-efe', 6500.5));
+  });
+
+  it('un monto que no se entiende no cobra y dice por que', async () => {
+    montar();
+    const monto = await screen.findByDisplayValue('6500');
+    fireEvent.click(screen.getByRole('button', { name: /Efectivo/ }));
+    fireEvent.change(monto, { target: { value: '1,2,3' } });
+    const boton = screen.getByRole('button', { name: /^Cobrar/ });
+    expect(boton).toBeDisabled();
+    const aviso = screen.getByText(/No entiendo ese número/);
+    expect(aviso).toHaveTextContent(/1\.500,50/);
+    expect(aviso).toHaveAttribute('aria-live', 'polite');
+    expect(monto).toHaveAttribute('aria-invalid', 'true');
+    fireEvent.click(boton);
+    expect(caja.cobrar).not.toHaveBeenCalled();
+  });
+
+  it('a medio tipear no avisa error, pero tampoco deja cobrar', async () => {
+    montar();
+    const monto = await screen.findByDisplayValue('6500');
+    fireEvent.click(screen.getByRole('button', { name: /Efectivo/ }));
+    fireEvent.change(monto, { target: { value: '1.500,' } });
+    expect(screen.queryByText(/No entiendo ese número/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Cobrar/ })).toBeDisabled();
+  });
+
+  it('lo entregado que no se entiende avisa y no inventa un vuelto', async () => {
+    montar();
+    fireEvent.click(await screen.findByRole('button', { name: /Efectivo/ }));
+    fireEvent.change(screen.getByPlaceholderText('Para calcular el vuelto'), {
+      target: { value: '1,2,3' },
+    });
+    expect(screen.getByText(/No entiendo ese número/)).toBeInTheDocument();
+    expect(screen.queryByText(/Vuelto|Faltan/)).not.toBeInTheDocument();
+  });
+});

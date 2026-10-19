@@ -20,6 +20,8 @@
  * gente ajuste el numero en vez de decir lo que le paso.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { parseMontoAR, montoAMedioTipear } from '../../../lib/format';
+import MontoInvalido from './MontoInvalido';
 
 const money = (n) => `$ ${(Math.round((Number(n) || 0) * 100) / 100)
   .toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
@@ -49,16 +51,18 @@ export default function MiMiniCaja({
   // es la forma mas facil de presentar el numero de ayer.
   useEffect(() => { setContado(''); setNotas(''); }, [turno?.id]);
 
-  const diferencia = contado === ''
-    ? null
-    : (Number(String(contado).replace(',', '.')) || 0) - (Number(esperado) || 0);
+  // Vacio no es 0: hay que contar. Lo que no se entiende tampoco se presenta.
+  const contadoNum = contado === '' ? null : parseMontoAR(contado);
+  const contadoValido = Number.isFinite(contadoNum);
+  const contadoError = contado !== '' && !contadoValido && !montoAMedioTipear(contado);
+  const diferencia = contadoValido ? contadoNum - (Number(esperado) || 0) : null;
 
   const presentar = useCallback(async () => {
-    if (contado === '' || enviando) return;
+    if (!contadoValido || enviando) return;
     setEnviando(true);
-    await onPresentar?.(Number(String(contado).replace(',', '.')) || 0, notas.trim() || null);
+    await onPresentar?.(contadoNum, notas.trim() || null);
     setEnviando(false);
-  }, [contado, notas, enviando, onPresentar]);
+  }, [contadoNum, contadoValido, notas, enviando, onPresentar]);
 
   if (!turno) {
     return (
@@ -138,11 +142,17 @@ export default function MiMiniCaja({
               value={contado}
               onChange={(e) => setContado(e.target.value.replace(/[^\d.,]/g, ''))}
               placeholder="0"
+              aria-invalid={contadoError || undefined}
+              aria-describedby={contadoError ? 'minicaja-contado-invalido' : 'minicaja-contado-ayuda'}
             />
-            <small>
-              Contá lo que tenés en mano. Si no coincide, presentalo igual: la
-              diferencia queda anotada y se habla, no se esconde.
-            </small>
+            {contadoError ? (
+              <MontoInvalido id="minicaja-contado-invalido" style={{ marginTop: 0, fontSize: 12 }} />
+            ) : (
+              <small id="minicaja-contado-ayuda">
+                Contá lo que tenés en mano. Si no coincide, presentalo igual: la
+                diferencia queda anotada y se habla, no se esconde.
+              </small>
+            )}
           </label>
 
           <label className="ag-minicaja-campo">
@@ -160,7 +170,7 @@ export default function MiMiniCaja({
             <button
               type="button" className="ag-btn-primary"
               onClick={presentar}
-              disabled={contado === '' || enviando || cargando}
+              disabled={!contadoValido || enviando || cargando}
             >
               Presentar pre-cierre
             </button>

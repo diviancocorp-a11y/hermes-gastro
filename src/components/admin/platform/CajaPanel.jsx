@@ -19,7 +19,8 @@
  * cierra en cero es un arqueo que nadie mira.
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { parseMontoAR } from '../../../lib/format';
+import { parseMontoAR, montoAMedioTipear } from '../../../lib/format';
+import MontoInvalido from './MontoInvalido';
 import { horaCortaDelLocal } from '../../../modules/estadoOperativo';
 
 // opened_at es timestamptz: cortarle el texto da la hora UTC, tres de mas.
@@ -74,22 +75,6 @@ function Linea({ label, valor, fuerte, tono }) {
       <span>{label}</span>
       <span style={{ fontVariantNumeric: 'tabular-nums' }}>{valor}</span>
     </div>
-  );
-}
-
-// "1." o "1.500," son un numero a medio tipear, no un error: el boton queda
-// apagado pero el aviso no sale en cada tecla.
-const aMedioTipear = (texto) => /[.,]$/.test(texto);
-
-// El aviso reemplaza a la ayuda del campo: con un numero que no se entiende
-// el boton queda apagado, y sin decir por que parece roto.
-function MontoInvalido({ id }) {
-  return (
-    <span id={id} aria-live="polite" style={{
-      display: 'block', marginTop: 5, fontSize: 12.5, color: 'var(--ag-bad, #c62828)',
-    }}>
-      No entiendo ese número. Los centavos van con coma: 1.500,50
-    </span>
   );
 }
 
@@ -252,8 +237,8 @@ export default function CajaPanel({
   const inicialValido = Number.isFinite(inicialNum);
   const contadoNum = contado === '' ? null : parseMontoAR(contado);
   const contadoValido = Number.isFinite(contadoNum);
-  const inicialError = montoInicial !== '' && !inicialValido && !aMedioTipear(montoInicial);
-  const contadoError = contado !== '' && !contadoValido && !aMedioTipear(contado);
+  const inicialError = montoInicial !== '' && !inicialValido && !montoAMedioTipear(montoInicial);
+  const contadoError = contado !== '' && !contadoValido && !montoAMedioTipear(contado);
   const diferencia = contadoValido ? contadoNum - (Number(esperado) || 0) : null;
   const bloqueado = cargando || enviando;
 
@@ -455,7 +440,7 @@ export default function CajaPanel({
             cursor: !contadoValido || bloqueado ? 'not-allowed' : 'pointer',
             opacity: !contadoValido ? 0.5 : 1,
             background: confirmando ? 'var(--ag-bad, #c62828)' : 'var(--ag-accent, #e8b947)',
-            color: confirmando ? '#fff' : '#1a1a1a',
+            color: confirmando ? 'var(--ag-bad-ink)' : '#1a1a1a',
           }}
         >
           {enviando ? 'Cerrando…' : confirmando ? '¿Seguro? Tocá de nuevo' : 'Cerrar caja'}

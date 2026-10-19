@@ -266,6 +266,15 @@ describe('CajaPanel — hora del local', () => {
 });
 
 describe('CajaPanel — tokens del panel', () => {
+  // #fff sobre el rojo del tema oscuro daba 2.77:1: la tinta va con el tema.
+  it('el texto de la confirmacion de cierre usa la tinta del rojo', () => {
+    render(<CajaPanel turno={turno()} esperado={0} onCerrar={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '100' } });
+    fireEvent.click(screen.getByRole('button', { name: /Cerrar caja/ }));
+    const confirmar = screen.getByRole('button', { name: /¿Seguro\?/ });
+    expect(confirmar.style.color).toBe('var(--ag-bad-ink)');
+  });
+
   // cp-root es la raiz del catalogo: en el admin pinta fondo blanco e Inter,
   // y en tema oscuro deja la supervision a 1.17:1.
   it('no usa la raiz del catalogo, con o sin turno', () => {

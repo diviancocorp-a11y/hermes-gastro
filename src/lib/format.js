@@ -33,3 +33,13 @@ export function parseMontoAR(valor) {
   if (/^\d+\.\d{1,2}$/.test(s)) return Number(s);
   return NaN;
 }
+
+// "1." o "1.500," son un numero a medio tipear, no un error: el boton queda
+// apagado pero el aviso no sale en cada tecla.
+export const montoAMedioTipear = (texto) => /[.,]$/.test(String(texto ?? ''));
+
+// Un numero cargado en un campo que despues lee parseMontoAR: coma decimal y
+// sin puntos de miles. String(1500.125) da "1500.125", que no se entiende.
+export const montoParaEditar = (n) => Number(n).toLocaleString('es-AR', {
+  useGrouping: false, maximumFractionDigits: 2,
+});
