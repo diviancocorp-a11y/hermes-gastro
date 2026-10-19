@@ -120,7 +120,7 @@ export function solucion(desafio, vertical) {
         titulo: 'Lo que te falta es ver la ganancia, no la venta.',
         hoy: gastro
           ? 'Cerrás la caja y Dico te da el resultado de esa noche: ventas, insumos según tus recetas, nómina y merma.'
-          : 'Cerrás la caja y Dico te da el resultado del día: ventas, costo de lo vendido, gastos y personal en un mismo número.',
+          : 'Cerrás la caja y ves en un mismo lugar las ventas, las compras de mercadería, los gastos y los sueldos del día.',
         pieza: 'cierre',
       };
     case 'costos':
