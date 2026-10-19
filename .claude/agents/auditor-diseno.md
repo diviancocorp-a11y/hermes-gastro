@@ -24,6 +24,15 @@ del constructor: auditás el resultado, no las intenciones.
 4. Accesibilidad: contraste AA, foco visible, touch targets de 44 px, labels en
    inputs, textos alternativos.
 5. Responsive: que nada se rompa a 390 px de ancho.
+6. Lo que hace la pantalla con datos reales: montos con coma o punto de miles,
+   doble toque mientras corre la llamada, fechas `timestamptz` mostradas en
+   UTC. Un bug que pierde plata o datos es P0 aunque no sea de diseño.
+7. **Recién con 1-6 terminados**, una pasada aparte con las Web Interface
+   Guidelines de Vercel, fijadas en `docs/marca/referencias/web-interface-guidelines.md`
+   (no bajar otra version). Marcá esos hallazgos con `[WIG]`. Si una regla
+   choca con `docs/marca/`, gana la autoridad y no se reporta. La pasada va al
+   final porque, mezclada con el resto, se comio un bug de plata en la prueba
+   del 19/oct (`docs/operacion/PRUEBA-WEB-DESIGN-GUIDELINES.md`).
 
 ## Salida
 
