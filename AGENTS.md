@@ -199,6 +199,9 @@ seguir solo.
 | Retomar, en que quedamos, que hay pendiente | `/dico` |
 | Competencia, un competidor | skill `analisis-competencia` |
 | Prueba de carga, k6, cuantos usuarios aguanta | `/carga` (tambien cada 15 dias, tarea programada) |
+| Sumar una skill, plugin, MCP o repo de terceros | El criterio de entrada (abajo): tabla de ya evaluadas, `gh api repos/<dueno>/<repo>` para licencia y ultimo push, instrucciones se copian, software va a `prueba/<herramienta>` |
+| SEO, posicionamiento, palabras clave, sitemap, meta tags | skill `marketing:seo-audit`; si cambia `index.html` o la landing, ademas `/diseno` |
+| Propuesta comercial, presentacion, deck, diapositivas | skill `propuesta-divianco` (o `pptx` si pide el archivo); no va al repo: Google Drive |
 
 - **Ruteo** (hook `UserPromptSubmit`, `orquestador.mjs ruteo`): inyecta solo
   la indicacion que aplica; si no aplica ninguna, no dice nada. Una skill que
@@ -427,6 +430,35 @@ Lo que NO se recorta para escribir menos: validacion en el borde de confianza
 (RLS, `tenant_id`, edge functions publicas), manejo de errores que pierde
 datos, seguridad y accesibilidad.
 
+## Cambios quirurgicos y nada de "listo" sin evidencia (19/oct/2026)
+
+Adaptado sin instalar de dos fuentes: las guias de Karpathy
+(`multica-ai/andrej-karpathy-skills`; el repo no tiene licencia, asi que se
+reescribe y no se copia) y `verification-before-completion` de Superpowers
+(`obra/superpowers`, MIT). El resto de Superpowers se pisa con la escalera,
+`/code-review`, `/simplify` y las reglas de worktrees.
+
+- **Supuestos a la vista.** Si el pedido admite dos lecturas, se dicen las dos
+  antes de elegir. Si algo no cierra, se pregunta antes de escribir, no
+  despues de romper.
+- **Cada linea cambiada sale del pedido.** No se "mejora" codigo vecino, ni
+  comentarios, ni formato; se respeta el estilo del archivo. Codigo muerto
+  ajeno se menciona, no se borra. Lo que tu cambio deja huerfano (imports,
+  variables, funciones) si se saca.
+- **Criterio de exito antes de empezar.** "Arreglar el bug" se vuelve "un test
+  que lo reproduce, y que pase"; en una tarea de varios pasos, cada paso dice
+  con que se verifica.
+- **Sin evidencia no hay "listo".** Antes de decir que algo funciona, pasa,
+  esta aplicado o esta publicado: correr AHORA el comando que lo prueba (el
+  test, `npm run ci:esperar`, un `select` contra la base, el SHA del deploy en
+  Vercel), leer la salida entera y el exit code, y recien ahi afirmarlo. Si no
+  se pudo comprobar, se dice "no verificado" y por que. Paso seis veces que se
+  reporto una deduccion como hecho; la ultima, una migracion en `main` que
+  nunca se aplico a la base.
+- **Senales de que se esta por afirmar sin evidencia:** "deberia andar",
+  "seguramente", "ya quedo", o dar por bueno el reporte de un subagente o de
+  otra sesion sin mirar el diff.
+
 ## Skills, plugins y MCPs de terceros: criterio de entrada
 
 Antes de sumar una herramienta, responder:
@@ -459,6 +491,27 @@ Ya evaluadas (no reabrir sin un motivo nuevo):
 | Thermos (ports de Cursor) | No | Se pisa con `/code-review`; ports no oficiales |
 | ECC (everything-claude-code) | No | Cientos de skills y hooks: ruido de contexto y superficie de hooks ajenos |
 | k6 (Grafana, carga) | En prueba (rama `prueba/k6`) | Mide la carga sobre Supabase; no se pisa con ningun check. Binario aparte, no toca `package.json`. Ver `docs/operacion/CARGA-K6.md` |
+| Superpowers (`obra/superpowers`) | Adaptada (solo `verification-before-completion`) | Ataca "comprobar antes de afirmar"; lo demas se pisa con la escalera, `/code-review`, `/simplify` y worktrees |
+| Karpathy skills (`multica-ai/andrej-karpathy-skills`) | Adaptada (cambios quirurgicos) | Cuatro reglas, reescritas porque el repo no tiene licencia |
+| Claude Octopus | No | 54 comandos y 63 skills (el motivo de ECC); el segundo modelo ya es Codex |
+| I Have ADHD | No | No hay repo verificable; respuestas breves ya es preferencia de Ricky (output style de la app) |
+| Opencode | No | Agente de codigo: ya estan Claude y Codex |
+| Harper | No | Corrector pensado para ingles; Ricky escribe en espanol |
+| Vane (ex-Perplexica) | No | Se pisa con WebSearch y `deep-research`; un servidor mas para mantener |
+| agenticSeek | No | Se pisa con el navegador integrado y Claude in Chrome; GPL |
+| Presenton / ppt-master | No | Se pisa con `propuesta-divianco`, `pptx` y Slides (regla del orquestador); las propuestas van a Drive |
+| ai-website-cloner-template | No | Plantilla Next.js (el stack es Vite); se pisa con `design-taste-frontend` |
+| Awesome Design | No | Lista de links, sin cambios desde 2024 |
+| Duix-Avatar | No | Avatar de una cara humana con licencia propia; la mascota DICO va por la API de Claude |
+| YouTube Agent Skill | No | No es del repo; se reabre si Divianco arma un canal |
+| Meetily | Fuera del repo (opcional para Ricky) | Notas de reuniones en local; no le sirve al orquestador |
+| CompAI CRM | No (por ahora) | El CRM interno de Divianco se mira con 3+ clientes pagos (plan de la consola); sirve de referencia para el CRM de DICO |
+| Open-SEO | No (por ahora) | Primero `marketing:seo-audit` (regla del orquestador); Open-SEO es una app mas para hostear |
+| PaddleOCR | No (por ahora) | Python pesado sin donde correr (las functions son Deno); facturas y listas de precios (alta de Monare) primero con Claude y vision |
+| Scrapling | No (por ahora) | `analisis-competencia` con el navegador alcanza para pocos sitios; leads por scraping roza terminos de uso y datos personales |
+| changedetection.io | No (por ahora) | Pide Docker, que en la maquina de Ricky se traba; vigilar la competencia va mejor como tarea programada que llama a `analisis-competencia` |
+| Web Design Guidelines (`vercel-labs/agent-skills`) | A probar (rama `prueba/web-design-guidelines`) | Checklist de accesibilidad e interaccion para `auditor-diseno`, sobre todo el admin (taste no cubre dashboards). Fijar el commit: la skill baja las reglas en cada corrida |
+| Image to Code (`Leonxlnx/imagegen-skills`) | A probar (rama `prueba/image-to-code`) | Se mudo de `taste-skill`; encaja en portar una pantalla desde un render (`PORTAR-UNA-PANTALLA.md`) |
 
 ## Antes de razonar sobre una RPC, traela
 
