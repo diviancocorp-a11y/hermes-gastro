@@ -111,6 +111,10 @@ ahi: `CLAUDE.md` (este), `AGENTS.md` (el mismo, para Codex) y `README.md`.
 - CSS scoped: `body[data-cp-theme="X"] .cp-root { --ac: ...; }`
 - **Cualquier componente del catalogo-pro DEBE tener `className="cp-root"`** o no recibe los tokens del tema
 - Si agregas un componente nuevo y los colores no se aplican, esto es la causa
+- **Al reves en el panel:** `cp-root` en el admin pinta fondo blanco e Inter y
+  tapa los `--ag-*` (en tema oscuro dejo la supervision de Caja a 1.17:1).
+  ESLint lo rechaza en `src/components/admin/`, `src/pages/admin/` y
+  `PlatformAdmin.jsx` (`no-restricted-syntax` en `eslint.config.js`)
 
 ### Schema Zod === DB columns (Settings, Recipes, etc.)
 - `src/lib/schemas/index.js` define `SettingsInputSchema`, `RecipeInputSchema`, etc.
