@@ -70,6 +70,30 @@
         ["\\bk6\\b", "\\b(prueba|test|tests|pruebas) de (carga|estres)\\b", "\\bload ?test", "\\bestresar\\b", "\\bcuantos usuarios aguanta\\b", "\\busuarios (a la vez|simultaneos|concurrentes)\\b"]
       ],
       "texto": "Carga: usar la skill /carga (k6 solo lecturas con 20, 50 y 100 usuarios, cruzado con pg_stat_statements y comparado contra el historial de docs/operacion/CARGA-K6.md). Nunca crear pedidos contra un tenant real."
+    },
+    {
+      "id": "herramienta-terceros",
+      "todas": [
+        ["\\bskills?\\b", "\\bplugins?\\b", "\\bmcps?\\b", "\\brepositorios?\\b", "\\brepos?\\b", "github\\.com/", "\\bherramientas? (de terceros|nuevas?|externas?|open source)\\b", "\\bdependencias? nuevas?\\b"],
+        ["\\binstal", "\\bsum(a|ar|emos|amos)\\b", "\\bagreg", "\\bevalu", "\\banaliz", "\\bprob(a|ar|emos|amos)\\b", "\\bconviene\\b", "\\bvale la pena\\b", "\\bincorpor", "\\bcambiar\\b", "\\breemplaz"]
+      ],
+      "texto": "Herramienta de terceros: antes de opinar, el criterio de entrada de CLAUDE.md (que friccion documentada resuelve, si se pisa con algo que ya hay) y la tabla de ya evaluadas (no reabrir sin motivo nuevo). Datos reales con `gh api repos/<dueno>/<repo>` (licencia, ultimo push, archivado). Si son solo instrucciones, se copian en CLAUDE.md y AGENTS.md; si es software, se prueba en una rama prueba/<herramienta>. La decision se anota en la tabla."
+    },
+    {
+      "id": "seo",
+      "skill": "seo-audit",
+      "todas": [
+        ["\\bseo\\b", "\\bposicionamiento\\b", "\\bpalabras? clave\\b", "\\bkeywords?\\b", "\\bmeta ?tags?\\b", "\\bsitemap\\b", "\\brobots\\.txt\\b", "\\baparec\\w* en google\\b", "\\bgoogle (no )?(nos |lo |la )?(encuentra|indexa)"]
+      ],
+      "texto": "SEO: usar la skill marketing:seo-audit (landing de divianco.app o catalogo de un tenant). Si el cambio toca index.html o la landing, ademas /diseno antes de editar. Open-SEO ya se evaluo: no por ahora."
+    },
+    {
+      "id": "propuesta",
+      "skill": "propuesta-divianco",
+      "todas": [
+        ["\\bpropuestas? (comercial|comerciales|para|de servicio)", "\\bpresentacion(es)? (comercial|para|de divianco|de dico)", "\\bdeck\\b", "\\bdiapositivas?\\b", "\\bpowerpoint\\b", "\\bpptx\\b", "\\bslides\\b"]
+      ],
+      "texto": "Propuesta o presentacion: usar la skill propuesta-divianco (o pptx si Ricky pide el archivo). Es doc de negocio: va a Google Drive, nunca al repo."
     }
   ],
   "candado": {

@@ -50,6 +50,14 @@ describe('ruteo: 14 prompts de ejemplo', () => {
     ['/diseno pulí el botón de pagar', []],
     ['Corré la prueba de carga del catálogo con k6', ['carga']],
     ['¿Cuántos usuarios aguanta el sistema?', ['carga']],
+    ['Analizá estas skills y repositorios de herramientas para el proyecto', ['herramienta-terceros']],
+    ['¿Vale la pena instalar el plugin de Superpowers?', ['herramienta-terceros']],
+    ['Probemos github.com/Leonxlnx/imagegen-skills', ['herramienta-terceros']],
+    ['Cargá la skill de diseño y pulí el botón', ['diseno-pulir']],
+    ['Hacé una auditoría SEO del catálogo de Crazy Miga', ['seo']],
+    ['Google no nos encuentra cuando buscan Dico', ['seo']],
+    ['Armá una propuesta comercial para Monare', ['propuesta']],
+    ['Necesito un deck de 10 diapositivas para inversores', ['propuesta']],
   ];
   for (const [prompt, esperado] of casos) {
     it(prompt, () => expect(ids(prompt)).toEqual(esperado));
