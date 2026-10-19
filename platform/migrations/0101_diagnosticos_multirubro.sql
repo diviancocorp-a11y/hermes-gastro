@@ -1,5 +1,5 @@
 -- 0101_diagnosticos_multirubro.sql
--- SIN APLICAR: la aplica Ricky desde el editor SQL del panel (toca restricciones).
+-- Aplicada via panel (editor SQL) por Ricky el 19/oct/2026; verificada con pg_constraint.
 --
 -- contraer: diagnosticos se creo el 19/oct/2026 (0100) y esta vacia; ningun
 -- codigo desplegado la lee ni la escribe todavia. La landing pasa a hablarle a
