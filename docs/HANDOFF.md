@@ -11,6 +11,83 @@
 
 ---
 
+## 19/oct/2026 — Monare: imágenes, filtros y dirección de Boedo (Codex)
+
+### Aplicado y verificado en el edificio
+
+- Solo datos de `monare` (`1367edee-7754-4169-a616-45310d98c045`): los 53
+  productos tienen imagen asociada. Son 40 WebP públicos en `tenant-images`,
+  prefijo `<tenant_id>/catalogo-20261019/`; 31 composiciones con fotos de
+  bodega/PDF y 9 imágenes provisorias que cubren 14 productos. Registro técnico
+  de fuentes, URLs y asociaciones: `docs/operacion/monare-imagenes-20261019.json`.
+  El PNG del fondo maestro también está en Storage, URL en ese registro, para
+  seguir incorporando productos con el mismo fondo.
+- Fondo común basado en el manual de Monare de la Biblioteca de empresas:
+  carbón, berenjena/bordó, luz cálida y logo original copa + MONARE dorado.
+  Se descartó el logo M viejo. Generadas con ImageGen y convertidas a WebP
+  sin recortar ni recomponer. Las referencias inciertas llevan texto
+  `IMAGEN PROVISORIA` y aclaración en descripción; las cajas muestran la
+  botella individual y los envases de 3 litros quedan por confirmar.
+- Ricky autorizó usar referencias provisorias y reemplazarlas después.
+  Pedir fotos de frente, etiqueta y capacidad de: Mumm; Freixenet Dulce;
+  Cosecha Especial Rosé; Cosecha Tardía Rosé; Pulka Rosé (confirmar nombre);
+  bolsas de hielo de 2 y 15 kg; Fantasía Criolla Tinta; Ancestral White Blend;
+  Inspirado Chardonnay; Ópalo Semillón-Sauvignon Blanc; Skin Contact Viognier;
+  Inspirado Cabernet Franc/Cabernet Cabernet/Blend de 3 litros.
+- Se corrigió Louis -> **Lois Rosé** según la etiqueta oficial de Lorca, sin
+  modificar precios. Siguen 20 activos, 32 inactivos sin precio actualizado
+  y la caja de Ópalo Syrah pendiente. Stock sigue NULL en los 53.
+- Nueva dirección indicada por Ricky: **Quintino Bocayuva 1130, Boedo, CABA**.
+  Sucursal default `bb84f552-75e4-442e-a6e0-f3f8453e1498`, ahora Despacho Monare,
+  coordenadas USIG CABA `-34.626682, -58.421350`. Reemplazada la dirección
+  provisoria de Av. de los Incas en settings, sucursal, aviso de envío y
+  `/info/compras-y-envios`. Sigue sin local de atención al público.
+- Horario corregido por Ricky: **lunes a sábado 08:30–20:30**, domingo cerrado.
+  WhatsApp e Instagram permanecen como confirmó antes.
+- Readback SQL: 53/53 imágenes, 20 activos, stock NULL; `get_catalog('monare')`
+  emite 20 imágenes, `catalogo_activo=true`, coordenadas nuevas y domingo cerrado.
+  Los 40 objetos se comprobaron por HTTP HEAD al cargarlos.
+  Playwright contra producción: 26 elementos de imagen del nuevo prefijo
+  cargados, cero errores JS; la página pública de compras muestra Boedo,
+  lunes a sábado y domingo cerrado (exit 0).
+
+### Filtros preparados, publicación pendiente de aprobación visual
+
+- 15 grupos en `settings.cat_groups`: Cajas, Espumantes, Vinos tintos,
+  Vinos blancos, Hielo, Mauricio Lorca, Chandon, Salentein, Mumm, Freixenet,
+  Malbec, Cabernet Sauvignon, Chardonnay, Syrah, Rosé. Categorías hoja por
+  producto/presentación permiten pertenecer a varios grupos sin duplicarlo.
+- El catálogo ignoraba `settings.cat_groups`; corregido en la rama
+  `codex/monare-catalogo`, worktree `.claude/worktrees/monare-catalogo`, PR #38.
+  Solo UI/helpers/tests: Catalog.jsx, HomeScreen.jsx, catalogCategories.js y
+  catalogCategories.test.js. El fallback del edificio no cambió en ese PR.
+- Preview Vercel READY `dpl_4tYS8NJMF1M15oMWzL6AaJmxiLei`, rama temporal
+  `codex/monare-catalogo-preview`, SHA `0349939225657a2dada04395eb85d46206244f75`:
+  https://hermes-platform-rkb3vflej-diviancocorp-a11ys-projects.vercel.app/
+  Misma UI revisada, más un cambio temporal de fallback Cochi -> Monare para
+  ver ese tenant en `*.vercel.app`. **No mergear la rama de preview.**
+  Usar MCP `get_access_to_vercel_url` para un enlace de revisión sin login;
+  no guardar el secreto del enlace en este repo público.
+- Verificación: 94 pruebas (categorías/utils/schemas), typecheck, build y
+  `check:diseno` pasan. CI del PR sobre `7276762` pasó lint/typecheck/tests,
+  build, audit y Playwright. Luego rebase a main `8073f2d` para preservar
+  cambios paralelos (recetario/RLS y La Nona Pato); sin cambio en la UI.
+- Auditoría independiente final en preview, móvil 390x844 y escritorio
+  1280x800: cero hallazgos nuevos P0–P3, cero desborde, 16 chips de 48 px,
+  aria-pressed y foco de teclado. Todos 20, Cajas 4, Hielo 4, Espumantes 9.
+  Sin imágenes rotas en la vista de Hielo. Detector de archivos tocados [];
+  global 17 -> 17 (deuda previa). Sin pedido ni pago de prueba.
+- Pendiente inmediato: OK visual de Ricky para publicar los filtros en main;
+  después verificar SHA de producción y limpiar rama de preview/worktree.
+  Las imágenes y los datos ya están aplicados aunque el código siga en PR.
+- Falta de negocio: 32 precios, precio de caja Ópalo, fotos definitivas y
+  datos bancarios reales. No se inventaron. Sin recetas.
+- Archivos temporales en `.preview/monare-assets/` (ignorado) y temp del sistema
+  durante el armado; los originales de ImageGen quedan en su caché por regla
+  de la herramienta. Ninguna dependencia nueva ni schema ni migración.
+- Pendientes heredados de GerenteDico que se archivan: cerrar issue #29 de
+  prueba; próxima etapa issue `gerentedico` -> PR/preview. No tratados acá.
+
 ## 19/oct/2026 — La Nona Pato: acceso y ubicacion de despacho (Codex)
 
 - El acceso fallaba por el enlace con doble n (`la-nonna-pato`). El tenant
@@ -288,107 +365,3 @@ ni edge functions.
   (`src/pages/PlatformLanding.jsx`). Son contenido y decisión suya.
 
 ---
-
-## 17/oct/2026 (tarde) — GerenteDico etapa 3: memoria de la charla y "anotar" (Claude)
-
-**Publicado y verificado.** `2aadfe3` a `b119081`, CI verde en `b119081`.
-Ricky cargó `GERENTE_GITHUB_TOKEN`, redeployó `gerente-webhook` e hizo la
-prueba del paso D el 17/oct. El front no cambió.
-
-### Hecho
-
-- **0099 `gerente_memoria_y_notas`**, aplicada por MCP con ok de Ricky. Crea
-  `gerente_mensajes` (la charla) y `gerente_notas` (los issues propuestos).
-  Son tablas de plataforma, **sin `tenant_id`**: es la charla de Ricky con el
-  bot, no datos de un negocio. RLS activa, cero policies y sin grants para
-  anon/authenticated (verificado en la base). Snapshot del edificio al día
-  hasta 0099.
-- **Memoria:** a OpenAI le llegan los últimos 10 mensajes de las últimas 12 h.
-  Se guarda solo el texto de Ricky y la respuesta final, nunca los resultados
-  de las herramientas. Se borra lo de más de 30 días. `/olvidar` borra la
-  charla.
-- **Herramienta `anotar`** (`platform/functions/gerente-webhook/anotar.ts`):
-  el modelo no crea el issue. Deja una nota `pendiente` y el código muestra el
-  título y el cuerpo exactos, con el pedido de "Contestá SI". El SI lo revisa
-  el código (`esSi`), no el modelo. La nota vence a los 15 min y cualquier
-  otro mensaje la descarta. El paso `pendiente` → `creando` es un update
-  condicionado, así un SI repetido no crea dos issues. El issue lleva el label
-  `gerentedico` (si GitHub lo rechaza, se crea sin label). **El repo es
-  público**: el prompt prohíbe montos y datos de clientes, y la vista previa
-  muestra todo antes del SI.
-- Tests: `src/test/gerenteWebhook.test.js` (25, con historia, SI, cuerpo del
-  issue y `crearIssue` con fetch simulado).
-
-### Lo que tiene que hacer Ricky (en este orden)
-
-**A. Crear el token de GitHub** (permisos mínimos, solo issues de este repo)
-
-1. Entrá a https://github.com/settings/personal-access-tokens/new (es
-   **Settings** → **Developer settings** → **Personal access tokens** →
-   **Fine-grained tokens** → **Generate new token**).
-2. **Token name:** `GerenteDico issues`
-3. **Resource owner:** `diviancocorp-a11y`
-4. **Expiration:** **Custom** y elegí una fecha a un año. Anotala en el
-   calendario: cuando vence, el bot contesta "GitHub rechazó el token".
-5. **Repository access:** **Only select repositories** → elegí `hermes-gastro`.
-6. **Permissions** → **Repository permissions** → **Issues** → **Access:
-   Read and write**. *Metadata: Read-only* aparece solo; no toques nada más.
-7. **Generate token** y copiá el valor (empieza con `github_pat_`). GitHub lo
-   muestra **una sola vez**.
-
-> Ojo: un token **no se edita**. Si se vence o se pierde, se crea otro y se
-> reemplaza el secret. Si `diviancocorp-a11y` es una organización, puede
-> quedar "pending approval": se aprueba en la organización → **Settings** →
-> **Personal access tokens** → **Pending requests**.
-
-**B. Cargarlo en Supabase**
-
-1. Entrá a
-   https://supabase.com/dashboard/project/wwwzdgprsooyjgkuyoav/functions/secrets
-   (**Edge Functions** → **Secrets**).
-2. En **Add new secret**:
-   - **Name:** `GERENTE_GITHUB_TOKEN`
-   - **Value:** el token del paso A
-3. **Save**. Tiene que aparecer en la lista `GERENTE_GITHUB_TOKEN`, al lado de
-   `GERENTEDICOBOT` y `DICO_BRAIN`.
-
-**C. Redeployar la function** (en la terminal del repo, en `main` actualizado)
-
-```bash
-node platform/scripts/deploy-functions.mjs --only gerente-webhook
-```
-
-Tiene que terminar con `gerente-webhook (no-verify-jwt) ... ok`. **No** hace
-falta volver a registrar el webhook: sigue recibiendo los mismos mensajes.
-
-**D. Probarlo en Telegram, con GerenteDico**
-
-1. `/ayuda` → la bienvenida ahora menciona "anotar" y `/olvidar`.
-2. `como viene crazy-miga?` y después `y cuantos productos tiene?` → la segunda
-   respuesta tiene que hablar de crazy-miga sin que lo repitas (memoria).
-3. `anota que hay que probar el anotar de GerenteDico` → te muestra
-   "Issue para anotar en GitHub", el título, el cuerpo y "Contesta SI…".
-4. `SI` → contesta `Anotado: issue #N` con el link. En GitHub, el issue tiene
-   el label `gerentedico`. Cerralo: era de prueba.
-5. `/olvidar` → "Listo, me olvide de la charla".
-
-Si en el paso 3 dice "falta el secret GERENTE_GITHUB_TOKEN", el paso B no
-quedó guardado. Si en el 4 dice "no tiene permiso de Issues", el paso A.6 o
-A.5 quedaron mal: hay que crear un token nuevo.
-
-### Verificado (en producción)
-
-- `gerente_notas`: una nota `creada`, "Probar la función anotar", con
-  `issue_number` 29. El issue #29 existe en GitHub con el label `gerentedico`
-  y el cuerpo esperado (detalle, pedido original citado, pie con la fecha).
-- `gerente_mensajes` vacía después del `/olvidar` del final, como corresponde.
-  La memoria (paso D.2) no se puede ver en la base por eso; Ricky la probó en
-  el chat.
-- `function_logs` de 04:56 a 05:01 UTC: solo boot/shutdown, ningún warning de
-  guardado ni error de OpenAI o GitHub.
-
-### Pendiente
-
-1. Cerrar el issue #29 (era de prueba).
-2. Próxima etapa: que un issue `gerentedico` se convierta en PR y preview sin
-   pasar por una sesión a mano.
