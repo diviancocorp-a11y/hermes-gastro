@@ -11,6 +11,79 @@
 
 ---
 
+## 17-19/oct/2026 — Orquestador de skills: ruteo por prompt y candado de /diseno (Claude)
+
+**En main y con CI verde.** PR #31 (`7c8bd44`, `d0e6e01`, `8bf93cc`), merge
+`2374959`; CI verde en `8bf93cc` y en `2374959`. La regla de `/carga` entró
+aparte (`386e826`, PR #32). No toca el front ni la base.
+
+### Hecho
+
+- **`scripts/hooks/orquestador.mjs`**, un solo script con dos modos,
+  registrado en `.claude/settings.json`. Reemplaza a `linea-diseno.mjs`
+  (borrado), que inyectaba el mismo texto en cada turno sin leer el prompt.
+  - `ruteo` (UserPromptSubmit): las reglas de
+    `scripts/hooks/orquestador-reglas.json` (regex sobre el prompt en
+    minúsculas y sin tildes, sin LLM) inyectan **solo** la indicación que
+    aplica: UI → `/diseno` con `design-taste-frontend` (pantalla nueva o
+    rediseño) o `impeccable` (pulir); base → `npm run mapa`; cierre →
+    `/cerrardico`; arranque → `/dico`; competencia → `analisis-competencia`;
+    carga → `/carga`. Si no aplica ninguna, no dice nada. Una skill que ya se
+    cargó en la sesión no se vuelve a pedir.
+  - `candado` (PreToolUse `Edit|Write|MultiEdit`): editar `src/**/*.jsx`,
+    `src/**/*.css` o `index.html` sin `/diseno` cargado le agrega al modelo
+    el aviso de cargarla. Los subagentes `disenador` y `auditor-diseno`
+    están exentos, y los tests quedan afuera.
+- **Por qué se lee el transcript como JSON por línea y no con grep:** el texto
+  `Launching skill: diseno` aparece en la salida de cualquier comando que lo
+  busque, y pasó en la misma sesión que lo construyó. Cuentan tres señales:
+  el tool_use `Skill`, `toolUseResult.commandName` y `<command-name>/x</command-name>`
+  en un mensaje de Ricky.
+- **Por qué avisa y no bloquea:** un subagente que no es de la línea de
+  diseño no ve las skills del padre, y hay ediciones chicas de UI que Ricky
+  pide sin la línea completa. Con `"modo": "bloqueo"` en el JSON pasa a
+  rechazar la edición.
+- Documentado en `CLAUDE.md` y `AGENTS.md` (la tabla de qué skill va con cada
+  pedido; Codex no tiene hooks y sigue esas reglas leyendo el texto).
+
+### Verificado
+
+- `src/test/orquestadorSkills.test.js`: 30 tests, con 12 prompts de ejemplo,
+  falsos positivos del transcript, el candado en aviso y en bloqueo, y el
+  script corrido con stdin (entrada rota o modo desconocido → exit 0 y sin
+  salida).
+- Detección contra transcripts reales: la sesión `bca8550a` da `diseno`
+  cargada y el candado calla. La sesión que lo construyó da solo
+  `plugin-authoring`, aunque tenía greps con el texto.
+- **En vivo, según la sesión de k6** (sección de abajo): el ruteo inyectó su
+  aviso en cada prompt en la máquina de Ricky. En esta sesión no se vio: el
+  harness siguió corriendo el hook viejo desde el checkout principal, que
+  estaba en `prueba/k6`, incluso cuando `linea-diseno.mjs` ya no existía en
+  la worktree. **El candado no se vio disparar en ninguna sesión.**
+
+### Pendiente inmediato
+
+1. **Ver el candado andando en una sesión sobre `main`**: editar un `.jsx`
+   sin `/diseno` cargado tiene que traer el aviso. Si no llega nada, puede
+   ser que esta versión de Claude Code no lea `additionalContext` en
+   PreToolUse; en ese caso, pasar a `"modo": "bloqueo"`.
+2. **Un gate para hooks rotos**: que morning-health o un `check:*` falle si
+   `.claude/settings.json` apunta a un script de `scripts/hooks/` que no
+   existe. Hoy un hook que apunta a un archivo borrado falla en silencio en
+   cada turno.
+
+### Bloqueado por Ricky
+
+- Nada propio. Lo heredado de la landing está en la sección de k6.
+
+### Archivos fuera de src/, docs/, platform/ o scripts/
+
+- `.claude/settings.json`: registra los dos hooks, con ok de Ricky.
+- `.agents/skills/` y `.codex/` aparecieron sin seguimiento en la worktree y
+  en el checkout principal. No son de esta sesión y no se tocaron.
+
+---
+
 ## 17-19/oct/2026 — Prueba de carga con k6, skill /carga cada 15 días (Claude)
 
 **Publicado.** PR #33 (`prueba/k6`, merge `fe95296`) y PR #32 (regla del
@@ -353,141 +426,3 @@ del 17/oct, ya con las variables de Sentry). CI verde en el último push.
 - Nada de Sentry. Los puntos 1 y 2 del "Bloqueado" del 16/oct (Telegram y
   `SMOKE_TENANTS`) quedaron resueltos ese mismo día.
 - Lo de GerenteDico (punto 2 de arriba): el ok y la key.
-
-## 16/oct/2026 — La base y el repo vuelven a decir lo mismo; morning-health vigila lo que no veía (Claude)
-
-**Publicado.** Todo en `main`, de `b0c3416` a `cd82ca5`, en commits de un
-solo tema. Producción de `hermes-platform` `READY` en `cd82ca5` (verificado
-por MCP de Vercel).
-
-### Hecho
-
-- **Reglas nuevas en `CLAUDE.md`/`AGENTS.md`**:
-  - "la escalera" antes de escribir código (adaptada de Ponytail);
-  - criterio de entrada para skills/plugins/MCPs de terceros, con tabla de
-    las 12 ya evaluadas (no reabrir sin motivo nuevo);
-  - migraciones "expandir y después contraer" (Vercel ya es blue-green, la
-    base no vuelve con el rollback) y patrón para sumar un argumento a una RPC
-    (`drop` + `create` con `default`, como la 0068; **no** `create or replace`
-    con otra firma: deja dos vivas);
-  - "cómo se aplica una migración": archivo en el mismo commit; lo
-    destructivo lo aplica Ricky desde el panel (por MCP el `drop` se cuelga a
-    los 60s, pasó 3 veces);
-  - "qué se hace sin preguntar" y qué pide el ok de Ricky.
-- `/cerrardico` suma un paso: proponer reglas a partir de correcciones
-  repetidas (adaptado de Task Observer).
-- **`check:expandir`** (`scripts/check-migraciones-compatibles.mjs`,
-  pre-commit + CI): frena drop/rename/`set not null`/cambio de tipo desde la
-  0096 salvo `-- contraer: <motivo>`; reconoce solo el cambio de firma
-  compatible buscando la firma vieja en las migraciones anteriores.
-- **`check-functions-drift.mjs`** ahora compara cuerpo **y** firma de las 83
-  funciones de `public`, no solo las críticas. `CRITICAS` (9) quedan como las
-  que no pueden faltar. Encuentra también `create function` sin `or replace`.
-- **`check-migraciones-sin-archivo.mjs`** (nuevo, en morning-health): toda
-  fila de `supabase_migrations.schema_migrations` tiene que tener archivo.
-  Lee vía el RPC `migrations_snapshot` (**0097**, definer, solo
-  `service_role`). Lo histórico que no coincide por nombre (24) está en
-  `scripts/migraciones-sin-archivo.json` con el veredicto de cada una.
-- **Base**:
-  - **0062** aplicada por Ricky desde el panel: queda una sola
-    `sumar_staff(text,text)`.
-  - **0097** aplicada por MCP.
-- **Rescatadas al repo** (lo que corría en la base sin archivo, copiado de
-  `schema_migrations`):
-  - **0096**: `provision_owner`/`attach_owner` escriben `roles`. La versión
-    del repo fallaba por `roles` NOT NULL desde la 0050.
-  - **0018**: el cron `release-dormant-tenants`.
-  - **0079**: `schema_snapshot` con vistas. El original vive en la worktree
-    `claude/recursing-gauss-acdbb9` (`08f82ba`): si se mergea, tiene que ser
-    igual; si difiere, vale el del repo.
-  - **0098**: `register_waste`/`register_purchase` que asientan en el libro.
-    El repo decía que corría la de la 0040.
-- `_migrations_through` en `0098`.
-
-### Verificado
-
-- Contra producción (MCP, solo lectura): las 83 firmas de `public` coinciden
-  con el repo. Los 83 cuerpos también: el único que daba distinto
-  (`crear_sectores_tipicos`) es idéntico con el normalizador real. Era un
-  artefacto de normalizar en Postgres, donde `[a-z]` incluye letras con tilde.
-- Coinciden con el repo: constraint `entry_time_valid`, índices
-  `inv_mov_client_request_uniq` y `suppliers_tenant_name_uniq`, policies de
-  `sales`/`expenses`/`suppliers`.
-- **No** se compararon una por una las policies del resto de las tablas que
-  tocan las `roles_*`: solo se sabe que `check:rls` las da cerradas.
-- Tests de los checks (103) y pre-commit completo con build en cada commit.
-- **CI entero en verde desde `6e055c8`** (los 5 jobs). *Security Audit*
-  daba rojo desde antes de esta sesión: se arregló con `npm audit fix` y
-  `lint-staged` 15 → 16.4.0 (pide node ≥ 20.17). Verificado: suite completa
-  (116 archivos, 1594 tests), build, y lint-staged 16 corriendo eslint e
-  integridad en el pre-commit.
-- Los checks nuevos de morning-health **no corrieron todavía contra la base**
-  desde CI: ver bloqueado.
-
-### Resuelto al final del 16/oct (verificado con un morning-health manual)
-
-- Token del bot en el secret **`GERENTEDICOBOT`** (el workflow lo toma de ahí,
-  `TELEGRAM_BOT_TOKEN` de respaldo) y `TELEGRAM_CHAT_ID` cargado; el script
-  recorta espacios (el chat id traía un salto de línea).
-- **Los negocios a mirar salen de la base** (`scripts/tenants-vivos.mjs`):
-  `active` se mira, `trial` sale como "en carga" sin rojo. Lo usan
-  morning-health y el smoke. `SMOKE_TENANTS` queda de respaldo sin service role.
-- **DICO_BRAIN** (API key de OpenAI, secret de GitHub): si hay problemas, los
-  explica en castellano. `workflow_dispatch` con `probar_cerebro` lo prueba.
-- Run `38962476797`: todo en verde (cochi, crazy-miga, la-nona-pato; monare
-  en carga), los 3 checks nuevos en verde contra la base, la prueba del
-  cerebro respondió y **llegó a Telegram**.
-- `/dico` ahora arranca mirando el CI de `main` y el último morning-health.
-
-### Sentry (16/oct, tarde)
-
-- **El build de producción no tiene Sentry**: el bundle publicado no contiene
-  ni la palabra (falta `VITE_SENTRY_DSN` en Vercel `hermes-platform`). Desde
-  el 27/sep llegaron **0** eventos y Sentry no descartó nada: no llega nada.
-  Confirmado con un build local con el DSN, que sí lo incluye. Detalle y pasos
-  en `docs/plataforma/SENTRY.md`.
-- morning-health ahora lo detecta (`checkSentryEnBuild`): da rojo y deja de
-  decir "sin errores en 24h". Run manual `38964529421`: rojo por Sentry,
-  explicado por DICO_BRAIN, llegó a Telegram.
-- **`sentry-alerta` desplegada** (versión 1, `verify_jwt=false`). Probada desde
-  la base con `pg_net`: sin firma válida contesta 401. Falta el alta en Sentry
-  y los secrets (pasos en `SENTRY.md`).
-- Pendiente con ok de Ricky (toca `src/`): el tag `tenant` de Sentry sale de
-  `__CLIENT__`, que en el edificio siempre vale `edificio`. Tendría que salir
-  del hostname. Mientras tanto, `sentry-alerta` saca el negocio de la URL del
-  error.
-
-**Bloqueado por Ricky (Sentry):** cargar en Vercel `VITE_SENTRY_DSN`,
-`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` y redeployar; crear la
-integración interna GerenteDico en Sentry; cargar en Supabase
-`SENTRY_ALERTA_SECRET`, `GERENTEDICOBOT`, `TELEGRAM_CHAT_ID` y `DICO_BRAIN`;
-crear la regla de alerta y mandar la notificación de prueba.
-
-Lo de abajo quedó como estaba escrito al cerrar; los puntos 1 y 2 ya no
-aplican.
-
-### Bloqueado por Ricky
-
-1. **Morning-health falla desde el 14/oct y no manda nada a Telegram**:
-   `Telegram API error: 401 Unauthorized`. El `TELEGRAM_BOT_TOKEN` de los
-   secrets de GitHub ya no es válido. Cargar el token del bot nuevo
-   (GerenteDico) y su `TELEGRAM_CHAT_ID` en Settings → Secrets → Actions.
-2. **`SMOKE_TENANTS`** (variable de Actions) dice
-   `la-nona-pato,cochi,mala-miga`: `mala-miga` ya no existe (da "catálogo
-   VACÍO" todos los días). Cambiar por los tenants vivos (al menos
-   `crazy-miga`).
-3. Ok y `ANTHROPIC_API_KEY` (la carga él) para el bot GerenteDico.
-
-### Pendiente inmediato
-
-1. Después de 1 y 2: correr morning-health a mano (`workflow_dispatch`) y
-   confirmar que llega y que los 3 checks nuevos dan verde.
-2. GerenteDico (propuesta en el chat del 16/oct, no hay código):
-   - etapa 1, el resumen de la mañana con los errores de Sentry explicados en
-     castellano;
-   - etapa 2, edge function `gerente-webhook` (solo el chat de Ricky,
-     herramientas de solo lectura, Claude API);
-   - etapa 3, "anotá que hay que arreglar X" → issue de GitHub → Claude Code
-     abre el PR → link del preview para aprobar desde el teléfono.
-3. Comparar una por una las policies de las tablas que tocan
-   `roles_y_alcance_policies` / `roles_barrido_de_policies_viejas`.

@@ -9,6 +9,146 @@
 
 ---
 
+## 16/oct/2026 — La base y el repo vuelven a decir lo mismo; morning-health vigila lo que no veía (Claude)
+
+**Publicado.** Todo en `main`, de `b0c3416` a `cd82ca5`, en commits de un
+solo tema. Producción de `hermes-platform` `READY` en `cd82ca5` (verificado
+por MCP de Vercel).
+
+### Hecho
+
+- **Reglas nuevas en `CLAUDE.md`/`AGENTS.md`**:
+  - "la escalera" antes de escribir código (adaptada de Ponytail);
+  - criterio de entrada para skills/plugins/MCPs de terceros, con tabla de
+    las 12 ya evaluadas (no reabrir sin motivo nuevo);
+  - migraciones "expandir y después contraer" (Vercel ya es blue-green, la
+    base no vuelve con el rollback) y patrón para sumar un argumento a una RPC
+    (`drop` + `create` con `default`, como la 0068; **no** `create or replace`
+    con otra firma: deja dos vivas);
+  - "cómo se aplica una migración": archivo en el mismo commit; lo
+    destructivo lo aplica Ricky desde el panel (por MCP el `drop` se cuelga a
+    los 60s, pasó 3 veces);
+  - "qué se hace sin preguntar" y qué pide el ok de Ricky.
+- `/cerrardico` suma un paso: proponer reglas a partir de correcciones
+  repetidas (adaptado de Task Observer).
+- **`check:expandir`** (`scripts/check-migraciones-compatibles.mjs`,
+  pre-commit + CI): frena drop/rename/`set not null`/cambio de tipo desde la
+  0096 salvo `-- contraer: <motivo>`; reconoce solo el cambio de firma
+  compatible buscando la firma vieja en las migraciones anteriores.
+- **`check-functions-drift.mjs`** ahora compara cuerpo **y** firma de las 83
+  funciones de `public`, no solo las críticas. `CRITICAS` (9) quedan como las
+  que no pueden faltar. Encuentra también `create function` sin `or replace`.
+- **`check-migraciones-sin-archivo.mjs`** (nuevo, en morning-health): toda
+  fila de `supabase_migrations.schema_migrations` tiene que tener archivo.
+  Lee vía el RPC `migrations_snapshot` (**0097**, definer, solo
+  `service_role`). Lo histórico que no coincide por nombre (24) está en
+  `scripts/migraciones-sin-archivo.json` con el veredicto de cada una.
+- **Base**:
+  - **0062** aplicada por Ricky desde el panel: queda una sola
+    `sumar_staff(text,text)`.
+  - **0097** aplicada por MCP.
+- **Rescatadas al repo** (lo que corría en la base sin archivo, copiado de
+  `schema_migrations`):
+  - **0096**: `provision_owner`/`attach_owner` escriben `roles`. La versión
+    del repo fallaba por `roles` NOT NULL desde la 0050.
+  - **0018**: el cron `release-dormant-tenants`.
+  - **0079**: `schema_snapshot` con vistas. El original vive en la worktree
+    `claude/recursing-gauss-acdbb9` (`08f82ba`): si se mergea, tiene que ser
+    igual; si difiere, vale el del repo.
+  - **0098**: `register_waste`/`register_purchase` que asientan en el libro.
+    El repo decía que corría la de la 0040.
+- `_migrations_through` en `0098`.
+
+### Verificado
+
+- Contra producción (MCP, solo lectura): las 83 firmas de `public` coinciden
+  con el repo. Los 83 cuerpos también: el único que daba distinto
+  (`crear_sectores_tipicos`) es idéntico con el normalizador real. Era un
+  artefacto de normalizar en Postgres, donde `[a-z]` incluye letras con tilde.
+- Coinciden con el repo: constraint `entry_time_valid`, índices
+  `inv_mov_client_request_uniq` y `suppliers_tenant_name_uniq`, policies de
+  `sales`/`expenses`/`suppliers`.
+- **No** se compararon una por una las policies del resto de las tablas que
+  tocan las `roles_*`: solo se sabe que `check:rls` las da cerradas.
+- Tests de los checks (103) y pre-commit completo con build en cada commit.
+- **CI entero en verde desde `6e055c8`** (los 5 jobs). *Security Audit*
+  daba rojo desde antes de esta sesión: se arregló con `npm audit fix` y
+  `lint-staged` 15 → 16.4.0 (pide node ≥ 20.17). Verificado: suite completa
+  (116 archivos, 1594 tests), build, y lint-staged 16 corriendo eslint e
+  integridad en el pre-commit.
+- Los checks nuevos de morning-health **no corrieron todavía contra la base**
+  desde CI: ver bloqueado.
+
+### Resuelto al final del 16/oct (verificado con un morning-health manual)
+
+- Token del bot en el secret **`GERENTEDICOBOT`** (el workflow lo toma de ahí,
+  `TELEGRAM_BOT_TOKEN` de respaldo) y `TELEGRAM_CHAT_ID` cargado; el script
+  recorta espacios (el chat id traía un salto de línea).
+- **Los negocios a mirar salen de la base** (`scripts/tenants-vivos.mjs`):
+  `active` se mira, `trial` sale como "en carga" sin rojo. Lo usan
+  morning-health y el smoke. `SMOKE_TENANTS` queda de respaldo sin service role.
+- **DICO_BRAIN** (API key de OpenAI, secret de GitHub): si hay problemas, los
+  explica en castellano. `workflow_dispatch` con `probar_cerebro` lo prueba.
+- Run `38962476797`: todo en verde (cochi, crazy-miga, la-nona-pato; monare
+  en carga), los 3 checks nuevos en verde contra la base, la prueba del
+  cerebro respondió y **llegó a Telegram**.
+- `/dico` ahora arranca mirando el CI de `main` y el último morning-health.
+
+### Sentry (16/oct, tarde)
+
+- **El build de producción no tiene Sentry**: el bundle publicado no contiene
+  ni la palabra (falta `VITE_SENTRY_DSN` en Vercel `hermes-platform`). Desde
+  el 27/sep llegaron **0** eventos y Sentry no descartó nada: no llega nada.
+  Confirmado con un build local con el DSN, que sí lo incluye. Detalle y pasos
+  en `docs/plataforma/SENTRY.md`.
+- morning-health ahora lo detecta (`checkSentryEnBuild`): da rojo y deja de
+  decir "sin errores en 24h". Run manual `38964529421`: rojo por Sentry,
+  explicado por DICO_BRAIN, llegó a Telegram.
+- **`sentry-alerta` desplegada** (versión 1, `verify_jwt=false`). Probada desde
+  la base con `pg_net`: sin firma válida contesta 401. Falta el alta en Sentry
+  y los secrets (pasos en `SENTRY.md`).
+- Pendiente con ok de Ricky (toca `src/`): el tag `tenant` de Sentry sale de
+  `__CLIENT__`, que en el edificio siempre vale `edificio`. Tendría que salir
+  del hostname. Mientras tanto, `sentry-alerta` saca el negocio de la URL del
+  error.
+
+**Bloqueado por Ricky (Sentry):** cargar en Vercel `VITE_SENTRY_DSN`,
+`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` y redeployar; crear la
+integración interna GerenteDico en Sentry; cargar en Supabase
+`SENTRY_ALERTA_SECRET`, `GERENTEDICOBOT`, `TELEGRAM_CHAT_ID` y `DICO_BRAIN`;
+crear la regla de alerta y mandar la notificación de prueba.
+
+Lo de abajo quedó como estaba escrito al cerrar; los puntos 1 y 2 ya no
+aplican.
+
+### Bloqueado por Ricky
+
+1. **Morning-health falla desde el 14/oct y no manda nada a Telegram**:
+   `Telegram API error: 401 Unauthorized`. El `TELEGRAM_BOT_TOKEN` de los
+   secrets de GitHub ya no es válido. Cargar el token del bot nuevo
+   (GerenteDico) y su `TELEGRAM_CHAT_ID` en Settings → Secrets → Actions.
+2. **`SMOKE_TENANTS`** (variable de Actions) dice
+   `la-nona-pato,cochi,mala-miga`: `mala-miga` ya no existe (da "catálogo
+   VACÍO" todos los días). Cambiar por los tenants vivos (al menos
+   `crazy-miga`).
+3. Ok y `ANTHROPIC_API_KEY` (la carga él) para el bot GerenteDico.
+
+### Pendiente inmediato
+
+1. Después de 1 y 2: correr morning-health a mano (`workflow_dispatch`) y
+   confirmar que llega y que los 3 checks nuevos dan verde.
+2. GerenteDico (propuesta en el chat del 16/oct, no hay código):
+   - etapa 1, el resumen de la mañana con los errores de Sentry explicados en
+     castellano;
+   - etapa 2, edge function `gerente-webhook` (solo el chat de Ricky,
+     herramientas de solo lectura, Claude API);
+   - etapa 3, "anotá que hay que arreglar X" → issue de GitHub → Claude Code
+     abre el PR → link del preview para aprobar desde el teléfono.
+3. Comparar una por una las policies de las tablas que tocan
+   `roles_y_alcance_policies` / `roles_barrido_de_policies_viejas`.
+
+---
+
 ## 15/oct/2026 — Gate de diseño, /diseno siempre activo y pulido de la landing de divianco.app (Claude)
 
 **Publicado.** Ricky dio el OK y el PR #26 se mergeó a `main` como merge
