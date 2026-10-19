@@ -18,7 +18,32 @@
  * La diferencia se muestra en grande, con signo y color. Un arqueo que siempre
  * cierra en cero es un arqueo que nadie mira.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { parseMontoAR } from '../../../lib/format';
+import { horaCortaDelLocal } from '../../../modules/estadoOperativo';
+
+// opened_at es timestamptz: cortarle el texto da la hora UTC, tres de mas.
+// Una zona mal cargada hace tirar a Intl: cae al reloj del dispositivo en vez
+// de dejar la caja sin pantalla.
+const enZona = (formatear, timezone) => {
+  try { return formatear(timezone); } catch { return formatear(undefined); }
+};
+
+const horaDe = (iso, timezone) => {
+  const d = new Date(iso || '');
+  return Number.isFinite(d.getTime()) ? enZona((tz) => horaCortaDelLocal(d, tz), timezone) : '';
+};
+
+// El dia del local en AAAA-MM-DD, como business_day (solo para turnos viejos
+// que no lo tienen): el de UTC cambia de dia a las 21 hs.
+const diaDe = (iso, timezone) => {
+  const d = new Date(iso || '');
+  return Number.isFinite(d.getTime())
+    ? enZona((tz) => new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz || undefined, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(d), timezone)
+    : '';
+};
 
 const money = (n) => new Intl.NumberFormat('es-AR', {
   style: 'currency', currency: 'ARS', maximumFractionDigits: 2,
@@ -49,6 +74,22 @@ function Linea({ label, valor, fuerte, tono }) {
       <span>{label}</span>
       <span style={{ fontVariantNumeric: 'tabular-nums' }}>{valor}</span>
     </div>
+  );
+}
+
+// "1." o "1.500," son un numero a medio tipear, no un error: el boton queda
+// apagado pero el aviso no sale en cada tecla.
+const aMedioTipear = (texto) => /[.,]$/.test(texto);
+
+// El aviso reemplaza a la ayuda del campo: con un numero que no se entiende
+// el boton queda apagado, y sin decir por que parece roto.
+function MontoInvalido({ id }) {
+  return (
+    <span id={id} aria-live="polite" style={{
+      display: 'block', marginTop: 5, fontSize: 12.5, color: 'var(--ag-bad, #c62828)',
+    }}>
+      No entiendo ese número. Los centavos van con coma: 1.500,50
+    </span>
   );
 }
 
@@ -191,22 +232,48 @@ export default function CajaPanel({
   onResolverIncidencia,
   onRefrescarEsperado,
   cargando = false,
+  timezone,            // el del local: las horas se muestran en su reloj
 }) {
   const [montoInicial, setMontoInicial] = useState('');
   const [contado, setContado] = useState('');
   const [notas, setNotas] = useState('');
   const [confirmando, setConfirmando] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  // El ref frena el segundo toque aunque llegue antes del re-render.
+  const enviandoRef = useRef(false);
 
   // Al abrir el turno se limpia el arqueo anterior: dejar el numero viejo en
   // el campo es la forma mas facil de cerrar con el conteo de ayer.
   useEffect(() => { setContado(''); setNotas(''); setConfirmando(false); }, [turno?.id]);
 
-  const diferencia = contado === '' ? null : (Number(contado) || 0) - (Number(esperado) || 0);
+  // Vacio en la apertura es 0 ("si no dejas nada, pone 0"); en el cierre no
+  // hay valor por defecto: hay que contar.
+  const inicialNum = montoInicial === '' ? 0 : parseMontoAR(montoInicial);
+  const inicialValido = Number.isFinite(inicialNum);
+  const contadoNum = contado === '' ? null : parseMontoAR(contado);
+  const contadoValido = Number.isFinite(contadoNum);
+  const inicialError = montoInicial !== '' && !inicialValido && !aMedioTipear(montoInicial);
+  const contadoError = contado !== '' && !contadoValido && !aMedioTipear(contado);
+  const diferencia = contadoValido ? contadoNum - (Number(esperado) || 0) : null;
+  const bloqueado = cargando || enviando;
 
-  const abrir = useCallback(async () => {
-    await onAbrir?.(Number(montoInicial) || 0, notas || null);
+  // Abrir y cerrar mueven plata: mientras corre la llamada, el boton no
+  // acepta otro toque (dos aperturas o dos cierres del mismo turno).
+  const enviar = useCallback(async (accion) => {
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
+    setEnviando(true);
+    try { await accion(); } finally {
+      enviandoRef.current = false;
+      setEnviando(false);
+    }
+  }, []);
+
+  const abrir = useCallback(() => enviar(async () => {
+    if (!inicialValido) return;
+    await onAbrir?.(inicialNum, notas || null);
     setMontoInicial(''); setNotas('');
-  }, [onAbrir, montoInicial, notas]);
+  }), [enviar, onAbrir, inicialNum, inicialValido, notas]);
 
   const input = {
     width: '100%', padding: '11px 13px', borderRadius: 9, fontSize: 16,
@@ -219,7 +286,7 @@ export default function CajaPanel({
   /* ── Sin turno abierto: apertura ── */
   if (!turno) {
     return (
-      <section className="cp-root ag-caja-layout">
+      <section className="ag-caja-layout">
         <div className="ag-caja-arqueo">
         <div style={papel}>
           <div style={{ textAlign: 'center', letterSpacing: '0.14em', fontSize: 12, opacity: 0.6 }}>
@@ -238,21 +305,29 @@ export default function CajaPanel({
             style={input} inputMode="decimal" value={montoInicial}
             onChange={(e) => setMontoInicial(e.target.value.replace(/[^\d.,]/g, ''))}
             placeholder="0" autoFocus
+            aria-invalid={inicialError || undefined}
+            aria-describedby={inicialError ? 'caja-inicial-invalido' : 'caja-inicial-ayuda'}
           />
-          <span style={{ display: 'block', marginTop: 5, fontSize: 12.5, color: 'var(--ag-ink-3, #666)' }}>
-            El cambio que dejás en el cajón. Si no dejás nada, poné 0.
-          </span>
+          {inicialError ? <MontoInvalido id="caja-inicial-invalido" /> : (
+            <span id="caja-inicial-ayuda" style={{ display: 'block', marginTop: 5, fontSize: 12.5, color: 'var(--ag-ink-3, #666)' }}>
+              El cambio que dejás en el cajón. Si no dejás nada, poné 0.
+            </span>
+          )}
         </label>
 
         <button
-          type="button" onClick={abrir} disabled={cargando}
+          type="button" onClick={abrir} disabled={bloqueado || !inicialValido}
+          aria-busy={enviando || undefined}
           style={{
-            padding: '13px', borderRadius: 10, cursor: 'pointer', font: 'inherit',
+            padding: '13px', borderRadius: 10, font: 'inherit',
             fontSize: 15, fontWeight: 650, border: 'none',
+            cursor: bloqueado || !inicialValido ? 'not-allowed' : 'pointer',
+            // "Abriendo…" es el aviso de que esta en curso: no se atenua.
+            opacity: !inicialValido ? 0.5 : 1,
             background: 'var(--ag-accent, #e8b947)', color: '#1a1a1a',
           }}
         >
-          Abrir caja
+          {enviando ? 'Abriendo…' : 'Abrir caja'}
         </button>
 
         {turnosPrevios.length > 0 && (
@@ -267,7 +342,7 @@ export default function CajaPanel({
                   padding: '7px 10px', borderRadius: 7,
                   background: 'var(--ag-surface-2, rgba(0,0,0,0.03))',
                 }}>
-                  <span>{t.business_day || (t.opened_at || '').slice(0, 10)}</span>
+                  <span>{t.business_day || diaDe(t.opened_at, timezone)}</span>
                   <span style={{
                     fontVariantNumeric: 'tabular-nums',
                     color: Number(t.difference) === 0 ? 'inherit'
@@ -294,14 +369,14 @@ export default function CajaPanel({
 
   /* ── Turno abierto: arqueo y cierre ── */
   return (
-    <section className="cp-root ag-caja-layout">
+    <section className="ag-caja-layout">
       <div className="ag-caja-arqueo">
       <div style={papel}>
         <div style={{ textAlign: 'center', letterSpacing: '0.14em', fontSize: 12, opacity: 0.6 }}>
           TURNO ABIERTO
         </div>
         <div style={{ textAlign: 'center', fontSize: 12, opacity: 0.55, marginBottom: 12 }}>
-          {turno.business_day || ''} · desde {(turno.opened_at || '').slice(11, 16)}
+          {turno.business_day || ''} · desde {horaDe(turno.opened_at, timezone)}
         </div>
 
         <Linea label="Apertura" valor={money(turno.opening_amount)} />
@@ -330,10 +405,14 @@ export default function CajaPanel({
           style={input} inputMode="decimal" value={contado}
           onChange={(e) => { setContado(e.target.value.replace(/[^\d.,]/g, '')); setConfirmando(false); }}
           placeholder="0"
+          aria-invalid={contadoError || undefined}
+          aria-describedby={contadoError ? 'caja-contado-invalido' : 'caja-contado-ayuda'}
         />
-        <span style={{ display: 'block', marginTop: 5, fontSize: 12.5, color: 'var(--ag-ink-3, #666)' }}>
-          Contá la plata del cajón. Si no coincide, se guarda la diferencia igual.
-        </span>
+        {contadoError ? <MontoInvalido id="caja-contado-invalido" /> : (
+          <span id="caja-contado-ayuda" style={{ display: 'block', marginTop: 5, fontSize: 12.5, color: 'var(--ag-ink-3, #666)' }}>
+            Contá la plata del cajón. Si no coincide, se guarda la diferencia igual.
+          </span>
+        )}
       </label>
 
       {diferencia !== null && diferencia !== 0 && (
@@ -362,23 +441,24 @@ export default function CajaPanel({
         </button>
         <button
           type="button"
-          disabled={contado === '' || cargando}
+          disabled={!contadoValido || bloqueado}
+          aria-busy={enviando || undefined}
           onClick={() => {
             // Cerrar la caja termina el turno y no se deshace: la confirmacion
             // en dos pasos evita el cierre por un toque de mas.
             if (!confirmando) { setConfirmando(true); return; }
-            onCerrar?.(Number(contado) || 0, notas || null);
+            enviar(async () => { await onCerrar?.(contadoNum, notas || null); });
           }}
           style={{
             flex: 1, padding: '12px', borderRadius: 10, font: 'inherit',
             fontSize: 15, fontWeight: 650, border: 'none',
-            cursor: contado === '' ? 'not-allowed' : 'pointer',
-            opacity: contado === '' ? 0.5 : 1,
+            cursor: !contadoValido || bloqueado ? 'not-allowed' : 'pointer',
+            opacity: !contadoValido ? 0.5 : 1,
             background: confirmando ? 'var(--ag-bad, #c62828)' : 'var(--ag-accent, #e8b947)',
             color: confirmando ? '#fff' : '#1a1a1a',
           }}
         >
-          {confirmando ? '¿Seguro? Tocá de nuevo' : 'Cerrar caja'}
+          {enviando ? 'Cerrando…' : confirmando ? '¿Seguro? Tocá de nuevo' : 'Cerrar caja'}
         </button>
       </div>
       </div>

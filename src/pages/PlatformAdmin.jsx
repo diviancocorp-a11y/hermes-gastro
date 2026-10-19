@@ -653,7 +653,8 @@ export default function PlatformAdmin() {
     const r = await abrirTurno(tenantId, b?.id, monto, notas);
     if (r.__error) { msg(r.message); return; }
     msg('Caja abierta');
-    loadCaja();
+    // Con await, el boton sigue ocupado hasta que llega el turno nuevo.
+    await loadCaja();
   }, [tenantId, loadCaja, msg]);
 
   const onCerrarCaja = useCallback(async (contado, notas) => {
@@ -664,7 +665,7 @@ export default function PlatformAdmin() {
     // El resultado del arqueo se dice, no se esconde detras de un "listo".
     msg(d === 0 ? 'Caja cerrada, cerró justo'
       : `Caja cerrada · ${d < 0 ? 'faltan' : 'sobran'} ${Math.abs(d)}`);
-    loadCaja();
+    await loadCaja();
   }, [turno, loadCaja, msg]);
 
   const onRevisarRendicion = useCallback(async (id, decision, notes) => {
@@ -1621,6 +1622,7 @@ export default function PlatformAdmin() {
                 onRevisarRendicion={onRevisarRendicion}
                 onResolverIncidencia={onResolverIncidencia}
                 onRefrescarEsperado={loadCaja}
+                timezone={timezone}
               />
             </Suspense>
           )}
