@@ -47,6 +47,9 @@
 - Readback SQL: 53/53 imágenes, 20 activos, stock NULL; `get_catalog('monare')`
   emite 20 imágenes, `catalogo_activo=true`, coordenadas nuevas y domingo cerrado.
   Los 40 objetos se comprobaron por HTTP HEAD al cargarlos.
+  Playwright contra producción: 26 elementos de imagen del nuevo prefijo
+  cargados, cero errores JS; la página pública de compras muestra Boedo,
+  lunes a sábado y domingo cerrado (exit 0).
 
 ### Filtros preparados, publicación pendiente de aprobación visual
 
