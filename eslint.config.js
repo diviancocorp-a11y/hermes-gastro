@@ -53,6 +53,26 @@ export default defineConfig([
     },
   },
 
+  // ── El panel no usa la raiz del catalogo ────────────────
+  // `cp-root` trae los tokens del catalogo publico y pinta fondo blanco e
+  // Inter: en el admin tapa los `--ag-*` y en tema oscuro dejo la supervision
+  // de Caja a 1.17:1 (auditoria del 19/oct). Paso en cinco pantallas.
+  {
+    files: ['src/components/admin/**/*.{js,jsx}', 'src/pages/admin/**/*.{js,jsx}', 'src/pages/PlatformAdmin.jsx'],
+    rules: {
+      'no-restricted-syntax': ['error',
+        {
+          selector: 'JSXAttribute[name.name="className"] Literal[value=/(^|\\s)cp-root(\\s|$)/]',
+          message: 'cp-root es la raiz del catalogo: en el panel se usan los tokens --ag-*.',
+        },
+        {
+          selector: 'JSXAttribute[name.name="className"] TemplateElement[value.raw=/(^|\\s)cp-root(\\s|$)/]',
+          message: 'cp-root es la raiz del catalogo: en el panel se usan los tokens --ag-*.',
+        },
+      ],
+    },
+  },
+
   // ── Unit tests (vitest + jsdom) ─────────────────────────
   {
     files: ['src/test/**/*.{js,jsx}'],

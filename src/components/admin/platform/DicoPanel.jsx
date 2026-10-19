@@ -579,7 +579,7 @@ export default function DicoPanel({
   const poseDicoEnBarra = intervencionActiva?.pose || (dicoEnRespuesta && respondiendo ? 'thinking' : 'idle');
 
   return (
-    <section className="dico-panel cp-root" aria-labelledby="dico-panel-titulo">
+    <section className="dico-panel" aria-labelledby="dico-panel-titulo">
       <div className="dico-panel-title-row">
       <div>
           <span className="dico-panel-kicker">Dico</span>

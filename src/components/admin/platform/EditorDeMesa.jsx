@@ -128,7 +128,6 @@ export default function EditorDeMesa({
 
   return (
     <div
-      className="cp-root"
       role="dialog"
       aria-modal="true"
       aria-label={esNueva ? `Nueva ${terminologia.singular}` : `Editar ${recurso.name}`}
