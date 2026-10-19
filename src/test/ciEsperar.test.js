@@ -30,6 +30,15 @@ describe('veredicto', () => {
     expect(v.lineas.join(' ')).toMatch(/push posterior/);
   });
 
+  // 19/oct: GitHub cerro el run con 'success' y los 5 jobs en cola.
+  it('run success con jobs sin terminar: no es verde, sigue esperando', () => {
+    const v = veredicto({ status: 'completed', conclusion: 'success' }, [
+      { name: 'Lint', status: 'completed', conclusion: 'success' },
+      { name: 'Build', status: 'queued', conclusion: null },
+    ]);
+    expect(v).toMatchObject({ terminado: false, codigo: 2 });
+  });
+
   it('timed_out sigue siendo rojo', () => {
     expect(veredicto({ status: 'completed', conclusion: 'timed_out' }).codigo).toBe(1);
   });
