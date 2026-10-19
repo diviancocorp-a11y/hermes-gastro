@@ -25,9 +25,16 @@
   `get_catalog('la-nona-pato')` devuelve `catalogo_activo=true`, esas coordenadas
   y 43 productos. Browser de produccion muestra La Nona Pato y "Abierto".
   No se envio pedido de prueba ni se verifico una venta completa.
-- Pendiente para terminar la configuracion comercial: horarios, WhatsApp,
-  medios/cuentas de pago y condiciones de envio. Siguen vacios; no se
-  inventaron valores. Sin horarios el catalogo muestra Abierto por defecto.
+- Continuacion confirmada por Ricky: todos los dias (lunes a domingo),
+  09:00-21:00, en los siete indices de `store_hours`. WhatsApp provisional
+  `+5491172381841`, tambien guardado como telefono de la sucursal Principal.
+  Efectivo disponible de forma implicita; cuenta de transferencia activa para
+  checkout con alias `pato.jhs`. Sin titular ni CBU informados. El QR es fisico
+  y Ricky pidio dejarlo fuera del catalogo. Readback del RPC publico confirma
+  telefono, siete horarios, alias, catalogo activo y 43 productos.
+- Pendiente: condiciones/tarifas de envio. No se cambiaron precios ni se
+  enviaron pedidos de prueba. Reemplazar WhatsApp provisional cuando Ricky
+  confirme el definitivo; completar titular de transferencia cuando lo informe.
 - Sin cambios de codigo ni schema ni otros tenants. Solo documentacion en
   `docs/`; no se crearon archivos fuera de `src/`, `docs/`, `platform/` o
   `scripts/`. Preservados los archivos sin seguimiento y el trabajo paralelo.
