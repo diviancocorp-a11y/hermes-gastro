@@ -62,6 +62,14 @@
         ["\\bcompetencia\\b", "\\bcompetidor(es|a|as)?\\b", "\\bla competencia\\b", "\\brivales?\\b", "\\bbenchmark\\b"]
       ],
       "texto": "Competencia: usar la skill analisis-competencia (suma el competidor al doc de competencia, arma el reporte para el gerente y propone preguntas para sus creadores)."
+    },
+    {
+      "id": "carga",
+      "skill": "carga",
+      "todas": [
+        ["\\bk6\\b", "\\b(prueba|test|tests|pruebas) de (carga|estres)\\b", "\\bload ?test", "\\bestresar\\b", "\\bcuantos usuarios aguanta\\b", "\\busuarios (a la vez|simultaneos|concurrentes)\\b"]
+      ],
+      "texto": "Carga: usar la skill /carga (k6 solo lecturas con 20, 50 y 100 usuarios, cruzado con pg_stat_statements y comparado contra el historial de docs/operacion/CARGA-K6.md). Nunca crear pedidos contra un tenant real."
     }
   ],
   "candado": {

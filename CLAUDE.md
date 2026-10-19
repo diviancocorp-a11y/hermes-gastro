@@ -198,6 +198,7 @@ seguir solo.
 | Cerrar la sesion, terminar por hoy, guardar el trabajo | `/cerrardico` |
 | Retomar, en que quedamos, que hay pendiente | `/dico` |
 | Competencia, un competidor | skill `analisis-competencia` |
+| Prueba de carga, k6, cuantos usuarios aguanta | `/carga` (tambien cada 15 dias, tarea programada) |
 
 - **Ruteo** (hook `UserPromptSubmit`, `orquestador.mjs ruteo`): inyecta solo
   la indicacion que aplica; si no aplica ninguna, no dice nada. Una skill que
