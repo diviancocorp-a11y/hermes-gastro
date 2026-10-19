@@ -158,6 +158,15 @@ describe('color: identidad y minimos', () => {
     expect(shell).toContain('color: var(--ag-bad-ink)');
   });
 
+  it('la tinta sobre el solido de exito cambia con el tema', () => {
+    // Blanco sobre el verde del claro da 5.39:1, pero sobre el del oscuro
+    // (#4ADE80) da 1.6:1; Zinc 950 ahi da 11.4:1. Medido.
+    const inks = tokens.split('\n').filter((l) => l.trim().startsWith('--ag-ok-ink:'));
+    expect(inks).toHaveLength(2);
+    expect(inks[0]).toContain('#FFFFFF');
+    expect(inks[1]).toContain('var(--ms-zinc-950)');
+  });
+
   it('el foco es oro de 2px dentro del admin', () => {
     const i = shell.indexOf('.ag-root *:focus-visible');
     const bloque = shell.slice(i, shell.indexOf('}', i));

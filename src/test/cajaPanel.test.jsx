@@ -13,6 +13,9 @@ const turno = (over = {}) => ({
   business_day: '2026-08-19', status: 'open', ...over,
 });
 
+// La region que describe al campo: la ayuda y el aviso viven en el mismo lugar.
+const regionDe = (campo) => document.getElementById(campo.getAttribute('aria-describedby'));
+
 describe('CajaPanel — sin turno', () => {
   it('pide la apertura y explica que poner', () => {
     render(<CajaPanel turno={null} esperado={0} />);
@@ -173,6 +176,42 @@ describe('CajaPanel — montos en formato argentino', () => {
     expect(screen.getByPlaceholderText('0')).toHaveAttribute('aria-invalid', 'true');
     fireEvent.click(screen.getByRole('button', { name: 'Abrir caja' }));
     expect(onAbrir).not.toHaveBeenCalled();
+  });
+
+  it('el aviso entra en una region live que ya estaba montada', () => {
+    // Un aria-live que entra al DOM con el texto adentro no se anuncia en
+    // muchos lectores (WCAG 4.1.3): la region tiene que estar antes.
+    render(<CajaPanel turno={null} esperado={0} onAbrir={vi.fn()} />);
+    const campo = screen.getByPlaceholderText('0');
+    const region = regionDe(campo);
+    expect(region).toHaveAttribute('aria-live', 'polite');
+    fireEvent.change(campo, { target: { value: '1,2,3' } });
+    expect(regionDe(campo)).toBe(region);
+    expect(region).toHaveTextContent(/No entiendo ese número/);
+  });
+
+  it('la ayuda y el aviso no se meten en el nombre del campo', () => {
+    // Dentro del <label>, el lector los leia como parte del nombre y despues
+    // otra vez como descripcion, y el nombre cambiaba al equivocarse.
+    const { unmount } = render(<CajaPanel turno={null} esperado={0} onAbrir={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '1,2,3' } });
+    expect(screen.getByRole('textbox', { name: '¿Con cuánto arrancás?' }))
+      .toHaveAccessibleDescription(/No entiendo ese número/);
+    unmount();
+    render(<CajaPanel turno={turno()} esperado={13000} onCerrar={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '1,2,3' } });
+    expect(screen.getByRole('textbox', { name: '¿Cuánto contaste?' }))
+      .toHaveAccessibleDescription(/No entiendo ese número/);
+  });
+
+  it('al cerrar, el aviso tambien entra en una region que ya estaba', () => {
+    render(<CajaPanel turno={turno()} esperado={13000} onCerrar={vi.fn()} />);
+    const campo = screen.getByPlaceholderText('0');
+    const region = regionDe(campo);
+    expect(region).toHaveAttribute('aria-live', 'polite');
+    fireEvent.change(campo, { target: { value: '1,2,3' } });
+    expect(regionDe(campo)).toBe(region);
+    expect(region).toHaveTextContent(/No entiendo ese número/);
   });
 
   it('a medio tipear no avisa error, pero tampoco deja abrir', () => {

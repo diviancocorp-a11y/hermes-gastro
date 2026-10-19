@@ -20,7 +20,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { parseMontoAR, montoAMedioTipear } from '../../../lib/format';
-import MontoInvalido from './MontoInvalido';
+import AyudaDeMonto from './AyudaDeMonto';
 import { horaCortaDelLocal } from '../../../modules/estadoOperativo';
 
 // opened_at es timestamptz: cortarle el texto da la hora UTC, tres de mas.
@@ -282,23 +282,25 @@ export default function CajaPanel({
           </div>
         </div>
 
-        <label style={{ display: 'block' }}>
-          <span style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+        {/* div y no label: la ayuda de abajo no tiene que entrar en el nombre */}
+        <div style={{ display: 'block' }}>
+          <label htmlFor="caja-inicial" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
             ¿Con cuánto arrancás?
-          </span>
+          </label>
           <input
+            id="caja-inicial"
             style={input} inputMode="decimal" value={montoInicial}
             onChange={(e) => setMontoInicial(e.target.value.replace(/[^\d.,]/g, ''))}
             placeholder="0" autoFocus
             aria-invalid={inicialError || undefined}
-            aria-describedby={inicialError ? 'caja-inicial-invalido' : 'caja-inicial-ayuda'}
+            aria-describedby="caja-inicial-ayuda"
           />
-          {inicialError ? <MontoInvalido id="caja-inicial-invalido" /> : (
-            <span id="caja-inicial-ayuda" style={{ display: 'block', marginTop: 5, fontSize: 12.5, color: 'var(--ag-ink-3, #666)' }}>
+          <AyudaDeMonto id="caja-inicial-ayuda" invalido={inicialError}>
+            <span style={{ display: 'block', marginTop: 5, fontSize: 12.5, color: 'var(--ag-ink-3, #666)' }}>
               El cambio que dejás en el cajón. Si no dejás nada, poné 0.
             </span>
-          )}
-        </label>
+          </AyudaDeMonto>
+        </div>
 
         <button
           type="button" onClick={abrir} disabled={bloqueado || !inicialValido}
@@ -382,23 +384,25 @@ export default function CajaPanel({
         )}
       </div>
 
-      <label style={{ display: 'block' }}>
-        <span style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+      {/* div y no label: la ayuda de abajo no tiene que entrar en el nombre */}
+      <div style={{ display: 'block' }}>
+        <label htmlFor="caja-contado" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
           ¿Cuánto contaste?
-        </span>
+        </label>
         <input
+          id="caja-contado"
           style={input} inputMode="decimal" value={contado}
           onChange={(e) => { setContado(e.target.value.replace(/[^\d.,]/g, '')); setConfirmando(false); }}
           placeholder="0"
           aria-invalid={contadoError || undefined}
-          aria-describedby={contadoError ? 'caja-contado-invalido' : 'caja-contado-ayuda'}
+          aria-describedby="caja-contado-ayuda"
         />
-        {contadoError ? <MontoInvalido id="caja-contado-invalido" /> : (
-          <span id="caja-contado-ayuda" style={{ display: 'block', marginTop: 5, fontSize: 12.5, color: 'var(--ag-ink-3, #666)' }}>
+        <AyudaDeMonto id="caja-contado-ayuda" invalido={contadoError}>
+          <span style={{ display: 'block', marginTop: 5, fontSize: 12.5, color: 'var(--ag-ink-3, #666)' }}>
             Contá la plata del cajón. Si no coincide, se guarda la diferencia igual.
           </span>
-        )}
-      </label>
+        </AyudaDeMonto>
+      </div>
 
       {diferencia !== null && diferencia !== 0 && (
         <label style={{ display: 'block' }}>

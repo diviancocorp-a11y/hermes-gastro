@@ -21,7 +21,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { parseMontoAR, montoAMedioTipear } from '../../../lib/format';
-import MontoInvalido from './MontoInvalido';
+import AyudaDeMonto from './AyudaDeMonto';
 
 const money = (n) => `$ ${(Math.round((Number(n) || 0) * 100) / 100)
   .toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
@@ -135,25 +135,28 @@ export default function MiMiniCaja({
         </div>
       ) : (
         <>
-          <label className="ag-minicaja-campo">
-            <span>¿Cuánta plata tenés?</span>
+          {/* div y no label: la ayuda de abajo no tiene que entrar en el nombre */}
+          <div className="ag-minicaja-campo">
+            <label htmlFor="minicaja-contado">¿Cuánta plata tenés?</label>
             <input
+              id="minicaja-contado"
               inputMode="decimal"
               value={contado}
               onChange={(e) => setContado(e.target.value.replace(/[^\d.,]/g, ''))}
               placeholder="0"
               aria-invalid={contadoError || undefined}
-              aria-describedby={contadoError ? 'minicaja-contado-invalido' : 'minicaja-contado-ayuda'}
+              aria-describedby="minicaja-contado-ayuda"
             />
-            {contadoError ? (
-              <MontoInvalido id="minicaja-contado-invalido" style={{ marginTop: 0, fontSize: 12 }} />
-            ) : (
-              <small id="minicaja-contado-ayuda">
-                Contá lo que tenés en mano. Si no coincide, presentalo igual: la
-                diferencia queda anotada y se habla, no se esconde.
-              </small>
-            )}
-          </label>
+            {/* small y no span: el estilo de la pregunta (> span, > label) no
+                la tiene que alcanzar */}
+            <AyudaDeMonto
+              id="minicaja-contado-ayuda" as="small" invalido={contadoError}
+              avisoStyle={{ marginTop: 0, fontSize: 12 }}
+            >
+              Contá lo que tenés en mano. Si no coincide, presentalo igual: la
+              diferencia queda anotada y se habla, no se esconde.
+            </AyudaDeMonto>
+          </div>
 
           <label className="ag-minicaja-campo">
             <span>¿Algo que aclarar?</span>
