@@ -93,11 +93,19 @@ function negocioDeLaUrl() {
   return nombre.trim().slice(0, 80);
 }
 
+// El diagnostico manda /registro?rubro=gastro|retail|barber: se preselecciona
+// ese rubro y nada mas.
+function rubroDeLaUrl() {
+  if (typeof window === 'undefined') return 'gastro';
+  const rubro = new URLSearchParams(window.location.search).get('rubro');
+  return VERTICALES.some((v) => v.id === rubro) ? rubro : 'gastro';
+}
+
 export default function Signup() {
   const [bizName, setBizName] = useState(negocioDeLaUrl);
   const [slug, setSlug] = useState('');
   const [slugTocado, setSlugTocado] = useState(false);
-  const [vertical, setVertical] = useState('gastro');
+  const [vertical, setVertical] = useState(rubroDeLaUrl);
   const [modo, setModo] = useState('fisico');
   const [country, setCountry] = useState(PAIS_POR_DEFECTO);
   const [fullName, setFullName] = useState('');

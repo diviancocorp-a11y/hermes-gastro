@@ -15,6 +15,7 @@ import { supabase } from '../lib/supabase';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import { crearTenantPendiente, urlDelNegocio } from '../services/signup';
 import { AGENDA_URL } from '../lib/contactoPlataforma';
+import { vincularDiagnosticoPendiente } from '../lib/diagnostico';
 import '../styles/bienvenido.css';
 
 // Antes eran 2,2 s: alcanzaba para leer "te llevamos" y nada mas. Ahora hay
@@ -61,7 +62,15 @@ export default function Bienvenido() {
       // fallar. Por eso aca no hay rama por texto de error ni consulta extra.
       const r = await crearTenantPendiente();
 
-      if (r.ok) { marcarEvento('alta-confirmada'); setSlug(r.slug); setEstado('ok'); return; }
+      if (r.ok) {
+        marcarEvento('alta-confirmada');
+        // Ata el diagnostico de la landing al negocio nuevo. Sin esperar: es
+        // silencioso, nunca tira, y si el `d` no llego lee el localStorage.
+        void vincularDiagnosticoPendiente(new URLSearchParams(window.location.search).get('d'));
+        setSlug(r.slug);
+        setEstado('ok');
+        return;
+      }
 
       setError(r.error);
       setEstado('error');

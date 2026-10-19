@@ -13,6 +13,7 @@ import useTheme from './hooks/useTheme'
 import useTelegramMiniApp from './hooks/useTelegramMiniApp'
 import Catalog from './pages/Catalog'
 import PlatformLanding from './pages/PlatformLanding'
+import Diagnostico from './pages/Diagnostico'
 import Consola from './pages/Consola'
 import Signup from './pages/Signup'
 import Bienvenido from './pages/Bienvenido'
@@ -106,6 +107,17 @@ export default function App() {
               {(import.meta.env.DEV || window.location.hostname.endsWith('.vercel.app')) && (
                 <Route path="/landing" element={<PlatformLanding />} />
               )}
+              {/* El diagnostico de la landing: mismo criterio que /landing
+                  (la raiz, local y los previews *.vercel.app). En el
+                  subdominio de un tenant no hay nada que diagnosticar. */}
+              <Route
+                path="/diagnostico"
+                element={(isPlatformRoot(window.location.hostname)
+                  || import.meta.env.DEV
+                  || window.location.hostname.endsWith('.vercel.app'))
+                  ? <Diagnostico />
+                  : <NotFound />}
+              />
               {/* Alta self-service: solo tiene sentido en la raiz. En el
                   subdominio de un tenant el local ya es de alguien. */}
               <Route path="/registro" element={<Signup />} />

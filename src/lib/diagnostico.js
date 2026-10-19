@@ -152,7 +152,9 @@ export function solucion(desafio, vertical) {
     case 'stock':
       return {
         titulo: 'El stock tiene que avisarte antes de faltar.',
-        hoy: 'Cada venta descuenta lo que usó y Dico avisa cuando algo queda por debajo del mínimo.',
+        hoy: vertical === 'servicios'
+          ? 'Cargás lo que comprás y lo que usás, y Dico avisa cuando algo queda por debajo del mínimo.'
+          : 'Cada venta descuenta lo que usó y Dico avisa cuando algo queda por debajo del mínimo.',
         pendiente: vertical === 'comercio' ? 'Talles y colores por artículo: en desarrollo.' : null,
         pieza: 'stock',
       };
