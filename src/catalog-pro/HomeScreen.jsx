@@ -456,8 +456,8 @@ export default function HomeScreen({
                   return pc === catName || subs.includes(pc);
                 }).length;
             return (
-              <button key={c.name} onClick={() => setActiveCat(c.name)} style={{
-                flex: "0 0 auto", height: 36, padding: "0 14px", borderRadius: 999,
+              <button key={c.name} onClick={() => setActiveCat(c.name)} aria-pressed={isActive} style={{
+                flex: "0 0 auto", height: "var(--ds-control-height-touch)", padding: "0 14px", borderRadius: 999,
                 background: isActive ? "var(--tx)" : "transparent",
                 color: isActive ? "var(--bg)" : "var(--t2)",
                 border: isActive ? "1px solid var(--tx)" : "1px solid var(--line)",
@@ -466,7 +466,7 @@ export default function HomeScreen({
                 display: "inline-flex", alignItems: "center", gap: 6,
               }}>
                 {c.displayName || c.name}
-                <span style={{ fontSize: 10, color: isActive ? "rgba(255,255,255,0.5)" : "var(--t3)", fontWeight: 400 }}>{count}</span>
+                <span style={{ fontSize: 10, color: "inherit", fontWeight: 400 }}>{count}</span>
               </button>
             );
           })}
