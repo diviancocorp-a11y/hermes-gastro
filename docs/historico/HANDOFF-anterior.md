@@ -9,6 +9,135 @@
 
 ---
 
+## 15/oct/2026 — Gate de diseño, /diseno siempre activo y pulido de la landing de divianco.app (Claude)
+
+**Publicado.** Ricky dio el OK y el PR #26 se mergeó a `main` como merge
+commit `441c799`. El deploy de producción de `hermes-platform` quedó `READY`
+en ese SHA. Son commits de un solo tema cada uno, revertibles por separado:
+
+- `a29ba2a`: el gate.
+- `d3e86fc`: la skill.
+- `0d9a277`: la landing.
+- `1081171`: `/diseno` siempre activo.
+
+**`/diseno` siempre activo** (pedido de Ricky): toda mejora que toque UI pasa
+por la skill, que maneja la línea de skills. Está en tres lugares, porque uno
+solo se pierde:
+
+- la regla en `CLAUDE.md`/`AGENTS.md`;
+- un hook `UserPromptSubmit` en `.claude/settings.json`
+  (`scripts/hooks/linea-diseno.mjs`) que la recuerda en cada turno;
+- la skill, que se declara obligatoria aunque nadie la nombre y cierra pasando
+  el link del preview de Vercel de la rama.
+
+### Hecho
+
+**Gate de diseño.**
+- `scripts/check-diseno.mjs` (`npm run check:diseno`) corre `impeccable detect`
+  sobre `src/` e `index.html` y lo compara contra `scripts/diseno-deuda.json`.
+- Va en el pre-commit y en el CI.
+- Tiene el mismo contrato que `llamadas-legacy-pendientes.json`: un hallazgo
+  nuevo frena el commit y uno resuelto obliga a `-- --podar`.
+- Cuenta por archivo y regla, no por línea, así editar arriba de un hallazgo
+  viejo no lo vuelve nuevo.
+- Nació con **17 hallazgos**: 12 bordes laterales de color, 4 bordes de acento
+  sobre esquinas redondeadas e Inter cargada en `src/catalog-pro/tokens.css`,
+  aunque el manual la excluye.
+- `impeccable` entra como devDependency fija (4.5.2).
+
+**Skill `/diseno` y subagentes.**
+- Están en `.claude/skills/diseno/` y `.claude/agents/disenador.md` +
+  `auditor-diseno.md`.
+- Decisiones que no se deducen leyendo la skill:
+  - **En este repo no se usa ui-ux-pro-max.** Su trabajo es inventar un sistema
+    de diseño y DICO ya tiene uno en `docs/marca/`.
+  - **Una sola skill estética por tarea**: taste-skill para pantallas nuevas,
+    impeccable para pulir las existentes.
+  - **El auditor es de solo lectura** y no ve el razonamiento del constructor.
+- Las skills de terceros (`impeccable`, `design-taste-frontend`) **no se
+  commitean**: están en `.gitignore` y las baja `npm run skills:diseno`
+  fijadas a un commit.
+
+**Landing (`src/pages/PlatformLanding.jsx` + `src/styles/platform-landing.css`).**
+- **El monto de los planes salía a 14px en vez de 32px.** `.pl-card p` le
+  ganaba en especificidad a `.pl-precio-monto`, y también a `.pl-pilar-sub`.
+- **`.pl-mono` pedía JetBrains Mono, que no está autoalojada** (en
+  `public/fonts/dico` solo hay Overused y Butler). Unas 40 etiquetas caían en
+  la mono del sistema, que es el "fallback accidental" del manual 02.
+  - Pasaron a `.pl-etiqueta`, en Overused a `--ds-type-xs`.
+  - Los textos largos van en caja normal.
+  - Los números van en Overused con `tabular-nums`, siguiendo la regla de
+    métricas del DS v0.1.
+- **`--pl-t3` subió de 0.42 a 0.56 de opacidad** (contraste de 3.8:1 a ~6:1).
+- **Sin eyebrows ni índices 01/02/03.** El craft floor de impeccable los
+  prohíbe y la nav ya nombra las secciones.
+- **Táctil, foco y superficies del navegador.**
+  - Targets de 44px bajo `@media (pointer: coarse)` y no por ancho, así cubre
+    también las tablets.
+  - Foco en oro, `::selection` y `color-scheme: dark` mientras se ve la
+    landing. Se restaura al salir.
+- **El `<main>` de la landing pasó a `<div>`**, porque `App.jsx` ya envuelve
+  todo en `<main id="main-content">`.
+- **Único cambio de texto**: la etiqueta del plan Digital pasó de "Gratis" a
+  "Para empezar", porque repetía el monto "Gratis".
+
+### Verificado
+
+- Pre-commit completo en verde al commitear la landing, **incluido el gate
+  nuevo**.
+- `check:diseno`: 17 → 17, ninguno nuevo. La landing tenía 0 hallazgos del
+  detector antes y después: sus defectos salieron de mirarla renderizada, no
+  del detector.
+- Build en verde, y **1560/1560 tests** con `--pool=threads`. Los 7 rojos
+  preexistentes de la sección del 7-9/oct ya no fallan sobre esta rama.
+- Renderizada en Chromium headless a 320, 390, 768, 1024 y 1280:
+  - sin scroll horizontal;
+  - sin monospace dentro de `.pl-root`;
+  - montos a 32px;
+  - con puntero táctil emulado a 390 y 820, ningún target por debajo de 44px;
+  - el móvil quedó 532px más corto.
+- **Auditoría independiente**: 0 P0, 1 P1 (tamaños y espacios a mano fuera de
+  la escala `--ds-*`) y 3 P2. Todo se corrigió en la segunda ronda del
+  constructor. Esa segunda ronda la verificaron los gates y las capturas, **no
+  una segunda auditoría**.
+- **NO verificado**:
+  - la página en producción, porque no está publicada;
+  - un dispositivo táctil real;
+  - `npx impeccable detect <url>`, porque su Chromium no corre como root en el
+    sandbox.
+
+### Pendiente inmediato
+
+1. **Verificar que el hook corre en la máquina de Ricky** (Windows, Claude Code):
+   la primera sesión en el repo tiene que mostrar el aviso de `/diseno`. Acá
+   solo se probó el script a mano. Si Claude Code pide aprobar el hook del
+   proyecto, aprobarlo.
+2. **Números de ejemplo de la landing**: no se tocaron porque son contenido.
+   - **Son inconsistentes entre sí.** El pilar dice bife a $1.200 con $340 de
+     insumos. El aviso de Dico dice que el costo pasó a $520 y que el margen es
+     14%; con esos números da ~41%.
+   - **Están en una escala que no cierra con los precios del plan.** Una noche
+     de $4.200 de venta contra un plan de $59.000 por mes.
+   - Un gastronómico lo nota, y es justo la promesa de la página
+     ("Sin suposiciones. Números"). Hay que alinearlos a precios de 2026.
+3. **WhatsApp del CTA con número de EE. UU. (+1 786)** para un público
+   argentino. Es decisión de Ricky.
+4. **Fuera de alcance, preexistentes**:
+   - `SkipToContent.jsx` usa blanco sobre `#C45D3E`, que da 4.21:1, y está en
+     DM Sans.
+   - El `<main>` de `App.jsx` debería salir por ruta.
+5. **Deuda del gate**: los 12 `side-tab` del panel son el siguiente bloque
+   natural para `/diseno`, y cada uno que se resuelve se poda.
+6. **Heredado del 28/sep, no verificado en esta sesión**: los cron de GitHub
+   (`morning-health` y el smoke) corrían unas 8 h tarde. Mirar las últimas
+   corridas antes de tocar nada.
+
+### Bloqueado por Ricky
+
+- Los números de ejemplo y el WhatsApp de la landing (puntos 2 y 3).
+
+---
+
 ## 7-9/oct/2026 — Crazy Miga: del alta a vender por Telegram (Claude)
 
 Crazy Miga es una dark kitchen (cookies) que cobra por alias o efectivo, sin la

@@ -11,6 +11,101 @@
 
 ---
 
+## 17-19/oct/2026 — Prueba de carga con k6, skill /carga cada 15 días (Claude)
+
+**Publicado.** PR #33 (`prueba/k6`, merge `fe95296`) y PR #32 (regla del
+orquestador, merge `693fb2f`), los mergeó Ricky el 19/oct. Producción `READY`
+en `fe95296` = `HEAD`. El CI se mide sobre el commit de este HANDOFF, que viene encima de `fe95296` (el push cancela la corrida anterior de `main`). No toca `src/`, la base
+ni edge functions.
+
+### Hecho
+
+- **`scripts/carga/catalogo.js`** (k6) + **`scripts/carga/correr.mjs`** +
+  `npm run carga:catalogo`. Repite una visita real al catálogo, medida en el
+  navegador sobre crazy-miga: `get_catalog` + `mp-status` en paralelo.
+  **Solo lecturas**, porque un pedido de prueba es un pedido real (comandera,
+  push, Telegram, stock). El front no se prueba: es CDN de Vercel y no dice
+  nada del sistema. El wrapper lee la key publicable del `.env` del edificio y
+  corta si la URL no es `wwwzdgprsooyjgkuyoav`. `--sin-mp` simula la visita sin
+  `mp-status`; `visita_ms` es lo que espera la visita.
+- **Resultados** (detalle e historial en `docs/operacion/CARGA-K6.md`): con 20,
+  50 y 100 usuarios, 0 errores; `get_catalog` med ~112 ms, p95 204 → 261 ms.
+  En Postgres 2,6–3 ms por llamada y el máximo no se movió: **hasta 100
+  usuarios la base no es el cuello de botella**, el tiempo es red + PostgREST.
+  Picos aislados de 3,6 y 6,7 s que no salen de la base (comprobado); que sean
+  red o gateway es deducción.
+- **Incidente de red el 17/oct:** una corrida dio 19% de visitas rotas por
+  TCP cortado contra las IPs de Cloudflare de Supabase (no 429 ni 5xx). La
+  siguiente y la repetición dieron 0. Documentado; la skill sabe clasificarlo.
+- **`mp-status` en cada visita** (`src/pages/Catalog.jsx:304`): es una edge
+  function por visita y `mpConnected` solo lo usa el paso de pago. Medido con
+  100 usuarios: con él 1736 requests / 868 invocaciones / visita p95 340 ms;
+  sin él 880 / 0 / 183 ms. **Ojo:** la home no espera a `mp-status`, así que
+  lo que se gana es cuota y una conexión menos, no render. Propuesta A
+  (pedirlo con el primer producto en el carrito) escrita en el chat del 17/oct,
+  **sin aplicar**: Ricky dijo "lo vemos después".
+- **Skill `/carga`** (`.claude/skills/carga/SKILL.md`): 20/50/100 usuarios,
+  cruce con `pg_stat_statements`, clasificación de errores, comparación
+  contra `## Historial` y commit de la fila nueva solo si el checkout está en
+  `main` sin cambios ajenos en el doc.
+- **Tarea programada `dico-prueba-de-carga`** de la app de Claude: días 1 y 16
+  a las 10:00, primera el **1/nov**. Vive fuera del repo, en
+  `C:\Users\ricar\.claude\scheduled-tasks\dico-prueba-de-carga\SKILL.md`.
+- **Orquestador:** regla `carga` en `scripts/hooks/orquestador-reglas.json`
+  ("prueba de carga", "k6", "cuántos usuarios aguanta"…) + 2 prompts de
+  ejemplo en el test + fila en la tabla de rutas de `CLAUDE.md`/`AGENTS.md`.
+- **k6 instalado** en `C:\Program Files\k6\k6.exe` (v2.2.0, winget; pidió
+  UAC). Si una PC no tiene admin: zip del release + checksum + `K6_BIN`.
+- Fila de k6 en la tabla de herramientas evaluadas ("en prueba").
+
+### Verificado
+
+- Las corridas son reales contra producción (lecturas). `get_catalog` es
+  `stable` sin DML y `mp-status` solo hace selects: no ensuciaron datos.
+- Las llamadas nuevas de `pg_stat_statements` coinciden una a una con las
+  visitas de k6.
+- Test del orquestador: 32 en verde. Pre-commit completo en verde en los
+  commits.
+- El hook del orquestador corre en la máquina de Ricky: inyectó su aviso en
+  cada prompt de esta sesión (era el pendiente 1 del 15/oct).
+- **NO verificado:** la tarea programada nunca corrió. Arranca en el modo de
+  permisos por defecto y puede frenar a pedir permiso.
+
+### Pendiente inmediato
+
+1. **Ricky: "Run now" una vez** en la tarea "DICO: prueba de carga quincenal
+   (k6)" para aprobar los permisos que pide; si no, el 1/nov puede quedar
+   esperando una aprobación. Tarda ~12 min y commitea una fila en `main`.
+2. **Decidir `mp-status`** (opción A, un archivo de `src/`). Pide ok de Ricky.
+3. **Escenario de panel (logueado)**: los advisors marcan 15
+   `auth_rls_initplan` y 54 `multiple_permissive_policies` en `orders`,
+   `order_items`, `profiles`, `staff`. No pegan en el catálogo (`get_catalog`
+   es SECURITY DEFINER) pero sí en el panel, y no está medido.
+4. **CI en ramas de trabajo**: `ci.yml` solo escucha `main`,
+   `platform/runtime-tenant` y PRs; una rama `claude/**` o `prueba/**` no pasa
+   por ningún gate hasta el PR. Propuesto, no hecho.
+5. **Worktree `cool-fermat-5ba418`**: su rama ya está mergeada, pero es el
+   `cwd` de la sesión "Orquestador de skills por hooks en DICO" (sin archivar)
+   y su `.codex/` es distinto al de `main`. No se borró: archivar esa sesión,
+   revisar `.codex/` y recién ahí `git worktree remove` + `prune`.
+6. **Heredado del 15/oct** (esa sección se archiva hoy):
+   - `SkipToContent.jsx` usa blanco sobre `#C45D3E` (4.21:1) y DM Sans; el
+     `<main>` de `App.jsx` debería salir por ruta.
+   - Los 12 `side-tab` del panel son el siguiente bloque para `/diseno`.
+   - Los cron de GitHub (`morning-health` y el smoke) corrían ~8 h tarde el
+     28/sep; mirar las últimas corridas antes de tocar nada.
+
+### Bloqueado por Ricky
+
+- El "Run now" de la tarea programada (punto 1) y el ok de `mp-status`.
+- **Heredado del 15/oct, sigue vigente:** los números de ejemplo de la landing
+  son inconsistentes entre sí (bife $1.200 con $340 de insumos vs. costo $520
+  y margen 14%) y no cierran con el plan de $59.000/mes; y el WhatsApp del CTA
+  es de EE. UU. (+1 786) para un público argentino
+  (`src/pages/PlatformLanding.jsx`). Son contenido y decisión suya.
+
+---
+
 ## 17/oct/2026 (tarde) — GerenteDico etapa 3: memoria de la charla y "anotar" (Claude)
 
 **Publicado y verificado.** `2aadfe3` a `b119081`, CI verde en `b119081`.
@@ -396,132 +491,3 @@ aplican.
      abre el PR → link del preview para aprobar desde el teléfono.
 3. Comparar una por una las policies de las tablas que tocan
    `roles_y_alcance_policies` / `roles_barrido_de_policies_viejas`.
-
-## 15/oct/2026 — Gate de diseño, /diseno siempre activo y pulido de la landing de divianco.app (Claude)
-
-**Publicado.** Ricky dio el OK y el PR #26 se mergeó a `main` como merge
-commit `441c799`. El deploy de producción de `hermes-platform` quedó `READY`
-en ese SHA. Son commits de un solo tema cada uno, revertibles por separado:
-
-- `a29ba2a`: el gate.
-- `d3e86fc`: la skill.
-- `0d9a277`: la landing.
-- `1081171`: `/diseno` siempre activo.
-
-**`/diseno` siempre activo** (pedido de Ricky): toda mejora que toque UI pasa
-por la skill, que maneja la línea de skills. Está en tres lugares, porque uno
-solo se pierde:
-
-- la regla en `CLAUDE.md`/`AGENTS.md`;
-- un hook `UserPromptSubmit` en `.claude/settings.json`
-  (`scripts/hooks/linea-diseno.mjs`) que la recuerda en cada turno;
-- la skill, que se declara obligatoria aunque nadie la nombre y cierra pasando
-  el link del preview de Vercel de la rama.
-
-### Hecho
-
-**Gate de diseño.**
-- `scripts/check-diseno.mjs` (`npm run check:diseno`) corre `impeccable detect`
-  sobre `src/` e `index.html` y lo compara contra `scripts/diseno-deuda.json`.
-- Va en el pre-commit y en el CI.
-- Tiene el mismo contrato que `llamadas-legacy-pendientes.json`: un hallazgo
-  nuevo frena el commit y uno resuelto obliga a `-- --podar`.
-- Cuenta por archivo y regla, no por línea, así editar arriba de un hallazgo
-  viejo no lo vuelve nuevo.
-- Nació con **17 hallazgos**: 12 bordes laterales de color, 4 bordes de acento
-  sobre esquinas redondeadas e Inter cargada en `src/catalog-pro/tokens.css`,
-  aunque el manual la excluye.
-- `impeccable` entra como devDependency fija (4.5.2).
-
-**Skill `/diseno` y subagentes.**
-- Están en `.claude/skills/diseno/` y `.claude/agents/disenador.md` +
-  `auditor-diseno.md`.
-- Decisiones que no se deducen leyendo la skill:
-  - **En este repo no se usa ui-ux-pro-max.** Su trabajo es inventar un sistema
-    de diseño y DICO ya tiene uno en `docs/marca/`.
-  - **Una sola skill estética por tarea**: taste-skill para pantallas nuevas,
-    impeccable para pulir las existentes.
-  - **El auditor es de solo lectura** y no ve el razonamiento del constructor.
-- Las skills de terceros (`impeccable`, `design-taste-frontend`) **no se
-  commitean**: están en `.gitignore` y las baja `npm run skills:diseno`
-  fijadas a un commit.
-
-**Landing (`src/pages/PlatformLanding.jsx` + `src/styles/platform-landing.css`).**
-- **El monto de los planes salía a 14px en vez de 32px.** `.pl-card p` le
-  ganaba en especificidad a `.pl-precio-monto`, y también a `.pl-pilar-sub`.
-- **`.pl-mono` pedía JetBrains Mono, que no está autoalojada** (en
-  `public/fonts/dico` solo hay Overused y Butler). Unas 40 etiquetas caían en
-  la mono del sistema, que es el "fallback accidental" del manual 02.
-  - Pasaron a `.pl-etiqueta`, en Overused a `--ds-type-xs`.
-  - Los textos largos van en caja normal.
-  - Los números van en Overused con `tabular-nums`, siguiendo la regla de
-    métricas del DS v0.1.
-- **`--pl-t3` subió de 0.42 a 0.56 de opacidad** (contraste de 3.8:1 a ~6:1).
-- **Sin eyebrows ni índices 01/02/03.** El craft floor de impeccable los
-  prohíbe y la nav ya nombra las secciones.
-- **Táctil, foco y superficies del navegador.**
-  - Targets de 44px bajo `@media (pointer: coarse)` y no por ancho, así cubre
-    también las tablets.
-  - Foco en oro, `::selection` y `color-scheme: dark` mientras se ve la
-    landing. Se restaura al salir.
-- **El `<main>` de la landing pasó a `<div>`**, porque `App.jsx` ya envuelve
-  todo en `<main id="main-content">`.
-- **Único cambio de texto**: la etiqueta del plan Digital pasó de "Gratis" a
-  "Para empezar", porque repetía el monto "Gratis".
-
-### Verificado
-
-- Pre-commit completo en verde al commitear la landing, **incluido el gate
-  nuevo**.
-- `check:diseno`: 17 → 17, ninguno nuevo. La landing tenía 0 hallazgos del
-  detector antes y después: sus defectos salieron de mirarla renderizada, no
-  del detector.
-- Build en verde, y **1560/1560 tests** con `--pool=threads`. Los 7 rojos
-  preexistentes de la sección del 7-9/oct ya no fallan sobre esta rama.
-- Renderizada en Chromium headless a 320, 390, 768, 1024 y 1280:
-  - sin scroll horizontal;
-  - sin monospace dentro de `.pl-root`;
-  - montos a 32px;
-  - con puntero táctil emulado a 390 y 820, ningún target por debajo de 44px;
-  - el móvil quedó 532px más corto.
-- **Auditoría independiente**: 0 P0, 1 P1 (tamaños y espacios a mano fuera de
-  la escala `--ds-*`) y 3 P2. Todo se corrigió en la segunda ronda del
-  constructor. Esa segunda ronda la verificaron los gates y las capturas, **no
-  una segunda auditoría**.
-- **NO verificado**:
-  - la página en producción, porque no está publicada;
-  - un dispositivo táctil real;
-  - `npx impeccable detect <url>`, porque su Chromium no corre como root en el
-    sandbox.
-
-### Pendiente inmediato
-
-1. **Verificar que el hook corre en la máquina de Ricky** (Windows, Claude Code):
-   la primera sesión en el repo tiene que mostrar el aviso de `/diseno`. Acá
-   solo se probó el script a mano. Si Claude Code pide aprobar el hook del
-   proyecto, aprobarlo.
-2. **Números de ejemplo de la landing**: no se tocaron porque son contenido.
-   - **Son inconsistentes entre sí.** El pilar dice bife a $1.200 con $340 de
-     insumos. El aviso de Dico dice que el costo pasó a $520 y que el margen es
-     14%; con esos números da ~41%.
-   - **Están en una escala que no cierra con los precios del plan.** Una noche
-     de $4.200 de venta contra un plan de $59.000 por mes.
-   - Un gastronómico lo nota, y es justo la promesa de la página
-     ("Sin suposiciones. Números"). Hay que alinearlos a precios de 2026.
-3. **WhatsApp del CTA con número de EE. UU. (+1 786)** para un público
-   argentino. Es decisión de Ricky.
-4. **Fuera de alcance, preexistentes**:
-   - `SkipToContent.jsx` usa blanco sobre `#C45D3E`, que da 4.21:1, y está en
-     DM Sans.
-   - El `<main>` de `App.jsx` debería salir por ruta.
-5. **Deuda del gate**: los 12 `side-tab` del panel son el siguiente bloque
-   natural para `/diseno`, y cada uno que se resuelve se poda.
-6. **Heredado del 28/sep, no verificado en esta sesión**: los cron de GitHub
-   (`morning-health` y el smoke) corrían unas 8 h tarde. Mirar las últimas
-   corridas antes de tocar nada.
-
-### Bloqueado por Ricky
-
-- Los números de ejemplo y el WhatsApp de la landing (puntos 2 y 3).
-
----
