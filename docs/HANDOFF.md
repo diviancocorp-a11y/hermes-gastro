@@ -11,6 +11,66 @@
 
 ---
 
+## 19/oct/2026 — Carga inicial de Monare (Codex)
+
+### Hecho y verificado en el edificio
+
+- Solo datos del tenant `monare` (`1367edee-7754-4169-a616-45310d98c045`),
+  sin cambios de codigo, schema, otros tenants ni condiciones comerciales.
+- 53 productos simples: 20 activos con precio, 32 del PDF inactivos por
+  falta de precio actualizado y una caja de Opalo Syrah inactiva por confirmar.
+  Incluyen 36 presentaciones de Mauricio Lorca, 8 espumantes, 5 cajas x6
+  y 4 lotes de hielo. Louis Rose se tomo como el "Lois rose" del mensaje.
+- Precios de los mensajes del 15/oct tienen prioridad sobre PDF e imagen:
+  Louis Rose $17.390 / caja x6 $102.000; Lorca Joven Malbec $8.190 / $49.200;
+  Opalo Syrah $13.290 / $48.600 (caja pendiente); Fantasia Chardonnay y
+  Cabernet Sauvignon $9.490 / $54.590 cada caja x6. No se importaron
+  los precios, costos ni promociones del PDF. Sin stock inventado.
+- Hielo: lotes de 15/30 bolsas de 2 kg a $27.000/$51.000 y de 15 kg a
+  $94.500/$180.000. Los importes publicados son por lote completo.
+- Medios internos: transferencia, efectivo y credito segun acuerdo;
+  MercadoPago desactivado. Cuenta de transferencia en checkout con datos
+  a coordinar (sin alias, CBU ni titular inventados). La tarjeta solo queda
+  como medio interno, no como pasarela online.
+- Pagina `/info/compras-y-envios`: horario informado 8:30-20:30, pagos,
+  CABA y Provincia, entrega gratis en CABA para pedidos mayores a $95.000
+  en 24 horas; express cotizado por zona (Flex/Uber). No se activo el umbral
+  global de envio gratis porque tambien aplicaria a Provincia.
+- `settings.has_physical_store=false` ya existia, pero el espejo del tenant
+  no tenia esa clave: `get_catalog` devolvia true. Se alineo la clave del JSON
+  a false sin cambiar el trigger compartido. Pendiente del sistema: el
+  trigger `espejar_settings_a_tenant` no copia esa columna.
+- La cuenta existente de `importacionmarcano@gmail.com` ya era owner.
+  Se configuro por Supabase Auth Admin la clave pedida y se verifico login;
+  no se guarda la clave en archivos ni en este documento.
+- Readback SQL: 53 filas, 20 activas, 33 inactivas, 0 diferencias contra los
+  datos preparados, 0 activas a $0 y todo el stock NULL. RPC como anon:
+  20 productos y `has_physical_store=false`. Browser de produccion muestra
+  los 20 productos con precios; sigue "Cerrado: todavia no toma pedidos".
+
+### Pendiente de datos de Ricky / Monare
+
+- Punto de despacho: no hay sucursales ni coordenadas, por eso el RPC
+  devuelve `catalogo_activo=false`. No inventar una ubicacion de CABA.
+- WhatsApp de ventas y alias/CBU. Dias de atencion: se recibio la franja
+  horaria pero no los dias; `store_hours` sigue NULL, horario en texto.
+- Confirmar caja x6 de Opalo Syrah a $48.600 frente a $13.290 por unidad.
+  Se pregunto y quedo inactiva con el precio informado, sin corregirlo.
+- Precios actualizados de las otras 32 presentaciones del PDF. Los ejemplos
+  de la planilla vacia de Drive NO son datos reales ni se importaron.
+- Pendientes heredados sin verificar en esta sesion: primer error Sentry
+  desminificado; diferencia de productos de Crazy Miga y existencia de
+  MiaEstudio en el edificio. Las etapas 2/3 de GerenteDico y el barrido de
+  policies tienen secciones posteriores a la de Sentry, consultar esas.
+
+### Archivos y evidencia
+
+- Solo documentacion en `docs/`. PDF e imagen del usuario se leyeron en sus
+  ubicaciones originales. Imagenes temporales de inspeccion en el temp del
+  sistema y `.preview/monare-import/` (ignorado), eliminadas al terminar.
+- Codigo desplegado al iniciar: `5076010`, produccion READY en Vercel.
+  La carga es de datos y no requiere deploy ni migracion.
+
 ## 17-19/oct/2026 — Orquestador de skills: ruteo por prompt y candado de /diseno (Claude)
 
 **En main y con CI verde.** PR #31 (`7c8bd44`, `d0e6e01`, `8bf93cc`), merge
@@ -347,82 +407,3 @@ Supabase desde `sentry-alerta`: no hay que cargar nada.
 2. GerenteDico etapa 3: "anota que hay que arreglar X" → issue → PR →
    preview. Y memoria de la charla (necesita tabla y migracion).
 3. MiaEstudio sigue sin tenant en el edificio.
-
-## 16-17/oct/2026 (noche) — Sentry vivo de punta a punta y alerta a GerenteDico (Claude)
-
-**Publicado.** Todo en `main`, de `2e5957f` a `7962a7c`. Producción de
-`hermes-platform` `READY` en `7962a7c` (redeploy de Ricky de las 02:28 UTC
-del 17/oct, ya con las variables de Sentry). CI verde en el último push.
-
-### Hecho
-
-- **Ricky cargó todo lo de Sentry** (pasos en `docs/plataforma/SENTRY.md`):
-  - en Vercel: `VITE_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT` y
-    `SENTRY_AUTH_TOKEN`;
-  - la integración interna GerenteDico en Sentry y la regla "Error nuevo →
-    Telegram";
-  - los secrets de `sentry-alerta` en Supabase;
-  - un token de Sentry nuevo con `event:write` en el secret de GitHub
-    `SENTRY_AUTH_TOKEN`.
-- `2e5957f` — **el tag `tenant` de Sentry sale del subdominio**
-  (`tenantDelHost` en `src/lib/observability.js`; lo usan el reporter liviano
-  y `sentryFull.js`). Antes decía `edificio` para todos y no se podía filtrar
-  por negocio. En la landing vale `raiz`; fuera de `*.divianco.app`, el build.
-  El build quedó en su propio tag `build` y se sacó `tenant_name`, que siempre
-  decía "Dico".
-- `5665c0f` — `checkSentryEnBuild` mira **todos** los chunks que nombra la
-  landing. El DSN queda en `observability-*.js`, no en `index-*.js`: con todo
-  bien cargado iba a seguir dando rojo.
-- `8f7cae9` — **`probar_alerta`** (input de morning-health a mano, módulo
-  `scripts/sentry-prueba.mjs`). Manda un error de prueba con el DSN del build
-  publicado. Cada prueba lleva un fingerprint nuevo porque la regla avisa
-  solo por issue nuevo; con el mismo fingerprint, la segunda prueba no
-  avisaría. El tag `prueba:alerta` lo excluye del resumen diario.
-- `7962a7c` — cada corrida de morning-health **cierra sola las pruebas
-  viejas** (issues abiertos con `prueba:alerta`). Si el token no tiene
-  `event:write`, lo dice en el reporte en vez de fallar.
-- **Regla de Sentry** (MCP): se le sacó el disparador "issue resuelto", que
-  mandaba "🚨 Error nuevo" al cerrar un error. Quedan tres: issue nuevo,
-  reaparecido y regresión.
-
-### Verificado (en producción)
-
-- El bundle publicado trae el DSN y la función del tenant por subdominio.
-  Release `dico@2e5957f1`, después `dico@7962a7cd`.
-- Cadena entera, dos veces:
-  - **16/oct:** error mandado desde la base por `pg_net` (`HERMES-GASTRO-Q`).
-  - **17/oct:** con `probar_alerta`, run `38992938659` (`HERMES-GASTRO-R`).
-  - El camino fue el mismo: Sentry lo recibió, la regla se disparó y
-    `sentry-alerta` arrancó 2-3 s después. **Ricky confirmó que llegó a
-    Telegram** las dos veces.
-- Run `38995065906`: "pruebas de alerta: ✓ 1 cerrada(s)", así que el token
-  nuevo escribe. El filtro `!prueba:alerta` se comprobó en Sentry: el issue
-  de prueba aparece sin el filtro y desaparece con él.
-- **Sourcemaps:** el build de las 02:28 corrió `sentry-vite-plugin`, Sentry
-  registró el release `dico@7962a7cd` con deploy `vercel-production`, y los
-  `.map` dan 404 en el sitio (se borran después de subirlos).
-  - **No verificado:** cuántos archivos recibió el release, porque el log del
-    build vino cortado. La prueba real es que el primer error real llegue con
-    archivo y línea, no minificado.
-
-### Pendiente inmediato
-
-1. Cuando entre el primer error real: confirmar que llega des-minificado y
-   con `tenant` = el negocio. Si llega minificado, revisar los artifacts del
-   release en Sentry.
-2. GerenteDico conversacional (sigue sin código). Etapa 2: edge function
-   `gerente-webhook`, solo el chat de Ricky, herramientas de solo lectura.
-   Etapa 3: "anotá que hay que arreglar X" → issue → PR → preview. Necesita
-   el ok y la `ANTHROPIC_API_KEY` de Ricky.
-3. Comparar una por una las policies que tocan `roles_y_alcance_policies` y
-   `roles_barrido_de_policies_viejas`. Hoy solo se sabe que `check:rls` las da
-   cerradas.
-4. Por mirar, sin verificar en esta sesión: crazy-miga muestra 8 productos en
-   el catálogo y en la base parecían 19; MiaEstudio no tiene tenant en el
-   edificio.
-
-### Bloqueado por Ricky
-
-- Nada de Sentry. Los puntos 1 y 2 del "Bloqueado" del 16/oct (Telegram y
-  `SMOKE_TENANTS`) quedaron resueltos ese mismo día.
-- Lo de GerenteDico (punto 2 de arriba): el ok y la key.
