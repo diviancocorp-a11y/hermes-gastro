@@ -47,15 +47,22 @@
   datos preparados, 0 activas a $0 y todo el stock NULL. RPC como anon:
   20 productos y `has_physical_store=false`. Browser de produccion muestra
   los 20 productos con precios; sigue "Cerrado: todavia no toma pedidos".
+- Continuacion confirmada por Ricky: todos los dias (lunes a domingo),
+  08:30-20:30, guardados en `store_hours` (indices 0-6). WhatsApp
+  `+5491123901855`. `store_address` = CABA, explicitamente provisorio;
+  actualizado tambien el texto de `/info/compras-y-envios` y el aviso de
+  entrega en CABA y Provincia. Readback de tabla y RPC publico coinciden.
+- Ricky eligio dejar pendiente la caja x6 de Opalo Syrah; sigue inactiva.
 
 ### Pendiente de datos de Ricky / Monare
 
 - Punto de despacho: no hay sucursales ni coordenadas, por eso el RPC
-  devuelve `catalogo_activo=false`. No inventar una ubicacion de CABA.
-- WhatsApp de ventas y alias/CBU. Dias de atencion: se recibio la franja
-  horaria pero no los dias; `store_hours` sigue NULL, horario en texto.
-- Confirmar caja x6 de Opalo Syrah a $48.600 frente a $13.290 por unidad.
-  Se pregunto y quedo inactiva con el precio informado, sin corregirlo.
+  devuelve `catalogo_activo=false`, verificado despues de guardar horario
+  y WhatsApp. Se guardo CABA como texto provisorio pedido por Ricky;
+  no se geocodifico el centro de la ciudad como si fuera el despacho.
+- Alias/CBU para transferencias.
+- Caja x6 de Opalo Syrah a $48.600 frente a $13.290 por unidad: Ricky
+  pidio dejarla pendiente, sin corregir ni publicar su precio.
 - Precios actualizados de las otras 32 presentaciones del PDF. Los ejemplos
   de la planilla vacia de Drive NO son datos reales ni se importaron.
 - Pendientes heredados sin verificar en esta sesion: primer error Sentry
