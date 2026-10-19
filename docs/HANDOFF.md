@@ -53,13 +53,25 @@
   actualizado tambien el texto de `/info/compras-y-envios` y el aviso de
   entrega en CABA y Provincia. Readback de tabla y RPC publico coinciden.
 - Ricky eligio dejar pendiente la caja x6 de Opalo Syrah; sigue inactiva.
+- Actualizacion posterior: Instagram `monare.boutique`; despacho provisorio
+  autorizado en Av. de los Incas 4000, CABA. USIG normalizo esa direccion y
+  devolvio lat/lng `-34.577830, -58.467925` (OSM coincide). Creada sucursal
+  default activa "Despacho provisorio", con telefono y direccion marcados
+  como provisorios. `get_catalog` como anon devuelve `catalogo_activo=true`;
+  siguen 20 productos activos y no hay local de atencion al publico. Browser
+  de produccion muestra "Abierto: 08:30 a 20:30" y los links correctos de
+  Instagram y WhatsApp. No se envio ningun pedido de prueba.
+- Envio sin tarifa automatica: con `delivery_pricing=NULL` el checkout usa
+  tarifas genericas de $500 a $5.000 que Monare nunca informo. Se guardo un
+  escalon con costo 0 y aviso explicito: el total online incluye productos;
+  el envio se cotiza/cobra aparte segun zona y cantidad, coordinar antes de
+  pagar. La pagina de condiciones lo explica; CABA > $95.000 conserva envio
+  sin costo en 24 horas. Esto no implementa una cotizacion automatica por zona.
 
 ### Pendiente de datos de Ricky / Monare
 
-- Punto de despacho: no hay sucursales ni coordenadas, por eso el RPC
-  devuelve `catalogo_activo=false`, verificado despues de guardar horario
-  y WhatsApp. Se guardo CABA como texto provisorio pedido por Ricky;
-  no se geocodifico el centro de la ciudad como si fuera el despacho.
+- Reemplazar el despacho provisorio de Av. de los Incas 4000 por el real
+  cuando Monare lo confirme (direccion y coordenadas de la sucursal default).
 - Alias/CBU para transferencias.
 - Caja x6 de Opalo Syrah a $48.600 frente a $13.290 por unidad: Ricky
   pidio dejarla pendiente, sin corregir ni publicar su precio.
