@@ -5,7 +5,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/hooks/linea-diseno.mjs\""
+            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/hooks/orquestador.mjs\" ruteo"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/hooks/orquestador.mjs\" candado"
           }
         ]
       }

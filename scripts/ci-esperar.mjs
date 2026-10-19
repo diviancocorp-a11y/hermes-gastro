@@ -52,6 +52,16 @@ export function veredicto(run, jobs = []) {
         '  mirar el CI del ultimo commit de la rama (npm run ci:esperar -- origin/main)'],
     };
   }
+  // GitHub a veces cierra el run con 'success' y los jobs todavia en cola
+  // (paso el 19/oct con la cola de Actions atrasada): eso no es verde.
+  const pendientes = jobs.filter((j) => j.status && j.status !== 'completed');
+  if (pendientes.length) {
+    return {
+      terminado: false,
+      codigo: 2,
+      lineas: [`· CI ${run.conclusion} pero ${pendientes.length} job(s) sin terminar: sigo esperando`],
+    };
+  }
   const verde = run.conclusion === 'success';
   const lineas = [`${verde ? '✓' : '✗'} CI ${run.conclusion}`];
   for (const j of jobs) lineas.push(`  ${j.conclusion === 'success' ? '✓' : '✗'} ${j.name}: ${j.conclusion}`);

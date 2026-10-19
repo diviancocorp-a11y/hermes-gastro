@@ -1,0 +1,108 @@
+{
+  "_como_se_edita": [
+    "Reglas del orquestador de skills (scripts/hooks/orquestador.mjs).",
+    "Cada regla del ruteo se evalua contra el prompt ya normalizado: minusculas y sin tildes (una palabra con tilde llega sin tilde).",
+    "'todas' es una lista de grupos: tiene que matchear al menos un patron de CADA grupo. 'ninguna' anula la regla si matchea cualquiera.",
+    "Los patrones son regex de JavaScript escritas como string: en JSON la barra invertida va doble (\\\\b).",
+    "'skill' (opcional): si esa skill ya se cargo en la sesion, la regla no se repite.",
+    "Si dos reglas tienen el mismo 'grupo', gana la primera que matchea (sirve para elegir una sola skill estetica).",
+    "El test src/test/orquestadorSkills.test.js corre 10+ prompts de ejemplo: si cambias una regla, corre el test."
+  ],
+  "ruteo": [
+    {
+      "id": "diseno-pantalla-nueva",
+      "grupo": "diseno",
+      "skill": "diseno",
+      "todas": [
+        ["\\bpantallas?\\b", "\\blanding\\b", "\\bpaginas?\\b", "\\bseccion(es)?\\b", "\\bvistas?\\b", "\\bhero\\b"],
+        ["\\bnuev[ao]s?\\b", "\\bredisen", "\\brehac", "\\bdesde cero\\b", "\\barm(a|ar|emos|amos)\\b", "\\bcre(a|ar|emos|amos)\\b"]
+      ],
+      "ninguna": ["^/diseno\\b"],
+      "texto": "Esto toca UI: cargar la skill /diseno ANTES de editar (linea base, autoridad de docs/marca/, constructor y auditor separados, medicion antes/despues). Es pantalla nueva o rediseno: la skill estetica es design-taste-frontend (no impeccable, una sola por tarea)."
+    },
+    {
+      "id": "diseno-pulir",
+      "grupo": "diseno",
+      "skill": "diseno",
+      "todas": [
+        ["\\bpantallas?\\b", "\\blanding\\b", "\\bcomponentes?\\b", "\\bui\\b", "\\bux\\b", "\\bcss\\b", "\\bjsx\\b", "index\\.html", "\\bestilos?\\b", "\\bdiseno\\b", "\\bbotones?\\b", "\\bboton\\b", "\\bcolor(es)?\\b", "\\btipograf", "\\blayout\\b", "\\bespaciado\\b", "\\bmargen(es)?\\b", "\\bpadding\\b", "\\banimacion(es)?\\b", "\\bresponsive\\b", "\\biconos?\\b", "\\bmodal(es)?\\b", "\\bheader\\b", "\\bfooter\\b", "\\bhero\\b", "\\bse ve\\b", "\\bque se vea\\b", "\\bmas lindo\\b", "\\bfeo\\b", "\\bmodo oscuro\\b", "\\bdark mode\\b", "\\bcp-root\\b", "\\btema (ambar|noche|carbon)\\b"]
+      ],
+      "ninguna": ["^/diseno\\b"],
+      "texto": "Esto toca UI: cargar la skill /diseno ANTES de editar (linea base, autoridad de docs/marca/, constructor y auditor separados, medicion antes/despues). Es pulir algo que existe: la skill estetica es impeccable (no design-taste-frontend, una sola por tarea)."
+    },
+    {
+      "id": "mapa-base",
+      "todas": [
+        ["\\brpcs?\\b", "\\btablas?\\b", "\\bmigracion(es)?\\b", "\\bcolumnas?\\b", "\\bpolic(y|ies)\\b", "\\brls\\b", "\\btriggers?\\b", "\\bsecurity definer\\b", "\\bschema\\b", "\\bpg_proc\\b", "\\bfuncion(es)? sql\\b"]
+      ],
+      "texto": "Toca la base: antes de razonar sobre una RPC o tabla, `npm run mapa -- <nombre>` (que migracion la define, firma vigente, quien la llama). Migraciones: expandir y despues contraer; lo aditivo va por MCP con su archivo en platform/migrations/ en el mismo commit, lo destructivo lo aplica Ricky desde el panel."
+    },
+    {
+      "id": "cierre",
+      "skill": "cerrardico",
+      "todas": [
+        ["\\bcerr(a|ar|emos|amos)\\b.{0,25}\\b(sesion|dia|todo|por hoy)\\b", "\\bterminamos por hoy\\b", "\\blisto por hoy\\b", "\\bpor hoy (es todo|esta)\\b", "\\bguard(a|ar) (el|todo el) trabajo\\b", "\\bresumi(r)? la sesion\\b", "\\bantes de limpiar el chat\\b", "\\bactualiza(r)? el handoff\\b"]
+      ],
+      "ninguna": ["^/cerrardico\\b"],
+      "texto": "Cierre de sesion: correr la skill /cerrardico (actualiza docs/HANDOFF.md, dice que quedo sin commitear y si se creo algun archivo fuera de src/, docs/, platform/ o scripts/)."
+    },
+    {
+      "id": "arranque",
+      "skill": "dico",
+      "todas": [
+        ["\\bretom(a|ar|emos|amos)\\b", "\\ben que (estabamos|quedamos)\\b", "\\bdonde (estabamos|quedamos)\\b", "\\barranc(a|ar|emos|amos) (con|el|la)\\b", "\\bque hay pendiente\\b", "\\bcontexto (de dico|del edificio|de la plataforma)\\b"]
+      ],
+      "ninguna": ["^/dico\\b"],
+      "texto": "Arranque o retome: cargar la skill /dico (contexto del edificio, seccion 0 de docs/HANDOFF.md, git worktree list) antes de proponer nada."
+    },
+    {
+      "id": "competencia",
+      "skill": "analisis-competencia",
+      "todas": [
+        ["\\bcompetencia\\b", "\\bcompetidor(es|a|as)?\\b", "\\bla competencia\\b", "\\brivales?\\b", "\\bbenchmark\\b"]
+      ],
+      "texto": "Competencia: usar la skill analisis-competencia (suma el competidor al doc de competencia, arma el reporte para el gerente y propone preguntas para sus creadores)."
+    },
+    {
+      "id": "carga",
+      "skill": "carga",
+      "todas": [
+        ["\\bk6\\b", "\\b(prueba|test|tests|pruebas) de (carga|estres)\\b", "\\bload ?test", "\\bestresar\\b", "\\bcuantos usuarios aguanta\\b", "\\busuarios (a la vez|simultaneos|concurrentes)\\b"]
+      ],
+      "texto": "Carga: usar la skill /carga (k6 solo lecturas con 20, 50 y 100 usuarios, cruzado con pg_stat_statements y comparado contra el historial de docs/operacion/CARGA-K6.md). Nunca crear pedidos contra un tenant real."
+    },
+    {
+      "id": "herramienta-terceros",
+      "todas": [
+        ["\\bskills?\\b", "\\bplugins?\\b", "\\bmcps?\\b", "\\brepositorios?\\b", "\\brepos?\\b", "github\\.com/", "\\bherramientas? (de terceros|nuevas?|externas?|open source)\\b", "\\bdependencias? nuevas?\\b"],
+        ["\\binstal", "\\bsum(a|ar|emos|amos)\\b", "\\bagreg", "\\bevalu", "\\banaliz", "\\bprob(a|ar|emos|amos)\\b", "\\bconviene\\b", "\\bvale la pena\\b", "\\bincorpor", "\\bcambiar\\b", "\\breemplaz"]
+      ],
+      "texto": "Herramienta de terceros: antes de opinar, el criterio de entrada de CLAUDE.md (que friccion documentada resuelve, si se pisa con algo que ya hay) y la tabla de ya evaluadas (no reabrir sin motivo nuevo). Datos reales con `gh api repos/<dueno>/<repo>` (licencia, ultimo push, archivado). Si son solo instrucciones, se copian en CLAUDE.md y AGENTS.md; si es software, se prueba en una rama prueba/<herramienta>. La decision se anota en la tabla."
+    },
+    {
+      "id": "seo",
+      "skill": "seo-audit",
+      "todas": [
+        ["\\bseo\\b", "\\bposicionamiento\\b", "\\bpalabras? clave\\b", "\\bkeywords?\\b", "\\bmeta ?tags?\\b", "\\bsitemap\\b", "\\brobots\\.txt\\b", "\\baparec\\w* en google\\b", "\\bgoogle (no )?(nos |lo |la )?(encuentra|indexa)"]
+      ],
+      "texto": "SEO: usar la skill marketing:seo-audit (landing de divianco.app o catalogo de un tenant). Si el cambio toca index.html o la landing, ademas /diseno antes de editar. Open-SEO ya se evaluo: no por ahora."
+    },
+    {
+      "id": "propuesta",
+      "skill": "propuesta-divianco",
+      "todas": [
+        ["\\bpropuestas? (comercial|comerciales|para|de servicio)", "\\bpresentacion(es)? (comercial|para|de divianco|de dico)", "\\bdeck\\b", "\\bdiapositivas?\\b", "\\bpowerpoint\\b", "\\bpptx\\b", "\\bslides\\b"]
+      ],
+      "texto": "Propuesta o presentacion: usar la skill propuesta-divianco (o pptx si Ricky pide el archivo). Es doc de negocio: va a Google Drive, nunca al repo."
+    }
+  ],
+  "candado": {
+    "_modo": "'aviso' agrega un recordatorio al editar y deja seguir; 'bloqueo' rechaza la edicion hasta que se cargue la skill.",
+    "modo": "aviso",
+    "skill": "diseno",
+    "archivos": ["src/**/*.jsx", "src/**/*.css", "index.html"],
+    "excluir": ["src/test/**", "**/*.test.jsx"],
+    "agentes_exentos": ["disenador", "auditor-diseno"],
+    "texto": "Vas a editar un archivo de UI ({archivo}) y en esta sesion no se cargo la skill /diseno. Regla de Ricky (15/oct/2026): toda mejora de UI pasa por /diseno ANTES de editar. Cargala ahora con la tool Skill (skill: diseno) y segui sus pasos; si Ricky pidio explicitamente saltearla, decilo en la respuesta."
+  }
+}

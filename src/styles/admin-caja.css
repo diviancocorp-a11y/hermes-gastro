@@ -14,6 +14,7 @@
 
 .ag-caja-supervision {
   padding: 18px;
+  color: var(--ag-ink);
   border: 1px solid var(--ag-line);
   border-top: 2px solid var(--ag-accent);
   border-radius: 6px;

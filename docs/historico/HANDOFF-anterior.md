@@ -9,6 +9,275 @@
 
 ---
 
+## 16/oct/2026 — La base y el repo vuelven a decir lo mismo; morning-health vigila lo que no veía (Claude)
+
+**Publicado.** Todo en `main`, de `b0c3416` a `cd82ca5`, en commits de un
+solo tema. Producción de `hermes-platform` `READY` en `cd82ca5` (verificado
+por MCP de Vercel).
+
+### Hecho
+
+- **Reglas nuevas en `CLAUDE.md`/`AGENTS.md`**:
+  - "la escalera" antes de escribir código (adaptada de Ponytail);
+  - criterio de entrada para skills/plugins/MCPs de terceros, con tabla de
+    las 12 ya evaluadas (no reabrir sin motivo nuevo);
+  - migraciones "expandir y después contraer" (Vercel ya es blue-green, la
+    base no vuelve con el rollback) y patrón para sumar un argumento a una RPC
+    (`drop` + `create` con `default`, como la 0068; **no** `create or replace`
+    con otra firma: deja dos vivas);
+  - "cómo se aplica una migración": archivo en el mismo commit; lo
+    destructivo lo aplica Ricky desde el panel (por MCP el `drop` se cuelga a
+    los 60s, pasó 3 veces);
+  - "qué se hace sin preguntar" y qué pide el ok de Ricky.
+- `/cerrardico` suma un paso: proponer reglas a partir de correcciones
+  repetidas (adaptado de Task Observer).
+- **`check:expandir`** (`scripts/check-migraciones-compatibles.mjs`,
+  pre-commit + CI): frena drop/rename/`set not null`/cambio de tipo desde la
+  0096 salvo `-- contraer: <motivo>`; reconoce solo el cambio de firma
+  compatible buscando la firma vieja en las migraciones anteriores.
+- **`check-functions-drift.mjs`** ahora compara cuerpo **y** firma de las 83
+  funciones de `public`, no solo las críticas. `CRITICAS` (9) quedan como las
+  que no pueden faltar. Encuentra también `create function` sin `or replace`.
+- **`check-migraciones-sin-archivo.mjs`** (nuevo, en morning-health): toda
+  fila de `supabase_migrations.schema_migrations` tiene que tener archivo.
+  Lee vía el RPC `migrations_snapshot` (**0097**, definer, solo
+  `service_role`). Lo histórico que no coincide por nombre (24) está en
+  `scripts/migraciones-sin-archivo.json` con el veredicto de cada una.
+- **Base**:
+  - **0062** aplicada por Ricky desde el panel: queda una sola
+    `sumar_staff(text,text)`.
+  - **0097** aplicada por MCP.
+- **Rescatadas al repo** (lo que corría en la base sin archivo, copiado de
+  `schema_migrations`):
+  - **0096**: `provision_owner`/`attach_owner` escriben `roles`. La versión
+    del repo fallaba por `roles` NOT NULL desde la 0050.
+  - **0018**: el cron `release-dormant-tenants`.
+  - **0079**: `schema_snapshot` con vistas. El original vive en la worktree
+    `claude/recursing-gauss-acdbb9` (`08f82ba`): si se mergea, tiene que ser
+    igual; si difiere, vale el del repo.
+  - **0098**: `register_waste`/`register_purchase` que asientan en el libro.
+    El repo decía que corría la de la 0040.
+- `_migrations_through` en `0098`.
+
+### Verificado
+
+- Contra producción (MCP, solo lectura): las 83 firmas de `public` coinciden
+  con el repo. Los 83 cuerpos también: el único que daba distinto
+  (`crear_sectores_tipicos`) es idéntico con el normalizador real. Era un
+  artefacto de normalizar en Postgres, donde `[a-z]` incluye letras con tilde.
+- Coinciden con el repo: constraint `entry_time_valid`, índices
+  `inv_mov_client_request_uniq` y `suppliers_tenant_name_uniq`, policies de
+  `sales`/`expenses`/`suppliers`.
+- **No** se compararon una por una las policies del resto de las tablas que
+  tocan las `roles_*`: solo se sabe que `check:rls` las da cerradas.
+- Tests de los checks (103) y pre-commit completo con build en cada commit.
+- **CI entero en verde desde `6e055c8`** (los 5 jobs). *Security Audit*
+  daba rojo desde antes de esta sesión: se arregló con `npm audit fix` y
+  `lint-staged` 15 → 16.4.0 (pide node ≥ 20.17). Verificado: suite completa
+  (116 archivos, 1594 tests), build, y lint-staged 16 corriendo eslint e
+  integridad en el pre-commit.
+- Los checks nuevos de morning-health **no corrieron todavía contra la base**
+  desde CI: ver bloqueado.
+
+### Resuelto al final del 16/oct (verificado con un morning-health manual)
+
+- Token del bot en el secret **`GERENTEDICOBOT`** (el workflow lo toma de ahí,
+  `TELEGRAM_BOT_TOKEN` de respaldo) y `TELEGRAM_CHAT_ID` cargado; el script
+  recorta espacios (el chat id traía un salto de línea).
+- **Los negocios a mirar salen de la base** (`scripts/tenants-vivos.mjs`):
+  `active` se mira, `trial` sale como "en carga" sin rojo. Lo usan
+  morning-health y el smoke. `SMOKE_TENANTS` queda de respaldo sin service role.
+- **DICO_BRAIN** (API key de OpenAI, secret de GitHub): si hay problemas, los
+  explica en castellano. `workflow_dispatch` con `probar_cerebro` lo prueba.
+- Run `38962476797`: todo en verde (cochi, crazy-miga, la-nona-pato; monare
+  en carga), los 3 checks nuevos en verde contra la base, la prueba del
+  cerebro respondió y **llegó a Telegram**.
+- `/dico` ahora arranca mirando el CI de `main` y el último morning-health.
+
+### Sentry (16/oct, tarde)
+
+- **El build de producción no tiene Sentry**: el bundle publicado no contiene
+  ni la palabra (falta `VITE_SENTRY_DSN` en Vercel `hermes-platform`). Desde
+  el 27/sep llegaron **0** eventos y Sentry no descartó nada: no llega nada.
+  Confirmado con un build local con el DSN, que sí lo incluye. Detalle y pasos
+  en `docs/plataforma/SENTRY.md`.
+- morning-health ahora lo detecta (`checkSentryEnBuild`): da rojo y deja de
+  decir "sin errores en 24h". Run manual `38964529421`: rojo por Sentry,
+  explicado por DICO_BRAIN, llegó a Telegram.
+- **`sentry-alerta` desplegada** (versión 1, `verify_jwt=false`). Probada desde
+  la base con `pg_net`: sin firma válida contesta 401. Falta el alta en Sentry
+  y los secrets (pasos en `SENTRY.md`).
+- Pendiente con ok de Ricky (toca `src/`): el tag `tenant` de Sentry sale de
+  `__CLIENT__`, que en el edificio siempre vale `edificio`. Tendría que salir
+  del hostname. Mientras tanto, `sentry-alerta` saca el negocio de la URL del
+  error.
+
+**Bloqueado por Ricky (Sentry):** cargar en Vercel `VITE_SENTRY_DSN`,
+`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` y redeployar; crear la
+integración interna GerenteDico en Sentry; cargar en Supabase
+`SENTRY_ALERTA_SECRET`, `GERENTEDICOBOT`, `TELEGRAM_CHAT_ID` y `DICO_BRAIN`;
+crear la regla de alerta y mandar la notificación de prueba.
+
+Lo de abajo quedó como estaba escrito al cerrar; los puntos 1 y 2 ya no
+aplican.
+
+### Bloqueado por Ricky
+
+1. **Morning-health falla desde el 14/oct y no manda nada a Telegram**:
+   `Telegram API error: 401 Unauthorized`. El `TELEGRAM_BOT_TOKEN` de los
+   secrets de GitHub ya no es válido. Cargar el token del bot nuevo
+   (GerenteDico) y su `TELEGRAM_CHAT_ID` en Settings → Secrets → Actions.
+2. **`SMOKE_TENANTS`** (variable de Actions) dice
+   `la-nona-pato,cochi,mala-miga`: `mala-miga` ya no existe (da "catálogo
+   VACÍO" todos los días). Cambiar por los tenants vivos (al menos
+   `crazy-miga`).
+3. Ok y `ANTHROPIC_API_KEY` (la carga él) para el bot GerenteDico.
+
+### Pendiente inmediato
+
+1. Después de 1 y 2: correr morning-health a mano (`workflow_dispatch`) y
+   confirmar que llega y que los 3 checks nuevos dan verde.
+2. GerenteDico (propuesta en el chat del 16/oct, no hay código):
+   - etapa 1, el resumen de la mañana con los errores de Sentry explicados en
+     castellano;
+   - etapa 2, edge function `gerente-webhook` (solo el chat de Ricky,
+     herramientas de solo lectura, Claude API);
+   - etapa 3, "anotá que hay que arreglar X" → issue de GitHub → Claude Code
+     abre el PR → link del preview para aprobar desde el teléfono.
+3. Comparar una por una las policies de las tablas que tocan
+   `roles_y_alcance_policies` / `roles_barrido_de_policies_viejas`.
+
+---
+
+## 15/oct/2026 — Gate de diseño, /diseno siempre activo y pulido de la landing de divianco.app (Claude)
+
+**Publicado.** Ricky dio el OK y el PR #26 se mergeó a `main` como merge
+commit `441c799`. El deploy de producción de `hermes-platform` quedó `READY`
+en ese SHA. Son commits de un solo tema cada uno, revertibles por separado:
+
+- `a29ba2a`: el gate.
+- `d3e86fc`: la skill.
+- `0d9a277`: la landing.
+- `1081171`: `/diseno` siempre activo.
+
+**`/diseno` siempre activo** (pedido de Ricky): toda mejora que toque UI pasa
+por la skill, que maneja la línea de skills. Está en tres lugares, porque uno
+solo se pierde:
+
+- la regla en `CLAUDE.md`/`AGENTS.md`;
+- un hook `UserPromptSubmit` en `.claude/settings.json`
+  (`scripts/hooks/linea-diseno.mjs`) que la recuerda en cada turno;
+- la skill, que se declara obligatoria aunque nadie la nombre y cierra pasando
+  el link del preview de Vercel de la rama.
+
+### Hecho
+
+**Gate de diseño.**
+- `scripts/check-diseno.mjs` (`npm run check:diseno`) corre `impeccable detect`
+  sobre `src/` e `index.html` y lo compara contra `scripts/diseno-deuda.json`.
+- Va en el pre-commit y en el CI.
+- Tiene el mismo contrato que `llamadas-legacy-pendientes.json`: un hallazgo
+  nuevo frena el commit y uno resuelto obliga a `-- --podar`.
+- Cuenta por archivo y regla, no por línea, así editar arriba de un hallazgo
+  viejo no lo vuelve nuevo.
+- Nació con **17 hallazgos**: 12 bordes laterales de color, 4 bordes de acento
+  sobre esquinas redondeadas e Inter cargada en `src/catalog-pro/tokens.css`,
+  aunque el manual la excluye.
+- `impeccable` entra como devDependency fija (4.5.2).
+
+**Skill `/diseno` y subagentes.**
+- Están en `.claude/skills/diseno/` y `.claude/agents/disenador.md` +
+  `auditor-diseno.md`.
+- Decisiones que no se deducen leyendo la skill:
+  - **En este repo no se usa ui-ux-pro-max.** Su trabajo es inventar un sistema
+    de diseño y DICO ya tiene uno en `docs/marca/`.
+  - **Una sola skill estética por tarea**: taste-skill para pantallas nuevas,
+    impeccable para pulir las existentes.
+  - **El auditor es de solo lectura** y no ve el razonamiento del constructor.
+- Las skills de terceros (`impeccable`, `design-taste-frontend`) **no se
+  commitean**: están en `.gitignore` y las baja `npm run skills:diseno`
+  fijadas a un commit.
+
+**Landing (`src/pages/PlatformLanding.jsx` + `src/styles/platform-landing.css`).**
+- **El monto de los planes salía a 14px en vez de 32px.** `.pl-card p` le
+  ganaba en especificidad a `.pl-precio-monto`, y también a `.pl-pilar-sub`.
+- **`.pl-mono` pedía JetBrains Mono, que no está autoalojada** (en
+  `public/fonts/dico` solo hay Overused y Butler). Unas 40 etiquetas caían en
+  la mono del sistema, que es el "fallback accidental" del manual 02.
+  - Pasaron a `.pl-etiqueta`, en Overused a `--ds-type-xs`.
+  - Los textos largos van en caja normal.
+  - Los números van en Overused con `tabular-nums`, siguiendo la regla de
+    métricas del DS v0.1.
+- **`--pl-t3` subió de 0.42 a 0.56 de opacidad** (contraste de 3.8:1 a ~6:1).
+- **Sin eyebrows ni índices 01/02/03.** El craft floor de impeccable los
+  prohíbe y la nav ya nombra las secciones.
+- **Táctil, foco y superficies del navegador.**
+  - Targets de 44px bajo `@media (pointer: coarse)` y no por ancho, así cubre
+    también las tablets.
+  - Foco en oro, `::selection` y `color-scheme: dark` mientras se ve la
+    landing. Se restaura al salir.
+- **El `<main>` de la landing pasó a `<div>`**, porque `App.jsx` ya envuelve
+  todo en `<main id="main-content">`.
+- **Único cambio de texto**: la etiqueta del plan Digital pasó de "Gratis" a
+  "Para empezar", porque repetía el monto "Gratis".
+
+### Verificado
+
+- Pre-commit completo en verde al commitear la landing, **incluido el gate
+  nuevo**.
+- `check:diseno`: 17 → 17, ninguno nuevo. La landing tenía 0 hallazgos del
+  detector antes y después: sus defectos salieron de mirarla renderizada, no
+  del detector.
+- Build en verde, y **1560/1560 tests** con `--pool=threads`. Los 7 rojos
+  preexistentes de la sección del 7-9/oct ya no fallan sobre esta rama.
+- Renderizada en Chromium headless a 320, 390, 768, 1024 y 1280:
+  - sin scroll horizontal;
+  - sin monospace dentro de `.pl-root`;
+  - montos a 32px;
+  - con puntero táctil emulado a 390 y 820, ningún target por debajo de 44px;
+  - el móvil quedó 532px más corto.
+- **Auditoría independiente**: 0 P0, 1 P1 (tamaños y espacios a mano fuera de
+  la escala `--ds-*`) y 3 P2. Todo se corrigió en la segunda ronda del
+  constructor. Esa segunda ronda la verificaron los gates y las capturas, **no
+  una segunda auditoría**.
+- **NO verificado**:
+  - la página en producción, porque no está publicada;
+  - un dispositivo táctil real;
+  - `npx impeccable detect <url>`, porque su Chromium no corre como root en el
+    sandbox.
+
+### Pendiente inmediato
+
+1. **Verificar que el hook corre en la máquina de Ricky** (Windows, Claude Code):
+   la primera sesión en el repo tiene que mostrar el aviso de `/diseno`. Acá
+   solo se probó el script a mano. Si Claude Code pide aprobar el hook del
+   proyecto, aprobarlo.
+2. **Números de ejemplo de la landing**: no se tocaron porque son contenido.
+   - **Son inconsistentes entre sí.** El pilar dice bife a $1.200 con $340 de
+     insumos. El aviso de Dico dice que el costo pasó a $520 y que el margen es
+     14%; con esos números da ~41%.
+   - **Están en una escala que no cierra con los precios del plan.** Una noche
+     de $4.200 de venta contra un plan de $59.000 por mes.
+   - Un gastronómico lo nota, y es justo la promesa de la página
+     ("Sin suposiciones. Números"). Hay que alinearlos a precios de 2026.
+3. **WhatsApp del CTA con número de EE. UU. (+1 786)** para un público
+   argentino. Es decisión de Ricky.
+4. **Fuera de alcance, preexistentes**:
+   - `SkipToContent.jsx` usa blanco sobre `#C45D3E`, que da 4.21:1, y está en
+     DM Sans.
+   - El `<main>` de `App.jsx` debería salir por ruta.
+5. **Deuda del gate**: los 12 `side-tab` del panel son el siguiente bloque
+   natural para `/diseno`, y cada uno que se resuelve se poda.
+6. **Heredado del 28/sep, no verificado en esta sesión**: los cron de GitHub
+   (`morning-health` y el smoke) corrían unas 8 h tarde. Mirar las últimas
+   corridas antes de tocar nada.
+
+### Bloqueado por Ricky
+
+- Los números de ejemplo y el WhatsApp de la landing (puntos 2 y 3).
+
+---
+
 ## 7-9/oct/2026 — Crazy Miga: del alta a vender por Telegram (Claude)
 
 Crazy Miga es una dark kitchen (cookies) que cobra por alias o efectivo, sin la

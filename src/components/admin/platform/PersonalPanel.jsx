@@ -64,7 +64,7 @@ export default function PersonalPanel({
   const pct = costoLaboral?.costo_sobre_ventas_pct;
 
   return (
-    <section className="cp-root" style={{ display: 'grid', gap: 18 }}>
+    <section style={{ display: 'grid', gap: 18 }}>
       {/* ── Lo que cuesta el turno, contra lo que vendio ── */}
       {costoLaboral && (
         <div style={{

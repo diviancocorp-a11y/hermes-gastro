@@ -45,6 +45,7 @@
     "pantalla": "node scripts/pantalla/preview.mjs",
     "pantalla:acciones": "node scripts/pantalla/acciones.mjs",
     "mapa": "node scripts/mapa.mjs",
+    "carga:catalogo": "node scripts/carga/correr.mjs catalogo",
     "handoff:archivar": "node scripts/archivar-handoff.mjs"
   },
   "dependencies": {
