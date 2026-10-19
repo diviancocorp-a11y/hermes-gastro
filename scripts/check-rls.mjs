@@ -268,6 +268,7 @@ export const DEFINER_APROBADAS = {
   consumo_diario_de_insumos: { tipo: 'se_cuida', porque: 'filtra por current_user_tenants: a otro le devuelve vacio' },
   signup_tenant: { tipo: 'se_cuida', porque: 'exige sesion y crea el negocio de ESE usuario' },
   upsert_push_subscription: { tipo: 'se_cuida', porque: 'cualquiera se suscribe como cliente; como admin solo si es miembro' },
+  vincular_diagnostico: { tipo: 'se_cuida', porque: 'solo hacia un negocio de current_user_tenants, un diagnostico sin vincular y de 7 dias (0100)' },
   // ── caja, salon y facturacion (0067, 0069, 0070; aplicadas el 27/sep) ──
   force_close_cash_session: { tipo: 'se_cuida', porque: 'solo el owner del negocio de esa sesion de caja' },
   open_table_visit: { tipo: 'se_cuida', porque: 'rol de salon o caja en p_tenant_id' },
