@@ -1,7 +1,6 @@
 -- 0103 El resultado del dia: cuanto se gano hoy, por sucursal.
--- SIN APLICAR: espera el ok de Ricky. Aditiva (una funcion nueva, no toca
--- nada de lo que ya corre). Al aplicarla, cambiar esta linea por
--- "Aplicada via MCP el <fecha>".
+-- Aplicada via MCP el 20/oct/2026, con ok de Ricky. Aditiva: una funcion
+-- nueva, no toca nada de lo que ya corre.
 --
 -- Hasta aca el resultado existia solo por mes (MonthSummary, armado en el
 -- front con todas las ventas del tenant). La promesa es "sabe cuanto ganas
