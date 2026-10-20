@@ -11,7 +11,7 @@
 //
 // Lo usan los dos caminos que existen para recuperarse de un deploy nuevo:
 //   - el banner "hay una actualizacion" (useAppUpdate)
-//   - el rescate por chunk roto de App.jsx (lazyReload)
+//   - el rescate por chunk roto (lazyReload, src/lib/lazyReload.js)
 //
 // NO desregistra el SW: eso dejaria al usuario sin PWA ni push hasta la
 // proxima visita. Alcanza con vaciarle los caches y pedirle que se actualice.

@@ -6,7 +6,10 @@
  *
  * El chrome (topbar, nav, tokens) se reusa por CSS, no por componente.
  */
-import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
+// lazyReload y no lazy: si el chunk ya no existe tras un deploy, recarga una
+// vez en vez de romper el panel (HERMES-GASTRO-S, Monare 19/oct).
+import { lazyReload } from '../lib/lazyReload';
 
 import usePlatformTenant from '../hooks/usePlatformTenant';
 import LoginScreen from '../components/admin/LoginScreen';
@@ -20,7 +23,7 @@ import SectoresPanel from '../components/admin/platform/SectoresPanel';
 import ComanderaPanel from '../components/admin/platform/ComanderaPanel';
 // El MISMO formulario que usaba el Stock legacy: alta y edicion de insumo
 // no se reescriben, se reusan.
-const IngForm = lazy(() => import('../components/admin/Stock')
+const IngForm = lazyReload(() => import('../components/admin/Stock')
   .then(m => ({ default: m.IngForm })));
 import ConteoDeDeposito from '../components/admin/platform/ConteoDeDeposito';
 import DicoPresence from '../components/dico/DicoPresence';
@@ -100,41 +103,41 @@ import { puedeVer, pantallaInicial, puedeAbrirDestino, puedeEditar as puedeEdita
 // diferencia es que se le inyecta con que guardar y que zonas apagar. Va lazy
 // para que su peso (arrastra editores de QRs, paginas y pasarelas por imports
 // estaticos) no entre en el chunk del panel, que se carga siempre.
-const Settings = lazy(() => import('../components/admin/Settings'));
+const Settings = lazyReload(() => import('../components/admin/Settings'));
 // Stock: mismo componente del admin legacy, con el saver inyectado.
-const Stock = lazy(() => import('../components/admin/Stock'));
+const Stock = lazyReload(() => import('../components/admin/Stock'));
 // Finanzas: contenedor de Gastos + Compra + Proveedores (Etapa 3). Lazy por
 // lo mismo que Settings — arrastra Finance.jsx entero, que son 2000 lineas.
-const FinanzasPanel = lazy(() => import('../components/admin/platform/FinanzasPanel'));
+const FinanzasPanel = lazyReload(() => import('../components/admin/platform/FinanzasPanel'));
 // Ventas: SalesView + MonthSummary del legacy (Etapa 4). Lazy: MonthSummary
 // arrastra los analisis USAR y el exportador de informes.
-const VentasPanel = lazy(() => import('../components/admin/platform/VentasPanel'));
+const VentasPanel = lazyReload(() => import('../components/admin/platform/VentasPanel'));
 // Equipo: pantalla del legacy tal cual. El service bifurca a tenant-users,
 // que scopea todo al negocio de este host.
 // Equipo: pantalla propia del edificio (6f). El `Users` legacy maneja un rol
 // unico y global; aca una persona tiene varios roles y puede estar acotada a
 // una sucursal.
-const Users = lazy(() => import('../components/admin/platform/EquipoDelNegocio'));
+const Users = lazyReload(() => import('../components/admin/platform/EquipoDelNegocio'));
 // Salon: el plano del local (Etapa 6c). Lazy porque solo lo ve un negocio
 // fisico y arrastra su propio editor de arrastre.
-const MapaDeMesas = lazy(() => import('../components/admin/platform/MapaDeMesas'));
+const MapaDeMesas = lazyReload(() => import('../components/admin/platform/MapaDeMesas'));
 // El alta de mesas viaja con el salon: quien no tiene local no lo baja nunca.
-const EditorDeMesa = lazy(() => import('../components/admin/platform/EditorDeMesa'));
+const EditorDeMesa = lazyReload(() => import('../components/admin/platform/EditorDeMesa'));
 // La pantalla de cobro se abre desde Pedidos y desde el plano del salon. Va
 // lazy como el resto de los paneles; OrdersPanel la importa de forma estatica,
 // asi que las dos rutas terminan compartiendo el mismo chunk.
-const PantallaDeCobro = lazy(() => import('../components/admin/platform/PantallaDeCobro'));
+const PantallaDeCobro = lazyReload(() => import('../components/admin/platform/PantallaDeCobro'));
 // Cobros online: se abre una vez en la vida del negocio, asi que no tiene por
 // que estar en el chunk que se carga siempre.
-const CobrosOnline = lazy(() => import('../components/admin/platform/CobrosOnline'));
+const CobrosOnline = lazyReload(() => import('../components/admin/platform/CobrosOnline'));
 // Caja: el turno con su arqueo. Lazy por lo mismo que el salon.
-const CajaPanel = lazy(() => import('../components/admin/platform/CajaPanel'));
+const CajaPanel = lazyReload(() => import('../components/admin/platform/CajaPanel'));
 // La caja del mozo es otra pantalla, no la misma con ifs adentro: el que
 // cobra las mesas declara lo suyo y no tiene nada que ver con el arqueo del
 // local, las incidencias del turno ni la cola fiscal.
-const MiMiniCaja = lazy(() => import('../components/admin/platform/MiMiniCaja'));
+const MiMiniCaja = lazyReload(() => import('../components/admin/platform/MiMiniCaja'));
 // Equipo: quien esta trabajando y cuanto cuesta el turno (6e).
-const PersonalPanel = lazy(() => import('../components/admin/platform/PersonalPanel'));
+const PersonalPanel = lazyReload(() => import('../components/admin/platform/PersonalPanel'));
 
 import '../styles/admin-tokens.css';
 import '../styles/admin-bg.css';

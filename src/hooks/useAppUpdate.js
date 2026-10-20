@@ -45,8 +45,11 @@ export default function useAppUpdate() {
       doneRef.current = true;
       setUpdateAvailable(true);
     };
-    // Un chunk lazy no cargo (tipico tras deploy): avisar ya.
-    const onPreloadError = (e) => { e?.preventDefault?.(); flag(); };
+    // Un chunk lazy no cargo (tipico tras deploy): avisar ya. SIN
+    // preventDefault: cancelar el evento hace que Vite se trague el error y
+    // el import resuelva undefined, asi lazyReload no se entera y React rompe
+    // con "reading 'default'" (HERMES-GASTRO-S, 19/oct).
+    const onPreloadError = () => { flag(); };
     window.addEventListener("vite:preloadError", onPreloadError);
 
     check();
