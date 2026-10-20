@@ -19,8 +19,11 @@
   La protección completa de cantidades sigue diferida según la decisión 2.
 - SQL y pruebas: `0107_recetario.sql`, `recetario_por_rol.sql`. Fixtures de
   prueba revertidos íntegramente; verificación de cero tenants de prueba.
-- El check de RLS global sigue señalando `vincular_diagnostico`, de la rama
-  de la landing; los 65 objetos tienen RLS y no hay tablas abiertas.
+- Tras integrar la landing de Claude, el check global RLS está verde:
+  65 objetos, 54 con tenant_id y 43 funciones definer aprobadas.
+- Diseño: 17 warnings y 6 advisory antes/después; sin hallazgos nuevos.
+  Navegador: dueño/cocina, 390x844 y 1280x800; descarga JSON, ventana PDF,
+  escalado y guardado comprobados sin errores ni desbordes.
 
 ## Qué se quiere
 
