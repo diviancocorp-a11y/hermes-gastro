@@ -10,7 +10,7 @@
 
 import { useEffect, useRef } from 'react';
 import { cargarAnalitica } from '../lib/analiticaPlataforma';
-import Embudo, { PREGUNTAS } from '../components/landing/Diagnostico';
+import Embudo from '../components/landing/Diagnostico';
 import { FOTOS } from '../components/landing/clientes';
 import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
@@ -18,7 +18,7 @@ import '../styles/platform-landing.css';
 import '../styles/diagnostico.css';
 
 const TITULO = 'Diagnóstico de tu negocio — Dico';
-const DESCRIPCION = `${PREGUNTAS} preguntas sobre tu negocio, sin email, y Dico te dice qué `
+const DESCRIPCION = 'Unas pocas preguntas sobre tu negocio, sin email, y Dico te dice qué '
   + 'resolver primero, cómo lo resuelve y qué plan te conviene.';
 
 export default function Diagnostico() {

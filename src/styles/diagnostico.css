@@ -94,7 +94,7 @@
   grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
   gap: var(--ds-space-4);
-  min-height: 56px;
+  min-height: var(--ds-control-height-touch);
   padding: var(--ds-space-3) var(--ds-space-4);
   border-radius: var(--pc-radio-control);
   background: var(--pc-suelo-2);
@@ -184,10 +184,10 @@
 .dg-texto {
   display: block;
   width: 100%;
-  min-height: 56px;
+  min-height: var(--ds-control-height-touch);
   margin-top: var(--ds-space-6);
   padding: 0 var(--ds-space-4);
-  border: 2px solid var(--pc-suelo-3);
+  border: 2px solid var(--pc-tinta-suave); /* 3:1 o mas sobre el suelo */
   border-radius: var(--pc-radio-control);
   background: var(--pc-suelo);
   color: var(--pc-tinta);
@@ -211,7 +211,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 52px;
+  min-height: var(--ds-control-height-touch);
   padding: 0 var(--ds-space-8);
   border: 0;
   border-radius: var(--pc-radio-control);
@@ -242,7 +242,8 @@
 
 @media (hover: hover) and (pointer: fine) {
   .dg-boton:not(:disabled):hover { background: var(--pl-pieza-paso); }
-  .dg-boton-volt:hover { background: var(--pc-volt-relleno); }
+  /* El hover queda en --pc-volt: blanco sobre el volt de relleno no llega a 4,5:1. */
+  .dg-boton-volt:hover { background: var(--pc-volt); }
 }
 
 /* Volver, Cambiar respuestas, Reintentar: botones que se leen como link. */
@@ -289,8 +290,8 @@
 
 .dg-guia-cara {
   flex: none;
-  width: 56px;
-  height: 56px;
+  width: var(--ds-space-layout-12);
+  height: var(--ds-space-layout-12);
 }
 
 .dg-guia-cara img { width: 100%; height: 100%; }
@@ -306,7 +307,7 @@
   gap: var(--ds-space-2);
 }
 
-.dg-ficha .pl-fila { padding: 7px 0; }
+.dg-ficha .pl-fila { padding: var(--ds-space-2) 0; }
 
 .dg-ficha .pl-fila dt { flex: none; }
 
@@ -422,7 +423,7 @@
 }
 
 @media (max-width: 699px) {
-  .dg-col { padding-top: 96px; }
+  .dg-col { padding-top: calc(var(--ds-space-layout-16) + var(--ds-space-8)); }
   .dg-progreso { margin-bottom: var(--ds-space-6); }
   .dg-escala { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .dg-opcion { padding-inline: var(--ds-space-3); }
@@ -432,37 +433,39 @@
   .dg-plan-linea { font-size: var(--pl-t2); }
 }
 
-/* ─────────────── Movimiento ─────────────── */
+/* ─────────────── Movimiento ───────────────
+ * RC5 cap. 10: tokens --pc-t-*, viaje --pc-viaje, settle sin rebote.
+ * --pc-t-personaje solo para la cara de Dico.
+ */
 
 @media (prefers-reduced-motion: no-preference) {
   /* Cada paso sube como una hoja clara; sus opciones, una detras de otra. */
-  .dg-entra { animation: dg-sube 460ms var(--pl-sale) both; }
+  .dg-entra { animation: dg-sube var(--pc-t-estructura) var(--pc-curva) both; }
 
-  .dg-entra .dg-opcion { animation: dg-sube 420ms var(--pl-sale) both; }
-  .dg-entra .dg-opcion:nth-child(2) { animation-delay: 40ms; }
-  .dg-entra .dg-opcion:nth-child(3) { animation-delay: 80ms; }
-  .dg-entra .dg-opcion:nth-child(4) { animation-delay: 120ms; }
-  .dg-entra .dg-opcion:nth-child(5) { animation-delay: 160ms; }
-  .dg-entra .dg-opcion:nth-child(n + 6) { animation-delay: 200ms; }
+  .dg-entra .dg-opcion { animation: dg-sube var(--pc-t-estructura) var(--pc-curva) both; }
+  .dg-entra .dg-opcion:nth-child(2) { animation-delay: calc(var(--pc-t-rapido) / 4); }
+  .dg-entra .dg-opcion:nth-child(3) { animation-delay: calc(var(--pc-t-rapido) / 2); }
+  .dg-entra .dg-opcion:nth-child(4) { animation-delay: calc(var(--pc-t-rapido) * 0.75); }
+  .dg-entra .dg-opcion:nth-child(n + 5) { animation-delay: var(--pc-t-rapido); }
 
-  .dg-guia-dice { animation: dg-aparece 320ms var(--pc-curva) both; }
+  .dg-guia-dice { animation: dg-aparece var(--pc-t-estandar) var(--pc-curva) both; }
 
   .dg-guia-cara[data-gesto] { animation: dg-gesto var(--pc-t-personaje) var(--pc-curva); }
 
-  .dg-ficha-valor { animation: dg-aparece 320ms var(--pc-curva) both; }
+  .dg-ficha-valor { animation: dg-aparece var(--pc-t-estandar) var(--pc-curva) both; }
 
-  .dg-progreso.leyendo .dg-tramo { animation: dg-lee 900ms ease-in-out infinite alternate; }
+  .dg-progreso.leyendo .dg-tramo { animation: dg-lee var(--pc-t-estructura) var(--pc-curva) infinite alternate; }
 
   .dg-res-cuerpo .dg-bloque,
-  .dg-res-cuerpo .dg-cierre { animation: dg-sube 520ms var(--pl-sale) both; }
-  .dg-res-cuerpo .dg-bloque:nth-child(2) { animation-delay: 80ms; }
-  .dg-res-cuerpo .dg-bloque:nth-child(3) { animation-delay: 160ms; }
+  .dg-res-cuerpo .dg-cierre { animation: dg-sube var(--pc-t-estructura) var(--pc-curva) both; }
+  .dg-res-cuerpo .dg-bloque:nth-child(2) { animation-delay: calc(var(--pc-t-rapido) / 2); }
+  .dg-res-cuerpo .dg-bloque:nth-child(3) { animation-delay: var(--pc-t-rapido); }
   .dg-res-cuerpo .dg-bloque:nth-child(n + 4),
-  .dg-res-cuerpo .dg-cierre { animation-delay: 240ms; }
+  .dg-res-cuerpo .dg-cierre { animation-delay: calc(var(--pc-t-rapido) * 1.5); }
 }
 
 @keyframes dg-sube {
-  from { opacity: 0; transform: translateY(24px); }
+  from { opacity: 0; transform: translateY(var(--pc-viaje)); }
   to { opacity: 1; transform: none; }
 }
 
@@ -473,7 +476,7 @@
 
 @keyframes dg-gesto {
   0% { transform: translateY(0) rotate(0); }
-  40% { transform: translateY(-4px) rotate(-4deg); }
+  40% { transform: translateY(calc(var(--ds-space-1) * -1)) rotate(-4deg); }
   100% { transform: translateY(0) rotate(0); }
 }
 

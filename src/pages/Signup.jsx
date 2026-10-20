@@ -15,6 +15,9 @@ const VERTICALES = [
   { id: 'retail', nombre: 'Comercio', detalle: 'Artículos y stock' },
 ];
 
+// Lo primero que se carga despues del alta, dicho como en cada rubro.
+const QUE_CARGAR = { gastro: 'tu carta', barber: 'tus servicios', retail: 'tus artículos' };
+
 const MODOS = modosDisponibles();
 const PAISES = paisesDisponibles();
 
@@ -187,7 +190,7 @@ export default function Signup() {
             <h2>Revisá tu email</h2>
             <p>
               Te mandamos un link a <strong>{email}</strong>. Cuando lo confirmes,
-              creamos <strong>{slug}.divianco.app</strong> y entrás a cargar tu carta.
+              creamos <strong>{slug}.divianco.app</strong> y entrás a cargar {QUE_CARGAR[vertical] || 'tu catálogo'}.
             </p>
             <p className="signup-success__note">
               Si no llega en unos minutos, mirá en spam. La dirección queda reservada

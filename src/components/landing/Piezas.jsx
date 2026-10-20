@@ -15,9 +15,13 @@
 // REGLA DE CONTENIDO (verificada en el codigo el 19/oct/2026):
 //   - el resultado es MENSUAL (MonthSummary): no hay resultado del dia;
 //   - el costo laboral es POR DIA (labor_cost_vs_sales), no por turno;
-//   - el stock se mueve con compras, merma y conteos (y en gastronomia con la
-//     receta de cada venta, desde la 0104), y el
-//     aviso de stock bajo es EN EL PANEL;
+//   - el stock entra con compras y conteos; desde la 0104, completar un pedido
+//     descuenta la receta (gastronomia) o el articulo mismo si no tiene receta
+//     y tiene stock (comercio, y los productos que vende un servicio). El
+//     minimo con aviso EN EL PANEL existe solo para insumos (ingredients):
+//     el minimo por articulo y que un servicio descuente sus insumos, no;
+//   - Dico solo "dice" (pl-lectura) lo que respalda una regla del sistema;
+//     el resto es texto del sistema (pl-pieza-nota);
 //   - el salon y las mesas son solo de gastronomia; en comercio y servicios no
 //     hay costo por venta (sale de las recetas): van las compras.
 
@@ -129,7 +133,9 @@ export function PiezaResultado({ rubro = 'gastronomia', elegible = true }) {
 
 /* ─────────────── Receta con costo (solo gastronomia) ─────────────── */
 
-// Bife: 4.200 + 540 + 360 = 5.100 de insumos; 18.000 - 5.100 - 2.775 = 10.125.
+// El costeo de Dico (services/platformRecipes.js): insumos x (1 + merma% +
+// gastos%). Bife: 4.200 + 540 + 360 = 5.100 de insumos; con 15 % de merma y
+// gastos, 765 mas: 5.865 de costo; 18.000 - 5.865 = 12.135, el 67,4 %.
 export function PiezaReceta() {
   return (
     <div className="pl-pieza pl-receta" data-ui role="figure" aria-label="Ejemplo: receta con costo">
@@ -142,17 +148,14 @@ export function PiezaReceta() {
         <div className="pl-fila"><dt>Papas · 300 g</dt><dd>$540</dd></div>
         <div className="pl-fila"><dt>Manteca, sal y aceite</dt><dd>$360</dd></div>
         <div className="pl-fila pl-fila-suma"><dt>Insumos</dt><dd>$5.100</dd></div>
-        <div className="pl-fila pl-fila-suma"><dt>Mano de obra</dt><dd>$2.775</dd></div>
+        <div className="pl-fila pl-fila-suma"><dt>Merma y gastos · 15 %</dt><dd>$765</dd></div>
       </dl>
       <div className="pl-pieza-cifra">
         <span className="pl-pieza-cifra-nombre">Te deja</span>
-        <span className="pl-pieza-cifra-valor pl-oro">$10.125</span>
-        <span className="pl-pieza-cifra-nota">56,3 % del precio</span>
+        <span className="pl-pieza-cifra-valor pl-oro">$12.135</span>
+        <span className="pl-pieza-cifra-nota">67,4 % del precio</span>
       </div>
-      <p className="pl-lectura">
-        <span className="pl-lectura-quien">Dico</span>
-        La carne subió 8 % el lunes. Ya está en el costo.
-      </p>
+      <p className="pl-pieza-nota">Costo calculado con el último precio de cada insumo.</p>
     </div>
   );
 }
@@ -174,12 +177,8 @@ export function PiezaTurno() {
       </div>
       <div className="pl-pieza-cifra">
         <span className="pl-pieza-cifra-nombre">Personal sobre venta</span>
-        <span className="pl-pieza-cifra-valor pl-alerta">38 %</span>
+        <span className="pl-pieza-cifra-valor">38 %</span>
       </div>
-      <p className="pl-lectura">
-        <span className="pl-lectura-quien">Dico</span>
-        Arriba del 30 %, el día no paga sus sueldos.
-      </p>
     </div>
   );
 }
@@ -279,29 +278,36 @@ export function PiezaPedidos({ rubro = 'gastronomia' }) {
   );
 }
 
-/* ─────────────── Stock con minimo ─────────────── */
+/* ─────────────── Stock ─────────────── */
 
+// Gastronomia: los insumos tienen minimo con aviso en el panel y la venta
+// descuenta la receta. Comercio: la venta descuenta el articulo; el minimo
+// por articulo no existe todavia. Servicios: los productos que vende bajan
+// con la venta; los insumos tienen minimo pero no se descuentan solos.
 const STOCK = {
   gastronomia: {
+    meta: 'Compras y ventas, según la receta',
     lista: [
       ['Harina 000', '6 kg', 'mínimo 10 kg', true],
-      ['Muzzarella', '8,4 kg', 'mínimo 5 kg', false],
+      ['Muzzarella', '8,4 kg', 'la venta #214 usó 0,3 kg', false],
       ['Tomate perita', '12 kg', 'mínimo 8 kg', false],
     ],
     lectura: 'La harina quedó debajo del mínimo. Te lo marqué en el panel.',
   },
   comercio: {
+    meta: 'Compras y ventas',
     lista: [
-      ['Yerba mate 1 kg', '6 u.', 'mínimo 12 u.', true],
-      ['Aceite de girasol 1,5 l', '18 u.', 'mínimo 10 u.', false],
-      ['Fideos secos 500 g', '40 u.', 'mínimo 24 u.', false],
+      ['Yerba mate 1 kg', '11 u.', 'la venta #318 descontó 1 u.', false],
+      ['Aceite de girasol 1,5 l', '18 u.', 'la compra del lunes sumó 24 u.', false],
+      ['Fideos secos 500 g', '38 u.', 'la venta #321 descontó 2 u.', false],
     ],
-    lectura: 'La yerba quedó debajo del mínimo. Te lo marqué en el panel.',
+    nota: 'Cada venta descuenta el artículo del stock.',
   },
   servicios: {
+    meta: 'Compras y ventas',
     lista: [
+      ['Cera para peinar', '10 u.', 'la venta #514 descontó 1 u.', false],
       ['Shampoo profesional 1 l', '2 u.', 'mínimo 4 u.', true],
-      ['Cera para peinar', '11 u.', 'mínimo 6 u.', false],
       ['Hojas de afeitar', '140 u.', 'mínimo 100 u.', false],
     ],
     lectura: 'El shampoo quedó debajo del mínimo. Te lo marqué en el panel.',
@@ -311,24 +317,27 @@ const STOCK = {
 export function PiezaStock({ rubro = 'gastronomia' }) {
   const s = deRubro(STOCK, rubro);
   return (
-    <div className="pl-pieza pl-stock" data-ui role="figure" aria-label="Ejemplo: stock con mínimo">
+    <div className="pl-pieza pl-stock" data-ui role="figure" aria-label="Ejemplo: stock">
       <div className="pl-pieza-cab">
         <span className="pl-pieza-titulo">Stock</span>
-        <span className="pl-pieza-meta">Actualizado con la última compra</span>
+        <span className="pl-pieza-meta">{s.meta}</span>
       </div>
       <ul className="pl-stock-lista">
-        {s.lista.map(([nombre, hay, minimo, bajo]) => (
+        {s.lista.map(([nombre, hay, detalle, bajo]) => (
           <li key={nombre} className={`pl-stock-item${bajo ? ' bajo' : ''}`}>
             <span className="pl-stock-nombre">{nombre}</span>
             <span className="pl-stock-hay">{hay}</span>
-            <span className="pl-stock-min">{minimo}</span>
+            <span className="pl-stock-min">{detalle}</span>
           </li>
         ))}
       </ul>
-      <p className="pl-lectura">
-        <span className="pl-lectura-quien">Dico</span>
-        {s.lectura}
-      </p>
+      {s.lectura && (
+        <p className="pl-lectura">
+          <span className="pl-lectura-quien">Dico</span>
+          {s.lectura}
+        </p>
+      )}
+      {s.nota && <p className="pl-pieza-nota">{s.nota}</p>}
     </div>
   );
 }

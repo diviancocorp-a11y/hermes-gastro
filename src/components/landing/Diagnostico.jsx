@@ -13,8 +13,9 @@
 // (que durante las preguntas se esconde: es larga y repite lo elegido).
 //
 // Colores (RC5 cap. 03): tinta para avanzar; volt para lo que Dico lee (el
-// avance, la ficha, "Ver mi diagnostico"); oro UNA vez, en el resultado:
-// "Crear mi cuenta gratis".
+// avance, la ficha, "Ver mi diagnostico"); oro para la accion y el valor: una
+// sola accion oro ("Crear mi cuenta", en el resultado) y, como cifra de valor
+// (texto gold-700 o la cifra de la pieza), el plan que conviene y su precio.
 //
 // Textos: preguntas y respuestas, dolores, urgencias, inversiones, plan y
 // soluciones salen de src/lib/diagnostico.js. Aca viven solo los enunciados
@@ -34,12 +35,9 @@ import { AGENDA_URL } from '../../lib/contactoPlataforma';
 import {
   CANALES, EQUIPOS, ESTABLECIMIENTOS, GESTIONES, INVERSIONES, LOCALES, ORDEN_PASOS,
   PLANES, URGENCIAS, VERTICALES, desafiosDe, guardarDiagnostico, paramsDelAlta,
-  planRecomendado, solucion,
+  planRecomendado, recordarDiagnosticoPendiente, solucion,
 } from '../../lib/diagnostico';
 import { PiezaPorNombre } from './Piezas';
-
-/** Cuantas preguntas tiene (el nombre del negocio no cuenta: es opcional). */
-export const PREGUNTAS = ORDEN_PASOS.length - 1;
 
 // Lo que dura el "estoy leyendo" de Dico. Tope del brief: 1,2 s.
 const ANALISIS_MS = 1000;
@@ -47,6 +45,20 @@ const ANALISIS_MS = 1000;
 // puntero: con el teclado se avanza con Enter o con "Seguir").
 const PAUSA_ELECCION_MS = 320;
 const CLAVE_SESION = 'dico:diagnostico-en-curso';
+const CLAVE_EVENTOS = 'dico:diagnostico-eventos';
+
+/** Marca un evento de analitica una sola vez por diagnostico, aunque se
+ *  recargue la pagina: lo ya marcado queda en sessionStorage. `clave` separa
+ *  diagnosticos distintos (el resultado de otras respuestas es otro). */
+function marcarUnaVez(evento, clave = '') {
+  const id = `${evento}:${clave}`;
+  let hechos = [];
+  try { hechos = JSON.parse(sessionStorage.getItem(CLAVE_EVENTOS) || '[]'); } catch { /* sin storage */ }
+  if (!Array.isArray(hechos)) hechos = [];
+  if (hechos.includes(id)) return;
+  marcarEvento(evento);
+  try { sessionStorage.setItem(CLAVE_EVENTOS, JSON.stringify([...hechos, id].slice(-20))); } catch { /* sin storage */ }
+}
 
 const DICO = (cara) => `/brand/dico/dico-2d-${cara}.png`;
 const CARAS = ['question', 'curious', 'neutral', 'happy', 'celebrate'];
@@ -145,6 +157,13 @@ function completo(paso, r) {
 
 const todoCompleto = (r) => recorridoDe(r.vertical).every((p) => completo(p, r));
 
+/** El primer paso sin contestar (o el ultimo, si estan todos). */
+const primerFaltante = (r) => {
+  const rec = recorridoDe(r.vertical);
+  const i = rec.findIndex((p) => !completo(p, r));
+  return i === -1 ? rec.length - 1 : i;
+};
+
 /** Lo que muestra cada renglon de la ficha, o null si falta. */
 function valorDeFicha(clave, r) {
   switch (clave) {
@@ -210,8 +229,11 @@ function arranque(modo) {
   const h = estadoDeHistoria();
   const base = { respuestas, id: sesion?.id || null, firma: sesion?.firma || null };
 
-  if (h === 'resultado' && todoCompleto(respuestas)) {
-    return { ...base, abierto: true, indice: 0, fase: 'resultado' };
+  if (h === 'resultado') {
+    if (todoCompleto(respuestas)) return { ...base, abierto: true, indice: 0, fase: 'resultado' };
+    // La entrada dice "resultado" pero faltan respuestas (se borro la sesion):
+    // se muestra la primera que falta y la historia se corrige al montar.
+    return { ...base, abierto: true, indice: primerFaltante(respuestas), fase: 'preguntas', corregir: true };
   }
   if (typeof h === 'number') return { ...base, abierto: true, indice: h, fase: 'preguntas' };
   if (modo === 'pagina') return { ...base, abierto: true, indice: delaUrl ? 1 : 0, fase: 'preguntas' };
@@ -244,7 +266,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const envio = useRef({ firma: inicio.id ? inicio.firma : null, id: inicio.id, turno: 0, enCurso: false });
   const vista = useRef(null); // ultimo `abierto|paso|fase` atendido
   const marcoInicio = useRef(false);
-  const marcoResultado = useRef(false);
+  const marcoResultado = useRef(null);
 
   const recorrido = recorridoDe(respuestas.vertical);
   const pasoIdx = Math.min(indice, recorrido.length - 1);
@@ -255,10 +277,10 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   // Caras de Dico precargadas: cambiar de estado no tiene que parpadear.
   useEffect(() => {
     CARAS.forEach((c) => { const i = new Image(); i.src = DICO(c); });
-    if (modo === 'pagina' && estadoDeHistoria() === undefined) {
+    if ((modo === 'pagina' && estadoDeHistoria() === undefined) || inicio.corregir) {
       window.history.replaceState({ ...window.history.state, dg: inicio.indice }, '');
     }
-  }, [modo, inicio.indice]);
+  }, [modo, inicio.indice, inicio.corregir]);
 
   useEffect(() => () => clearTimeout(avance.current), []);
   useEffect(() => { respuestasRef.current = respuestas; }, [respuestas]);
@@ -272,16 +294,19 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     } catch { /* sin storage: sigue andando, sin recordar */ }
   }, [respuestas, id]);
 
-  // Analitica: el inicio y el resultado, una vez cada uno.
+  // Analitica: el inicio y el resultado, una vez por diagnostico aunque se
+  // recargue (marca en sessionStorage). El resultado se marca por juego de
+  // respuestas: cambiar respuestas y ver otro resultado es otro diagnostico.
   useEffect(() => {
-    if (abierto && !marcoInicio.current) { marcoInicio.current = true; marcarEvento('diagnostico-inicio'); }
+    if (abierto && !marcoInicio.current) { marcoInicio.current = true; marcarUnaVez('diagnostico-inicio'); }
   }, [abierto]);
   useEffect(() => {
-    if (fase === 'resultado' && !marcoResultado.current) {
-      marcoResultado.current = true;
-      marcarEvento('diagnostico-resultado');
-    }
-  }, [fase]);
+    if (fase !== 'resultado') return;
+    const firma = JSON.stringify(datosDe(respuestas));
+    if (marcoResultado.current === firma) return;
+    marcoResultado.current = firma;
+    marcarUnaVez('diagnostico-resultado', firma);
+  }, [fase, respuestas]);
 
   // Cada paso lleva el foco a su enunciado (el lector lo anuncia y el teclado
   // sigue desde ahi) y trae el embudo a la vista. Al cerrar, el foco vuelve
@@ -317,7 +342,13 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       }
       setAbierto(true);
       if (s === 'resultado') {
-        if (todoCompleto(respuestasRef.current)) setFase('resultado');
+        if (todoCompleto(respuestasRef.current)) { setFase('resultado'); return; }
+        // Pantalla e historial tienen que coincidir: si faltan respuestas, la
+        // entrada pasa a ser la primera pregunta sin contestar.
+        const falta = primerFaltante(respuestasRef.current);
+        window.history.replaceState({ ...window.history.state, dg: falta }, '');
+        setFase('preguntas');
+        setIndice(falta);
         return;
       }
       setFase('preguntas');
@@ -368,6 +399,9 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       envio.current.enCurso = false;
       if (nuevo) {
         envio.current.id = nuevo;
+        // Recien aca, con el turno confirmado: una respuesta vieja nunca
+        // pisa el id que se ata al alta.
+        recordarDiagnosticoPendiente(nuevo);
         setId(nuevo);
         setGuardado('ok');
       } else {
@@ -740,7 +774,7 @@ function Resultado({ sol, respuestas, id, guardado, onReintentar }) {
     <div className="pl-split-col dg-res-cuerpo dg-entra">
       {dolor && (
         <section className="dg-bloque" aria-labelledby="dg-encontramos">
-          <h3 className="dg-bloque-titulo" id="dg-encontramos">Lo que encontramos</h3>
+          <h2 className="dg-bloque-titulo" id="dg-encontramos">Lo que encontramos</h2>
           <p className="dg-dolor">{dolor.label}.</p>
           <p className="dg-parrafo">{dolor.sub}</p>
         </section>
@@ -748,13 +782,13 @@ function Resultado({ sol, respuestas, id, guardado, onReintentar }) {
 
       {gestion && (
         <section className="dg-bloque" aria-labelledby="dg-hoy">
-          <h3 className="dg-bloque-titulo" id="dg-hoy">Hoy</h3>
+          <h2 className="dg-bloque-titulo" id="dg-hoy">Hoy</h2>
           <p className="dg-parrafo">{gestion}.</p>
         </section>
       )}
 
       <section className="dg-bloque" aria-labelledby="dg-con-dico">
-        <h3 className="dg-bloque-titulo" id="dg-con-dico">Con Dico</h3>
+        <h2 className="dg-bloque-titulo" id="dg-con-dico">Con Dico</h2>
         <p className="dg-parrafo">{sol.hoy}</p>
         {respuestas.vertical === 'otro' && (
           <p className="dg-parrafo dg-suave">
@@ -769,7 +803,7 @@ function Resultado({ sol, respuestas, id, guardado, onReintentar }) {
 
       {sol.pendiente && (
         <section className="dg-bloque dg-desarrollo" aria-labelledby="dg-desarrollo">
-          <h3 className="dg-bloque-titulo" id="dg-desarrollo">En desarrollo</h3>
+          <h2 className="dg-bloque-titulo" id="dg-desarrollo">En desarrollo</h2>
           <p className="dg-parrafo">{sol.pendiente}</p>
           <p className="dg-parrafo">
             {sol.aMedida}{' '}
@@ -781,7 +815,7 @@ function Resultado({ sol, respuestas, id, guardado, onReintentar }) {
       )}
 
       <section className="dg-bloque dg-plan" aria-labelledby="dg-plan">
-        <h3 className="dg-bloque-titulo" id="dg-plan">Tu plan</h3>
+        <h2 className="dg-bloque-titulo" id="dg-plan">Tu plan</h2>
         <p className="dg-plan-linea">
           <span>{plan.nombre}</span>
           <span>{plan.precio}</span>

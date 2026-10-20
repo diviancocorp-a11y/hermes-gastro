@@ -12,9 +12,15 @@
 // (`implementado`). Lo que falta se dice "en desarrollo" y se ofrece como
 // "lo desarrollamos con vos" (decision de Ricky, 19/oct/2026). Verificado en
 // el codigo el 19/oct: el resultado es MENSUAL, el costo laboral es POR DIA,
-// el stock se mueve con compras, merma y conteos (en gastronomia, ademas, la
-// venta descuenta los insumos de la receta desde la 0104) y avisa
-// en el panel, y el salon es solo de gastronomia.
+// el stock entra con compras y conteos y, desde la 0104, completar un pedido
+// descuenta la receta (gastronomia) o el articulo sin receta (comercio, y los
+// productos que vende un servicio); el minimo con aviso en el panel es solo
+// de insumos; el salon es solo de gastronomia. El costeo de una receta es
+// insumos x (1 + merma% + gastos%): no hay mano de obra.
+//
+// Anclas viejas de la landing de main (#pilares, #flujo, #modulos,
+// #integraciones, #seguridad, #contacto): quedan como alias (.pl-ancla) en
+// la seccion equivalente, para que los links de afuera no caigan arriba.
 //
 // V3 (20/oct/2026, rama landing/rediseno). La home ES el embudo: la frase de
 // valor y un boton que abre el diagnostico en la misma pagina, en la misma
@@ -43,7 +49,7 @@ import {
   AGENDA_HORARIO, AGENDA_URL, WHATSAPP_HORARIO, WHATSAPP_URL, WHATSAPP_VISIBLE,
 } from '../lib/contactoPlataforma';
 import { desafiosDe } from '../lib/diagnostico';
-import Diagnostico, { PREGUNTAS } from '../components/landing/Diagnostico';
+import Diagnostico from '../components/landing/Diagnostico';
 import { PiezaResultado } from '../components/landing/Piezas';
 import { CLIENTES, FOTOS } from '../components/landing/clientes';
 import useEntradas from '../components/landing/useEntradas';
@@ -53,7 +59,7 @@ import '../styles/diagnostico.css';
 
 const TITULO = 'Dico — Todo tu negocio, en un solo lugar';
 const DESCRIPCION = 'Ventas, costos, sueldos, stock, caja y pedidos de tu gastronomía, '
-  + `comercio o servicio, en un solo lugar. Empezá con un diagnóstico de ${PREGUNTAS} preguntas, sin email.`;
+  + 'comercio o servicio, en un solo lugar. Empezá con un diagnóstico de unas pocas preguntas, sin email.';
 
 // Telefono, agenda y horarios: src/lib/contactoPlataforma.js.
 const marcarWhatsApp = () => marcarEvento('whatsapp');
@@ -109,7 +115,7 @@ export default function PlatformLanding() {
         </header>
         <Diagnostico
           modo="home"
-          nivel="h2"
+          nivel="h1"
           abrirRef={abrirRef}
           Portada={Portada}
           lado={(
@@ -152,7 +158,7 @@ function Portada({ onAbrir }) {
       <div className="pl-guia pl-sigue">
         <img src="/brand/dico/dico-2d-question.png" alt="" width="256" height="256" />
         <p className="pl-dico-dice">
-          Te hago {PREGUNTAS} preguntas, sin email, y te digo por dónde empezar.
+          Te hago unas pocas preguntas, sin email, y te digo por dónde empezar.
         </p>
       </div>
       <div className="pl-acciones pl-sigue">
@@ -187,8 +193,8 @@ const PARTES = [
     nota: 'Cargás la receta una vez. Cuando sube un insumo, Dico recalcula el plato y te dice cuánto te deja.',
     titulo: 'Bife de chorizo con papas',
     meta: 'Precio $18.000',
-    filas: [['Insumos', '$5.100'], ['Mano de obra', '$2.775']],
-    cifra: ['Te deja', '$10.125'],
+    filas: [['Insumos', '$5.100'], ['Merma y gastos · 15 %', '$765']],
+    cifra: ['Te deja', '$12.135'],
   },
   {
     id: 'costo_laboral',
@@ -202,9 +208,9 @@ const PARTES = [
   {
     id: 'stock',
     dolor: dolor('comercio', 'stock'),
-    nota: 'Cargás compras, merma y conteos. Lo que queda debajo del mínimo te lo marca el panel.',
+    nota: 'Cada venta descuenta los insumos de su receta. Lo que queda debajo del mínimo te lo marca el panel.',
     titulo: 'Stock',
-    meta: 'Con la última compra',
+    meta: 'Compras y ventas, según la receta',
     filas: [['Harina 000', '6 kg · mínimo 10'], ['Muzzarella', '8,4 kg · mínimo 5']],
   },
   {
@@ -227,11 +233,18 @@ const PARTES = [
   },
 ];
 
+// Oro para lo que es valor (lo que te deja, el resultado); error para la
+// diferencia de caja; el porcentaje de personal, en tinta: no hay regla que
+// lo marque como alerta.
+const TONO_CIFRA = { costos: 'pl-oro', rentabilidad: 'pl-oro', mermas_caja: 'pl-error' };
+
 function QueHace() {
   const [activa, setActiva] = useState(null);
 
   return (
     <section className="pl-seccion pl-que-hace" id="que-hace" aria-labelledby="pl-que-hace-titulo">
+      <span className="pl-ancla" id="pilares" aria-hidden="true" />
+      <span className="pl-ancla" id="flujo" aria-hidden="true" />
       <div className="pl-plancha">
         <h2 id="pl-que-hace-titulo" className="pl-h2 pl-plancha-titulo" data-reveal>Qué hace Dico</h2>
         <p className="pl-nota-texto pl-plancha-intro" data-reveal="1">
@@ -279,7 +292,7 @@ function PartePlancha({ parte, indice, activa, onActivar }) {
         {parte.cifra && (
           <p className="pl-plancha-cifra">
             <span>{parte.cifra[0]}</span>
-            <span className={parte.id === 'mermas_caja' ? 'pl-error' : 'pl-oro'}>{parte.cifra[1]}</span>
+            <span className={TONO_CIFRA[parte.id] || ''}>{parte.cifra[1]}</span>
           </p>
         )}
       </div>
@@ -303,8 +316,11 @@ const DESARROLLO = 'En desarrollo';
 
 // De src/modules/registry.js: `implementado: true` es Hoy. Lo demas, en
 // desarrollo (agenda de turnos y variantes estan en false; el resultado del
-// dia no existe todavia). En gastronomia la venta descuenta los insumos de la
-// receta desde la 0104 (aplicada el 20/oct); en comercio y servicios no.
+// dia no existe todavia). Desde la 0104 (aplicada el 20/oct) completar un
+// pedido descuenta la receta en gastronomia y el articulo sin receta en
+// comercio y en los productos que vende un servicio. No existen: el minimo
+// por articulo con aviso (min_stock es solo de insumos) y que un servicio
+// descuente los insumos que usa.
 const RUBROS = [
   {
     nombre: 'Gastronomía',
@@ -313,11 +329,11 @@ const RUBROS = [
       ['Mesas y comandas del salón', HOY],
       ['Cocina en pantalla, por sector', HOY],
       ['Recetas con el costo de cada plato', HOY],
-      ['Stock con compras, merma y conteos', HOY],
+      ['Stock de insumos con compras, conteos y mínimo', HOY],
+      ['Cada venta descuenta los insumos de su receta', HOY],
       ['Caja y arqueo por medio de pago', HOY],
       ['Fichaje y costo del personal por día', HOY],
       ['Gastos y resultado del mes', HOY],
-      ['Cada venta descuenta los insumos de su receta', HOY],
       ['Resultado del día, con nómina y merma', DESARROLLO],
     ],
   },
@@ -325,12 +341,12 @@ const RUBROS = [
     nombre: 'Comercio',
     filas: [
       ['Catálogo online y pedidos de mostrador', HOY],
-      ['Stock por artículo, con mínimo', HOY],
+      ['Stock por artículo: cada venta lo descuenta', HOY],
       ['Caja y arqueo por medio de pago', HOY],
       ['Fichaje y costo del personal por día', HOY],
       ['Compras, gastos y resultado del mes', HOY],
+      ['Mínimo por artículo con aviso', DESARROLLO],
       ['Talles y colores por artículo', DESARROLLO],
-      ['Stock que baja solo con cada venta', DESARROLLO],
     ],
   },
   {
@@ -340,8 +356,10 @@ const RUBROS = [
       ['Ventas y cobros de cada servicio', HOY],
       ['Caja y arqueo por medio de pago', HOY],
       ['Stock de insumos, con mínimo', HOY],
+      ['Productos que vendés: cada venta los descuenta', HOY],
       ['Fichaje y costo del personal por día', HOY],
       ['Gastos y resultado del mes', HOY],
+      ['Que cada servicio descuente los insumos que usa', DESARROLLO],
       ['Agenda de turnos online', DESARROLLO],
     ],
   },
@@ -357,6 +375,8 @@ const RUBROS = [
 function Rubros() {
   return (
     <section className="pl-seccion pl-rubros" id="rubros" aria-labelledby="pl-rubros-titulo">
+      <span className="pl-ancla" id="modulos" aria-hidden="true" />
+      <span className="pl-ancla" id="integraciones" aria-hidden="true" />
       <h2 id="pl-rubros-titulo" className="pl-h2 pl-rubros-titulo" data-reveal>Lo que hace hoy, por rubro</h2>
       <div className="pl-lista">
         {RUBROS.map((r, i) => (
@@ -483,7 +503,7 @@ function Planes({ onDiagnostico }) {
           <button type="button" className="pl-enlace pl-enlace-boton" onClick={onDiagnostico}>
             El diagnóstico te dice cuál te conviene
           </button>
-          .
+          , o <a className="pl-enlace" href="/registro">probá gratis sin diagnóstico</a>.
         </p>
       </div>
     </section>
@@ -495,7 +515,7 @@ function Planes({ onDiagnostico }) {
 const FAQ = [
   {
     p: '¿Qué es el diagnóstico?',
-    r: `Son ${PREGUNTAS} preguntas sobre tu negocio: el rubro, lo que más te preocupa, `
+    r: 'Son unas pocas preguntas sobre tu negocio: el rubro, lo que más te preocupa, '
       + 'los canales, el tamaño, cómo lo controlás hoy, para cuándo lo querés y cuánto '
       + 'pensás invertir. Con eso Dico te dice qué resolver primero, cómo lo resuelve y '
       + 'qué plan te conviene. No pide email ni tarjeta.',
@@ -558,6 +578,7 @@ const FAQ = [
 function Preguntas() {
   return (
     <section className="pl-seccion pl-preguntas" id="preguntas" aria-labelledby="pl-preguntas-titulo">
+      <span className="pl-ancla" id="seguridad" aria-hidden="true" />
       <h2 id="pl-preguntas-titulo" className="pl-h2 pl-preguntas-titulo" data-reveal>Preguntas</h2>
       <div className="pl-lectura-texto" data-reveal="1">
         {FAQ.map((f) => (
@@ -584,10 +605,10 @@ function Preguntas() {
 
 function Cierre({ onDiagnostico }) {
   return (
-    <section className="pl-seccion pl-cierre" aria-label="Empezar">
+    <section className="pl-seccion pl-cierre" id="contacto" aria-label="Empezar">
       <div className="pl-cierre-dentro" data-reveal>
         <p className="pl-cierre-frase">
-          {PREGUNTAS} preguntas, sin email, y sabés qué resolver primero en tu negocio.
+          Unas pocas preguntas, sin email, y sabés qué resolver primero en tu negocio.
         </p>
         <div className="pl-acciones">
           <button type="button" className="pl-boton" onClick={onDiagnostico}>Hacer mi diagnóstico</button>
@@ -614,6 +635,7 @@ function Pie() {
           Reuniones {AGENDA_HORARIO}
         </a>
         <a className="pl-enlace" href="mailto:hola@divianco.app">hola@divianco.app</a>
+        <a className="pl-enlace" href="/registro">Probar gratis</a>
         <a className="pl-enlace" href="/entrar">Entrar</a>
       </p>
       <p className="pl-pie-legal">
