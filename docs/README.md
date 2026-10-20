@@ -23,6 +23,7 @@ se contradicen, gana el que esta fuera de `historico/`.
 | `docs/TAREAS-MANUALES.md` | Lo que solo puede hacer Ricky a mano | Antes de reportar algo como roto |
 | `plataforma/` | Como esta construido el edificio | Al tocar arquitectura, schema o alta de clientes |
 | `plataforma/PORTAR-UNA-PANTALLA.md` | El orden para rehacer una pantalla desde un render | **Antes de tocar la primera linea** |
+| `plataforma/PLAN-RECETARIO.md` | Recetario digital por rol para gastro: fases y decisiones tomadas | Antes de tocar recetas, insumos o sus permisos |
 | `marca/` | Dico como identidad: design system, tipografia, el personaje | Al tocar cualquier cosa visual |
 | `operacion/` | Runbooks, seguridad, cobros, performance | Cuando algo falla en produccion |
 | `operacion/CARGA-K6.md` | Pruebas de carga con k6 y la linea base | Antes de un pico o de sumar tenants |

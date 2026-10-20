@@ -9,6 +9,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { getGuestUser } from "../lib/guestUser.js";
 import business, { waLink } from "@business";
 import { paymentLabel, paymentIcon } from "../lib/payments";
+import { buildCatalogGroups, matchesCatalogCategory, buildCatalogDealParents } from "../lib/catalogCategories";
 
 // ── Extracted components ──
 import WelcomeSplash from "../catalog-pro/WelcomeSplash";
@@ -32,7 +33,7 @@ import OrderSentView from "../components/catalog/OrderSentView";
 
 // ── Shared constants ──
 import {
-  avatarColors, CAT_GROUPS as FALLBACK_CAT_GROUPS, SUB_TO_PARENT as FALLBACK_SUB_TO_PARENT,
+  avatarColors, CAT_GROUPS as FALLBACK_CAT_GROUPS,
   DAILY_DEALS, DEAL_PCT,
   fallbackSettings, fallbackProducts,
   haversine, calcDeliveryCost, CHECKOUT_STEPS, DEFAULT_FORM
@@ -77,10 +78,14 @@ export default function Catalog() {
     () => (serverNow ? new Date(serverNow.getTime() + (Date.now() - serverNowCargadoEn.current)) : new Date()),
     [serverNow],
   );
-  // Grupos de categorias: salen del business.js del build (hoy vacios). La
-  // tabla category_groups era del legacy; el edificio no la tiene.
-  const catGroups = FALLBACK_CAT_GROUPS;
-  const subToParent = FALLBACK_SUB_TO_PARENT;
+  const catGroups = useMemo(
+    () => buildCatalogGroups(sett.cat_groups, FALLBACK_CAT_GROUPS, products),
+    [sett.cat_groups, products],
+  );
+  const subToParent = useMemo(
+    () => buildCatalogDealParents(Array.isArray(sett.cat_groups) ? sett.cat_groups : FALLBACK_CAT_GROUPS),
+    [sett.cat_groups],
+  );
 
   // --- Estado de UI ---
   const [selCat, setSelCat] = useState("Todos");
@@ -392,7 +397,7 @@ export default function Catalog() {
       .filter(g => !hiddenCats.has(g.name))
       .map(g => {
         const customImg = catImgs[g.name];
-        const rep = !customImg ? products.find(p => (p.category === g.name || g.subs.includes(p.category)) && p.image_url) : null;
+        const rep = !customImg ? products.find(p => matchesCatalogCategory(p, g) && p.image_url) : null;
         const displayName = catNames[g.name] || g.name;
         return { name: g.name, displayName, icon: g.icon, subs: g.subs, img: customImg || rep?.image_url || null, deal: dealCats.has(g.name) };
       });
@@ -403,19 +408,19 @@ export default function Catalog() {
   // switch "Tiene descuento" del editor) O deal del dia por categoria madre.
   const hasDeal = useCallback((p) => {
     if (Number(p?.discount_pct) > 0) return true;
-    const parent = subToParent[p.category];
+    const parent = subToParent[p.category] || p.category;
     return parent ? dealCats.has(parent) : false;
-  }, [dealCats]);
+  }, [dealCats, subToParent]);
 
   // Precio con descuento. El descuento propio PISA al deal del dia (no se
   // acumulan). Mismo Math.round que submit-order valida server-side.
   const getPrice = useCallback((p) => {
     const own = Number(p?.discount_pct) || 0;
     if (own > 0) return Math.round(p.sale_price * (1 - own / 100));
-    const parent = subToParent[p.category];
+    const parent = subToParent[p.category] || p.category;
     if (parent && dealCats.has(parent)) return Math.round(p.sale_price * (1 - DEAL_PCT / 100));
     return p.sale_price;
-  }, [dealCats]);
+  }, [dealCats, subToParent]);
 
   // Filtrar productos por categoria madre seleccionada.
   // Trim para tolerar trailing spaces en recipe.category (data legacy).
@@ -424,12 +429,7 @@ export default function Catalog() {
     if (selCat !== "Todos") {
       const group = catGroups.find(g => g.name === selCat);
       if (group) {
-        const gName = (group.name || "").trim();
-        const gSubs = (group.subs || []).map(s => (s || "").trim());
-        list = list.filter(r => {
-          const rc = (r.category || "").trim();
-          return rc === gName || gSubs.includes(rc);
-        });
+        list = list.filter(product => matchesCatalogCategory(product, group));
       }
     }
     if (searchQuery.trim()) {
@@ -989,7 +989,7 @@ export default function Catalog() {
         <CategoryScreenPro
           categoryName={cpScreen.name}
           displayName={cpScreen.displayName}
-          products={products.filter(p => (cpScreen.subs || []).includes(p.category))}
+          products={products.filter(p => matchesCatalogCategory(p, cpScreen))}
           hasDeal={hasDeal}
           dealPrice={getPrice}
           prepDefault={sett.prep_time_min}

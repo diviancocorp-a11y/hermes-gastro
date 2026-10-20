@@ -1,0 +1,119 @@
+{
+  "date": "2026-10-19",
+  "tenant_id": "c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb",
+  "tenant": "la-nona-pato",
+  "source": "Biblioteca de empresas/CLIENTES/LA NONA PATO",
+  "assets": [
+    {
+      "source": "logos/dico/logo-dico.png",
+      "field": "logo_url",
+      "sha256": "d8c8e66604f2dd27013cb08f1e282ac6ee52a58a8be47f57c36698c154c5da38",
+      "bytes": 519224,
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/d8c8e66604f2-logo-dico.png"
+    },
+    {
+      "source": "logos/dico/favicon-dico.png",
+      "field": "favicon_url",
+      "sha256": "53cf3268db80ced416b45ad57e49123d5998d2e1929876e6e5b4fbbc867de3ae",
+      "bytes": 11150,
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/53cf3268db80-favicon-dico.png"
+    },
+    {
+      "source": "logos/dico/compartir-dico.png",
+      "field": "og_image_url",
+      "sha256": "9a76d8cd931aa834e2a46391a92f5254b526c6b2c5ed6c7267195e3d8078790c",
+      "bytes": 202064,
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/9a76d8cd931a-compartir-dico.png"
+    },
+    {
+      "source": "productos/alfajores-1.jpg",
+      "product_id": "4a27352e-6f0d-4d2c-9164-0ec6941a07d8",
+      "name": "Alfajores de Maicena",
+      "sha256": "ce99daa38d8c99a3d6260c82d1ae447c3e6d21bc6dc42553adc0606c1e3a2acb",
+      "bytes": 56269,
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/ce99daa38d8c-alfajores-1.jpg"
+    },
+    {
+      "source": "productos/picada-1.jpg",
+      "product_id": "62099f66-c54d-41c4-ade9-d45c78d99fa8",
+      "name": "Picada",
+      "sha256": "2ca5dc873ca8187cdae8b1b7c80a0d5e02ccd5e1669b45eff754c6efa9ce5277",
+      "bytes": 81342,
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/2ca5dc873ca8-picada-1.jpg"
+    },
+    {
+      "source": "productos/tortilla-1.jpg",
+      "product_id": "0fb6fbd4-a27e-4ee8-9ed7-8a312a4dfdf2",
+      "name": "Tortilla de Papa",
+      "sha256": "fedabceedf467927ff070647c5bb416e0547c9313541c2d67a7aebd115d8222b",
+      "bytes": 71328,
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/fedabceedf46-tortilla-1.jpg"
+    },
+    {
+      "source": "productos/bruschetta-cebolla.jpg",
+      "product_id": "948d3883-4915-4741-adce-a8ef777d26c7",
+      "name": "Brusqueta de Cebolla Caramelizada",
+      "sha256": "e910fe42a26281c91239cd68767aaa83dbfcfd3e67ce055f7fd2a4d8d9bf92ca",
+      "bytes": 66814,
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/e910fe42a262-bruschetta-cebolla.jpg"
+    },
+    {
+      "source": "productos/bruschetta-jamon.jpg",
+      "product_id": "e8e2587d-04b4-4c2a-ae42-c28cf70557eb",
+      "name": "Brusqueta de Crudo y Rúcula",
+      "sha256": "b72558974e0e09f229dc10c445c22443697ac7ff8050fea33609dd6728caba6c",
+      "bytes": 65558,
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/b72558974e0e-bruschetta-jamon.jpg"
+    },
+    {
+      "source": "productos/bruschetta-morron.jpg",
+      "product_id": "d93a1e4b-fc1d-4bf4-bc53-d82b3a3bb135",
+      "name": "Brusqueta de Morrones",
+      "sha256": "9fe3c9aacf26c08c8f2894ce15c76534aaee66d959ed24daddc7bb97d08d6eb5",
+      "bytes": 64627,
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/9fe3c9aacf26-bruschetta-morron.jpg"
+    }
+  ],
+  "brand_authority": "MANUAL DE MARCA - La Nona Pato.pdf, v3 octubre 2026; fuente HTML y logos/dico de la Biblioteca de empresas",
+  "applied_settings": {
+    "catalog_theme": "carbon",
+    "logo_color": "#A83715",
+    "slogan": "Porque el amor también se come",
+    "instagram": "lanonapato.ar",
+    "logo_url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/d8c8e66604f2-logo-dico.png",
+    "favicon_url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/53cf3268db80-favicon-dico.png",
+    "og_image_url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/9a76d8cd931a-compartir-dico.png",
+    "cover_url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/9a76d8cd931a-compartir-dico.png"
+  },
+  "cover_note": "api/og.js consume cover_url como imagen social; HomeScreen no la muestra como portada. Se conserva tambien og_image_url para el editor.",
+  "verification": {
+    "storage": "9 objetos originales leidos por HTTP y SHA256 identico al archivo fuente",
+    "catalog": "get_catalog confirma marca, 43 productos y 6 con foto; horario 09-21 los 7 dias, WhatsApp y alias pato.jhs preservados",
+    "browser": "1280x720: logo, favicon, slogan, tema carbon y fotos cargados; auditor independiente sin regresiones P0-P3",
+    "social": "HTTP 200 como facebookexternalhit/1.1: titulo La Nona Pato, slogan e imagen compartir correctos",
+    "static": {
+      "warnings_before": 17,
+      "warnings_after": 17,
+      "advisory_before": 6,
+      "advisory_after": 6,
+      "source_changes": false
+    },
+    "mobile": "No verificado: navegador disponible sin control de viewport390"
+  },
+  "pending": [
+    "37 productos sin foto individual confirmada; no asociar surtidos a sabores",
+    "Manifest PWA sigue usando inicial L generada; favicon y apple-touch-icon del catalogo si usan la marca",
+    "Condiciones y tarifas de envio sin definir en esta tarea"
+  ],
+  "preserved": [
+    "precios",
+    "nombres",
+    "descripciones",
+    "stock",
+    "horarios actuales",
+    "WhatsApp provisional",
+    "direccion y coordenadas",
+    "medios de pago",
+    "otros tenants"
+  ]
+}

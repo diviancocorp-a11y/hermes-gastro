@@ -11,6 +11,264 @@
 
 ---
 
+## 19/oct/2026 — La Nona Pato: manual de marca aplicado (Codex)
+
+- Solo configuracion y assets del tenant `la-nona-pato`, sin cambios de
+  JSX/CSS, schema, precios, stock u otros tenants. El manual v3 y sus archivos
+  originales viven en Biblioteca de empresas/CLIENTES/LA NONA PATO.
+- Subidos a `tenant-images/<tenant_id>/marca-20261019/` el retrato preparado
+  para DICO, favicon 64 px e imagen social 1200x630. Eslogan:
+  **Porque el amor tambien se come** (con tilde en el dato). Tema `carbon`,
+  el existente mas cercano al fondo crema; terracota `#A83715` conservado.
+- Imagen social guardada en `og_image_url` y `cover_url`: `api/og.js` consume
+  este ultimo; la home actual no lo usa como portada visible. HTTP 200 como
+  facebookexternalhit confirma titulo, eslogan e imagen nueva para compartir.
+- Seis fotos propias asociadas a productos coincidentes: alfajores de maicena,
+  picada, tortilla y las tres brusquetas. Las fotos de surtidos de canastitas
+  y empanadas no identifican sabor; quedan fuera. Siguen 43 productos activos,
+  ahora 6 con foto y 37 sin ella. Nueve originales publicos verificados por
+  lectura HTTP y SHA256; fuentes y URLs en
+  `docs/operacion/la-nona-pato-marca-20261019.json`.
+- Horarios vigentes 09-21 todos los dias, WhatsApp provisional, direccion/pin
+  y alias `pato.jhs` preservados por readback del catalogo. Se ignoro el horario
+  7-18 anterior del manual en favor de la confirmacion reciente de Ricky.
+- /diseno: constructor `disenador` reviso assets y asociaciones; auditor
+  independiente `auditor-diseno` inspecciono catalogo y detalle en produccion
+  1280x720: 0 regresiones P0-P3. Antes/despues: marca/fotos 0 -> 3/6;
+  detector estatico 17 warnings y 6 advisory sin cambio, gate verde.
+  Movil 390, contraste calculado y foco: no verificados, IAB no ofrece viewport.
+- Instagram `lanonapato.ar` confirmado por Ricky y guardado en el tenant;
+  readback del catalogo publico verificado. La ficha de marca de la biblioteca
+  conserva la indicacion anterior de no confirmado; no se modifico ese archivo.
+- Pendiente: el manifest de
+  instalacion PWA sigue generando la inicial L: es una limitacion del sistema,
+  mientras favicon, icono de Apple y marca del catalogo ya usan el retrato.
+  Tarifas/condiciones de envio y fotos individuales restantes siguen pendientes.
+- Temporales fuera de src/docs/platform/scripts: solo `.preview/nona-marca/`,
+  ignorado, para subida e inspeccion; se elimina al terminar. Sin archivos en
+  carpetas hermanas ni modificaciones a la biblioteca de origen.
+- Pendientes heredados de k6 que siguen vigentes al archivar su seccion:
+  Ricky debe hacer Run now de la tarea quincenal; `mp-status` diferido espera
+  su ok; faltan escenario de panel y CI para ramas. No retirar la worktree
+  cool-fermat sin revisar su .codex. Accesibilidad de SkipToContent, side-tabs,
+  demora de crons y contenido/contacto de la landing siguen sin resolver aqui.
+  Detalle: `docs/operacion/CARGA-K6.md` y la seccion archivada de 17-19/oct.
+
+## 19/oct/2026 — Monare: imágenes, filtros y dirección de Boedo (Codex)
+
+### Planilla para completar precios y revisar descripciones
+
+- **20/oct, actualización:** Ricky pidió cargar las propuestas. Aplicadas las
+  53 descripciones de la columna C de Descripciones a Monare, conservando las
+  aclaraciones de imágenes/envases y los precios por bolsa y medios de pago
+  del hielo. Readback: 53/53 textos coinciden; precios, imágenes y estados sin
+  cambios (20 activos, 33 inactivos). `get_catalog('monare')` devuelve los 20
+  activos con las descripciones nuevas. La planilla no se modificó.
+- Google Sheets nativa: https://docs.google.com/spreadsheets/d/1fKf-okJoccHwbBhZopKl9OG6fQ_G9VObclGWq_0Z9uo/edit
+- Pestaña Precios: 32 presentaciones sin precio y caja Ópalo Syrah x6 para
+  confirmar/corregir los $48.600 informados. Los 33 precios confirmados están
+  vacíos; celdas amarillas para completar, validación positiva en ARS y contador.
+- Pestaña Descripciones: 53 propuestas con sabor y maridaje cuando hay ficha
+  oficial; fuentes por fila y datos inciertos señalados. Son borradores en
+  Drive: esta tarea no cambió descripciones ni precios de la base.
+- Verificados los 33 registros de precios y las 53 descripciones contra lo
+  redactado; contador probado al completar y luego vaciar una celda.
+- `importacionmarcano@gmail.com` tiene permiso Editor, comprobado en Compartir;
+  acceso general restringido. Se desactivó la notificación por correo al compartir.
+
+### Aplicado y verificado en el edificio
+
+- Solo datos de `monare` (`1367edee-7754-4169-a616-45310d98c045`): los 53
+  productos tienen imagen asociada. Son 40 WebP públicos en `tenant-images`,
+  prefijo `<tenant_id>/catalogo-20261019/`; 31 composiciones con fotos de
+  bodega/PDF y 9 imágenes provisorias que cubren 14 productos. Registro técnico
+  de fuentes, URLs y asociaciones: `docs/operacion/monare-imagenes-20261019.json`.
+  El PNG del fondo maestro también está en Storage, URL en ese registro, para
+  seguir incorporando productos con el mismo fondo.
+- Fondo común basado en el manual de Monare de la Biblioteca de empresas:
+  carbón, berenjena/bordó, luz cálida y logo original copa + MONARE dorado.
+  Se descartó el logo M viejo. Generadas con ImageGen y convertidas a WebP
+  sin recortar ni recomponer. Las referencias inciertas llevan texto
+  `IMAGEN PROVISORIA` y aclaración en descripción; las cajas muestran la
+  botella individual y los envases de 3 litros quedan por confirmar.
+- Ricky autorizó usar referencias provisorias y reemplazarlas después.
+  Pedir fotos de frente, etiqueta y capacidad de: Mumm; Freixenet Dulce;
+  Cosecha Especial Rosé; Cosecha Tardía Rosé; Pulka Rosé (confirmar nombre);
+  bolsas de hielo de 2 y 15 kg; Fantasía Criolla Tinta; Ancestral White Blend;
+  Inspirado Chardonnay; Ópalo Semillón-Sauvignon Blanc; Skin Contact Viognier;
+  Inspirado Cabernet Franc/Cabernet Cabernet/Blend de 3 litros.
+- Se corrigió Louis -> **Lois Rosé** según la etiqueta oficial de Lorca, sin
+  modificar precios. Siguen 20 activos, 32 inactivos sin precio actualizado
+  y la caja de Ópalo Syrah pendiente. Stock sigue NULL en los 53.
+- Nueva dirección indicada por Ricky: **Quintino Bocayuva 1130, Boedo, CABA**.
+  Sucursal default `bb84f552-75e4-442e-a6e0-f3f8453e1498`, ahora Despacho Monare,
+  coordenadas USIG CABA `-34.626682, -58.421350`. Reemplazada la dirección
+  provisoria de Av. de los Incas en settings, sucursal, aviso de envío y
+  `/info/compras-y-envios`. Sigue sin local de atención al público.
+- Horario corregido por Ricky: **lunes a sábado 08:30–20:30**, domingo cerrado.
+  WhatsApp e Instagram permanecen como confirmó antes.
+- Readback SQL: 53/53 imágenes, 20 activos, stock NULL; `get_catalog('monare')`
+  emite 20 imágenes, `catalogo_activo=true`, coordenadas nuevas y domingo cerrado.
+  Los 40 objetos se comprobaron por HTTP HEAD al cargarlos.
+  Playwright contra producción: 26 elementos de imagen del nuevo prefijo
+  cargados, cero errores JS; la página pública de compras muestra Boedo,
+  lunes a sábado y domingo cerrado (exit 0).
+
+### Filtros publicados y verificados
+
+- 15 grupos en `settings.cat_groups`: Cajas, Espumantes, Vinos tintos,
+  Vinos blancos, Hielo, Mauricio Lorca, Chandon, Salentein, Mumm, Freixenet,
+  Malbec, Cabernet Sauvignon, Chardonnay, Syrah, Rosé. Categorías hoja por
+  producto/presentación permiten pertenecer a varios grupos sin duplicarlo.
+- El catálogo ignoraba `settings.cat_groups`; corregido en PR #38, integrado
+  en main `905be1370a92757c152f57707aff320e8dd35977` con OK explícito de Ricky.
+  Solo UI/helpers/tests: Catalog.jsx, HomeScreen.jsx, catalogCategories.js y
+  catalogCategories.test.js. El fallback del edificio no cambió en ese PR.
+- Preview Vercel READY `dpl_4tYS8NJMF1M15oMWzL6AaJmxiLei`, rama temporal
+  `codex/monare-catalogo-preview`, SHA `0349939225657a2dada04395eb85d46206244f75`:
+  https://hermes-platform-rkb3vflej-diviancocorp-a11ys-projects.vercel.app/
+  Misma UI revisada, más un cambio temporal de fallback Cochi -> Monare para
+  ver ese tenant en `*.vercel.app`. **No mergear la rama de preview.**
+  Usar MCP `get_access_to_vercel_url` para un enlace de revisión sin login;
+  no guardar el secreto del enlace en este repo público.
+- Verificación: 94 pruebas (categorías/utils/schemas), typecheck, build y
+  `check:diseno` pasan. CI del PR sobre `7276762` pasó lint/typecheck/tests,
+  build, audit y Playwright. Luego rebase a main `8073f2d` para preservar
+  cambios paralelos (recetario/RLS y La Nona Pato); sin cambio en la UI.
+- Auditoría independiente final en preview, móvil 390x844 y escritorio
+  1280x800: cero hallazgos nuevos P0–P3, cero desborde, 16 chips de 48 px,
+  aria-pressed y foco de teclado. Todos 20, Cajas 4, Hielo 4, Espumantes 9.
+  Sin imágenes rotas en la vista de Hielo. Detector de archivos tocados [];
+  global 17 -> 17 (deuda previa). Sin pedido ni pago de prueba.
+- CI final del PR `0840512`: lint, typecheck,  unit tests, audit, build y
+  Playwright aprobados. Vercel producción READY
+  `dpl_FRtUES9XsmF99QTTGRh9YwAyznaH`, SHA `905be137`.
+  Verificado ahora en `monare.divianco.app`: version.json buildId `905be137`,
+  Cajas 4 / Hielo 4 / Espumantes 9 / Todos 20, chips 48 px y selección correcta;
+  26 imágenes cargadas, cero desborde y cero errores JS. Dirección y horario
+  correctos en la página pública de compras (Playwright exit 0).
+- Eliminadas worktree y ramas propias de revisión/preview después del merge,
+  sin tocar las de los demás chats. Temporales de imágenes limpios; los 40
+  WebP finales y el fondo maestro permanecen en Storage. La URL de preview
+  anterior queda solo como registro de la revisión; la tienda ya es pública.
+- Falta de negocio: 32 precios, precio de caja Ópalo, fotos definitivas y
+  datos bancarios reales. No se inventaron. Sin recetas.
+- Archivos temporales en `.preview/monare-assets/` (ignorado) y temp del sistema
+  durante el armado; los originales de ImageGen quedan en su caché por regla
+  de la herramienta. Ninguna dependencia nueva ni schema ni migración.
+- Pendientes heredados de GerenteDico que se archivan: cerrar issue #29 de
+  prueba; próxima etapa issue `gerentedico` -> PR/preview. No tratados acá.
+
+## 19/oct/2026 — La Nona Pato: acceso y ubicacion de despacho (Codex)
+
+- El acceso fallaba por el enlace con doble n (`la-nonna-pato`). El tenant
+  existente es `la-nona-pato`; catalogo y `/admin` muestran La Nona Pato.
+  No se creo ni renombro ningun tenant. Estado `active`, 43 productos activos,
+  sin imagenes y sin pedidos al consultar; Ricardo figura como owner.
+- Solo datos de `c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb`: direccion de despacho
+  confirmada por Ricky en `settings.store_address` y en la sucursal Principal
+  (`10a833ea-0f8e-4b9f-9505-1259f30a15ba`). Coordenadas del pin que compartio
+  Ricky: `-34.4097901, -58.857199`. La sucursal sigue activa y default.
+- Verificado por readback SQL: direccion guardada, tenant activo y
+  `get_catalog('la-nona-pato')` devuelve `catalogo_activo=true`, esas coordenadas
+  y 43 productos. Browser de produccion muestra La Nona Pato y "Abierto".
+  No se envio pedido de prueba ni se verifico una venta completa.
+- Continuacion confirmada por Ricky: todos los dias (lunes a domingo),
+  09:00-21:00, en los siete indices de `store_hours`. WhatsApp provisional
+  `+5491172381841`, tambien guardado como telefono de la sucursal Principal.
+  Efectivo disponible de forma implicita; cuenta de transferencia activa para
+  checkout con alias `pato.jhs`. Sin titular ni CBU informados. El QR es fisico
+  y Ricky pidio dejarlo fuera del catalogo. Readback del RPC publico confirma
+  telefono, siete horarios, alias, catalogo activo y 43 productos.
+- Pendiente: condiciones/tarifas de envio. No se cambiaron precios ni se
+  enviaron pedidos de prueba. Reemplazar WhatsApp provisional cuando Ricky
+  confirme el definitivo; completar titular de transferencia cuando lo informe.
+- Sin cambios de codigo ni schema ni otros tenants. Solo documentacion en
+  `docs/`; no se crearon archivos fuera de `src/`, `docs/`, `platform/` o
+  `scripts/`. Preservados los archivos sin seguimiento y el trabajo paralelo.
+- Pendientes que siguen vigentes de las secciones a archivar: primer error
+  real desminificado de Sentry y existencia/alta de MiaEstudio no verificados
+  en esta tarea. GerenteDico etapas 2/3 se describen en las secciones siguientes.
+
+## 19/oct/2026 — Carga inicial de Monare (Codex)
+
+### Hecho y verificado en el edificio
+
+- Solo datos del tenant `monare` (`1367edee-7754-4169-a616-45310d98c045`),
+  sin cambios de codigo, schema, otros tenants ni condiciones comerciales.
+- 53 productos simples: 20 activos con precio, 32 del PDF inactivos por
+  falta de precio actualizado y una caja de Opalo Syrah inactiva por confirmar.
+  Incluyen 36 presentaciones de Mauricio Lorca, 8 espumantes, 5 cajas x6
+  y 4 lotes de hielo. Louis Rose se tomo como el "Lois rose" del mensaje.
+- Precios de los mensajes del 15/oct tienen prioridad sobre PDF e imagen:
+  Louis Rose $17.390 / caja x6 $102.000; Lorca Joven Malbec $8.190 / $49.200;
+  Opalo Syrah $13.290 / $48.600 (caja pendiente); Fantasia Chardonnay y
+  Cabernet Sauvignon $9.490 / $54.590 cada caja x6. No se importaron
+  los precios, costos ni promociones del PDF. Sin stock inventado.
+- Hielo: lotes de 15/30 bolsas de 2 kg a $27.000/$51.000 y de 15 kg a
+  $94.500/$180.000. Los importes publicados son por lote completo.
+- Medios internos: transferencia, efectivo y credito segun acuerdo;
+  MercadoPago desactivado. Cuenta de transferencia en checkout con datos
+  a coordinar (sin alias, CBU ni titular inventados). La tarjeta solo queda
+  como medio interno, no como pasarela online.
+- Pagina `/info/compras-y-envios`: horario informado 8:30-20:30, pagos,
+  CABA y Provincia, entrega gratis en CABA para pedidos mayores a $95.000
+  en 24 horas; express cotizado por zona (Flex/Uber). No se activo el umbral
+  global de envio gratis porque tambien aplicaria a Provincia.
+- `settings.has_physical_store=false` ya existia, pero el espejo del tenant
+  no tenia esa clave: `get_catalog` devolvia true. Se alineo la clave del JSON
+  a false sin cambiar el trigger compartido. Pendiente del sistema: el
+  trigger `espejar_settings_a_tenant` no copia esa columna.
+- La cuenta existente de `importacionmarcano@gmail.com` ya era owner.
+  Se configuro por Supabase Auth Admin la clave pedida y se verifico login;
+  no se guarda la clave en archivos ni en este documento.
+- Readback SQL: 53 filas, 20 activas, 33 inactivas, 0 diferencias contra los
+  datos preparados, 0 activas a $0 y todo el stock NULL. RPC como anon:
+  20 productos y `has_physical_store=false`. Browser de produccion muestra
+  los 20 productos con precios; sigue "Cerrado: todavia no toma pedidos".
+- Continuacion confirmada por Ricky: todos los dias (lunes a domingo),
+  08:30-20:30, guardados en `store_hours` (indices 0-6). WhatsApp
+  `+5491123901855`. `store_address` = CABA, explicitamente provisorio;
+  actualizado tambien el texto de `/info/compras-y-envios` y el aviso de
+  entrega en CABA y Provincia. Readback de tabla y RPC publico coinciden.
+- Ricky eligio dejar pendiente la caja x6 de Opalo Syrah; sigue inactiva.
+- Actualizacion posterior: Instagram `monare.boutique`; despacho provisorio
+  autorizado en Av. de los Incas 4000, CABA. USIG normalizo esa direccion y
+  devolvio lat/lng `-34.577830, -58.467925` (OSM coincide). Creada sucursal
+  default activa "Despacho provisorio", con telefono y direccion marcados
+  como provisorios. `get_catalog` como anon devuelve `catalogo_activo=true`;
+  siguen 20 productos activos y no hay local de atencion al publico. Browser
+  de produccion muestra "Abierto: 08:30 a 20:30" y los links correctos de
+  Instagram y WhatsApp. No se envio ningun pedido de prueba.
+- Envio sin tarifa automatica: con `delivery_pricing=NULL` el checkout usa
+  tarifas genericas de $500 a $5.000 que Monare nunca informo. Se guardo un
+  escalon con costo 0 y aviso explicito: el total online incluye productos;
+  el envio se cotiza/cobra aparte segun zona y cantidad, coordinar antes de
+  pagar. La pagina de condiciones lo explica; CABA > $95.000 conserva envio
+  sin costo en 24 horas. Esto no implementa una cotizacion automatica por zona.
+
+### Pendiente de datos de Ricky / Monare
+
+- Reemplazar el despacho provisorio de Av. de los Incas 4000 por el real
+  cuando Monare lo confirme (direccion y coordenadas de la sucursal default).
+- Alias/CBU para transferencias.
+- Caja x6 de Opalo Syrah a $48.600 frente a $13.290 por unidad: Ricky
+  pidio dejarla pendiente, sin corregir ni publicar su precio.
+- Precios actualizados de las otras 32 presentaciones del PDF. Los ejemplos
+  de la planilla vacia de Drive NO son datos reales ni se importaron.
+- Pendientes heredados sin verificar en esta sesion: primer error Sentry
+  desminificado; diferencia de productos de Crazy Miga y existencia de
+  MiaEstudio en el edificio. Las etapas 2/3 de GerenteDico y el barrido de
+  policies tienen secciones posteriores a la de Sentry, consultar esas.
+
+### Archivos y evidencia
+
+- Solo documentacion en `docs/`. PDF e imagen del usuario se leyeron en sus
+  ubicaciones originales. Imagenes temporales de inspeccion en el temp del
+  sistema y `.preview/monare-import/` (ignorado), eliminadas al terminar.
+- Codigo desplegado al iniciar: `5076010`, produccion READY en Vercel.
+  La carga es de datos y no requiere deploy ni migracion.
+
 ## 17-19/oct/2026 — Orquestador de skills: ruteo por prompt y candado de /diseno (Claude)
 
 **En main y con CI verde.** PR #31 (`7c8bd44`, `d0e6e01`, `8bf93cc`), merge
@@ -83,346 +341,3 @@ aparte (`386e826`, PR #32). No toca el front ni la base.
   en el checkout principal. No son de esta sesión y no se tocaron.
 
 ---
-
-## 17-19/oct/2026 — Prueba de carga con k6, skill /carga cada 15 días (Claude)
-
-**Publicado.** PR #33 (`prueba/k6`, merge `fe95296`) y PR #32 (regla del
-orquestador, merge `693fb2f`), los mergeó Ricky el 19/oct. Producción `READY`
-en `fe95296` = `HEAD`. El CI se mide sobre el commit de este HANDOFF, que viene encima de `fe95296` (el push cancela la corrida anterior de `main`). No toca `src/`, la base
-ni edge functions.
-
-### Hecho
-
-- **`scripts/carga/catalogo.js`** (k6) + **`scripts/carga/correr.mjs`** +
-  `npm run carga:catalogo`. Repite una visita real al catálogo, medida en el
-  navegador sobre crazy-miga: `get_catalog` + `mp-status` en paralelo.
-  **Solo lecturas**, porque un pedido de prueba es un pedido real (comandera,
-  push, Telegram, stock). El front no se prueba: es CDN de Vercel y no dice
-  nada del sistema. El wrapper lee la key publicable del `.env` del edificio y
-  corta si la URL no es `wwwzdgprsooyjgkuyoav`. `--sin-mp` simula la visita sin
-  `mp-status`; `visita_ms` es lo que espera la visita.
-- **Resultados** (detalle e historial en `docs/operacion/CARGA-K6.md`): con 20,
-  50 y 100 usuarios, 0 errores; `get_catalog` med ~112 ms, p95 204 → 261 ms.
-  En Postgres 2,6–3 ms por llamada y el máximo no se movió: **hasta 100
-  usuarios la base no es el cuello de botella**, el tiempo es red + PostgREST.
-  Picos aislados de 3,6 y 6,7 s que no salen de la base (comprobado); que sean
-  red o gateway es deducción.
-- **Incidente de red el 17/oct:** una corrida dio 19% de visitas rotas por
-  TCP cortado contra las IPs de Cloudflare de Supabase (no 429 ni 5xx). La
-  siguiente y la repetición dieron 0. Documentado; la skill sabe clasificarlo.
-- **`mp-status` en cada visita** (`src/pages/Catalog.jsx:304`): es una edge
-  function por visita y `mpConnected` solo lo usa el paso de pago. Medido con
-  100 usuarios: con él 1736 requests / 868 invocaciones / visita p95 340 ms;
-  sin él 880 / 0 / 183 ms. **Ojo:** la home no espera a `mp-status`, así que
-  lo que se gana es cuota y una conexión menos, no render. Propuesta A
-  (pedirlo con el primer producto en el carrito) escrita en el chat del 17/oct,
-  **sin aplicar**: Ricky dijo "lo vemos después".
-- **Skill `/carga`** (`.claude/skills/carga/SKILL.md`): 20/50/100 usuarios,
-  cruce con `pg_stat_statements`, clasificación de errores, comparación
-  contra `## Historial` y commit de la fila nueva solo si el checkout está en
-  `main` sin cambios ajenos en el doc.
-- **Tarea programada `dico-prueba-de-carga`** de la app de Claude: días 1 y 16
-  a las 10:00, primera el **1/nov**. Vive fuera del repo, en
-  `C:\Users\ricar\.claude\scheduled-tasks\dico-prueba-de-carga\SKILL.md`.
-- **Orquestador:** regla `carga` en `scripts/hooks/orquestador-reglas.json`
-  ("prueba de carga", "k6", "cuántos usuarios aguanta"…) + 2 prompts de
-  ejemplo en el test + fila en la tabla de rutas de `CLAUDE.md`/`AGENTS.md`.
-- **k6 instalado** en `C:\Program Files\k6\k6.exe` (v2.2.0, winget; pidió
-  UAC). Si una PC no tiene admin: zip del release + checksum + `K6_BIN`.
-- Fila de k6 en la tabla de herramientas evaluadas ("en prueba").
-
-### Verificado
-
-- Las corridas son reales contra producción (lecturas). `get_catalog` es
-  `stable` sin DML y `mp-status` solo hace selects: no ensuciaron datos.
-- Las llamadas nuevas de `pg_stat_statements` coinciden una a una con las
-  visitas de k6.
-- Test del orquestador: 32 en verde. Pre-commit completo en verde en los
-  commits.
-- El hook del orquestador corre en la máquina de Ricky: inyectó su aviso en
-  cada prompt de esta sesión (era el pendiente 1 del 15/oct).
-- **NO verificado:** la tarea programada nunca corrió. Arranca en el modo de
-  permisos por defecto y puede frenar a pedir permiso.
-
-### Pendiente inmediato
-
-1. **Ricky: "Run now" una vez** en la tarea "DICO: prueba de carga quincenal
-   (k6)" para aprobar los permisos que pide; si no, el 1/nov puede quedar
-   esperando una aprobación. Tarda ~12 min y commitea una fila en `main`.
-2. **Decidir `mp-status`** (opción A, un archivo de `src/`). Pide ok de Ricky.
-3. **Escenario de panel (logueado)**: los advisors marcan 15
-   `auth_rls_initplan` y 54 `multiple_permissive_policies` en `orders`,
-   `order_items`, `profiles`, `staff`. No pegan en el catálogo (`get_catalog`
-   es SECURITY DEFINER) pero sí en el panel, y no está medido.
-4. **CI en ramas de trabajo**: `ci.yml` solo escucha `main`,
-   `platform/runtime-tenant` y PRs; una rama `claude/**` o `prueba/**` no pasa
-   por ningún gate hasta el PR. Propuesto, no hecho.
-5. **Worktree `cool-fermat-5ba418`**: su rama ya está mergeada, pero es el
-   `cwd` de la sesión "Orquestador de skills por hooks en DICO" (sin archivar)
-   y su `.codex/` es distinto al de `main`. No se borró: archivar esa sesión,
-   revisar `.codex/` y recién ahí `git worktree remove` + `prune`.
-6. **Heredado del 15/oct** (esa sección se archiva hoy):
-   - `SkipToContent.jsx` usa blanco sobre `#C45D3E` (4.21:1) y DM Sans; el
-     `<main>` de `App.jsx` debería salir por ruta.
-   - Los 12 `side-tab` del panel son el siguiente bloque para `/diseno`.
-   - Los cron de GitHub (`morning-health` y el smoke) corrían ~8 h tarde el
-     28/sep; mirar las últimas corridas antes de tocar nada.
-
-### Bloqueado por Ricky
-
-- El "Run now" de la tarea programada (punto 1) y el ok de `mp-status`.
-- **Heredado del 15/oct, sigue vigente:** los números de ejemplo de la landing
-  son inconsistentes entre sí (bife $1.200 con $340 de insumos vs. costo $520
-  y margen 14%) y no cierran con el plan de $59.000/mes; y el WhatsApp del CTA
-  es de EE. UU. (+1 786) para un público argentino
-  (`src/pages/PlatformLanding.jsx`). Son contenido y decisión suya.
-
----
-
-## 17/oct/2026 (tarde) — GerenteDico etapa 3: memoria de la charla y "anotar" (Claude)
-
-**Publicado y verificado.** `2aadfe3` a `b119081`, CI verde en `b119081`.
-Ricky cargó `GERENTE_GITHUB_TOKEN`, redeployó `gerente-webhook` e hizo la
-prueba del paso D el 17/oct. El front no cambió.
-
-### Hecho
-
-- **0099 `gerente_memoria_y_notas`**, aplicada por MCP con ok de Ricky. Crea
-  `gerente_mensajes` (la charla) y `gerente_notas` (los issues propuestos).
-  Son tablas de plataforma, **sin `tenant_id`**: es la charla de Ricky con el
-  bot, no datos de un negocio. RLS activa, cero policies y sin grants para
-  anon/authenticated (verificado en la base). Snapshot del edificio al día
-  hasta 0099.
-- **Memoria:** a OpenAI le llegan los últimos 10 mensajes de las últimas 12 h.
-  Se guarda solo el texto de Ricky y la respuesta final, nunca los resultados
-  de las herramientas. Se borra lo de más de 30 días. `/olvidar` borra la
-  charla.
-- **Herramienta `anotar`** (`platform/functions/gerente-webhook/anotar.ts`):
-  el modelo no crea el issue. Deja una nota `pendiente` y el código muestra el
-  título y el cuerpo exactos, con el pedido de "Contestá SI". El SI lo revisa
-  el código (`esSi`), no el modelo. La nota vence a los 15 min y cualquier
-  otro mensaje la descarta. El paso `pendiente` → `creando` es un update
-  condicionado, así un SI repetido no crea dos issues. El issue lleva el label
-  `gerentedico` (si GitHub lo rechaza, se crea sin label). **El repo es
-  público**: el prompt prohíbe montos y datos de clientes, y la vista previa
-  muestra todo antes del SI.
-- Tests: `src/test/gerenteWebhook.test.js` (25, con historia, SI, cuerpo del
-  issue y `crearIssue` con fetch simulado).
-
-### Lo que tiene que hacer Ricky (en este orden)
-
-**A. Crear el token de GitHub** (permisos mínimos, solo issues de este repo)
-
-1. Entrá a https://github.com/settings/personal-access-tokens/new (es
-   **Settings** → **Developer settings** → **Personal access tokens** →
-   **Fine-grained tokens** → **Generate new token**).
-2. **Token name:** `GerenteDico issues`
-3. **Resource owner:** `diviancocorp-a11y`
-4. **Expiration:** **Custom** y elegí una fecha a un año. Anotala en el
-   calendario: cuando vence, el bot contesta "GitHub rechazó el token".
-5. **Repository access:** **Only select repositories** → elegí `hermes-gastro`.
-6. **Permissions** → **Repository permissions** → **Issues** → **Access:
-   Read and write**. *Metadata: Read-only* aparece solo; no toques nada más.
-7. **Generate token** y copiá el valor (empieza con `github_pat_`). GitHub lo
-   muestra **una sola vez**.
-
-> Ojo: un token **no se edita**. Si se vence o se pierde, se crea otro y se
-> reemplaza el secret. Si `diviancocorp-a11y` es una organización, puede
-> quedar "pending approval": se aprueba en la organización → **Settings** →
-> **Personal access tokens** → **Pending requests**.
-
-**B. Cargarlo en Supabase**
-
-1. Entrá a
-   https://supabase.com/dashboard/project/wwwzdgprsooyjgkuyoav/functions/secrets
-   (**Edge Functions** → **Secrets**).
-2. En **Add new secret**:
-   - **Name:** `GERENTE_GITHUB_TOKEN`
-   - **Value:** el token del paso A
-3. **Save**. Tiene que aparecer en la lista `GERENTE_GITHUB_TOKEN`, al lado de
-   `GERENTEDICOBOT` y `DICO_BRAIN`.
-
-**C. Redeployar la function** (en la terminal del repo, en `main` actualizado)
-
-```bash
-node platform/scripts/deploy-functions.mjs --only gerente-webhook
-```
-
-Tiene que terminar con `gerente-webhook (no-verify-jwt) ... ok`. **No** hace
-falta volver a registrar el webhook: sigue recibiendo los mismos mensajes.
-
-**D. Probarlo en Telegram, con GerenteDico**
-
-1. `/ayuda` → la bienvenida ahora menciona "anotar" y `/olvidar`.
-2. `como viene crazy-miga?` y después `y cuantos productos tiene?` → la segunda
-   respuesta tiene que hablar de crazy-miga sin que lo repitas (memoria).
-3. `anota que hay que probar el anotar de GerenteDico` → te muestra
-   "Issue para anotar en GitHub", el título, el cuerpo y "Contesta SI…".
-4. `SI` → contesta `Anotado: issue #N` con el link. En GitHub, el issue tiene
-   el label `gerentedico`. Cerralo: era de prueba.
-5. `/olvidar` → "Listo, me olvide de la charla".
-
-Si en el paso 3 dice "falta el secret GERENTE_GITHUB_TOKEN", el paso B no
-quedó guardado. Si en el 4 dice "no tiene permiso de Issues", el paso A.6 o
-A.5 quedaron mal: hay que crear un token nuevo.
-
-### Verificado (en producción)
-
-- `gerente_notas`: una nota `creada`, "Probar la función anotar", con
-  `issue_number` 29. El issue #29 existe en GitHub con el label `gerentedico`
-  y el cuerpo esperado (detalle, pedido original citado, pie con la fecha).
-- `gerente_mensajes` vacía después del `/olvidar` del final, como corresponde.
-  La memoria (paso D.2) no se puede ver en la base por eso; Ricky la probó en
-  el chat.
-- `function_logs` de 04:56 a 05:01 UTC: solo boot/shutdown, ningún warning de
-  guardado ni error de OpenAI o GitHub.
-
-### Pendiente
-
-1. Cerrar el issue #29 (era de prueba).
-2. Próxima etapa: que un issue `gerentedico` se convierta en PR y preview sin
-   pasar por una sesión a mano.
-
-## 17/oct/2026 — GerenteDico conversa (etapa 2), policies de roles comparadas y limpieza (Claude)
-
-**Publicado y verificado.** `4324c38` a `b77d083`, CI verde en `f03e231`. El
-front no cambio. `gerente-webhook` la deployo Ricky el 17/oct y el webhook
-quedo registrado (run `39001644500`: "Coincide con la esperada: si").
-
-### Hecho
-
-- `4324c38` — **`ci:esperar`**: un run cancelado por un push posterior
-  (`cancel-in-progress` de ci.yml) ya no sale rojo (exit 1), sale 2 y dice que
-  mire el CI del ultimo commit. Escribe una linea por consulta con el tiempo.
-  No estaba colgado: un `timeout 100 | tail` escondia que el CI seguia
-  corriendo. CLAUDE.md/AGENTS.md lo dicen.
-- `2dd1636` — **policies de `roles_y_alcance_policies` y
-  `roles_barrido_de_policies_viejas`**: las 28 policies vivas de expenses,
-  suppliers, sales, settings, staff, audit_log, cash_sessions y tenant_members
-  coinciden una por una con la 0050 (`cash_sessions_select` con la 0070). RLS
-  activa en las 8. La fila vieja dejaba a cashier/attendant insertar `sales`;
-  la base no. Veredicto en `scripts/migraciones-sin-archivo.json`.
-- **Crazy Miga** (ok de Ricky en el chat): se borraron los 11 productos de la
-  epoca Mala Miga (todos `active=false`, `is_archived=true`, del 27/sep, sin
-  pedidos, ventas, variantes, recetas ni favoritos). Quedan los 8 activos.
-- **Worktree `recursing-gauss-acdbb9`** borrada, y su rama local
-  `claude/beautiful-bun-4a9817`. Su unico commit (`6288f29`) es la 0096 con
-  otros comentarios; el SQL es el mismo. La rama sigue en origin como respaldo.
-- `b77d083` — **`gerente-webhook`** (etapa 2 de GerenteDico). Ricky le
-  escribe al bot y contesta OpenAI (`DICO_BRAIN`, `gpt-4o-mini`) con tres
-  herramientas de solo lectura: `negocios`, `pedidos`, `productos`. Sin datos
-  personales de clientes. Solo el chat `TELEGRAM_CHAT_ID`, secret_token
-  derivado del token. Si se contesta a un mensaje (un aviso de Sentry), ese
-  texto va de contexto. No guarda historia: cada mensaje es una charla nueva.
-  Se registra con el workflow **GerenteDico webhook** (secret `GERENTEDICOBOT`
-  de GitHub). La key de Anthropic ya no hace falta para esta etapa.
-
-### Verificado (en produccion)
-
-- `/start` llego (POST 200, sin errores en `function_logs`) y Ricky recibio
-  la bienvenida.
-- "como viene crazy-miga": contesto 3 pedidos completados, $ 161.000, ultimo
-  el 10/10 y los 8 productos con precio. Coincide con la base.
-
-### Como se publico (por si hay que repetirlo)
-
-
-1. En la terminal del repo: `npm run deploy:functions -- --only gerente-webhook`
-   (o `node platform/scripts/deploy-functions.mjs --only gerente-webhook`).
-   Tiene que terminar con `gerente-webhook (no-verify-jwt) ... ok`.
-2. `gh workflow run gerente-webhook.yml -f accion=registrar` desde la terminal
-   de Ricky (o GitHub → **Actions** → **GerenteDico webhook** → **Run
-   workflow**, con sesion iniciada). Al final del log:
-   `Coincide con la esperada: si`. El clasificador no deja que el agente lo
-   dispare.
-3. En Telegram, a GerenteDico: `/start`. Contesta con lo que sabe hacer.
-   Despues: `como viene crazy-miga esta semana?`
-
-Los secrets (`GERENTEDICOBOT`, `TELEGRAM_CHAT_ID`, `DICO_BRAIN`) ya estan en
-Supabase desde `sentry-alerta`: no hay que cargar nada.
-
-### Pendiente
-
-1. Primer error real en Sentry: des-minificado y con `tenant` (Ricky: esperar).
-2. GerenteDico etapa 3: "anota que hay que arreglar X" → issue → PR →
-   preview. Y memoria de la charla (necesita tabla y migracion).
-3. MiaEstudio sigue sin tenant en el edificio.
-
-## 16-17/oct/2026 (noche) — Sentry vivo de punta a punta y alerta a GerenteDico (Claude)
-
-**Publicado.** Todo en `main`, de `2e5957f` a `7962a7c`. Producción de
-`hermes-platform` `READY` en `7962a7c` (redeploy de Ricky de las 02:28 UTC
-del 17/oct, ya con las variables de Sentry). CI verde en el último push.
-
-### Hecho
-
-- **Ricky cargó todo lo de Sentry** (pasos en `docs/plataforma/SENTRY.md`):
-  - en Vercel: `VITE_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT` y
-    `SENTRY_AUTH_TOKEN`;
-  - la integración interna GerenteDico en Sentry y la regla "Error nuevo →
-    Telegram";
-  - los secrets de `sentry-alerta` en Supabase;
-  - un token de Sentry nuevo con `event:write` en el secret de GitHub
-    `SENTRY_AUTH_TOKEN`.
-- `2e5957f` — **el tag `tenant` de Sentry sale del subdominio**
-  (`tenantDelHost` en `src/lib/observability.js`; lo usan el reporter liviano
-  y `sentryFull.js`). Antes decía `edificio` para todos y no se podía filtrar
-  por negocio. En la landing vale `raiz`; fuera de `*.divianco.app`, el build.
-  El build quedó en su propio tag `build` y se sacó `tenant_name`, que siempre
-  decía "Dico".
-- `5665c0f` — `checkSentryEnBuild` mira **todos** los chunks que nombra la
-  landing. El DSN queda en `observability-*.js`, no en `index-*.js`: con todo
-  bien cargado iba a seguir dando rojo.
-- `8f7cae9` — **`probar_alerta`** (input de morning-health a mano, módulo
-  `scripts/sentry-prueba.mjs`). Manda un error de prueba con el DSN del build
-  publicado. Cada prueba lleva un fingerprint nuevo porque la regla avisa
-  solo por issue nuevo; con el mismo fingerprint, la segunda prueba no
-  avisaría. El tag `prueba:alerta` lo excluye del resumen diario.
-- `7962a7c` — cada corrida de morning-health **cierra sola las pruebas
-  viejas** (issues abiertos con `prueba:alerta`). Si el token no tiene
-  `event:write`, lo dice en el reporte en vez de fallar.
-- **Regla de Sentry** (MCP): se le sacó el disparador "issue resuelto", que
-  mandaba "🚨 Error nuevo" al cerrar un error. Quedan tres: issue nuevo,
-  reaparecido y regresión.
-
-### Verificado (en producción)
-
-- El bundle publicado trae el DSN y la función del tenant por subdominio.
-  Release `dico@2e5957f1`, después `dico@7962a7cd`.
-- Cadena entera, dos veces:
-  - **16/oct:** error mandado desde la base por `pg_net` (`HERMES-GASTRO-Q`).
-  - **17/oct:** con `probar_alerta`, run `38992938659` (`HERMES-GASTRO-R`).
-  - El camino fue el mismo: Sentry lo recibió, la regla se disparó y
-    `sentry-alerta` arrancó 2-3 s después. **Ricky confirmó que llegó a
-    Telegram** las dos veces.
-- Run `38995065906`: "pruebas de alerta: ✓ 1 cerrada(s)", así que el token
-  nuevo escribe. El filtro `!prueba:alerta` se comprobó en Sentry: el issue
-  de prueba aparece sin el filtro y desaparece con él.
-- **Sourcemaps:** el build de las 02:28 corrió `sentry-vite-plugin`, Sentry
-  registró el release `dico@7962a7cd` con deploy `vercel-production`, y los
-  `.map` dan 404 en el sitio (se borran después de subirlos).
-  - **No verificado:** cuántos archivos recibió el release, porque el log del
-    build vino cortado. La prueba real es que el primer error real llegue con
-    archivo y línea, no minificado.
-
-### Pendiente inmediato
-
-1. Cuando entre el primer error real: confirmar que llega des-minificado y
-   con `tenant` = el negocio. Si llega minificado, revisar los artifacts del
-   release en Sentry.
-2. GerenteDico conversacional (sigue sin código). Etapa 2: edge function
-   `gerente-webhook`, solo el chat de Ricky, herramientas de solo lectura.
-   Etapa 3: "anotá que hay que arreglar X" → issue → PR → preview. Necesita
-   el ok y la `ANTHROPIC_API_KEY` de Ricky.
-3. Comparar una por una las policies que tocan `roles_y_alcance_policies` y
-   `roles_barrido_de_policies_viejas`. Hoy solo se sabe que `check:rls` las da
-   cerradas.
-4. Por mirar, sin verificar en esta sesión: crazy-miga muestra 8 productos en
-   el catálogo y en la base parecían 19; MiaEstudio no tiene tenant en el
-   edificio.
-
-### Bloqueado por Ricky
-
-- Nada de Sentry. Los puntos 1 y 2 del "Bloqueado" del 16/oct (Telegram y
-  `SMOKE_TENANTS`) quedaron resueltos ese mismo día.
-- Lo de GerenteDico (punto 2 de arriba): el ok y la key.
