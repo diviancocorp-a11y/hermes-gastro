@@ -46,7 +46,7 @@ describe('diagnostico de la landing', () => {
     }
   });
 
-  it('urgencia e inversion usan los mismos ids que la base (0102)', () => {
+  it('urgencia e inversion usan los mismos ids que la base (0105)', () => {
     expect(URGENCIAS.map((u) => u.id)).toEqual(['ya', 'este_mes', 'proximos_meses', 'explorando']);
     expect(INVERSIONES.map((i) => i.id)).toEqual(['gratis', 'hasta_60k', 'hasta_100k', 'mas_de_100k', 'no_se']);
   });

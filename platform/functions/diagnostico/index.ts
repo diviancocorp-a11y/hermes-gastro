@@ -1,6 +1,6 @@
 // Canal publico del diagnostico de la landing (divianco.app/diagnostico).
 //
-// Guarda las respuestas en public.diagnosticos (0100/0101/0102) con el service role
+// Guarda las respuestas en public.diagnosticos (0100/0101/0105) con el service role
 // y devuelve el id, que viaja al alta para vincular el diagnostico al negocio
 // (vincular_diagnostico). No guarda email, telefono ni nombre de persona.
 //
