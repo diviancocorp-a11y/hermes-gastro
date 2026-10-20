@@ -7,287 +7,63 @@
 // un error de conexion que no existe.
 //
 // REGLA DE CONTENIDO: aca no se promete nada que el producto no haga hoy.
-// Cada afirmacion de esta pagina se puede rastrear a una migracion o a una
-// pantalla que existe. Donde la verdad es "todavia no", lo dice.
+// Cada afirmacion se puede rastrear a una migracion o a una pantalla que
+// existe; lo que hace cada rubro sale de src/modules/registry.js
+// (`implementado`). Lo que falta se dice "en desarrollo" y se ofrece como
+// "lo desarrollamos con vos" (decision de Ricky, 19/oct/2026). Verificado en
+// el codigo el 19/oct: el resultado es MENSUAL, el costo laboral es POR DIA,
+// el stock entra con compras y conteos y, desde la 0104, completar un pedido
+// descuenta la receta (gastronomia) o el articulo sin receta (comercio, y los
+// productos que vende un servicio); el minimo con aviso en el panel es solo
+// de insumos; el salon es solo de gastronomia. El costeo de una receta es
+// insumos x (1 + merma% + gastos%): no hay mano de obra.
 //
-// ENFOQUE (copy del 12/sep/2026): la landing habla SOLO a gastronomia. No es
-// que el sistema no sirva para barberia o indumentaria —el registry de rubros
-// las tiene y el alta las ofrece— es que una landing que le habla a todos no
-// le habla a nadie. El titular es fijo, no rota entre rubros.
+// Anclas viejas de la landing de main (#pilares, #flujo, #modulos,
+// #integraciones, #seguridad, #contacto): quedan como alias (.pl-ancla) en
+// la seccion equivalente, para que los links de afuera no caigan arriba.
 //
-// LA PROMESA: "sabe cuanto ganas, no solo cuanto vendes". Lo que la sostiene
-// son tres datos que el edificio junta y nadie mas junta en un solo lugar:
-//   - receta con costo por insumo   -> migraciones 0026 y 0028
-//   - costo por hora con fichaje    -> migracion 0048, incluye costo laboral
-//                                      sobre venta por dia operativo
-//   - P&L con merma y gastos        -> migraciones 0030 a 0033
-// Si alguna de esas tres deja de ser cierta, esta pagina miente.
+// V3 (20/oct/2026, rama landing/rediseno). La home ES el embudo: la frase de
+// valor y un boton que abre el diagnostico en la misma pagina, en la misma
+// columna (src/components/landing/Diagnostico.jsx). Lo que explica el sistema
+// queda debajo, para quien quiere leer.
+//
+// Direccion de design-taste-frontend: `quiet-instrument` (seed 2118221348).
+// Columna angosta, la frase como unica cosa grande, demostraciones chicas y
+// exactas, mucho aire compuesto. Idea: lo que Dico lee de tu negocio se
+// imprime en un instrumento al lado de la columna: el resultado del mes en la
+// portada, tus respuestas durante el diagnostico, la pieza que resuelve tu
+// dolor al final. Paleta en src/styles/plataforma-claro.css (oro solo accion
+// y valor, volt solo lo que lee Dico, oscuro solo en piezas de producto).
+//
+// Orden: portada (embudo) -> que hace Dico (tu dolor y la parte del panel que
+// lo resuelve) -> que hace hoy cada rubro y que esta en desarrollo -> clientes
+// -> planes -> preguntas -> una frase y el boton -> una linea de pie.
+//
+// PRUEBA SOCIAL: solo nombres y fotos reales de productos de clientes que
+// corren sobre Dico (La Nona Pato y Crazy Miga). Sin cifras de resultados.
+// Las cifras de las piezas del producto son ejemplos y cierran entre si.
 
-import { useEffect } from 'react';
-import FooterAscii from '../components/landing/FooterAscii.jsx';
+import { useEffect, useRef, useState } from 'react';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
+import {
+  AGENDA_HORARIO, AGENDA_URL, WHATSAPP_HORARIO, WHATSAPP_URL, WHATSAPP_VISIBLE,
+} from '../lib/contactoPlataforma';
+import { desafiosDe } from '../lib/diagnostico';
+import Diagnostico from '../components/landing/Diagnostico';
+import { PiezaResultado } from '../components/landing/Piezas';
+import { CLIENTES, FOTOS } from '../components/landing/clientes';
+import useEntradas from '../components/landing/useEntradas';
+import '../styles/plataforma-claro.css';
 import '../styles/platform-landing.css';
+import '../styles/diagnostico.css';
 
-const TITULO = 'Dico — Sabé cuánto ganás, no solo cuánto vendés';
-const DESCRIPCION = 'El sistema de gestión para restaurantes, parrillas, cafés y '
-  + 'cocinas de delivery que te muestra la ganancia real de cada plato, cada '
-  + 'turno y cada noche. Recetas con costo, nómina por hora y P&L en tiempo real.';
+const TITULO = 'Dico — Todo tu negocio, en un solo lugar';
+const DESCRIPCION = 'Ventas, costos, sueldos, stock, caja y pedidos de tu gastronomía, '
+  + 'comercio o servicio, en un solo lugar. Empezá con un diagnóstico de unas pocas preguntas, sin email.';
 
-// El telefono de Ricardo. Va en el CTA principal a proposito: a esta escala
-// el primer contacto es una persona, no un formulario.
-const WHATSAPP = '17869608110';
-const WHATSAPP_TEXTO = 'Hola Ricardo, quiero conocer Dico para mi negocio.';
-const WHATSAPP_URL = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(WHATSAPP_TEXTO)}`;
+// Telefono, agenda y horarios: src/lib/contactoPlataforma.js.
 const marcarWhatsApp = () => marcarEvento('whatsapp');
-
-const PILARES = [
-  {
-    id: 'receta',
-    nombre: 'Receta',
-    sub: 'Costo + margen',
-    detalle: 'Cargás los insumos de cada plato una vez. Dico calcula el costo '
-      + 'solo y lo vuelve a calcular cuando el proveedor cambia el precio. Al '
-      + 'lado del precio de venta ves el margen que te dejó.',
-    ejemplo: [
-      ['Bife de chorizo', 'venta', '$1.200'],
-      ['Insumos', 'costo', '$340'],
-      ['Hora de trabajo', 'costo', '$185'],
-      ['Margen', 'neto', '$675'],
-    ],
-  },
-  {
-    id: 'horario',
-    nombre: 'Horario',
-    sub: 'Nómina + rentabilidad',
-    detalle: 'Cada puesto tiene un valor por hora. La gente ficha entrada y '
-      + 'salida, y las horas que cuentan son las fichadas, no las programadas. '
-      + 'Dico te dice qué porcentaje de la venta se fue en sueldos, día por día.',
-    ejemplo: [
-      ['Martes 14 a 17', 'venta', '$4.900'],
-      ['Mozo + cocinero', 'nómina', '$1.850'],
-      ['Sobre la venta', 'costo', '38%'],
-      ['Ese turno', 'veredicto', 'No paga'],
-    ],
-  },
-  {
-    id: 'pl',
-    nombre: 'P&L',
-    sub: 'Número real',
-    detalle: 'Cerrás la caja y el reporte ya está hecho: ventas, insumos, '
-      + 'nómina, merma y margen neto. Eso es lo que ganaste esa noche. No hay '
-      + '"veníamos bien", hay un número.',
-    ejemplo: [
-      ['Viernes', 'ventas', '$4.200'],
-      ['Insumos', 'costo', '$1.050'],
-      ['Nómina', 'costo', '$650'],
-      ['Merma', 'costo', '$140'],
-      ['Ganancia', 'neta', '$2.360'],
-    ],
-  },
-];
-
-const PASOS = [
-  {
-    n: '1',
-    titulo: 'Entra el pedido',
-    detalle: 'Lo carga el mozo desde el salón, o lo hace el cliente solo desde '
-      + 'el QR de la mesa. Aparece en el mismo lugar para los dos.',
-  },
-  {
-    n: '2',
-    titulo: 'La cocina lo ve',
-    detalle: 'El pedido aprobado baja a producción. Cuando sale, se marca listo '
-      + 'y el salón se entera sin que nadie grite.',
-  },
-  {
-    n: '3',
-    titulo: 'El stock se descuenta',
-    detalle: 'Cada venta baja los insumos que usó esa receta. Si algo queda por '
-      + 'debajo del mínimo, Dico avisa antes de que falte a mitad del servicio.',
-  },
-  {
-    n: '4',
-    titulo: 'Se cobra y se cierra',
-    detalle: 'Efectivo, tarjeta o MercadoPago. Al final del turno, el arqueo '
-      + 'compara lo declarado con lo registrado y la diferencia aparece sola.',
-  },
-  {
-    n: '5',
-    titulo: 'Aparece la ganancia',
-    detalle: 'Dico ya sabe qué costaron los insumos, cuánto se pagó en horas y '
-      + 'qué se tiró. Te muestra el neto de esa noche, no a fin de mes.',
-  },
-];
-
-const MODULOS = [
-  { nombre: 'Catálogo público', estado: 'activo', detalle: 'Tu carta online en tu-nombre.divianco.app, con QR para la mesa.' },
-  { nombre: 'Pedidos y salón', estado: 'activo', detalle: 'Mapa de mesas, comandas, estado por mesa y pedidos para llevar.' },
-  { nombre: 'Caja y arqueo', estado: 'activo', detalle: 'Apertura, cobros por medio de pago y cierre con control del encargado.' },
-  { nombre: 'Stock y compras', estado: 'activo', detalle: 'Insumos, compras, recepciones y merma. Cada movimiento queda asentado.' },
-  { nombre: 'Recetas con costo real', estado: 'activo', detalle: 'Insumos por plato, costo automático y margen al lado del precio.' },
-  { nombre: 'Reportes y P&L', estado: 'activo', detalle: 'Ganancia por día, por mes y por categoría, con costos reales.' },
-  { nombre: 'Equipo y horarios', estado: 'activo', detalle: 'Legajos, puestos, fichaje, costo por hora y costo laboral sobre venta.' },
-  { nombre: 'Cocina en pantalla', estado: 'pruebas', detalle: 'La comanda digital por sector. Está construida y se termina de probar.' },
-  { nombre: 'Facturación ARCA', estado: 'roadmap', detalle: 'Factura electrónica desde el mismo pedido. En desarrollo, todavía no.' },
-];
-
-const INTEGRACIONES = [
-  { nombre: 'MercadoPago', estado: 'activo', detalle: 'Checkout Pro con la cuenta del propio negocio. Por ahora solo Argentina.' },
-  { nombre: 'WhatsApp', estado: 'activo', detalle: 'Los pedidos del catálogo se responden por wa.me desde el panel.' },
-  { nombre: 'Avisos push', estado: 'activo', detalle: 'Pedido nuevo, stock bajo y cierre de turno, en el celular.' },
-  { nombre: 'Exportar a Excel', estado: 'activo', detalle: 'Bajás en CSV o PDF lo que ves en pantalla, para tu contador.' },
-  { nombre: 'Facturación ARCA', estado: 'roadmap', detalle: 'En desarrollo. No la ofrecemos hasta que emita una factura de verdad.' },
-  { nombre: 'Rappi y Pedidos Ya', estado: 'roadmap', detalle: 'Está en la lista y no tiene fecha. Preferimos decirlo así.' },
-];
-
-const ESTADO_TEXTO = { activo: 'Activo', pruebas: 'En pruebas', roadmap: 'En desarrollo' };
-
-// Lo que Dico dice son AVISOS sobre datos que ya estan en el sistema, no
-// respuestas de un modelo de lenguaje. La diferencia importa y esta seccion
-// existe para dejarla clara antes de que alguien la asuma al reves.
-const AVISOS = [
-  {
-    titulo: 'Food cost alto',
-    texto: 'El bife de chorizo te sale $520 hoy. La semana pasada salía $380: '
-      + 'subió el proveedor. ¿Ajustás el precio o cambiás el corte?',
-  },
-  {
-    titulo: 'Turno que no paga',
-    texto: 'Los martes de 14 a 17 la nómina se come el 38% de la venta. Es el '
-      + 'único turno de la semana arriba del 30%.',
-  },
-  {
-    titulo: 'Merma fuera de lo normal',
-    texto: 'Esta semana tiraste $1.200, casi el triple del promedio del mes. '
-      + 'Casi todo en verdulería.',
-  },
-];
-
-const SEGURIDAD = [
-  {
-    titulo: 'Cada rol ve lo suyo',
-    detalle: 'Un mozo no ve el P&L ni la nómina. Un cocinero no ve el precio de '
-      + 'venta ni el costo. No es una pantalla escondida: el permiso se aplica '
-      + 'en la base de datos, así que tampoco se llega por otro lado.',
-  },
-  {
-    titulo: 'Un negocio no ve al otro',
-    detalle: 'Cada local es un inquilino separado con seguridad por fila. Si '
-      + 'tenés dos sucursales, cada una ve su data. Si sumás un contador, ve '
-      + 'reportes sin ver la operación.',
-  },
-  {
-    titulo: 'Dico no lee tus datos',
-    detalle: 'Dico es determinista: calcula sobre lo que ya está cargado, con '
-      + 'reglas que se pueden leer. No es un modelo entrenado con tu '
-      + 'información ni la manda a ningún lado.',
-  },
-  {
-    titulo: 'Respaldo y cifrado',
-    detalle: 'Los datos viajan cifrados y se respaldan a diario. Nadie de '
-      + 'Divianco entra a tu operación sin que vos lo pidas.',
-  },
-];
-
-const FAQ = [
-  {
-    p: '¿Qué pasa si se cae el sistema en pleno servicio?',
-    r: 'Te lo digo derecho: hoy no hay modo offline. Si se cae la conexión o el '
-      + 'servicio, no vas a poder cargar pedidos hasta que vuelva. Corre sobre '
-      + 'infraestructura administrada y con respaldo diario, y no es algo que '
-      + 'pase seguido, pero prometerte que seguís cobrando sin internet sería '
-      + 'mentirte. El modo offline está en la lista de lo que falta.',
-  },
-  {
-    p: '¿Puedo migrar desde el sistema que uso hoy?',
-    r: 'Sí. El catálogo, el stock y los clientes los importamos si los tenés '
-      + 'digitalizados. Las recetas y el equipo se cargan una vez, y ahí se va '
-      + 'el grueso del tiempo. La migración la hacemos con el local cerrado '
-      + 'para que no dejes de vender.',
-  },
-  {
-    p: 'No entiendo nada de tecnología. ¿Igual lo puedo usar?',
-    r: 'Por eso el alta la hacemos juntos. Te muestro cada módulo y lo practicás '
-      + 'con tus propios datos. Después es cargar pedidos y mirar el número al '
-      + 'cierre. Si algo no se entiende, WhatsApp.',
-  },
-  {
-    p: '¿Cuánto tarda la puesta en marcha?',
-    r: 'Crear la cuenta y tener el catálogo online es cuestión de minutos, y eso '
-      + 'lo hacés solo desde acá. Dejarlo completo, con recetas costeadas, '
-      + 'equipo y horarios cargados, es un par de horas conmigo.',
-  },
-  {
-    p: '¿Y si abro una segunda sucursal?',
-    r: 'Pasás al plan Cadena cuando quieras, sin penalidad. Cada local tiene su '
-      + 'P&L y sus roles, y arriba ves el consolidado y la comparativa entre '
-      + 'sucursales.',
-  },
-  {
-    p: 'Si dejo de pagar, ¿pierdo mis datos?',
-    r: 'No se borran. Perdés el acceso hasta que retomes, y cuando volvés está '
-      + 'todo donde lo dejaste.',
-  },
-  {
-    p: '¿Sirve con mi caja registradora vieja?',
-    r: 'Si es una máquina mecánica, no se conecta. Pero Dico trae su propia caja '
-      + 'digital y esa la reemplaza. Si cobrás con terminal de MercadoPago, eso '
-      + 'sí entra solo.',
-  },
-];
-
-// Los precios salen de la tabla `plans` del edificio (migracion 0052). El plan
-// `total` queda afuera a proposito: esta modelado y marcado no disponible.
-const PLANES = [
-  {
-    id: 'digital',
-    nombre: 'Digital',
-    etiqueta: 'Para empezar',
-    mensual: 0,
-    descripcion: 'Todo el sistema, sin pagar.',
-    items: [
-      'Catálogo público con link propio',
-      'Pedidos, caja y arqueo',
-      'Recetas con costo y margen',
-      'Stock e insumos',
-      'Equipo, horarios y costo por hora',
-      'P&L con números reales',
-    ],
-  },
-  {
-    id: 'local',
-    nombre: 'Local',
-    etiqueta: 'Más elegido',
-    destacado: true,
-    mensual: 59000,
-    anual: 47200,
-    descripcion: 'Un local, con todo lo que llega.',
-    items: [
-      'Todo lo del plan Digital',
-      'Facturación ARCA cuando salga',
-      'Cocina en pantalla cuando salga',
-      'Soporte por mail y chat',
-      'Una sucursal',
-    ],
-  },
-  {
-    id: 'cadena',
-    nombre: 'Cadena',
-    etiqueta: 'Multi-local',
-    mensual: 99000,
-    anual: 79200,
-    descripcion: 'Varias sucursales en un solo lugar.',
-    items: [
-      'Todo lo del plan Local',
-      'Sucursales sin tope',
-      'Consolidado y comparativa entre locales',
-      'Roles por local',
-      'Soporte por teléfono',
-    ],
-  },
-];
-
-const pesos = (n) => `$${n.toLocaleString('es-AR')}`;
+const marcarAgenda = () => marcarEvento('agenda');
 
 /** Escribe el titulo y los meta de la raiz. El index.html del build lleva los
  *  del cliente que se horneo (clients/edificio), asi que sin esto la pestania de
@@ -305,456 +81,566 @@ function useMetaDeLaPlataforma() {
     set('meta[property="og:title"]', 'content', TITULO);
     set('meta[property="og:description"]', 'content', DESCRIPCION);
 
-    // La landing es oscura aunque el resto de la app no lo sea: con
-    // color-scheme dark la barra de scroll, el autocompletado y los controles
-    // nativos no aparecen claros. Se devuelve el valor previo al desmontar.
+    // La landing es clara: color-scheme light para que la barra de scroll y
+    // los controles nativos acompanien. Se devuelve el valor previo al salir.
     const raiz = document.documentElement;
     const esquemaPrevio = raiz.style.colorScheme;
-    raiz.style.colorScheme = 'dark';
+    raiz.style.colorScheme = 'light';
     return () => { raiz.style.colorScheme = esquemaPrevio; };
   }, []);
 }
 
 export default function PlatformLanding() {
   useMetaDeLaPlataforma();
+  const raizRef = useRef(null);
+  const abrirRef = useRef(null);
+  useEntradas(raizRef);
+
+  // Los botones de mas abajo abren el mismo diagnostico, arriba.
+  const abrirDiagnostico = () => {
+    marcarEvento('diagnostico-cta');
+    abrirRef.current?.();
+  };
 
   return (
-    <div className="pl-root">
-      <header className="pl-nav">
-        <div className="pl-wrap pl-nav-in">
-          <a className="pl-logo" href="/" aria-label="Dico">
-            <img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
-          </a>
-          <nav className="pl-nav-links">
-            <a href="#pilares">Cómo lo calcula</a>
-            <a href="#flujo">Cómo funciona</a>
-            <a href="#modulos">Módulos</a>
-            <a href="#precios">Precios</a>
-            <a href="#preguntas">Preguntas</a>
-          </nav>
-          <div className="pl-nav-cta">
-            <a className="pl-btn pl-btn-ghost pl-btn-sm" href="/entrar">Entrar</a>
-            <a className="pl-btn pl-btn-gold pl-btn-sm" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
-              Agendá 20 minutos
-            </a>
-          </div>
-        </div>
-      </header>
-
+    <div className="pl-root" ref={raizRef}>
       {/* div y no main: App.jsx ya envuelve todas las rutas en
           <main id="main-content">, y un main adentro de otro rompe el landmark. */}
-      <div>
-        {/* ── 1. HERO ── */}
-        <section className="pl-hero">
-          <div className="pl-wrap">
-            <p className="pl-pill">
-              <span className="pl-pill-dot" aria-hidden="true" />
-              Gestión para gastronomía&nbsp;· Argentina
-            </p>
-
-            <h1 className="pl-titular">
-              <span className="pl-titular-fijo">Sabé cuánto ganás,</span>
-              <span className="pl-titular-alma pl-serif">no solo cuánto vendés.</span>
-            </h1>
-
-            <p className="pl-hero-sub">
-              La ganancia real de cada plato, de cada turno y de cada noche.
-              Sin suposiciones. Números.
-            </p>
-
-            <div className="pl-hero-cta">
-              <a className="pl-btn pl-btn-gold" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
-                Agendá 20 minutos conmigo
-              </a>
-              <a className="pl-btn pl-btn-ghost" href="/registro">Probar gratis</a>
+      <section className="pl-hero" aria-label="Dico">
+        <header className="pl-cabecera">
+          <a className="pl-marca" href="/">
+            <img src="/brand/dico/logo/dico-claro.png" alt="Dico" width="1368" height="452" />
+          </a>
+          <a className="pl-enlace pl-cabecera-link" href="/entrar">Entrar</a>
+        </header>
+        <Diagnostico
+          modo="home"
+          nivel="h1"
+          abrirRef={abrirRef}
+          Portada={Portada}
+          lado={(
+            <div className="pl-instrumento">
+              <PiezaResultado />
+              <p className="pl-instrumento-nota">Un mes de ejemplo. Elegí el rubro y mirá cómo cierra la cuenta.</p>
             </div>
-
-            <p className="pl-hero-nota">
-              El plan Digital es gratis&nbsp;· Sin tarjeta&nbsp;· Tu carta online en un minuto
-            </p>
-
-            <MockupPanel />
-          </div>
-        </section>
-
-        <section className="pl-tira" aria-labelledby="pl-tira-titulo">
-          <div className="pl-wrap pl-tira-in">
-            <strong id="pl-tira-titulo" className="pl-etiqueta">Lo que reemplaza</strong>
-            <span>Planillas de Excel</span>
-            <span>Cuaderno de caja</span>
-            <span>Grupo de WhatsApp</span>
-            <span>Comandera aparte</span>
-            <span>Conteo de stock a ojo</span>
-          </div>
-        </section>
-
-        {/* ── 2. EL PROBLEMA ── */}
-        <section className="pl-sec pl-problema">
-          <div className="pl-wrap">
-            <div className="pl-sec-head">
-              <h2 className="pl-serif">Vendiste $10.000. ¿Ganaste cuánto?</h2>
-            </div>
-            <div className="pl-grid pl-grid-2">
-              <article className="pl-card">
-                <h3>Sin sistema</h3>
-                <p>
-                  Anotás a mano, sumás en papel y a fin de mes calculás si diste
-                  vuelta o no. Si el resultado es malo, ya pasó.
-                </p>
-              </article>
-              <article className="pl-card">
-                <h3>Con un sistema que solo vende</h3>
-                <p>
-                  Ves que vendiste $10.000 y no sabés cuánto pagaste de insumos,
-                  cuánto costó el equipo de esa noche, ni si ese plato de $500 te
-                  deja $200 o te sale negativo.
-                </p>
-              </article>
-            </div>
-            <p className="pl-remate">
-              En los dos casos decidís a ciegas. ¿Cambio la carta? ¿Subo precios?
-              ¿Abro un turno más? Sin costos reales, es adivinar.
-            </p>
-          </div>
-        </section>
-
-        {/* ── 3 y 4. LA SOLUCIÓN / LOS TRES PILARES ── */}
-        <section className="pl-sec" id="pilares">
-          <div className="pl-wrap">
-            <div className="pl-sec-head">
-              <h2 className="pl-serif">Receta por receta, turno por turno</h2>
-              <p>
-                Dico junta tres datos que en cualquier otro lado viven separados.
-                Juntos dejan de ser tres planillas y pasan a ser una ganancia.
-              </p>
-            </div>
-            <div className="pl-grid pl-pilares">
-              {PILARES.map((p) => (
-                <article className="pl-card pl-pilar" key={p.id}>
-                  <h3>{p.nombre}</h3>
-                  <p className="pl-pilar-sub pl-etiqueta">{p.sub}</p>
-                  <p>{p.detalle}</p>
-                  <dl className="pl-ejemplo">
-                    {p.ejemplo.map(([concepto, tipo, valor]) => (
-                      <div className="pl-ejemplo-fila" key={concepto}>
-                        <dt>
-                          {concepto} <span className="pl-ejemplo-tipo pl-etiqueta">{tipo}</span>
-                        </dt>
-                        <dd>{valor}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </article>
-              ))}
-            </div>
-            <p className="pl-remate">
-              Una sola base de datos. El dato se carga una vez y aparece donde
-              haga falta. Nada se duplica y nada se pierde entre planillas.
-            </p>
-          </div>
-        </section>
-
-        {/* ── 5. CÓMO FUNCIONA ── */}
-        <section className="pl-sec" id="flujo">
-          <div className="pl-wrap">
-            <div className="pl-sec-head pl-row">
-              <h2 className="pl-serif">Cinco pasos, de la mesa al número</h2>
-              <p>
-                Cada paso funciona solo. Conectados, el último sale sin que nadie
-                tenga que sentarse a calcularlo.
-              </p>
-            </div>
-            <ol className="pl-pasos">
-              {PASOS.map((p) => (
-                <li className="pl-paso" key={p.n}>
-                  <span className="pl-paso-n">{p.n}</span>
-                  <div>
-                    <h3>{p.titulo}</h3>
-                    <p>{p.detalle}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
-        {/* ── 6. MÓDULOS ── */}
-        <section className="pl-sec" id="modulos">
-          <div className="pl-wrap">
-            <div className="pl-sec-head pl-row">
-              <h2 className="pl-serif">Lo que tenés hoy y lo que falta</h2>
-              <p>
-                Usás lo que necesitás. Lo que todavía no está terminado figura
-                como tal, no como promesa.
-              </p>
-            </div>
-            <div className="pl-grid">
-              {MODULOS.map((m) => (
-                <article className="pl-card" key={m.nombre}>
-                  <div className="pl-card-head">
-                    <h3>{m.nombre}</h3>
-                    <span className={`pl-estado pl-etiqueta ${m.estado}`}>{ESTADO_TEXTO[m.estado]}</span>
-                  </div>
-                  <p>{m.detalle}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 7. INTEGRACIONES ── */}
-        <section className="pl-sec" id="integraciones">
-          <div className="pl-wrap">
-            <div className="pl-sec-head pl-row">
-              <h2 className="pl-serif">Se lleva bien con lo que ya usás</h2>
-              <p>¿Necesitás conectar otra cosa? Escribime y lo vemos.</p>
-            </div>
-            <div className="pl-grid">
-              {INTEGRACIONES.map((i) => (
-                <article className="pl-card" key={i.nombre}>
-                  <div className="pl-card-head">
-                    <h3>{i.nombre}</h3>
-                    <span className={`pl-estado pl-etiqueta ${i.estado}`}>{ESTADO_TEXTO[i.estado]}</span>
-                  </div>
-                  <p>{i.detalle}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 8. DICO, TU COPILOTO ── */}
-        <section className="pl-sec pl-copiloto">
-          <div className="pl-wrap">
-            <div className="pl-sec-head">
-              <h2 className="pl-serif">No decide por vos. Te avisa.</h2>
-              <p>
-                Dico mira tus números y levanta la mano cuando algo se sale de lo
-                normal. No manda a la cocina, no cambia precios y no gasta plata.
-                Te pone el dato adelante para que decidas vos.
-              </p>
-            </div>
-            <div className="pl-grid pl-avisos">
-              {AVISOS.map((a) => (
-                <article className="pl-card pl-aviso" key={a.titulo}>
-                  <h3 className="pl-aviso-firma">
-                    <img src="/brand/dico/dico-2d-neutral.png" alt="" width="256" height="256" />
-                    {a.titulo}
-                  </h3>
-                  <p>{a.texto}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 9. PLANES ── */}
-        <section className="pl-sec pl-precios" id="precios">
-          <div className="pl-wrap">
-            <div className="pl-sec-head">
-              <h2 className="pl-serif">Empezás gratis. Pagás si te sirve.</h2>
-            </div>
-            <div className="pl-grid">
-              {PLANES.map((p) => (
-                <article className={`pl-card pl-precio-card${p.destacado ? ' destacado' : ''}`} key={p.id}>
-                  <div className="pl-card-head">
-                    <h3>{p.nombre}</h3>
-                    <span className="pl-etiqueta">{p.etiqueta}</span>
-                  </div>
-                  <p className="pl-precio-monto">
-                    {p.mensual === 0 ? 'Gratis' : pesos(p.mensual)}
-                    {p.mensual > 0 && <span>/ mes por local</span>}
-                  </p>
-                  <p className="pl-precio-anual">
-                    {p.anual ? `${pesos(p.anual)} por mes si pagás el año` : p.descripcion}
-                  </p>
-                  <ul>
-                    {p.items.map((i) => <li key={i}>{i}</li>)}
-                  </ul>
-                  <a
-                    className={`pl-btn pl-btn-block ${p.destacado ? 'pl-btn-gold' : 'pl-btn-ghost'}`}
-                    href={p.mensual === 0 ? '/registro' : WHATSAPP_URL}
-                    {...(p.mensual === 0 ? {} : { target: '_blank', rel: 'noreferrer', onClick: marcarWhatsApp })}
-                  >
-                    {p.mensual === 0 ? 'Empezar gratis' : `Hablar de ${p.nombre}`}
-                  </a>
-                </article>
-              ))}
-            </div>
-            <p className="pl-precio-pie">
-              Sin cargo por usuario, por pedido ni por factura procesada. Lo que
-              ves en la tarjeta es lo que pagás. Precios en pesos, por local, sin IVA.
-            </p>
-          </div>
-        </section>
-
-        {/* ── 10. SEGURIDAD ── */}
-        <section className="pl-sec" id="seguridad">
-          <div className="pl-wrap">
-            <div className="pl-sec-head pl-row">
-              <h2 className="pl-serif">Tu data es tuya</h2>
-              <p>
-                Lo que sigue no son buenas intenciones: son reglas escritas en la
-                base de datos, que es donde tienen que estar.
-              </p>
-            </div>
-            <div className="pl-grid pl-grid-2">
-              {SEGURIDAD.map((s) => (
-                <article className="pl-card" key={s.titulo}>
-                  <h3>{s.titulo}</h3>
-                  <p>{s.detalle}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 11. FAQ ── */}
-        <section className="pl-sec" id="preguntas">
-          <div className="pl-wrap">
-            <div className="pl-sec-head">
-              <h2 className="pl-serif">Lo que todos preguntan</h2>
-            </div>
-            <div className="pl-faq">
-              {FAQ.map((f) => (
-                <details className="pl-faq-item" key={f.p}>
-                  <summary>
-                    <span>{f.p}</span>
-                    <span className="pl-faq-signo" aria-hidden="true" />
-                  </summary>
-                  <p>{f.r}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 12. CIERRE Y CONTACTO ── */}
-        <section className="pl-cierre" id="contacto">
-          <div className="pl-wrap">
-            <h2 className="pl-serif">Empecemos</h2>
-            <p>
-              Veinte minutos alcanzan para mirar juntos los números de tu local y
-              que veas si esto te sirve. Si preferís probarlo solo primero, el
-              plan Digital es gratis y no pide tarjeta.
-            </p>
-            <div className="pl-hero-cta">
-              <a className="pl-btn pl-btn-gold" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
-                Agendá 20 minutos conmigo
-              </a>
-              <a className="pl-btn pl-btn-ghost" href="/registro">Probar gratis</a>
-            </div>
-            <dl className="pl-contacto">
-              <div>
-                <dt className="pl-etiqueta">WhatsApp</dt>
-                <dd><a href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>+1 786 960 8110</a></dd>
-              </div>
-              <div>
-                <dt className="pl-etiqueta">Horario</dt>
-                <dd>Lunes a viernes, 11 a 23 h (Buenos Aires)</dd>
-              </div>
-              <div>
-                <dt className="pl-etiqueta">Mail</dt>
-                <dd><a href="mailto:hola@divianco.app">hola@divianco.app</a></dd>
-              </div>
-              <div>
-                <dt className="pl-etiqueta">Atiende</dt>
-                <dd>Ricardo Rodríguez · Grupo Divianco</dd>
-              </div>
-            </dl>
-          </div>
-        </section>
-      </div>
-
-      {/* La trama de puntos cierra la pagina y entrega el pie: es decoracion
-          (el componente es aria-hidden) y no aporta nada al lector de pantalla. */}
-      <FooterAscii />
-
-      <footer className="pl-pie">
-        <div className="pl-wrap pl-pie-in">
-          <img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
-          <span className="pl-pie-legal">© {new Date().getFullYear()} Grupo Divianco</span>
-          <div className="pl-pie-links">
-            <a href="#pilares">Cómo lo calcula</a>
-            <a href="#modulos">Módulos</a>
-            <a href="#precios">Precios</a>
-            <a href="#preguntas">Preguntas</a>
-            <a href="/entrar">Entrar</a>
-          </div>
-        </div>
-      </footer>
+          )}
+        />
+      </section>
+      <QueHace />
+      <Rubros />
+      <Clientes />
+      <Planes onDiagnostico={abrirDiagnostico} />
+      <Preguntas />
+      <Cierre onDiagnostico={abrirDiagnostico} />
+      <Pie />
     </div>
   );
 }
 
-/* El mockup no es una captura: es la propia UI en miniatura, con datos de
-   ejemplo de un restaurante chico. Una captura envejece con cada deploy; esto
-   no. Los numeros son los mismos del pilar de P&L a proposito: la pagina
-   cuenta una sola noche, no cinco ejemplos sueltos. */
-function MockupPanel() {
+/* ─────────────── La portada: la frase y el boton ─────────────── */
+
+function Portada({ onAbrir }) {
+  const alAbrir = () => {
+    marcarEvento('diagnostico-cta');
+    onAbrir();
+  };
   return (
-    <div
-      className="pl-mock"
-      role="img"
-      aria-label="Vista del panel de Dico con las ventas de la noche, el costo de insumos y de nómina, la merma y la ganancia neta"
-    >
-      <div className="pl-mock-bar">
-        <span className="pl-mock-luz" />
-        <span className="pl-mock-luz" />
-        <span className="pl-mock-luz" />
-        <span className="pl-mock-url">divianco.app · cierre del viernes</span>
+    <div className="pl-portada">
+      <h1 className="pl-h1 pl-lineas">
+        <span className="pl-linea"><span className="pl-linea-in">Todo tu negocio,</span></span>{' '}
+        <span className="pl-linea"><span className="pl-linea-in pl-linea-2">en un solo lugar.</span></span>
+      </h1>
+      <p className="pl-bajada pl-sigue">
+        Ventas, costos, sueldos, stock, caja y pedidos: cada variable de tu
+        gastronomía, comercio o servicio, cubierta en Dico. Lo que todavía no
+        hace, lo desarrollamos con vos.
+      </p>
+      <div className="pl-guia pl-sigue">
+        <img src="/brand/dico/dico-2d-question.png" alt="" width="256" height="256" />
+        <p className="pl-dico-dice">
+          Te hago unas pocas preguntas, sin email, y te digo por dónde empezar.
+        </p>
       </div>
-
-      <div className="pl-mock-body" aria-hidden="true">
-        <div>
-          <div className="pl-kpis">
-            <div className="pl-kpi">
-              <div className="pl-kpi-label pl-etiqueta">Ventas</div>
-              <div className="pl-kpi-valor">$4.200</div>
-              <div className="pl-kpi-delta sube">+6%</div>
-            </div>
-            <div className="pl-kpi">
-              <div className="pl-kpi-label pl-etiqueta">Insumos</div>
-              <div className="pl-kpi-valor">$1.050</div>
-              <div className="pl-kpi-delta">25% de la venta</div>
-            </div>
-            <div className="pl-kpi">
-              <div className="pl-kpi-label pl-etiqueta">Nómina</div>
-              <div className="pl-kpi-valor">$650</div>
-              <div className="pl-kpi-delta">15% de la venta</div>
-            </div>
-            <div className="pl-kpi destacado">
-              <div className="pl-kpi-label pl-etiqueta">Ganancia neta</div>
-              <div className="pl-kpi-valor">$2.360</div>
-              <div className="pl-kpi-delta sube">56% de margen</div>
-            </div>
-          </div>
-
-          <div className="pl-pend">
-            <h3>Pendientes de decidir</h3>
-            <ul>
-              <li><span className="pl-tag pl-etiqueta alta">Alta</span> El bife de chorizo pasó de $380 a $520 de costo.</li>
-              <li><span className="pl-tag pl-etiqueta alta">Alta</span> Agua mineral 500 ml sin stock cargado.</li>
-              <li><span className="pl-tag pl-etiqueta media">Media</span> Merma del viernes: $140, casi toda en verdulería.</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="pl-dico-card">
-          <div className="pl-dico-firma pl-etiqueta">
-            <img src="/brand/dico/dico-2d-neutral.png" alt="" width="256" height="256" />
-            Dico
-          </div>
-          <p className="pl-dico-dice">
-            El bife de chorizo te está dejando 14% de margen. A $1.450 volvés al
-            objetivo sin tocar el resto de la carta.
-          </p>
-          <div className="pl-dico-acciones">
-            <span className="pl-btn pl-btn-gold pl-btn-sm">Aplicar</span>
-            <span className="pl-btn pl-btn-ghost pl-btn-sm">Ahora no</span>
-          </div>
-        </div>
+      <div className="pl-acciones pl-sigue">
+        <button type="button" className="pl-boton" data-abrir onClick={alAbrir}>
+          Hacer mi diagnóstico
+        </button>
+        <a className="pl-enlace" href="#que-hace">Qué hace Dico</a>
       </div>
     </div>
+  );
+}
+
+/* ─────────────── Que hace Dico: tu dolor y la parte que lo resuelve ─────────────── */
+
+// Cada nota es un dolor tal como lo dice el duenio (la lib del diagnostico)
+// y, al lado, la parte del panel de Dico que lo resuelve. El panel es de un
+// restaurante de ejemplo; las cifras cierran con las de Piezas.jsx.
+const dolor = (vertical, id) => desafiosDe(vertical).find((d) => d.id === id)?.label;
+
+const PARTES = [
+  {
+    id: 'pedidos',
+    dolor: dolor('gastronomia', 'pedidos'),
+    nota: 'Salón, mostrador y catálogo online entran al mismo panel, con su estado y su cobro.',
+    titulo: 'Pedidos de hoy',
+    meta: '48 pedidos',
+    filas: [['Salón · mesa 6', '$38.400'], ['Mostrador', '$12.900'], ['Catálogo online', '$27.600']],
+  },
+  {
+    id: 'costos',
+    dolor: dolor('gastronomia', 'costos'),
+    nota: 'Cargás la receta una vez. Cuando sube un insumo, Dico recalcula el plato y te dice cuánto te deja.',
+    titulo: 'Bife de chorizo con papas',
+    meta: 'Precio $18.000',
+    filas: [['Insumos', '$5.100'], ['Merma y gastos · 15 %', '$765']],
+    cifra: ['Te deja', '$12.135'],
+  },
+  {
+    id: 'costo_laboral',
+    dolor: dolor('gastronomia', 'costo_laboral'),
+    nota: 'El equipo ficha entrada y salida, y ves qué parte de la venta de cada día se fue en sueldos.',
+    titulo: 'Martes 14',
+    meta: '24 h fichadas',
+    filas: [['Ventas del día', '$490.000'], ['Personal', '$186.000']],
+    cifra: ['Personal sobre venta', '38 %'],
+  },
+  {
+    id: 'stock',
+    dolor: dolor('comercio', 'stock'),
+    nota: 'Cada venta descuenta los insumos de su receta. Lo que queda debajo del mínimo te lo marca el panel.',
+    titulo: 'Stock',
+    meta: 'Compras y ventas, según la receta',
+    filas: [['Harina 000', '6 kg · mínimo 10'], ['Muzzarella', '8,4 kg · mínimo 5']],
+  },
+  {
+    id: 'mermas_caja',
+    dolor: dolor('gastronomia', 'mermas_caja'),
+    nota: 'La merma queda asentada y el arqueo compara lo declarado con lo registrado, medio por medio.',
+    titulo: 'Arqueo del viernes',
+    meta: 'Efectivo',
+    filas: [['Declarado', '$412.000'], ['Registrado', '$418.500']],
+    cifra: ['Diferencia', '−$6.500'],
+  },
+  {
+    id: 'rentabilidad',
+    dolor: dolor('gastronomia', 'rentabilidad'),
+    nota: 'Ventas, costo según tus recetas y gastos: el resultado del mes se arma solo.',
+    titulo: 'Resultado de septiembre',
+    meta: '20,0 % de la venta',
+    filas: [['Ventas', '$42.600.000'], ['Costo y gastos', '−$34.080.000']],
+    cifra: ['Resultado', '$8.520.000'],
+  },
+];
+
+// Oro para lo que es valor (lo que te deja, el resultado); error para la
+// diferencia de caja; el porcentaje de personal, en tinta: no hay regla que
+// lo marque como alerta.
+const TONO_CIFRA = { costos: 'pl-oro', rentabilidad: 'pl-oro', mermas_caja: 'pl-error' };
+
+function QueHace() {
+  const [activa, setActiva] = useState(null);
+
+  return (
+    <section className="pl-seccion pl-que-hace" id="que-hace" aria-labelledby="pl-que-hace-titulo">
+      <span className="pl-ancla" id="pilares" aria-hidden="true" />
+      <span className="pl-ancla" id="flujo" aria-hidden="true" />
+      <div className="pl-plancha">
+        <h2 id="pl-que-hace-titulo" className="pl-h2 pl-plancha-titulo" data-reveal>Qué hace Dico</h2>
+        <p className="pl-nota-texto pl-plancha-intro" data-reveal="1">
+          Cada dolor, al lado de la parte del panel que lo resuelve. Es un
+          restaurante de ejemplo.
+        </p>
+        <div className="pl-plancha-tapa pl-pieza" data-ui aria-hidden="true">
+          <span className="pl-pieza-titulo">Panel de Dico</span>
+          <span className="pl-pieza-meta">Gastronomía</span>
+        </div>
+        {PARTES.map((p, i) => (
+          <PartePlancha
+            key={p.id}
+            parte={p}
+            indice={i}
+            activa={activa === p.id}
+            onActivar={(on) => setActiva(on ? p.id : null)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PartePlancha({ parte, indice, activa, onActivar }) {
+  const ultima = indice === PARTES.length - 1;
+  const lado = indice % 2 === 0 ? 'izq' : 'der';
+  return (
+    <>
+      <div
+        className={`pl-plancha-parte pl-pieza pl-r${indice + 2}${ultima ? ' ultima' : ''}${activa ? ' activa' : ''}`}
+        data-ui
+        role="figure"
+        aria-label={`Ejemplo: ${parte.titulo}`}
+      >
+        <div className="pl-pieza-cab">
+          <span className="pl-pieza-titulo">{parte.titulo}</span>
+          <span className="pl-pieza-meta">{parte.meta}</span>
+        </div>
+        <dl className="pl-filas">
+          {parte.filas.map(([a, b]) => (
+            <div className="pl-fila" key={a}><dt>{a}</dt><dd>{b}</dd></div>
+          ))}
+        </dl>
+        {parte.cifra && (
+          <p className="pl-plancha-cifra">
+            <span>{parte.cifra[0]}</span>
+            <span className={TONO_CIFRA[parte.id] || ''}>{parte.cifra[1]}</span>
+          </p>
+        )}
+      </div>
+      <div
+        className={`pl-nota pl-nota-${lado} pl-r${indice + 2}`}
+        data-reveal
+        onPointerEnter={() => onActivar(true)}
+        onPointerLeave={() => onActivar(false)}
+      >
+        <h3 className="pl-nota-nombre">{parte.dolor}</h3>
+        <p className="pl-nota-texto">{parte.nota}</p>
+      </div>
+    </>
+  );
+}
+
+/* ─────────────── Lo que hace hoy cada rubro ─────────────── */
+
+const HOY = 'Hoy';
+const DESARROLLO = 'En desarrollo';
+
+// De src/modules/registry.js: `implementado: true` es Hoy. Lo demas, en
+// desarrollo (agenda de turnos y variantes estan en false; el resultado del
+// dia no existe todavia). Desde la 0104 (aplicada el 20/oct) completar un
+// pedido descuenta la receta en gastronomia y el articulo sin receta en
+// comercio y en los productos que vende un servicio. No existen: el minimo
+// por articulo con aviso (min_stock es solo de insumos) y que un servicio
+// descuente los insumos que usa.
+const RUBROS = [
+  {
+    nombre: 'Gastronomía',
+    filas: [
+      ['Catálogo online y pedidos de salón, mostrador y delivery', HOY],
+      ['Mesas y comandas del salón', HOY],
+      ['Cocina en pantalla, por sector', HOY],
+      ['Recetas con el costo de cada plato', HOY],
+      ['Stock de insumos con compras, conteos y mínimo', HOY],
+      ['Cada venta descuenta los insumos de su receta', HOY],
+      ['Caja y arqueo por medio de pago', HOY],
+      ['Fichaje y costo del personal por día', HOY],
+      ['Gastos y resultado del mes', HOY],
+      ['Resultado del día, con nómina y merma', DESARROLLO],
+    ],
+  },
+  {
+    nombre: 'Comercio',
+    filas: [
+      ['Catálogo online y pedidos de mostrador', HOY],
+      ['Stock por artículo: cada venta lo descuenta', HOY],
+      ['Caja y arqueo por medio de pago', HOY],
+      ['Fichaje y costo del personal por día', HOY],
+      ['Compras, gastos y resultado del mes', HOY],
+      ['Mínimo por artículo con aviso', DESARROLLO],
+      ['Talles y colores por artículo', DESARROLLO],
+    ],
+  },
+  {
+    nombre: 'Servicios',
+    filas: [
+      ['Catálogo de servicios online, con precio', HOY],
+      ['Ventas y cobros de cada servicio', HOY],
+      ['Caja y arqueo por medio de pago', HOY],
+      ['Stock de insumos, con mínimo', HOY],
+      ['Productos que vendés: cada venta los descuenta', HOY],
+      ['Fichaje y costo del personal por día', HOY],
+      ['Gastos y resultado del mes', HOY],
+      ['Que cada servicio descuente los insumos que usa', DESARROLLO],
+      ['Agenda de turnos online', DESARROLLO],
+    ],
+  },
+  {
+    nombre: 'En todos los rubros',
+    filas: [
+      ['Facturación electrónica ARCA', DESARROLLO],
+      ['Pedidos de Rappi y PedidosYa', 'Sin fecha'],
+    ],
+  },
+];
+
+function Rubros() {
+  return (
+    <section className="pl-seccion pl-rubros" id="rubros" aria-labelledby="pl-rubros-titulo">
+      <span className="pl-ancla" id="modulos" aria-hidden="true" />
+      <span className="pl-ancla" id="integraciones" aria-hidden="true" />
+      <h2 id="pl-rubros-titulo" className="pl-h2 pl-rubros-titulo" data-reveal>Lo que hace hoy, por rubro</h2>
+      <div className="pl-lista">
+        {RUBROS.map((r, i) => (
+          <div className="pl-lista-grupo" key={r.nombre} data-reveal={(i % 3) + 1}>
+            <h3 className="pl-lista-grupo-nombre">{r.nombre}</h3>
+            <ul>
+              {r.filas.map(([que, estado]) => (
+                <li className={`pl-lista-fila${estado === HOY ? '' : ' pendiente'}`} key={que}>
+                  <span className="pl-lista-punto" aria-hidden="true" />
+                  <span className="pl-lista-que">{que}</span>
+                  <span className="pl-lista-estado">{estado}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+        <p className="pl-lista-cierre" data-reveal>
+          ¿Tu negocio necesita algo que está en desarrollo, o que no está en la
+          lista? Lo desarrollamos con vos.{' '}
+          <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
+            Contanos qué necesitás
+          </a>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────── Clientes: una tabla y sus productos ─────────────── */
+
+function Clientes() {
+  return (
+    <section className="pl-seccion pl-clientes" aria-labelledby="pl-clientes-titulo">
+      <h2 id="pl-clientes-titulo" className="pl-h2 pl-escalon" data-reveal>
+        <span>Ya trabajan</span> <span className="pl-escalon-2">con Dico</span>
+      </h2>
+      <table className="pl-tabla" data-reveal="1">
+        <caption className="pl-oculto">Negocios que usan Dico</caption>
+        <thead>
+          <tr><th scope="col">Negocio</th><th scope="col">Rubro</th><th scope="col">Lo que venden</th></tr>
+        </thead>
+        <tbody>
+          {CLIENTES.map(([negocio, rubro, venden]) => (
+            <tr key={negocio}>
+              <th scope="row">{negocio}</th>
+              <td>{rubro}</td>
+              <td>{venden}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="pl-fotos">
+        {FOTOS.map((f, i) => (
+          <figure className="pl-foto" key={f.src} data-reveal={(i % 3) + 1}>
+            <span className="pl-foto-marco">
+              <img src={f.src} alt={f.alt} width={f.ancho} height={f.alto} loading="lazy" />
+            </span>
+            <figcaption>{f.pie}, de {f.de}</figcaption>
+          </figure>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────── Planes, como una carta ─────────────── */
+
+// Los precios salen de la tabla `plans` del edificio (migracion 0052). El plan
+// `total` queda afuera a proposito: esta modelado y marcado no disponible.
+const PLANES = [
+  {
+    grupo: 'Para empezar',
+    nombre: 'Digital',
+    precio: 'Gratis',
+    texto: 'Catálogo online con link propio, pedidos, caja y arqueo, stock, equipo y el resultado de cada mes. En gastronomía, también recetas con costo.',
+  },
+  {
+    grupo: 'Un local',
+    nombre: 'Local',
+    precio: '$59.000',
+    texto: 'Todo lo de Digital, con soporte por mail y chat, y lo que llega cuando salga: facturación ARCA.',
+    anual: 'O $47.200 por mes pagando el año.',
+  },
+  {
+    grupo: 'Varias sucursales',
+    nombre: 'Cadena',
+    precio: '$99.000',
+    texto: 'Por local. Sucursales sin tope, consolidado y comparativa entre locales, roles por local y soporte por teléfono.',
+    anual: 'O $79.200 por mes pagando el año.',
+  },
+];
+
+function Planes({ onDiagnostico }) {
+  return (
+    <section className="pl-seccion pl-planes" id="precios" aria-labelledby="pl-planes-titulo">
+      <div className="pl-planes-cab">
+        <h2 id="pl-planes-titulo" className="pl-h2" data-reveal>Planes</h2>
+        <figure className="pl-foto pl-planes-foto" data-reveal="1">
+          <span className="pl-foto-marco">
+            <img
+              className="pl-deriva"
+              src="/brand/landing/crazy-dulce-nebulosa.webp"
+              alt="Cookie con chips de dulce de leche sobre una piedra oscura"
+              width="900" height="900" loading="lazy"
+            />
+          </span>
+          <figcaption>Dulce Nebulosa, de Crazy Miga</figcaption>
+        </figure>
+      </div>
+      <div className="pl-carta" data-reveal="2">
+        {PLANES.map((p) => (
+          <div className="pl-carta-grupo" key={p.nombre}>
+            <h3 className="pl-carta-item">
+              <span>{p.nombre}</span>
+              <span>{p.precio === 'Gratis' ? p.precio : `${p.precio} por mes`}</span>
+            </h3>
+            <p className="pl-carta-texto"><strong>{p.grupo}.</strong> {p.texto}</p>
+            {p.anual && <p className="pl-carta-texto">{p.anual}</p>}
+          </div>
+        ))}
+        <p className="pl-carta-nota">
+          Precios en pesos, por local, sin IVA. Sin cargo por usuario ni por
+          pedido. La cuenta empieza gratis y sin tarjeta.{' '}
+          <button type="button" className="pl-enlace pl-enlace-boton" onClick={onDiagnostico}>
+            El diagnóstico te dice cuál te conviene
+          </button>
+          , o <a className="pl-enlace" href="/registro">probá gratis sin diagnóstico</a>.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────── Preguntas, como texto de lectura ─────────────── */
+
+const FAQ = [
+  {
+    p: '¿Qué es el diagnóstico?',
+    r: 'Son unas pocas preguntas sobre tu negocio: el rubro, lo que más te preocupa, '
+      + 'los canales, el tamaño, cómo lo controlás hoy, para cuándo lo querés y cuánto '
+      + 'pensás invertir. Con eso Dico te dice qué resolver primero, cómo lo resuelve y '
+      + 'qué plan te conviene. No pide email ni tarjeta.',
+  },
+  {
+    p: '¿Qué pasa si se cae el sistema en pleno servicio?',
+    r: 'Te lo digo derecho: hoy no hay modo offline. Si se cae la conexión o el '
+      + 'servicio, no vas a poder cargar pedidos hasta que vuelva. No es algo que '
+      + 'pase seguido, pero prometerte que seguís cobrando sin internet sería '
+      + 'mentirte. El modo offline está en la lista de lo que falta.',
+  },
+  {
+    p: '¿Puedo migrar desde el sistema que uso hoy?',
+    r: 'Sí. El catálogo, el stock y los clientes los importamos si los tenés '
+      + 'digitalizados. Las recetas y el equipo se cargan una vez, y ahí se va '
+      + 'el grueso del tiempo.',
+  },
+  {
+    p: 'No entiendo nada de tecnología. ¿Igual lo puedo usar?',
+    r: 'Por eso la puesta en marcha la hacemos juntos: te muestro cada módulo y '
+      + 'lo practicás con tus propios datos. Después es cargar pedidos y mirar '
+      + 'el número. Si algo no se entiende, WhatsApp.',
+    whatsapp: true,
+  },
+  {
+    p: '¿Cuánto tarda la puesta en marcha?',
+    r: 'Crear la cuenta y tener el catálogo online es cuestión de minutos, y eso '
+      + 'lo hacés solo. Dejarlo completo, con recetas costeadas, equipo y '
+      + 'horarios cargados, es un par de horas conmigo.',
+  },
+  {
+    p: '¿Y si mi negocio necesita algo que Dico no hace?',
+    r: 'Contanos qué es. Lo que está en desarrollo, como la agenda de turnos o '
+      + 'los talles y colores, se puede adelantar para tu negocio, y lo que no '
+      + 'está en la lista lo desarrollamos con vos.',
+  },
+  {
+    p: '¿Y si abro una segunda sucursal?',
+    r: 'Pasás al plan Cadena cuando quieras, sin penalidad. Cada local tiene su '
+      + 'resultado y sus roles, y arriba ves el consolidado.',
+  },
+  {
+    p: 'Si dejo de pagar, ¿pierdo mis datos?',
+    r: 'No se borran. Perdés el acceso hasta que retomes, y cuando volvés está '
+      + 'todo donde lo dejaste.',
+  },
+  {
+    p: '¿Sirve con mi caja registradora vieja?',
+    r: 'Si es una máquina mecánica, no se conecta. Dico trae su propia caja, con '
+      + 'efectivo, tarjeta y MercadoPago, y el arqueo al cerrar.',
+  },
+  {
+    p: '¿Quién ve qué adentro de mi negocio?',
+    r: 'Cada rol ve lo suyo: un mozo o un vendedor no ve el resultado ni los '
+      + 'sueldos. Y un negocio nunca ve los números de otro: eso lo separa la '
+      + 'base de datos, no una pantalla.',
+  },
+];
+
+function Preguntas() {
+  return (
+    <section className="pl-seccion pl-preguntas" id="preguntas" aria-labelledby="pl-preguntas-titulo">
+      <span className="pl-ancla" id="seguridad" aria-hidden="true" />
+      <h2 id="pl-preguntas-titulo" className="pl-h2 pl-preguntas-titulo" data-reveal>Preguntas</h2>
+      <div className="pl-lectura-texto" data-reveal="1">
+        {FAQ.map((f) => (
+          <p className="pl-respuesta" key={f.p}>
+            <strong>{f.p}</strong>{' '}
+            {f.r}
+            {f.whatsapp && (
+              <>
+                {' '}
+                <a className="pl-enlace" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
+                  Escribime al {WHATSAPP_VISIBLE}
+                </a>
+                , {WHATSAPP_HORARIO}.
+              </>
+            )}
+          </p>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────── Cierre: una frase y el boton ─────────────── */
+
+function Cierre({ onDiagnostico }) {
+  return (
+    <section className="pl-seccion pl-cierre" id="contacto" aria-label="Empezar">
+      <div className="pl-cierre-dentro" data-reveal>
+        <p className="pl-cierre-frase">
+          Unas pocas preguntas, sin email, y sabés qué resolver primero en tu negocio.
+        </p>
+        <div className="pl-acciones">
+          <button type="button" className="pl-boton" onClick={onDiagnostico}>Hacer mi diagnóstico</button>
+          <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
+            Agendá una reunión
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────── Pie: una linea ─────────────── */
+
+function Pie() {
+  return (
+    <footer className="pl-pie">
+      <p className="pl-pie-que">Dico, de Grupo Divianco. Buenos Aires.</p>
+      <p className="pl-pie-links">
+        <a className="pl-enlace" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
+          WhatsApp {WHATSAPP_VISIBLE}
+        </a>
+        <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
+          Reuniones {AGENDA_HORARIO}
+        </a>
+        <a className="pl-enlace" href="mailto:hola@divianco.app">hola@divianco.app</a>
+        <a className="pl-enlace" href="/registro">Probar gratis</a>
+        <a className="pl-enlace" href="/entrar">Entrar</a>
+      </p>
+      <p className="pl-pie-legal">
+        © {new Date().getFullYear()} Grupo Divianco. Fotos: productos de La Nona Pato y Crazy Miga.
+      </p>
+    </footer>
   );
 }

@@ -56,6 +56,9 @@ const InfoPagesAdmin = lazyReload(() => import('./pages/admin/InfoPages'))
 const OrderTracker = lazyReload(() => import('./pages/OrderTracker'))
 const MyAccount = lazyReload(() => import('./pages/MyAccount'))
 const MpStatus = lazyReload(() => import('./pages/MpStatus'))
+// El diagnostico como pagina propia: la home lo abre en el lugar, asi que
+// /diagnostico es un chunk aparte para links viejos y de afuera.
+const Diagnostico = lazyReload(() => import('./pages/Diagnostico'))
 
 const Loading = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
@@ -106,6 +109,17 @@ export default function App() {
               {(import.meta.env.DEV || window.location.hostname.endsWith('.vercel.app')) && (
                 <Route path="/landing" element={<PlatformLanding />} />
               )}
+              {/* El diagnostico de la landing: mismo criterio que /landing
+                  (la raiz, local y los previews *.vercel.app). En el
+                  subdominio de un tenant no hay nada que diagnosticar. */}
+              <Route
+                path="/diagnostico"
+                element={(isPlatformRoot(window.location.hostname)
+                  || import.meta.env.DEV
+                  || window.location.hostname.endsWith('.vercel.app'))
+                  ? <Diagnostico />
+                  : <NotFound />}
+              />
               {/* Alta self-service: solo tiene sentido en la raiz. En el
                   subdominio de un tenant el local ya es de alguien. */}
               <Route path="/registro" element={<Signup />} />

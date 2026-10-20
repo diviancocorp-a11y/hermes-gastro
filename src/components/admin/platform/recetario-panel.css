@@ -1,0 +1,30 @@
+.ag-recetario, .ag-recetario-switch { font-family: var(--ag-font); color: var(--ag-ink); }
+.ag-recetario-switch { display: flex; gap: 8px; margin-block: 16px; }
+.ag-recetario button, .ag-recetario-switch button { min-height: 44px; border: 1px solid var(--ag-line-strong); border-radius: 8px; padding: 8px 12px; background: var(--ag-bg-card); color: var(--ag-ink); font: inherit; cursor: pointer; }
+.ag-recetario-switch button[aria-pressed="true"], .ag-recetario button[aria-current="true"] { background: var(--ag-accent-soft); border-color: var(--ag-accent); }
+.ag-recetario button:disabled { opacity: .65; cursor: default; }
+.ag-recetario :is(button,input,textarea):focus-visible, .ag-recetario-switch button:focus-visible { outline: 2px solid var(--ag-ink); outline-offset: 3px; }
+.ag-recetario header, .ag-recetario-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; }
+.ag-recetario h2 { font-size: 24px; margin: 0; }
+.ag-recetario h3 { font-size: 24px; margin-block: 0 16px; overflow-wrap: anywhere; }
+.ag-recetario h4 { font-size: 18px; margin-block: 24px 12px; }
+.ag-recetario p { line-height: 1.6; }
+.ag-recetario-hint, .ag-recetario aside span { color: var(--ag-ink-2); font-size: 14px; }
+.ag-recetario-layout { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr); gap: 24px; margin-block: 24px; }
+.ag-recetario aside, .ag-recetario article { min-width: 0; }
+.ag-recetario article { padding: 24px; background: var(--ag-bg-card); border: 1px solid var(--ag-line); border-radius: 12px; }
+.ag-recetario label { display: grid; gap: 8px; margin-block: 12px; font-size: 15px; }
+.ag-recetario :is(input,textarea) { width: 100%; box-sizing: border-box; min-height: 44px; padding: 10px; border: 1px solid var(--ag-line-strong); border-radius: 6px; background: var(--ag-bg-card); color: var(--ag-ink); font: inherit; }
+.ag-recetario textarea { min-height: 100px; resize: vertical; }
+.ag-recetario fieldset { border: 0; padding: 0; margin: 16px 0; min-width: 0; }
+.ag-recetario fieldset:disabled :is(input,textarea) { opacity: 1; color: var(--ag-ink); -webkit-text-fill-color: var(--ag-ink); }
+.ag-recetario-fields { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+.ag-recetario aside ul { list-style: none; padding: 0; }
+.ag-recetario aside li { border-bottom: 1px solid var(--ag-line); }
+.ag-recetario aside button { display: grid; gap: 6px; text-align: start; width: 100%; border: 0; border-radius: 0; padding: 16px 12px; overflow-wrap: anywhere; }
+.ag-recetario li { line-height: 1.7; overflow-wrap: anywhere; }
+.ag-recetario .ag-recetario-check { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.ag-recetario-check input { width: 22px; min-height: 22px; accent-color: var(--ag-accent); }
+@media (max-width: 768px) { .ag-recetario-layout { grid-template-columns: minmax(0, 1fr); } .ag-recetario-fields { grid-template-columns: minmax(0,1fr); } .ag-recetario article { padding: 16px; } .ag-recetario aside ul { max-height: 280px; overflow-y: auto; } }
+
+.ag-pantalla-productos .ag-recetario-product-allergens { display: block; font-size: 13px; font-weight: 400; color: var(--ag-ink-2); white-space: normal; }

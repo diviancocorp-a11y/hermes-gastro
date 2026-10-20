@@ -14,6 +14,9 @@
 // mail se puede abrir en otro equipo, donde localStorage no existe.
 
 import { supabase } from '../lib/supabase';
+import { vincularDiagnosticoPendiente } from '../lib/diagnostico';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** true si el slug esta libre Y es valido segun el server. */
 export async function slugDisponible(slug) {
@@ -31,7 +34,7 @@ export async function slugDisponible(slug) {
  */
 export async function registrarNegocio({
   email, password, bizName, vertical, slug, fullName,
-  operationMode, country, currency, timezone, channels,
+  operationMode, country, currency, timezone, channels, diagnostico,
 }) {
   const nombrePersona = String(fullName || '').trim().replace(/\s+/g, ' ');
   if (nombrePersona.length < 2) {
@@ -54,10 +57,14 @@ export async function registrarNegocio({
         currency: currency || null,
         timezone: timezone || null,
         channels: Array.isArray(channels) ? channels : [],
+        // El diagnostico de la landing viaja en el metadata: si el mail se
+        // confirma en otro dispositivo, el localStorage no esta, esto si.
+        diagnostico: UUID.test(String(diagnostico || '')) ? diagnostico : null,
       },
       // Vuelve SIEMPRE a la raiz: el tenant todavia no existe, asi que su
       // subdominio no resolveria a nada.
-      emailRedirectTo: `${window.location.origin}/bienvenido`,
+      emailRedirectTo: `${window.location.origin}/bienvenido${
+        UUID.test(String(diagnostico || '')) ? `?d=${diagnostico}` : ''}`,
     },
   });
 
@@ -120,8 +127,31 @@ export async function destinoTrasLogin() {
     return { ok: false, error: 'No pudimos identificar tu negocio. Volvé a entrar.' };
   }
 
-  if (r.ok) return { ok: true, url: urlDelNegocio(r.slug), slug: r.slug };
+  if (r.ok) {
+    // Confirmo el mail pero nunca paso por /bienvenido: el diagnostico de la
+    // landing se vincula aca, solo si hay uno, y con un tope corto: la
+    // navegacion al subdominio cortaria el pedido si no se espera.
+    const diagnostico = await diagnosticoDelUsuario();
+    if (diagnostico) {
+      await Promise.race([
+        vincularDiagnosticoPendiente(diagnostico),
+        new Promise((r) => setTimeout(r, 1500)),
+      ]);
+    }
+    return { ok: true, url: urlDelNegocio(r.slug), slug: r.slug };
+  }
   return { ok: false, error: r.error };
+}
+
+/** El id del diagnostico guardado en el metadata del alta, si hay. */
+export async function diagnosticoDelUsuario() {
+  try {
+    const { data } = await supabase.auth.getUser();
+    const id = data?.user?.user_metadata?.diagnostico;
+    return UUID.test(String(id || '')) ? id : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Manda el mail de restablecimiento de contraseña. */

@@ -358,7 +358,7 @@ python3 -c "open('FILE','rb').read().decode('utf-8','strict')"
   `PLATFORM_PATHS` dentro del script — archivo nuevo que le hable al edificio,
   sumalo ahi. Si un archivo consulta una tabla que solo existe del otro lado,
   el check avisa que esta mal clasificado en vez de dar un error confuso.
-- `check-edificio-alcanzable.mjs` (`npm run check:alcanzable`) — recorre los
+- `check-edificio-alcanzable.mjs` (`npm run check:alcanzable`) — primero valida con `scripts/check-hooks.mjs` que los comandos de `.claude/settings.json` que referencian `scripts/` apunten a archivos existentes (sin ejecutarlos); falla si falta uno. Luego recorre los
   imports desde `src/main.jsx` y exige que cada `.from()`, `.rpc()` y
   `functions.invoke()` alcanzable exista en `platform/migrations` o
   `platform/functions`. Lo roto al nacer esta en

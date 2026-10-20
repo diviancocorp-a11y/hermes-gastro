@@ -30,6 +30,8 @@ import Dialog from '../../ui/Dialog';
 import {
   fetchMediosDePago, saldoDelPedido, fetchPagosDePedido, cobrar,
 } from '../../../services/platformCaja';
+import { parseMontoAR, montoAMedioTipear, montoParaEditar } from '../../../lib/format';
+import AyudaDeMonto from './AyudaDeMonto';
 
 const money = (n) => `$${Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
 
@@ -71,8 +73,9 @@ export default function PantallaDeCobro({
     setPagos(ps);
     setSaldo(s);
     // El monto se recarga con lo que falta: despues de un pago parcial, el
-    // siguiente cobro casi siempre es el resto.
-    setMonto(s > 0 ? String(s) : '');
+    // siguiente cobro casi siempre es el resto. En formato argentino: el campo
+    // lo lee parseMontoAR, y "6500.125" no lo entiende.
+    setMonto(s > 0 ? montoParaEditar(s) : '');
     setEntregado('');
     setUltimos4('');
     setReferencia('');
@@ -93,9 +96,17 @@ export default function PantallaDeCobro({
   const esEfectivo = medioSel?.kind === 'cash';
   const esTarjeta = medioSel?.kind === 'card';
   const esPagoDigital = ['card', 'mp', 'transfer'].includes(medioSel?.kind);
-  const montoNum = Number(String(monto).replace(',', '.')) || 0;
-  const vuelto = esEfectivo && entregado !== ''
-    ? (Number(String(entregado).replace(',', '.')) || 0) - montoNum
+  // Lo que no se entiende da NaN y no se cobra; vacio tampoco.
+  const montoNum = parseMontoAR(monto);
+  const montoValido = Number.isFinite(montoNum);
+  const montoError = monto !== '' && !montoValido && !montoAMedioTipear(monto);
+  // Lo entregado no se asienta (ver arriba): si no se entiende, se avisa y no
+  // hay vuelto, pero el cobro no se frena por un campo opcional.
+  const entregadoNum = parseMontoAR(entregado);
+  const entregadoError = entregado !== '' && !Number.isFinite(entregadoNum)
+    && !montoAMedioTipear(entregado);
+  const vuelto = esEfectivo && Number.isFinite(entregadoNum) && montoValido
+    ? entregadoNum - montoNum
     : null;
   const saldado = saldo !== null && saldo <= 0;
   // Techo del cobro. El tope de verdad esta en `register_payment` (0063) —lo
@@ -105,7 +116,7 @@ export default function PantallaDeCobro({
   // redondeada y rechazar por $0,004 seria rechazar un cobro correcto.
   const excedeSaldo = saldo !== null && montoNum > saldo + 0.01;
   const comprobanteCompleto = !esTarjeta || /^\d{4}$/.test(ultimos4);
-  const puedeCobrar = !!metodo && montoNum > 0 && !excedeSaldo
+  const puedeCobrar = !!metodo && montoValido && montoNum > 0 && !excedeSaldo
     && comprobanteCompleto && !enviando;
 
   const confirmar = useCallback(async () => {
@@ -289,23 +300,29 @@ export default function PantallaDeCobro({
               )}
             </div>
 
-            <label style={{ display: 'block' }}>
-              <span style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+            {/* div y no label: la ayuda de abajo no tiene que entrar en el nombre */}
+            <div style={{ display: 'block' }}>
+              <label htmlFor="cobro-monto" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
                 ¿Cuánto cobrás?
-              </span>
+              </label>
               <input
+                id="cobro-monto"
                 style={input} inputMode="decimal" value={monto}
                 onChange={(e) => setMonto(e.target.value.replace(/[^\d.,]/g, ''))}
+                aria-invalid={montoError || undefined}
+                aria-describedby="cobro-monto-ayuda"
               />
-              <span style={{
-                display: 'block', marginTop: 5, fontSize: 12.5,
-                color: excedeSaldo ? 'var(--ag-bad, #c62828)' : 'var(--ag-ink-3, #666)',
-              }}>
-                {excedeSaldo
-                  ? `No se puede cobrar más que lo que falta (${money(saldo)}).`
-                  : 'Viene con lo que falta. Poné menos para dividir la cuenta.'}
-              </span>
-            </label>
+              <AyudaDeMonto id="cobro-monto-ayuda" invalido={montoError}>
+                <span style={{
+                  display: 'block', marginTop: 5, fontSize: 12.5,
+                  color: excedeSaldo ? 'var(--ag-bad, #c62828)' : 'var(--ag-ink-3, #666)',
+                }}>
+                  {excedeSaldo
+                    ? `No se puede cobrar más que lo que falta (${money(saldo)}).`
+                    : 'Viene con lo que falta. Poné menos para dividir la cuenta.'}
+                </span>
+              </AyudaDeMonto>
+            </div>
 
             {esTarjeta && (
               <div className="ag-cobro-comprobante">
@@ -367,16 +384,22 @@ export default function PantallaDeCobro({
             )}
 
             {esEfectivo && (
-              <label style={{ display: 'block' }}>
-                <span style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+              <div style={{ display: 'block' }}>
+                <label htmlFor="cobro-entregado" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
                   ¿Con cuánto paga?{' '}
                   <span style={{ fontWeight: 400, color: 'var(--ag-ink-3, #666)' }}>(opcional)</span>
-                </span>
+                </label>
                 <input
+                  id="cobro-entregado"
                   style={{ ...input, fontSize: 17 }} inputMode="decimal" value={entregado}
                   onChange={(e) => setEntregado(e.target.value.replace(/[^\d.,]/g, ''))}
                   placeholder="Para calcular el vuelto"
+                  aria-invalid={entregadoError || undefined}
+                  aria-describedby="cobro-entregado-ayuda"
                 />
+                {/* Sin ayuda cuando es valido: la region queda vacia (mide 0)
+                    pero montada, para que el aviso se anuncie al entrar. */}
+                <AyudaDeMonto id="cobro-entregado-ayuda" invalido={entregadoError} />
                 {vuelto !== null && (
                   <span style={{
                     display: 'block', marginTop: 7, fontSize: 15, fontWeight: 650,
@@ -387,7 +410,7 @@ export default function PantallaDeCobro({
                       : `Vuelto ${money(vuelto)}`}
                   </span>
                 )}
-              </label>
+              </div>
             )}
 
             {error && (
@@ -404,7 +427,7 @@ export default function PantallaDeCobro({
                 background: 'var(--ag-accent, #e8b947)', color: '#1a1a1a',
               }}
             >
-              {enviando ? 'Cobrando…' : `Cobrar ${money(montoNum)}`}
+              {enviando ? 'Cobrando…' : montoValido ? `Cobrar ${money(montoNum)}` : 'Cobrar'}
             </button>
           </>
         )}
@@ -416,7 +439,7 @@ export default function PantallaDeCobro({
             style={{
               padding: '15px', borderRadius: 11, font: 'inherit', fontSize: 16,
               fontWeight: 700, border: 'none', cursor: 'pointer',
-              background: 'var(--ag-ok, #2e7d32)', color: '#fff',
+              background: 'var(--ag-ok, #2e7d32)', color: 'var(--ag-ok-ink)',
             }}
           >
             Cerrar la cuenta

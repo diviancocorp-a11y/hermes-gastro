@@ -9,7 +9,9 @@ vi.mock('../components/ConfirmSlideProvider', () => ({
 }));
 
 import { supabase } from '../lib/supabase';
-import ProductsPanel from '../components/admin/platform/ProductsPanel';
+import ProductsPanelWithRoles from '../components/admin/platform/ProductsPanel';
+// Estas pruebas ejercitan la pantalla de gestion del dueño.
+const ProductsPanel = props => <ProductsPanelWithRoles roles={['owner']} {...props} />;
 import OrdersPanel from '../components/admin/platform/OrdersPanel';
 import FinanzasPanel from '../components/admin/platform/FinanzasPanel';
 

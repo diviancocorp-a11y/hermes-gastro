@@ -13,6 +13,9 @@ const turno = (over = {}) => ({
   business_day: '2026-08-19', status: 'open', ...over,
 });
 
+// La region que describe al campo: la ayuda y el aviso viven en el mismo lugar.
+const regionDe = (campo) => document.getElementById(campo.getAttribute('aria-describedby'));
+
 describe('CajaPanel — sin turno', () => {
   it('pide la apertura y explica que poner', () => {
     render(<CajaPanel turno={null} esperado={0} />);
@@ -175,6 +178,42 @@ describe('CajaPanel — montos en formato argentino', () => {
     expect(onAbrir).not.toHaveBeenCalled();
   });
 
+  it('el aviso entra en una region live que ya estaba montada', () => {
+    // Un aria-live que entra al DOM con el texto adentro no se anuncia en
+    // muchos lectores (WCAG 4.1.3): la region tiene que estar antes.
+    render(<CajaPanel turno={null} esperado={0} onAbrir={vi.fn()} />);
+    const campo = screen.getByPlaceholderText('0');
+    const region = regionDe(campo);
+    expect(region).toHaveAttribute('aria-live', 'polite');
+    fireEvent.change(campo, { target: { value: '1,2,3' } });
+    expect(regionDe(campo)).toBe(region);
+    expect(region).toHaveTextContent(/No entiendo ese número/);
+  });
+
+  it('la ayuda y el aviso no se meten en el nombre del campo', () => {
+    // Dentro del <label>, el lector los leia como parte del nombre y despues
+    // otra vez como descripcion, y el nombre cambiaba al equivocarse.
+    const { unmount } = render(<CajaPanel turno={null} esperado={0} onAbrir={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '1,2,3' } });
+    expect(screen.getByRole('textbox', { name: '¿Con cuánto arrancás?' }))
+      .toHaveAccessibleDescription(/No entiendo ese número/);
+    unmount();
+    render(<CajaPanel turno={turno()} esperado={13000} onCerrar={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '1,2,3' } });
+    expect(screen.getByRole('textbox', { name: '¿Cuánto contaste?' }))
+      .toHaveAccessibleDescription(/No entiendo ese número/);
+  });
+
+  it('al cerrar, el aviso tambien entra en una region que ya estaba', () => {
+    render(<CajaPanel turno={turno()} esperado={13000} onCerrar={vi.fn()} />);
+    const campo = screen.getByPlaceholderText('0');
+    const region = regionDe(campo);
+    expect(region).toHaveAttribute('aria-live', 'polite');
+    fireEvent.change(campo, { target: { value: '1,2,3' } });
+    expect(regionDe(campo)).toBe(region);
+    expect(region).toHaveTextContent(/No entiendo ese número/);
+  });
+
   it('a medio tipear no avisa error, pero tampoco deja abrir', () => {
     // "1.500,50" pasa por "1." y "1.500,": no es un error, todavia no termino.
     render(<CajaPanel turno={null} esperado={0} onAbrir={vi.fn()} />);
@@ -266,6 +305,15 @@ describe('CajaPanel — hora del local', () => {
 });
 
 describe('CajaPanel — tokens del panel', () => {
+  // #fff sobre el rojo del tema oscuro daba 2.77:1: la tinta va con el tema.
+  it('el texto de la confirmacion de cierre usa la tinta del rojo', () => {
+    render(<CajaPanel turno={turno()} esperado={0} onCerrar={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '100' } });
+    fireEvent.click(screen.getByRole('button', { name: /Cerrar caja/ }));
+    const confirmar = screen.getByRole('button', { name: /¿Seguro\?/ });
+    expect(confirmar.style.color).toBe('var(--ag-bad-ink)');
+  });
+
   // cp-root es la raiz del catalogo: en el admin pinta fondo blanco e Inter,
   // y en tema oscuro deja la supervision a 1.17:1.
   it('no usa la raiz del catalogo, con o sin turno', () => {

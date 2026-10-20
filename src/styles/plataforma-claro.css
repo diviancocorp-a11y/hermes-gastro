@@ -1,0 +1,63 @@
+/* src/styles/plataforma-claro.css
+ *
+ * Paleta y movimiento de las paginas publicas de la plataforma (landing,
+ * diagnostico) en fondo claro. Decision de Ricky del 19/oct/2026: fondo hueso,
+ * el oscuro solo para las piezas del producto.
+ *
+ * Semantica del manual RC5 (cap. 03 y 10), no se negocia:
+ *   - Gold = accion, valor y Dico. Una sola accion oro por contexto. Sobre
+ *     hueso, el oro es RELLENO (con tinta oscura encima); como texto se usa
+ *     --pc-oro-texto (gold-700), porque gold-500 sobre hueso no llega a 3:1.
+ *   - Volt (azul) = inteligencia y procesamiento: el diagnostico mientras Dico
+ *     analiza, el progreso, lo que Dico "lee". Sobre hueso, como texto,
+ *     --pc-volt (intelligence-trace).
+ *   - Zinc/neutros = estructura.
+ *   - Lo premium sale de la escasez del material, no de sumar efectos.
+ * Movimiento: 180-320 ms, settle sin rebote, un foco por zona.
+ */
+
+:root {
+  /* suelo y tinta */
+  --pc-suelo: var(--ds-color-neutral-50);
+  --pc-suelo-2: var(--ds-color-neutral-100);      /* un paso de tono, en vez de lineas */
+  --pc-suelo-3: var(--ds-color-neutral-200);
+  --pc-tinta: var(--ds-color-neutral-950);
+  --pc-tinta-suave: var(--ds-color-neutral-600);  /* secundario, >= 4.5:1 sobre suelo */
+
+  /* accion y valor */
+  --pc-oro: var(--ds-color-brand-gold-500);       /* relleno del boton principal */
+  --pc-oro-hover: var(--ds-color-brand-gold-600);
+  --pc-oro-texto: var(--ds-color-brand-gold-700); /* cifra de valor sobre suelo claro */
+  --pc-sobre-oro: var(--ds-color-neutral-950);
+
+  /* inteligencia */
+  --pc-volt: var(--ds-color-intelligence-trace);  /* texto y trazo sobre claro */
+  --pc-volt-relleno: var(--ds-color-intelligence-volt);
+  --pc-volt-suave: var(--ds-color-intelligence-halo);
+  --pc-sobre-volt: var(--ds-color-neutral-0);
+
+  /* piezas del producto (bloques oscuros) */
+  --pc-producto: var(--ds-color-neutral-950);
+  --pc-producto-2: var(--ds-color-neutral-900);
+  --pc-producto-tinta: var(--ds-color-neutral-50);
+  --pc-producto-tinta-suave: var(--ds-color-neutral-400);
+  --pc-producto-oro: var(--ds-color-brand-gold-500);
+  --pc-producto-volt: var(--ds-color-intelligence-label);
+
+  /* estados de los datos, solo en datos */
+  --pc-ok: var(--ds-color-status-success);
+  --pc-alerta: var(--ds-color-status-warning);
+  --pc-error: var(--ds-color-status-error);
+
+  /* forma (RC5 cap. 04) */
+  --pc-radio-control: var(--ds-radius-2);   /* 6px */
+  --pc-radio-pieza: var(--ds-radius-3);     /* 8px: Dico y piezas de producto */
+
+  /* movimiento (RC5 cap. 10) */
+  --pc-t-rapido: 160ms;
+  --pc-t-estandar: 220ms;
+  --pc-t-estructura: 300ms;
+  --pc-t-personaje: 480ms;
+  --pc-curva: cubic-bezier(0.2, 0.7, 0.2, 1);   /* asienta, no rebota */
+  --pc-viaje: 10px;                             /* desplazamiento de entrada */
+}

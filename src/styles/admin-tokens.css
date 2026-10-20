@@ -113,6 +113,8 @@ body[data-ui-owner="admin"],
      claro pide texto blanco (6.54:1) y el rojo del oscuro pide tinta
      (7.19:1). Un solo valor fijo falla en uno de los dos. */
   --ag-bad-ink:      #FFFFFF;
+  /* Igual sobre el solido de exito: blanco da 5.39:1 sobre el verde claro. */
+  --ag-ok-ink:       #FFFFFF;
   /* Tintes de estado: fondo suave con el solido de arriba como texto. */
   --ag-ok-bg:        #E6F4EA;
   --ag-bad-bg:       #FCE8E6;
@@ -230,6 +232,7 @@ body[data-ui-owner="admin"],
   --ag-bad:          #F87171;   /*  6.40:1 */
   --ag-warn:         #FBBF24;   /* 10.61:1 */
   --ag-bad-ink:      var(--ms-zinc-950);   /* 7.19:1 sobre el rojo del oscuro */
+  --ag-ok-ink:       var(--ms-zinc-950);   /* 11.4:1 sobre el verde del oscuro */
   --ag-ok-bg:        rgba(76, 175, 106, 0.18);
   --ag-bad-bg:       rgba(229, 83, 75, 0.18);
   --ag-warn-bg:      rgba(201, 118, 26, 0.20);
