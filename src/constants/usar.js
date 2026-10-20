@@ -60,6 +60,20 @@ export function getUsarExpense(value) {
 }
 
 /**
+ * Una compra de insumos es inventario, no gasto: lo que cuesta es lo vendido
+ * (costo segun recetas), y sumarla tambien como gasto es doble conteo.
+ * register_purchase la marca con category 'Materia Prima' y usar_category
+ * null (0031); el legacy, con usar_category food_* o packaging.
+ * Mismo criterio que resultado_del_dia (0108): tienen que coincidir.
+ */
+export function esCompraDeInsumos(e) {
+  if (!e) return false;
+  if (e.category === 'Materia Prima') return true;
+  const usar = e.usar_category;
+  return typeof usar === 'string' && (usar.startsWith('food_') || usar === 'packaging');
+}
+
+/**
  * Targets por defecto (mirror del default del schema settings.usar_targets)
  */
 export const DEFAULT_USAR_TARGETS = {

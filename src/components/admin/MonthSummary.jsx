@@ -20,12 +20,13 @@ import MenuEngineering from "./MenuEngineering";
 import TheoreticalFoodCost from "./TheoreticalFoodCost";
 import AnimatedStatCard from "./shared/cards/AnimatedStatCard";
 import UsarTrendCard from "./shared/cards/UsarTrendCard";
+import { esCompraDeInsumos } from "../../constants/usar";
 
-// Gastos de comida/packaging NO cuentan como gasto operativo: ya viven en el
-// costo de mercaderia (mismo criterio que useFinancials, fix doble conteo jun 2026)
-const isFoodExpense = (e) =>
-  typeof e.usar_category === 'string' &&
-  (e.usar_category.startsWith('food_') || e.usar_category === 'packaging');
+// Las compras de insumos NO cuentan como gasto operativo: ya viven en el
+// costo de mercaderia (fix doble conteo jun 2026). Las del edificio llegan con
+// usar_category null y category 'Materia Prima': mismo criterio que
+// resultado_del_dia (0108).
+const isFoodExpense = esCompraDeInsumos;
 
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
