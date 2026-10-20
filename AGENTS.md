@@ -514,8 +514,8 @@ Ya evaluadas (no reabrir sin un motivo nuevo):
 | PaddleOCR | No (por ahora) | Python pesado sin donde correr (las functions son Deno); facturas y listas de precios (alta de Monare) primero con Claude y vision |
 | Scrapling | No (por ahora) | `analisis-competencia` con el navegador alcanza para pocos sitios; leads por scraping roza terminos de uso y datos personales |
 | changedetection.io | No (por ahora) | Pide Docker, que en la maquina de Ricky se traba; vigilar la competencia va mejor como tarea programada que llama a `analisis-competencia` |
-| Web Design Guidelines (`vercel-labs/agent-skills`) | A probar (rama `prueba/web-design-guidelines`) | Checklist de accesibilidad e interaccion para `auditor-diseno`, sobre todo el admin (taste no cubre dashboards). Fijar el commit: la skill baja las reglas en cada corrida |
-| Image to Code (`Leonxlnx/imagegen-skills`) | A probar (rama `prueba/image-to-code`) | Se mudo de `taste-skill`; encaja en portar una pantalla desde un render (`PORTAR-UNA-PANTALLA.md`) |
+| Web Design Guidelines (`vercel-labs/agent-skills`) | En prueba (rama `prueba/web-design-guidelines`) | Copia fija como pasada final de `auditor-diseno`. En Caja sumo dos bugs reales (doble envio, hora UTC), pero mezclada se comio el de montos. Falta repetir en otra pantalla. Ver `docs/operacion/PRUEBA-WEB-DESIGN-GUIDELINES.md` |
+| Image to Code (`Leonxlnx/imagegen-skills`) | No | No lee una imagen tuya: genera imagenes y maqueta sitios de marketing para Codex. Claude Code no genera imagenes; la landing ya la cubre `design-taste-frontend` |
 
 ## Antes de razonar sobre una RPC, traela
 
