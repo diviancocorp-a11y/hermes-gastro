@@ -14,6 +14,15 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import { crearTenantPendiente, urlDelNegocio } from '../services/signup';
+import { AGENDA_URL } from '../lib/contactoPlataforma';
+import { vincularDiagnosticoPendiente } from '../lib/diagnostico';
+import '../styles/bienvenido.css';
+
+// Antes eran 2,2 s: alcanzaba para leer "te llevamos" y nada mas. Ahora hay
+// una cuenta regresiva visible de 6 s para leer y tocar el link de la
+// puesta en marcha. Tocar o enfocar ese link, o "Quedarme acá", cancela la
+// redireccion; "Entrar ahora" sigue para quien no quiere esperar.
+const ESPERA_REDIRECCION_S = 6;
 
 const C = {
   bg: '#0f0e0d', tx: '#f5f1ea', t2: 'rgba(245,241,234,0.6)',
@@ -31,6 +40,8 @@ export default function Bienvenido() {
   const [estado, setEstado] = useState('cargando'); // cargando | ok | sin-sesion | error
   const [slug, setSlug] = useState(null);
   const [error, setError] = useState(null);
+  const [restan, setRestan] = useState(ESPERA_REDIRECCION_S);
+  const [quedarse, setQuedarse] = useState(false);
   const yaCorrio = useRef(false);
 
   useEffect(() => {
@@ -51,7 +62,15 @@ export default function Bienvenido() {
       // fallar. Por eso aca no hay rama por texto de error ni consulta extra.
       const r = await crearTenantPendiente();
 
-      if (r.ok) { marcarEvento('alta-confirmada'); setSlug(r.slug); setEstado('ok'); return; }
+      if (r.ok) {
+        marcarEvento('alta-confirmada');
+        // Ata el diagnostico de la landing al negocio nuevo. Sin esperar: es
+        // silencioso, nunca tira, y si el `d` no llego lee el localStorage.
+        void vincularDiagnosticoPendiente(new URLSearchParams(window.location.search).get('d'));
+        setSlug(r.slug);
+        setEstado('ok');
+        return;
+      }
 
       setError(r.error);
       setEstado('error');
@@ -59,10 +78,18 @@ export default function Bienvenido() {
   }, []);
 
   useEffect(() => {
-    if (estado !== 'ok' || !slug) return;
-    const t = setTimeout(() => { window.location.href = urlDelNegocio(slug); }, 2200);
-    return () => clearTimeout(t);
-  }, [estado, slug]);
+    if (estado !== 'ok' || !slug || quedarse) return undefined;
+    const t = setInterval(() => setRestan((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [estado, slug, quedarse]);
+
+  useEffect(() => {
+    if (estado === 'ok' && slug && !quedarse && restan === 0) {
+      window.location.href = urlDelNegocio(slug);
+    }
+  }, [estado, slug, quedarse, restan]);
+
+  const cancelar = () => setQuedarse(true);
 
   if (estado === 'cargando') {
     return <main style={wrap}><p style={{ color: C.t2 }}>Activando tu negocio…</p></main>;
@@ -115,8 +142,14 @@ export default function Bienvenido() {
         <h1 style={{ fontSize: 25, margin: '14px 0 10px' }}>¡Tu local ya existe!</h1>
         <p style={{ color: C.t2, fontSize: 15, lineHeight: 1.55 }}>
           Está en <strong style={{ color: C.ac }}>{slug}.divianco.app</strong>
-          <br />Te llevamos para allá…
+          <br />
+          {quedarse ? 'Te quedás acá: entrá cuando quieras.' : `En ${restan} s te llevamos para allá.`}
         </p>
+        {!quedarse && (
+          <button type="button" className="bv-quedarme" onClick={cancelar}>
+            Quedarme acá
+          </button>
+        )}
         <a
           href={urlDelNegocio(slug)}
           style={{
@@ -127,6 +160,19 @@ export default function Bienvenido() {
         >
           Entrar ahora
         </a>
+        <p>
+          <a
+            className="bv-agenda"
+            href={AGENDA_URL}
+            target="_blank"
+            rel="noreferrer"
+            onPointerDown={cancelar}
+            onFocus={cancelar}
+            onClick={() => { cancelar(); marcarEvento('agenda'); }}
+          >
+            Agendá tu puesta en marcha
+          </a>
+        </p>
       </div>
     </main>
   );

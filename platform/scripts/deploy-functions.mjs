@@ -55,6 +55,7 @@ const NO_VERIFY_JWT = new Set([
   "mp-webhook",     // lo llama MercadoPago: valida firma, no sesion
   "staff-invite",   // auth interna: JWT de un staff de Divianco
   "table-assistance", // menu de mesa: rate limit + codigos opacos + RPCs acotadas
+  "diagnostico",    // diagnostico de la landing: rate limit por IP + listas cerradas
   "cancel-order",   // arrepentimiento del comprador: rate limit + uuid + regla en cancel_own_order
   "tg-vincular",    // mini app de Telegram: firma HMAC del initData + rate limit
   "tg-notificar",   // la llama el trigger de orders: firma compartida en Vault

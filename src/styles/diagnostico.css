@@ -1,0 +1,486 @@
+/* ────────────────────────────────────────────────────────
+ * El embudo de Dico (src/components/landing/Diagnostico.jsx), en la home y
+ * en /diagnostico. V3, 20/oct/2026.
+ *
+ * Vive adentro de .pl-root y usa su grilla (.pl-split: la columna y el
+ * instrumento), sus tokens y sus piezas (platform-landing.css). Aca solo lo
+ * propio del diagnostico:
+ *   - la columna: el avance, la pregunta (la unica cosa grande), las
+ *     opciones y las acciones;
+ *   - el instrumento: Dico y la ficha que imprime lo que lee;
+ *   - el resultado: el plan con nombre propio.
+ *
+ * Colores (RC5 cap. 03): tinta para avanzar ("Seguir"), volt para lo que Dico
+ * lee (avance, ficha, "Ver mi diagnostico"), oro una sola vez: "Crear mi
+ * cuenta gratis". Las opciones se separan del fondo por un paso de tono.
+ * ──────────────────────────────────────────────────────── */
+
+.dg-pagina .pl-split { min-height: 100svh; }
+
+/* /diagnostico: debajo del embudo, quienes ya usan Dico. */
+.dg-confian-titulo { grid-column: 1 / 5; }
+.dg-confian-texto { grid-column: 5 / span 5; align-self: end; max-width: 44ch; }
+.dg-pie { padding-top: var(--pl-hueco); }
+
+@media (max-width: 699px) {
+  .dg-confian-titulo,
+  .dg-confian-texto { grid-column: 1; }
+  .dg-confian-texto { margin-top: var(--ds-space-3); }
+}
+
+/* ─────────────── La columna ─────────────── */
+
+.dg-col > *,
+.dg-res-cab > *,
+.dg-res-cuerpo > * { max-width: var(--pl-columna); }
+
+.dg-cuenta {
+  margin-left: auto;
+  font-size: var(--pl-t5);
+  color: var(--pc-tinta-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.dg-progreso {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--ds-space-1);
+  height: 4px;
+  margin-bottom: var(--ds-space-8);
+}
+
+.dg-tramo {
+  border-radius: var(--ds-radius-1);
+  background: var(--pc-suelo-3);
+  transition: background-color var(--pc-t-estructura) var(--pc-curva);
+}
+
+.dg-tramo.hecho { background: var(--pc-volt); }
+
+.dg-titulo {
+  font-size: var(--pl-t2);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+/* El enunciado recibe el foco para que el lector lo anuncie; no es un
+   control, asi que no lleva anillo. */
+.dg-titulo:focus,
+.dg-titulo:focus-visible { outline: none; }
+
+.dg-ayuda {
+  margin-top: var(--ds-space-2);
+  font-size: var(--pl-t4);
+  color: var(--pc-tinta-suave);
+}
+
+.dg-grupo {
+  min-width: 0;
+  margin: var(--ds-space-6) 0 0;
+  border: 0;
+}
+
+.dg-opciones {
+  display: grid;
+  gap: var(--ds-space-2);
+}
+
+/* Una opcion: la fila entera es el blanco (56 px o mas), el control se ve. */
+.dg-opcion {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ds-space-4);
+  min-height: var(--ds-control-height-touch);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border-radius: var(--pc-radio-control);
+  background: var(--pc-suelo-2);
+  cursor: pointer;
+  transition:
+    background-color var(--pc-t-estandar) var(--pc-curva),
+    transform var(--pc-t-rapido) var(--pc-curva);
+}
+
+.dg-opcion-doble { align-items: start; }
+.dg-opcion-doble input { margin-top: 3px; }
+
+.dg-opcion:active { transform: scale(0.99); }
+
+/* El control propio: un circulo (o un cuadrado, para varios) que se llena.
+   Lleva su propio foco visible, sin depender de :has(). */
+.dg-opcion input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: 2px solid var(--pc-tinta-suave);
+  border-radius: var(--ds-radius-pill);
+  background: var(--pc-suelo);
+  appearance: none;
+  cursor: pointer;
+  transition:
+    border-color var(--pc-t-rapido) var(--pc-curva),
+    border-width var(--pc-t-rapido) var(--pc-curva);
+}
+
+.dg-opcion input[type='checkbox'] { border-radius: var(--ds-radius-1); }
+
+.dg-opcion input:checked {
+  border-width: 6px;
+  border-color: var(--pc-tinta);
+}
+
+.dg-opcion input[type='checkbox']:checked { background: var(--pc-tinta); }
+
+.dg-opcion input:focus-visible {
+  outline: 2px solid var(--pc-volt);
+  outline-offset: 3px;
+}
+
+/* Mejora donde hay :has(): la fila elegida sube un paso de tono y la
+   enfocada lleva el anillo completo. */
+.dg-opcion:has(input:checked) { background: var(--pc-suelo-3); }
+
+.dg-opcion:has(input:focus-visible) {
+  outline: 2px solid var(--pc-volt);
+  outline-offset: 2px;
+}
+
+.dg-opcion-texto {
+  display: grid;
+  gap: 2px;
+  font-size: var(--pl-t3);
+  line-height: 1.35;
+}
+
+.dg-opcion-label { font-weight: 500; }
+
+.dg-opcion-sub {
+  font-size: var(--pl-t4);
+  color: var(--pc-tinta-suave);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dg-opcion:hover { background: var(--pc-suelo-3); }
+  .dg-opcion:hover input:not(:checked) { border-color: var(--pc-tinta); }
+}
+
+.dg-escala {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ds-space-6);
+}
+
+.dg-subtitulo {
+  margin-bottom: var(--ds-space-2);
+  padding: 0;
+  font-size: var(--pl-t4);
+  color: var(--pc-tinta-suave);
+}
+
+.dg-texto {
+  display: block;
+  width: 100%;
+  min-height: var(--ds-control-height-touch);
+  margin-top: var(--ds-space-6);
+  padding: 0 var(--ds-space-4);
+  border: 2px solid var(--pc-tinta-suave); /* 3:1 o mas sobre el suelo */
+  border-radius: var(--pc-radio-control);
+  background: var(--pc-suelo);
+  color: var(--pc-tinta);
+  font: inherit;
+  font-size: var(--pl-t3);
+  transition: border-color var(--pc-t-estandar) var(--pc-curva);
+}
+
+.dg-texto:focus { border-color: var(--pc-tinta); outline: none; }
+.dg-texto:focus-visible { outline: 2px solid var(--pc-volt); outline-offset: 2px; }
+
+.dg-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-3) var(--ds-space-6);
+  margin-top: var(--ds-space-8);
+}
+
+.dg-boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ds-control-height-touch);
+  padding: 0 var(--ds-space-8);
+  border: 0;
+  border-radius: var(--pc-radio-control);
+  background: var(--pc-tinta);
+  color: var(--pc-suelo);
+  font: inherit;
+  font-size: var(--pl-t3);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--pc-t-rapido) var(--pc-curva),
+    background-color var(--pc-t-estandar) var(--pc-curva),
+    color var(--pc-t-estandar) var(--pc-curva);
+}
+
+.dg-boton:active:not(:disabled) { transform: scale(0.97); }
+
+.dg-boton:disabled {
+  background: var(--pc-suelo-3);
+  color: var(--pc-tinta-suave);
+  cursor: not-allowed;
+}
+
+.dg-boton-volt {
+  background: var(--pc-volt);
+  color: var(--pc-sobre-volt);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dg-boton:not(:disabled):hover { background: var(--pl-pieza-paso); }
+  /* El hover queda en --pc-volt: blanco sobre el volt de relleno no llega a 4,5:1. */
+  .dg-boton-volt:hover { background: var(--pc-volt); }
+}
+
+/* Volver, Cambiar respuestas, Reintentar: botones que se leen como link. */
+.dg-texto-boton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pc-tinta);
+  font: inherit;
+  font-size: var(--pl-t4);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.24em;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  cursor: pointer;
+  transition: text-decoration-color var(--pc-t-estandar) var(--pc-curva);
+}
+
+.dg-en-linea { min-height: 0; font-size: inherit; }
+
+@media (hover: hover) and (pointer: fine) {
+  .dg-texto-boton:hover { text-decoration-color: currentColor; }
+}
+
+/* ─────────────── El instrumento ─────────────── */
+
+.dg-lado-dentro {
+  position: sticky;
+  top: var(--ds-space-8);
+  display: grid;
+  gap: var(--ds-space-6);
+  width: min(100%, 440px);
+}
+
+.dg-guia {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-4);
+}
+
+.dg-guia-cara {
+  flex: none;
+  width: var(--ds-space-layout-12);
+  height: var(--ds-space-layout-12);
+}
+
+.dg-guia-cara img { width: 100%; height: 100%; }
+
+.dg-guia-dice {
+  font-size: var(--pl-t3);
+  line-height: 1.4;
+}
+
+.dg-ficha-envoltura {
+  display: grid;
+  justify-items: start;
+  gap: var(--ds-space-2);
+}
+
+.dg-ficha .pl-fila { padding: var(--ds-space-2) 0; }
+
+.dg-ficha .pl-fila dt { flex: none; }
+
+.dg-ficha .pl-fila dd {
+  min-width: 0;
+  color: var(--pc-producto-tinta);
+  overflow-wrap: anywhere;
+}
+
+.dg-ficha-falta { color: var(--pc-producto-tinta-suave); }
+
+/* La fila que se esta preguntando: Dico la lee (volt). */
+.dg-ficha-fila.actual dt { color: var(--pc-producto-volt); }
+
+.dg-ficha-sin-plan {
+  font-size: var(--pl-t5);
+  color: var(--pc-producto-tinta-suave);
+}
+
+/* ─────────────── El resultado ─────────────── */
+
+.dg-fase-resultado .dg-res-cab {
+  grid-row: 1;
+  padding-bottom: 0;
+}
+
+.dg-fase-resultado .dg-res-cuerpo {
+  grid-row: 2;
+  padding-top: var(--ds-space-layout-12);
+}
+
+.dg-bloque + .dg-bloque { margin-top: var(--ds-space-layout-12); }
+
+.dg-bloque-titulo {
+  margin-bottom: var(--ds-space-2);
+  font-size: var(--pl-t4);
+  font-weight: 400;
+  color: var(--pc-tinta-suave);
+}
+
+.dg-dolor {
+  font-size: var(--ds-type-xl);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.dg-parrafo {
+  font-size: var(--pl-t3);
+  line-height: 1.55;
+}
+
+.dg-parrafo + .dg-parrafo,
+.dg-dolor + .dg-parrafo { margin-top: var(--ds-space-2); }
+
+.dg-suave { color: var(--pc-tinta-suave); }
+
+.dg-pieza { margin-top: var(--ds-space-6); }
+
+.dg-plan-linea {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--ds-space-4);
+  margin-bottom: var(--ds-space-2);
+  font-size: var(--ds-type-xl);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+}
+
+.dg-plan-linea span:last-child { color: var(--pc-oro-texto); }
+
+.dg-cierre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-3) var(--ds-space-8);
+  margin-top: var(--ds-space-layout-12);
+}
+
+.dg-agenda {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.dg-guardado { margin-top: var(--ds-space-4); }
+
+/* ─────────────── Telefono ─────────────── */
+
+@media (max-width: 999px) {
+  /* Durante las preguntas, la ficha repite lo elegido: en el telefono queda
+     Dico solo, despues de las acciones. En el resultado la ficha vuelve. */
+  .dg-fase-preguntas .dg-ficha-envoltura,
+  .dg-fase-analizando .dg-ficha-envoltura { display: none; }
+
+  .dg-fase-preguntas .pl-split-lado,
+  .dg-fase-analizando .pl-split-lado {
+    align-items: stretch;
+    padding-block: var(--ds-space-6);
+  }
+
+  .dg-lado-dentro { position: static; }
+
+  /* Orden del DOM = orden visual: titulo, ficha, el resto. */
+  .dg-fase-resultado .dg-res-cab,
+  .dg-fase-resultado .dg-res-cuerpo { grid-row: auto; }
+
+  .dg-fase-resultado .dg-res-cab { padding-bottom: var(--ds-space-8); }
+  .dg-fase-resultado .pl-split-lado { padding-block: var(--ds-space-8); }
+  .dg-fase-resultado .dg-res-cuerpo { padding-top: var(--ds-space-8); }
+}
+
+@media (max-width: 699px) {
+  .dg-col { padding-top: calc(var(--ds-space-layout-16) + var(--ds-space-8)); }
+  .dg-progreso { margin-bottom: var(--ds-space-6); }
+  .dg-escala { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .dg-opcion { padding-inline: var(--ds-space-3); }
+  .dg-boton { flex: 1 1 auto; }
+  .dg-cierre .pl-boton { width: 100%; }
+  .dg-dolor,
+  .dg-plan-linea { font-size: var(--pl-t2); }
+}
+
+/* ─────────────── Movimiento ───────────────
+ * RC5 cap. 10: tokens --pc-t-*, viaje --pc-viaje, settle sin rebote.
+ * --pc-t-personaje solo para la cara de Dico.
+ */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Cada paso sube como una hoja clara; sus opciones, una detras de otra. */
+  .dg-entra { animation: dg-sube var(--pc-t-estructura) var(--pc-curva) both; }
+
+  .dg-entra .dg-opcion { animation: dg-sube var(--pc-t-estructura) var(--pc-curva) both; }
+  .dg-entra .dg-opcion:nth-child(2) { animation-delay: calc(var(--pc-t-rapido) / 4); }
+  .dg-entra .dg-opcion:nth-child(3) { animation-delay: calc(var(--pc-t-rapido) / 2); }
+  .dg-entra .dg-opcion:nth-child(4) { animation-delay: calc(var(--pc-t-rapido) * 0.75); }
+  .dg-entra .dg-opcion:nth-child(n + 5) { animation-delay: var(--pc-t-rapido); }
+
+  .dg-guia-dice { animation: dg-aparece var(--pc-t-estandar) var(--pc-curva) both; }
+
+  .dg-guia-cara[data-gesto] { animation: dg-gesto var(--pc-t-personaje) var(--pc-curva); }
+
+  .dg-ficha-valor { animation: dg-aparece var(--pc-t-estandar) var(--pc-curva) both; }
+
+  .dg-progreso.leyendo .dg-tramo { animation: dg-lee var(--pc-t-estructura) var(--pc-curva) infinite alternate; }
+
+  .dg-res-cuerpo .dg-bloque,
+  .dg-res-cuerpo .dg-cierre { animation: dg-sube var(--pc-t-estructura) var(--pc-curva) both; }
+  .dg-res-cuerpo .dg-bloque:nth-child(2) { animation-delay: calc(var(--pc-t-rapido) / 2); }
+  .dg-res-cuerpo .dg-bloque:nth-child(3) { animation-delay: var(--pc-t-rapido); }
+  .dg-res-cuerpo .dg-bloque:nth-child(n + 4),
+  .dg-res-cuerpo .dg-cierre { animation-delay: calc(var(--pc-t-rapido) * 1.5); }
+}
+
+@keyframes dg-sube {
+  from { opacity: 0; transform: translateY(var(--pc-viaje)); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes dg-aparece {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dg-gesto {
+  0% { transform: translateY(0) rotate(0); }
+  40% { transform: translateY(calc(var(--ds-space-1) * -1)) rotate(-4deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+
+@keyframes dg-lee {
+  from { opacity: 1; }
+  to { opacity: 0.45; }
+}

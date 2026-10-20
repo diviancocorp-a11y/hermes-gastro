@@ -41,9 +41,11 @@ export default async function handler(req, res) {
   const slug = slugFromHost(host);
 
   // Sin tenant (raiz): la marca de la plataforma.
-  let title = 'Dico — Sabé cuánto ganás, no solo cuánto vendés';
-  let description = 'Gestión para gastronomía: recetas con costo real, nómina por '
-    + 'hora y la ganancia neta de cada noche.';
+  // Igual que el titulo y la descripcion de la landing (PlatformLanding.jsx):
+  // nada que el producto no haga hoy.
+  let title = 'Dico — Todo tu negocio, en un solo lugar';
+  let description = 'Ventas, costos, sueldos, stock, caja y pedidos de tu '
+    + 'gastronomía, comercio o servicio, en un solo lugar. Empezá con un diagnóstico, sin email.';
   // La imagen de la raiz la genera scripts/generar-og-landing.mjs. Medidas
   // fijas: con width/height declarados WhatsApp la muestra grande al primer
   // envio, sin esperar a bajarla para saber el tamano.
