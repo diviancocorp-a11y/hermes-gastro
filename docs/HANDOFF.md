@@ -37,8 +37,10 @@
   1280x720: 0 regresiones P0-P3. Antes/despues: marca/fotos 0 -> 3/6;
   detector estatico 17 warnings y 6 advisory sin cambio, gate verde.
   Movil 390, contraste calculado y foco: no verificados, IAB no ofrece viewport.
-- Pendiente: confirmar Instagram `lanonapato.ar` (el manual lo declara pero
-  `marca.json` lo marca no confirmado); no se publico. El manifest de
+- Instagram `lanonapato.ar` confirmado por Ricky y guardado en el tenant;
+  readback del catalogo publico verificado. La ficha de marca de la biblioteca
+  conserva la indicacion anterior de no confirmado; no se modifico ese archivo.
+- Pendiente: el manifest de
   instalacion PWA sigue generando la inicial L: es una limitacion del sistema,
   mientras favicon, icono de Apple y marca del catalogo ya usan el retrato.
   Tarifas/condiciones de envio y fotos individuales restantes siguen pendientes.

@@ -79,6 +79,7 @@
     "catalog_theme": "carbon",
     "logo_color": "#A83715",
     "slogan": "Porque el amor también se come",
+    "instagram": "lanonapato.ar",
     "logo_url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/d8c8e66604f2-logo-dico.png",
     "favicon_url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/53cf3268db80-favicon-dico.png",
     "og_image_url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb/marca-20261019/9a76d8cd931a-compartir-dico.png",
@@ -100,7 +101,6 @@
     "mobile": "No verificado: navegador disponible sin control de viewport390"
   },
   "pending": [
-    "Instagram lanonapato.ar del manual pendiente de confirmacion porque marca.json dice no confirmado",
     "37 productos sin foto individual confirmada; no asociar surtidos a sabores",
     "Manifest PWA sigue usando inicial L generada; favicon y apple-touch-icon del catalogo si usan la marca",
     "Condiciones y tarifas de envio sin definir en esta tarea"
