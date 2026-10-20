@@ -1,4 +1,4 @@
--- Test de la 0103: completar un pedido descuenta el stock de su receta, una
+-- Test de la 0104: completar un pedido descuenta el stock de su receta, una
 -- sola vez. Correr cada vez que se toca complete_order o el libro.
 --
 -- Es UN bloque DO que siembra un negocio de prueba, completa un pedido y
@@ -38,11 +38,11 @@ declare
   v_stock2 jsonb;
   v_falla  text := '';
 begin
-  -- @@MIGRACION@@ (el runner previo a aplicar la 0103 la inserta aca)
+  -- @@MIGRACION@@ (el runner previo a aplicar la 0104 la inserta aca)
 
   -- ── siembra ──
   insert into public.tenants (id, slug, name, vertical)
-    values (v_t, 'test-stock-' || substr(v_t::text, 1, 8), 'Test stock 0103', 'gastro');
+    values (v_t, 'test-stock-' || substr(v_t::text, 1, 8), 'Test stock 0104', 'gastro');
   if not exists (select 1 from public.branches where tenant_id = v_t and is_default) then
     insert into public.branches (tenant_id, name, is_default) values (v_t, 'Central', true);
   end if;

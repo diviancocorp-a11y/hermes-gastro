@@ -1,4 +1,4 @@
--- 0103 La venta descuenta el stock de lo que uso.
+-- 0104 La venta descuenta el stock de lo que uso.
 -- Sin aplicar: espera el ok de Ricky (va por MCP apply_migration, es aditiva).
 --
 -- ══════════════════ LO QUE ESTABA ROTO ══════════════════
@@ -148,7 +148,7 @@ revoke all on function public.descontar_stock_del_pedido(uuid)
   from public, anon, authenticated;
 
 comment on function public.descontar_stock_del_pedido(uuid) is
-  '0103: asienta en el libro (kind sale) lo que la receta del pedido uso y baja el stock. Idempotente por pedido. Solo la llama complete_order.';
+  '0104: asienta en el libro (kind sale) lo que la receta del pedido uso y baja el stock. Idempotente por pedido. Solo la llama complete_order.';
 
 
 -- complete_order: igual que 0050, mas el descuento entre el cambio de estado
@@ -189,7 +189,7 @@ begin
 
   update public.orders set status = 'completed' where id = v_order.id;
 
-  -- 0103: lo vendido sale del stock, en la misma transaccion.
+  -- 0104: lo vendido sale del stock, en la misma transaccion.
   perform public.descontar_stock_del_pedido(v_order.id);
 
   return query

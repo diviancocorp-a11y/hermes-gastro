@@ -940,7 +940,7 @@ export default function PlatformAdmin() {
       if (res?.__error) return res;
       setOrders(list => list.map(o => (o.id === id ? { ...o, status: next } : o)));
       if (res.sales?.length) setVentas(prev => [...res.sales, ...prev]);
-      // complete_order descuenta del stock lo que uso la receta (0103): sin
+      // complete_order descuenta del stock lo que uso la receta (0104): sin
       // recargar, la alerta de stock bajo seguiria mirando el numero viejo.
       loadIngs();
       if (perfilFiscal?.enabled && perfilFiscal.auto_issue) {
