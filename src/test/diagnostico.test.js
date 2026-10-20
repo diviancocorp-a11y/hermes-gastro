@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   VERTICALES, ESTABLECIMIENTOS, desafiosDe, planRecomendado, solucion, paramsDelAlta,
+  ORDEN_PASOS, URGENCIAS, INVERSIONES,
 } from '../lib/diagnostico';
 
 describe('diagnostico de la landing', () => {
@@ -36,6 +37,18 @@ describe('diagnostico de la landing', () => {
   it('los tipos de negocio son solo de su rubro', () => {
     expect(ESTABLECIMIENTOS.otro).toEqual([]);
     expect(ESTABLECIMIENTOS.gastronomia.map((e) => e.id)).toContain('dark_kitchen');
+  });
+
+  it('el dolor va segundo y cada uno tiene su bajada', () => {
+    expect(ORDEN_PASOS.slice(0, 2)).toEqual(['vertical', 'desafio']);
+    for (const v of VERTICALES) {
+      for (const d of desafiosDe(v.id)) expect(d.sub, `${v.id}/${d.id}`).toBeTruthy();
+    }
+  });
+
+  it('urgencia e inversion usan los mismos ids que la base (0102)', () => {
+    expect(URGENCIAS.map((u) => u.id)).toEqual(['ya', 'este_mes', 'proximos_meses', 'explorando']);
+    expect(INVERSIONES.map((i) => i.id)).toEqual(['gratis', 'hasta_60k', 'hasta_100k', 'mas_de_100k', 'no_se']);
   });
 
   it('el alta recibe el rubro del registry, el nombre y el id', () => {

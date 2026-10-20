@@ -1,6 +1,6 @@
 // Canal publico del diagnostico de la landing (divianco.app/diagnostico).
 //
-// Guarda las respuestas en public.diagnosticos (0100/0101) con el service role
+// Guarda las respuestas en public.diagnosticos (0100/0101/0102) con el service role
 // y devuelve el id, que viaja al alta para vincular el diagnostico al negocio
 // (vincular_diagnostico). No guarda email, telefono ni nombre de persona.
 //
@@ -45,6 +45,8 @@ const EQUIPOS = ["hasta_5", "de_6_a_15", "mas_de_15"];
 const GESTIONES = ["planillas", "registro_manual", "otro_sistema", "contador", "sin_control"];
 const DESAFIOS = ["rentabilidad", "costos", "costo_laboral", "mermas_caja", "pedidos", "stock", "turnos"];
 const PLANES = ["digital", "local", "cadena"];
+const URGENCIAS = ["ya", "este_mes", "proximos_meses", "explorando"];
+const INVERSIONES = ["gratis", "hasta_60k", "hasta_100k", "mas_de_100k", "no_se"];
 
 function texto(v: unknown, max: number) {
   const s = String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
@@ -104,6 +106,8 @@ Deno.serve(async (req) => {
         gestion_actual: gestion,
         desafio,
         plan_recomendado: plan,
+        urgencia: deLaLista(b.urgencia, URGENCIAS),
+        inversion: deLaLista(b.inversion, INVERSIONES),
         nombre_negocio: texto(b.nombre_negocio, 80),
         origen: texto(b.origen, 200),
       })

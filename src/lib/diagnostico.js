@@ -71,29 +71,62 @@ export const GESTIONES = [
   { id: 'sin_control', label: 'Hoy no lo controlo' },
 ];
 
-// El desafio cambia de forma segun el rubro: en un comercio no hay recetas y en
-// una barberia lo que se pierde es tiempo de agenda, no mercaderia.
-const DESAFIOS = {
-  rentabilidad: 'No tengo visibilidad de la rentabilidad real del negocio',
-  costos: 'La suba de insumos afecta mis márgenes',
-  costo_laboral: 'El costo laboral es alto en relación con las ventas',
-  mermas_caja: 'Tengo pérdidas por merma o diferencias de caja',
-  pedidos: 'Los pedidos se desordenan entre canales',
-  stock: 'Me quedo sin mercadería o tengo stock inmovilizado',
-  turnos: 'Pierdo tiempo coordinando turnos',
+// El dolor, en primera persona y con la consecuencia concreta, porque asi lo
+// dice el duenio (referencia: el diagnostico de IMAN, 19/oct/2026). Cambia
+// segun el rubro: en un comercio no hay recetas y en una barberia lo que se
+// pierde es tiempo de agenda. El id es el que se guarda (CHECK de 0101).
+const DOLORES = {
+  gastronomia: [
+    { id: 'rentabilidad', label: 'Vendo bien, pero no sé cuánto me queda', sub: 'Me entero a fin de mes, cuando ya no hay nada que corregir.' },
+    { id: 'costos', label: 'Los insumos suben y no sé si mis precios alcanzan', sub: 'Recalculo cada plato a mano, o directamente no recalculo.' },
+    { id: 'costo_laboral', label: 'Los sueldos se comen la venta', sub: 'Hay días con mucha gente y poca venta, y no lo veo a tiempo.' },
+    { id: 'mermas_caja', label: 'Se pierde mercadería y la caja no cierra', sub: 'Lo que se tira, se regala o falta no queda anotado en ningún lado.' },
+    { id: 'pedidos', label: 'Los pedidos me llegan por todos lados', sub: 'Salón, mostrador y WhatsApp, cada uno por su cuenta.' },
+  ],
+  comercio: [
+    { id: 'rentabilidad', label: 'Vendo, pero no sé cuánto gano', sub: 'Compro, vendo y pago; el número final no lo veo nunca.' },
+    { id: 'stock', label: 'Me quedo sin mercadería o compro de más', sub: 'El stock lo cuento a ojo, cuando puedo.' },
+    { id: 'costo_laboral', label: 'El personal me pesa y no sé cuánto', sub: 'No sé qué parte de la venta se va en sueldos.' },
+    { id: 'mermas_caja', label: 'La caja no me cierra', sub: 'Diferencias chicas todos los días que nadie explica.' },
+    { id: 'pedidos', label: 'Los pedidos se me desordenan', sub: 'Mostrador y catálogo por WhatsApp, cada uno por su lado.' },
+  ],
+  servicios: [
+    { id: 'rentabilidad', label: 'Trabajo mucho y no sé cuánto gano', sub: 'Cobro todos los días, pero el número del mes no lo veo.' },
+    { id: 'turnos', label: 'Coordinar turnos me lleva horas', sub: 'Mensajes de ida y vuelta para cada turno.' },
+    { id: 'costo_laboral', label: 'No sé si cada día paga los sueldos', sub: 'Hay días flojos y no sé cuánto me cuestan.' },
+    { id: 'stock', label: 'Me quedo sin insumos en el peor momento', sub: 'Me doy cuenta cuando ya no queda.' },
+    { id: 'mermas_caja', label: 'La caja no me cierra', sub: 'Efectivo, transferencias y tarjeta no coinciden con lo que cobré.' },
+  ],
 };
-
-const DESAFIOS_POR_VERTICAL = {
-  gastronomia: ['rentabilidad', 'costos', 'costo_laboral', 'mermas_caja', 'pedidos'],
-  comercio: ['rentabilidad', 'stock', 'costo_laboral', 'mermas_caja', 'pedidos'],
-  servicios: ['rentabilidad', 'turnos', 'costo_laboral', 'stock', 'mermas_caja'],
-  otro: ['rentabilidad', 'stock', 'costo_laboral', 'mermas_caja', 'pedidos'],
-};
+DOLORES.otro = DOLORES.comercio;
 
 export function desafiosDe(vertical) {
-  return (DESAFIOS_POR_VERTICAL[vertical] || DESAFIOS_POR_VERTICAL.otro)
-    .map((id) => ({ id, label: DESAFIOS[id] }));
+  return DOLORES[vertical] || DOLORES.otro;
 }
+
+export const URGENCIAS = [
+  { id: 'ya', label: 'Ya, es urgente' },
+  { id: 'este_mes', label: 'Este mes' },
+  { id: 'proximos_meses', label: 'En los próximos meses' },
+  { id: 'explorando', label: 'Estoy mirando opciones' },
+];
+
+// Rangos alineados a los planes: Digital gratis, Local $59.000, Cadena $99.000.
+export const INVERSIONES = [
+  { id: 'gratis', label: 'Quiero empezar gratis' },
+  { id: 'hasta_60k', label: 'Hasta $60.000 por mes' },
+  { id: 'hasta_100k', label: 'Hasta $100.000 por mes' },
+  { id: 'mas_de_100k', label: 'Más de $100.000 por mes' },
+  { id: 'no_se', label: 'Todavía no lo sé' },
+];
+
+/** Orden de las preguntas: rubro, y enseguida el dolor (lo que mas importa
+ *  y lo que mas engancha); despues lo que cualifica. `establecimiento` se
+ *  saltea en "otro". */
+export const ORDEN_PASOS = [
+  'vertical', 'desafio', 'establecimiento', 'canales', 'escala',
+  'gestion_actual', 'urgencia', 'inversion', 'nombre_negocio',
+];
 
 /** Plan recomendado. Cadena = varias sucursales; Local = un local con equipo o
  *  que ya usa un sistema; Digital = el resto. El alta empieza siempre gratis. */
