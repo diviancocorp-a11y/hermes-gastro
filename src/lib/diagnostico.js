@@ -154,11 +154,15 @@ export function solucion(desafio, vertical) {
     case 'rentabilidad':
       return {
         titulo: 'Lo que te falta es ver la ganancia, no la venta.',
+        // resultado_del_dia (0103, publicado el 20/oct): ventas, costo segun la
+        // receta, nomina fichada, merma, gastos del dia y fijos prorrateados.
+        // El costo por venta sale de las recetas: fuera de gastronomia el
+        // resultado del dia no lo tiene y la pantalla lo avisa.
         hoy: gastro
-          ? 'Dico arma el resultado de cada mes con tus ventas, el costo de cada plato según tus recetas y tus gastos. Y la caja te muestra la diferencia de cada día.'
-          : `Dico arma el resultado de cada mes con tus ventas, tus compras de ${vertical === 'servicios' ? 'insumos' : 'mercadería'} y tus gastos. Y la caja te muestra la diferencia de cada día.`,
-        pendiente: 'El resultado de cada día, con nómina y merma, está en desarrollo.',
-        aMedida,
+          ? 'Cerrás el día y Dico te da la ganancia neta de esa noche: ventas, el costo de cada plato según tus recetas, las horas fichadas, la merma y los gastos. Por sucursal.'
+          : 'Cerrás el día y Dico te da su resultado: ventas, las horas fichadas, los gastos del día y los fijos repartidos. Y el resultado de cada mes, con tus compras.',
+        pendiente: gastro ? null : 'El costo de lo vendido por artículo, para que el resultado del día lo descuente, está en desarrollo.',
+        aMedida: gastro ? null : aMedida,
         pieza: 'cierre',
       };
     case 'costos':
