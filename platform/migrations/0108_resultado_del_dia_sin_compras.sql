@@ -1,6 +1,8 @@
 -- 0108 El resultado del dia no resta la compra de insumos.
--- PENDIENTE de aplicar: pide el ok de Ricky. Aditiva: misma firma y mismo
--- retorno que la 0103, solo cambia el cuerpo (create or replace compatible).
+-- Aplicada via MCP el 20/oct/2026, con ok de Ricky (schema_migrations
+-- 20261020183425). Aditiva: misma firma y mismo retorno que la 0103, solo
+-- cambia el cuerpo (create or replace compatible). Despues de aplicarla:
+-- pg_proc 1 firma, invoker, anon sin execute; test SQL 17/17.
 --
 -- El bug (visto el 20/oct/2026 contra la funcion desplegada): register_purchase
 -- (0098, igual desde la 0031) asienta cada compra en `expenses` con
