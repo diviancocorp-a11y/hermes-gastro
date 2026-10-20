@@ -17,7 +17,7 @@ export const VERTICALES = [
   { id: 'gastronomia', label: 'Gastronomía', rubro: 'gastro' },
   { id: 'comercio', label: 'Comercio minorista', rubro: 'retail' },
   { id: 'servicios', label: 'Servicios (barbería, peluquería, estética)', rubro: 'barber' },
-  { id: 'otro', label: 'Otro rubro', rubro: null },
+  { id: 'otro', label: 'Otro rubro', rubro: 'retail' },
 ];
 
 export const ESTABLECIMIENTOS = {
@@ -114,25 +114,30 @@ export const PLANES = {
  *  interfaz que el resultado muestra (lo dibuja la pagina). */
 export function solucion(desafio, vertical) {
   const gastro = vertical === 'gastronomia';
+  // Lo que todavia no esta se ofrece como desarrollo para el negocio, no como
+  // promesa: "lo construimos con vos" (decision de Ricky, 19/oct/2026).
+  const aMedida = 'Si tu negocio lo necesita antes, lo desarrollamos con vos.';
   switch (desafio) {
     case 'rentabilidad':
       return {
         titulo: 'Lo que te falta es ver la ganancia, no la venta.',
         hoy: gastro
-          ? 'Cerrás la caja y Dico te da el resultado de esa noche: ventas, insumos según tus recetas, nómina y merma.'
-          : 'Cerrás la caja y ves en un mismo lugar las ventas, las compras de mercadería, los gastos y los sueldos del día.',
+          ? 'Dico arma el resultado de cada mes con tus ventas, el costo de cada plato según tus recetas y tus gastos. Y la caja te muestra la diferencia de cada día.'
+          : 'Dico arma el resultado de cada mes con tus ventas, tus compras de mercadería y tus gastos. Y la caja te muestra la diferencia de cada día.',
+        pendiente: 'El resultado de cada día, con nómina y merma, está en desarrollo.',
+        aMedida,
         pieza: 'cierre',
       };
     case 'costos':
       return {
         titulo: 'Tus precios tienen que seguir a tus costos.',
-        hoy: 'Cargás la receta de cada plato una vez. Cuando el proveedor sube un insumo, Dico recalcula el costo y te muestra qué margen te queda.',
+        hoy: 'Cargás la receta de cada plato una vez. Cuando cambia el costo de un insumo, Dico recalcula el plato y te muestra qué margen te queda.',
         pieza: 'receta',
       };
     case 'costo_laboral':
       return {
-        titulo: 'Cada turno tiene que pagarse solo.',
-        hoy: 'El equipo ficha entrada y salida, y Dico te dice qué parte de la venta se fue en sueldos, turno por turno.',
+        titulo: 'Cada día tiene que pagar sus sueldos.',
+        hoy: 'El equipo ficha entrada y salida, y Dico te dice qué parte de la venta del día se fue en personal, día por día.',
         pieza: 'turno',
       };
     case 'mermas_caja':
@@ -146,23 +151,27 @@ export function solucion(desafio, vertical) {
     case 'pedidos':
       return {
         titulo: 'Un solo lugar para todos tus pedidos.',
-        hoy: 'Salón, mostrador y catálogo online entran al mismo panel, con su estado y su cobro.',
+        hoy: gastro
+          ? 'Salón, mostrador y catálogo online entran al mismo panel, con su estado y su cobro.'
+          : 'Mostrador y catálogo online entran al mismo panel, con su estado y su cobro.',
         pieza: 'pedidos',
       };
     case 'stock':
       return {
         titulo: 'El stock tiene que avisarte antes de faltar.',
-        hoy: vertical === 'servicios'
-          ? 'Cargás lo que comprás y lo que usás, y Dico avisa cuando algo queda por debajo del mínimo.'
-          : 'Cada venta descuenta lo que usó y Dico avisa cuando algo queda por debajo del mínimo.',
-        pendiente: vertical === 'comercio' ? 'Talles y colores por artículo: en desarrollo.' : null,
+        hoy: 'Cargás compras, merma y conteos, y Dico te marca en el panel lo que quedó por debajo del mínimo.',
+        pendiente: vertical === 'comercio'
+          ? 'Que cada venta descuente el stock solo, y los talles y colores por artículo, están en desarrollo.'
+          : 'Que cada venta descuente el stock solo está en desarrollo.',
+        aMedida,
         pieza: 'stock',
       };
     case 'turnos':
       return {
         titulo: 'La agenda de turnos todavía no está. Lo demás, sí.',
         hoy: 'Hoy Dico te ordena servicios, cobros, caja y personal en un solo lugar.',
-        pendiente: 'La agenda de turnos online está en desarrollo; te avisamos cuando salga.',
+        pendiente: 'La agenda de turnos online está en desarrollo.',
+        aMedida,
         pieza: 'cierre',
       };
     default:
