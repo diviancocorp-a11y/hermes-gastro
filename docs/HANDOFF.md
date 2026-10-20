@@ -13,6 +13,20 @@
 
 ## 19/oct/2026 — Monare: imágenes, filtros y dirección de Boedo (Codex)
 
+### Planilla para completar precios y revisar descripciones
+
+- Google Sheets nativa: https://docs.google.com/spreadsheets/d/1fKf-okJoccHwbBhZopKl9OG6fQ_G9VObclGWq_0Z9uo/edit
+- Pestaña Precios: 32 presentaciones sin precio y caja Ópalo Syrah x6 para
+  confirmar/corregir los $48.600 informados. Los 33 precios confirmados están
+  vacíos; celdas amarillas para completar, validación positiva en ARS y contador.
+- Pestaña Descripciones: 53 propuestas con sabor y maridaje cuando hay ficha
+  oficial; fuentes por fila y datos inciertos señalados. Son borradores en
+  Drive: esta tarea no cambió descripciones ni precios de la base.
+- Verificados los 33 registros de precios y las 53 descripciones contra lo
+  redactado; contador probado al completar y luego vaciar una celda.
+- `importacionmarcano@gmail.com` tiene permiso Editor, comprobado en Compartir;
+  acceso general restringido. Se desactivó la notificación por correo al compartir.
+
 ### Aplicado y verificado en el edificio
 
 - Solo datos de `monare` (`1367edee-7754-4169-a616-45310d98c045`): los 53
