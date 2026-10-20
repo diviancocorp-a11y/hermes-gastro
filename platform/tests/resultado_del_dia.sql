@@ -1,11 +1,12 @@
--- La cuenta del resultado del dia (0103). Correr cada vez que se toque
--- resultado_del_dia o alguna de las tablas que suma.
+-- La cuenta del resultado del dia (0103, compras afuera desde la 0108).
+-- Correr cada vez que se toque resultado_del_dia, register_purchase o alguna
+-- de las tablas que suma.
 --
 -- No deja nada en la base: todo corre en un solo DO que TERMINA SIEMPRE EN
 -- ERROR a proposito, y el error deshace la siembra entera. El resultado viene
 -- en el mensaje del error:
---   'RESULTADO_DEL_DIA 16/16 ok'                    -> verde
---   'RESULTADO_DEL_DIA 14/16 ok | merma (...) ...'  -> lo que fallo
+--   'RESULTADO_DEL_DIA 17/17 ok'                    -> verde
+--   'RESULTADO_DEL_DIA 15/17 ok | merma (...) ...'  -> lo que fallo
 --
 -- Correr: pegar en el SQL editor del proyecto, o via MCP execute_sql.
 --
@@ -36,6 +37,9 @@ begin
   insert into public.tenants (id, slug, name, vertical) values
     (t,  'zz-prueba-0103-'  || substr(t::text, 1, 8),  'Prueba 0103',      'gastro'),
     (t2, 'zz-prueba-0103b-' || substr(t2::text, 1, 8), 'Prueba 0103 otro', 'gastro');
+  -- register_purchase firma la compra con auth.uid() (created_by -> auth.users)
+  insert into auth.users (id, aud, role, email)
+    values (u, 'authenticated', 'authenticated', 'zz-prueba-0108-' || substr(u::text, 1, 8) || '@example.invalid');
   insert into public.tenant_members (tenant_id, user_id, roles) values
     (t, u, array['owner']), (t2, u2, array['owner']);
   insert into public.branches (id, tenant_id, name, timezone, day_cutoff_hour, is_default) values
@@ -98,6 +102,17 @@ begin
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
     json_build_object('sub', u, 'role', 'authenticated')::text, true);
+
+  -- Una compra de insumos cargada hoy, por la RPC real: 10 kg a 300. Es
+  -- inventario, no gasto: lo que cuesta es lo vendido, y eso ya esta en
+  -- costo_mercaderia. Antes de la 0108 entraba entera en gastos_del_dia.
+  perform public.register_purchase(t, dia,
+    jsonb_build_array(jsonb_build_object('ingredient_id', ing, 'qty', 10, 'unit_cost', 300)));
+  select count(*) into n from public.expenses e
+   where e.tenant_id = t and e.date = dia and e.category = 'Materia Prima'
+     and e.usar_category is null and e.amount = 3000 and e.branch_id = b;
+  total := total + 1; if n <> 1 then
+    fallas := fallas || format('la compra no quedo como la asienta register_purchase (%s filas)', n); end if;
 
   select * into r from public.resultado_del_dia(b, dia);
 

@@ -19,7 +19,7 @@
 
 import { useMemo, useState } from "react";
 import { formatInt } from "../../lib/utils";
-import { FOOD_CATEGORIES, DEFAULT_USAR_TARGETS } from "../../constants/usar";
+import { FOOD_CATEGORIES, DEFAULT_USAR_TARGETS, esCompraDeInsumos } from "../../constants/usar";
 import DeltaBadge from "../DeltaBadge";
 
 const CHANNEL_LABELS = {
@@ -164,6 +164,9 @@ export default function UsarPnL({
   const byUsarExpense = useMemo(() => {
     const map = {};
     expenses.forEach(e => {
+      // La compra ya esta en el COGS (recetas). Sin esto, la del edificio
+      // (usar_category null) caia en "Otros" y se restaba dos veces.
+      if (esCompraDeInsumos(e)) return;
       const cat = e.usar_category || "other_opex";
       map[cat] = (map[cat] || 0) + (Number(e.amount) || 0);
     });
