@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   // nada que el producto no haga hoy.
   let title = 'Dico — Todo tu negocio, en un solo lugar';
   let description = 'Ventas, costos, sueldos, stock, caja, pedidos y el resultado de cada día de tu '
-    + 'gastronomía, comercio o servicio, en un solo lugar. Empezá con un diagnóstico, sin email.';
+    + 'gastronomía, comercio o servicio. Empezá con un diagnóstico, sin email.';
   // La imagen de la raiz la genera scripts/generar-og-landing.mjs. Medidas
   // fijas: con width/height declarados WhatsApp la muestra grande al primer
   // envio, sin esperar a bajarla para saber el tamano.

@@ -60,8 +60,9 @@ import '../styles/platform-landing.css';
 import '../styles/diagnostico.css';
 
 const TITULO = 'Dico — Todo tu negocio, en un solo lugar';
+// <= 160 caracteres, lo que muestran los buscadores. Igual en api/og.js.
 const DESCRIPCION = 'Ventas, costos, sueldos, stock, caja, pedidos y el resultado de cada día '
-  + 'de tu gastronomía, comercio o servicio, en un solo lugar. Empezá con un diagnóstico de unas pocas preguntas, sin email.';
+  + 'de tu gastronomía, comercio o servicio. Empezá con un diagnóstico, sin email.';
 
 // Telefono, agenda y horarios: src/lib/contactoPlataforma.js.
 const marcarWhatsApp = () => marcarEvento('whatsapp');
@@ -122,12 +123,17 @@ export default function PlatformLanding() {
           Portada={Portada}
           lado={(
             <div className="pl-instrumento">
-              <PiezaResultado />
-              <p className="pl-instrumento-nota">
-                Ejemplos: un viernes en gastronomía; un mes en comercio y
-                servicios, donde el día todavía no descuenta lo vendido. Elegí
-                el rubro y mirá cómo cierra la cuenta.
-              </p>
+              <div className="pl-instrumento-vivo">
+                <PiezaResultado />
+                <NotaDelInstrumento />
+              </div>
+              {/* Molde invisible del rubro mas alto (gastronomia, 7 filas):
+                  reserva el alto para que cambiar de rubro no mueva lo de
+                  abajo, sin estirar la pieza oscura. */}
+              <div className="pl-instrumento-molde" aria-hidden="true" inert>
+                <PiezaResultado rubro="gastronomia" />
+                <NotaDelInstrumento />
+              </div>
             </div>
           )}
         />
@@ -140,6 +146,16 @@ export default function PlatformLanding() {
       <Cierre onDiagnostico={abrirDiagnostico} />
       <Pie />
     </div>
+  );
+}
+
+function NotaDelInstrumento() {
+  return (
+    <p className="pl-instrumento-nota">
+      Ejemplos: un viernes en gastronomía; un mes en comercio y servicios,
+      donde el día todavía no descuenta lo vendido. Elegí el rubro y mirá cómo
+      cierra la cuenta.
+    </p>
   );
 }
 
@@ -231,10 +247,10 @@ const PARTES = [
   {
     id: 'rentabilidad',
     dolor: dolor('gastronomia', 'rentabilidad'),
-    nota: 'Cerrás el día y la ganancia neta de esa noche se arma sola: ventas, el costo según tus recetas, las horas fichadas, la merma y los gastos. Por sucursal.',
+    nota: 'Al terminar el día, la ganancia neta de esa noche se calcula sola: ventas, el costo de lo vendido según tus recetas, la nómina fichada, la merma y los gastos. Por sucursal.',
     titulo: 'Resultado del viernes',
-    meta: '31,1 % de la venta',
-    filas: [['Ventas', '$2.150.000'], ['Costo, personal, merma y gastos', '−$1.481.000']],
+    meta: '30,9 % de la venta',
+    filas: [['Ventas', '$2.168.000'], ['Descuentos, costo, nómina, merma y gastos', '−$1.499.000']],
     cifra: ['Ganancia neta', '$669.000'],
   },
 ];

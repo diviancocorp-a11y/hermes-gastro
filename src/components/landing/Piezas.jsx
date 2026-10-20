@@ -41,9 +41,12 @@ const deRubro = (tabla, rubro) => tabla[rubro] || tabla.comercio;
 
 /* ─────────────── Resultado: la noche en gastronomia, el mes en el resto ─────────────── */
 
-// Gastronomia: un viernes, con las lineas de la solapa "Hoy" del panel
-// (lineasDelResultado, sin descuentos). Es un dia fuerte de un mes de ~42,6 M:
-// 2.150.000 - 645.000 - 387.000 - 43.000 - 96.000 - 310.000 = 669.000 (31,1 %).
+// Gastronomia: un viernes, con las lineas y los nombres de la solapa "Hoy"
+// del panel (lineasDelResultado en src/services/platformResultado.js; el
+// detalle va despues de " · "). Es un dia fuerte de un mes de ~42,6 M:
+// 2.168.000 - 18.000 - 645.000 - 387.000 - 43.000 - 96.000 - 310.000 = 669.000;
+// 30,9 % sobre ventas, como margenDelDia. Lo cobrado (ventas - descuentos)
+// es 2.150.000, lo registrado en PiezaArqueo. Nomina: 43 h a $9.000.
 // Comercio y servicios: el mes, con las compras (sin recetas el dia no tiene
 // costo de lo vendido y su "ganancia" seria mas alta que la real):
 // comercio 18.900.000 - 11.340.000 - 5.290.000 = 2.270.000 (12,0 %);
@@ -55,13 +58,14 @@ const RESULTADOS = {
     meta: 'Viernes',
     periodo: 'un viernes',
     neto: 'Ganancia neta',
-    ventas: 2150000,
+    ventas: 2168000,
     costos: [
-      ['Costo según tus recetas', 645000],
-      ['Personal fichado', 387000],
+      ['Descuentos', 18000],
+      ['Costo de lo vendido · según recetas', 645000],
+      ['Nómina · 43 h fichadas', 387000],
       ['Merma', 43000],
       ['Gastos del día', 96000],
-      ['Gastos fijos, parte del mes', 310000],
+      ['Gastos fijos · parte del mes', 310000],
     ],
   },
   comercio: {
@@ -211,7 +215,7 @@ export function PiezaTurno() {
 /* ─────────────── Arqueo ─────────────── */
 
 // El mismo viernes del resultado: registrado 418.500 + 958.000 + 773.500 =
-// 2.150.000, las ventas de esa noche.
+// 2.150.000, lo cobrado esa noche (ventas 2.168.000 - descuentos 18.000).
 export function PiezaArqueo() {
   const medios = [
     ['Efectivo', '$412.000', '$418.500'],
