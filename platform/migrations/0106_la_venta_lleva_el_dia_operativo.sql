@@ -1,5 +1,8 @@
 -- 0106 La venta lleva el dia operativo y la sucursal del pedido, no la fecha UTC.
--- SIN APLICAR: espera el ok de Ricky. Test: platform/tests/venta_dia_operativo.sql
+-- Aplicada via MCP el 20/oct/2026 (schema_migrations 20261020134800,
+-- `la_venta_lleva_el_dia_operativo`), con el ok de Ricky. Tests contra lo
+-- desplegado: platform/tests/venta_dia_operativo.sql -> 7/7 ok (antes de
+-- aplicar daba 3/7) y venta_descuenta_stock.sql (0104) -> OK.
 --
 -- ══════════════════ LO QUE ESTABA ROTO ══════════════════
 --
