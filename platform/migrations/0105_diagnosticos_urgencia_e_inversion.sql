@@ -1,4 +1,7 @@
--- 0102_diagnosticos_urgencia_e_inversion.sql
+-- 0105_diagnosticos_urgencia_e_inversion.sql
+-- (Nacio como 0102 y se renumero: main ya tenia 0102_recetas_e_insumos_por_rol
+-- y las sesiones de producto usan 0103 y 0104. En la base quedo registrada
+-- como diagnosticos_urgencia_e_inversion, sin numero.)
 -- Aplicada via MCP el 19/oct/2026 (ok de Ricky en el chat: "Si, las dos").
 --
 -- El diagnostico cualifica sin pedir email: para cuando lo quiere andando y
