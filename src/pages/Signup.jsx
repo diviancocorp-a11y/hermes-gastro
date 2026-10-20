@@ -11,9 +11,12 @@ import '../styles/signup.css';
 
 const VERTICALES = [
   { id: 'gastro', nombre: 'Gastronomía', detalle: 'Carta, pedidos, recetas' },
-  { id: 'barber', nombre: 'Barbería', detalle: 'Turnos y servicios' },
-  { id: 'retail', nombre: 'Indumentaria', detalle: 'Talles, colores y stock' },
+  { id: 'barber', nombre: 'Servicios', detalle: 'Servicios y cobros' },
+  { id: 'retail', nombre: 'Comercio', detalle: 'Artículos y stock' },
 ];
+
+// Lo primero que se carga despues del alta, dicho como en cada rubro.
+const QUE_CARGAR = { gastro: 'tu carta', barber: 'tus servicios', retail: 'tus artículos' };
 
 const MODOS = modosDisponibles();
 const PAISES = paisesDisponibles();
@@ -85,11 +88,34 @@ function BrandPanel() {
   );
 }
 
+// La landing manda /registro?negocio=<nombre> desde la frase del cierre.
+// Solo precarga el nombre: el resto del alta no cambia.
+function negocioDeLaUrl() {
+  if (typeof window === 'undefined') return '';
+  const nombre = new URLSearchParams(window.location.search).get('negocio') || '';
+  return nombre.trim().slice(0, 80);
+}
+
+// El diagnostico manda /registro?rubro=gastro|retail|barber: se preselecciona
+// ese rubro y nada mas.
+// El id del diagnostico (?d=) viaja al metadata del alta y al link del mail,
+// asi se vincula aunque el mail se confirme en otro dispositivo.
+function diagnosticoDeLaUrl() {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get('d');
+}
+
+function rubroDeLaUrl() {
+  if (typeof window === 'undefined') return 'gastro';
+  const rubro = new URLSearchParams(window.location.search).get('rubro');
+  return VERTICALES.some((v) => v.id === rubro) ? rubro : 'gastro';
+}
+
 export default function Signup() {
-  const [bizName, setBizName] = useState('');
+  const [bizName, setBizName] = useState(negocioDeLaUrl);
   const [slug, setSlug] = useState('');
   const [slugTocado, setSlugTocado] = useState(false);
-  const [vertical, setVertical] = useState('gastro');
+  const [vertical, setVertical] = useState(rubroDeLaUrl);
   const [modo, setModo] = useState('fisico');
   const [country, setCountry] = useState(PAIS_POR_DEFECTO);
   const [fullName, setFullName] = useState('');
@@ -145,6 +171,7 @@ export default function Signup() {
       currency: monedaDe(country),
       timezone: zonaDe(country),
       channels: canalesSugeridos(vertical, modo),
+      diagnostico: diagnosticoDeLaUrl(),
     });
     setEnviando(false);
     if (!r.ok) { setError(r.error); return; }
@@ -163,7 +190,7 @@ export default function Signup() {
             <h2>Revisá tu email</h2>
             <p>
               Te mandamos un link a <strong>{email}</strong>. Cuando lo confirmes,
-              creamos <strong>{slug}.divianco.app</strong> y entrás a cargar tu carta.
+              creamos <strong>{slug}.divianco.app</strong> y entrás a cargar {QUE_CARGAR[vertical] || 'tu catálogo'}.
             </p>
             <p className="signup-success__note">
               Si no llega en unos minutos, mirá en spam. La dirección queda reservada

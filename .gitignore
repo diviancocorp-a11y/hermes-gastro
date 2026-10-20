@@ -58,3 +58,6 @@ platform/qa-lite/supabase/.branches/
 
 # Vista previa de pantallas (scripts/pantalla): se regenera con `npm run pantalla`.
 .preview/
+
+# salida de la skill design-taste-frontend (inspector, capturas)
+.taste-skill/

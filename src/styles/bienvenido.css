@@ -1,0 +1,41 @@
+/* Bienvenido: el link a la puesta en marcha y el "Quedarme acá" que aparecen
+ * cuando el alta queda ok. El resto de la pantalla todavia usa estilos en
+ * linea (deuda previa). */
+
+.bv-agenda {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: var(--ds-space-3);
+  color: var(--ds-color-neutral-50);
+  font-size: var(--ds-type-md);
+  text-decoration: underline;
+  text-underline-offset: 0.22em;
+}
+
+.bv-agenda:focus-visible {
+  outline: 2px solid var(--ds-color-brand-gold-500);
+  outline-offset: 3px;
+  border-radius: var(--ds-radius-1);
+}
+
+.bv-quedarme {
+  display: block;
+  min-height: 44px;
+  margin: var(--ds-space-2) auto 0;
+  padding: 0 var(--ds-space-4);
+  border: 0;
+  background: none;
+  color: var(--ds-color-neutral-50);
+  font: inherit;
+  font-size: var(--ds-type-md);
+  text-decoration: underline;
+  text-underline-offset: 0.22em;
+  cursor: pointer;
+}
+
+.bv-quedarme:focus-visible {
+  outline: 2px solid var(--ds-color-brand-gold-500);
+  outline-offset: 3px;
+  border-radius: var(--ds-radius-1);
+}
