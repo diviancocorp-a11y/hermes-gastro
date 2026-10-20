@@ -7,60 +7,57 @@
 // un error de conexion que no existe.
 //
 // REGLA DE CONTENIDO: aca no se promete nada que el producto no haga hoy.
-// Cada afirmacion de esta pagina se puede rastrear a una migracion o a una
-// pantalla que existe. Donde la verdad es "todavia no", lo dice. Lo que hace
-// cada rubro sale de src/modules/registry.js (`implementado`).
+// Cada afirmacion se puede rastrear a una migracion o a una pantalla que
+// existe; lo que hace cada rubro sale de src/modules/registry.js
+// (`implementado`). Lo que falta se dice "en desarrollo" y se ofrece como
+// "lo desarrollamos con vos" (decision de Ricky, 19/oct/2026). Verificado en
+// el codigo el 19/oct: el resultado es MENSUAL, el costo laboral es POR DIA,
+// el stock se mueve con compras, merma y conteos (en gastronomia, ademas, la
+// venta descuenta los insumos de la receta desde la 0104) y avisa
+// en el panel, y el salon es solo de gastronomia.
 //
-// V2 (19/oct/2026, rama landing/rediseno). Criterio de Ricky: fondo claro,
-// multirubro, una historia que va de "te muestro el sistema" a "te lo vendo"
-// y que termina en el diagnostico, con Dico como guia.
+// V3 (20/oct/2026, rama landing/rediseno). La home ES el embudo: la frase de
+// valor y un boton que abre el diagnostico en la misma pagina, en la misma
+// columna (src/components/landing/Diagnostico.jsx). Lo que explica el sistema
+// queda debajo, para quien quiere leer.
 //
-// Direccion de design-taste-frontend: "the product performs". El producto
-// trabaja adelante tuyo: la pagina abre con el cierre de caja funcionando
-// (se elige el rubro y cambia la cuenta), cada pieza del sistema aparece en
-// un bloque oscuro con su cifra, y el diagnostico se ve ya abierto en su
-// primera pregunta. El oscuro es SOLO para piezas del producto; el oro, para
-// la accion y las cifras de valor; el volt, para lo que Dico lee y para el
-// diagnostico. Paleta en src/styles/plataforma-claro.css.
+// Direccion de design-taste-frontend: `quiet-instrument` (seed 2118221348).
+// Columna angosta, la frase como unica cosa grande, demostraciones chicas y
+// exactas, mucho aire compuesto. Idea: lo que Dico lee de tu negocio se
+// imprime en un instrumento al lado de la columna: el resultado del mes en la
+// portada, tus respuestas durante el diagnostico, la pieza que resuelve tu
+// dolor al final. Paleta en src/styles/plataforma-claro.css (oro solo accion
+// y valor, volt solo lo que lee Dico, oscuro solo en piezas de producto).
 //
-// Orden de la historia: promesa -> el problema -> un solo lugar (las piezas)
-// -> tu rubro -> el diagnostico como puente -> clientes -> planes ->
-// preguntas -> cierre -> pie.
+// Orden: portada (embudo) -> que hace Dico (tu dolor y la parte del panel que
+// lo resuelve) -> que hace hoy cada rubro y que esta en desarrollo -> clientes
+// -> planes -> preguntas -> una frase y el boton -> una linea de pie.
 //
 // PRUEBA SOCIAL: solo nombres y fotos reales de productos de clientes que
-// corren sobre Dico (La Nona Pato y Crazy Miga). Sin cifras de resultados:
-// no hay datos firmes. Cada foto lleva el nombre del negocio y nunca se
-// presenta como "un plato de ejemplo de Dico". Las cifras de las piezas del
-// producto son ejemplos y cierran entre si.
+// corren sobre Dico (La Nona Pato y Crazy Miga). Sin cifras de resultados.
+// Las cifras de las piezas del producto son ejemplos y cierran entre si.
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import {
   AGENDA_HORARIO, AGENDA_URL, WHATSAPP_HORARIO, WHATSAPP_URL, WHATSAPP_VISIBLE,
 } from '../lib/contactoPlataforma';
-import { VERTICALES } from '../lib/diagnostico';
-import {
-  PiezaArqueo, PiezaCierre, PiezaPedidos, PiezaReceta, PiezaStock, PiezaTurno,
-} from '../components/landing/Piezas';
+import { desafiosDe } from '../lib/diagnostico';
+import Diagnostico, { PREGUNTAS } from '../components/landing/Diagnostico';
+import { PiezaResultado } from '../components/landing/Piezas';
+import { CLIENTES, FOTOS } from '../components/landing/clientes';
+import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
 import '../styles/platform-landing.css';
+import '../styles/diagnostico.css';
 
-const TITULO = 'Dico — Sabé cuánto ganás. Todo lo que necesitás en un solo lugar';
-const DESCRIPCION = 'El sistema de gestión para gastronomía, comercio y servicios: '
-  + 'pedidos, caja, stock, equipo y la ganancia real de cada día, en un solo '
-  + 'lugar. Empezá con un diagnóstico de 6 preguntas.';
-
-// Cuantas preguntas tiene el diagnostico, tal como lo dice la pagina. Si
-// src/lib/diagnostico.js cambia el recorrido, se cambia aca.
-const PREGUNTAS = 6;
-const DIAGNOSTICO_URL = '/diagnostico';
+const TITULO = 'Dico — Todo tu negocio, en un solo lugar';
+const DESCRIPCION = 'Ventas, costos, sueldos, stock, caja y pedidos de tu gastronomía, '
+  + `comercio o servicio, en un solo lugar. Empezá con un diagnóstico de ${PREGUNTAS} preguntas, sin email.`;
 
 // Telefono, agenda y horarios: src/lib/contactoPlataforma.js.
 const marcarWhatsApp = () => marcarEvento('whatsapp');
 const marcarAgenda = () => marcarEvento('agenda');
-const marcarDiagnostico = () => marcarEvento('diagnostico-cta');
-
-const pesos = (n) => `$${Math.round(n).toLocaleString('es-AR')}`;
 
 /** Escribe el titulo y los meta de la raiz. El index.html del build lleva los
  *  del cliente que se horneo (clients/edificio), asi que sin esto la pestania de
@@ -87,563 +84,426 @@ function useMetaDeLaPlataforma() {
   }, []);
 }
 
-const sinMovimiento = () => typeof window !== 'undefined'
-  && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-/** Entradas por seccion: cada [data-reveal] entra una sola vez cuando aparece.
- *  El estado oculto solo existe bajo .pl-anim, que se pone aca: sin
- *  IntersectionObserver o con movimiento reducido, todo esta a la vista. */
-function useEntradas(raizRef) {
-  // useLayoutEffect: la clase entra antes del primer pintado, asi el titular
-  // no aparece entero y despues desaparece para animarse.
-  useLayoutEffect(() => {
-    const raiz = raizRef.current;
-    if (!raiz || sinMovimiento() || typeof IntersectionObserver === 'undefined') return undefined;
-    raiz.classList.add('pl-anim');
-    const io = new IntersectionObserver((entradas) => {
-      for (const e of entradas) {
-        if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
-      }
-    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
-    raiz.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, [raizRef]);
-}
-
 export default function PlatformLanding() {
   useMetaDeLaPlataforma();
   const raizRef = useRef(null);
+  const abrirRef = useRef(null);
   useEntradas(raizRef);
+
+  // Los botones de mas abajo abren el mismo diagnostico, arriba.
+  const abrirDiagnostico = () => {
+    marcarEvento('diagnostico-cta');
+    abrirRef.current?.();
+  };
 
   return (
     <div className="pl-root" ref={raizRef}>
       {/* div y no main: App.jsx ya envuelve todas las rutas en
           <main id="main-content">, y un main adentro de otro rompe el landmark. */}
-      <Hero />
-      <Problema />
-      <UnSoloLugar />
+      <section className="pl-hero" aria-label="Dico">
+        <header className="pl-cabecera">
+          <a className="pl-marca" href="/">
+            <img src="/brand/dico/logo/dico-claro.png" alt="Dico" width="1368" height="452" />
+          </a>
+          <a className="pl-enlace pl-cabecera-link" href="/entrar">Entrar</a>
+        </header>
+        <Diagnostico
+          modo="home"
+          nivel="h2"
+          abrirRef={abrirRef}
+          Portada={Portada}
+          lado={(
+            <div className="pl-instrumento">
+              <PiezaResultado />
+              <p className="pl-instrumento-nota">Un mes de ejemplo. Elegí el rubro y mirá cómo cierra la cuenta.</p>
+            </div>
+          )}
+        />
+      </section>
+      <QueHace />
       <Rubros />
-      <Puente />
       <Clientes />
-      <Planes />
+      <Planes onDiagnostico={abrirDiagnostico} />
       <Preguntas />
-      <Cierre />
+      <Cierre onDiagnostico={abrirDiagnostico} />
       <Pie />
     </div>
   );
 }
 
-/* ─────────────── Acciones comunes ─────────────── */
+/* ─────────────── La portada: la frase y el boton ─────────────── */
 
-function BotonDiagnostico({ className = '' }) {
+function Portada({ onAbrir }) {
+  const alAbrir = () => {
+    marcarEvento('diagnostico-cta');
+    onAbrir();
+  };
   return (
-    <a className={`pl-boton ${className}`.trim()} href={DIAGNOSTICO_URL} onClick={marcarDiagnostico}>
-      Hacer mi diagnóstico
-    </a>
-  );
-}
-
-function LinkAgenda({ children = 'Agendá una reunión' }) {
-  return (
-    <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
-      {children}
-    </a>
-  );
-}
-
-/* ─────────────── 1. Promesa: el cierre funcionando ─────────────── */
-
-// El cierre y las demas piezas viven en src/components/landing/Piezas.jsx:
-// el resultado del diagnostico muestra las mismas.
-
-function Hero() {
-  return (
-    <section className="pl-hero" aria-labelledby="pl-hero-titulo">
-      <header className="pl-cabecera">
-        <a className="pl-marca" href="/">
-          <img src="/brand/dico/logo/dico-claro.png" alt="Dico" width="1368" height="452" />
-        </a>
-        <nav className="pl-nav" aria-label="Principal">
-          <a className="pl-nav-link" href="#sistema">Sistema</a>
-          <a className="pl-nav-link" href="#rubros">Rubros</a>
-          <a className="pl-nav-link" href="#precios">Precios</a>
-          <a className="pl-nav-link" href="/entrar">Entrar</a>
-        </nav>
-      </header>
-
-      <div className="pl-hero-texto">
-        <h1 id="pl-hero-titulo" className="pl-h1 pl-lineas">
-          <span className="pl-linea"><span className="pl-linea-in">Sabé cuánto</span></span>{' '}
-          <span className="pl-linea"><span className="pl-linea-in pl-linea-2">ganás.</span></span>
-        </h1>
-        <p className="pl-hero-bajada pl-hero-sigue">
-          Todo lo que necesitás en un solo lugar: pedidos, caja, stock, equipo y
-          la ganancia real de cada día. Para gastronomía, comercio y servicios.
+    <div className="pl-portada">
+      <h1 className="pl-h1 pl-lineas">
+        <span className="pl-linea"><span className="pl-linea-in">Todo tu negocio,</span></span>{' '}
+        <span className="pl-linea"><span className="pl-linea-in pl-linea-2">en un solo lugar.</span></span>
+      </h1>
+      <p className="pl-bajada pl-sigue">
+        Ventas, costos, sueldos, stock, caja y pedidos: cada variable de tu
+        gastronomía, comercio o servicio, cubierta en Dico. Lo que todavía no
+        hace, lo desarrollamos con vos.
+      </p>
+      <div className="pl-guia pl-sigue">
+        <img src="/brand/dico/dico-2d-question.png" alt="" width="256" height="256" />
+        <p className="pl-dico-dice">
+          Te hago {PREGUNTAS} preguntas, sin email, y te digo por dónde empezar.
         </p>
-        <div className="pl-hero-dico pl-hero-sigue">
-          <img className="pl-dico-img" src="/brand/dico/dico-2d-question.png" alt="" width="256" height="256" />
-          <p className="pl-dico-dice">
-            ¿Te hago un diagnóstico? Son {PREGUNTAS} preguntas y te digo por dónde empezar.
-          </p>
-        </div>
-        <div className="pl-acciones pl-hero-sigue">
-          <BotonDiagnostico />
-          <a className="pl-enlace" href="/registro">Probar gratis</a>
-          <LinkAgenda />
-        </div>
       </div>
-
-      <div className="pl-hero-escena">
-        <PiezaCierre />
+      <div className="pl-acciones pl-sigue">
+        <button type="button" className="pl-boton" data-abrir onClick={alAbrir}>
+          Hacer mi diagnóstico
+        </button>
+        <a className="pl-enlace" href="#que-hace">Qué hace Dico</a>
       </div>
-    </section>
+    </div>
   );
 }
 
-/* ─────────────── 2. El problema: vender no es ganar ─────────────── */
+/* ─────────────── Que hace Dico: tu dolor y la parte que lo resuelve ─────────────── */
 
-const FUGAS = [
-  ['La mercadería sube', 'y el precio de venta queda igual. Si nadie recalcula el costo, el margen se achica sin aviso, producto por producto.'],
-  ['Los sueldos pesan', 'distinto cada día. Un turno con mucha gente y poca venta no se paga solo, y en la planilla no se ve.'],
-  ['Lo que se pierde', 'no queda anotado: la merma, lo que se vence, lo que se regala. Nadie lo suma, pero sale de la ganancia.'],
-  ['La caja no cierra', 'por poco y nadie sabe por qué. Una diferencia chica todos los días es mucha plata a fin de mes.'],
+// Cada nota es un dolor tal como lo dice el duenio (la lib del diagnostico)
+// y, al lado, la parte del panel de Dico que lo resuelve. El panel es de un
+// restaurante de ejemplo; las cifras cierran con las de Piezas.jsx.
+const dolor = (vertical, id) => desafiosDe(vertical).find((d) => d.id === id)?.label;
+
+const PARTES = [
+  {
+    id: 'pedidos',
+    dolor: dolor('gastronomia', 'pedidos'),
+    nota: 'Salón, mostrador y catálogo online entran al mismo panel, con su estado y su cobro.',
+    titulo: 'Pedidos de hoy',
+    meta: '48 pedidos',
+    filas: [['Salón · mesa 6', '$38.400'], ['Mostrador', '$12.900'], ['Catálogo online', '$27.600']],
+  },
+  {
+    id: 'costos',
+    dolor: dolor('gastronomia', 'costos'),
+    nota: 'Cargás la receta una vez. Cuando sube un insumo, Dico recalcula el plato y te dice cuánto te deja.',
+    titulo: 'Bife de chorizo con papas',
+    meta: 'Precio $18.000',
+    filas: [['Insumos', '$5.100'], ['Mano de obra', '$2.775']],
+    cifra: ['Te deja', '$10.125'],
+  },
+  {
+    id: 'costo_laboral',
+    dolor: dolor('gastronomia', 'costo_laboral'),
+    nota: 'El equipo ficha entrada y salida, y ves qué parte de la venta de cada día se fue en sueldos.',
+    titulo: 'Martes 14',
+    meta: '24 h fichadas',
+    filas: [['Ventas del día', '$490.000'], ['Personal', '$186.000']],
+    cifra: ['Personal sobre venta', '38 %'],
+  },
+  {
+    id: 'stock',
+    dolor: dolor('comercio', 'stock'),
+    nota: 'Cargás compras, merma y conteos. Lo que queda debajo del mínimo te lo marca el panel.',
+    titulo: 'Stock',
+    meta: 'Con la última compra',
+    filas: [['Harina 000', '6 kg · mínimo 10'], ['Muzzarella', '8,4 kg · mínimo 5']],
+  },
+  {
+    id: 'mermas_caja',
+    dolor: dolor('gastronomia', 'mermas_caja'),
+    nota: 'La merma queda asentada y el arqueo compara lo declarado con lo registrado, medio por medio.',
+    titulo: 'Arqueo del viernes',
+    meta: 'Efectivo',
+    filas: [['Declarado', '$412.000'], ['Registrado', '$418.500']],
+    cifra: ['Diferencia', '−$6.500'],
+  },
+  {
+    id: 'rentabilidad',
+    dolor: dolor('gastronomia', 'rentabilidad'),
+    nota: 'Ventas, costo según tus recetas y gastos: el resultado del mes se arma solo.',
+    titulo: 'Resultado de septiembre',
+    meta: '20,0 % de la venta',
+    filas: [['Ventas', '$42.600.000'], ['Costo y gastos', '−$34.080.000']],
+    cifra: ['Resultado', '$8.520.000'],
+  },
 ];
 
-function Problema() {
+function QueHace() {
+  const [activa, setActiva] = useState(null);
+
   return (
-    <section className="pl-problema" aria-label="Vender no es ganar">
-      <p className="pl-lead" data-reveal>
-        Vender no es ganar. Entre la mercadería, los sueldos, lo que se pierde y
-        la caja que no cierra, la venta se achica antes de llegar a tu bolsillo.
-        Y casi siempre te enterás a fin de mes.
-      </p>
-      <div className="pl-fugas">
-        {FUGAS.map(([frase, resto], i) => (
-          <p className="pl-fuga" key={frase} data-reveal={i + 1}>
-            <strong>{frase}</strong> {resto}
-          </p>
+    <section className="pl-seccion pl-que-hace" id="que-hace" aria-labelledby="pl-que-hace-titulo">
+      <div className="pl-plancha">
+        <h2 id="pl-que-hace-titulo" className="pl-h2 pl-plancha-titulo" data-reveal>Qué hace Dico</h2>
+        <p className="pl-nota-texto pl-plancha-intro" data-reveal="1">
+          Cada dolor, al lado de la parte del panel que lo resuelve. Es un
+          restaurante de ejemplo.
+        </p>
+        <div className="pl-plancha-tapa pl-pieza" data-ui aria-hidden="true">
+          <span className="pl-pieza-titulo">Panel de Dico</span>
+          <span className="pl-pieza-meta">Gastronomía</span>
+        </div>
+        {PARTES.map((p, i) => (
+          <PartePlancha
+            key={p.id}
+            parte={p}
+            indice={i}
+            activa={activa === p.id}
+            onActivar={(on) => setActiva(on ? p.id : null)}
+          />
         ))}
       </div>
-      <div className="pl-problema-fotos">
-        <figure className="pl-foto pl-foto-ancha" data-reveal>
-          <span className="pl-foto-marco">
-            <img
-              className="pl-foto-deriva"
-              src="/brand/landing/lnp-picada.webp"
-              alt="Tabla de picada con fiambres, quesos, aceitunas y palta"
-              width="789" height="374" loading="lazy"
-            />
-          </span>
-          <figcaption>Picada de La Nona Pato</figcaption>
-        </figure>
-        <figure className="pl-foto pl-foto-cuadrada" data-reveal="2">
-          <span className="pl-foto-marco">
-            <img
-              src="/brand/landing/lnp-tortilla.webp"
-              alt="Tortilla de papas en un plato blanco, con una porción cortada"
-              width="789" height="374" loading="lazy"
-            />
-          </span>
-          <figcaption>Tortilla de La Nona Pato</figcaption>
-        </figure>
-      </div>
     </section>
   );
 }
 
-/* ─────────────── 3. Un solo lugar: las piezas del producto ─────────────── */
-
-function UnSoloLugar() {
+function PartePlancha({ parte, indice, activa, onActivar }) {
+  const ultima = indice === PARTES.length - 1;
+  const lado = indice % 2 === 0 ? 'izq' : 'der';
   return (
-    <section className="pl-lugar" id="sistema" aria-labelledby="pl-lugar-titulo">
-      <div className="pl-lugar-cab">
-        <h2 id="pl-lugar-titulo" className="pl-h2" data-reveal>Un solo lugar.</h2>
-        <p className="pl-lugar-intro" data-reveal="1">
-          Las planillas, el cuaderno de caja, el grupo de WhatsApp, el stock
-          contado a ojo y la espera del contador a fin de mes. Dico junta todo
-          y te da el número cada día.
-        </p>
+    <>
+      <div
+        className={`pl-plancha-parte pl-pieza pl-r${indice + 2}${ultima ? ' ultima' : ''}${activa ? ' activa' : ''}`}
+        data-ui
+        role="figure"
+        aria-label={`Ejemplo: ${parte.titulo}`}
+      >
+        <div className="pl-pieza-cab">
+          <span className="pl-pieza-titulo">{parte.titulo}</span>
+          <span className="pl-pieza-meta">{parte.meta}</span>
+        </div>
+        <dl className="pl-filas">
+          {parte.filas.map(([a, b]) => (
+            <div className="pl-fila" key={a}><dt>{a}</dt><dd>{b}</dd></div>
+          ))}
+        </dl>
+        {parte.cifra && (
+          <p className="pl-plancha-cifra">
+            <span>{parte.cifra[0]}</span>
+            <span className={parte.id === 'mermas_caja' ? 'pl-error' : 'pl-oro'}>{parte.cifra[1]}</span>
+          </p>
+        )}
       </div>
-
-      <div className="pl-lugar-filas">
-        <FilaPieza
-          antes="Antes, la planilla de costos."
-          titulo="El costo de cada plato, siempre al día."
-          texto="Cargás la receta una vez. Cuando el proveedor sube un insumo, Dico recalcula el costo y te muestra cuánto te deja cada venta. Es de gastronomía: un corte de pelo no lleva receta."
-        >
-          <PiezaReceta />
-        </FilaPieza>
-        <FilaPieza
-          antes="Antes, las horas anotadas en un papel."
-          titulo="Cada turno, contra lo que vendió."
-          texto="El equipo ficha entrada y salida. Dico cruza las horas con la venta y te dice qué parte se fue en sueldos, turno por turno."
-        >
-          <PiezaTurno />
-        </FilaPieza>
-        <FilaPieza
-          antes="Antes, el cuaderno de caja."
-          titulo="La diferencia de caja aparece sola."
-          texto="Efectivo, tarjeta y MercadoPago. Al cerrar, el arqueo compara lo declarado con lo registrado y te muestra la diferencia, medio por medio."
-        >
-          <PiezaArqueo />
-        </FilaPieza>
-        <FilaPieza
-          antes="Antes, el grupo de WhatsApp."
-          titulo="Todos los pedidos en el mismo panel."
-          texto="Salón, mostrador y catálogo online entran al mismo lugar, con su estado y su cobro. Cuando entra un pedido, te avisa al celular."
-        >
-          <PiezaPedidos />
-        </FilaPieza>
-        <FilaPieza
-          antes="Antes, el stock contado a ojo."
-          titulo="El stock baja con cada venta."
-          texto="Cada venta descuenta lo que usó. Cuando algo queda debajo del mínimo, Dico te avisa antes de que falte."
-        >
-          <PiezaStock />
-        </FilaPieza>
+      <div
+        className={`pl-nota pl-nota-${lado} pl-r${indice + 2}`}
+        data-reveal
+        onPointerEnter={() => onActivar(true)}
+        onPointerLeave={() => onActivar(false)}
+      >
+        <h3 className="pl-nota-nombre">{parte.dolor}</h3>
+        <p className="pl-nota-texto">{parte.nota}</p>
       </div>
-    </section>
+    </>
   );
 }
 
-function FilaPieza({ antes, titulo, texto, children }) {
-  return (
-    <article className="pl-fila-pieza">
-      <div className="pl-fila-texto" data-reveal>
-        <p className="pl-antes">{antes}</p>
-        <h3 className="pl-h3">{titulo}</h3>
-        <p className="pl-fila-parrafo">{texto}</p>
-      </div>
-      <div className="pl-fila-escena" data-reveal="2">
-        {children}
-      </div>
-    </article>
-  );
-}
+/* ─────────────── Lo que hace hoy cada rubro ─────────────── */
 
-/* ─────────────── 4. Para tu rubro: lo que hace hoy ─────────────── */
-
-const HOY = 'Funciona hoy';
-const PRUEBAS = 'En pruebas';
+const HOY = 'Hoy';
 const DESARROLLO = 'En desarrollo';
 
+// De src/modules/registry.js: `implementado: true` es Hoy. Lo demas, en
+// desarrollo (agenda de turnos y variantes estan en false; el resultado del
+// dia no existe todavia). En gastronomia la venta descuenta los insumos de la
+// receta desde la 0104 (aplicada el 20/oct); en comercio y servicios no.
 const RUBROS = [
   {
-    id: 'gastronomia',
     nombre: 'Gastronomía',
-    quienes: 'Restaurantes, parrillas, cafés, panaderías, bares y cocinas de delivery.',
-    modulos: [
-      ['Catálogo y pedidos', 'Tu carta online con QR. Salón, mostrador y delivery en el mismo panel.', HOY],
-      ['Salón y comandas', 'Mapa de mesas, comandas y el estado de cada mesa.', HOY],
-      ['Recetas con costo', 'El costo de cada plato por insumo, recalculado cuando sube un precio.', HOY],
-      ['Stock y compras', 'Baja con cada venta y avisa cuando algo queda debajo del mínimo.', HOY],
-      ['Caja y arqueo', 'Efectivo, tarjeta y MercadoPago, con la diferencia al cerrar.', HOY],
-      ['Equipo y horarios', 'Fichaje, costo por hora y nómina contra la venta de cada turno.', HOY],
-      ['Cocina en pantalla', 'La comanda digital por sector. Está construida y se termina de probar.', PRUEBAS],
+    filas: [
+      ['Catálogo online y pedidos de salón, mostrador y delivery', HOY],
+      ['Mesas y comandas del salón', HOY],
+      ['Cocina en pantalla, por sector', HOY],
+      ['Recetas con el costo de cada plato', HOY],
+      ['Stock con compras, merma y conteos', HOY],
+      ['Caja y arqueo por medio de pago', HOY],
+      ['Fichaje y costo del personal por día', HOY],
+      ['Gastos y resultado del mes', HOY],
+      ['Cada venta descuenta los insumos de su receta', HOY],
+      ['Resultado del día, con nómina y merma', DESARROLLO],
     ],
   },
   {
-    id: 'comercio',
     nombre: 'Comercio',
-    quienes: 'Indumentaria, almacenes, kioscos, licorerías y tiendas.',
-    modulos: [
-      ['Catálogo online y pedidos', 'Tu tienda en tu-negocio.divianco.app. Mostrador y online en el mismo panel.', HOY],
-      ['Stock por artículo', 'Baja con cada venta y avisa antes de que algo falte.', HOY],
-      ['Caja y arqueo', 'Efectivo, tarjeta y MercadoPago, con la diferencia al cerrar.', HOY],
-      ['Ventas y gastos', 'El resultado del día y del mes, con los gastos cargados.', HOY],
-      ['Equipo', 'Fichaje y costo por hora de cada vendedor.', HOY],
-      ['Talles y colores', 'Variantes por artículo, cada una con su stock.', DESARROLLO],
+    filas: [
+      ['Catálogo online y pedidos de mostrador', HOY],
+      ['Stock por artículo, con mínimo', HOY],
+      ['Caja y arqueo por medio de pago', HOY],
+      ['Fichaje y costo del personal por día', HOY],
+      ['Compras, gastos y resultado del mes', HOY],
+      ['Talles y colores por artículo', DESARROLLO],
+      ['Stock que baja solo con cada venta', DESARROLLO],
     ],
   },
   {
-    id: 'servicios',
     nombre: 'Servicios',
-    quienes: 'Barberías, peluquerías, centros de estética, uñas y spa.',
-    modulos: [
-      ['Catálogo de servicios', 'Tus servicios online, con precio y duración.', HOY],
-      ['Pedidos y cobros', 'Cada servicio vendido, con su medio de pago.', HOY],
-      ['Caja y arqueo', 'Lo cobrado en el día y la diferencia al cerrar.', HOY],
-      ['Stock de insumos', 'Productos y repuestos, con aviso cuando llegan al mínimo.', HOY],
-      ['Ventas y gastos', 'El resultado del día y del mes, con los gastos cargados.', HOY],
-      ['Equipo', 'Fichaje y costo de cada profesional.', HOY],
-      ['Agenda de turnos online', 'Reservas desde tu catálogo. Te avisamos cuando salga.', DESARROLLO],
+    filas: [
+      ['Catálogo de servicios online, con precio', HOY],
+      ['Ventas y cobros de cada servicio', HOY],
+      ['Caja y arqueo por medio de pago', HOY],
+      ['Stock de insumos, con mínimo', HOY],
+      ['Fichaje y costo del personal por día', HOY],
+      ['Gastos y resultado del mes', HOY],
+      ['Agenda de turnos online', DESARROLLO],
+    ],
+  },
+  {
+    nombre: 'En todos los rubros',
+    filas: [
+      ['Facturación electrónica ARCA', DESARROLLO],
+      ['Pedidos de Rappi y PedidosYa', 'Sin fecha'],
     ],
   },
 ];
 
 function Rubros() {
-  const [activo, setActivo] = useState(0);
-  const tabsRef = useRef([]);
-  const rubro = RUBROS[activo];
-
-  // Teclado de un tablist: flechas, Inicio y Fin mueven el foco y la seleccion.
-  const alTeclear = (e) => {
-    const ultimo = RUBROS.length - 1;
-    const mapa = {
-      ArrowDown: activo === ultimo ? 0 : activo + 1,
-      ArrowRight: activo === ultimo ? 0 : activo + 1,
-      ArrowUp: activo === 0 ? ultimo : activo - 1,
-      ArrowLeft: activo === 0 ? ultimo : activo - 1,
-      Home: 0,
-      End: ultimo,
-    };
-    if (!(e.key in mapa)) return;
-    e.preventDefault();
-    setActivo(mapa[e.key]);
-    tabsRef.current[mapa[e.key]]?.focus();
-  };
-
   return (
-    <section className="pl-rubros" id="rubros" aria-labelledby="pl-rubros-titulo">
-      <h2 id="pl-rubros-titulo" className="pl-h2" data-reveal>Lo que hace hoy en tu rubro.</h2>
-
-      <div className="pl-rubros-cuerpo">
-        <div className="pl-tabs" role="tablist" aria-label="Rubros" aria-orientation="vertical" data-reveal="1">
-          {RUBROS.map((r, i) => (
-            <button
-              key={r.id}
-              ref={(el) => { tabsRef.current[i] = el; }}
-              type="button"
-              role="tab"
-              id={`pl-tab-${r.id}`}
-              className="pl-tab"
-              aria-selected={i === activo}
-              aria-controls={`pl-panel-${r.id}`}
-              tabIndex={i === activo ? 0 : -1}
-              onClick={() => setActivo(i)}
-              onKeyDown={alTeclear}
-            >
-              <span className="pl-tab-nombre">{r.nombre}</span>
-              <span className="pl-tab-cuenta">
-                {r.modulos.filter((m) => m[2] === HOY).length} módulos hoy
-              </span>
-            </button>
-          ))}
-        </div>
-
-        <div
-          className="pl-rubro-panel"
-          role="tabpanel"
-          id={`pl-panel-${rubro.id}`}
-          aria-labelledby={`pl-tab-${rubro.id}`}
-          key={rubro.id}
-        >
-          <p className="pl-rubro-quienes">{rubro.quienes}</p>
-          <ul className="pl-bandas">
-            {rubro.modulos.map(([nombre, que, estado]) => (
-              <li key={nombre} className={`pl-banda${estado === HOY ? '' : ' pendiente'}`}>
-                <span className="pl-banda-nombre">{nombre}</span>
-                <span className="pl-banda-que">{que}</span>
-                <span className="pl-banda-estado">{estado}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      <p className="pl-rubros-nota" data-reveal>
-        En todos los rubros, la facturación ARCA está en desarrollo y no la
-        ofrecemos hasta que emita una factura de verdad. Rappi y PedidosYa están
-        en la lista y todavía no tienen fecha.
-      </p>
-    </section>
-  );
-}
-
-/* ─────────────── 5. El puente: el diagnostico ya abierto ─────────────── */
-
-/* Es un form GET a /diagnostico: el rubro elegido viaja como ?vertical=<id>
-   (los ids de VERTICALES, los mismos de la tabla diagnosticos). */
-function Puente() {
-  return (
-    <section className="pl-puente" id="diagnostico" aria-labelledby="pl-puente-titulo">
-      <div className="pl-puente-texto">
-        <img className="pl-dico-img pl-puente-dico" src="/brand/dico/dico-2d-curious.png" alt="" width="256" height="256" data-reveal />
-        <h2 id="pl-puente-titulo" className="pl-h1 pl-puente-titular" data-reveal="1">
-          Empezá por el diagnóstico.
-        </h2>
-        <p className="pl-dico-dice pl-puente-dice" data-reveal="2">
-          Te hago {PREGUNTAS} preguntas sobre tu negocio. En dos minutos te digo qué
-          resolver primero, cómo lo resuelve Dico y qué plan te conviene. Sin
-          reunión y sin tarjeta.
+    <section className="pl-seccion pl-rubros" id="rubros" aria-labelledby="pl-rubros-titulo">
+      <h2 id="pl-rubros-titulo" className="pl-h2 pl-rubros-titulo" data-reveal>Lo que hace hoy, por rubro</h2>
+      <div className="pl-lista">
+        {RUBROS.map((r, i) => (
+          <div className="pl-lista-grupo" key={r.nombre} data-reveal={(i % 3) + 1}>
+            <h3 className="pl-lista-grupo-nombre">{r.nombre}</h3>
+            <ul>
+              {r.filas.map(([que, estado]) => (
+                <li className={`pl-lista-fila${estado === HOY ? '' : ' pendiente'}`} key={que}>
+                  <span className="pl-lista-punto" aria-hidden="true" />
+                  <span className="pl-lista-que">{que}</span>
+                  <span className="pl-lista-estado">{estado}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+        <p className="pl-lista-cierre" data-reveal>
+          ¿Tu negocio necesita algo que está en desarrollo, o que no está en la
+          lista? Lo desarrollamos con vos.{' '}
+          <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
+            Contanos qué necesitás
+          </a>
         </p>
       </div>
-
-      <form className="pl-dialogo" data-ui action={DIAGNOSTICO_URL} method="get" onSubmit={marcarDiagnostico} data-reveal="2">
-        <div className="pl-dialogo-cab">
-          <span className="pl-dialogo-titulo">Diagnóstico</span>
-          <span className="pl-dialogo-paso">Pregunta 1 de {PREGUNTAS}</span>
-        </div>
-        <div className="pl-progreso" aria-hidden="true">
-          {Array.from({ length: PREGUNTAS }, (_, i) => (
-            <span key={i} className={`pl-progreso-tramo${i === 0 ? ' hecho' : ''}`} />
-          ))}
-        </div>
-        <fieldset className="pl-dialogo-campo">
-          <legend className="pl-dialogo-pregunta">¿Qué tipo de negocio tenés?</legend>
-          {VERTICALES.map((v, i) => (
-            <label className="pl-opcion" key={v.id}>
-              <input type="radio" name="vertical" value={v.id} defaultChecked={i === 0} />
-              <span>{v.label}</span>
-            </label>
-          ))}
-        </fieldset>
-        <button type="submit" className="pl-boton pl-boton-ancho">Hacer mi diagnóstico</button>
-      </form>
     </section>
   );
 }
 
-/* ─────────────── 6. Clientes: nombres y fotos ─────────────── */
-
-// Solo tenants reales del edificio (verificado en la base el 19/oct/2026).
-const CLIENTES = [
-  {
-    nombre: 'La Nona Pato',
-    que: 'Panadería',
-    fotos: [
-      { src: '/brand/landing/lnp-empanadas.webp', ancho: 789, alto: 374, alt: 'Fuente blanca con empanadas horneadas sobre una tabla de madera', pie: 'Empanadas' },
-      { src: '/brand/landing/lnp-alfajores.webp', ancho: 789, alto: 374, alt: 'Alfajores de maicena con dulce de leche y coco rallado', pie: 'Alfajores de maicena' },
-      { src: '/brand/landing/lnp-bruschettas.webp', ancho: 789, alto: 374, alt: 'Bruschettas con jamón crudo, morrones asados y cebolla caramelizada', pie: 'Bruschettas' },
-    ],
-  },
-  {
-    nombre: 'Crazy Miga',
-    que: 'Cookies con delivery en Zona Norte',
-    fotos: [
-      { src: '/brand/landing/crazy-orbita-blanca.webp', ancho: 900, alto: 900, alt: 'Cookie con chips de chocolate blanco sobre una piedra oscura', pie: 'Órbita Blanca' },
-      { src: '/brand/landing/crazy-choco-eclipse.webp', ancho: 900, alto: 900, alt: 'Cookie con chips de chocolate negro sobre una piedra oscura', pie: 'Choco Eclipse' },
-      { src: '/brand/landing/crazy-dulce-nebulosa.webp', ancho: 900, alto: 900, alt: 'Cookie con chips de dulce de leche sobre una piedra oscura', pie: 'Dulce Nebulosa' },
-    ],
-  },
-];
+/* ─────────────── Clientes: una tabla y sus productos ─────────────── */
 
 function Clientes() {
   return (
-    <section className="pl-clientes" aria-labelledby="pl-clientes-titulo">
-      <h2 id="pl-clientes-titulo" className="pl-h2" data-reveal>Ya trabajan con Dico.</h2>
-      {CLIENTES.map((c) => (
-        <div className={`pl-tablero pl-tablero-${c.fotos.length}`} key={c.nombre}>
-          <div className="pl-tablero-nombre" data-reveal>
-            <p className="pl-tablero-cliente">{c.nombre}</p>
-            <p className="pl-tablero-que">{c.que}</p>
-          </div>
-          {c.fotos.map((f, i) => (
-            <figure className="pl-foto pl-tablero-foto" key={f.src} data-reveal={i + 1}>
-              <span className="pl-foto-marco">
-                <img src={f.src} alt={f.alt} width={f.ancho} height={f.alto} loading="lazy" />
-              </span>
-              <figcaption>{f.pie}, de {c.nombre}</figcaption>
-            </figure>
+    <section className="pl-seccion pl-clientes" aria-labelledby="pl-clientes-titulo">
+      <h2 id="pl-clientes-titulo" className="pl-h2 pl-escalon" data-reveal>
+        <span>Ya trabajan</span> <span className="pl-escalon-2">con Dico</span>
+      </h2>
+      <table className="pl-tabla" data-reveal="1">
+        <caption className="pl-oculto">Negocios que usan Dico</caption>
+        <thead>
+          <tr><th scope="col">Negocio</th><th scope="col">Rubro</th><th scope="col">Lo que venden</th></tr>
+        </thead>
+        <tbody>
+          {CLIENTES.map(([negocio, rubro, venden]) => (
+            <tr key={negocio}>
+              <th scope="row">{negocio}</th>
+              <td>{rubro}</td>
+              <td>{venden}</td>
+            </tr>
           ))}
-        </div>
-      ))}
+        </tbody>
+      </table>
+      <div className="pl-fotos">
+        {FOTOS.map((f, i) => (
+          <figure className="pl-foto" key={f.src} data-reveal={(i % 3) + 1}>
+            <span className="pl-foto-marco">
+              <img src={f.src} alt={f.alt} width={f.ancho} height={f.alto} loading="lazy" />
+            </span>
+            <figcaption>{f.pie}, de {f.de}</figcaption>
+          </figure>
+        ))}
+      </div>
     </section>
   );
 }
 
-/* ─────────────── 7. Planes: los nombres y una cifra viva ─────────────── */
+/* ─────────────── Planes, como una carta ─────────────── */
 
 // Los precios salen de la tabla `plans` del edificio (migracion 0052). El plan
 // `total` queda afuera a proposito: esta modelado y marcado no disponible.
 const PLANES = [
   {
-    id: 'digital',
+    grupo: 'Para empezar',
     nombre: 'Digital',
-    mensual: 0,
-    texto: 'Todo el sistema, sin pagar: catálogo online con link propio, pedidos, '
-      + 'caja y arqueo, stock, equipo con costo por hora y el resultado de cada '
-      + 'día. En gastronomía, también recetas con costo.',
-    accion: 'Empezar con Digital',
+    precio: 'Gratis',
+    texto: 'Catálogo online con link propio, pedidos, caja y arqueo, stock, equipo y el resultado de cada mes. En gastronomía, también recetas con costo.',
   },
   {
-    id: 'local',
+    grupo: 'Un local',
     nombre: 'Local',
-    mensual: 59000,
-    anual: 47200,
-    texto: 'Un local, con todo lo del plan Digital y lo que llega: facturación '
-      + 'ARCA y cocina en pantalla cuando salgan. Soporte por mail y chat.',
-    accion: 'Hablar del plan Local',
+    precio: '$59.000',
+    texto: 'Todo lo de Digital, con soporte por mail y chat, y lo que llega cuando salga: facturación ARCA.',
+    anual: 'O $47.200 por mes pagando el año.',
   },
   {
-    id: 'cadena',
+    grupo: 'Varias sucursales',
     nombre: 'Cadena',
-    mensual: 99000,
-    anual: 79200,
-    texto: 'Todo lo del plan Local, con sucursales sin tope, consolidado y '
-      + 'comparativa entre locales, roles por local y soporte por teléfono.',
-    accion: 'Hablar del plan Cadena',
+    precio: '$99.000',
+    texto: 'Por local. Sucursales sin tope, consolidado y comparativa entre locales, roles por local y soporte por teléfono.',
+    anual: 'O $79.200 por mes pagando el año.',
   },
 ];
 
-function Planes() {
-  const [elegido, setElegido] = useState('local');
-
+function Planes({ onDiagnostico }) {
   return (
-    <section className="pl-planes" id="precios" aria-label="Planes y precios">
-      <div className="pl-planes-grilla">
-        {PLANES.map((p) => {
-          const abierto = elegido === p.id;
-          const pago = p.mensual > 0;
-          return (
-            <div className="pl-plan" key={p.id}>
-              <h2 className="pl-plan-nombre">
-                <button
-                  type="button"
-                  aria-expanded={abierto}
-                  aria-controls={`pl-plan-${p.id}`}
-                  onClick={() => setElegido(p.id)}
-                  onFocus={() => setElegido(p.id)}
-                >
-                  {p.nombre}
-                </button>
-              </h2>
-              <div className="pl-plan-escena" id={`pl-plan-${p.id}`} hidden={!abierto}>
-                <p className="pl-plan-precio">
-                  <span className="pl-plan-cifra">{pago ? pesos(p.mensual) : 'Gratis'}</span>
-                  <span className="pl-plan-periodo">{pago ? 'por mes y por local' : 'sin tarjeta'}</span>
-                </p>
-                {pago && <p className="pl-plan-anual">O {pesos(p.anual)} por mes pagando el año.</p>}
-                <p className="pl-plan-texto">{p.texto}</p>
-                {pago ? (
-                  <a className="pl-boton" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
-                    {p.accion}
-                  </a>
-                ) : (
-                  <a className="pl-boton" href="/registro">{p.accion}</a>
-                )}
-              </div>
-            </div>
-          );
-        })}
+    <section className="pl-seccion pl-planes" id="precios" aria-labelledby="pl-planes-titulo">
+      <div className="pl-planes-cab">
+        <h2 id="pl-planes-titulo" className="pl-h2" data-reveal>Planes</h2>
+        <figure className="pl-foto pl-planes-foto" data-reveal="1">
+          <span className="pl-foto-marco">
+            <img
+              className="pl-deriva"
+              src="/brand/landing/crazy-dulce-nebulosa.webp"
+              alt="Cookie con chips de dulce de leche sobre una piedra oscura"
+              width="900" height="900" loading="lazy"
+            />
+          </span>
+          <figcaption>Dulce Nebulosa, de Crazy Miga</figcaption>
+        </figure>
       </div>
-      <p className="pl-planes-nota" data-reveal>
-        Precios en pesos, por local, sin IVA. Sin cargo por usuario, por pedido
-        ni por factura procesada. ¿No sabés cuál te conviene?{' '}
-        <a className="pl-enlace" href={DIAGNOSTICO_URL} onClick={marcarDiagnostico}>
-          El diagnóstico te lo dice
-        </a>
-        .
-      </p>
+      <div className="pl-carta" data-reveal="2">
+        {PLANES.map((p) => (
+          <div className="pl-carta-grupo" key={p.nombre}>
+            <h3 className="pl-carta-item">
+              <span>{p.nombre}</span>
+              <span>{p.precio === 'Gratis' ? p.precio : `${p.precio} por mes`}</span>
+            </h3>
+            <p className="pl-carta-texto"><strong>{p.grupo}.</strong> {p.texto}</p>
+            {p.anual && <p className="pl-carta-texto">{p.anual}</p>}
+          </div>
+        ))}
+        <p className="pl-carta-nota">
+          Precios en pesos, por local, sin IVA. Sin cargo por usuario ni por
+          pedido. La cuenta empieza gratis y sin tarjeta.{' '}
+          <button type="button" className="pl-enlace pl-enlace-boton" onClick={onDiagnostico}>
+            El diagnóstico te dice cuál te conviene
+          </button>
+          .
+        </p>
+      </div>
     </section>
   );
 }
 
-/* ─────────────── 8. Preguntas ─────────────── */
+/* ─────────────── Preguntas, como texto de lectura ─────────────── */
 
 const FAQ = [
   {
     p: '¿Qué es el diagnóstico?',
-    r: `Son ${PREGUNTAS} preguntas sobre tu negocio: el rubro, los canales, cuántos `
-      + 'locales y cuánta gente tenés, cómo lo controlás hoy y qué te preocupa. '
-      + 'Con eso Dico te dice qué resolver primero, cómo lo resuelve y qué plan te '
-      + 'conviene. Lleva un par de minutos y no pide tarjeta.',
+    r: `Son ${PREGUNTAS} preguntas sobre tu negocio: el rubro, lo que más te preocupa, `
+      + 'los canales, el tamaño, cómo lo controlás hoy, para cuándo lo querés y cuánto '
+      + 'pensás invertir. Con eso Dico te dice qué resolver primero, cómo lo resuelve y '
+      + 'qué plan te conviene. No pide email ni tarjeta.',
   },
   {
     p: '¿Qué pasa si se cae el sistema en pleno servicio?',
     r: 'Te lo digo derecho: hoy no hay modo offline. Si se cae la conexión o el '
-      + 'servicio, no vas a poder cargar pedidos hasta que vuelva. Corre sobre '
-      + 'infraestructura administrada y con respaldo diario, y no es algo que '
+      + 'servicio, no vas a poder cargar pedidos hasta que vuelva. No es algo que '
       + 'pase seguido, pero prometerte que seguís cobrando sin internet sería '
       + 'mentirte. El modo offline está en la lista de lo que falta.',
   },
@@ -651,27 +511,31 @@ const FAQ = [
     p: '¿Puedo migrar desde el sistema que uso hoy?',
     r: 'Sí. El catálogo, el stock y los clientes los importamos si los tenés '
       + 'digitalizados. Las recetas y el equipo se cargan una vez, y ahí se va '
-      + 'el grueso del tiempo. La migración la hacemos con el local cerrado '
-      + 'para que no dejes de vender.',
+      + 'el grueso del tiempo.',
   },
   {
     p: 'No entiendo nada de tecnología. ¿Igual lo puedo usar?',
-    r: 'Por eso la puesta en marcha la hacemos juntos. Te muestro cada módulo y '
+    r: 'Por eso la puesta en marcha la hacemos juntos: te muestro cada módulo y '
       + 'lo practicás con tus propios datos. Después es cargar pedidos y mirar '
-      + 'el número al cierre. Si algo no se entiende, WhatsApp.',
+      + 'el número. Si algo no se entiende, WhatsApp.',
     whatsapp: true,
   },
   {
     p: '¿Cuánto tarda la puesta en marcha?',
     r: 'Crear la cuenta y tener el catálogo online es cuestión de minutos, y eso '
-      + 'lo hacés solo desde acá. Dejarlo completo, con recetas costeadas, '
-      + 'equipo y horarios cargados, es un par de horas conmigo.',
+      + 'lo hacés solo. Dejarlo completo, con recetas costeadas, equipo y '
+      + 'horarios cargados, es un par de horas conmigo.',
+  },
+  {
+    p: '¿Y si mi negocio necesita algo que Dico no hace?',
+    r: 'Contanos qué es. Lo que está en desarrollo, como la agenda de turnos o '
+      + 'los talles y colores, se puede adelantar para tu negocio, y lo que no '
+      + 'está en la lista lo desarrollamos con vos.',
   },
   {
     p: '¿Y si abro una segunda sucursal?',
     r: 'Pasás al plan Cadena cuando quieras, sin penalidad. Cada local tiene su '
-      + 'resultado y sus roles, y arriba ves el consolidado y la comparativa '
-      + 'entre sucursales.',
+      + 'resultado y sus roles, y arriba ves el consolidado.',
   },
   {
     p: 'Si dejo de pagar, ¿pierdo mis datos?',
@@ -680,82 +544,63 @@ const FAQ = [
   },
   {
     p: '¿Sirve con mi caja registradora vieja?',
-    r: 'Si es una máquina mecánica, no se conecta. Pero Dico trae su propia caja '
-      + 'digital y esa la reemplaza. Si cobrás con terminal de MercadoPago, eso '
-      + 'sí entra solo.',
+    r: 'Si es una máquina mecánica, no se conecta. Dico trae su propia caja, con '
+      + 'efectivo, tarjeta y MercadoPago, y el arqueo al cerrar.',
   },
   {
     p: '¿Quién ve qué adentro de mi negocio?',
-    r: 'Cada rol ve lo suyo. Un mozo o un vendedor no ve el resultado ni la '
-      + 'nómina. No es una pantalla escondida: el permiso se aplica en la base de '
-      + 'datos, así que tampoco se llega por otro lado. Y un negocio nunca ve los '
-      + 'números de otro.',
+    r: 'Cada rol ve lo suyo: un mozo o un vendedor no ve el resultado ni los '
+      + 'sueldos. Y un negocio nunca ve los números de otro: eso lo separa la '
+      + 'base de datos, no una pantalla.',
   },
 ];
 
 function Preguntas() {
   return (
-    <section className="pl-preguntas" id="preguntas" aria-labelledby="pl-preguntas-titulo">
-      <h2 id="pl-preguntas-titulo" className="pl-h2 pl-preguntas-titulo" data-reveal>
-        Lo que todos preguntan
-      </h2>
-      <div className="pl-preguntas-lista">
+    <section className="pl-seccion pl-preguntas" id="preguntas" aria-labelledby="pl-preguntas-titulo">
+      <h2 id="pl-preguntas-titulo" className="pl-h2 pl-preguntas-titulo" data-reveal>Preguntas</h2>
+      <div className="pl-lectura-texto" data-reveal="1">
         {FAQ.map((f) => (
-          <details className="pl-pregunta" name="pl-faq" key={f.p} data-reveal>
-            <summary>
-              <span>{f.p}</span>
-              <span className="pl-signo" aria-hidden="true" />
-            </summary>
-            <p>
-              {f.r}
-              {f.whatsapp && (
-                <>
-                  {' '}
-                  <a className="pl-enlace" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
-                    Escribime al {WHATSAPP_VISIBLE}
-                  </a>
-                  , {WHATSAPP_HORARIO}.
-                </>
-              )}
-            </p>
-          </details>
+          <p className="pl-respuesta" key={f.p}>
+            <strong>{f.p}</strong>{' '}
+            {f.r}
+            {f.whatsapp && (
+              <>
+                {' '}
+                <a className="pl-enlace" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
+                  Escribime al {WHATSAPP_VISIBLE}
+                </a>
+                , {WHATSAPP_HORARIO}.
+              </>
+            )}
+          </p>
         ))}
       </div>
     </section>
   );
 }
 
-/* ─────────────── 9. Cierre: la fila de tres ─────────────── */
+/* ─────────────── Cierre: una frase y el boton ─────────────── */
 
-function Cierre() {
+function Cierre({ onDiagnostico }) {
   return (
-    <section className="pl-cierre-final" aria-labelledby="pl-cierre-titulo">
-      <figure className="pl-tile pl-tile-foto" aria-hidden="true">
-        <img src="/brand/landing/lnp-picada.webp" alt="" width="789" height="374" loading="lazy" />
-      </figure>
-      <div className="pl-tile pl-tile-centro" data-reveal>
-        <div className="pl-tile-texto">
-          <h2 id="pl-cierre-titulo" className="pl-h2 pl-cierre-titular">Seis preguntas y sabés qué hacer.</h2>
-          <p className="pl-cierre-texto">
-            Dico te dice qué resolver primero y qué plan te conviene. Si ya lo
-            tenés claro, probá gratis o agendá una reunión.
-          </p>
-          <div className="pl-acciones">
-            <BotonDiagnostico />
-            <a className="pl-enlace" href="/registro">Probar gratis</a>
-            <LinkAgenda />
-          </div>
+    <section className="pl-seccion pl-cierre" aria-label="Empezar">
+      <div className="pl-cierre-dentro" data-reveal>
+        <p className="pl-cierre-frase">
+          {PREGUNTAS} preguntas, sin email, y sabés qué resolver primero en tu negocio.
+        </p>
+        <div className="pl-acciones">
+          <button type="button" className="pl-boton" onClick={onDiagnostico}>Hacer mi diagnóstico</button>
+          <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
+            Agendá una reunión
+          </a>
         </div>
-      </div>
-      {/* El campo volt es donde aparece Dico: el mismo color del diagnostico. */}
-      <div className="pl-tile pl-tile-volt">
-        <img className="pl-dico-img pl-cierre-dico" src="/brand/dico/dico-2d-happy.png" alt="" width="256" height="256" data-reveal />
       </div>
     </section>
   );
 }
 
-/* ─────────────── 10. Pie: una linea ─────────────── */
+/* ─────────────── Pie: una linea ─────────────── */
 
 function Pie() {
   return (
@@ -765,15 +610,14 @@ function Pie() {
         <a className="pl-enlace" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
           WhatsApp {WHATSAPP_VISIBLE}
         </a>
-        <LinkAgenda>Agendá una reunión</LinkAgenda>
+        <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
+          Reuniones {AGENDA_HORARIO}
+        </a>
         <a className="pl-enlace" href="mailto:hola@divianco.app">hola@divianco.app</a>
         <a className="pl-enlace" href="/entrar">Entrar</a>
       </p>
       <p className="pl-pie-legal">
         © {new Date().getFullYear()} Grupo Divianco. Fotos: productos de La Nona Pato y Crazy Miga.
-      </p>
-      <p className="pl-pie-horarios">
-        WhatsApp {WHATSAPP_HORARIO}. Reuniones {AGENDA_HORARIO}.
       </p>
     </footer>
   );

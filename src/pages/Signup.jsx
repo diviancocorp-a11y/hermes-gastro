@@ -11,8 +11,8 @@ import '../styles/signup.css';
 
 const VERTICALES = [
   { id: 'gastro', nombre: 'Gastronomía', detalle: 'Carta, pedidos, recetas' },
-  { id: 'barber', nombre: 'Barbería', detalle: 'Turnos y servicios' },
-  { id: 'retail', nombre: 'Indumentaria', detalle: 'Talles, colores y stock' },
+  { id: 'barber', nombre: 'Servicios', detalle: 'Servicios y cobros' },
+  { id: 'retail', nombre: 'Comercio', detalle: 'Artículos y stock' },
 ];
 
 const MODOS = modosDisponibles();

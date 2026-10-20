@@ -17,7 +17,7 @@ async function completeSignup() {
   fireEvent.change(screen.getByLabelText('¿Cómo se llama tu negocio?'), {
     target: { value: 'Café Uno' },
   });
-  fireEvent.click(screen.getByRole('button', { name: /Barbería/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Servicios/ }));
   fireEvent.click(screen.getByRole('button', { name: /Solo a distancia/ }));
   fireEvent.change(screen.getByLabelText('¿En qué país?'), {
     target: { value: 'UY' },

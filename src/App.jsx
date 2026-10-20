@@ -13,7 +13,6 @@ import useTheme from './hooks/useTheme'
 import useTelegramMiniApp from './hooks/useTelegramMiniApp'
 import Catalog from './pages/Catalog'
 import PlatformLanding from './pages/PlatformLanding'
-import Diagnostico from './pages/Diagnostico'
 import Consola from './pages/Consola'
 import Signup from './pages/Signup'
 import Bienvenido from './pages/Bienvenido'
@@ -57,6 +56,9 @@ const InfoPagesAdmin = lazyReload(() => import('./pages/admin/InfoPages'))
 const OrderTracker = lazyReload(() => import('./pages/OrderTracker'))
 const MyAccount = lazyReload(() => import('./pages/MyAccount'))
 const MpStatus = lazyReload(() => import('./pages/MpStatus'))
+// El diagnostico como pagina propia: la home lo abre en el lugar, asi que
+// /diagnostico es un chunk aparte para links viejos y de afuera.
+const Diagnostico = lazyReload(() => import('./pages/Diagnostico'))
 
 const Loading = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>

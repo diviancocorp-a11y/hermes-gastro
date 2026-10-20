@@ -1,95 +1,95 @@
 // src/components/landing/Piezas.jsx
 // Las piezas del producto que muestran la landing (src/pages/PlatformLanding.jsx)
-// y el resultado del diagnostico (src/pages/Diagnostico.jsx): fragmentos de la
-// interfaz de Dico construidos en HTML, oscuros (data-ui), con cifras de
-// ejemplo que cierran entre si.
+// y el resultado del diagnostico (src/components/landing/Diagnostico.jsx):
+// fragmentos de la interfaz de Dico construidos en HTML, oscuros (data-ui),
+// con cifras de ejemplo que cierran entre si.
 //
 // Los estilos viven en src/styles/platform-landing.css (.pl-pieza y lo que
-// cuelga de ella): las dos paginas lo cargan. Se extrajeron de la landing el
-// 19/oct/2026 sin cambiar como se ven ahi: cada pieza arranca con el contenido
-// de gastronomia, que es el que mostraba la landing.
+// cuelga de ella): las dos paginas lo cargan.
 //
 // `rubro` cambia SOLO el contenido de ejemplo, para que el resultado del
 // diagnostico de una barberia no muestre harina y comandas de cocina. Los ids
 // son los de VERTICALES (src/lib/diagnostico.js); `otro` usa el contenido de
 // comercio, que no promete nada de un rubro (catalogo, pedidos, caja, stock).
 //
-// REGLA DE CONTENIDO (la de la landing): nada que el producto no haga hoy. En
-// comercio y servicios no hay recetas, asi que ninguna fila habla de costo por
-// venta: en el cierre van las compras del dia, no el costo de lo vendido.
+// REGLA DE CONTENIDO (verificada en el codigo el 19/oct/2026):
+//   - el resultado es MENSUAL (MonthSummary): no hay resultado del dia;
+//   - el costo laboral es POR DIA (labor_cost_vs_sales), no por turno;
+//   - el stock se mueve con compras, merma y conteos (y en gastronomia con la
+//     receta de cada venta, desde la 0104), y el
+//     aviso de stock bajo es EN EL PANEL;
+//   - el salon y las mesas son solo de gastronomia; en comercio y servicios no
+//     hay costo por venta (sale de las recetas): van las compras.
 
 import { useState } from 'react';
 
 const pesos = (n) => `$${Math.round(n).toLocaleString('es-AR')}`;
 const porcentaje = (n) => n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-/** El contenido de ejemplo de un rubro, con gastronomia como base. */
+/** El contenido de ejemplo de un rubro; si no hay, el de comercio. */
 const deRubro = (tabla, rubro) => tabla[rubro] || tabla.comercio;
 
-/* ─────────────── Cierre de caja ─────────────── */
+/* ─────────────── Resultado del mes ─────────────── */
 
-// El mismo cierre en tres rubros. Las cifras son de ejemplo y cierran:
-// gastronomia 4.200.000 - 1.050.000 - 650.000 - 140.000 = 2.360.000 (los
-// numeros de la v1 por mil); comercio 1.380.000 - 745.000 - 180.000 - 62.000
-// = 393.000; servicios 620.000 - 25.000 - 248.000 - 31.000 = 316.000.
-const CIERRES = {
+// El mismo mes en tres rubros. Las cifras son de ejemplo y cierran:
+// gastronomia 42.600.000 - 12.780.000 - 21.300.000 = 8.520.000 (20,0 %);
+// comercio 18.900.000 - 11.340.000 - 5.290.000 = 2.270.000 (12,0 %);
+// servicios 9.400.000 - 610.000 - 6.150.000 = 2.640.000 (28,1 %).
+const RESULTADOS = {
   gastronomia: {
     nombre: 'Gastronomía',
-    cuando: 'Viernes, 23:52',
-    ventas: 4200000,
+    ventas: 42600000,
     costos: [
-      ['Insumos, según tus recetas', 1050000],
-      ['Nómina, por horas fichadas', 650000],
-      ['Merma', 140000],
+      ['Costo según tus recetas', 12780000],
+      ['Gastos', 21300000],
     ],
-    lectura: 'La merma de hoy duplica la del viernes pasado. Casi toda es de verdulería.',
   },
   comercio: {
     nombre: 'Comercio',
-    cuando: 'Sábado, 20:15',
-    ventas: 1380000,
+    ventas: 18900000,
     costos: [
       // Sin recetas no hay costo por venta: lo que hay son las compras.
-      ['Compras de mercadería', 745000],
-      ['Personal', 180000],
-      ['Gastos del día', 62000],
+      ['Compras de mercadería', 11340000],
+      ['Gastos', 5290000],
     ],
-    lectura: 'Tres artículos quedaron debajo del mínimo. Te dejé la lista en Stock.',
   },
   servicios: {
     nombre: 'Servicios',
-    cuando: 'Sábado, 19:40',
-    ventas: 620000,
+    ventas: 9400000,
     costos: [
-      ['Compras de insumos', 25000],
-      ['Personal', 248000],
-      ['Gastos del día', 31000],
+      ['Compras de insumos', 610000],
+      ['Gastos', 6150000],
     ],
-    lectura: 'El personal se llevó el 40 % de la venta. El martes fue el 22 %.',
   },
 };
-const RUBROS_DEL_CIERRE = Object.keys(CIERRES);
+const RUBROS_DEL_RESULTADO = Object.keys(RESULTADOS);
 
-/* El cierre de caja de Dico. Con `elegible`, se elige el rubro y la cuenta
-   cambia (la promesa de la landing); sin eso, queda fijo en `rubro`. */
-export function PiezaCierre({ rubro = 'gastronomia', elegible = true }) {
-  const [elegido, setElegido] = useState(CIERRES[rubro] ? rubro : 'comercio');
-  const actual = elegible ? elegido : (CIERRES[rubro] ? rubro : 'comercio');
-  const c = CIERRES[actual];
-  const totalCostos = c.costos.reduce((s, [, m]) => s + m, 0);
-  const neto = c.ventas - totalCostos;
-  const margen = (neto / c.ventas) * 100;
+/* El resultado del mes en Dico. Con `elegible`, se elige el rubro y la cuenta
+   cambia (la pieza viva del hero); sin eso, queda fijo en `rubro`. */
+export function PiezaResultado({ rubro = 'gastronomia', elegible = true }) {
+  const inicial = RESULTADOS[rubro] ? rubro : 'comercio';
+  const [elegido, setElegido] = useState(inicial);
+  const actual = elegible ? elegido : inicial;
+  const r = RESULTADOS[actual];
+  const totalCostos = r.costos.reduce((s, [, m]) => s + m, 0);
+  const resultado = r.ventas - totalCostos;
+  const margen = (resultado / r.ventas) * 100;
 
   return (
-    <div className="pl-pieza pl-cierre" data-ui aria-label={elegible ? undefined : 'Ejemplo: cierre de caja'}>
+    <div
+      className="pl-pieza pl-resultado"
+      data-ui
+      role="figure"
+      aria-label={`Ejemplo: resultado del mes en ${r.nombre.toLowerCase()}`}
+    >
       <div className="pl-pieza-cab">
-        <span className="pl-pieza-titulo">Cierre de caja</span>
-        <span className="pl-pieza-meta">{c.cuando}</span>
+        <span className="pl-pieza-titulo">Resultado del mes</span>
+        <span className="pl-pieza-meta">Septiembre</span>
       </div>
 
       {elegible && (
         <div className="pl-segmento" role="group" aria-label="Rubro del ejemplo">
-          {RUBROS_DEL_CIERRE.map((id) => (
+          {RUBROS_DEL_RESULTADO.map((id) => (
             <button
               key={id}
               type="button"
@@ -97,35 +97,31 @@ export function PiezaCierre({ rubro = 'gastronomia', elegible = true }) {
               aria-pressed={actual === id}
               onClick={() => setElegido(id)}
             >
-              {CIERRES[id].nombre}
+              {RESULTADOS[id].nombre}
             </button>
           ))}
         </div>
       )}
 
       {/* key: al cambiar de rubro las filas se reemplazan y entran de nuevo */}
-      <div className="pl-cierre-cuenta" key={actual} aria-live={elegible ? 'polite' : undefined}>
+      <div className="pl-resultado-cuenta" key={actual} aria-live={elegible ? 'polite' : undefined}>
         <dl className="pl-filas">
           <div className="pl-fila">
             <dt>Ventas</dt>
-            <dd>{pesos(c.ventas)}</dd>
+            <dd>{pesos(r.ventas)}</dd>
           </div>
-          {c.costos.map(([concepto, monto]) => (
+          {r.costos.map(([concepto, monto]) => (
             <div className="pl-fila" key={concepto}>
               <dt>{concepto}</dt>
               <dd>−{pesos(monto)}</dd>
             </div>
           ))}
         </dl>
-        <div className="pl-cierre-neto">
-          <span className="pl-cierre-neto-nombre">Ganancia neta</span>
-          <span className="pl-cierre-neto-cifra">{pesos(neto)}</span>
-          <span className="pl-cierre-neto-margen">{porcentaje(margen)} % de la venta</span>
+        <div className="pl-resultado-neto">
+          <span className="pl-resultado-neto-nombre">Resultado</span>
+          <span className="pl-resultado-neto-cifra">{pesos(resultado)}</span>
+          <span className="pl-resultado-neto-margen">{porcentaje(margen)} % de la venta</span>
         </div>
-        <p className="pl-lectura">
-          <span className="pl-lectura-quien">Dico</span>
-          {c.lectura}
-        </p>
       </div>
     </div>
   );
@@ -136,7 +132,7 @@ export function PiezaCierre({ rubro = 'gastronomia', elegible = true }) {
 // Bife: 4.200 + 540 + 360 = 5.100 de insumos; 18.000 - 5.100 - 2.775 = 10.125.
 export function PiezaReceta() {
   return (
-    <div className="pl-pieza pl-receta" data-ui aria-label="Ejemplo: receta con costo">
+    <div className="pl-pieza pl-receta" data-ui role="figure" aria-label="Ejemplo: receta con costo">
       <div className="pl-pieza-cab">
         <span className="pl-pieza-titulo">Bife de chorizo con papas</span>
         <span className="pl-pieza-meta">Precio $18.000</span>
@@ -161,27 +157,28 @@ export function PiezaReceta() {
   );
 }
 
-/* ─────────────── Turno con nomina ─────────────── */
+/* ─────────────── Un dia: personal contra venta ─────────────── */
 
-// 186.000 / 490.000 = 37,96 %. Vale para cualquier rubro.
+// 186.000 / 490.000 = 37,96 %. Vale para cualquier rubro: el costo laboral es
+// por dia, con las horas fichadas.
 export function PiezaTurno() {
   return (
-    <div className="pl-pieza pl-turno" data-ui aria-label="Ejemplo: turno con nómina">
+    <div className="pl-pieza pl-turno" data-ui role="figure" aria-label="Ejemplo: personal contra la venta de un día">
       <div className="pl-pieza-cab">
-        <span className="pl-pieza-titulo">Martes, de 14 a 17 h</span>
-        <span className="pl-pieza-meta">3 personas · 9 h fichadas</span>
+        <span className="pl-pieza-titulo">Martes 14 de octubre</span>
+        <span className="pl-pieza-meta">3 personas · 24 h fichadas</span>
       </div>
       <div className="pl-turno-cuenta">
-        <div><span className="pl-pieza-meta">Ventas</span><span className="pl-turno-monto">$490.000</span></div>
-        <div><span className="pl-pieza-meta">Nómina</span><span className="pl-turno-monto">$186.000</span></div>
+        <div><span className="pl-pieza-meta">Ventas del día</span><span className="pl-turno-monto">$490.000</span></div>
+        <div><span className="pl-pieza-meta">Personal</span><span className="pl-turno-monto">$186.000</span></div>
       </div>
       <div className="pl-pieza-cifra">
-        <span className="pl-pieza-cifra-nombre">Nómina sobre venta</span>
+        <span className="pl-pieza-cifra-nombre">Personal sobre venta</span>
         <span className="pl-pieza-cifra-valor pl-alerta">38 %</span>
       </div>
       <p className="pl-lectura">
         <span className="pl-lectura-quien">Dico</span>
-        Arriba del 30 %, este turno no se paga solo.
+        Arriba del 30 %, el día no paga sus sueldos.
       </p>
     </div>
   );
@@ -189,7 +186,7 @@ export function PiezaTurno() {
 
 /* ─────────────── Arqueo ─────────────── */
 
-// Registrado: 418.500 + 1.960.000 + 1.821.500 = 4.200.000 (el viernes del cierre).
+// Registrado: 418.500 + 1.960.000 + 1.821.500 = 4.200.000.
 export function PiezaArqueo() {
   const medios = [
     ['Efectivo', '$412.000', '$418.500'],
@@ -219,13 +216,14 @@ export function PiezaArqueo() {
 
 /* ─────────────── Pedidos de todos los canales ─────────────── */
 
+// El salon (mesas) es solo de gastronomia.
 const PEDIDOS = {
   gastronomia: {
     hora: '21:40',
     lista: [
-      ['#214', 'Salón · mesa 6', 'En cocina', '$38.400', 'cocina'],
+      ['#214', 'Salón · mesa 6', 'En cocina', '$38.400', 'curso'],
       ['#215', 'Mostrador', 'Listo', '$12.900', 'listo'],
-      ['#216', 'Catálogo online · delivery', 'Confirmado', '$27.600', 'nuevo'],
+      ['#216', 'Catálogo online · delivery', 'Confirmado', '$27.600', 'curso'],
       ['#217', 'Salón · mesa 2', 'Cobrado', '$51.300', 'cobrado'],
     ],
     resumen: '48 pedidos de 3 canales',
@@ -235,19 +233,30 @@ const PEDIDOS = {
     hora: '19:10',
     lista: [
       ['#318', 'Mostrador', 'Cobrado', '$24.900', 'cobrado'],
-      ['#319', 'Catálogo online · envío', 'Confirmado', '$61.500', 'nuevo'],
+      ['#319', 'Catálogo online · envío', 'Confirmado', '$61.500', 'curso'],
       ['#320', 'Catálogo online · retiro', 'Listo', '$18.700', 'listo'],
-      ['#321', 'Mostrador', 'Preparando', '$9.800', 'cocina'],
+      ['#321', 'Mostrador', 'Preparando', '$9.800', 'curso'],
     ],
     resumen: '36 pedidos de 2 canales',
     total: '$842.000',
+  },
+  servicios: {
+    hora: '18:30',
+    lista: [
+      ['#512', 'Mostrador · corte y barba', 'Cobrado', '$18.000', 'cobrado'],
+      ['#513', 'Catálogo online · color', 'Confirmado', '$42.000', 'curso'],
+      ['#514', 'Mostrador · corte', 'Cobrado', '$12.000', 'cobrado'],
+      ['#515', 'Catálogo online · manicura', 'Confirmado', '$15.500', 'curso'],
+    ],
+    resumen: '22 servicios de 2 canales',
+    total: '$318.500',
   },
 };
 
 export function PiezaPedidos({ rubro = 'gastronomia' }) {
   const p = deRubro(PEDIDOS, rubro);
   return (
-    <div className="pl-pieza pl-pedidos" data-ui aria-label="Ejemplo: pedidos de todos los canales">
+    <div className="pl-pieza pl-pedidos" data-ui role="figure" aria-label="Ejemplo: pedidos de todos los canales">
       <div className="pl-pieza-cab">
         <span className="pl-pieza-titulo">Pedidos de hoy</span>
         <span className="pl-pieza-meta">{p.hora}</span>
@@ -279,7 +288,7 @@ const STOCK = {
       ['Muzzarella', '8,4 kg', 'mínimo 5 kg', false],
       ['Tomate perita', '12 kg', 'mínimo 8 kg', false],
     ],
-    lectura: 'La harina quedó debajo del mínimo. Te avisé al celular.',
+    lectura: 'La harina quedó debajo del mínimo. Te lo marqué en el panel.',
   },
   comercio: {
     lista: [
@@ -287,7 +296,7 @@ const STOCK = {
       ['Aceite de girasol 1,5 l', '18 u.', 'mínimo 10 u.', false],
       ['Fideos secos 500 g', '40 u.', 'mínimo 24 u.', false],
     ],
-    lectura: 'La yerba quedó debajo del mínimo. Te avisé al celular.',
+    lectura: 'La yerba quedó debajo del mínimo. Te lo marqué en el panel.',
   },
   servicios: {
     lista: [
@@ -295,17 +304,17 @@ const STOCK = {
       ['Cera para peinar', '11 u.', 'mínimo 6 u.', false],
       ['Hojas de afeitar', '140 u.', 'mínimo 100 u.', false],
     ],
-    lectura: 'El shampoo quedó debajo del mínimo. Te avisé al celular.',
+    lectura: 'El shampoo quedó debajo del mínimo. Te lo marqué en el panel.',
   },
 };
 
 export function PiezaStock({ rubro = 'gastronomia' }) {
   const s = deRubro(STOCK, rubro);
   return (
-    <div className="pl-pieza pl-stock" data-ui aria-label="Ejemplo: stock con mínimo">
+    <div className="pl-pieza pl-stock" data-ui role="figure" aria-label="Ejemplo: stock con mínimo">
       <div className="pl-pieza-cab">
         <span className="pl-pieza-titulo">Stock</span>
-        <span className="pl-pieza-meta">Actualizado con la última venta</span>
+        <span className="pl-pieza-meta">Actualizado con la última compra</span>
       </div>
       <ul className="pl-stock-lista">
         {s.lista.map(([nombre, hay, minimo, bajo]) => (
@@ -327,7 +336,7 @@ export function PiezaStock({ rubro = 'gastronomia' }) {
 /** La pieza que nombra `solucion().pieza` (src/lib/diagnostico.js). */
 export function PiezaPorNombre({ nombre, rubro }) {
   switch (nombre) {
-    case 'cierre': return <PiezaCierre rubro={rubro} elegible={false} />;
+    case 'cierre': return <PiezaResultado rubro={rubro} elegible={false} />;
     case 'receta': return <PiezaReceta />;
     case 'turno': return <PiezaTurno />;
     case 'arqueo': return <PiezaArqueo />;
