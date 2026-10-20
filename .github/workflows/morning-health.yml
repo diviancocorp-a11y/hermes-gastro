@@ -1,18 +1,29 @@
 name: Morning Health Check
 
-# Lunes a sabado 10:00 UTC = 7:00 AM Argentina (UTC-3).
+# Tres turnos (Argentina = UTC-3), pedido de Ricky el 20/oct: en el dia
+# pasan cosas que el reporte de la manana no ve.
+#   manana: L-S 7:00 AR (10:00 UTC), Sentry de las ultimas 24h
+#   tarde:  todos los dias 15:00 AR (18:00 UTC), Sentry de las ultimas 8h
+#   noche:  todos los dias 21:00 AR (00:00 UTC), Sentry de las ultimas 8h
 # Salud del EDIFICIO (Dico) a Telegram: landing, tenants, submit-order,
 # drift de schema y Sentry. Los 3 proyectos legacy estan pausados a proposito
 # y ya no se chequean (daban rojo todas las mananas = ruido).
 #
-# OJO: el cron corre desde la rama DEFAULT (main). Hasta que main y
-# platform/runtime-tenant converjan, probarlo con workflow_dispatch eligiendo
-# la rama platform/runtime-tenant.
+# OJO: el cron corre desde la rama DEFAULT (main), y GitHub lo atrasa: el
+# de las 7:00 del 20/oct salio 11:41. El turno sale del cron que disparo, no
+# de la hora, para que un atraso no le cambie el nombre.
 on:
   schedule:
     - cron: '0 10 * * 1-6'
+    - cron: '0 18 * * *'
+    - cron: '0 0 * * *'
   workflow_dispatch: # permite correrlo manualmente desde la UI
     inputs:
+      turno:
+        description: 'Que reporte simular (cambia el titulo y la ventana de Sentry)'
+        type: choice
+        options: [manana, tarde, noche]
+        default: manana
       probar_cerebro:
         description: 'Llamar a DICO_BRAIN con un problema de ejemplo aunque todo este en verde'
         type: boolean
@@ -38,6 +49,7 @@ jobs:
           # (16/oct). TELEGRAM_BOT_TOKEN queda de respaldo.
           TELEGRAM_BOT_TOKEN: ${{ secrets.GERENTEDICOBOT || secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TURNO: ${{ github.event.schedule == '0 18 * * *' && 'tarde' || github.event.schedule == '0 0 * * *' && 'noche' || inputs.turno || 'manana' }}
           # Los negocios salen de la base (scripts/tenants-vivos.mjs). La
           # variable queda de respaldo si falta la service role.
           SMOKE_TENANTS: ${{ vars.SMOKE_TENANTS }}

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // scripts/morning-health.mjs
 // ─────────────────────────────────────────────────────────
-// Health check matutino de DICO (el edificio) — envia a Telegram.
-// Corre via GitHub Actions cron L-S 7am AR (10:00 UTC), o a mano:
-//   SMOKE_TENANTS=la-nona-pato,cochi node scripts/morning-health.mjs
+// Health check de DICO (el edificio) — envia a Telegram.
+// Corre via GitHub Actions en tres turnos (TURNO): manana L-S 7am AR, tarde
+// 15h y noche 21h todos los dias. O a mano:
+//   TURNO=tarde SMOKE_TENANTS=la-nona-pato,cochi node scripts/morning-health.mjs
 //
 // Reescrito 17/ago/2026. La version anterior chequeaba los 3 tenants LEGACY
 // (proyectos Supabase pausados a proposito): daba rojo todas las mananas, y un
@@ -58,6 +59,16 @@ const LANDING = 'https://divianco.app';
 // TELEGRAM_CHAT_ID el 16/oct), y Telegram no reconoce el chat.
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN?.trim();
 const TG_CHAT = process.env.TELEGRAM_CHAT_ID?.trim();
+
+// Tres reportes por dia (20/oct). La manana mira Sentry de 24h para cubrir la
+// noche; tarde y noche, 8h, asi un mismo error no se repite en los tres. TURNO
+// lo pone el workflow segun el cron que disparo.
+const TURNOS = {
+  manana: { emoji: '🌅', nombre: 'mañana', ventana: '24h' },
+  tarde: { emoji: '🌤️', nombre: 'tarde', ventana: '8h' },
+  noche: { emoji: '🌙', nombre: 'noche', ventana: '8h' },
+};
+const TURNO = TURNOS[process.env.TURNO?.trim()] || TURNOS.manana;
 
 if (!TG_TOKEN || !TG_CHAT) {
   console.error('❌ Faltan TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID');
@@ -149,7 +160,7 @@ async function main() {
 
   /* ── Mensaje: lo roto primero, el verde corto ────────── */
   const date = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
-  const lines = [`🌅 *Dico — salud del edificio*`, `_${date}_`, ''];
+  const lines = [`${TURNO.emoji} *Dico — salud del edificio · ${TURNO.nombre}*`, `_${date}_`, ''];
 
   if (problemas.length === 0) {
     lines.push(`✅ Todo en verde (${TENANTS.length} tenants, función, schema).`);
@@ -313,7 +324,7 @@ async function checkSentryEnBuild() {
   }
 }
 
-/** Issues sin resolver vistos en las ultimas 24h. Sin token se saltea. */
+/** Issues sin resolver vistos en la ventana del turno. Sin token se saltea. */
 async function checkSentry() {
   // trim: al pegar un secret suele colarse un salto de linea al final, y con
   // eso la URL ya no encuentra ni la org ni el proyecto (404).
@@ -326,7 +337,7 @@ async function checkSentry() {
     // lastSeen en la query: statsPeriod solo arma las estadisticas, no filtra.
     // Sin esto el reporte decia "en 24h" de un error de hace dos dias (28/sep).
     // !prueba:alerta: los errores de probar_alerta no son de la app.
-    + `?query=${encodeURIComponent('is:unresolved lastSeen:-24h !prueba:alerta')}&statsPeriod=24h&limit=5`;
+    + `?query=${encodeURIComponent(`is:unresolved lastSeen:-${TURNO.ventana} !prueba:alerta`)}&statsPeriod=24h&limit=5`;
   try {
     const r = await sentryApi(token, ruta);
     if (r.status === 404) {
@@ -337,9 +348,9 @@ async function checkSentry() {
     }
     if (!r.ok) return { rojo: true, texto: `API HTTP ${r.status}` };
     const issues = await r.json();
-    if (!Array.isArray(issues) || issues.length === 0) return { rojo: false, texto: '✓ sin errores en 24h' };
+    if (!Array.isArray(issues) || issues.length === 0) return { rojo: false, texto: `✓ sin errores en ${TURNO.ventana}` };
     const top = issues.slice(0, 3).map(i => i.title?.slice(0, 60) || i.culprit || '?');
-    return { rojo: true, texto: `${issues.length} issue(s) en 24h — ${top.join(' · ')}` };
+    return { rojo: true, texto: `${issues.length} issue(s) en ${TURNO.ventana} — ${top.join(' · ')}` };
   } catch (e) {
     return { rojo: true, texto: `error: ${e.name}` };
   }
@@ -439,7 +450,8 @@ async function explicarConCerebro(problemas) {
             role: 'system',
             content: 'Sos el gerente tecnico de Dico, una plataforma de catalogos y pedidos para negocios '
               + '(cada negocio vive en <slug>.divianco.app). Le explicas al dueno, que no es programador, '
-              + 'el reporte matutino. En espanol argentino, maximo 5 renglones cortos, sin Markdown: '
+              + `el reporte de la ${TURNO.nombre}. En espanol argentino,`
+              + ' maximo 5 renglones cortos, sin Markdown: '
               + 'que se rompio, a que negocio o cliente afecta, que tan urgente es (hoy / esta semana / '
               + 'puede esperar) y que hacer. No inventes datos que no esten en el reporte.',
           },

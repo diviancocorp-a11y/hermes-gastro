@@ -42,7 +42,7 @@ Procedimientos para los problemas más comunes. Cada runbook tiene síntoma → 
 | Realtime tenant degradado en Supabase | Supabase Dashboard → Settings → Pause project → esperar 2 min → Restore (último recurso, downtime ~5 min) |
 | Las tablas no están en publication | SQL: `SELECT * FROM pg_publication_tables WHERE pubname='supabase_realtime'`. Si falta `orders`/`order_items`: `ALTER PUBLICATION supabase_realtime ADD TABLE public.orders, public.order_items;` |
 
-**Health check diario:** el workflow `morning-health.yml` corre L-S 7am y avisa por Telegram si esto se rompe.
+**Health check, tres veces por dia:** el workflow `morning-health.yml` corre L-S 7am, y todos los dias 15h y 21h, y avisa por Telegram si esto se rompe.
 
 ---
 
