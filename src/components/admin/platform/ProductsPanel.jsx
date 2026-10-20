@@ -13,9 +13,11 @@ import { useConfirm } from '../../ConfirmSlideProvider';
 import ProductEditor from './ProductEditor';
 import { categoriesFrom, normalizarCategoriaProducto } from '../../../services/platformAdmin';
 import { margen, indexarInsumos } from '../../../services/platformRecipes';
-import { terminologia } from '../../../modules/registry';
+import { terminologia, usaReceta } from '../../../modules/registry';
 import DicoCuadro from '../../dico/DicoCuadro';
 import GestionProductosPanel from './GestionProductosPanel';
+import RecetarioPanel from './RecetarioPanel';
+import { puedeEditar, vePrecios } from '../../../modules/roles';
 import useMediaQuery from '../../../lib/useMediaQuery';
 
 function money(n) {
@@ -29,7 +31,7 @@ function numero(n) {
 const MINIMO_MARGEN_PCT = 30;
 
 const ProductsPanel = forwardRef(function ProductsPanel({
-  products, vertical, loading, onSave, onToggleActive, onArchive, onSaveSettings, showToast,
+  tenantId, roles = [], products, vertical, loading, onSave, onToggleActive, onArchive, onSaveSettings, showToast,
   /**
    * Cuando Dico Physical esta atendiendo el catalogo vacio, esta pantalla NO
    * monta su propia escena 2D: serian dos Dicos a la vez. Publica el nodo al
@@ -46,6 +48,19 @@ const ProductsPanel = forwardRef(function ProductsPanel({
   sectores = [],
 }, ref) {
   const confirmSlide = useConfirm();
+  const editable = puedeEditar(roles, 'products');
+  const [vista, setVista] = useState('productos');
+  const [recetarioDirty, setRecetarioDirty] = useState(false);
+  const tieneRecetario = usaReceta(vertical) && roles.some(r => ['owner', 'manager', 'kitchen'].includes(r));
+  const cambiarVista = async (next) => {
+    if (recetarioDirty && !await confirmSlide({ title: 'Descartar cambios', body: 'Hay cambios sin guardar en la ficha. ¿Querés descartarlos?' })) return;
+    setRecetarioDirty(false);
+    setVista(next);
+  };
+  const selectorVista = tieneRecetario && <div className="ag-recetario-switch" role="group" aria-label="Vista de Productos">
+    <button type="button" aria-pressed={vista === 'productos'} onClick={() => cambiarVista('productos')}>Productos</button>
+    <button type="button" aria-pressed={vista === 'recetario'} onClick={() => cambiarVista('recetario')}>Recetario</button>
+  </div>;
   const [editing, setEditing] = useState(null); // objeto producto | 'new' | null
   const [search, setSearch] = useState('');
   // `null` significa que todas nacen abiertas. Un Set aparece recien cuando
@@ -93,8 +108,13 @@ const ProductsPanel = forwardRef(function ProductsPanel({
   };
 
   useImperativeHandle(ref, () => ({
-    nuevoProducto: () => setEditing('new'),
-  }), []);
+    nuevoProducto: async () => {
+      if (!editable) return;
+      if (recetarioDirty && !await confirmSlide({ title: 'Descartar cambios', body: 'Hay cambios sin guardar en la ficha. ¿Querés descartarlos?' })) return;
+      setRecetarioDirty(false);
+      setEditing('new');
+    },
+  }), [editable, recetarioDirty, confirmSlide]);
 
   // Como se llama lo que vende este negocio. Un corte de pelo no es un
   // "producto": la palabra cambia toda la pantalla.
@@ -205,7 +225,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
   };
 
   /* ── Formulario a pantalla completa ── */
-  if (editing) {
+  if (editing && editable) {
     const isNew = editing === 'new';
     return (
       <div className="ag-page-over">
@@ -237,6 +257,15 @@ const ProductsPanel = forwardRef(function ProductsPanel({
     );
   }
 
+  if (tieneRecetario && vista === 'recetario') return <div className="ag-pantalla-productos">{selectorVista}
+    <RecetarioPanel key={tenantId + roles.join(',')} tenantId={tenantId} roles={roles} products={products}
+      recetas={recetas} ingredientes={ingredientes} onDirtyChange={setRecetarioDirty}
+      onEditIngredients={product => { setEditing(product); }} />
+  </div>;
+  if (!vePrecios(roles)) return <div className="ag-pantalla-productos">{selectorVista}
+    <ul>{products.map(p => <li key={p.id}>{p.name}{p.category ? ` · ${p.category}` : ''}</li>)}</ul>
+  </div>;
+
   /* ── Listado ──
      Contenedor EN FLUJO, no `ag-page-over`. Esa clase es un overlay de
      pantalla completa (position:fixed, z-index 950) y admin-shared.css tiene
@@ -250,6 +279,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
     // Phase 8/9 y tienen su propia deuda declarada; sin este ancla, el gate de
     // Phase 4 les cobraria a ellos.
     <div className="ag-pantalla-productos">
+      {selectorVista}
       {/* NO va un <h2> con el nombre de la seccion.
           El shell ya lo pone en `.ag-section-title` (PlatformAdmin), asi que
           la pantalla mostraba "Productos" DOS VECES, una arriba de la otra y
@@ -287,7 +317,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
               <button
                 type="button"
                 className="ag-cta dico-cuadro-accion"
-                onClick={() => setEditing('new')}
+                disabled={!editable} onClick={() => setEditing('new')}
               >
                 {`+ Agregar ${t.singular}`}
               </button>
@@ -301,7 +331,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
               size={188}
               texto={`Empecemos por tu primer ${t.singular}. Cargalo y queda publicado en tu catálogo.`}
               accion={`+ Agregar ${t.singular}`}
-              onAccion={() => setEditing('new')}
+              onAccion={editable ? () => setEditing('new') : undefined}
               title={`Dico mira el botón para agregar el primer ${t.singular}`}
             />
           )}
@@ -323,7 +353,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
         <div className={`ag-productos-categorias${operativo ? ' esta-operativo' : ''}`}>
         <div className="ag-productos-categorias-titulo">
           <h2>Categorías</h2>
-          <div className="ag-categorias-config">
+          {editable && <div className="ag-categorias-config">
             <button
               type="button"
               className="ag-categorias-menu"
@@ -359,7 +389,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                 <button type="submit">Guardar</button>
               </form>
             )}
-          </div>
+          </div>}
         </div>
         {groups.map(([cat, items]) => {
           const abierta = categoriasAbiertas === null
@@ -424,6 +454,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                         <span className="ag-fila-nombre">
                           {p.name}
                           {p.requires_age_gate && <span className="ag-fila-edad">+18</span>}
+                          {p.allergens?.length > 0 && <small className="ag-recetario-product-allergens">Alérgenos: {p.allergens.join(', ')}</small>}
                         </span>
                         <i aria-hidden="true" />
                       </button>
@@ -431,6 +462,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                       <span className="ag-fila-nombre">
                         {p.name}
                         {p.requires_age_gate && <span className="ag-fila-edad">+18</span>}
+                          {p.allergens?.length > 0 && <small className="ag-recetario-product-allergens">Alérgenos: {p.allergens.join(', ')}</small>}
                       </span>
                     )}
                     {!p.active && <span className="ag-fila-oculto">oculto</span>}
@@ -449,7 +481,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                     </span>
                   </div>}
                   <span className="ag-fila-precio">{money(p.price)}</span>
-                  <div className="ag-fila-acciones">
+                  {editable && <div className="ag-fila-acciones">
                     <button
                       type="button"
                       className="ag-btn-mini ag-fila-visibilidad"
@@ -497,7 +529,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                         </div>
                       )}
                     </div>
-                  </div>
+                  </div>}
                 </div>
                 );
               })}
@@ -507,7 +539,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
         })}
         </div>
 
-        <GestionProductosPanel
+        {editable && <GestionProductosPanel
           key={turno?.id || (operativo ? 'operativo-sin-caja' : 'cerrado')}
           products={products}
           orders={orders}
@@ -526,7 +558,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
           onIr={onIr}
           showToast={showToast}
           onDicoResumenChange={onDicoResumenChange}
-        />
+        />}
       </div>
       )}
     </div>

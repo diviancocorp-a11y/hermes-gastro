@@ -185,6 +185,34 @@
         "no_receipt",
         "payment_method"
       ]
+    },
+    "recipe_cards": {
+      "schema": "RecipeCardInputSchema",
+      "columns": [
+        "yield_qty",
+        "yield_unit",
+        "time_minutes",
+        "steps",
+        "notes",
+        "visible_to",
+        "is_archived"
+      ],
+      "serverOnly": [
+        "id",
+        "tenant_id",
+        "product_id",
+        "updated_by",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "products": {
+      "schema": "ProductAllergensInputSchema",
+      "columns": [
+        "allergens"
+      ],
+      "serverOnly": [],
+      "$comment": "Schema de actualizacion parcial de alergenos; el guardado general sigue en platformAdmin."
     }
   }
 }
