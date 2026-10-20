@@ -58,6 +58,12 @@
 
 ### Planilla para completar precios y revisar descripciones
 
+- **20/oct, actualización:** Ricky pidió cargar las propuestas. Aplicadas las
+  53 descripciones de la columna C de Descripciones a Monare, conservando las
+  aclaraciones de imágenes/envases y los precios por bolsa y medios de pago
+  del hielo. Readback: 53/53 textos coinciden; precios, imágenes y estados sin
+  cambios (20 activos, 33 inactivos). `get_catalog('monare')` devuelve los 20
+  activos con las descripciones nuevas. La planilla no se modificó.
 - Google Sheets nativa: https://docs.google.com/spreadsheets/d/1fKf-okJoccHwbBhZopKl9OG6fQ_G9VObclGWq_0Z9uo/edit
 - Pestaña Precios: 32 presentaciones sin precio y caja Ópalo Syrah x6 para
   confirmar/corregir los $48.600 informados. Los 33 precios confirmados están

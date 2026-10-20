@@ -942,6 +942,9 @@ export default function PlatformAdmin() {
       if (res?.__error) return res;
       setOrders(list => list.map(o => (o.id === id ? { ...o, status: next } : o)));
       if (res.sales?.length) setVentas(prev => [...res.sales, ...prev]);
+      // complete_order descuenta del stock lo que uso la receta (0104): sin
+      // recargar, la alerta de stock bajo seguiria mirando el numero viejo.
+      loadIngs();
       if (perfilFiscal?.enabled && perfilFiscal.auto_issue) {
         const queued = await encolarFactura(tenantId, id);
         if (queued.__error) {
@@ -956,7 +959,7 @@ export default function PlatformAdmin() {
     const res = await setOrderStatus(id, next);
     if (res === true) setOrders(list => list.map(o => (o.id === id ? { ...o, status: next } : o)));
     return res;
-  }, [loadCaja, msg, perfilFiscal, tenantId]);
+  }, [loadCaja, loadIngs, msg, perfilFiscal, tenantId]);
 
   useEffect(() => {
     if (!turno?.id || !yoEnElEquipo?.id) { setMiEsperado(null); return; }
