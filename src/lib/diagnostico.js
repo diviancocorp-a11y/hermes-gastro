@@ -159,8 +159,8 @@ export function solucion(desafio, vertical) {
         // El costo por venta sale de las recetas: fuera de gastronomia el
         // resultado del dia no lo tiene y la pantalla lo avisa.
         hoy: gastro
-          ? 'Cerrás el día y Dico te da la ganancia neta de esa noche: ventas, el costo de cada plato según tus recetas, las horas fichadas, la merma y los gastos. Por sucursal.'
-          : 'Cerrás el día y Dico te da su resultado: ventas, las horas fichadas, los gastos del día y los fijos repartidos. Y el resultado de cada mes, con tus compras.',
+          ? 'Al terminar el día, Dico te da la ganancia neta de esa noche: ventas, el costo de cada plato según tus recetas, las horas fichadas, la merma y los gastos. Por sucursal.'
+          : 'Dico arma el resultado de cada mes con tus ventas, tus compras y tus gastos. Y cada día te muestra ventas, horas fichadas y gastos.',
         pendiente: gastro ? null : 'El costo de lo vendido por artículo, para que el resultado del día lo descuente, está en desarrollo.',
         aMedida: gastro ? null : aMedida,
         pieza: 'cierre',
