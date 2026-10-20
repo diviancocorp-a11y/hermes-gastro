@@ -1,0 +1,696 @@
+{
+  "date": "2026-10-19",
+  "tenant_id": "1367edee-7754-4169-a616-45310d98c045",
+  "tenant": "monare",
+  "master_background_url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/monare-background-v1.png",
+  "brand_authority": "Biblioteca de empresas/CLIENTES/monare/MANUAL DE MARCA - Monare.pdf y logos/logo-original-fondo-negro.png",
+  "workflow": "ImageGen: fotografía de referencia sobre un mismo fondo Monare, logo original; conversión a WebP sin recorte ni composición adicional.",
+  "verification": "40 objetos públicos comprobados por HTTP HEAD; 53 asociaciones comprobadas por consulta; 20 productos activos con imagen en get_catalog.",
+  "assets": [
+    {
+      "key": "ancestral-blend",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/ancestral-blend-monare-v1.webp",
+      "bytes": 160642,
+      "productIds": [
+        "45cb2788-9c42-4ca8-85ae-47112b54514d"
+      ],
+      "products": [
+        "Ancestral Blend - Caja x3"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/ancestral-blend/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-ANCESTRAL-BD.png",
+      "presentationNotes": [
+        {
+          "name": "Ancestral Blend - Caja x3",
+          "note": "Foto de botella individual; se entrega la caja indicada en el producto."
+        }
+      ]
+    },
+    {
+      "key": "ancestral-malbec",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/ancestral-malbec-monare-v1.webp",
+      "bytes": 144806,
+      "productIds": [
+        "b62f25df-3669-4e33-988c-5582809dc619"
+      ],
+      "products": [
+        "Ancestral Malbec - Caja x3"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/ancestral-malbec/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-ANCESTRAL-MB.png",
+      "presentationNotes": [
+        {
+          "name": "Ancestral Malbec - Caja x3",
+          "note": "Foto de botella individual; se entrega la caja indicada en el producto."
+        }
+      ]
+    },
+    {
+      "key": "blanco-referencial",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/blanco-referencial-monare-v1.webp",
+      "bytes": 158114,
+      "productIds": [
+        "37c7b614-6279-4298-910d-fa32d3e69333",
+        "c644dbd1-27ef-4c51-9b44-b90ef80dbdfb",
+        "512fc040-65d8-48cb-8d38-bcb37953381a"
+      ],
+      "products": [
+        "Ancestral White Blend - Caja x3",
+        "Inspirado Chardonnay 750 ml - Caja x3",
+        "Ópalo Semillón - Sauvignon Blanc"
+      ],
+      "provisional": true,
+      "source": "Referencia genérica generada, sin etiqueta comercial; autorizada como provisoria por Ricky.",
+      "sourceImage": null,
+      "presentationNotes": [
+        {
+          "name": "Ancestral White Blend - Caja x3",
+          "note": "Foto de botella individual; se entrega la caja indicada en el producto."
+        },
+        {
+          "name": "Inspirado Chardonnay 750 ml - Caja x3",
+          "note": "Foto de botella individual; se entrega la caja indicada en el producto."
+        }
+      ]
+    },
+    {
+      "key": "chandon",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/chandon-monare-v1.webp",
+      "bytes": 160160,
+      "productIds": [
+        "cf32c146-d670-4c74-bcf5-072d832dc8e5"
+      ],
+      "products": [
+        "Chandon Extra Brut"
+      ],
+      "provisional": false,
+      "source": "https://www.chandon.com/es-ar/product/extra-brut",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "fantasia-cabernet-franc",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/fantasia-cabernet-franc-monare-v1.webp",
+      "bytes": 153652,
+      "productIds": [
+        "370f5fd2-f360-4d57-8c2f-fa6a0a4ddcb1"
+      ],
+      "products": [
+        "Fantasía Cabernet Franc"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/fantasia-cabernet-franc/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-FANTASIA-CB-FR.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "fantasia-cabernet-sauvignon",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/fantasia-cabernet-sauvignon-monare-v1.webp",
+      "bytes": 145168,
+      "productIds": [
+        "ef83edb5-9a0e-4c4d-9fde-486a4864ee01",
+        "381117ff-0b2f-4d7d-b60e-1f78318e598b"
+      ],
+      "products": [
+        "Fantasía Cabernet Sauvignon",
+        "Fantasía Cabernet Sauvignon - Caja x6"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/fantasia-cabernet-sauvignon/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-FANTASIA-CB.png",
+      "presentationNotes": [
+        {
+          "name": "Fantasía Cabernet Sauvignon - Caja x6",
+          "note": "Foto de botella individual; se entrega la caja indicada en el producto."
+        }
+      ]
+    },
+    {
+      "key": "fantasia-chardonnay",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/fantasia-chardonnay-monare-v1.webp",
+      "bytes": 158182,
+      "productIds": [
+        "18105bb5-7a8f-4b50-a6c8-90341caf3063",
+        "fdb7929a-e0bd-44e4-bec6-4de66bf5e564"
+      ],
+      "products": [
+        "Fantasía Chardonnay",
+        "Fantasía Chardonnay - Caja x6"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/fantasia-chardonnay/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-FANTASIA-CH.png",
+      "presentationNotes": [
+        {
+          "name": "Fantasía Chardonnay - Caja x6",
+          "note": "Foto de botella individual; se entrega la caja indicada en el producto."
+        }
+      ]
+    },
+    {
+      "key": "fantasia-malbec",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/fantasia-malbec-monare-v1.webp",
+      "bytes": 153426,
+      "productIds": [
+        "a03fb7de-5875-4bd6-a39e-5d2f1d1e07c9"
+      ],
+      "products": [
+        "Fantasía Malbec"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/fantasia-malbec/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-FANTASIA-MB.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "fantasia-sauvignon-blanc",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/fantasia-sauvignon-blanc-monare-v1.webp",
+      "bytes": 165076,
+      "productIds": [
+        "a0e067d1-ff68-41e8-85b7-4e1cb4a1b376"
+      ],
+      "products": [
+        "Fantasía Sauvignon Blanc"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/fantasia-sauvignon-blanc/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-FANTASIA-SB.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "fantasia-torrontes",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/fantasia-torrontes-monare-v1.webp",
+      "bytes": 175774,
+      "productIds": [
+        "9c322d9f-59df-4941-af1b-8e8833f76455"
+      ],
+      "products": [
+        "Fantasía Torrontés"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/fantasia-torrontes/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-FANTASIA-TO.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "freixenet-dulce",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/freixenet-dulce-monare-v1.webp",
+      "bytes": 171620,
+      "productIds": [
+        "47377a24-aa1e-4cea-9631-8140c3f9f8a7"
+      ],
+      "products": [
+        "Freixenet Dulce"
+      ],
+      "provisional": true,
+      "source": "https://www.winedepot.com.ar/espumantes/espumante-freixenet-x-dulce-6x750cc",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "gran-opalo-blend",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/gran-opalo-blend-monare-v1.webp",
+      "bytes": 158138,
+      "productIds": [
+        "18d5b02d-f11a-4fa9-81ed-c6875920a864"
+      ],
+      "products": [
+        "Gran Ópalo Blend"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/gran-opalo-blend/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-GRAN-OPALO.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "gv-gran-blend",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/gv-gran-blend-monare-v1.webp",
+      "bytes": 151786,
+      "productIds": [
+        "58a515e7-7528-449a-8b3d-80a75154a345"
+      ],
+      "products": [
+        "Grandes Varietales Blend"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/gv-gran-blend/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-GRANDES-VARIETALES-BLEND.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "gv-gran-malbec",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/gv-gran-malbec-monare-v1.webp",
+      "bytes": 156474,
+      "productIds": [
+        "5f1841ed-8a52-4892-85e2-562396093539"
+      ],
+      "products": [
+        "Grandes Varietales Malbec"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/gv-gran-malbec/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-GRANDES-VARIETALES-MALBEC.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "gv-gran-petit-verdot",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/gv-gran-petit-verdot-monare-v1.webp",
+      "bytes": 150524,
+      "productIds": [
+        "3e06f130-bc8b-433e-99b5-279b54d23b95"
+      ],
+      "products": [
+        "Grandes Varietales Petit Verdot"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/gv-gran-petit-verdot/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-GRANDES-VARIETALES-PETIT-VERDOT.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "hielo-15kg-referencial",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/hielo-15kg-referencial-monare-v1.webp",
+      "bytes": 215254,
+      "productIds": [
+        "e372f02c-f748-4c92-b995-0a185107761c",
+        "8612ae1a-dca4-4c4c-ad3c-23ebe5dce71c"
+      ],
+      "products": [
+        "Hielo 15 kg - Lote de 15 bolsas",
+        "Hielo 15 kg - Lote de 30 bolsas"
+      ],
+      "provisional": true,
+      "source": "Referencia genérica generada, sin etiqueta comercial; autorizada como provisoria por Ricky.",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "hielo-2kg-referencial",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/hielo-2kg-referencial-monare-v1.webp",
+      "bytes": 178692,
+      "productIds": [
+        "d5754605-159d-4d53-a2c0-4f05e0fba0fa",
+        "2f7b8aa6-cea1-4762-8fac-4fa4a80352e8"
+      ],
+      "products": [
+        "Hielo 2 kg - Lote de 15 bolsas",
+        "Hielo 2 kg - Lote de 30 bolsas"
+      ],
+      "provisional": true,
+      "source": "Referencia genérica generada, sin etiqueta comercial; autorizada como provisoria por Ricky.",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "inspirado-blend",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/inspirado-blend-monare-v1.webp",
+      "bytes": 154582,
+      "productIds": [
+        "c0fc27c3-5ab0-4530-a8af-93f727a2768d",
+        "e9c42ad7-b54e-4673-a294-872d78184fa0"
+      ],
+      "products": [
+        "Inspirado Blend 3000 ml",
+        "Inspirado Blend 750 ml"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/inspirado-blend/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-INSPIRADO-BD.png",
+      "presentationNotes": [
+        {
+          "name": "Inspirado Blend 3000 ml",
+          "note": "Foto de etiqueta de botella; confirmar envase de 3 litros."
+        }
+      ]
+    },
+    {
+      "key": "inspirado-cabernet-cabernet",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/inspirado-cabernet-cabernet-monare-v1.webp",
+      "bytes": 162204,
+      "productIds": [
+        "a659edfe-5667-47f1-b0a6-1e40c59d5c75",
+        "ee910d8e-5de2-45dc-ba5f-0f2f2630b624"
+      ],
+      "products": [
+        "Inspirado Cab. Cab. 750 ml",
+        "Inspirado Cabernet Cabernet 3000 ml"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/inspirado-cabernet-cabernet/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-INSPIRADO-CB-CB.png",
+      "presentationNotes": [
+        {
+          "name": "Inspirado Cabernet Cabernet 3000 ml",
+          "note": "Foto de etiqueta de botella; confirmar envase de 3 litros."
+        }
+      ]
+    },
+    {
+      "key": "inspirado-cabernet-franc",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/inspirado-cabernet-franc-monare-v1.webp",
+      "bytes": 167138,
+      "productIds": [
+        "5a36fe81-fc21-43e8-bd95-5a2bdad3e0a1",
+        "de385d75-5c6c-468e-9b70-fa45f9dcd6ec"
+      ],
+      "products": [
+        "Inspirado Cabernet Franc 3000 ml",
+        "Inspirado Cabernet Franc 750 ml"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/inspirado-cabernet-franc/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-INSPIRADO-CF.png",
+      "presentationNotes": [
+        {
+          "name": "Inspirado Cabernet Franc 3000 ml",
+          "note": "Foto de etiqueta de botella; confirmar envase de 3 litros."
+        }
+      ]
+    },
+    {
+      "key": "lois-rose",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/lois-rose-monare-v1.webp",
+      "bytes": 148618,
+      "productIds": [
+        "e9c99206-ae52-460e-b0f4-e939a45d7836",
+        "a1f3e1ef-1ddd-477d-a1a0-3472f78dd04c"
+      ],
+      "products": [
+        "Lois Rosé",
+        "Lois Rosé - Caja x6"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/lois-rose/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/BFL-IMAGEN-WEB-LOIS-ROSE.jpg",
+      "presentationNotes": [
+        {
+          "name": "Lois Rosé - Caja x6",
+          "note": "Foto de botella individual; se entrega la caja indicada en el producto."
+        }
+      ]
+    },
+    {
+      "key": "lorca-joven-from-monare",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/lorca-joven-from-monare-monare-v1.webp",
+      "bytes": 160744,
+      "productIds": [
+        "57cd840c-669e-4bb3-858a-9c1388b53205",
+        "c02f235b-d8cf-47b8-b6db-d3275e0733aa"
+      ],
+      "products": [
+        "Lorca Joven Malbec",
+        "Lorca Joven Malbec - Caja x6"
+      ],
+      "provisional": false,
+      "source": "Catálogo Monare Selección Mauricio Lorca.pdf, página 3, aportado por Ricky",
+      "sourceImage": null,
+      "presentationNotes": [
+        {
+          "name": "Lorca Joven Malbec - Caja x6",
+          "note": "Foto de botella individual; se entrega la caja indicada en el producto."
+        }
+      ]
+    },
+    {
+      "key": "mumm-referencial",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/mumm-referencial-monare-v1.webp",
+      "bytes": 158226,
+      "productIds": [
+        "6af61355-bf7c-4f57-b4eb-ec849226eb01"
+      ],
+      "products": [
+        "Mumm"
+      ],
+      "provisional": true,
+      "source": "https://www.mumm.com.ar/product/extra-brut/",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "naranjo-referencial",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/naranjo-referencial-monare-v1.webp",
+      "bytes": 155700,
+      "productIds": [
+        "ac79b82a-1e1e-4c71-a38b-ffa1d7aea626"
+      ],
+      "products": [
+        "Skin Contact Viognier"
+      ],
+      "provisional": true,
+      "source": "Referencia genérica generada, sin etiqueta comercial; autorizada como provisoria por Ricky.",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "natural-malbec-cabernet-franc",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/natural-malbec-cabernet-franc-monare-v1.webp",
+      "bytes": 161778,
+      "productIds": [
+        "a34f48f3-12c3-40aa-a28a-256dfae22f4c"
+      ],
+      "products": [
+        "Natural Cabernet Franc - Malbec"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/natural-malbec-cabernet-franc/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2025/02/IMAGENES-WEB-NATURAL-CF-MB.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "norton-cosecha-especial",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/norton-cosecha-especial-monare-v1.webp",
+      "bytes": 162012,
+      "productIds": [
+        "e7c20170-3d19-457a-b5cd-43016abf67d3"
+      ],
+      "products": [
+        "Cosecha Especial Rosé"
+      ],
+      "provisional": true,
+      "source": "https://www.norton.com.ar/nuestros-vinos/espumantes/cosecha-especial-brut-rose/",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "opalo-cabernet-sauvignon",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/opalo-cabernet-sauvignon-monare-v1.webp",
+      "bytes": 151824,
+      "productIds": [
+        "a8254df6-3f00-404a-970d-a9f6b45df40b"
+      ],
+      "products": [
+        "Ópalo Cabernet Sauvignon"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/opalo-cabernet-sauvignon/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-OPALO-CS.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "opalo-malbec",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/opalo-malbec-monare-v1.webp",
+      "bytes": 160528,
+      "productIds": [
+        "7d76054f-aa60-402e-bee2-b33b000dd2cf"
+      ],
+      "products": [
+        "Ópalo Malbec"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/opalo-malbec/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-OPALO-MB.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "opalo-syrah",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/opalo-syrah-monare-v1.webp",
+      "bytes": 158172,
+      "productIds": [
+        "7f316498-4f0b-4ad0-803c-92408b14afb0",
+        "56d2e16f-15d9-4013-bdf8-49047420b26a"
+      ],
+      "products": [
+        "Ópalo Syrah - Caja x6",
+        "Ópalo Syrah"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/opalo-syrah/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-OPALO-SY.png",
+      "presentationNotes": [
+        {
+          "name": "Ópalo Syrah - Caja x6",
+          "note": "Foto de botella individual; se entrega la caja indicada en el producto."
+        }
+      ]
+    },
+    {
+      "key": "poetico-cabernet-franc",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/poetico-cabernet-franc-monare-v1.webp",
+      "bytes": 170068,
+      "productIds": [
+        "da3dcecd-3d8e-4bd4-9435-5e13aab78322"
+      ],
+      "products": [
+        "Poético Cabernet Franc"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/poetico-cabernet-franc/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/ML-POETICO-Cf-1-scaled.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "poetico-cabernet-sauvignon",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/poetico-cabernet-sauvignon-monare-v1.webp",
+      "bytes": 162020,
+      "productIds": [
+        "c572df59-69e9-4f75-9453-ad1de325b699"
+      ],
+      "products": [
+        "Poético Cabernet Sauvignon"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-POETICO-CB-SA.png",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "poetico-chardonnay",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/poetico-chardonnay-monare-v1.webp",
+      "bytes": 177456,
+      "productIds": [
+        "f531ffb5-e794-418c-9117-2136a9ec1b00"
+      ],
+      "products": [
+        "Poético Chardonnay"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/poetico-chardonnay/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-POETICO-CH.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "poetico-malbec",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/poetico-malbec-monare-v1.webp",
+      "bytes": 152504,
+      "productIds": [
+        "cc07fce3-99c3-4706-9104-a8bc26f194bb"
+      ],
+      "products": [
+        "Poético Malbec"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/poetico-malbec/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/IMAGENES-WEB-POETICO-MB.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "poetico-syrah",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/poetico-syrah-monare-v1.webp",
+      "bytes": 163610,
+      "productIds": [
+        "8f0f30a2-3803-4e75-8293-db21f3c48d28"
+      ],
+      "products": [
+        "Poético Syrah"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/poetico-syrah/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/ML-POETICO-SY-scaled.png",
+      "presentationNotes": []
+    },
+    {
+      "key": "poetico-white-blend",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/poetico-white-blend-monare-v1.webp",
+      "bytes": 161724,
+      "productIds": [
+        "4dba27a6-6ee3-4545-a603-661b47e50c1e"
+      ],
+      "products": [
+        "Poético White Blend"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/wp-content/uploads/2025/02/IMAGENES-WEB-POETICO-WB.png",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "rose-referencial",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/rose-referencial-monare-v1.webp",
+      "bytes": 149108,
+      "productIds": [
+        "423c7e91-82a3-4482-bb40-9424d29fa718",
+        "2329ede2-50bb-441d-ab02-56651298042f"
+      ],
+      "products": [
+        "Pulka Rosé",
+        "Cosecha Tardía Rosé"
+      ],
+      "provisional": true,
+      "source": "Referencia genérica generada, sin etiqueta comercial; autorizada como provisoria por Ricky.",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "salentein",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/salentein-monare-v1.webp",
+      "bytes": 162024,
+      "productIds": [
+        "8252cc15-09b1-4c87-afbe-5998818ed045"
+      ],
+      "products": [
+        "Salentein Extra Brut"
+      ],
+      "provisional": false,
+      "source": "https://www.bodegasalentein.com/en/bodega/vino/63/salentein-extra-brut.html",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "tinto-referencial",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/tinto-referencial-monare-v1.webp",
+      "bytes": 142270,
+      "productIds": [
+        "5fdd94d3-8768-4742-8c50-7d55511246eb"
+      ],
+      "products": [
+        "Fantasía Criolla Tinta"
+      ],
+      "provisional": true,
+      "source": "Referencia genérica generada, sin etiqueta comercial; autorizada como provisoria por Ricky.",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "zapam-cabernet-sauvignon",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/zapam-cabernet-sauvignon-monare-v1.webp",
+      "bytes": 174822,
+      "productIds": [
+        "1a29196e-6a22-4b88-9ee0-aa1cc9df8610"
+      ],
+      "products": [
+        "Zapam Zucum Orgánico Cabernet Sauvignon"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/wp-content/uploads/2025/02/ZAPAM-ZUCUM-CABERNET-SAUVIGNON-scaled.png",
+      "sourceImage": null,
+      "presentationNotes": []
+    },
+    {
+      "key": "zapamzucum-malbec-organico",
+      "url": "https://wwwzdgprsooyjgkuyoav.supabase.co/storage/v1/object/public/tenant-images/1367edee-7754-4169-a616-45310d98c045/catalogo-20261019/zapamzucum-malbec-organico-monare-v1.webp",
+      "bytes": 183512,
+      "productIds": [
+        "d698e582-2d62-4622-8b98-f6c9daf05d89"
+      ],
+      "products": [
+        "Zapam Zucum Orgánico Malbec"
+      ],
+      "provisional": false,
+      "source": "https://bodegafosterlorca.com/producto/zapamzucum-malbec-organico/",
+      "sourceImage": "https://bodegafosterlorca.com/wp-content/uploads/2021/06/zapamzucum-malbec-esp-scaled.png",
+      "presentationNotes": []
+    }
+  ]
+}
