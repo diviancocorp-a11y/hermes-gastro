@@ -115,6 +115,8 @@ describe('Phase 2A /registro visual canary', () => {
         currency: 'UYU',
         timezone: 'America/Montevideo',
         channels: ['online_booking'],
+        // Sin ?d= en la URL: el alta no viene de un diagnostico de la landing.
+        diagnostico: null,
       });
     }
   });

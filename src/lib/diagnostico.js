@@ -156,7 +156,7 @@ export function solucion(desafio, vertical) {
         titulo: 'Lo que te falta es ver la ganancia, no la venta.',
         hoy: gastro
           ? 'Dico arma el resultado de cada mes con tus ventas, el costo de cada plato según tus recetas y tus gastos. Y la caja te muestra la diferencia de cada día.'
-          : 'Dico arma el resultado de cada mes con tus ventas, tus compras de mercadería y tus gastos. Y la caja te muestra la diferencia de cada día.',
+          : `Dico arma el resultado de cada mes con tus ventas, tus compras de ${vertical === 'servicios' ? 'insumos' : 'mercadería'} y tus gastos. Y la caja te muestra la diferencia de cada día.`,
         pendiente: 'El resultado de cada día, con nómina y merma, está en desarrollo.',
         aMedida,
         pieza: 'cierre',
@@ -192,10 +192,12 @@ export function solucion(desafio, vertical) {
     case 'stock':
       return {
         titulo: 'El stock tiene que avisarte antes de faltar.',
-        hoy: 'Cargás compras, merma y conteos, y Dico te marca en el panel lo que quedó por debajo del mínimo.',
-        pendiente: vertical === 'comercio'
-          ? 'Que cada venta descuente el stock solo, y los talles y colores por artículo, están en desarrollo.'
-          : 'Que cada venta descuente el stock solo está en desarrollo.',
+        hoy: vertical === 'servicios'
+          ? 'Cargás lo que comprás y lo que usás, y Dico te marca en el panel lo que quedó por debajo del mínimo. Los productos que vendés bajan solos con cada venta.'
+          : 'Cada venta descuenta el artículo del stock y cargás compras y conteos en el mismo lugar.',
+        pendiente: vertical === 'servicios'
+          ? 'Que cada servicio descuente los insumos que usa está en desarrollo.'
+          : 'El mínimo por artículo con aviso, y los talles y colores, están en desarrollo.',
         aMedida,
         pieza: 'stock',
       };
@@ -238,11 +240,17 @@ export async function guardarDiagnostico(respuestas) {
       },
     });
     if (error || !data?.id) return null;
-    try { localStorage.setItem(CLAVE_PENDIENTE, data.id); } catch { /* sin storage */ }
     return data.id;
   } catch {
     return null;
   }
+}
+
+/** Recuerda el id para vincularlo despues del alta. Lo llama la pagina
+ *  DESPUES de confirmar que la respuesta es la del ultimo envio (una respuesta
+ *  vieja que llega tarde no tiene que pisar el id bueno). */
+export function recordarDiagnosticoPendiente(id) {
+  try { if (id) localStorage.setItem(CLAVE_PENDIENTE, id); } catch { /* sin storage */ }
 }
 
 /** Despues del alta: ata el diagnostico al negocio nuevo. Silencioso. */

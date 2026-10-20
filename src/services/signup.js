@@ -129,8 +129,15 @@ export async function destinoTrasLogin() {
 
   if (r.ok) {
     // Confirmo el mail pero nunca paso por /bienvenido: el diagnostico de la
-    // landing se vincula aca. Sin esperar: nunca frena la entrada.
-    void diagnosticoDelUsuario().then((id) => vincularDiagnosticoPendiente(id));
+    // landing se vincula aca, solo si hay uno, y con un tope corto: la
+    // navegacion al subdominio cortaria el pedido si no se espera.
+    const diagnostico = await diagnosticoDelUsuario();
+    if (diagnostico) {
+      await Promise.race([
+        vincularDiagnosticoPendiente(diagnostico),
+        new Promise((r) => setTimeout(r, 1500)),
+      ]);
+    }
     return { ok: true, url: urlDelNegocio(r.slug), slug: r.slug };
   }
   return { ok: false, error: r.error };

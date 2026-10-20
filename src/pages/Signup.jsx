@@ -95,6 +95,13 @@ function negocioDeLaUrl() {
 
 // El diagnostico manda /registro?rubro=gastro|retail|barber: se preselecciona
 // ese rubro y nada mas.
+// El id del diagnostico (?d=) viaja al metadata del alta y al link del mail,
+// asi se vincula aunque el mail se confirme en otro dispositivo.
+function diagnosticoDeLaUrl() {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get('d');
+}
+
 function rubroDeLaUrl() {
   if (typeof window === 'undefined') return 'gastro';
   const rubro = new URLSearchParams(window.location.search).get('rubro');
@@ -161,6 +168,7 @@ export default function Signup() {
       currency: monedaDe(country),
       timezone: zonaDe(country),
       channels: canalesSugeridos(vertical, modo),
+      diagnostico: diagnosticoDeLaUrl(),
     });
     setEnviando(false);
     if (!r.ok) { setError(r.error); return; }
