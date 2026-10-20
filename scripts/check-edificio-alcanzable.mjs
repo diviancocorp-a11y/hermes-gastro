@@ -38,6 +38,7 @@ import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from '
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative, sep } from 'node:path';
 import { indexar, llamadasEn, firmasVivas } from './mapa.mjs';
+import { erroresHooks } from './check-hooks.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, '..');
@@ -205,6 +206,11 @@ export function componentesHuerfanos(padres, root = ROOT) {
 }
 
 if (ES_MAIN) {
+  const hooksRotos = erroresHooks(ROOT);
+  if (hooksRotos.length) {
+    for (const error of hooksRotos) console.error(error);
+    process.exit(1);
+  }
   const padres = grafo();
   if (HUERFANOS) {
     const lista = componentesHuerfanos(padres);
