@@ -25,6 +25,22 @@
   Navegador: dueño/cocina, 390x844 y 1280x800; descarga JSON, ventana PDF,
   escalado y guardado comprobados sin errores ni desbordes.
 
+## Pendientes (la única lista; revisada contra el código el 20/oct)
+
+Lo de abajo de esta sección es el plan original: lo tachado ya está hecho.
+
+1. **Fotos privadas de la ficha**: bucket privado `recetario`, URLs firmadas
+   (fase 1; `recipe_cards` no tiene `photo_path`).
+2. **Abrir la ficha desde el KDS** al tocar un plato del ticket (fase 2).
+3. **Pasos que se van tildando** en el modo lectura de la cocina (fase 2): hoy
+   los pasos son una lista numerada.
+4. **Alérgenos en la toma del pedido**: hoy el mozo los ve en la lista de
+   Productos, no en la pantalla donde toma el pedido (fase 2).
+5. **StockPanel esconde "Nuevo insumo" y "Registrar merma"** a los roles que la
+   0102 dejó sin permiso; hoy les muestra el error genérico al guardar.
+6. **Semielaborados** como insumo elaborado (fase 3).
+7. "Más adelante" (al final) sigue igual; imprimir la ficha ya está hecho.
+
 ## Qué se quiere
 
 Que el negocio tenga su recetario: el **cómo se hace** de cada cosa (pasos,
@@ -65,7 +81,7 @@ tenant: se activa por rubro.
 
 Cada fase dice cómo se verifica. Ninguna se da por hecha sin esa evidencia.
 
-### Fase 0 — Cerrar los permisos de insumos y recetas (prerrequisito)
+### ~~Fase 0 — Cerrar los permisos de insumos y recetas~~ ✅ 19/oct (0102, 56/56)
 
 Migración `0102_recetas_e_insumos_por_rol.sql`, mismo patrón que la 0064
 (barrer todas las policies de la tabla antes de crear las nuevas, porque las
@@ -84,9 +100,8 @@ la cocina mantiene la escritura. SQL listo en
 `platform/tests/recetas_por_rol.sql`: antes de aplicar dio 23/56 (rojo
 esperado) y después, 56/56.
 
-**Fase 0 hecha el 19/oct/2026:** 0102 aplicada por MCP, test 56/56.
-Pendiente para la fase 2: StockPanel no esconde "Nuevo insumo" ni "Registrar
-merma" a los roles sin permiso; hoy les muestra el error genérico al guardar.
+**Fase 0 hecha el 19/oct/2026:** 0102 aplicada por MCP, test 56/56. Lo de
+StockPanel es el pendiente 5.
 
 Antes de escribir el SQL, verificar:
 
@@ -113,9 +128,10 @@ verde.
 MCP; si hay que borrar policies con `drop policy`, igual que la 0064 va en el
 mismo archivo, pero si el MCP se cuelga lo aplica Ricky desde el panel.
 
-### Fase 1 — Los datos del recetario
+### ~~Fase 1 — Los datos del recetario~~ ✅ 20/oct (0107, 74/74), sin fotos
 
-Migración `0103_recetario.sql`.
+Salió como `0107_recetario.sql` (la 0103 la tomó otra línea). Falta solo lo
+de fotos (pendiente 1); el resto de esta sección está hecho.
 
 **Tabla `recipe_cards`** (la ficha técnica; una por producto):
 
@@ -178,11 +194,12 @@ trabajo (privilegios por columna + RPC de costeo) y queda anotado, no se mezcla.
 `npm run check:definer`, `npm run check:expandir`, suite completa con
 `--pool=threads`.
 
-### Fase 2 — La pantalla (pasa por `/diseno`)
+### Fase 2 — La pantalla (pasa por `/diseno`) — entregada el 20/oct, quedan los pendientes 2 a 5
 
-**Puerta antes que pantalla** (la memoria "pantalla publicada sin puerta"):
-módulo `recetario` en `src/modules/registry.js` solo para rubros con receta, y
-en la matriz de `roles.js`:
+~~**Puerta antes que pantalla**: módulo `recetario` en `src/modules/registry.js`
+y en la matriz de `roles.js`.~~ Ricky pidió el recetario como vista dentro de
+Productos: la puerta es `tieneRecetario` en `ProductsPanel.jsx` (rubro con
+receta y rol owner, manager o kitchen), con la misma tabla de abajo:
 
 | Rol | recetario |
 |---|---|
@@ -195,18 +212,18 @@ tienen que decir lo mismo.
 
 **Qué tiene la pantalla:**
 
-1. Lista buscable por nombre y categoría, con foto.
-2. Ficha en modo lectura grande (cocina, tablet apoyada en la mesada):
-   ingredientes con cantidades, **escalar** a N porciones o a una cantidad,
-   pasos numerados que se van tildando, alérgenos, notas. Sin precio ni costo.
-3. Edición (owner/manager): pasos, rinde, tiempo, notas, foto, alérgenos y el
-   selector "quién la ve" con los roles del negocio
-   (`rolesAsignables(vertical, modo)`).
-4. Desde el KDS, tocar un plato del ticket abre su ficha.
-5. Desde el editor de producto, un link "Ver/crear ficha": los ingredientes
-   se siguen editando en `RecipeEditor`, no en dos lugares.
-6. El mozo ve los alérgenos donde ya mira los productos (la toma del pedido),
-   no en el recetario, que para él no existe.
+1. ~~Lista buscable por nombre y categoría~~, con foto (pendiente 1).
+2. ~~Ficha en modo lectura: ingredientes con cantidades, **escalar**, alérgenos,
+   notas, sin precio ni costo~~; pasos que se van tildando (pendiente 3).
+3. ~~Edición (owner/manager): pasos, rinde, tiempo, notas, alérgenos y "quién
+   la ve"~~; foto (pendiente 1).
+4. Desde el KDS, tocar un plato del ticket abre su ficha (pendiente 2).
+5. ~~Link entre la ficha y el editor de producto: los ingredientes se siguen
+   editando en `RecipeEditor`~~ (salió desde la ficha: "Editar ingredientes en
+   el producto").
+6. El mozo ve los alérgenos ~~en la lista de Productos~~; falta en la toma del
+   pedido (pendiente 4).
+7. ~~Exportar: JSON e imprimir / guardar PDF~~ (sumado por Ricky el 20/oct).
 
 **Línea de `/diseno` para esta pantalla:**
 
@@ -228,7 +245,7 @@ ve el módulo pero sí los alérgenos al tomar el pedido, la cocina lee y no
 edita, el encargado no ve una ficha `{owner}`.
 Captura del preview para Ricky.
 
-### Fase 3 — Preparaciones internas (semielaborados)
+### Fase 3 — Preparaciones internas (semielaborados) — sin empezar (pendiente 6)
 
 Masa madre, salsas, rellenos: se hacen, se guardan y entran en otras recetas,
 pero no se venden. Hoy no tienen dónde vivir, porque la ficha cuelga de un
@@ -249,7 +266,7 @@ la 0028: por eso va después de la pantalla (decisión 3).
   una ficha que el rol no puede ver).
 - Alérgenos en el catálogo público (`get_catalog`).
 - Historial de versiones de la ficha (quién cambió qué).
-- Imprimir la ficha (ver memoria "imprimir desde el navegador").
+- ~~Imprimir la ficha~~ (hecho el 20/oct con la exportación a PDF).
 - La mascota DICO respondiendo "¿cómo se hace X?" leyendo el recetario con
   los permisos de quien pregunta, cuando se conecte a la API de Claude.
 - Esconder `ingredients.cost` y `products.price` a la cocina a nivel base.
@@ -268,6 +285,6 @@ la 0028: por eso va después de la pantalla (decisión 3).
 
 | Paso | Por qué |
 |---|---|
-| Aplicar 0102 y 0103 | Es la base (aditivo por MCP; lo destructivo, desde el panel) |
+| Aplicar migraciones (~~0102~~, ~~0107~~, las de fotos y semielaborados) | Es la base (aditivo por MCP; lo destructivo, desde el panel) |
 | Código en `src/` | Cambia lo que ve un cliente |
 | Push a `main` | Publica en `divianco.app`; antes, preview de Vercel |
