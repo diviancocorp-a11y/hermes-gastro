@@ -144,6 +144,44 @@ export const TICKETS = [
 ];
 
 /**
+ * El resultado del dia (0103). La sucursal y los dias son los de los tests de
+ * platformResultado: el dia con una linea de cada (y ganancia NEGATIVA), el
+ * dia real de Crazy Miga del 13/oct y un dia sin movimientos, que es el caso
+ * normal de una sucursal recien dada de alta.
+ */
+const SUCURSAL = { id: 'b', name: 'Casa central', timezone: 'America/Argentina/Buenos_Aires' };
+
+const RESULTADO_COMPLETO = {
+  dia: '2026-10-15', ventas: 15000, descuentos: 1000, costo_mercaderia: 3800,
+  lineas_sin_costo: 1, tickets: 2, nomina: 8000, horas: 4, merma: 1300,
+  gastos_del_dia: 2000, gastos_fijos: 1000, ganancia_neta: -2100,
+};
+
+const RESULTADO_CRAZY_MIGA = {
+  dia: '2026-10-13', ventas: 151000, descuentos: 0, costo_mercaderia: 43574.6,
+  lineas_sin_costo: 0, tickets: 3, nomina: 0, horas: 0, merma: 0,
+  gastos_del_dia: 0, gastos_fijos: 0, ganancia_neta: 107425.4,
+};
+
+const RESULTADO_VACIO = {
+  dia: '2026-10-20', ventas: 0, descuentos: 0, costo_mercaderia: 0,
+  lineas_sin_costo: 0, tickets: 0, nomina: 0, horas: 0, merma: 0,
+  gastos_del_dia: 0, gastos_fijos: 0, ganancia_neta: 0,
+};
+
+// La perdida de 7 cifras: la cifra va sin cortes de linea y a 390px no
+// puede desbordar.
+const RESULTADO_PERDIDA_GRANDE = {
+  dia: '2026-10-18', ventas: 1234567.89, descuentos: 0, costo_mercaderia: 0,
+  lineas_sin_costo: 0, tickets: 412, nomina: 0, horas: 120, merma: 0,
+  gastos_del_dia: 2469135.78, gastos_fijos: 0, ganancia_neta: -1234567.89,
+};
+
+// El preview pinta el primer render (no corre efectos): el `cargar` queda por
+// si la muestra se monta en un navegador, y `resultadoInicial` es lo que se ve.
+const cargarMuestra = (r) => async () => ({ ok: true, data: r });
+
+/**
  * Cada entrada declara que componente montar, con que props y a que anchos
  * mirarlo. `anchos` son los que de verdad cambian el layout, no una lista de
  * dispositivos: mirar a 1440 y a 1366 no dice nada nuevo.
@@ -211,6 +249,36 @@ export const MUESTRAS = {
       ahoraFijo: AHORA_KDS,
     },
     anchos: [1100, 700],
+  },
+  'resultado-dia': {
+    modulo: 'src/components/admin/platform/ResultadoDelDia.jsx',
+    titulo: 'Ventas · Hoy · día completo con pérdida',
+    props: { sucursal: SUCURSAL, cargar: cargarMuestra(RESULTADO_COMPLETO), resultadoInicial: RESULTADO_COMPLETO },
+    anchos: [390, 900],
+  },
+  'resultado-dia-crazy-miga': {
+    modulo: 'src/components/admin/platform/ResultadoDelDia.jsx',
+    titulo: 'Ventas · Hoy · Crazy Miga 13/oct',
+    props: { sucursal: SUCURSAL, cargar: cargarMuestra(RESULTADO_CRAZY_MIGA), resultadoInicial: RESULTADO_CRAZY_MIGA },
+    anchos: [390, 900],
+  },
+  'resultado-dia-perdida-grande': {
+    modulo: 'src/components/admin/platform/ResultadoDelDia.jsx',
+    titulo: 'Ventas · Hoy · pérdida de 7 cifras',
+    props: { sucursal: SUCURSAL, cargar: cargarMuestra(RESULTADO_PERDIDA_GRANDE), resultadoInicial: RESULTADO_PERDIDA_GRANDE },
+    anchos: [390],
+  },
+  'resultado-dia-vacio': {
+    modulo: 'src/components/admin/platform/ResultadoDelDia.jsx',
+    titulo: 'Ventas · Hoy · sin movimientos',
+    props: { sucursal: SUCURSAL, cargar: cargarMuestra(RESULTADO_VACIO), resultadoInicial: RESULTADO_VACIO },
+    anchos: [390],
+  },
+  'resultado-dia-cargando': {
+    modulo: 'src/components/admin/platform/ResultadoDelDia.jsx',
+    titulo: 'Ventas · Hoy · cargando',
+    props: { sucursal: SUCURSAL, cargar: cargarMuestra(RESULTADO_VACIO) },
+    anchos: [390],
   },
   conteo: {
     modulo: 'src/components/admin/platform/ConteoDeDeposito.jsx',

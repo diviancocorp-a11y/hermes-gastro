@@ -236,7 +236,9 @@ export default function PlatformAdmin() {
 
   // Salon (6c). `branch` es la sucursal por defecto: mientras el negocio tenga
   // una sola, nunca se muestra selector — ver docs/plataforma/PLAN-LOCAL-Y-ROLES.md.
-  const [branch, setBranch] = useState(null);
+  // Arranca en undefined (todavia no se pregunto) y no en null (no hay): el
+  // resultado del dia distingue "cargando" de "este negocio no tiene sucursal".
+  const [branch, setBranch] = useState(undefined);
   const [recursos, setRecursos] = useState([]);
   const [turno, setTurno] = useState(null);
   const [cajaCargada, setCajaCargada] = useState(false);
@@ -1673,6 +1675,7 @@ export default function PlatformAdmin() {
                 onCrearVenta={crearVenta}
                 onFetchClientes={traerClientes}
                 onGuardarSettings={guardarSettings}
+                sucursal={branch}
               />
             </Suspense>
           )}

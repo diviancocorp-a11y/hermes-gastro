@@ -1,0 +1,324 @@
+/* Resultado del dia — la solapa "Hoy" de Ventas.
+ *
+ * Una sola cifra protagonista (la ganancia neta) y debajo la cuenta que la
+ * explica, como un estado de resultados de una columna: lo que entro arriba,
+ * lo que se fue abajo, el total al pie. Todo sale de --ag-*: el panel tiene
+ * tema claro y oscuro, y un valor fijo aca rompe uno de los dos.
+ *
+ * Los numeros van en Overused con cifras tabulares (manual tipografico: KPIs
+ * 700 tabulares) y no en mono: es la misma voz del resto del panel, y las
+ * tabulares ya alinean la columna de montos para sumarla a ojo. */
+
+.ag-resultado {
+  max-width: 960px;
+  padding: var(--ag-sp-3) var(--ag-sp-4) var(--ag-sp-6);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── El dia y como moverse ───────────────────────────────────────────── */
+
+.ag-resultado-dia {
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-2);
+  margin-bottom: var(--ag-sp-4);
+}
+
+.ag-resultado-dia-texto {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.ag-resultado-dia-texto h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--ag-ink);
+}
+
+.ag-resultado-dia-texto p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--ag-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 44px: el minimo tactil. El .ag-month-nav vecino es de 38 y no se reusa. */
+.ag-resultado-nav {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-pill);
+  background: var(--ag-bg-card);
+  color: var(--ag-ink-2);
+  cursor: pointer;
+  transition: background var(--ag-t-fast) var(--ag-ease),
+              color var(--ag-t-fast) var(--ag-ease);
+}
+
+.ag-resultado-nav:hover:not(:disabled) {
+  background: var(--ag-bg-soft);
+  color: var(--ag-ink);
+}
+
+.ag-resultado-nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Cuerpo: una columna en el telefono, dos desde 900 ───────────────── */
+
+.ag-resultado-cuerpo {
+  display: grid;
+  gap: var(--ag-sp-5);
+}
+
+@media (min-width: 900px) {
+  .ag-resultado-cuerpo {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    align-items: start;
+    gap: var(--ag-sp-6);
+  }
+}
+
+/* ── La cifra ────────────────────────────────────────────────────────── */
+
+/* La cifra va a 28px, el `metric` de la escala del sistema (v0.1, seccion 5):
+   no hay tamanio de metrica mas grande. Es la protagonista por posicion (lo
+   primero debajo del dia), por peso (700, lo mas pesado de la pantalla) y por
+   el aire que la rodea, no por tamanio. */
+.ag-resultado-cifra {
+  padding: var(--ag-sp-4) var(--ag-sp-1) 0;
+}
+
+.ag-resultado-neta {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ag-ink);
+  /* Una cifra partida en dos renglones no se lee como un numero. */
+  white-space: nowrap;
+}
+
+/* Perdida: el rojo del sistema, que pasa AA como texto en los dos temas
+   (B3261E sobre blanco, F87171 sobre Zinc 900). El signo va igual: el color
+   solo no alcanza para quien no lo distingue. */
+.ag-resultado-neta[data-signo="negativo"] { color: var(--ag-bad); }
+
+.ag-resultado-etiqueta {
+  margin: var(--ag-sp-1) 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ag-ink);
+}
+
+.ag-resultado-meta {
+  margin: var(--ag-sp-1) 0 0;
+  font-size: 13px;
+  color: var(--ag-ink-2);
+}
+
+.ag-resultado-quieto {
+  margin: var(--ag-sp-3) 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ag-ink-2);
+}
+
+/* ── Avisos: lo que la cuenta no puede saber ─────────────────────────────
+ * Tono informativo, no de error: el punto Volt es la misma senial con la que
+ * Dico marca lo que observa (oportunidades.css). Fondo neutro, sin borde
+ * lateral de color. */
+
+.ag-resultado-avisos {
+  display: grid;
+  gap: var(--ag-sp-2);
+  margin: var(--ag-sp-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ag-resultado-aviso {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ag-sp-2);
+  padding: var(--ag-sp-3);
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-surface-2);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ag-ink-2);
+}
+
+.ag-resultado-aviso::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ag-volt);
+  transform: translateY(-2px);
+}
+
+/* ── La cuenta ───────────────────────────────────────────────────────── */
+
+.ag-resultado-cuenta {
+  padding: var(--ag-sp-2) var(--ag-sp-4) var(--ag-sp-3);
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-lg);
+  background: var(--ag-bg-card);
+  box-shadow: var(--ag-sh-sm);
+}
+
+.ag-resultado-tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ag-resultado-tabla caption {
+  padding: var(--ag-sp-2) 0;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ag-ink-2);
+}
+
+.ag-resultado-tabla th,
+.ag-resultado-tabla td {
+  padding: var(--ag-sp-2) 0;
+  border-top: 1px solid var(--ag-line);
+  vertical-align: baseline;
+}
+
+.ag-resultado-tabla th {
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ag-ink);
+}
+
+.ag-resultado-detalle {
+  display: block;
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ag-ink-3);
+}
+
+.ag-resultado-tabla td {
+  padding-left: var(--ag-sp-3);
+  text-align: right;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ag-ink);
+}
+
+/* Ventas abre la cuenta: un poco mas de peso para que se lea primero. */
+.ag-resultado-fila[data-linea="ventas"] th,
+.ag-resultado-fila[data-linea="ventas"] td {
+  font-weight: 600;
+}
+
+/* Una linea en 0 se ve, atenuada: el duenio tiene que saber que la nomina dio
+   0, no preguntarse si falta. Se atenua con ink-3 (pasa AA en los dos temas)
+   y no con opacidad, que lo bajaria del minimo. */
+.ag-resultado-fila[data-cero="true"] th,
+.ag-resultado-fila[data-cero="true"] td {
+  color: var(--ag-ink-3);
+  font-weight: 400;
+}
+
+.ag-resultado-total th,
+.ag-resultado-total td {
+  padding-top: var(--ag-sp-3);
+  border-top: 1px solid var(--ag-line-strong);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ag-ink);
+}
+
+.ag-resultado-total td[data-signo="negativo"] { color: var(--ag-bad); }
+
+.ag-resultado-descuadre {
+  margin: var(--ag-sp-2) 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ag-warn);
+}
+
+/* ── Estados ─────────────────────────────────────────────────────────── */
+
+.ag-resultado-estado {
+  padding: var(--ag-sp-6) var(--ag-sp-4);
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-lg);
+  background: var(--ag-bg-card);
+  text-align: center;
+}
+
+.ag-resultado-estado p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ag-ink-2);
+}
+
+.ag-resultado-reintentar {
+  min-height: 44px;
+  margin-top: var(--ag-sp-4);
+  padding: 0 var(--ag-sp-5);
+  border: 1px solid var(--ag-accent-border);
+  border-radius: var(--ag-r-pill);
+  background: transparent;
+  color: var(--ag-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--ag-t-fast) var(--ag-ease);
+}
+
+.ag-resultado-reintentar:hover { background: var(--ag-accent-soft); }
+
+/* El anillo de foco global trae radio 4px: sobre un boton redondo queda un
+   cuadrado alrededor de un circulo. Aca sigue la forma del control. */
+.ag-root .ag-resultado-nav:focus-visible,
+.ag-root .ag-resultado-reintentar:focus-visible {
+  border-radius: var(--ag-r-pill);
+}
+
+/* Esqueleto: la forma de lo que viene (la cifra y las lineas), no un spinner
+   en el medio. */
+.ag-resultado-hueso {
+  display: block;
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-bg-soft);
+  animation: ag-resultado-latido 1.4s var(--ag-ease) infinite alternate;
+}
+
+.ag-resultado-hueso[data-forma="cifra"] { width: 55%; height: 32px; }
+.ag-resultado-hueso[data-forma="texto"] { width: 40%; height: 14px; margin-top: var(--ag-sp-3); }
+.ag-resultado-hueso[data-forma="linea"] { width: 100%; height: 14px; margin: var(--ag-sp-3) 0; }
+
+@keyframes ag-resultado-latido {
+  from { opacity: 1; }
+  to   { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ag-resultado-hueso { animation: none; }
+  .ag-resultado-nav,
+  .ag-resultado-reintentar { transition: none; }
+}

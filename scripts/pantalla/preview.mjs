@@ -51,6 +51,10 @@ const CSS_PANTALLAS = [
   'src/styles/admin-salon.css',
   'src/styles/admin-kds.css',
   'src/styles/admin-sectores.css',
+  'src/styles/admin-resultado.css',
+  // Define .ag-sr-only, que en la app es global. Sin ella los textos para
+  // lectores de pantalla salen visibles y la vista previa miente.
+  'src/styles/admin-sidebar.css',
 ];
 
 function hojas() {

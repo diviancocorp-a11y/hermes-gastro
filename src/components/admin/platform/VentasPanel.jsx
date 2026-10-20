@@ -1,9 +1,12 @@
 /**
  * VentasPanel — la pestaña "Ventas" del panel del edificio. ETAPA 4.
  *
- * Contenedor con dos solapas, mismo criterio que FinanzasPanel:
- *   - Ventas:  SalesView del legacy (historial + venta manual)
- *   - Resumen: MonthSummary del legacy (el P&L del mes)
+ * Contenedor con cuatro solapas, mismo criterio que FinanzasPanel:
+ *   - Hoy:      ResultadoDelDia (la ganancia neta del dia de la sucursal,
+ *               calculada por la base). Es la solapa por defecto.
+ *   - Ventas:   SalesView del legacy (historial + venta manual)
+ *   - Resumen:  MonthSummary del legacy (el P&L del mes)
+ *   - Clientes: promos del catalogo + CRM
  *
  * Las pantallas hablan el idioma del legacy; los adaptadores
  * (productosComoRecetas / pedidosParaVentas, en platformSales.js) traducen el
@@ -19,6 +22,7 @@ import { SalesView } from '../Finance';
 import MonthSummary from '../MonthSummary';
 import CRM from '../CRM';
 import PromosDelCatalogo from './PromosDelCatalogo';
+import ResultadoDelDia from './ResultadoDelDia';
 import { productosComoRecetas, pedidosParaVentas } from '../../../services/platformSales';
 import { pedidosParaCrm } from '../../../services/platformCrm';
 import { costoBruto, indexarInsumos } from '../../../services/platformRecipes';
@@ -27,6 +31,7 @@ import { costoBruto, indexarInsumos } from '../../../services/platformRecipes';
 // el pulgar y seis items no entran (la razon de FinanzasPanel). Ademas es el
 // mismo momento: se mira cuanto se vendio y a quien.
 const SOLAPAS = [
+  { id: 'hoy', label: 'Hoy' },
   { id: 'ventas', label: 'Ventas' },
   { id: 'resumen', label: 'Resumen' },
   { id: 'clientes', label: 'Clientes' },
@@ -44,10 +49,10 @@ function Solapas({ valor, onChange }) {
             onClick={() => onChange(o.id)}
             aria-current={on ? 'page' : undefined}
             style={{
-              flex: 1, padding: '9px 6px', borderRadius: 999,
-              border: on ? '2px solid var(--ag-c-terra)' : '1px solid var(--ag-line)',
-              background: on ? 'rgba(245,158,11,0.08)' : 'var(--ag-bg-card)',
-              color: on ? 'var(--ag-c-terra)' : 'var(--ag-ink-2)',
+              flex: 1, minHeight: 44, padding: '9px 6px', borderRadius: 999,
+              border: on ? '2px solid var(--ag-accent-border)' : '1px solid var(--ag-line)',
+              background: on ? 'var(--ag-accent-soft)' : 'var(--ag-bg-card)',
+              color: on ? 'var(--ag-accent-border)' : 'var(--ag-ink-2)',
               fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
             }}
           >{o.label}</button>
@@ -72,8 +77,13 @@ export default function VentasPanel({
   onFetchClientes,
   // Guarda settings (las promos del catalogo se prenden y apagan en Clientes).
   onGuardarSettings,
+  // La sucursal por defecto ({id, name, timezone}): el resultado del dia es
+  // por sucursal. undefined mientras se busca, null si el negocio no tiene
+  // ninguna. Sin default a proposito: un `= null` convertiria el "todavia se
+  // esta buscando" en "no hay sucursal".
+  sucursal,
 }) {
-  const [solapa, setSolapa] = useState('ventas');
+  const [solapa, setSolapa] = useState('hoy');
   const [ov, setOv] = useState(null);
 
   const recs = useMemo(
@@ -118,6 +128,8 @@ export default function VentasPanel({
   return (
     <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
       <Solapas valor={solapa} onChange={setSolapa} />
+
+      {solapa === 'hoy' && <ResultadoDelDia sucursal={sucursal} />}
 
       {solapa === 'ventas' && (
         <SalesView
