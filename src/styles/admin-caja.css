@@ -300,7 +300,10 @@
 
 .ag-minicaja-campo { display: grid; gap: 5px; }
 
-.ag-minicaja-campo > span {
+/* La pregunta: span cuando el campo entero es el label, label cuando el campo
+   es un div (asi la ayuda no entra en el nombre accesible del input). */
+.ag-minicaja-campo > span,
+.ag-minicaja-campo > label {
   font-size: 13px;
   font-weight: 600;
   color: var(--ag-ink);
