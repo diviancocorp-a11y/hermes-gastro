@@ -1,5 +1,7 @@
 -- 0104 La venta descuenta el stock de lo que uso.
--- Sin aplicar: espera el ok de Ricky (va por MCP apply_migration, es aditiva).
+-- Aplicada via MCP el 20/oct/2026 (schema_migrations 20261020032659,
+-- `la_venta_descuenta_stock`), con el ok de Ricky. Test contra lo desplegado:
+-- platform/tests/venta_descuenta_stock.sql -> OK.
 --
 -- ══════════════════ LO QUE ESTABA ROTO ══════════════════
 --
