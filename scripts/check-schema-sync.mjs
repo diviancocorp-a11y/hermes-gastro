@@ -66,7 +66,7 @@ function extractSchemaFields(source, schemaName) {
   const fields = new Set();
   let nestDepth = 0;
   body.split("\n").forEach(rawLine => {
-    let line = rawLine;
+    let line = rawLine.trimEnd();
     // strip line comment
     const cIdx = line.indexOf("//");
     if (cIdx >= 0) line = line.slice(0, cIdx);

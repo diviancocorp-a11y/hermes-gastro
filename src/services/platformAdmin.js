@@ -26,6 +26,7 @@
 
 import { supabase } from '../lib/supabase';
 import { resolveTenantSlug } from '../lib/activeTenant';
+import { ProductAllergensInputSchema } from '../lib/schemas/index.js';
 
 /**
  * Falla fuerte si falta el tenant. Un tenantId undefined haria una consulta
@@ -148,7 +149,7 @@ export async function fetchMyTenant() {
 
 /* ─────────────────────────── Productos ─────────────────────────── */
 
-const PRODUCT_COLS = 'id, type, name, price, active, is_archived, category, description, image_url, requires_age_gate, duration_min, stock, station_id, created_at';
+const PRODUCT_COLS = 'id, type, name, price, active, is_archived, category, description, image_url, requires_age_gate, duration_min, stock, station_id, allergens, created_at';
 
 function compactarTexto(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');
@@ -228,6 +229,9 @@ export function validateProduct(p, products = []) {
   if (p?.duration_min != null && p.duration_min !== '' && !(Number(p.duration_min) > 0)) {
     errs.push('La duracion tiene que ser mayor a 0');
   }
+  if (p?.allergens !== undefined && !ProductAllergensInputSchema.safeParse({ allergens: p.allergens }).success) {
+    errs.push('Alergenos invalidos');
+  }
   return errs;
 }
 
@@ -252,6 +256,8 @@ function toRow(p, tenantId) {
     // la descartaria sin error y el plato no apareceria en ninguna pantalla
     // de produccion. Es el bug que este repo ya se comio cuatro veces.
     station_id: p.station_id || null,
+    ...(p.allergens !== undefined
+      ? ProductAllergensInputSchema.parse({ allergens: p.allergens }) : {}),
   };
 }
 

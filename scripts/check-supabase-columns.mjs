@@ -38,6 +38,7 @@ const PLATFORM_PATHS = [
   'src/services/platformSettings.js',
   'src/services/platformInventory.js',
   'src/services/platformRecipes.js',
+  'src/services/recetario.js',
   'src/services/platformFinance.js',
   'src/services/platformSuppliers.js',
   'src/services/platformSales.js',

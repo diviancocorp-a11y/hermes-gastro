@@ -438,3 +438,22 @@ export function validateInput(schema, data, context = 'unknown') {
   console.warn(`[Validación] ${context}:`, errors);
   return { ok: false, data: null, errors };
 }
+
+
+// Recetario del edificio: reemplazo completo de los campos editables.
+export const RecipeCardInputSchema = z.object({
+  yield_qty: z.number().finite().positive().max(1e9).default(1),
+  yield_unit: requiredText(50).default('unidad'),
+  time_minutes: z.number().int().min(0).max(2147483647).nullable().default(null),
+  steps: z.array(z.object({ texto: requiredText(4000) }).strict()).max(100).default([]),
+  notes: z.string().trim().max(10000).nullable().default(null),
+  visible_to: z.array(z.enum(['owner', 'manager', 'kitchen'])).min(1).max(3)
+    .refine(roles => new Set(roles).size === roles.length, 'Roles repetidos')
+    .default(['owner', 'manager', 'kitchen']),
+  is_archived: z.boolean().default(false),
+}).strict();
+
+// Actualizacion parcial de products; no reemplaza el producto completo.
+export const ProductAllergensInputSchema = z.object({
+  allergens: z.array(requiredText(100)).max(50),
+}).strict();

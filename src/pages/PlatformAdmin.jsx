@@ -94,7 +94,7 @@ import {
 import {
   modulosDe, terminologia, tieneModulo, usaContabilidadUsar,
 } from '../modules/registry';
-import { puedeVer, pantallaInicial, puedeAbrirDestino } from '../modules/roles';
+import { puedeVer, pantallaInicial, puedeAbrirDestino, puedeEditar as puedeEditarProductos } from '../modules/roles';
 
 // Settings es el componente del admin legacy, reusado tal cual: la unica
 // diferencia es que se le inyecta con que guardar y que zonas apagar. Va lazy
@@ -1290,7 +1290,7 @@ export default function PlatformAdmin() {
                   <span className="ag-productos-kicker">CATÁLOGO</span>
                   <h1 id="ag-productos-titulo" className="ag-section-title">{terminoCatalogo.plural}</h1>
                 </div>
-                <button
+                {puedeEditarProductos(roles, 'products') && <button
                   type="button"
                   className="ag-productos-head-agregar"
                   aria-label={`Agregar ${terminoCatalogo.singular}`}
@@ -1298,7 +1298,7 @@ export default function PlatformAdmin() {
                 >
                   <span aria-hidden="true">+</span>
                   <span className="ag-productos-head-agregar-texto">Agregar {terminoCatalogo.singular}</span>
-                </button>
+                </button>}
               </div>
               <div className="ag-productos-head-resumen">
                 <div className="ag-productos-head-metricas" aria-label="Resumen del catálogo">
@@ -1383,6 +1383,8 @@ export default function PlatformAdmin() {
           {tab === 'products' && (
             <ProductsPanel
               ref={productsPanelRef}
+              tenantId={tenantId}
+              roles={roles}
               products={products}
               orders={orders}
               itemsPorPedido={itemsPorPedido}

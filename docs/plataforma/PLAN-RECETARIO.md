@@ -1,8 +1,26 @@
 # Plan — Recetario digital para los tenants gastronómicos
 
-> Estado: **plan aprobado, sin empezar** (19/oct/2026). Nada de esto está
-> aplicado a la base ni en `src/`. Las 4 decisiones las tomó Ricky el 19/oct
-> (al final) y ya están volcadas en las fases.
+> Estado: **primera entrega implementada** (20/oct/2026). Fase 0 aplicada;
+> 0107 aplicada por MCP (`20261020143416`), permisos del recetario 74/74.
+> Ricky pidió integrarlo dentro de Productos y sumar exportación.
+
+## Entrega del 20/oct/2026
+
+- Productos / Recetario como vistas internas de Productos para gastro, sin
+  módulo separado. Dueño y encargado editan; cocina consulta y exporta.
+- Fichas persistentes por producto: rinde, unidad, tiempo, pasos, notas,
+  visibilidad y archivo. Ingredientes reutilizados desde product_ingredients;
+  escalado temporal sin cambiar la receta original.
+- Alérgenos en products con guardado separado y explícito. El dueño siempre
+  lee; el encargado conserva su propia lectura al guardar.
+- Exportación de fichas guardadas autorizadas: JSON e imprimir / guardar PDF,
+  por ficha o recetario activo. Sin costos ni precios.
+- Fotos privadas, acceso directo desde KDS y semielaborados quedan pendientes.
+  La protección completa de cantidades sigue diferida según la decisión 2.
+- SQL y pruebas: `0107_recetario.sql`, `recetario_por_rol.sql`. Fixtures de
+  prueba revertidos íntegramente; verificación de cero tenants de prueba.
+- El check de RLS global sigue señalando `vincular_diagnostico`, de la rama
+  de la landing; los 65 objetos tienen RLS y no hay tablas abiertas.
 
 ## Qué se quiere
 
