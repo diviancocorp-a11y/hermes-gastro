@@ -516,6 +516,7 @@ Ya evaluadas (no reabrir sin un motivo nuevo):
 | changedetection.io | No (por ahora) | Pide Docker, que en la maquina de Ricky se traba; vigilar la competencia va mejor como tarea programada que llama a `analisis-competencia` |
 | Web Design Guidelines (`vercel-labs/agent-skills`) | En prueba (rama `prueba/web-design-guidelines`) | Copia fija como pasada final de `auditor-diseno`. En Caja sumo dos bugs reales (doble envio, hora UTC), pero mezclada se comio el de montos. Falta repetir en otra pantalla. Ver `docs/operacion/PRUEBA-WEB-DESIGN-GUIDELINES.md` |
 | Image to Code (`Leonxlnx/imagegen-skills`) | No | No lee una imagen tuya: genera imagenes y maqueta sitios de marketing para Codex. Claude Code no genera imagenes; la landing ya la cubre `design-taste-frontend` |
+| Clonadores de sitios (`drshailesh88/ui-cloner-skill`, `JCodesMore/ai-website-cloner-template`) | No | El primero no tiene licencia (5 estrellas, sin push desde marzo); el segundo es Next.js y ya estaba evaluado. Hacen lo mismo que leer el codigo del sitio con el navegador integrado, y copiar 1:1 el sitio de otro es copiar su codigo y su diseno: se estudia la tecnica y se rehace con `/diseno` |
 
 ## Antes de razonar sobre una RPC, traela
 
