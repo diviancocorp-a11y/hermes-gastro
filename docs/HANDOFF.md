@@ -11,6 +11,89 @@
 
 ---
 
+## 22/oct/2026 — MiaEstudio: acceso y servicios cargados, datos de turnos pendientes (Codex)
+
+### Actualización del 22/oct
+
+- Cargados y releídos por MCP los siete servicios del tenant `mia-estudio`:
+  Alisado $26.000, Bótox capilar $18.000, Soft gel $12.000, Esmaltado
+  semipermanente $10.000, Flores 3D $700, Retiro de trabajo de Mía $1.000 y
+  Retiro de otra profesional $1.500. Tipo `service`, categorías Pelo/Uñas/
+  Retiros. Quedan como borradores (`active=false`), con `duration_min=NULL`;
+  `store_open=false` y horarios sin completar. No se inventaron duraciones.
+- En descripción del alisado figura resultado aproximado de 4 a 6 meses;
+  en bótox, de 2 a 4 meses, según el mensaje de Mía del 20/oct. Son duración
+  del resultado, no tiempo de atención. Los retiros conservan la aclaración
+  de que se hacen antes del nuevo servicio. Falta confirmar si Flores 3D se
+  cobra por flor, uña o trabajo y si los retiros se reservan por separado.
+- Creada cuenta de Auth para `miajazmingonzalez18@gmail.com`, usuario
+  `3ee37a6b-b090-4236-9437-f6dcff3fe706`, y vinculada como propietaria mediante
+  la RPC vigente `attach_owner` (cuerpo vivo revisado). Verificados login con
+  la clave suministrada, lectura de su membresía `roles=['owner']` y cierre
+  de la sesión de prueba. La clave no se guardó en archivos ni en Drive.
+  Panel: https://mia-estudio.divianco.app/admin . Interfaz del panel no
+  recorrida en esta tarea; el login se verificó por API.
+- Planilla nativa creada en Drive/ChatGPT y verificada por lecturas y navegador:
+  https://docs.google.com/spreadsheets/d/1F8KPcpfH8tXoIU1jyb2XIvINbv50i014EWDl7knSUgg/edit
+  Pestañas Servicios (atención en minutos, margen entre turnos, profesional y
+  aclaraciones), Atención (horarios diarios, lugar, contacto, profesionales,
+  cobros/seña y cancelaciones) e Insumos (producto, marca, contenido/costo del
+  envase, stock y consumo por clienta con unidad). Casilleros amarillos vacíos.
+- Bótox líquido The Real Brazilian Keratin, envase de 250 ml, registrado como
+  dato confirmado en la planilla. No se cargó stock ni costo cero en la base:
+  faltan cantidad disponible, costo exacto y consumo por servicio. Marcas de
+  uñas informadas y rango $2.500–$10.000 conservados como referencia, sin
+  transformarlos en insumos o costos individuales inventados. Producto de
+  alisado pendiente de identificación.
+- Ricky autorizó compartir la planilla con `miajazmingonzalez18@gmail.com`
+  como editora, sin notificación por correo. Aplicado y verificado en el
+  diálogo de Drive: correo exacto, Editor y acceso general Restringido.
+  Evidencia visual en el temporal del sistema. No se envió ningún mensaje.
+  También autorizó el push del HANDOFF a main tras el rechazo inicial de la
+  revisión automática. La carga del tenant no depende de un deploy.
+- Sigue pendiente implementar agenda y consumo por turno (ver alta inicial
+  abajo). Completar la planilla aporta datos, no habilita esas funciones.
+  Sin cambios de UI, schema, código ni otros tenants. Temporales de la
+  planilla solo en el temp del sistema; no se crearon archivos nuevos dentro
+  del repo fuera de src/docs/platform/scripts. Se preservó el HANDOFF previo
+  sin commitear, que documentaba el alta de este mismo tenant.
+- Al archivar la sección del orquestador se conserva su pendiente: comprobar
+  el aviso del candado en una sesión de Claude sobre main. Su otro pendiente
+  era el gate de hooks inexistentes; contrastar su integración con la
+  worktree `cool-fermat` antes de darlo por cerrado.
+
+### Alta inicial del 20/oct (registro histórico de esta carga)
+
+- Pedido de Ricky: salon de unas y pelo, con turnos y consumo de productos
+  configurable por servicio. No se informaron correo de la duena, servicios,
+  precios, duraciones, profesionales, horarios ni insumos/cantidades.
+- Creado por MCP en el edificio el tenant `mia-estudio`, MiaEstudio,
+  `d3f27bf9-db9b-48be-9c7a-0bfe9b0e0bd2`, rubro `barber`, estado `active`,
+  canal `appointment`. Modo `fisico`, moneda ARS y zona Buenos Aires heredados
+  del alta; confirmar si trabaja a domicilio. Sucursal Principal default
+  `d3fcd8e8-55b8-4155-8f79-969f6e623791`, sin ubicacion inventada.
+- Readback SQL: settings creados, `store_open=false`, cero servicios, insumos,
+  turnos y owners. `get_catalog('mia-estudio')` devuelve MiaEstudio,
+  `vertical=barber`, productos vacios y `catalogo_activo=false`.
+- Acceso pendiente del correo de la duena (preguntado a Ricky). No se asigno
+  otra cuenta como propietaria ni se creo un usuario sin su identidad.
+  Dominio previsto: https://mia-estudio.divianco.app/; HTTP/navegador no
+  verificados en esta tarea.
+- La agenda NO esta implementada en el panel (`MODULOS.agenda.implementado`
+  es false). La base tiene staff/appointments y evita superposiciones, pero
+  el unico trigger vivo de appointments completa sucursal: finalizar un turno
+  no registra venta ni consumo. `usaReceta('barber')` es false: tampoco se
+  pueden configurar los insumos del servicio desde su editor actual.
+- Reutilizable, verificado leyendo el cuerpo vivo: 0104 descuenta insumos
+  de `product_ingredients` al completar un pedido y deja asiento en el libro.
+  Falta conectar servicios/turnos con ese circuito. No duplicar tablas de
+  recetas ni confundir `appointment` (canal declarado) con agenda habilitada.
+  Flujo propuesto: reservar/cancelar no consume; finalizar el servicio consume
+  una sola vez las cantidades configuradas. No implementado en esta tarea.
+- Solo datos del tenant nuevo y este HANDOFF: sin cambios de UI, schema,
+  precios, condiciones comerciales ni otros tenants. No se crearon archivos
+  fuera de src/docs/platform/scripts. Trabajo paralelo preservado.
+
 ## 19/oct/2026 — La Nona Pato: manual de marca aplicado (Codex)
 
 - Solo configuracion y assets del tenant `la-nona-pato`, sin cambios de
@@ -268,76 +351,3 @@
   sistema y `.preview/monare-import/` (ignorado), eliminadas al terminar.
 - Codigo desplegado al iniciar: `5076010`, produccion READY en Vercel.
   La carga es de datos y no requiere deploy ni migracion.
-
-## 17-19/oct/2026 — Orquestador de skills: ruteo por prompt y candado de /diseno (Claude)
-
-**En main y con CI verde.** PR #31 (`7c8bd44`, `d0e6e01`, `8bf93cc`), merge
-`2374959`; CI verde en `8bf93cc` y en `2374959`. La regla de `/carga` entró
-aparte (`386e826`, PR #32). No toca el front ni la base.
-
-### Hecho
-
-- **`scripts/hooks/orquestador.mjs`**, un solo script con dos modos,
-  registrado en `.claude/settings.json`. Reemplaza a `linea-diseno.mjs`
-  (borrado), que inyectaba el mismo texto en cada turno sin leer el prompt.
-  - `ruteo` (UserPromptSubmit): las reglas de
-    `scripts/hooks/orquestador-reglas.json` (regex sobre el prompt en
-    minúsculas y sin tildes, sin LLM) inyectan **solo** la indicación que
-    aplica: UI → `/diseno` con `design-taste-frontend` (pantalla nueva o
-    rediseño) o `impeccable` (pulir); base → `npm run mapa`; cierre →
-    `/cerrardico`; arranque → `/dico`; competencia → `analisis-competencia`;
-    carga → `/carga`. Si no aplica ninguna, no dice nada. Una skill que ya se
-    cargó en la sesión no se vuelve a pedir.
-  - `candado` (PreToolUse `Edit|Write|MultiEdit`): editar `src/**/*.jsx`,
-    `src/**/*.css` o `index.html` sin `/diseno` cargado le agrega al modelo
-    el aviso de cargarla. Los subagentes `disenador` y `auditor-diseno`
-    están exentos, y los tests quedan afuera.
-- **Por qué se lee el transcript como JSON por línea y no con grep:** el texto
-  `Launching skill: diseno` aparece en la salida de cualquier comando que lo
-  busque, y pasó en la misma sesión que lo construyó. Cuentan tres señales:
-  el tool_use `Skill`, `toolUseResult.commandName` y `<command-name>/x</command-name>`
-  en un mensaje de Ricky.
-- **Por qué avisa y no bloquea:** un subagente que no es de la línea de
-  diseño no ve las skills del padre, y hay ediciones chicas de UI que Ricky
-  pide sin la línea completa. Con `"modo": "bloqueo"` en el JSON pasa a
-  rechazar la edición.
-- Documentado en `CLAUDE.md` y `AGENTS.md` (la tabla de qué skill va con cada
-  pedido; Codex no tiene hooks y sigue esas reglas leyendo el texto).
-
-### Verificado
-
-- `src/test/orquestadorSkills.test.js`: 30 tests, con 12 prompts de ejemplo,
-  falsos positivos del transcript, el candado en aviso y en bloqueo, y el
-  script corrido con stdin (entrada rota o modo desconocido → exit 0 y sin
-  salida).
-- Detección contra transcripts reales: la sesión `bca8550a` da `diseno`
-  cargada y el candado calla. La sesión que lo construyó da solo
-  `plugin-authoring`, aunque tenía greps con el texto.
-- **En vivo, según la sesión de k6** (sección de abajo): el ruteo inyectó su
-  aviso en cada prompt en la máquina de Ricky. En esta sesión no se vio: el
-  harness siguió corriendo el hook viejo desde el checkout principal, que
-  estaba en `prueba/k6`, incluso cuando `linea-diseno.mjs` ya no existía en
-  la worktree. **El candado no se vio disparar en ninguna sesión.**
-
-### Pendiente inmediato
-
-1. **Ver el candado andando en una sesión sobre `main`**: editar un `.jsx`
-   sin `/diseno` cargado tiene que traer el aviso. Si no llega nada, puede
-   ser que esta versión de Claude Code no lea `additionalContext` en
-   PreToolUse; en ese caso, pasar a `"modo": "bloqueo"`.
-2. **Un gate para hooks rotos**: que morning-health o un `check:*` falle si
-   `.claude/settings.json` apunta a un script de `scripts/hooks/` que no
-   existe. Hoy un hook que apunta a un archivo borrado falla en silencio en
-   cada turno.
-
-### Bloqueado por Ricky
-
-- Nada propio. Lo heredado de la landing está en la sección de k6.
-
-### Archivos fuera de src/, docs/, platform/ o scripts/
-
-- `.claude/settings.json`: registra los dos hooks, con ok de Ricky.
-- `.agents/skills/` y `.codex/` aparecieron sin seguimiento en la worktree y
-  en el checkout principal. No son de esta sesión y no se tocaron.
-
----

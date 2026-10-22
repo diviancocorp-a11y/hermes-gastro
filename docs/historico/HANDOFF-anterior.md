@@ -9,6 +9,79 @@
 
 ---
 
+## 17-19/oct/2026 — Orquestador de skills: ruteo por prompt y candado de /diseno (Claude)
+
+**En main y con CI verde.** PR #31 (`7c8bd44`, `d0e6e01`, `8bf93cc`), merge
+`2374959`; CI verde en `8bf93cc` y en `2374959`. La regla de `/carga` entró
+aparte (`386e826`, PR #32). No toca el front ni la base.
+
+### Hecho
+
+- **`scripts/hooks/orquestador.mjs`**, un solo script con dos modos,
+  registrado en `.claude/settings.json`. Reemplaza a `linea-diseno.mjs`
+  (borrado), que inyectaba el mismo texto en cada turno sin leer el prompt.
+  - `ruteo` (UserPromptSubmit): las reglas de
+    `scripts/hooks/orquestador-reglas.json` (regex sobre el prompt en
+    minúsculas y sin tildes, sin LLM) inyectan **solo** la indicación que
+    aplica: UI → `/diseno` con `design-taste-frontend` (pantalla nueva o
+    rediseño) o `impeccable` (pulir); base → `npm run mapa`; cierre →
+    `/cerrardico`; arranque → `/dico`; competencia → `analisis-competencia`;
+    carga → `/carga`. Si no aplica ninguna, no dice nada. Una skill que ya se
+    cargó en la sesión no se vuelve a pedir.
+  - `candado` (PreToolUse `Edit|Write|MultiEdit`): editar `src/**/*.jsx`,
+    `src/**/*.css` o `index.html` sin `/diseno` cargado le agrega al modelo
+    el aviso de cargarla. Los subagentes `disenador` y `auditor-diseno`
+    están exentos, y los tests quedan afuera.
+- **Por qué se lee el transcript como JSON por línea y no con grep:** el texto
+  `Launching skill: diseno` aparece en la salida de cualquier comando que lo
+  busque, y pasó en la misma sesión que lo construyó. Cuentan tres señales:
+  el tool_use `Skill`, `toolUseResult.commandName` y `<command-name>/x</command-name>`
+  en un mensaje de Ricky.
+- **Por qué avisa y no bloquea:** un subagente que no es de la línea de
+  diseño no ve las skills del padre, y hay ediciones chicas de UI que Ricky
+  pide sin la línea completa. Con `"modo": "bloqueo"` en el JSON pasa a
+  rechazar la edición.
+- Documentado en `CLAUDE.md` y `AGENTS.md` (la tabla de qué skill va con cada
+  pedido; Codex no tiene hooks y sigue esas reglas leyendo el texto).
+
+### Verificado
+
+- `src/test/orquestadorSkills.test.js`: 30 tests, con 12 prompts de ejemplo,
+  falsos positivos del transcript, el candado en aviso y en bloqueo, y el
+  script corrido con stdin (entrada rota o modo desconocido → exit 0 y sin
+  salida).
+- Detección contra transcripts reales: la sesión `bca8550a` da `diseno`
+  cargada y el candado calla. La sesión que lo construyó da solo
+  `plugin-authoring`, aunque tenía greps con el texto.
+- **En vivo, según la sesión de k6** (sección de abajo): el ruteo inyectó su
+  aviso en cada prompt en la máquina de Ricky. En esta sesión no se vio: el
+  harness siguió corriendo el hook viejo desde el checkout principal, que
+  estaba en `prueba/k6`, incluso cuando `linea-diseno.mjs` ya no existía en
+  la worktree. **El candado no se vio disparar en ninguna sesión.**
+
+### Pendiente inmediato
+
+1. **Ver el candado andando en una sesión sobre `main`**: editar un `.jsx`
+   sin `/diseno` cargado tiene que traer el aviso. Si no llega nada, puede
+   ser que esta versión de Claude Code no lea `additionalContext` en
+   PreToolUse; en ese caso, pasar a `"modo": "bloqueo"`.
+2. **Un gate para hooks rotos**: que morning-health o un `check:*` falle si
+   `.claude/settings.json` apunta a un script de `scripts/hooks/` que no
+   existe. Hoy un hook que apunta a un archivo borrado falla en silencio en
+   cada turno.
+
+### Bloqueado por Ricky
+
+- Nada propio. Lo heredado de la landing está en la sección de k6.
+
+### Archivos fuera de src/, docs/, platform/ o scripts/
+
+- `.claude/settings.json`: registra los dos hooks, con ok de Ricky.
+- `.agents/skills/` y `.codex/` aparecieron sin seguimiento en la worktree y
+  en el checkout principal. No son de esta sesión y no se tocaron.
+
+---
+
 ## 17-19/oct/2026 — Prueba de carga con k6, skill /carga cada 15 días (Claude)
 
 **Publicado.** PR #33 (`prueba/k6`, merge `fe95296`) y PR #32 (regla del
