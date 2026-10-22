@@ -15,6 +15,38 @@
 
 ### Actualización del 22/oct
 
+- Marca aplicada según la Biblioteca de empresas/CLIENTES/mia-estudio:
+  MANUAL.md, marca.json y fuente HTML del manual v2. Solo datos del tenant,
+  sin JSX/CSS, schema ni otros tenants. Nombre público `MIA ESTUDIO` también
+  en `tenants.name` (get_catalog lo toma de ahí), color de marca `#DF0359`,
+  tema `carbon` como base crema disponible, Instagram `miaestudiok` y texto
+  `Uñas y pelo · Zona Norte · Pilar · A domicilio` en slogan.
+- Original `logos/logo-y2k.png` (1254x1254, 1.390.915 bytes) cargado como logo
+  y favicon: `tenant-images/<tenant_id>/marca-20261022/20412413dc2d-logo-y2k.png`.
+  Original `logos/logo-completo-horizontal-claro.png` (2225x800, 497.235 bytes)
+  cargado como cover_url y og_image_url, mismo prefijo, nombre
+  `d103adcf4219-logo-completo-horizontal-claro.png`. Ambos HTTP 200 y SHA256
+  idéntico al original (prefijos de hash en nombre); sin regenerar ni editar
+  imágenes ni modificar la Biblioteca. api/og.js usa cover_url para compartir.
+- Readback de settings y get_catalog verificado. HTTP de producción como
+  facebookexternalhit: 200, og:title MIA ESTUDIO, descripción y og:image nuevos,
+  theme-color fucsia. Siete productos idénticos antes/después, todos borradores;
+  store_open=false, horarios sin tocar. Constructor separado revisó recursos.
+- Límite de la personalización actual: catalog_font no tiene consumidor y
+  logo_color no reemplaza --ac de catalog-pro. Carbon conserva tipografía
+  Source Serif y acento chocolate; Modak/Poppins y la paleta Y2K completa del
+  manual NO quedaron implementados. Cover no es un hero visible. No se
+  amplió el sistema global como parte de esta carga de datos.
+- /diseno: detector estático antes/después 17 warnings y 6 advisory, sin
+  cambios; check:diseno verde. Auditor independiente: 0 P0/P1 nuevos, sin
+  desborde a 390x844 y 1280x800, consola limpia, slogan 15,19:1 y foco de
+  Instagram visible. Dos P2 de contenedores compartidos: logo header 36 px
+  frente a mínimo 60 del manual y enlace IG 40 px frente a objetivo táctil
+  44. No corregidos en esta carga de datos: requieren cambios de código.
+  Evidencias y settings anteriores solo en el
+  temporal del sistema mia-estudio-marca-20261022. Sin archivos nuevos fuera
+  de src/docs/platform/scripts dentro del repo.
+
 - Cargados y releídos por MCP los siete servicios del tenant `mia-estudio`:
   Alisado $26.000, Bótox capilar $18.000, Soft gel $12.000, Esmaltado
   semipermanente $10.000, Flores 3D $700, Retiro de trabajo de Mía $1.000 y
