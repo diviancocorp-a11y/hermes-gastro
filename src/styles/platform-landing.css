@@ -592,12 +592,23 @@
 
 .pl-lineas .pl-linea-in { display: block; }
 
+/* El vivo y el molde ocupan la misma celda: el instrumento toma el alto del
+   rubro mas alto y la pieza oscura queda con el suyo. */
 .pl-instrumento {
+  display: grid;
+  width: min(100%, 440px);
+}
+
+.pl-instrumento-vivo,
+.pl-instrumento-molde {
+  grid-area: 1 / 1;
+  align-self: start;
   display: grid;
   justify-items: start;
   gap: var(--ds-space-3);
-  width: min(100%, 440px);
 }
+
+.pl-instrumento-molde { visibility: hidden; }
 
 .pl-instrumento-nota {
   font-size: var(--pl-t5);

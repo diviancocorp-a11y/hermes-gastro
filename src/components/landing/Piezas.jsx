@@ -12,8 +12,14 @@
 // son los de VERTICALES (src/lib/diagnostico.js); `otro` usa el contenido de
 // comercio, que no promete nada de un rubro (catalogo, pedidos, caja, stock).
 //
-// REGLA DE CONTENIDO (verificada en el codigo el 19/oct/2026):
-//   - el resultado es MENSUAL (MonthSummary): no hay resultado del dia;
+// REGLA DE CONTENIDO (verificada en el codigo el 19/oct/2026; el resultado
+// del dia, el 20/oct):
+//   - el resultado del dia (resultado_del_dia, 0103; solapa "Hoy" de Ventas)
+//     da la ganancia neta por sucursal: ventas, costo segun la receta, nomina
+//     fichada, merma, gastos del dia y fijos del mes prorrateados. El costo
+//     por venta sale SOLO de las recetas: fuera de gastronomia el dia no lo
+//     tiene, asi que ahi la pieza muestra el resultado del MES (MonthSummary),
+//     con las compras, que es la cuenta completa;
 //   - el costo laboral es POR DIA (labor_cost_vs_sales), no por turno;
 //   - el stock entra con compras y conteos; desde la 0104, completar un pedido
 //     descuenta la receta (gastronomia) o el articulo mismo si no tiene receta
@@ -33,23 +39,41 @@ const porcentaje = (n) => n.toLocaleString('es-AR', { minimumFractionDigits: 1, 
 /** El contenido de ejemplo de un rubro; si no hay, el de comercio. */
 const deRubro = (tabla, rubro) => tabla[rubro] || tabla.comercio;
 
-/* ─────────────── Resultado del mes ─────────────── */
+/* ─────────────── Resultado: la noche en gastronomia, el mes en el resto ─────────────── */
 
-// El mismo mes en tres rubros. Las cifras son de ejemplo y cierran:
-// gastronomia 42.600.000 - 12.780.000 - 21.300.000 = 8.520.000 (20,0 %);
+// Gastronomia: un viernes, con las lineas y los nombres de la solapa "Hoy"
+// del panel (lineasDelResultado en src/services/platformResultado.js; el
+// detalle va despues de " · "). Es un dia fuerte de un mes de ~42,6 M:
+// 2.168.000 - 18.000 - 645.000 - 387.000 - 43.000 - 96.000 - 310.000 = 669.000;
+// 30,9 % sobre ventas, como margenDelDia. Lo cobrado (ventas - descuentos)
+// es 2.150.000, lo registrado en PiezaArqueo. Nomina: 43 h a $9.000.
+// Comercio y servicios: el mes, con las compras (sin recetas el dia no tiene
+// costo de lo vendido y su "ganancia" seria mas alta que la real):
 // comercio 18.900.000 - 11.340.000 - 5.290.000 = 2.270.000 (12,0 %);
 // servicios 9.400.000 - 610.000 - 6.150.000 = 2.640.000 (28,1 %).
 const RESULTADOS = {
   gastronomia: {
     nombre: 'Gastronomía',
-    ventas: 42600000,
+    titulo: 'Resultado de hoy',
+    meta: 'Viernes',
+    periodo: 'un viernes',
+    neto: 'Ganancia neta',
+    ventas: 2168000,
     costos: [
-      ['Costo según tus recetas', 12780000],
-      ['Gastos', 21300000],
+      ['Descuentos', 18000],
+      ['Costo de lo vendido · según recetas', 645000],
+      ['Nómina · 43 h fichadas', 387000],
+      ['Merma', 43000],
+      ['Gastos del día', 96000],
+      ['Gastos fijos · parte del mes', 310000],
     ],
   },
   comercio: {
     nombre: 'Comercio',
+    titulo: 'Resultado del mes',
+    meta: 'Septiembre',
+    periodo: 'el mes',
+    neto: 'Resultado',
     ventas: 18900000,
     costos: [
       // Sin recetas no hay costo por venta: lo que hay son las compras.
@@ -59,6 +83,10 @@ const RESULTADOS = {
   },
   servicios: {
     nombre: 'Servicios',
+    titulo: 'Resultado del mes',
+    meta: 'Septiembre',
+    periodo: 'el mes',
+    neto: 'Resultado',
     ventas: 9400000,
     costos: [
       ['Compras de insumos', 610000],
@@ -68,8 +96,9 @@ const RESULTADOS = {
 };
 const RUBROS_DEL_RESULTADO = Object.keys(RESULTADOS);
 
-/* El resultado del mes en Dico. Con `elegible`, se elige el rubro y la cuenta
-   cambia (la pieza viva del hero); sin eso, queda fijo en `rubro`. */
+/* El resultado en Dico: la noche en gastronomia, el mes en comercio y
+   servicios. Con `elegible`, se elige el rubro y la cuenta cambia (la pieza
+   viva del hero); sin eso, queda fijo en `rubro`. */
 export function PiezaResultado({ rubro = 'gastronomia', elegible = true }) {
   const inicial = RESULTADOS[rubro] ? rubro : 'comercio';
   const [elegido, setElegido] = useState(inicial);
@@ -84,11 +113,11 @@ export function PiezaResultado({ rubro = 'gastronomia', elegible = true }) {
       className="pl-pieza pl-resultado"
       data-ui
       role="figure"
-      aria-label={`Ejemplo: resultado del mes en ${r.nombre.toLowerCase()}`}
+      aria-label={`Ejemplo: resultado de ${r.periodo} en ${r.nombre.toLowerCase()}`}
     >
       <div className="pl-pieza-cab">
-        <span className="pl-pieza-titulo">Resultado del mes</span>
-        <span className="pl-pieza-meta">Septiembre</span>
+        <span className="pl-pieza-titulo">{r.titulo}</span>
+        <span className="pl-pieza-meta">{r.meta}</span>
       </div>
 
       {elegible && (
@@ -122,7 +151,7 @@ export function PiezaResultado({ rubro = 'gastronomia', elegible = true }) {
           ))}
         </dl>
         <div className="pl-resultado-neto">
-          <span className="pl-resultado-neto-nombre">Resultado</span>
+          <span className="pl-resultado-neto-nombre">{r.neto}</span>
           <span className="pl-resultado-neto-cifra">{pesos(resultado)}</span>
           <span className="pl-resultado-neto-margen">{porcentaje(margen)} % de la venta</span>
         </div>
@@ -168,7 +197,7 @@ export function PiezaTurno() {
   return (
     <div className="pl-pieza pl-turno" data-ui role="figure" aria-label="Ejemplo: personal contra la venta de un día">
       <div className="pl-pieza-cab">
-        <span className="pl-pieza-titulo">Martes 14 de octubre</span>
+        <span className="pl-pieza-titulo">Martes 13 de octubre</span>
         <span className="pl-pieza-meta">3 personas · 24 h fichadas</span>
       </div>
       <div className="pl-turno-cuenta">
@@ -185,12 +214,13 @@ export function PiezaTurno() {
 
 /* ─────────────── Arqueo ─────────────── */
 
-// Registrado: 418.500 + 1.960.000 + 1.821.500 = 4.200.000.
+// El mismo viernes del resultado: registrado 418.500 + 958.000 + 773.500 =
+// 2.150.000, lo cobrado esa noche (ventas 2.168.000 - descuentos 18.000).
 export function PiezaArqueo() {
   const medios = [
     ['Efectivo', '$412.000', '$418.500'],
-    ['Tarjeta', '$1.960.000', '$1.960.000'],
-    ['MercadoPago', '$1.821.500', '$1.821.500'],
+    ['Tarjeta', '$958.000', '$958.000'],
+    ['MercadoPago', '$773.500', '$773.500'],
   ];
   return (
     <div className="pl-pieza pl-arqueo" data-ui>

@@ -11,7 +11,9 @@
 // existe; lo que hace cada rubro sale de src/modules/registry.js
 // (`implementado`). Lo que falta se dice "en desarrollo" y se ofrece como
 // "lo desarrollamos con vos" (decision de Ricky, 19/oct/2026). Verificado en
-// el codigo el 19/oct: el resultado es MENSUAL, el costo laboral es POR DIA,
+// el codigo el 19/oct: el resultado del mes es para todos; desde la 0103
+// (publicada el 20/oct) hay resultado del dia por sucursal, con costo de lo
+// vendido solo donde hay recetas (gastronomia). El costo laboral es POR DIA,
 // el stock entra con compras y conteos y, desde la 0104, completar un pedido
 // descuenta la receta (gastronomia) o el articulo sin receta (comercio, y los
 // productos que vende un servicio); el minimo con aviso en el panel es solo
@@ -30,8 +32,8 @@
 // Direccion de design-taste-frontend: `quiet-instrument` (seed 2118221348).
 // Columna angosta, la frase como unica cosa grande, demostraciones chicas y
 // exactas, mucho aire compuesto. Idea: lo que Dico lee de tu negocio se
-// imprime en un instrumento al lado de la columna: el resultado del mes en la
-// portada, tus respuestas durante el diagnostico, la pieza que resuelve tu
+// imprime en un instrumento al lado de la columna: el resultado en la portada
+// (la noche en gastronomia, el mes en comercio y servicios), tus respuestas durante el diagnostico, la pieza que resuelve tu
 // dolor al final. Paleta en src/styles/plataforma-claro.css (oro solo accion
 // y valor, volt solo lo que lee Dico, oscuro solo en piezas de producto).
 //
@@ -58,8 +60,9 @@ import '../styles/platform-landing.css';
 import '../styles/diagnostico.css';
 
 const TITULO = 'Dico — Todo tu negocio, en un solo lugar';
-const DESCRIPCION = 'Ventas, costos, sueldos, stock, caja y pedidos de tu gastronomía, '
-  + 'comercio o servicio, en un solo lugar. Empezá con un diagnóstico de unas pocas preguntas, sin email.';
+// <= 160 caracteres, lo que muestran los buscadores. Igual en api/og.js.
+const DESCRIPCION = 'Ventas, costos, sueldos, stock, caja, pedidos y el resultado de cada día '
+  + 'de tu gastronomía, comercio o servicio. Empezá con un diagnóstico, sin email.';
 
 // Telefono, agenda y horarios: src/lib/contactoPlataforma.js.
 const marcarWhatsApp = () => marcarEvento('whatsapp');
@@ -120,8 +123,17 @@ export default function PlatformLanding() {
           Portada={Portada}
           lado={(
             <div className="pl-instrumento">
-              <PiezaResultado />
-              <p className="pl-instrumento-nota">Un mes de ejemplo. Elegí el rubro y mirá cómo cierra la cuenta.</p>
+              <div className="pl-instrumento-vivo">
+                <PiezaResultado />
+                <NotaDelInstrumento />
+              </div>
+              {/* Molde invisible del rubro mas alto (gastronomia, 7 filas):
+                  reserva el alto para que cambiar de rubro no mueva lo de
+                  abajo, sin estirar la pieza oscura. */}
+              <div className="pl-instrumento-molde" aria-hidden="true" inert>
+                <PiezaResultado rubro="gastronomia" />
+                <NotaDelInstrumento />
+              </div>
             </div>
           )}
         />
@@ -134,6 +146,16 @@ export default function PlatformLanding() {
       <Cierre onDiagnostico={abrirDiagnostico} />
       <Pie />
     </div>
+  );
+}
+
+function NotaDelInstrumento() {
+  return (
+    <p className="pl-instrumento-nota">
+      Ejemplos: un viernes en gastronomía; un mes en comercio y servicios,
+      donde el día todavía no descuenta lo vendido. Elegí el rubro y mirá cómo
+      cierra la cuenta.
+    </p>
   );
 }
 
@@ -152,8 +174,8 @@ function Portada({ onAbrir }) {
       </h1>
       <p className="pl-bajada pl-sigue">
         Ventas, costos, sueldos, stock, caja y pedidos: cada variable de tu
-        gastronomía, comercio o servicio, cubierta en Dico. Lo que todavía no
-        hace, lo desarrollamos con vos.
+        gastronomía, comercio o servicio, cubierta en Dico, con el resultado de
+        cada día. Lo que todavía no hace, lo desarrollamos con vos.
       </p>
       <div className="pl-guia pl-sigue">
         <img src="/brand/dico/dico-2d-question.png" alt="" width="256" height="256" />
@@ -200,7 +222,7 @@ const PARTES = [
     id: 'costo_laboral',
     dolor: dolor('gastronomia', 'costo_laboral'),
     nota: 'El equipo ficha entrada y salida, y ves qué parte de la venta de cada día se fue en sueldos.',
-    titulo: 'Martes 14',
+    titulo: 'Martes 13',
     meta: '24 h fichadas',
     filas: [['Ventas del día', '$490.000'], ['Personal', '$186.000']],
     cifra: ['Personal sobre venta', '38 %'],
@@ -225,11 +247,11 @@ const PARTES = [
   {
     id: 'rentabilidad',
     dolor: dolor('gastronomia', 'rentabilidad'),
-    nota: 'Ventas, costo según tus recetas y gastos: el resultado del mes se arma solo.',
-    titulo: 'Resultado de septiembre',
-    meta: '20,0 % de la venta',
-    filas: [['Ventas', '$42.600.000'], ['Costo y gastos', '−$34.080.000']],
-    cifra: ['Resultado', '$8.520.000'],
+    nota: 'Al terminar el día, la ganancia neta de esa noche se calcula sola: ventas, el costo de lo vendido según tus recetas, la nómina fichada, la merma y los gastos. Por sucursal.',
+    titulo: 'Resultado del viernes',
+    meta: '30,9 % de la venta',
+    filas: [['Ventas', '$2.168.000'], ['Descuentos, costo, nómina, merma y gastos', '−$1.499.000']],
+    cifra: ['Ganancia neta', '$669.000'],
   },
 ];
 
@@ -315,8 +337,9 @@ const HOY = 'Hoy';
 const DESARROLLO = 'En desarrollo';
 
 // De src/modules/registry.js: `implementado: true` es Hoy. Lo demas, en
-// desarrollo (agenda de turnos y variantes estan en false; el resultado del
-// dia no existe todavia). Desde la 0104 (aplicada el 20/oct) completar un
+// desarrollo (agenda de turnos y variantes estan en false). El resultado del
+// dia (0103) es Hoy en los tres rubros; el costo de lo vendido sale solo de
+// las recetas, asi que fuera de gastronomia el dia va sin el. Desde la 0104 (aplicada el 20/oct) completar un
 // pedido descuenta la receta en gastronomia y el articulo sin receta en
 // comercio y en los productos que vende un servicio. No existen: el minimo
 // por articulo con aviso (min_stock es solo de insumos) y que un servicio
@@ -334,7 +357,7 @@ const RUBROS = [
       ['Caja y arqueo por medio de pago', HOY],
       ['Fichaje y costo del personal por día', HOY],
       ['Gastos y resultado del mes', HOY],
-      ['Resultado del día, con nómina y merma', DESARROLLO],
+      ['La ganancia neta de cada noche, por sucursal', HOY],
     ],
   },
   {
@@ -345,6 +368,8 @@ const RUBROS = [
       ['Caja y arqueo por medio de pago', HOY],
       ['Fichaje y costo del personal por día', HOY],
       ['Compras, gastos y resultado del mes', HOY],
+      ['El resultado de cada día (ventas, personal y gastos)', HOY],
+      ['El costo de lo vendido por artículo', DESARROLLO],
       ['Mínimo por artículo con aviso', DESARROLLO],
       ['Talles y colores por artículo', DESARROLLO],
     ],
@@ -359,6 +384,8 @@ const RUBROS = [
       ['Productos que vendés: cada venta los descuenta', HOY],
       ['Fichaje y costo del personal por día', HOY],
       ['Gastos y resultado del mes', HOY],
+      ['El resultado de cada día (ventas, personal y gastos)', HOY],
+      ['El costo de lo vendido por artículo', DESARROLLO],
       ['Que cada servicio descuente los insumos que usa', DESARROLLO],
       ['Agenda de turnos online', DESARROLLO],
     ],
@@ -451,7 +478,7 @@ const PLANES = [
     grupo: 'Para empezar',
     nombre: 'Digital',
     precio: 'Gratis',
-    texto: 'Catálogo online con link propio, pedidos, caja y arqueo, stock, equipo y el resultado de cada mes. En gastronomía, también recetas con costo.',
+    texto: 'Catálogo online con link propio, pedidos, caja y arqueo, stock, equipo y el resultado de cada día y de cada mes. En gastronomía, también recetas con costo y la ganancia neta de cada noche.',
   },
   {
     grupo: 'Un local',
