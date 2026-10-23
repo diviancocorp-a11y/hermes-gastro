@@ -19,10 +19,11 @@ export default function NuevoTurno({
   const ambas = reglas.offers_local && reglas.offers_home;
   const propio = acceso === 'propio';
 
-  const servicios = useMemo(
-    () => reservables(base.servicios.filter(s => s.active !== false)), [base.servicios],
-  );
-  const sinDuracion = base.servicios.filter(s => s.active !== false && !(s.duration_min > 0));
+  // Un servicio en borrador (active=false) no sale en el catalogo publico pero
+  // se agenda igual desde el panel: la baja logica es is_archived y ya viene
+  // filtrada en fetchAgendaBase.
+  const servicios = useMemo(() => reservables(base.servicios), [base.servicios]);
+  const sinDuracion = base.servicios.filter(s => !(s.duration_min > 0));
 
   const [servicioId, setServicioId] = useState('');
   const [modalidad, setModalidad] = useState(reglas.offers_local ? 'local' : 'home');
