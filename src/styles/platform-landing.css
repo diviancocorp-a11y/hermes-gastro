@@ -380,6 +380,8 @@
   letter-spacing: -0.035em;
   line-height: 1.05;
   color: var(--pc-producto-oro);
+  /* Cuenta desde 0 (useCuentaQueSeArma): los digitos no cambian de ancho. */
+  font-variant-numeric: tabular-nums;
 }
 
 .pl-resultado-neto-margen {
@@ -1125,9 +1127,46 @@
     transform: none;
   }
 
-  /* Al cambiar de rubro, la cuenta entra de nuevo. */
-  .pl-resultado-cuenta {
-    animation: pl-sube var(--pc-t-estructura) var(--pc-curva) both;
+  /* La cuenta del resultado se arma al entrar en pantalla y al cambiar de
+     rubro (useCuentaQueSeArma en Piezas.jsx pone las clases): las filas de
+     arriba hacia abajo, un paso de rapido / 4 (40 ms) entre cada una; el neto
+     cuando termina la escalera, y el margen cuando la cifra llega. Con 7
+     filas, la cuenta queda armada a los ~740 ms. La transicion vive solo en
+     el estado de llegada: ocultar es instantaneo, asi armar la cuenta sobre
+     filas ya pintadas no las desvanece primero. */
+  .pl-resultado-cuenta { --pl-paso: calc(var(--pc-t-rapido) / 4); }
+
+  .pl-cuenta-arma .pl-fila,
+  .pl-cuenta-arma .pl-resultado-neto {
+    opacity: 0;
+    transform: translateY(var(--pc-viaje));
+  }
+
+  .pl-cuenta-arma.is-in .pl-fila,
+  .pl-cuenta-arma.is-cuenta .pl-resultado-neto {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--pc-t-estructura) var(--pc-curva),
+      transform var(--pc-t-estructura) var(--pc-curva);
+  }
+
+  .pl-cuenta-arma.is-in .pl-fila:nth-child(2) { transition-delay: var(--pl-paso); }
+  .pl-cuenta-arma.is-in .pl-fila:nth-child(3) { transition-delay: calc(var(--pl-paso) * 2); }
+  .pl-cuenta-arma.is-in .pl-fila:nth-child(4) { transition-delay: calc(var(--pl-paso) * 3); }
+  .pl-cuenta-arma.is-in .pl-fila:nth-child(5) { transition-delay: calc(var(--pl-paso) * 4); }
+  .pl-cuenta-arma.is-in .pl-fila:nth-child(6) { transition-delay: calc(var(--pl-paso) * 5); }
+  .pl-cuenta-arma.is-in .pl-fila:nth-child(7) { transition-delay: calc(var(--pl-paso) * 6); }
+  /* Un escalon de margen sobre las 7 filas de gastronomia. Por nth-child y
+     no por un --i inline: la regla del repo es cero style= nuevos. Si un
+     rubro pasa de 8 filas, sumar el escalon (el JS ya cuenta todas). */
+  .pl-cuenta-arma.is-in .pl-fila:nth-child(8) { transition-delay: calc(var(--pl-paso) * 7); }
+
+  .pl-cuenta-arma .pl-resultado-neto-margen { opacity: 0; }
+
+  .pl-cuenta-arma.is-lista .pl-resultado-neto-margen {
+    opacity: 1;
+    transition: opacity var(--pc-t-rapido) var(--pc-curva);
   }
 
   /* La foto viva: una deriva lenta, de ambiente. */
@@ -1141,6 +1180,17 @@
 
   @media (hover: hover) and (pointer: fine) {
     .pl-fotos .pl-foto:hover .pl-foto-marco img { transform: scale(1.03); }
+  }
+}
+
+/* Impresa, la cuenta sale armada aunque no haya entrado en pantalla. */
+@media print {
+  .pl-cuenta-arma .pl-fila,
+  .pl-cuenta-arma .pl-resultado-neto,
+  .pl-cuenta-arma .pl-resultado-neto-margen {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
 

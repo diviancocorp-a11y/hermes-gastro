@@ -3,7 +3,8 @@
 
 import { useLayoutEffect } from 'react';
 
-const sinMovimiento = () => typeof window !== 'undefined'
+// Exportada: la cuenta del resultado (Piezas.jsx) usa el mismo criterio.
+export const sinMovimiento = () => typeof window !== 'undefined'
   && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 /** Entradas por seccion: cada [data-reveal] entra una sola vez cuando aparece.

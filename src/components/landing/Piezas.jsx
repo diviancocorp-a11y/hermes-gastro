@@ -31,7 +31,8 @@
 //   - el salon y las mesas son solo de gastronomia; en comercio y servicios no
 //     hay costo por venta (sale de las recetas): van las compras.
 
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { sinMovimiento } from './useEntradas';
 
 const pesos = (n) => `$${Math.round(n).toLocaleString('es-AR')}`;
 const porcentaje = (n) => n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -96,6 +97,109 @@ const RESULTADOS = {
 };
 const RUBROS_DEL_RESULTADO = Object.keys(RESULTADOS);
 
+/** Un token de tiempo ('160ms' o '0.16s') en milisegundos. */
+const aMs = (valor) => {
+  const v = valor.trim();
+  const n = parseFloat(v);
+  return v.endsWith('ms') ? n : v.endsWith('s') ? n * 1000 : n;
+};
+
+/** La cuenta se arma una vez, al entrar en pantalla: las filas entran
+ *  escalonadas (CSS, bajo .pl-cuenta-arma), despues el neto y su cifra cuenta
+ *  desde 0, y al final aparece el margen. El estado oculto solo existe bajo
+ *  esa clase, que se pone aca: sin IntersectionObserver, con movimiento
+ *  reducido o en el molde invisible del hero (inert), la cuenta queda armada
+ *  desde el primer pintado. `clave` (el rubro) la vuelve a armar.
+ *  Devuelve las refs de la cuenta y de la cifra. */
+function useCuentaQueSeArma(final, clave) {
+  const cuentaRef = useRef(null);
+  const cifraRef = useRef(null);
+  // useLayoutEffect: la clase entra antes del primer pintado, asi las filas
+  // no se ven enteras y despues desaparecen para entrar.
+  useLayoutEffect(() => {
+    const cuenta = cuentaRef.current;
+    // El nodo de texto que pinto React: se le cambia el valor sin re-render
+    // por cuadro y al terminar queda en el mismo `final` que tiene React.
+    const texto = cifraRef.current?.firstChild;
+    if (!cuenta || !texto || cuenta.closest('[inert]') || sinMovimiento()
+      || typeof IntersectionObserver === 'undefined') return undefined;
+
+    // Tiempos de los tokens (plataforma-claro.css). El paso entre filas es
+    // --pl-paso (rapido / 4) en el CSS: el neto entra cuando termina la
+    // escalera, una fila despues de la ultima.
+    const estilo = getComputedStyle(cuenta);
+    const rapido = aMs(estilo.getPropertyValue('--pc-t-rapido'));
+    const dura = aMs(estilo.getPropertyValue('--pc-t-estructura'));
+    if (!(rapido > 0) || !(dura > 0)) return undefined;
+    const espera = (rapido / 4) * cuenta.querySelectorAll('.pl-fila').length;
+
+    let vivo = true;
+    let cuadro = 0;
+    let reloj = 0;
+    let respaldo = 0;
+    cuenta.classList.add('pl-cuenta-arma');
+
+    // La cifra pasa a $0 recien al contar: hasta ahi el neto esta oculto y,
+    // si se imprime antes, sale el valor final.
+    const contar = () => {
+      texto.nodeValue = pesos(0);
+      cuenta.classList.add('is-cuenta');
+      const inicio = performance.now();
+      const avanzar = (ahora) => {
+        const t = Math.min(1, (ahora - inicio) / dura);
+        // Sale rapido y asienta, como --pc-curva; sin pasarse del final.
+        texto.nodeValue = pesos(final * (1 - (1 - t) ** 3));
+        if (t < 1) cuadro = requestAnimationFrame(avanzar);
+        else cuenta.classList.add('is-lista');
+      };
+      cuadro = requestAnimationFrame(avanzar);
+    };
+
+    const arrancar = () => {
+      if (!vivo || cuenta.classList.contains('is-in')) return;
+      clearTimeout(respaldo);
+      cuenta.classList.add('is-in');
+      reloj = setTimeout(contar, espera);
+    };
+
+    // En el hero la pieza vive en una columna que entra con su propia
+    // animacion (.pl-anim .dg-cerrado .pl-split-lado > *): la escalera espera
+    // a que termine, si no se jugaria con el contenedor invisible. Respaldo
+    // por si `finished` no llega: lo que dura esa entrada (rapido +
+    // estructura) mas un rapido de holgura, para no ganarle a `finished`.
+    const entrando = () => {
+      const pendientes = [];
+      for (let n = cuenta.parentElement; n; n = n.parentElement) {
+        for (const a of n.getAnimations?.() || []) {
+          const fin = a.effect?.getComputedTiming?.().endTime;
+          if (a.playState !== 'finished' && Number.isFinite(fin)) pendientes.push(a.finished);
+        }
+      }
+      if (!pendientes.length) { arrancar(); return; }
+      respaldo = setTimeout(arrancar, rapido * 2 + dura);
+      Promise.allSettled(pendientes).then(arrancar);
+    };
+
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      entrando();
+    }, { threshold: 0.3 });
+    io.observe(cuenta);
+
+    return () => {
+      vivo = false;
+      io.disconnect();
+      clearTimeout(respaldo);
+      clearTimeout(reloj);
+      cancelAnimationFrame(cuadro);
+      texto.nodeValue = pesos(final);
+      cuenta.classList.remove('pl-cuenta-arma', 'is-in', 'is-cuenta', 'is-lista');
+    };
+  }, [final, clave]);
+  return [cuentaRef, cifraRef];
+}
+
 /* El resultado en Dico: la noche en gastronomia, el mes en comercio y
    servicios. Con `elegible`, se elige el rubro y la cuenta cambia (la pieza
    viva del hero); sin eso, queda fijo en `rubro`. */
@@ -107,6 +211,7 @@ export function PiezaResultado({ rubro = 'gastronomia', elegible = true }) {
   const totalCostos = r.costos.reduce((s, [, m]) => s + m, 0);
   const resultado = r.ventas - totalCostos;
   const margen = (resultado / r.ventas) * 100;
+  const [cuentaRef, cifraRef] = useCuentaQueSeArma(resultado, actual);
 
   return (
     <div
@@ -137,7 +242,12 @@ export function PiezaResultado({ rubro = 'gastronomia', elegible = true }) {
       )}
 
       {/* key: al cambiar de rubro las filas se reemplazan y entran de nuevo */}
-      <div className="pl-resultado-cuenta" key={actual} aria-live={elegible ? 'polite' : undefined}>
+      <div
+        className="pl-resultado-cuenta"
+        key={actual}
+        ref={cuentaRef}
+        aria-live={elegible ? 'polite' : undefined}
+      >
         <dl className="pl-filas">
           <div className="pl-fila">
             <dt>Ventas</dt>
@@ -152,7 +262,10 @@ export function PiezaResultado({ rubro = 'gastronomia', elegible = true }) {
         </dl>
         <div className="pl-resultado-neto">
           <span className="pl-resultado-neto-nombre">{r.neto}</span>
-          <span className="pl-resultado-neto-cifra">{pesos(resultado)}</span>
+          {/* La cifra que cuenta no se lee (ni la anuncia aria-live cuadro a
+              cuadro): el lector escucha solo el valor final. */}
+          <span className="pl-resultado-neto-cifra" ref={cifraRef} aria-hidden="true">{pesos(resultado)}</span>
+          <span className="pl-oculto">{pesos(resultado)}</span>
           <span className="pl-resultado-neto-margen">{porcentaje(margen)} % de la venta</span>
         </div>
       </div>
