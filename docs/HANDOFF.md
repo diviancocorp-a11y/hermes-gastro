@@ -11,6 +11,17 @@
 
 ---
 
+## 23/oct/2026 — La landing se sigue desde un solo lugar (Claude)
+
+- `docs/plataforma/LANDING.md` es la guia unica de la landing: estado, mapa de
+  archivos, reglas de honestidad y de marca (resumen del RC5), lo aprendido de
+  IMAN y el plan. Ricky la sigue desde Codex.
+- Pendiente: rama `landing/resultado-del-dia` (auditada, con preview, sin PR).
+  Antes del PR, arreglar el Security Audit de `main`, rojo desde el 22/oct por
+  `vite` 8.3.0-8.3.2 y `vitest` <=4.1.11.
+
+---
+
 ## 22/oct/2026 — MiaEstudio: acceso y servicios cargados, datos de turnos pendientes (Codex)
 
 ### Actualización del 22/oct
