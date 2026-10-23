@@ -11,7 +11,35 @@
 
 ---
 
-## 23/oct/2026 — Landing: plan acordado y hero implementado (Claude / Codex)
+## 23/oct/2026 — Landing: hero rechazado y reemplazo con parallax (Claude / Codex)
+
+### Ultima decision de Ricky y reemplazo (leer primero)
+
+- Ricky rechazo el hero de concreto/dispositivos de `b4084ad`: textura rara,
+  profundidad insuficiente y laptop deformada al abrir el ejemplo. Los checks
+  anteriores no equivalian a aprobacion visual. No extender esa direccion.
+- Se reemplazo por la composicion original de Parallax Scrolling de Osmo:
+  paisaje, montana, titulo y caminante en cuatro planos. Mensaje **Mas tiempo
+  para vivir.**, bajada de pedidos/stock/caja/resultados y tiempo para los tuyos.
+  Quiero Dico mantiene el diagnostico. Recursos originales CC0, 192.604 bytes,
+  procedencia y licencia en `docs/marca/referencias/parallax-osmo.md`.
+- Misma worktree y PR #52. Se retiro la textura huerfana de public; las tres
+  capas WebP son los nuevos archivos finales fuera de src/docs/platform/scripts,
+  necesarios para servir la escena localmente. Sin paquetes ni backend nuevos.
+- Verificado localmente: 61 tests/5 archivos, tipos, build y check:diseno.
+  Chrome en 1440/768/390/320/1280 sin overflow; CTA visible y abre con foco.
+  Scroll288 mueve cielo236,16/montana187,20/titulo95,04/frente34,56 px.
+  Movimiento reducido cancela las cuatro animaciones, sin errores de JS.
+- Auditor independiente: 0 hallazgos nuevos. P2 heredado Entrar38,86x44px;
+  contraste AA fotografico completo no certificado. Detector17/6 sin cambio;
+  inspector real pasa de1FAIL/3WARN a0FAIL/3WARN (se retira details que daba
+  falso positivo). Los tres warnings preexistentes se explican en LANDING.
+  CTA de una linea revalidado en320px, sin desborde.
+- Actualizacion del preview en curso. La aceptacion visual sigue pendiente
+  de Ricky; cuerpo y planes siguen pendientes de fases3/4.
+  Detalle y evidencia viva en LANDING secciones1/11. Agenda intacta.
+
+### Historial de la entrega anterior (reemplazada)
 
 - `docs/plataforma/LANDING.md` es la guia unica de la landing: estado, mapa de
   archivos, reglas de honestidad y de marca (resumen del RC5), lo aprendido de

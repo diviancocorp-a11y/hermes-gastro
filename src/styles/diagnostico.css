@@ -487,8 +487,8 @@
 
 
 /* El morph es solo de la portada: /diagnostico conserva su composicion. */
-.pl-hero-concreto .dg-embudo:not(.dg-cerrado) .dg-col,
-.pl-hero-concreto .dg-embudo:not(.dg-cerrado) .dg-res-cab {
+.pl-hero-tiempo .dg-embudo:not(.dg-cerrado) .dg-col,
+.pl-hero-tiempo .dg-embudo:not(.dg-cerrado) .dg-res-cab {
   --pc-suelo: var(--ds-color-zinc-950);
   --pc-suelo-2: var(--ds-color-zinc-900);
   --pc-suelo-3: var(--ds-color-zinc-800);
@@ -499,22 +499,22 @@
   background: var(--pc-suelo);
   color: var(--pc-tinta);
 }
-.pl-hero-concreto .dg-boton:not(:disabled):hover {
+.pl-hero-tiempo .dg-boton:not(:disabled):hover {
   background: var(--pc-producto-tinta-suave);
   color: var(--pc-producto);
 }
-.pl-hero-concreto .dg-embudo:not(.dg-cerrado) .dg-lado { background: var(--pc-suelo-2); }
-.pl-hero-concreto .dg-titulo:focus-visible { outline: 2px solid var(--pc-volt); outline-offset: var(--ds-space-2); }
+.pl-hero-tiempo .dg-embudo:not(.dg-cerrado) .dg-lado { background: var(--pc-suelo-2); }
+.pl-hero-tiempo .dg-titulo:focus-visible { outline: 2px solid var(--pc-volt); outline-offset: var(--ds-space-2); }
 /* El foco se asigna al montar. En la home el morph nativo se encarga de la
    entrada; el titulo y las opciones reales permanecen visibles desde ahi. */
-.pl-hero-concreto .dg-entra,
-.pl-hero-concreto .dg-entra .dg-opcion { animation: none; }
+.pl-hero-tiempo .dg-entra,
+.pl-hero-tiempo .dg-entra .dg-opcion { animation: none; }
 
 
 @media (prefers-reduced-motion: no-preference) {
-  .pl-hero-concreto .pl-hero-origen,
-  .pl-hero-concreto .dg-col,
-  .pl-hero-concreto .dg-res-cab { view-transition-name: dico-diagnostico; }
+  .pl-hero-tiempo .pl-hero-origen,
+  .pl-hero-tiempo .dg-col,
+  .pl-hero-tiempo .dg-res-cab { view-transition-name: dico-diagnostico; }
   ::view-transition-group(dico-diagnostico) { animation-duration: var(--pc-t-personaje); animation-timing-function: var(--pc-curva); }
   ::view-transition-old(dico-diagnostico) { animation-duration: var(--pc-t-rapido); }
   ::view-transition-new(dico-diagnostico) { animation-duration: var(--pc-t-estructura); }

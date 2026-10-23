@@ -9,6 +9,33 @@
 
 ## 1. Estado al 23/oct/2026
 
+### Replanteo del hero — decision posterior de Ricky
+
+Ricky **rechazo** el hero implementado en `b4084ad`: el concreto se veia raro,
+no se percibia profundidad y el desglose estiraba la computadora. La auditoria
+tecnica y el CI anterior no validaron esa direccion visual. No usar esa entrega
+como aprobacion del hero ni extenderla a otros apartados.
+
+Nueva instruccion: conservar la composicion de **Parallax Scrolling de Osmo**
+y adaptar colores/texto a Dico. El beneficio es **tiempo para vivir y compartir
+con los tuyos**. Se retiran concreto y dispositivos del hero, con el mismo
+diagnostico funcional. Se trabaja sobre el mismo PR #52, sin tocar agenda,
+precios ni produccion. Reemplazo implementado y auditado; actualizacion del
+preview en curso. El criterio visual final es de Ricky;
+seccion 11.
+
+Referencia original gratuita CC0 localizada y verificada en Webflow. Tres
+imagenes originales por capas ya guardadas en el repo, 192.604 bytes en total.
+Fuente, licencia, geometria medida y decisiones:
+`docs/marca/referencias/parallax-osmo.md`. No se instalan dependencias.
+
+Linea base de este reemplazo: 17 warnings / 6 advisory estaticos; inspector
+del hero rechazado 1 FAIL conocido de details cerrado y 3 WARN (hueso de marca,
+skip-link global preexistente y ausencia de video). Capturas en temp del sistema.
+
+Lo que sigue conserva el historial de la primera entrega y sus verificaciones;
+la decision anterior reemplaza su direccion de hero.
+
 ### Ejecucion iniciada — Codex, 23/oct
 
 - Ricky autorizo desarrollar el plan y avanzar con la implementacion.
@@ -1004,9 +1031,86 @@ Los objetos pertenecen al Storage publico de `wwwzdgprsooyjgkuyoav`; no se
 regeneraron logos ni se escribieron datos del tenant. Esto verifica los
 destinos configurados por sus marcas, no metricas de Instagram.
 
-Textura final: `public/brand/landing/concreto-hero.webp`, 1536x1024,
+Textura de la entrega rechazada (retirada del runtime y del repo al reemplazar
+el hero): `public/brand/landing/concreto-hero.webp`, 1536x1024,
 171.234 bytes. Generada con herramienta integrada ImageGen y convertida a
 WebP con `@jsquash/webp` ya instalado (calidad 72), sin dependencias nuevas.
 No es una captura ni una fotografia de un negocio cliente. Prompt exacto:
 
 > Use case: photorealistic-natural. Asset type: wide website background material texture, no user interface. Generate a subtly weathered architectural concrete wall and low concrete floor ledge, front-on almost orthographic with extremely slight natural perspective. Entire image is only matte smooth grey warm zinc concrete, fine pores and quiet mineral variation, soft natural light from upper left, subdued natural diagonal sunlight only on far right. Flat continuous uninterrupted upper 80% wall, low horizontal ledge at bottom 20%. Contemporary refined material photography, realistic and tactile, low contrast overall so dark text on left will stay clearly readable. Very wide 3:2 or landscape format. No objects, plants, devices, text, logos, typography, cracks, signs or strong seams. No vignette. This is a reusable background texture for Dico's landing page.
+
+## 11. Reemplazo del hero: tiempo y parallax original — 23/oct/2026
+
+Esta instruccion posterior de Ricky reemplaza la direccion del hero de la
+seccion 8. Los demas apartados acordados mantienen su plan. No hace falta
+volver a elegir referencias ni sumar otro efecto al que Ricky selecciono.
+
+### Argumento y contenido
+
+El visitante es el duenio que reparte su atencion entre pedidos, costos,
+stock, caja y equipo. El resultado deseado es recuperar tiempo para su vida.
+Dico lo ayuda reuniendo esa gestion en una plataforma; el diagnostico
+identifica por donde empezar segun el negocio. No se promete una cantidad
+de horas ahorradas ni que la app tome todas las decisiones por el duenio.
+
+1. Hero: **Mas tiempo para vivir.** La escena de paisaje y persona transmite
+   espacio personal; la bajada explica que Dico reune la operacion.
+2. La prueba operativa sigue en el cuerpo y las piezas reales del diagnostico,
+   no en una computadora que cambia de forma al desplegar una cuenta.
+3. Accion: **Quiero Dico**, con aclaracion del diagnostico sin email.
+
+### Construccion
+
+1. Usar las tres capas del original gratuito CC0, servidas desde el repo.
+   Mantener el orden cielo/montana/titulo/primer plano y la alineacion exacta
+   de los planos. No generar otra textura ni convertir la escena en cards.
+2. Trasladar el recorrido visible: velocidades claramente distintas, sin
+   interceptar scroll ni agregar dependencias. El rango debe percibirse en
+   el navegador, no solo existir como unos pocos pixeles en el codigo.
+3. Adaptar los colores con la marca original, accion dorada, volt funcional
+   y texto legible; conservar fotografia y composicion de la referencia.
+4. Mensaje y CTA visibles al entrar en movil y escritorio. La persona puede
+   quedar delante del plano del texto, pero no volver ilegible el titulo.
+   Mantener el encuadre sin deformar las imagenes al cambiar viewport.
+5. Conservar el diagnostico existente, el foco y sus respuestas. Abrirlo
+   retira la escena y sus animaciones; /diagnostico sigue independiente.
+
+### Verificacion antes de compartir
+
+- Comparar escena al inicio, durante y despues de scroll: registrar movimiento
+  de cada capa y comprobar diferencias grandes, continuidad y ausencia de
+  bandas vacias. Mirar las capturas de 390/768/1280/1440, no solo los numeros.
+- Movimiento reducido quieto, teclado/foco, touch targets, contraste sobre
+  fotografia, cambios de ancho/alto y CTA siempre accionable.
+- Auditor separado contra autoridad y referencia. Tests del ciclo de motion
+  si se modifica, regresiones del diagnostico, lint, tipos, build y gates.
+- Actualizar el PR #52 y el preview de la rama; no publicar a main. Registrar
+  aqui evidencia y limites reales. El estado de aprobado depende de Ricky.
+
+Fuentes y licencia: `docs/marca/referencias/parallax-osmo.md`.
+
+### Evidencia del reemplazo
+
+- Navegador Chrome local sobre `/landing`, no un harness: 1440x900,
+  768x1024, 390x844, 320x568 y 1280x600. Sin desborde horizontal,
+  imagenes cargadas con encuadre compartido y CTA visible al entrar.
+- A scroll 288 px: cielo 236,16 px; montana 187,20 px; titulo 95,04 px;
+  primer plano 34,56 px. Separacion cielo/frente 201,60 px. Capturas
+  iniciales y durante scroll revisadas; ninguna escala de dispositivos.
+- Cambio de preferencia a movimiento reducido: 0 animaciones del parallax,
+  transforms `none`. Abrir Quiero Dico retira la escena y enfoca la primera
+  pregunta en los cinco tamanios. Sin errores JavaScript en ese recorrido.
+- 61 tests pertinentes / 5 archivos pasan con Vitest 4.1.12, pool threads;
+  incluyen cuatro casos nuevos del ciclo de motion. Typecheck, build y
+  `check:diseno` pasan. Sin nuevas dependencias ni cambios de backend.
+- Auditor independiente: 0 hallazgos nuevos P0/P1/P2/P3. Registra un P2
+  heredado en Entrar (38,86x44 px frente a objetivo 44x44); no se amplio el
+  alcance al header global. No certifico AA numerico de toda la fotografia.
+- Medicion estatica antes/despues: 17 warnings / 6 advisory, delta 0.
+  Inspector real antes 1 FAIL/3 WARN, despues 0 FAIL/3 WARN: se retiro el
+  details que provocaba el falso positivo; no se presenta como mejora AA.
+  Warnings conservados: hueso del sistema de marca, skip-link global
+  preexistente a 4,2:1 y ausencia de video (se usa el parallax elegido).
+- Revalidado el ajuste de CTA de una linea en 320x568, sin desborde.
+  No se declara aprobado el diseno por estas comprobaciones tecnicas.
+  Preview se registra al terminar la verificacion del deploy.

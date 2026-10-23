@@ -1157,182 +1157,109 @@
 }
 
 
-/* Portada aprobada: concreto, tres dispositivos y una sola presencia Dico.
-   La UI sigue siendo HTML legible: las pantallas no son capturas inventadas. */
-.pl-hero-concreto {
-  --pc-producto: var(--ds-color-zinc-950);
-  --pc-producto-2: var(--ds-color-zinc-900);
-  --pc-producto-tinta: var(--ds-color-zinc-50);
-  --pc-producto-tinta-suave: var(--ds-color-zinc-400);
-  --pl-pieza-paso: var(--ds-color-zinc-800);
-  background-color: var(--pc-suelo-2);
-  background-image: url('/brand/landing/concreto-hero.webp');
-  background-size: cover;
-  background-position: center;
-}
-
-.pl-hero-concreto .dg-cerrado {
-  grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
-  min-height: min(940px, 110svh);
-  align-items: center;
-}
-
-.pl-hero-concreto .dg-cerrado .pl-split-col {
-  padding-top: calc(var(--ds-space-layout-16) * 2);
-  padding-bottom: var(--ds-space-layout-16);
-}
-
-.pl-hero-concreto .dg-cerrado .pl-split-lado {
-  background: none;
-  padding: calc(var(--ds-space-layout-16) + var(--ds-space-layout-12)) var(--pl-m) var(--ds-space-8) 0;
-}
-
-.pl-hero-concreto .pl-h1 {
-  font-family: var(--ds-font-soul);
-  font-size: clamp(38px, 4.5vw, 72px);
-  font-weight: 400;
-  letter-spacing: -0.04em;
-  line-height: 1.06;
-}
-
-.pl-hero-concreto .pl-bajada { max-width: 32ch; font-size: var(--ds-type-xl); line-height: 1.4; }
-.pl-hero-concreto .pl-acciones { margin-top: var(--ds-space-8); gap: var(--ds-space-4) var(--ds-space-6); }
-.pl-hero-origen { min-height: calc(var(--ds-control-height-touch) + var(--ds-space-2)); gap: var(--ds-space-layout-12); }
-.pl-hero-origen > span { font-size: var(--ds-type-xl); }
-.pl-hero-ayuda { margin-top: var(--ds-space-4); font-size: var(--ds-type-md); color: var(--pc-tinta); }
-
-.pl-escena {
-  --pl-escena-alto: 660px;
+/* Referencia Osmo: cielo, montana, titulo y caminante, en ese orden.
+   Un solo encuadre compartido conserva el registro de los tres recortes. */
+.pl-hero-tiempo { background: var(--pc-producto); }
+.pl-hero-tiempo .pl-cabecera { z-index: 8; color: var(--pc-producto-tinta); }
+.pl-hero-tiempo.pl-hero-diagnostico .pl-cabecera { color: var(--pc-tinta); }
+.pl-hero-tiempo .dg-cerrado {
   position: relative;
+  display: block;
+  height: 120svh;
+  min-height: 0;
   isolation: isolate;
-  width: 100%;
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  align-content: center;
-  align-items: start;
-  gap: var(--ds-space-8) var(--ds-space-6);
-  min-height: var(--pl-escena-alto);
-  perspective: 1600px;
-  font-size: var(--ds-type-md);
-  line-height: 1.4;
-}
-
-.pl-dispositivo {
-  position: relative;
-  width: 100%;
+  overflow: clip;
   color: var(--pc-producto-tinta);
-  background: var(--pc-producto);
-  border: 2px solid var(--pl-pieza-paso);
-  border-radius: var(--ds-radius-4);
-  box-shadow: var(--ds-shadow-lg); /* taste-skill-ignore: elevación física de los dispositivos de la referencia aprobada, no tarjetas de marketing. */
-  font-variant-numeric: tabular-nums;
 }
-
-.pl-laptop {
-  grid-column: 1 / -1;
-  width: 94%;
-  justify-self: end;
-  padding: var(--ds-space-2);
-  transform: rotateY(-7deg) rotateX(3deg);
-  transform-origin: right center;
-}
-.pl-laptop-pantalla { overflow: hidden; border-radius: var(--pc-radio-pieza); background: var(--pc-producto-2); }
-.pl-laptop .pl-pieza { padding: var(--ds-space-4); background: var(--pc-producto-2); }
-.pl-laptop .pl-pieza-titulo { font-size: var(--ds-type-lg); }
-.pl-laptop .pl-fila { padding-block: var(--ds-space-1); }
-.pl-laptop .pl-resultado-neto { margin-top: var(--ds-space-3); padding-top: var(--ds-space-3); }
-.pl-laptop .pl-resultado-neto-cifra { font-size: clamp(32px, 3vw, 44px); }
-.pl-dispositivo-cab { display: flex; justify-content: space-between; align-items: center; gap: var(--ds-space-2); padding: var(--ds-space-3) var(--ds-space-4); }
-.pl-dispositivo-cab h2, .pl-celular h2 { font-size: var(--ds-type-lg); font-weight: 600; }
-.pl-dispositivo-cab > span:first-child { color: var(--pc-producto-tinta-suave); }
-.pl-senal { color: var(--pc-producto-volt); }
-.pl-laptop-base {
+.pl-hero-tiempo .dg-cerrado .pl-split-col,
+.pl-hero-tiempo .dg-cerrado .pl-split-lado,
+.pl-hero-tiempo .pl-portada { display: contents; }
+.pl-hero-tiempo .dg-cerrado::after {
+  content: '';
   position: absolute;
-  top: 100%;
-  left: -3%;
-  width: 106%;
-  height: var(--ds-space-3);
-  background: var(--pl-pieza-paso);
-  border-radius: 0 0 var(--ds-radius-4) var(--ds-radius-4);
-  transform: skewX(-10deg);
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(transparent 42%, color-mix(in srgb, var(--pc-producto) 80%, transparent) 100%); /* taste-skill-ignore: scrim neutro de contraste sobre fotografia, excepcion de la skill. */
 }
-
-.pl-tablet {
-  margin-top: var(--ds-space-6);
-  padding: var(--ds-space-2);
-  background: color-mix(in srgb, var(--pc-producto) 96%, transparent);
-  backdrop-filter: blur(var(--ds-space-2)); /* taste-skill-ignore: cristal ahumado pedido expresamente por Ricky para esta pantalla de producto. */
-  transform: rotateY(5deg) rotateX(4deg);
+.pl-tiempo-escena { position: absolute; inset: 0; }
+.pl-tiempo-escena::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--pc-producto) 50%, transparent);
+  pointer-events: none;
 }
-.pl-escena-pedidos li { display: flex; align-items: center; justify-content: space-between; gap: var(--ds-space-2); padding: var(--ds-space-3) var(--ds-space-2); }
-.pl-escena-pedidos li + li { border-top: 1px solid var(--pl-pieza-paso); } /* taste-skill-ignore: separación de filas en el panel de pedidos real. */
-.pl-escena-pedidos small { display: block; color: var(--pc-producto-tinta-suave); font-size: var(--ds-type-sm); }
-.pl-escena-pedidos li > span:last-child { font-size: var(--ds-type-sm); }
-.pl-celular { padding: var(--ds-space-4) var(--ds-space-3); transform: rotateY(-6deg); }
-.pl-celular-camara { width: var(--ds-space-8); height: var(--ds-space-1); border-radius: var(--ds-radius-pill); margin: 0 auto var(--ds-space-4); background: var(--pl-pieza-paso); }
-.pl-celular h2 { margin-bottom: var(--ds-space-3); }
-.pl-celular img { width: 100%; aspect-ratio: 1.4; object-fit: cover; border-radius: var(--pc-radio-control); }
-.pl-celular p { margin-top: var(--ds-space-3); }
-.pl-celular .pl-senal { display: block; margin-top: var(--ds-space-1); font-size: var(--ds-type-sm); }
-.pl-escena-nota { grid-column: 1 / -1; font-size: var(--ds-type-sm); color: var(--pc-tinta); text-align: right; }
-
-@media (min-width: 1600px) {
-  .pl-hero-concreto .dg-cerrado { max-width: 1680px; margin-inline: auto; }
+.pl-anim .dg-cerrado .pl-split-lado > .pl-tiempo-escena { opacity: 1; animation: none; }
+.pl-tiempo-capa {
+  position: absolute;
+  top: -17.5%;
+  left: 0;
+  width: 100%;
+  height: 117.5%;
+  object-fit: cover;
+  object-position: center;
 }
-
-@media (max-width: 1199px) and (min-width: 1000px) {
-  .pl-escena { --pl-escena-alto: 720px; }
-  .pl-escena-pedidos li { flex-direction: column; align-items: start; gap: var(--ds-space-1); }
-  .pl-hero-concreto .pl-h1 { font-size: clamp(38px, 4.1vw, 50px); }
+.pl-tiempo-cielo { z-index: 1; }
+.pl-tiempo-montana { z-index: 2; }
+.pl-tiempo-frente { z-index: 4; }
+.pl-hero-tiempo .pl-h1 {
+  position: absolute;
+  z-index: 3;
+  top: 14svh;
+  left: var(--pl-m);
+  right: var(--pl-m);
+  font-family: var(--ds-font-soul);
+  font-size: clamp(72px, 10vw, 160px);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 0.94;
+  text-align: center;
 }
-
+.pl-hero-tiempo .pl-h1 > span { display: block; }
+.pl-tiempo-propuesta {
+  position: absolute;
+  z-index: 6;
+  top: 69svh;
+  left: var(--pl-m);
+  max-width: min(39ch, 42%);
+}
+.pl-hero-tiempo .pl-bajada { margin-top: 0; font-size: var(--ds-type-lg); line-height: 1.4; }
+.pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-6); gap: var(--ds-space-4) var(--ds-space-6); }
+.pl-hero-origen { min-height: calc(var(--ds-control-height-touch) + var(--ds-space-2)); gap: var(--ds-space-layout-12); white-space: nowrap; }
+.pl-hero-origen > span { font-size: var(--ds-type-xl); }
+.pl-hero-ayuda { margin-top: var(--ds-space-3); font-size: var(--ds-type-sm); }
+.pl-tiempo-credito {
+  position: absolute;
+  z-index: 6;
+  top: 104svh;
+  right: var(--pl-m);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ds-control-height-touch);
+  font-size: var(--ds-type-sm);
+  color: var(--pc-producto-tinta);
+  text-underline-offset: 0.24em;
+}
+.pl-hero-tiempo .dg-cerrado :focus-visible,
+.pl-hero-tiempo:not(.pl-hero-diagnostico) .pl-cabecera :focus-visible {
+  outline-color: var(--pc-producto-volt);
+}
 @media (max-width: 999px) {
-  .pl-hero-concreto .dg-cerrado { grid-template-columns: minmax(0, 1fr); min-height: 0; }
-  .pl-hero-concreto .dg-cerrado .pl-split-col { padding: calc(var(--ds-space-layout-16) + var(--ds-space-8)) var(--pl-m) var(--ds-space-8); }
-  .pl-hero-concreto .dg-cerrado .pl-split-lado { padding: 0 var(--pl-m) var(--ds-space-8); }
-  .pl-hero-concreto .pl-h1 { font-size: clamp(38px, 6.7vw, 64px); }
-  .pl-hero-concreto .pl-portada { max-width: none; }
-  .pl-hero-concreto .pl-bajada { max-width: 36ch; font-size: var(--ds-type-lg); margin-top: var(--ds-space-6); }
-  .pl-hero-concreto .pl-acciones { margin-top: var(--ds-space-6); }
-  .pl-escena { max-width: 640px; --pl-escena-alto: 660px; }
-  .pl-laptop { width: 96%; }
+  .pl-tiempo-capa { object-position: 32% center; }
+  .pl-hero-tiempo .pl-h1 { top: 18svh; font-size: clamp(64px, 11vw, 104px); }
+  .pl-tiempo-propuesta { top: 68svh; max-width: min(38ch, 55%); }
 }
-
 @media (max-width: 599px) {
-  .pl-hero-concreto .pl-h1 { font-size: clamp(32px, 9.2vw, 48px); }
-  .pl-hero-concreto .pl-acciones { gap: var(--ds-space-3) var(--ds-space-6); }
-  .pl-hero-origen { gap: var(--ds-space-6); }
-  .pl-hero-ayuda { max-width: 31ch; }
-  .pl-escena { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--ds-space-4) var(--ds-space-3); min-height: 0; perspective: none; }
-  .pl-dispositivo { transform: none; }
-  .pl-laptop { grid-column: 1 / -1; margin-bottom: var(--ds-space-3); }
-  .pl-laptop-base { left: 0; width: 100%; transform: none; }
-  .pl-laptop .pl-pieza { font-size: var(--ds-type-md); }
-  .pl-laptop .pl-fila { gap: var(--ds-space-3); }
-  .pl-laptop .pl-fila dt { max-width: 22ch; }
-  .pl-tablet { margin-top: 0; padding: var(--ds-space-1); }
-  .pl-tablet .pl-dispositivo-cab { padding-inline: var(--ds-space-2); }
-  .pl-escena-pedidos li { flex-direction: column; align-items: start; gap: var(--ds-space-1); padding: var(--ds-space-2); }
-  .pl-celular { padding: var(--ds-space-3) var(--ds-space-2); }
-  .pl-celular h2 { font-size: var(--ds-type-md); }
-  .pl-escena-nota { grid-column: 1 / -1; position: static; text-align: left; }
+  .pl-hero-tiempo .pl-h1 { top: 18svh; font-size: clamp(48px, 15vw, 80px); }
+  .pl-tiempo-capa { object-position: 36% center; }
+  .pl-tiempo-propuesta { top: 57svh; max-width: 62%; }
+  .pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-4); }
+  .pl-hero-tiempo .pl-acciones > .pl-enlace { display: none; }
+  .pl-hero-tiempo .pl-bajada { font-size: var(--ds-type-lg); }
+  .pl-tiempo-credito { top: 108svh; }
 }
-
-
-/* El desglose abierto empuja a las otras pantallas en su grilla. */
-.pl-hero-resultado { padding: var(--ds-space-4) var(--ds-space-6) var(--ds-space-6); }
-.pl-hero-resultado > h2 { font-size: var(--ds-type-xl); font-weight: 500; margin-bottom: var(--ds-space-6); }
-.pl-hero-resultado-etiqueta { font-size: var(--ds-type-md); color: var(--pc-producto-tinta-suave); }
-.pl-hero-resultado-cifra { color: var(--pc-producto-oro); font-weight: 700; font-size: clamp(44px, 4.5vw, 64px); letter-spacing: -0.04em; line-height: 1.1; margin-top: var(--ds-space-2); }
-.pl-hero-resultado-margen { color: var(--pc-producto-tinta-suave); margin-top: var(--ds-space-2); }
-.pl-hero-desglose { margin-top: var(--ds-space-4); }
-.pl-hero-desglose > summary { cursor: pointer; display: list-item; width: fit-content; min-height: var(--ds-control-height-touch); padding-block: var(--ds-space-3); color: var(--pc-producto-volt); }
-.pl-hero-desglose :focus-visible { outline-color: var(--pc-producto-volt); }
-.pl-hero-desglose .pl-pieza { padding-inline: 0; }
-@media (max-width: 599px) {
-  .pl-laptop { width: 100%; }
-  .pl-hero-resultado { padding: var(--ds-space-3); }
-  .pl-hero-resultado > h2 { font-size: var(--ds-type-lg); margin-bottom: var(--ds-space-4); }
-  .pl-hero-resultado-cifra { font-size: 44px; }
+@media (prefers-reduced-motion: reduce) {
+  .pl-tiempo-capa, .pl-hero-tiempo .pl-h1 { transform: none; }
 }

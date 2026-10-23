@@ -110,10 +110,10 @@ export default function PlatformLanding() {
     <div className="pl-root" ref={raizRef}>
       {/* div y no main: App.jsx ya envuelve todas las rutas en
           <main id="main-content">, y un main adentro de otro rompe el landmark. */}
-      <section className={`pl-hero pl-hero-concreto${diagnosticoAbierto ? ' pl-hero-diagnostico' : ''}`} aria-label="Dico">
+      <section className={`pl-hero pl-hero-tiempo${diagnosticoAbierto ? ' pl-hero-diagnostico' : ''}`} aria-label="Dico">
         <header className="pl-cabecera">
           <a className="pl-marca" href="/">
-            <img src={diagnosticoAbierto ? '/brand/dico/logo/dic-claro.png' : '/brand/dico/logo/dico-claro.png'} alt="Dico" width="1368" height="452" />
+            <img src={diagnosticoAbierto ? '/brand/dico/logo/dic-claro.png' : '/brand/dico/logo/dico-oscuro.png'} alt="Dico" width="1368" height="452" />
           </a>
           <a className="pl-enlace pl-cabecera-link" href="/entrar">Entrar</a>
         </header>
@@ -146,21 +146,23 @@ function Portada({ onAbrir }) {
   };
   return (
     <div className="pl-portada">
-      <h1 className="pl-h1 pl-lineas">
-        <span className="pl-linea"><span className="pl-linea-in">Todo tu negocio,</span></span>{' '}
-        <span className="pl-linea"><span className="pl-linea-in pl-linea-2">en un solo lugar.</span></span>
+      <h1 className="pl-h1" data-tiempo-capa="0.33">
+        <span>Más tiempo</span>{' '}
+        <span>para vivir.</span>
       </h1>
-      <p className="pl-bajada pl-sigue">
-        Ventas, stock, caja y resultados. Conectados en Dico para que puedas
-        ocuparte de tu negocio.
-      </p>
-      <div className="pl-acciones pl-sigue">
-        <button type="button" className="pl-boton pl-hero-origen" data-abrir onClick={alAbrir}>
-          Quiero Dico <span aria-hidden="true">↗</span>
-        </button>
-        <a className="pl-enlace" href="#que-hace">Qué hace Dico</a>
+      <div className="pl-tiempo-propuesta">
+        <p className="pl-bajada">
+          Dico reúne pedidos, stock, caja y resultados para que tengas más tiempo para vos y los tuyos.
+        </p>
+        <div className="pl-acciones">
+          <button type="button" className="pl-boton pl-hero-origen" data-abrir onClick={alAbrir}>
+            Quiero Dico <span aria-hidden="true">↗</span>
+          </button>
+          <a className="pl-enlace" href="#que-hace">Qué hace Dico</a>
+        </div>
+        <p className="pl-hero-ayuda">Empezamos con un diagnóstico breve, sin email.</p>
       </div>
-      <p className="pl-hero-ayuda">Empezamos con un diagnóstico breve, sin email.</p>
+      <a className="pl-tiempo-credito" href="https://webflow.com/made-in-webflow/website/osmo-parallax-image-layers" target="_blank" rel="noreferrer">Escena: Osmo · CC0</a>
     </div>
   );
 }

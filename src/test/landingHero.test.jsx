@@ -2,6 +2,7 @@ import { createElement, createRef } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Diagnostico from '../components/landing/Diagnostico';
+import EscenaHero from '../components/landing/EscenaHero';
 
 vi.mock('../lib/supabase', () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 vi.mock('../lib/analiticaPlataforma', () => ({ marcarEvento: vi.fn() }));
@@ -112,5 +113,106 @@ describe('hero y diagnóstico comparten un solo recorrido', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
     expect(screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveFocus();
     expect(push).toHaveBeenCalledOnce();
+  });
+});
+
+
+describe('parallax fotográfico', () => {
+  let preferencia;
+  let visibilidad;
+  let cuadro;
+  let animaciones;
+  let animar;
+  let desconectar;
+  let animateOriginal;
+
+  beforeEach(() => {
+    animateOriginal = Element.prototype.animate;
+    animaciones = [];
+    animar = vi.fn(() => {
+      const animacion = { pause: vi.fn(), cancel: vi.fn(), currentTime: 0 };
+      animaciones.push(animacion);
+      return animacion;
+    });
+    Element.prototype.animate = animar;
+    preferencia = { matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    vi.stubGlobal('matchMedia', vi.fn(() => preferencia));
+    desconectar = vi.fn();
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(callback) { visibilidad = callback; }
+      observe() {}
+      disconnect() { desconectar(); }
+    });
+    vi.stubGlobal('requestAnimationFrame', vi.fn((callback) => { cuadro = callback; return 7; }));
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+  });
+  afterEach(() => {
+    cleanup();
+    if (animateOriginal) Element.prototype.animate = animateOriginal;
+    else delete Element.prototype.animate;
+  });
+
+  const montarEscena = () => render(
+    <div className="dg-cerrado">
+      <h1 data-tiempo-capa="0.33">Más tiempo para vivir.</h1>
+      {createElement(EscenaHero)}
+    </div>,
+  );
+
+  it('sincroniza cuatro planos al scroll y al resize sin un loop permanente', () => {
+    const { container } = montarEscena();
+    const raiz = container.firstChild;
+    vi.spyOn(raiz, 'getBoundingClientRect').mockReturnValue({ top: -400 });
+    expect(animar).toHaveBeenCalledTimes(4);
+    expect(animar.mock.calls.map(([frames]) => frames[1].transform)).toEqual([
+      'translate3d(0, 990px, 0)', 'translate3d(0, 2460px, 0)',
+      'translate3d(0, 1950px, 0)', 'translate3d(0, 360px, 0)',
+    ]);
+    act(() => visibilidad([{ isIntersecting: true }]));
+    act(() => cuadro());
+    expect(animaciones.map((animacion) => animacion.currentTime)).toEqual([400, 400, 400, 400]);
+    expect(requestAnimationFrame).toHaveBeenCalledOnce();
+    fireEvent.resize(window);
+    expect(requestAnimationFrame).toHaveBeenCalledTimes(2);
+    act(() => cuadro());
+    expect(requestAnimationFrame).toHaveBeenCalledTimes(2);
+  });
+
+  it('fuera de pantalla cancela el cuadro pendiente y no agenda otros', () => {
+    montarEscena();
+    act(() => visibilidad([{ isIntersecting: true }]));
+    act(() => visibilidad([{ isIntersecting: false }]));
+    expect(cancelAnimationFrame).toHaveBeenCalledWith(7);
+    fireEvent.scroll(window);
+    fireEvent.resize(window);
+    expect(requestAnimationFrame).toHaveBeenCalledOnce();
+  });
+
+  it('movimiento reducido deja la composición quieta y responde al cambio de preferencia', () => {
+    preferencia.matches = true;
+    const { unmount } = montarEscena();
+    expect(animar).not.toHaveBeenCalled();
+    const cambiar = preferencia.addEventListener.mock.calls[0][1];
+    preferencia.matches = false;
+    act(() => cambiar());
+    expect(animar).toHaveBeenCalledTimes(4);
+    preferencia.matches = true;
+    act(() => cambiar());
+    animaciones.forEach((animacion) => expect(animacion.cancel).toHaveBeenCalledOnce());
+    unmount();
+    expect(preferencia.removeEventListener).toHaveBeenCalledWith('change', cambiar);
+  });
+
+  it('abrir el diagnóstico retira la escena, cancela animaciones y limpia listeners', () => {
+    const quitar = vi.spyOn(window, 'removeEventListener');
+    render(<Diagnostico modo="home" Portada={Portada} lado={createElement(EscenaHero)} />);
+    expect(screen.getByRole('figure')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
+    expect(screen.queryByRole('figure')).not.toBeInTheDocument();
+    expect(desconectar).toHaveBeenCalledOnce();
+    animaciones.forEach((animacion) => expect(animacion.cancel).toHaveBeenCalledOnce());
+    expect(quitar).toHaveBeenCalledWith('scroll', expect.any(Function));
+    expect(quitar).toHaveBeenCalledWith('resize', expect.any(Function));
+    expect(screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveFocus();
   });
 });
