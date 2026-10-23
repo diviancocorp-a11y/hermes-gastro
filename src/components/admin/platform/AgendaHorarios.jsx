@@ -15,10 +15,10 @@ import { agruparPorHora, diaLocal, etiquetaDelDia, sumarDias } from '../../../mo
 const DIAS_DE_BUSQUEDA = 14;
 
 export default function BuscaHorarios({
-  tenantId, serviceId, staffId = null, locationKind = 'local',
+  tenantId, serviceId, staffId = null, locationKind = 'local', travelMin = null,
   dia, onDia, elegido, onElegir, version = 0,
 }) {
-  const clave = [tenantId, serviceId, staffId, locationKind, dia, version].join('|');
+  const clave = [tenantId, serviceId, staffId, locationKind, travelMin, dia, version].join('|');
   const [estado, setEstado] = useState({ clave: null, error: '', grupos: [], proximo: null });
   const cargando = estado.clave !== clave;
 
@@ -26,18 +26,18 @@ export default function BuscaHorarios({
     if (!serviceId) return undefined;
     let vigente = true;
     (async () => {
-      const r = await fetchSlots(tenantId, serviceId, dia, dia, { staffId, locationKind });
+      const r = await fetchSlots(tenantId, serviceId, dia, dia, { staffId, locationKind, travelMin });
       if (!vigente) return;
       if (r.__error) { setEstado({ clave, error: r.message || 'No pudimos calcular los horarios.', grupos: [], proximo: null }); return; }
       const grupos = agruparPorHora(r.slots);
       if (grupos.length) { setEstado({ clave, error: '', grupos, proximo: null }); return; }
-      const sig = await fetchSlots(tenantId, serviceId, sumarDias(dia, 1), sumarDias(dia, DIAS_DE_BUSQUEDA), { staffId, locationKind });
+      const sig = await fetchSlots(tenantId, serviceId, sumarDias(dia, 1), sumarDias(dia, DIAS_DE_BUSQUEDA), { staffId, locationKind, travelMin });
       if (!vigente) return;
       const primero = sig.slots?.[0];
       setEstado({ clave, error: sig.__error ? sig.message : '', grupos: [], proximo: primero ? diaLocal(primero.starts_at) : null });
     })();
     return () => { vigente = false; };
-  }, [clave, tenantId, serviceId, staffId, locationKind, dia]);
+  }, [clave, tenantId, serviceId, staffId, locationKind, travelMin, dia]);
 
   return (
     <div className="ag-agd-sub">

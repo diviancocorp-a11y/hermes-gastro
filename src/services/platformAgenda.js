@@ -70,7 +70,7 @@ export async function fetchAgendaBase(tenantId) {
       .gte('ends_at', new Date().toISOString()).order('starts_at'),
     supabase.from('staff_services').select(COLS_STAFF_SERVICE).eq('tenant_id', tenantId),
     supabase.from('booking_settings').select(COLS_SETTINGS).eq('tenant_id', tenantId).maybeSingle(),
-    supabase.from('booking_zones').select(COLS_ZONE).eq('tenant_id', tenantId).eq('active', true).order('name'),
+    supabase.from('booking_zones').select(COLS_ZONE).eq('tenant_id', tenantId).order('name'),
   ]);
 
   const fallo = [staff, servicios, horarios, ausencias, relaciones, reglas, zonas].find(r => r.error);
@@ -84,7 +84,10 @@ export async function fetchAgendaBase(tenantId) {
     horarios: horarios.data || [],
     ausencias: ausencias.data || [],
     relaciones: relaciones.data || [],
-    zonas: zonas.data || [],
+    // Las activas se ofrecen al reservar; todas sirven para ponerle nombre a un
+    // turno viejo cuyo zona se dio de baja.
+    zonas: (zonas.data || []).filter(z => z.active),
+    zonasTodas: zonas.data || [],
     reglas: { ...REGLAS_POR_DEFECTO, ...(reglas.data || {}) },
     reglasGuardadas: !!reglas.data,
   };
@@ -260,8 +263,10 @@ export async function saveStaffServices(tenantId, staffId, serviceIds) {
 export async function saveZone(tenantId, { id, name, travel_min }) {
   const limpio = String(name || '').trim();
   if (!limpio) return { __error: 'sin_nombre', message: 'Poné el nombre de la zona.' };
+  // Number('') es 0: un campo vacio no puede guardarse como "cero minutos".
+  const vacio = travel_min === '' || travel_min == null || String(travel_min).trim() === '';
   const min = Math.round(Number(travel_min));
-  if (!Number.isFinite(min) || min < 0) {
+  if (vacio || !Number.isFinite(min) || min < 0) {
     return { __error: 'minutos', message: 'Poné los minutos de viaje (cero o más).' };
   }
   const fila = { name: limpio, travel_min: min };

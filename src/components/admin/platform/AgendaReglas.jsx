@@ -101,7 +101,8 @@ export default function AgendaReglas({ base, tenantId, onGuardado }) {
       </fieldset>
 
       {r.offers_home && (
-        <Numero id="ag-r-viaje" rotulo="Traslado fijo" unidad="minutos que se reservan antes de cada turno a domicilio"
+        <Numero id="ag-r-viaje" rotulo="Traslado por defecto" unidad="minutos que se reservan antes de cada turno a domicilio"
+          ayuda="Se usa si el turno a domicilio no tiene zona. Las zonas se cargan en la sección Zonas de domicilio"
           valor={r.travel_min} onCambio={set('travel_min')} />
       )}
 
