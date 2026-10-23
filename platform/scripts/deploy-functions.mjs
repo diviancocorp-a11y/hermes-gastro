@@ -62,6 +62,7 @@ const NO_VERIFY_JWT = new Set([
   "tg-webhook",     // la llama Telegram: secret_token derivado del token del bot
   "sentry-alerta",  // la llama Sentry: firma sentry-hook-signature con el Client Secret
   "gerente-webhook", // la llama Telegram: secret_token derivado del token + solo el chat de Ricky
+  "booking",        // reserva online de turnos: rate limit + tokens opacos + monto, horario y traslado salen de la base
 ]);
 
 function parseArgs(argv) {
