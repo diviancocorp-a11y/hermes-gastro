@@ -264,6 +264,18 @@ describe('Nuevo turno', () => {
     expect(within(dialogo).getByText(/no aparece porque no tienen duración|no aparece/)).toBeInTheDocument();
   });
 
+  it('un servicio en borrador tambien se agenda desde el panel', async () => {
+    // MiaEstudio carga sus servicios como borrador (active=false) hasta abrir la
+    // tienda: la agenda tiene que andar igual.
+    agenda.fetchAgendaBase.mockResolvedValue(baseCompleta({
+      servicios: [{ id: 'sv1', name: 'Soft gel', duration_min: 150, active: false }],
+    }));
+    montar();
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Nuevo turno' }))[0]);
+    const dialogo = await screen.findByRole('dialog');
+    expect(within(dialogo).getByRole('option', { name: /Soft gel/ })).toBeInTheDocument();
+  });
+
   it('muestra el error de la base si el hueco ya no esta', async () => {
     agenda.fetchSlots.mockResolvedValue({ ok: true, slots });
     sched.createAppointment.mockResolvedValue({ __error: 'db', message: 'Esa profesional ya tiene un turno en ese horario.' });
