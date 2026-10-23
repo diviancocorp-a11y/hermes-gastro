@@ -31,8 +31,8 @@
   Se mide el componente real en un harness local ignorado porque faltan
   las variables publicas de Supabase en esta worktree; usa conexion ficticia,
   no datos de produccion. La ruta real se comprobara en el preview.
-- Base de fase 1 preparada; fase 2 implementada y auditada, preview pendiente
-  de generar. Pasos y criterios en seccion 10. Cuerpo, planes y footer siguen
+- Base de fase 1 preparada; fase 2 implementada, auditada y subida a preview.
+  Pasos y criterios en seccion 10. Cuerpo, planes y footer siguen
   con la version anterior hasta fases 3/4. No se publico a produccion ni se
   modifico backend, agenda o precios.
 - Decision comercial posterior de Ricky: **Digital $14.999 por mes**. Reemplaza
@@ -80,8 +80,25 @@ Verificado en esta ejecucion:
   check:install-state paso en ambas (466 paquetes por lockfile). En adelante,
   comprobar realpath y este gate antes de instalar en una worktree.
 
-Siguiente: generar y comprobar preview/PR de esta fase; despues ejecutar
-fases 3/4 con los apartados acordados y la decision de precio Digital.
+Entrega de esta fase: [PR #52 en borrador](https://github.com/diviancocorp-a11y/hermes-gastro/pull/52),
+rama `landing/rediseno`, codigo `b4084ad`, integrado con main actual en
+`c9cf4dc`. [Preview del hero](https://hermes-platform-q0jlduys8-diviancocorp-a11ys-projects.vercel.app/landing)
+y [diagnostico independiente](https://hermes-platform-q0jlduys8-diviancocorp-a11ys-projects.vercel.app/diagnostico).
+Vercel `dpl_813zuemFeE6sorpp3Lp5BUZEMxbx` **READY**, SHA `c9cf4dc`,
+`version.json` respondio 200 con buildId `c9cf4dca`. Checks del PR para ese
+SHA: Lint, Typecheck, Unit Tests, Build, Security Audit y Playwright SUCCESS.
+Smoke de produccion SKIPPED, porque no se publico a main.
+
+El preview requiere sesion de Vercel. El navegador automatico llego al login;
+no se presenta como verificacion del runtime remoto. La revision automatica
+rechazo crear un enlace temporal y tambien el fetch protegido del conector
+porque pueden modificar/reutilizar bypass de acceso. No se cambio la
+proteccion ni se intento otra via equivalente. La comprobacion de SHA/READY
+y las pruebas locales siguen siendo validas; Ricky puede revisar con su sesion.
+
+Siguiente: revisar esta primera entrega y ejecutar fases 3/4 con los apartados
+acordados y la decision de precio Digital. El PR queda en borrador; no mergear
+como landing completa ni publicar mientras falten esas fases.
 
 La tabla siguiente conserva el estado historico de la guia en `99ffe83`;
 la verificacion de ejecucion anterior reemplaza su estado de Security Audit.
