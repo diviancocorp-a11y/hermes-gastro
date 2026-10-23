@@ -114,9 +114,7 @@ describe('tipoPorDefecto', () => {
 describe('modulos', () => {
   it('solo devuelve los implementados', () => {
     const ids = modulosDe('barber').map(m => m.id);
-    expect(ids).toEqual(['products', 'orders', 'stock', 'finanzas', 'ventas', 'caja', 'personal']);
-    // agenda esta declarada para barberia pero su calendario todavia no existe
-    expect(ids).not.toContain('agenda');
+    expect(ids).toEqual(['products', 'orders', 'agenda', 'stock', 'finanzas', 'ventas', 'caja', 'personal']);
   });
 
   it('el equipo NO necesita salon: una dark kitchen tambien tiene gente', () => {
@@ -175,7 +173,8 @@ describe('modulos', () => {
 
   it('tieneModulo responde por lo que existe hoy', () => {
     expect(tieneModulo('barber', 'products')).toBe(true);
-    expect(tieneModulo('barber', 'agenda')).toBe(false);
+    expect(tieneModulo('barber', 'agenda')).toBe(true);
+    // gastro no declara agenda en su lista de modulos
     expect(tieneModulo('gastro', 'agenda')).toBe(false);
   });
 
