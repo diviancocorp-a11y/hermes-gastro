@@ -52,7 +52,7 @@ import {
 } from '../lib/contactoPlataforma';
 import { desafiosDe } from '../lib/diagnostico';
 import Diagnostico from '../components/landing/Diagnostico';
-import { PiezaResultado } from '../components/landing/Piezas';
+import EscenaHero from '../components/landing/EscenaHero';
 import { CLIENTES, FOTOS } from '../components/landing/clientes';
 import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
@@ -96,6 +96,7 @@ function useMetaDeLaPlataforma() {
 export default function PlatformLanding() {
   useMetaDeLaPlataforma();
   const raizRef = useRef(null);
+  const [diagnosticoAbierto, setDiagnosticoAbierto] = useState(false);
   const abrirRef = useRef(null);
   useEntradas(raizRef);
 
@@ -109,10 +110,10 @@ export default function PlatformLanding() {
     <div className="pl-root" ref={raizRef}>
       {/* div y no main: App.jsx ya envuelve todas las rutas en
           <main id="main-content">, y un main adentro de otro rompe el landmark. */}
-      <section className="pl-hero" aria-label="Dico">
+      <section className={`pl-hero pl-hero-concreto${diagnosticoAbierto ? ' pl-hero-diagnostico' : ''}`} aria-label="Dico">
         <header className="pl-cabecera">
           <a className="pl-marca" href="/">
-            <img src="/brand/dico/logo/dico-claro.png" alt="Dico" width="1368" height="452" />
+            <img src={diagnosticoAbierto ? '/brand/dico/logo/dic-claro.png' : '/brand/dico/logo/dico-claro.png'} alt="Dico" width="1368" height="452" />
           </a>
           <a className="pl-enlace pl-cabecera-link" href="/entrar">Entrar</a>
         </header>
@@ -121,21 +122,8 @@ export default function PlatformLanding() {
           nivel="h1"
           abrirRef={abrirRef}
           Portada={Portada}
-          lado={(
-            <div className="pl-instrumento">
-              <div className="pl-instrumento-vivo">
-                <PiezaResultado />
-                <NotaDelInstrumento />
-              </div>
-              {/* Molde invisible del rubro mas alto (gastronomia, 7 filas):
-                  reserva el alto para que cambiar de rubro no mueva lo de
-                  abajo, sin estirar la pieza oscura. */}
-              <div className="pl-instrumento-molde" aria-hidden="true" inert>
-                <PiezaResultado rubro="gastronomia" />
-                <NotaDelInstrumento />
-              </div>
-            </div>
-          )}
+          onAbiertoChange={setDiagnosticoAbierto}
+          lado={<EscenaHero />}
         />
       </section>
       <QueHace />
@@ -146,16 +134,6 @@ export default function PlatformLanding() {
       <Cierre onDiagnostico={abrirDiagnostico} />
       <Pie />
     </div>
-  );
-}
-
-function NotaDelInstrumento() {
-  return (
-    <p className="pl-instrumento-nota">
-      Ejemplos: un viernes en gastronomía; un mes en comercio y servicios,
-      donde el día todavía no descuenta lo vendido. Elegí el rubro y mirá cómo
-      cierra la cuenta.
-    </p>
   );
 }
 
@@ -173,22 +151,16 @@ function Portada({ onAbrir }) {
         <span className="pl-linea"><span className="pl-linea-in pl-linea-2">en un solo lugar.</span></span>
       </h1>
       <p className="pl-bajada pl-sigue">
-        Ventas, costos, sueldos, stock, caja y pedidos: cada variable de tu
-        gastronomía, comercio o servicio, cubierta en Dico, con el resultado de
-        cada día. Lo que todavía no hace, lo desarrollamos con vos.
+        Ventas, stock, caja y resultados. Conectados en Dico para que puedas
+        ocuparte de tu negocio.
       </p>
-      <div className="pl-guia pl-sigue">
-        <img src="/brand/dico/dico-2d-question.png" alt="" width="256" height="256" />
-        <p className="pl-dico-dice">
-          Te hago unas pocas preguntas, sin email, y te digo por dónde empezar.
-        </p>
-      </div>
       <div className="pl-acciones pl-sigue">
-        <button type="button" className="pl-boton" data-abrir onClick={alAbrir}>
-          Hacer mi diagnóstico
+        <button type="button" className="pl-boton pl-hero-origen" data-abrir onClick={alAbrir}>
+          Quiero Dico <span aria-hidden="true">↗</span>
         </button>
         <a className="pl-enlace" href="#que-hace">Qué hace Dico</a>
       </div>
+      <p className="pl-hero-ayuda">Empezamos con un diagnóstico breve, sin email.</p>
     </div>
   );
 }
@@ -638,7 +610,7 @@ function Cierre({ onDiagnostico }) {
           Unas pocas preguntas, sin email, y sabés qué resolver primero en tu negocio.
         </p>
         <div className="pl-acciones">
-          <button type="button" className="pl-boton" onClick={onDiagnostico}>Hacer mi diagnóstico</button>
+          <button type="button" className="pl-boton" onClick={onDiagnostico}>Quiero Dico</button>
           <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
             Agendá una reunión
           </a>

@@ -18,6 +18,14 @@
   --ds-color-neutral-900: #1a1612;
   --ds-color-neutral-950: #0f0e0d;
 
+  /* Zinc/Carbon existente en machine-soul.css; primitivos compartidos para
+     piezas de producto publicas sin importar el scope administrativo. */
+  --ds-color-zinc-50: #FAFAFA;
+  --ds-color-zinc-400: #A1A1AA;
+  --ds-color-zinc-800: #27272A;
+  --ds-color-zinc-900: #18181B;
+  --ds-color-zinc-950: #09090B;
+
   --ds-color-brand-gold-300: #f0c868;
   --ds-color-brand-gold-500: #e0ac3c;
   --ds-color-brand-gold-600: #c4922e;
