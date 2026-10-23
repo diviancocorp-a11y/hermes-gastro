@@ -20,9 +20,12 @@ Nueva instruccion: conservar la composicion de **Parallax Scrolling de Osmo**
 y adaptar colores/texto a Dico. El beneficio es **tiempo para vivir y compartir
 con los tuyos**. Se retiran concreto y dispositivos del hero, con el mismo
 diagnostico funcional. Se trabaja sobre el mismo PR #52, sin tocar agenda,
-precios ni produccion. Reemplazo implementado y auditado; actualizacion del
-preview en curso. El criterio visual final es de Ricky;
-seccion 11.
+precios ni produccion. Reemplazo implementado, auditado y subido en `58afd2b`.
+Preview **READY** del mismo SHA:
+https://hermes-platform-gnwx2hljm-diviancocorp-a11ys-projects.vercel.app/landing
+CI del codigo: Lint, Typecheck, Unit Tests, Security Audit, Build y Playwright
+**SUCCESS**; smoke de produccion SKIPPED. El criterio visual final es de Ricky;
+seccion 11. El preview requiere sesion de Vercel; runtime remoto no verificado.
 
 Referencia original gratuita CC0 localizada y verificada en Webflow. Tres
 imagenes originales por capas ya guardadas en el repo, 192.604 bytes en total.
@@ -1113,4 +1116,8 @@ Fuentes y licencia: `docs/marca/referencias/parallax-osmo.md`.
   preexistente a 4,2:1 y ausencia de video (se usa el parallax elegido).
 - Revalidado el ajuste de CTA de una linea en 320x568, sin desborde.
   No se declara aprobado el diseno por estas comprobaciones tecnicas.
-  Preview se registra al terminar la verificacion del deploy.
+  Vercel confirma READY y SHA `58afd2b0c7692bf8b0b963c471eb5149e01e2054`.
+  Checks remotos del codigo en SUCCESS (smoke produccion SKIPPED).
+  Runtime remoto no verificado por proteccion de Vercel; no se intento
+  crear ni reutilizar un bypass. La validacion funcional de esta entrega
+  corresponde al navegador local con conexion ficticia, no a produccion.

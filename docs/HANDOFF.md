@@ -35,8 +35,13 @@
   inspector real pasa de1FAIL/3WARN a0FAIL/3WARN (se retira details que daba
   falso positivo). Los tres warnings preexistentes se explican en LANDING.
   CTA de una linea revalidado en320px, sin desborde.
-- Actualizacion del preview en curso. La aceptacion visual sigue pendiente
-  de Ricky; cuerpo y planes siguen pendientes de fases3/4.
+- Codigo `58afd2b`, PR #52 en borrador. Vercel READY del mismo SHA:
+  https://hermes-platform-gnwx2hljm-diviancocorp-a11ys-projects.vercel.app/landing
+  CI: Lint, Typecheck, Unit Tests, Security Audit, Build y Playwright SUCCESS;
+  smoke produccion SKIPPED. Runtime remoto no verificado por proteccion de
+  Vercel; no se intento bypass en esta entrega. Temporales propios retirados.
+- La aceptacion visual sigue pendiente de Ricky; cuerpo y planes siguen
+  pendientes de fases3/4. Este preview requiere su sesion de Vercel.
   Detalle y evidencia viva en LANDING secciones1/11. Agenda intacta.
 
 ### Historial de la entrega anterior (reemplazada)
