@@ -22,7 +22,7 @@ const COLS_RESOURCE =
 const COLS_APPT =
   'id, tenant_id, branch_id, staff_id, resource_id, service_id, customer_name, ' +
   'customer_phone, starts_at, ends_at, status, notes, source, party_size, ' +
-  'deposit_amount, deposit_status, cancellation_policy, location_kind, address, travel_min, ' +
+  'deposit_amount, deposit_status, cancellation_policy, location_kind, address, travel_min, zone_id, ' +
   'created_at';
 
 const MENSAJES = {
@@ -214,6 +214,7 @@ export async function createAppointment(tenantId, datos) {
     location_kind: datos.locationKind === 'home' ? 'home' : 'local',
     address: datos.locationKind === 'home' ? (datos.address?.trim() || null) : null,
     travel_min: datos.locationKind === 'home' ? Math.max(0, Number(datos.travelMin) || 0) : 0,
+    zone_id: datos.locationKind === 'home' ? (datos.zoneId || null) : null,
     client_request_id: claveDeIdempotencia('reserva', [
       tenantId, datos.resourceId || null, datos.staffId || null,
       datos.startsAt, datos.endsAt, datos.customerPhone || null,

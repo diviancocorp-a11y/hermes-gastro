@@ -240,13 +240,15 @@ export function faltaConfigurar(base) {
   if (!base) return [];
   const faltan = [];
   if (!base.staff.length) faltan.push({ id: 'staff', texto: 'Cargá quién atiende.' });
-  const sinDuracion = base.servicios.filter(s => !(s.duration_min > 0));
-  if (!base.servicios.length) {
+  // Un adicional no necesita duracion propia: no es una pendiente.
+  const principales = base.servicios.filter(s => !s.is_addon);
+  const sinDuracion = principales.filter(s => !(s.duration_min > 0));
+  if (!principales.length) {
     faltan.push({ id: 'servicios', texto: 'No hay servicios cargados.' });
   } else if (sinDuracion.length) {
     faltan.push({
       id: 'duraciones',
-      texto: sinDuracion.length === base.servicios.length
+      texto: sinDuracion.length === principales.length
         ? 'Ningún servicio tiene duración: sin eso no se pueden calcular horarios.'
         : `${sinDuracion.length} servicio(s) sin duración: ${sinDuracion.map(s => s.name).join(', ')}.`,
     });
@@ -259,11 +261,23 @@ export function faltaConfigurar(base) {
       texto: `Sin horario de trabajo: ${sinHorario.map(s => s.name).join(', ')}.`,
     });
   }
+  // A domicilio sin ninguna zona ni traslado fijo: los horarios no cuentan el viaje.
+  const r = base.reglas;
+  if (r?.offers_home && !(base.zonas || []).length && !(r.travel_min > 0)) {
+    faltan.push({
+      id: 'zonas',
+      texto: 'Atendés a domicilio pero no cargaste zonas: sin el tiempo de viaje, los turnos a domicilio quedan pegados.',
+    });
+  }
   return faltan;
 }
 
 /** Servicios con los que ya se puede reservar (tienen duracion). */
-export const reservables = (servicios = []) => servicios.filter(s => s.duration_min > 0);
+export const reservables = (servicios = []) =>
+  servicios.filter(s => s.duration_min > 0 && !s.is_addon);
+
+/** Los adicionales (Flores 3D) se suman a otro servicio: no se reservan solos. */
+export const adicionales = (servicios = []) => servicios.filter(s => s.is_addon);
 
 /** Profesionales que pueden hacer un servicio (todas si nadie lo tiene asignado). */
 export function quienHace(servicioId, staff = [], relaciones = []) {
