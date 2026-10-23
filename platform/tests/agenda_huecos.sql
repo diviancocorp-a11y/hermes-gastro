@@ -1,12 +1,12 @@
--- Test de la 0109: get_available_slots (huecos libres de la agenda).
+-- Test de la 0109 y la 0110: get_available_slots (huecos libres de la agenda).
 -- Correr cada vez que se toque la funcion, staff_schedules, staff_time_off,
 -- staff_services, booking_settings o las columnas nuevas de appointments.
 --
 -- No deja nada en la base: todo corre en un solo DO que TERMINA SIEMPRE EN
 -- ERROR a proposito, y el error deshace la siembra entera. El resultado viene
 -- en el mensaje del error:
---   'AGENDA_HUECOS 17/17 ok'                  -> verde
---   'AGENDA_HUECOS 15/17 ok | margen (...)'   -> lo que fallo
+--   'AGENDA_HUECOS 19/19 ok'                  -> verde
+--   'AGENDA_HUECOS 17/19 ok | margen (...)'   -> lo que fallo
 --
 -- Correr: pegar en el SQL editor, o via MCP execute_sql.
 -- Para probar la migracion ANTES de aplicarla, reemplazar la linea
@@ -153,6 +153,16 @@ begin
     from public.get_available_slots(t, svc, d, d, sa, 'local');
   total := total + 1; if got is distinct from '10:00,12:00,12:30,13:00' then
     fallas := fallas || format('local con domicilio prendido (%s)', got); end if;
+  /* 10b. El traslado de la zona pisa el fijo (0110): 0 min = como en el local
+         pero a domicilio; 60 min deja solo el ultimo hueco. */
+  select string_agg(to_char(starts_at at time zone tz, 'HH24:MI'), ',' order by starts_at) into got
+    from public.get_available_slots(t, svc, d, d, sa, 'home', 0);
+  total := total + 1; if got is distinct from '10:00,12:00,12:30,13:00' then
+    fallas := fallas || format('traslado de zona 0 (%s)', got); end if;
+  select string_agg(to_char(starts_at at time zone tz, 'HH24:MI'), ',' order by starts_at) into got
+    from public.get_available_slots(t, svc, d, d, sa, 'home', 60);
+  total := total + 1; if got is distinct from '13:00' then
+    fallas := fallas || format('traslado de zona 60 (%s)', got); end if;
   delete from public.appointments where staff_id = sa;
 
   /* 11. staff_services: el servicio solo lo hace B -> A no aparece. */
@@ -187,10 +197,10 @@ begin
   /* 14. Las tablas nuevas tienen RLS prendida. */
   select count(*) into n from pg_class c
    where c.relnamespace = 'public'::regnamespace
-     and c.relname in ('booking_settings', 'staff_schedules', 'staff_time_off', 'staff_services')
+     and c.relname in ('booking_settings', 'staff_schedules', 'staff_time_off', 'staff_services', 'booking_zones')
      and c.relrowsecurity;
-  total := total + 1; if n <> 4 then
-    fallas := fallas || format('RLS (%s de 4 tablas)', n); end if;
+  total := total + 1; if n <> 5 then
+    fallas := fallas || format('RLS (%s de 5 tablas)', n); end if;
 
   raise exception 'AGENDA_HUECOS %/% ok%', total - cardinality(fallas), total,
     case when cardinality(fallas) = 0 then '' else ' | ' || array_to_string(fallas, ' | ') end;
