@@ -121,6 +121,9 @@ const Users = lazyReload(() => import('../components/admin/platform/EquipoDelNeg
 // Salon: el plano del local (Etapa 6c). Lazy porque solo lo ve un negocio
 // fisico y arrastra su propio editor de arrastre.
 const MapaDeMesas = lazyReload(() => import('../components/admin/platform/MapaDeMesas'));
+// La agenda de servicios (turnos por profesional) trae su propio estado: se baja
+// solo cuando el negocio la usa.
+const AgendaPanel = lazyReload(() => import('../components/admin/platform/AgendaPanel'));
 // El alta de mesas viaja con el salon: quien no tiene local no lo baja nunca.
 const EditorDeMesa = lazyReload(() => import('../components/admin/platform/EditorDeMesa'));
 // La pantalla de cobro se abre desde Pedidos y desde el plano del salon. Va
@@ -177,6 +180,7 @@ const ICONOS = {
   mesas: MesasIcon,
   caja: CajaIcon,
   personal: PersonalIcon,
+  agenda: AgendaIcon,
 };
 
 const CLAVE_DICO_HISTORIAL = 'dico:intervenciones:v1';
@@ -1590,6 +1594,19 @@ export default function PlatformAdmin() {
               )}
             </Suspense>
           )}
+          {tab === 'agenda' && (
+            <Suspense fallback={<div style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando...</div>}>
+              <AgendaPanel
+                tenantId={tenantId}
+                negocio={tenant?.name}
+                branch={branch}
+                roles={roles}
+                currentUserId={session?.user?.id}
+                terminologia={terminologia(tenant?.vertical)}
+                onToast={msg}
+              />
+            </Suspense>
+          )}
           {tab === 'personal' && (
             <Suspense fallback={<div style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando...</div>}>
               <PersonalPanel
@@ -1767,6 +1784,16 @@ function BoxIcon() {
       <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
       <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+  );
+}
+function AgendaIcon() {
+  return (
+    <svg className="ag-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
     </svg>
   );
 }

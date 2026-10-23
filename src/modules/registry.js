@@ -37,7 +37,7 @@ export const MODULOS = {
   agenda: {
     id: 'agenda',
     label: 'Agenda',
-    implementado: false,     // tablas staff + appointments listas (migracion 0005)
+    implementado: true,      // Fase 2 de PLAN-AGENDA (migraciones 0005, 0045, 0109)
   },
   variants: {
     id: 'variants',
