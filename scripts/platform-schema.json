@@ -1,7 +1,7 @@
 {
   "_comment": "Snapshot del schema del EDIFICIO (proyecto Supabase hermes-platform, wwwzdgprsooyjgkuyoav) para validar columnas en .select(). El otro snapshot, supabase-schema.json, describe el schema LEGACY de los 3 tenants gastro viejos: son bases distintas y varias tablas (orders, order_items, coupons, profiles) existen en las dos con columnas diferentes. Que archivo se valida contra cual lo decide PLATFORM_PATHS en check-supabase-columns.mjs. Regenerar con: npm run schema:sync",
   "_refreshed_at": "2026-10-20",
-  "_migrations_through": "0108",
+  "_migrations_through": "0109",
   "tables": {
     "addresses": [
       "id",
@@ -32,7 +32,10 @@
       "deposit_amount",
       "deposit_status",
       "cancellation_policy",
-      "client_request_id"
+      "client_request_id",
+      "location_kind",
+      "address",
+      "travel_min"
     ],
     "audit_log": [
       "id",
@@ -43,6 +46,20 @@
       "entity_id",
       "cambios",
       "created_at"
+    ],
+    "booking_settings": [
+      "tenant_id",
+      "min_notice_min",
+      "max_advance_days",
+      "slot_step_min",
+      "cancel_window_hours",
+      "offers_local",
+      "offers_home",
+      "travel_min",
+      "deposit_mode",
+      "deposit_value",
+      "deposit_hold_min",
+      "updated_at"
     ],
     "branches": [
       "id",
@@ -552,7 +569,8 @@
       "station",
       "station_id",
       "is_archived",
-      "allergens"
+      "allergens",
+      "buffer_after_min"
     ],
     "profiles": [
       "id",
@@ -836,6 +854,21 @@
       "razon_social",
       "foto_perfil_path"
     ],
+    "staff_schedules": [
+      "id",
+      "tenant_id",
+      "staff_id",
+      "weekday",
+      "start_time",
+      "end_time",
+      "created_at"
+    ],
+    "staff_services": [
+      "tenant_id",
+      "staff_id",
+      "service_id",
+      "duration_min"
+    ],
     "staff_shifts": [
       "id",
       "tenant_id",
@@ -849,6 +882,15 @@
       "published_at",
       "swap_requested_by",
       "swap_taken_by",
+      "created_at"
+    ],
+    "staff_time_off": [
+      "id",
+      "tenant_id",
+      "staff_id",
+      "starts_at",
+      "ends_at",
+      "reason",
       "created_at"
     ],
     "store_credits": [
