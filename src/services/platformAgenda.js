@@ -62,7 +62,7 @@ export async function fetchAgendaBase(tenantId) {
   if (!tenantId) return null;
   const [staff, servicios, horarios, ausencias, relaciones, reglas] = await Promise.all([
     supabase.from('staff').select(COLS_STAFF).eq('tenant_id', tenantId).eq('active', true).order('name'),
-    supabase.from('products').select(COLS_SERVICE).eq('tenant_id', tenantId).eq('type', 'service').order('name'),
+    supabase.from('products').select(COLS_SERVICE).eq('tenant_id', tenantId).eq('type', 'service').eq('is_archived', false).order('name'),
     supabase.from('staff_schedules').select(COLS_SCHEDULE).eq('tenant_id', tenantId).order('weekday').order('start_time'),
     supabase.from('staff_time_off').select(COLS_TIMEOFF).eq('tenant_id', tenantId)
       .gte('ends_at', new Date().toISOString()).order('starts_at'),
