@@ -22,7 +22,8 @@ const COLS_RESOURCE =
 const COLS_APPT =
   'id, tenant_id, branch_id, staff_id, resource_id, service_id, customer_name, ' +
   'customer_phone, starts_at, ends_at, status, notes, source, party_size, ' +
-  'deposit_amount, deposit_status, cancellation_policy, created_at';
+  'deposit_amount, deposit_status, cancellation_policy, location_kind, address, travel_min, ' +
+  'created_at';
 
 const MENSAJES = {
   appt_no_overlap_resource: 'Esa mesa ya está reservada en ese horario.',
@@ -154,6 +155,24 @@ export async function fetchAppointments(tenantId, { branchId, desde, hasta } = {
 }
 
 /**
+ * Lo mismo que fetchAppointments pero sin esconder el error: la agenda tiene
+ * que poder distinguir "no hay turnos" de "no se pudo cargar".
+ * Devuelve { ok, turnos } o { __error, message }.
+ */
+export async function fetchAppointmentsOrError(tenantId, { branchId, desde, hasta } = {}) {
+  let q = supabase.from('appointments').select(COLS_APPT).eq('tenant_id', tenantId);
+  if (branchId) q = q.eq('branch_id', branchId);
+  if (desde) q = q.gte('starts_at', desde);
+  if (hasta) q = q.lte('starts_at', hasta);
+  const { data, error } = await q.order('starts_at');
+  if (error) {
+    console.error('fetchAppointmentsOrError:', error.message);
+    return { __error: 'db', message: 'No se pudieron cargar los turnos.' };
+  }
+  return { ok: true, turnos: data || [] };
+}
+
+/**
  * Que ofrecer para una franja. Viene ordenado por el que menos capacidad
  * desperdicia: sentar a 2 en la mesa de 8 un viernes es perder la mesa de 8.
  */
@@ -191,6 +210,10 @@ export async function createAppointment(tenantId, datos) {
     source: datos.source || 'panel',
     notes: datos.notes?.trim() || null,
     status: datos.status || 'booked',
+    // Agenda de servicios (0109): en el local o a domicilio, con su traslado.
+    location_kind: datos.locationKind === 'home' ? 'home' : 'local',
+    address: datos.locationKind === 'home' ? (datos.address?.trim() || null) : null,
+    travel_min: datos.locationKind === 'home' ? Math.max(0, Number(datos.travelMin) || 0) : 0,
     client_request_id: claveDeIdempotencia('reserva', [
       tenantId, datos.resourceId || null, datos.staffId || null,
       datos.startsAt, datos.endsAt, datos.customerPhone || null,
@@ -219,6 +242,23 @@ export async function setAppointmentStatus(tenantId, id, status) {
     .eq('id', id).eq('tenant_id', tenantId);
   if (error) {
     console.error('setAppointmentStatus:', error.message);
+    return { __error: 'db', message: traducir(error.message) };
+  }
+  return { ok: true };
+}
+
+/**
+ * Mover un turno a otro horario o a otra profesional. Si el hueco esta ocupado
+ * el EXCLUDE de la base rebota y el mensaje sale traducido.
+ */
+export async function rescheduleAppointment(tenantId, id, { startsAt, endsAt, staffId }) {
+  const patch = { starts_at: startsAt, ends_at: endsAt };
+  if (staffId) patch.staff_id = staffId;
+  const { error } = await supabase
+    .from('appointments').update(patch)
+    .eq('id', id).eq('tenant_id', tenantId);
+  if (error) {
+    console.error('rescheduleAppointment:', error.message);
     return { __error: 'db', message: traducir(error.message) };
   }
   return { ok: true };
