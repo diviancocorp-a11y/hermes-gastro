@@ -35,11 +35,15 @@
 - Sin paquetes/backend nuevos. El unico recurso final nuevo fuera de
   src/docs/platform/scripts es zinc-grain.svg, necesario para servir el grano;
   no se modificaron los masters ni los assets del pet. Agenda intacta.
-- Codigo `3eef553` subido al PR#52 en borrador; preview READY:
-  https://hermes-platform-el8761na7-diviancocorp-a11ys-projects.vercel.app/landing#que-hace
+- Codigo `3eef553` y parche `3a53c9d` subidos al PR#52 en borrador; preview READY:
+  https://hermes-platform-byaa0i2ua-diviancocorp-a11ys-projects.vercel.app/landing#que-hace
   El CI encontro alertas nuevas de undici via jsdom: parche solo del lockfile
   7.30.0 -> 7.30.1, sin dependencias nuevas. Audit local 0 vulnerabilidades e
-  instalacion coherente con 466 paquetes; CI del parche por verificar.
+  instalacion coherente con 466 paquetes. CI de `3a53c9d` SUCCESS: Lint,
+  Typecheck, Unit Tests, Security Audit, Build (run40105727258), tambien
+  Playwright (run40105727150); smoke produccion SKIPPED. 78 pruebas pertinentes
+  tambien pasan con el parche. Chrome local con backend ficticio; preview
+  requiere sesion Vercel. No se mergeo ni se publico en main.
   Ricky revisa apartado2 antes de seguir. Misma rama landing/rediseno. Fases3/4 aun
   pendientes: rubros, logos/Instagram, pasos, planes, FAQ/footer. Digital14999
   sigue documentado, sin aplicar aqui. LANDINGseccion1 es el estado vivo.

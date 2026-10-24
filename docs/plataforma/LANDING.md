@@ -16,8 +16,8 @@ con la burbuja **dorada** y confirma el titulo **Tu tiempo vuelve a ser tuyo.**
 La burbuja debe ser el origen de la expansion por la pantalla al diagnostico
 existente. Autoriza continuar el apartado 2, con Dico central y fondo negro
 zinc continuo. Boton, copy y apartado 2 implementados y auditados; preview
-READY de `3eef553` en el mismo PR #52. Se esta verificando el parche de
-seguridad transitorio indicado al final de esta entrega.
+READY de `3a53c9d` en el mismo PR #52. CI del codigo y Playwright SUCCESS,
+incluido el parche de seguridad transitorio indicado al final de esta entrega.
 
 Ricky vio el preview de `58afd2b` y **le gusta el hero con parallax**. Pide
 ajustar el boton, la bajada y evaluar tres titulos antes de seguir:
@@ -113,8 +113,8 @@ Verificado localmente:
   ausencia de video (la escena elegida es parallax). No se ocultan ni cambian
   detectores para conseguir ese resultado.
 
-Preview del codigo `3eef553`, confirmado READY en Vercel:
-https://hermes-platform-el8761na7-diviancocorp-a11ys-projects.vercel.app/landing#que-hace
+Preview final del codigo `3a53c9d`, confirmado READY en Vercel:
+https://hermes-platform-byaa0i2ua-diviancocorp-a11ys-projects.vercel.app/landing#que-hace
 
 El CI de esa entrega detecto tres avisos de undici (dependencia de desarrollo
 de jsdom), publicados en GitHub Advisory Database el 23/oct. Se actualiza solo
@@ -123,7 +123,14 @@ paquetes nuevos ni cambios a package.json. `npm audit --audit-level=high` da
 0 vulnerabilidades y check:install-state confirma 466 paquetes. Referencia:
 https://github.com/advisories/GHSA-xjj6-f33q-929c
 
-Pendiente inmediato: verificar el CI del parche y su preview. La validacion
+CI de `3a53c9d`: Lint, Typecheck, Unit Tests, Security Audit y Build SUCCESS
+(run 40105727258); Playwright chromium SUCCESS (run 40105727150). Smoke de
+produccion SKIPPED por ser PR. Las 78 pruebas pertinentes tambien pasan con
+el parche instalado; no cambia la UI auditada en `3eef553`. El preview requiere
+la sesion de Vercel de Ricky; validacion funcional en Chrome local con backend
+ficticio. No se accedio sorteando la proteccion ni se publico en main.
+
+La validacion
 visual del apartado 2 sigue pendiente de Ricky. Rubros, logos, pasos, planes,
 FAQ y footer conservan por ahora la version anterior; no se cierra toda fase 3.
 
