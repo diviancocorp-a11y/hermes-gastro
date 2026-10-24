@@ -487,8 +487,8 @@
 
 
 /* El morph es solo de la portada: /diagnostico conserva su composicion. */
-.pl-hero-tiempo .dg-embudo:not(.dg-cerrado) .dg-col,
-.pl-hero-tiempo .dg-embudo:not(.dg-cerrado) .dg-res-cab {
+.pl-hero-tiempo .dg-embudo:not(.dg-cerrado) {
+  min-height: 100svh;
   --pc-suelo: var(--ds-color-zinc-950);
   --pc-suelo-2: var(--ds-color-zinc-900);
   --pc-suelo-3: var(--ds-color-zinc-800);
@@ -512,13 +512,38 @@
 
 
 @media (prefers-reduced-motion: no-preference) {
-  .pl-hero-tiempo .pl-hero-origen,
-  .pl-hero-tiempo .dg-col,
-  .pl-hero-tiempo .dg-res-cab { view-transition-name: dico-diagnostico; }
+  .pl-hero-tiempo .pl-hero-burbuja,
+  .pl-hero-tiempo .dg-embudo:not(.dg-cerrado) { view-transition-name: dico-diagnostico; }
   ::view-transition-group(dico-diagnostico) { animation-duration: var(--pc-t-personaje); animation-timing-function: var(--pc-curva); }
-  ::view-transition-old(dico-diagnostico) { animation-duration: var(--pc-t-rapido); }
-  ::view-transition-new(dico-diagnostico) { animation-duration: var(--pc-t-estructura); }
+  ::view-transition-old(dico-diagnostico) {
+    height: 100%;
+    object-fit: none;
+    object-position: center;
+    animation: dg-burbuja-sale var(--pc-t-rapido) var(--pc-curva) both;
+  }
+  ::view-transition-new(dico-diagnostico) {
+    height: 100%;
+    object-fit: none;
+    object-position: center top;
+    animation: dg-panel-entra var(--pc-t-personaje) var(--pc-curva) both;
+  }
+  ::view-transition-image-pair(dico-diagnostico) {
+    overflow: clip;
+    isolation: isolate;
+    animation: dg-expansion-forma var(--pc-t-personaje) var(--pc-curva) both;
+  }
   ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
 }
 
-.pl-hero-diagnostico .pl-cabecera { background: var(--pc-suelo); }
+.pl-hero-diagnostico .pl-cabecera { background: var(--ds-color-zinc-950); color: var(--ds-color-zinc-50); }
+@keyframes dg-burbuja-sale { from { opacity: 1; } to { opacity: 0; } }
+@keyframes dg-panel-entra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dg-expansion-forma {
+  from { border-radius: var(--ds-radius-pill); background: var(--ds-color-brand-gold-500); }
+  to { border-radius: 0; background: var(--ds-color-zinc-950); }
+}
+@media (max-width: 699px) and (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(dico-diagnostico),
+  ::view-transition-image-pair(dico-diagnostico),
+  ::view-transition-new(dico-diagnostico) { animation-duration: var(--pc-t-estructura); }
+}

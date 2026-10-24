@@ -11,6 +11,13 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Decision posterior confirmada:** Ricky elige el boton **Marfil en movimiento**
+con la burbuja **dorada** y confirma el titulo **Tu tiempo vuelve a ser tuyo.**
+La burbuja debe ser el origen de la expansion por la pantalla al diagnostico
+existente. Autoriza continuar el apartado 2, con Dico central y fondo negro
+zinc continuo. Boton, copy y apartado 2 implementados y auditados; preview
+actualizado en preparacion, en el mismo PR #52.
+
 Ricky vio el preview de `58afd2b` y **le gusta el hero con parallax**. Pide
 ajustar el boton, la bajada y evaluar tres titulos antes de seguir:
 
@@ -30,8 +37,9 @@ ajustar el boton, la bajada y evaluar tres titulos antes de seguir:
   un corte a una superficie clara ni un nuevo fondo de concreto. Conservar
   esta continuidad al desarrollar el circuito de la fase 3.
 
-La propuesta se revisa en el chat; la landing del preview aun conserva el
-boton, titulo y bajada anteriores. No se construye el cuerpo en este paso.
+La comparacion de botones anterior queda como historial de la eleccion. El
+codigo actual ya aplica la capsula marfil con burbuja dorada y el titulo
+confirmado; el resto de las alternativas no se implementa.
 
 Verificacion de la propuesta aislada: Chrome en 320 y 736 px, ambos botones
 202,61x56 px, sin desborde; carrusel Anterior/Siguiente operativo, Overused
@@ -41,6 +49,72 @@ la gira 45 grados; movimiento reducido deja transforms en none. Lint estetico
 un ajuste de rol (foco en oro), sin pendientes. No son mediciones de conversion
 ni cambios publicados del hero. La base de src/index.html conserva 17 warnings
 y 6 advisory y no se modifico en esta revision.
+
+### Construccion del apartado 2 — 24/oct
+
+Alcance autorizado: aplicar la capsula marfil/burbuja dorada, el titulo elegido
+y la bajada de gestion; construir **Como se conecta tu negocio**, sin avanzar
+los otros bloques de la fase 3. La expansion nace de la burbuja y ocupa el
+ancho de la pantalla para mostrar el mismo diagnostico, en el flujo de la web.
+
+Linea base inmediatamente anterior: detector **17 warnings / 6 advisory**;
+inspector sobre `/landing` **0 FAIL / 3 WARN** (hueso de marca, skip-link
+preexistente y ausencia de video). Capturas en 1440/768/390 antes de editar.
+Se conserva el flujo `/diseno`, estetica unica `design-taste-frontend`,
+constructor y auditor independientes. Ninguna dependencia nueva.
+
+La demostracion es **gastronomia de ejemplo**, no datos de un tenant:
+catalogo/pedido recibido; pedido completado con descuento de harina segun
+receta y cobro registrado como hecho separado; resultado del dia completo.
+El neto de $669.000 sale de ventas $2.168.000 menos $1.499.000 de descuentos,
+costo, nomina, merma y gastos, coherente con `Piezas.jsx`; no es la ganancia
+de un solo pedido. Dico central representa la plataforma, no una IA autonoma.
+
+Se reutiliza el pet actual con `DicoPhysical` y su manifiesto, sin cuerpos ni
+poses nuevas. El grano zinc es un SVG estatico propio,
+`public/brand/landing/zinc-grain.svg`, no una fotografia ni la textura de
+concreto retirada. La opacidad debe ser baja para conservar lectura y union
+con el suelo del hero. No se modifican los assets originales de Dico.
+
+Implementado en `CircuitoNegocio.jsx` y `circuito-negocio.css`. En movil,
+selector antes del diagrama y explicacion despues: mantiene el control cerca
+de la escena. En escritorio bajo se compacta el circuito sin reducir los
+textos por debajo de 15 px; conserva sticky y la cifra visible. Las conexiones
+usan anclas medidas con ResizeObserver, sin coordenadas fijas que se desalineen.
+
+Verificado localmente:
+
+| Comprobacion | Antes | Despues |
+|---|---:|---:|
+| Detector estatico warnings/advisory | 17/6 | 17/6 |
+| Inspector real 1440/768/390 | 0 FAIL / 3 WARN | 0 FAIL / 3 WARN |
+| Tests pertinentes (pool threads, maxWorkers 2) | — | 78/78, 7 archivos |
+| Hallazgos nuevos del auditor al cierre | — | 0 P0/P1/P2/P3 |
+
+- Chrome 320x568, 390x844, 768x1024, 1280x600 y 1440x900: sin desborde,
+  titulo de dos lineas y CTA visible al entrar. Estado, stock y cobro correctos
+  al elegir los tres momentos. Scroll nativo tambien recorre los tres estados.
+- Corregido P2 de escritorio bajo: Resultado paso de 2,38 % del diagrama
+  visible al 100 %. Teclado centra el paso, conserva foco visible y cancela
+  el cuadro pendiente de scroll para no sobrescribir la eleccion manual.
+- Burbuja origen de 40x40; el destino ocupa todo el ancho. Abre una sola
+  transicion, enfoca la pregunta y retira la escena y el pet del circuito.
+  Minimo de alto 100svh en home; `/diagnostico` conserva su entrada propia.
+  Medicion final del panel: 390x844 y 768x1024 exactos en esos viewports.
+- Movimiento reducido desde carga: conexiones sin animacion ni transicion,
+  0 animaciones corriendo en hero/circuito y 0 llamadas a View Transition
+  al abrir; se mantiene el foco en la pregunta. Scroll de escritorio
+  comprobado: estados 1 -> 2 -> 3.
+- Fuente y personaje existentes, contraste de textos del circuito >=6,91:1;
+  no nuevos cuerpos ni poses. Ni loops del pet ni pulsos continuos del beam.
+- ESLint JSX sin warnings, typecheck y build pasan. Advertencias del inspector
+  conservadas: hueso/marfil de marca, skip-link global preexistente 4,2:1 y
+  ausencia de video (la escena elegida es parallax). No se ocultan ni cambian
+  detectores para conseguir ese resultado.
+
+Pendiente inmediato: subir al mismo PR #52 y verificar deploy/CI. La validacion
+visual del apartado 2 sigue pendiente de Ricky. Rubros, logos, pasos, planes,
+FAQ y footer conservan por ahora la version anterior; no se cierra toda fase 3.
 
 ### Replanteo del hero — decision posterior de Ricky
 
@@ -651,7 +725,8 @@ escribe con tildes. Un solo bloque, no dos demostraciones consecutivas.
   ventas y costos disponibles, sin insinuar que todos se generan por ese
   pedido. Dia en gastronomia, mes donde corresponda; ejemplos coherentes con
   `Piezas.jsx` y funciones verificadas. Rotular el rubro de la demostracion.
-- Concreto como fondo continuo; piezas zinc/carbono y cristal ahumado puntual.
+- Fondo negro zinc continuo (decision posterior del 24/oct, reemplaza el
+  concreto de la propuesta inicial); piezas zinc/carbono.
   Dico aporta el dorado central; volt marca el camino activo. El resultado
   puede enfatizar su cifra en dorado, sin sumar botones principales dentro
   de cada pieza ni pulsos permanentes en todas las conexiones.

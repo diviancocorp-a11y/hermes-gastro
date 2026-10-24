@@ -50,9 +50,9 @@ import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import {
   AGENDA_HORARIO, AGENDA_URL, WHATSAPP_HORARIO, WHATSAPP_URL, WHATSAPP_VISIBLE,
 } from '../lib/contactoPlataforma';
-import { desafiosDe } from '../lib/diagnostico';
 import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
+import CircuitoNegocio from '../components/landing/CircuitoNegocio';
 import { CLIENTES, FOTOS } from '../components/landing/clientes';
 import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
@@ -113,7 +113,7 @@ export default function PlatformLanding() {
       <section className={`pl-hero pl-hero-tiempo${diagnosticoAbierto ? ' pl-hero-diagnostico' : ''}`} aria-label="Dico">
         <header className="pl-cabecera">
           <a className="pl-marca" href="/">
-            <img src={diagnosticoAbierto ? '/brand/dico/logo/dic-claro.png' : '/brand/dico/logo/dico-oscuro.png'} alt="Dico" width="1368" height="452" />
+            <img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
           </a>
           <a className="pl-enlace pl-cabecera-link" href="/entrar">Entrar</a>
         </header>
@@ -126,7 +126,7 @@ export default function PlatformLanding() {
           lado={<EscenaHero />}
         />
       </section>
-      <QueHace />
+      <CircuitoNegocio ocultarDico={diagnosticoAbierto} />
       <Rubros />
       <Clientes />
       <Planes onDiagnostico={abrirDiagnostico} />
@@ -147,16 +147,16 @@ function Portada({ onAbrir }) {
   return (
     <div className="pl-portada">
       <h1 className="pl-h1" data-tiempo-capa="0.33">
-        <span>Más tiempo</span>{' '}
-        <span>para vivir.</span>
+        <span>Tu tiempo vuelve</span>{' '}
+        <span>a ser tuyo.</span>
       </h1>
       <div className="pl-tiempo-propuesta">
         <p className="pl-bajada">
-          Dico reúne pedidos, stock, caja y resultados para que tengas más tiempo para vos y los tuyos.
+          Dico simplifica la gestión de tu negocio para que tengas más tiempo para vos y los tuyos.
         </p>
         <div className="pl-acciones">
           <button type="button" className="pl-boton pl-hero-origen" data-abrir onClick={alAbrir}>
-            Quiero Dico <span aria-hidden="true">↗</span>
+            <span className="pl-hero-etiqueta">Quiero Dico</span> <span className="pl-hero-burbuja" aria-hidden="true">↗</span>
           </button>
           <a className="pl-enlace" href="#que-hace">Qué hace Dico</a>
         </div>
@@ -164,144 +164,6 @@ function Portada({ onAbrir }) {
       </div>
       <a className="pl-tiempo-credito" href="https://webflow.com/made-in-webflow/website/osmo-parallax-image-layers" target="_blank" rel="noreferrer">Escena: Osmo · CC0</a>
     </div>
-  );
-}
-
-/* ─────────────── Que hace Dico: tu dolor y la parte que lo resuelve ─────────────── */
-
-// Cada nota es un dolor tal como lo dice el duenio (la lib del diagnostico)
-// y, al lado, la parte del panel de Dico que lo resuelve. El panel es de un
-// restaurante de ejemplo; las cifras cierran con las de Piezas.jsx.
-const dolor = (vertical, id) => desafiosDe(vertical).find((d) => d.id === id)?.label;
-
-const PARTES = [
-  {
-    id: 'pedidos',
-    dolor: dolor('gastronomia', 'pedidos'),
-    nota: 'Salón, mostrador y catálogo online entran al mismo panel, con su estado y su cobro.',
-    titulo: 'Pedidos de hoy',
-    meta: '48 pedidos',
-    filas: [['Salón · mesa 6', '$38.400'], ['Mostrador', '$12.900'], ['Catálogo online', '$27.600']],
-  },
-  {
-    id: 'costos',
-    dolor: dolor('gastronomia', 'costos'),
-    nota: 'Cargás la receta una vez. Cuando sube un insumo, Dico recalcula el plato y te dice cuánto te deja.',
-    titulo: 'Bife de chorizo con papas',
-    meta: 'Precio $18.000',
-    filas: [['Insumos', '$5.100'], ['Merma y gastos · 15 %', '$765']],
-    cifra: ['Te deja', '$12.135'],
-  },
-  {
-    id: 'costo_laboral',
-    dolor: dolor('gastronomia', 'costo_laboral'),
-    nota: 'El equipo ficha entrada y salida, y ves qué parte de la venta de cada día se fue en sueldos.',
-    titulo: 'Martes 13',
-    meta: '24 h fichadas',
-    filas: [['Ventas del día', '$490.000'], ['Personal', '$186.000']],
-    cifra: ['Personal sobre venta', '38 %'],
-  },
-  {
-    id: 'stock',
-    dolor: dolor('comercio', 'stock'),
-    nota: 'Cada venta descuenta los insumos de su receta. Lo que queda debajo del mínimo te lo marca el panel.',
-    titulo: 'Stock',
-    meta: 'Compras y ventas, según la receta',
-    filas: [['Harina 000', '6 kg · mínimo 10'], ['Muzzarella', '8,4 kg · mínimo 5']],
-  },
-  {
-    id: 'mermas_caja',
-    dolor: dolor('gastronomia', 'mermas_caja'),
-    nota: 'La merma queda asentada y el arqueo compara lo declarado con lo registrado, medio por medio.',
-    titulo: 'Arqueo del viernes',
-    meta: 'Efectivo',
-    filas: [['Declarado', '$412.000'], ['Registrado', '$418.500']],
-    cifra: ['Diferencia', '−$6.500'],
-  },
-  {
-    id: 'rentabilidad',
-    dolor: dolor('gastronomia', 'rentabilidad'),
-    nota: 'Al terminar el día, la ganancia neta de esa noche se calcula sola: ventas, el costo de lo vendido según tus recetas, la nómina fichada, la merma y los gastos. Por sucursal.',
-    titulo: 'Resultado del viernes',
-    meta: '30,9 % de la venta',
-    filas: [['Ventas', '$2.168.000'], ['Descuentos, costo, nómina, merma y gastos', '−$1.499.000']],
-    cifra: ['Ganancia neta', '$669.000'],
-  },
-];
-
-// Oro para lo que es valor (lo que te deja, el resultado); error para la
-// diferencia de caja; el porcentaje de personal, en tinta: no hay regla que
-// lo marque como alerta.
-const TONO_CIFRA = { costos: 'pl-oro', rentabilidad: 'pl-oro', mermas_caja: 'pl-error' };
-
-function QueHace() {
-  const [activa, setActiva] = useState(null);
-
-  return (
-    <section className="pl-seccion pl-que-hace" id="que-hace" aria-labelledby="pl-que-hace-titulo">
-      <span className="pl-ancla" id="pilares" aria-hidden="true" />
-      <span className="pl-ancla" id="flujo" aria-hidden="true" />
-      <div className="pl-plancha">
-        <h2 id="pl-que-hace-titulo" className="pl-h2 pl-plancha-titulo" data-reveal>Qué hace Dico</h2>
-        <p className="pl-nota-texto pl-plancha-intro" data-reveal="1">
-          Cada dolor, al lado de la parte del panel que lo resuelve. Es un
-          restaurante de ejemplo.
-        </p>
-        <div className="pl-plancha-tapa pl-pieza" data-ui aria-hidden="true">
-          <span className="pl-pieza-titulo">Panel de Dico</span>
-          <span className="pl-pieza-meta">Gastronomía</span>
-        </div>
-        {PARTES.map((p, i) => (
-          <PartePlancha
-            key={p.id}
-            parte={p}
-            indice={i}
-            activa={activa === p.id}
-            onActivar={(on) => setActiva(on ? p.id : null)}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function PartePlancha({ parte, indice, activa, onActivar }) {
-  const ultima = indice === PARTES.length - 1;
-  const lado = indice % 2 === 0 ? 'izq' : 'der';
-  return (
-    <>
-      <div
-        className={`pl-plancha-parte pl-pieza pl-r${indice + 2}${ultima ? ' ultima' : ''}${activa ? ' activa' : ''}`}
-        data-ui
-        role="figure"
-        aria-label={`Ejemplo: ${parte.titulo}`}
-      >
-        <div className="pl-pieza-cab">
-          <span className="pl-pieza-titulo">{parte.titulo}</span>
-          <span className="pl-pieza-meta">{parte.meta}</span>
-        </div>
-        <dl className="pl-filas">
-          {parte.filas.map(([a, b]) => (
-            <div className="pl-fila" key={a}><dt>{a}</dt><dd>{b}</dd></div>
-          ))}
-        </dl>
-        {parte.cifra && (
-          <p className="pl-plancha-cifra">
-            <span>{parte.cifra[0]}</span>
-            <span className={TONO_CIFRA[parte.id] || ''}>{parte.cifra[1]}</span>
-          </p>
-        )}
-      </div>
-      <div
-        className={`pl-nota pl-nota-${lado} pl-r${indice + 2}`}
-        data-reveal
-        onPointerEnter={() => onActivar(true)}
-        onPointerLeave={() => onActivar(false)}
-      >
-        <h3 className="pl-nota-nombre">{parte.dolor}</h3>
-        <p className="pl-nota-texto">{parte.nota}</p>
-      </div>
-    </>
   );
 }
 
