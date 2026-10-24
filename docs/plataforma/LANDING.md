@@ -7,7 +7,40 @@
 
 ---
 
-## 1. Estado al 23/oct/2026
+## 1. Estado al 24/oct/2026
+
+### Revision visual de Ricky — 24/oct
+
+Ricky vio el preview de `58afd2b` y **le gusta el hero con parallax**. Pide
+ajustar el boton, la bajada y evaluar tres titulos antes de seguir:
+
+- Boton: dos propuestas para elegir, **Marfil en movimiento** y **Zinc y oro**.
+  Se conserva el texto Quiero Dico y el destino al diagnostico. Comparacion
+  visual en `docs/marca/referencias/botones-hero-opciones.html`; es una
+  propuesta, no un cambio del componente real ni una eleccion confirmada.
+- Bajada solicitada: "gestiona todas las necesidades de tu negocio para que
+  tengas mas tiempo para vos y los tuyos". Alternativa editorial propuesta:
+  "Dico simplifica la gestion de tu negocio para que tengas mas tiempo para
+  vos y los tuyos". Evita la promesa absoluta de resolver todas las necesidades;
+  las capacidades reales por rubro siguen siendo las de esta guia.
+- Titulos propuestos: **Tu tiempo vuelve a ser tuyo.**, **Menos gestion.
+  Mas vida.**, **Mas tiempo para los tuyos.** Pendiente de eleccion.
+- **Decision para la proxima seccion:** fondo negro con textura zinc muy
+  sutil, continuando el suelo oscuro de la escena. Al bajar no debe aparecer
+  un corte a una superficie clara ni un nuevo fondo de concreto. Conservar
+  esta continuidad al desarrollar el circuito de la fase 3.
+
+La propuesta se revisa en el chat; la landing del preview aun conserva el
+boton, titulo y bajada anteriores. No se construye el cuerpo en este paso.
+
+Verificacion de la propuesta aislada: Chrome en 320 y 736 px, ambos botones
+202,61x56 px, sin desborde; carrusel Anterior/Siguiente operativo, Overused
+local cargada y sin errores JavaScript. Marfil desplaza su flecha 8 px y zinc
+la gira 45 grados; movimiento reducido deja transforms en none. Lint estetico
+0 FAIL/0 WARN y detector del HTML sin hallazgos. Auditor independiente cerro
+un ajuste de rol (foco en oro), sin pendientes. No son mediciones de conversion
+ni cambios publicados del hero. La base de src/index.html conserva 17 warnings
+y 6 advisory y no se modifico en esta revision.
 
 ### Replanteo del hero — decision posterior de Ricky
 
