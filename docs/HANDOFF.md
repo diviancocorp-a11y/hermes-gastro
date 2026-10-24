@@ -35,8 +35,12 @@
 - Sin paquetes/backend nuevos. El unico recurso final nuevo fuera de
   src/docs/platform/scripts es zinc-grain.svg, necesario para servir el grano;
   no se modificaron los masters ni los assets del pet. Agenda intacta.
-- Preview/CI de esta continuacion en preparacion; misma rama landing/rediseno,
-  PR#52 en borrador. Ricky revisa apartado2 antes de seguir. Fases3/4 aun
+- Codigo `3eef553` subido al PR#52 en borrador; preview READY:
+  https://hermes-platform-el8761na7-diviancocorp-a11ys-projects.vercel.app/landing#que-hace
+  El CI encontro alertas nuevas de undici via jsdom: parche solo del lockfile
+  7.30.0 -> 7.30.1, sin dependencias nuevas. Audit local 0 vulnerabilidades e
+  instalacion coherente con 466 paquetes; CI del parche por verificar.
+  Ricky revisa apartado2 antes de seguir. Misma rama landing/rediseno. Fases3/4 aun
   pendientes: rubros, logos/Instagram, pasos, planes, FAQ/footer. Digital14999
   sigue documentado, sin aplicar aqui. LANDINGseccion1 es el estado vivo.
 

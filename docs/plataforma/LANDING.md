@@ -16,7 +16,8 @@ con la burbuja **dorada** y confirma el titulo **Tu tiempo vuelve a ser tuyo.**
 La burbuja debe ser el origen de la expansion por la pantalla al diagnostico
 existente. Autoriza continuar el apartado 2, con Dico central y fondo negro
 zinc continuo. Boton, copy y apartado 2 implementados y auditados; preview
-actualizado en preparacion, en el mismo PR #52.
+READY de `3eef553` en el mismo PR #52. Se esta verificando el parche de
+seguridad transitorio indicado al final de esta entrega.
 
 Ricky vio el preview de `58afd2b` y **le gusta el hero con parallax**. Pide
 ajustar el boton, la bajada y evaluar tres titulos antes de seguir:
@@ -112,7 +113,17 @@ Verificado localmente:
   ausencia de video (la escena elegida es parallax). No se ocultan ni cambian
   detectores para conseguir ese resultado.
 
-Pendiente inmediato: subir al mismo PR #52 y verificar deploy/CI. La validacion
+Preview del codigo `3eef553`, confirmado READY en Vercel:
+https://hermes-platform-el8761na7-diviancocorp-a11ys-projects.vercel.app/landing#que-hace
+
+El CI de esa entrega detecto tres avisos de undici (dependencia de desarrollo
+de jsdom), publicados en GitHub Advisory Database el 23/oct. Se actualiza solo
+su entrada del lockfile, 7.30.0 -> 7.30.1, dentro del rango existente: sin
+paquetes nuevos ni cambios a package.json. `npm audit --audit-level=high` da
+0 vulnerabilidades y check:install-state confirma 466 paquetes. Referencia:
+https://github.com/advisories/GHSA-xjj6-f33q-929c
+
+Pendiente inmediato: verificar el CI del parche y su preview. La validacion
 visual del apartado 2 sigue pendiente de Ricky. Rubros, logos, pasos, planes,
 FAQ y footer conservan por ahora la version anterior; no se cierra toda fase 3.
 
