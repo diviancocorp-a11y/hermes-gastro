@@ -1,3 +1,5 @@
+import { getCatalogCategories, matchesCatalogCategory as matchesFacetCategory, resolveCatalogProfile } from './catalogFacets';
+
 const categoryName = value => typeof value === 'string' ? value.trim() : '';
 
 // Los grupos del tenant reemplazan al build; [] deja solo las categorias
@@ -27,10 +29,16 @@ export function buildCatalogGroups(configured, fallback = [], products = []) {
 }
 
 export function matchesCatalogCategory(product, group) {
-  if (group?.name === 'Todos') return true;
   if (!group) return false;
-  const category = categoryName(product.category);
-  return category === group.name || group.subs.includes(category);
+  return matchesFacetCategory(product, group.name, [group]);
+}
+
+// Solo presentación/navegación: las asociaciones de ofertas siguen usando
+// buildCatalogDealParents sobre la configuración original, sin transformarla.
+export function buildCatalogDisplayGroups(configured, fallback = [], products = [], settings = {}) {
+  const legacy = buildCatalogGroups(configured, fallback, products);
+  return getCatalogCategories(products, legacy, resolveCatalogProfile(settings))
+    .filter(group => group.name !== 'Todos');
 }
 
 // Misma precedencia que submit-order: solo subs, gana el ultimo grupo.

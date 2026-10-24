@@ -17,6 +17,8 @@ import Icon from "./Icon";
 import { fmtAR } from "./format";
 import { ProductPhoto, Rating, Stepper, AddRound, SectionHeader, SoldOutBadge } from "./atoms";
 import { mapProduct } from "./homeHelpers";
+import ProductCharacteristics from "./ProductCharacteristics";
+import { getProductFeatures } from "../lib/catalogFacets";
 
 export default function ProductDetailScreen({
   product, related = [], hasDeal, dealPrice, prepDefault,
@@ -25,6 +27,15 @@ export default function ProductDetailScreen({
 }) {
   const p = mapProduct(product, { hasDeal, dealPrice, prepDefault, soldOutIds });
   const soldOut = p.soldOut;
+  const attributes = product.catalog_attributes || {};
+  const classification = [
+    ['category', 'Categoría'], ['brand', 'Bodega o marca'], ['line', 'Línea'],
+    ['varietal', 'Cepa'], ['presentation', 'Presentación'],
+  ].flatMap(([key, label]) => {
+    const value = typeof attributes[key] === 'string' ? attributes[key].trim() : '';
+    return value ? [{ key, label, value }] : [];
+  });
+  const features = Array.isArray(attributes.features) ? getProductFeatures(product) : [];
   // Sizes vienen del raw del producto (la DB recipes.sizes), no del mapProduct.
   const sizes = Array.isArray(product?.sizes) && product.sizes.length > 0 ? product.sizes : null;
   const [selectedSizeIdx, setSelectedSizeIdx] = useState(0);
@@ -118,6 +129,19 @@ export default function ProductDetailScreen({
           )}
         </h1>
         {p.desc && <p className="body-l" style={{ color: "var(--t2)", margin: 0, fontSize: 15 }}>{p.desc}</p>}
+        {(classification.length > 0 || features.length > 0) && (
+          <section className="cp-product-details" aria-label="Características">
+            <h2 className="cp-product-details-title">Características</h2>
+            {features.length > 0 && <ProductCharacteristics product={product} />}
+            {classification.length > 0 && (
+              <dl className="cp-product-details-list">
+                {classification.map(({ key, label, value }) => (
+                  <div key={key}><dt>{label}</dt><dd>{value}</dd></div>
+                ))}
+              </dl>
+            )}
+          </section>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
           <Rating value={p.rating} count={p.reviews} />
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--t2)" }}>
