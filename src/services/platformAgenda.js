@@ -12,7 +12,8 @@
 import { supabase } from '../lib/supabase';
 
 const COLS_STAFF = 'id, tenant_id, branch_id, user_id, name, color, active, job';
-const COLS_SERVICE = 'id, tenant_id, name, price, active, duration_min, buffer_after_min, category';
+const COLS_SERVICE = 'id, tenant_id, name, price, active, duration_min, buffer_after_min, is_addon, category';
+const COLS_ZONE = 'id, tenant_id, name, travel_min, active';
 const COLS_SCHEDULE = 'id, tenant_id, staff_id, weekday, start_time, end_time';
 const COLS_TIMEOFF = 'id, tenant_id, staff_id, starts_at, ends_at, reason';
 const COLS_STAFF_SERVICE = 'tenant_id, staff_id, service_id, duration_min';
@@ -29,6 +30,7 @@ const MENSAJES = {
   booking_deposit_coherente: 'Si pedís seña, falta el monto.',
   booking_percent_valido: 'El porcentaje de la seña no puede pasar de 100.',
   rango_demasiado_largo: 'Pedí los horarios de hasta dos meses por vez.',
+  booking_zones_nombre: 'Ya hay una zona con ese nombre.',
 };
 
 function traducir(msg = '') {
@@ -60,7 +62,7 @@ export const REGLAS_POR_DEFECTO = {
  */
 export async function fetchAgendaBase(tenantId) {
   if (!tenantId) return null;
-  const [staff, servicios, horarios, ausencias, relaciones, reglas] = await Promise.all([
+  const [staff, servicios, horarios, ausencias, relaciones, reglas, zonas] = await Promise.all([
     supabase.from('staff').select(COLS_STAFF).eq('tenant_id', tenantId).eq('active', true).order('name'),
     supabase.from('products').select(COLS_SERVICE).eq('tenant_id', tenantId).eq('type', 'service').eq('is_archived', false).order('name'),
     supabase.from('staff_schedules').select(COLS_SCHEDULE).eq('tenant_id', tenantId).order('weekday').order('start_time'),
@@ -68,9 +70,10 @@ export async function fetchAgendaBase(tenantId) {
       .gte('ends_at', new Date().toISOString()).order('starts_at'),
     supabase.from('staff_services').select(COLS_STAFF_SERVICE).eq('tenant_id', tenantId),
     supabase.from('booking_settings').select(COLS_SETTINGS).eq('tenant_id', tenantId).maybeSingle(),
+    supabase.from('booking_zones').select(COLS_ZONE).eq('tenant_id', tenantId).order('name'),
   ]);
 
-  const fallo = [staff, servicios, horarios, ausencias, relaciones, reglas].find(r => r.error);
+  const fallo = [staff, servicios, horarios, ausencias, relaciones, reglas, zonas].find(r => r.error);
   if (fallo) {
     console.error('fetchAgendaBase:', fallo.error.message);
     return null;
@@ -81,6 +84,10 @@ export async function fetchAgendaBase(tenantId) {
     horarios: horarios.data || [],
     ausencias: ausencias.data || [],
     relaciones: relaciones.data || [],
+    // Las activas se ofrecen al reservar; todas sirven para ponerle nombre a un
+    // turno viejo cuyo zona se dio de baja.
+    zonas: (zonas.data || []).filter(z => z.active),
+    zonasTodas: zonas.data || [],
     reglas: { ...REGLAS_POR_DEFECTO, ...(reglas.data || {}) },
     reglasGuardadas: !!reglas.data,
   };
@@ -91,7 +98,7 @@ export async function fetchAgendaBase(tenantId) {
  * 'YYYY-MM-DD'). Sin staffId devuelve una fila por profesional libre.
  */
 export async function fetchSlots(tenantId, serviceId, desde, hasta, {
-  staffId = null, locationKind = 'local',
+  staffId = null, locationKind = 'local', travelMin = null,
 } = {}) {
   const { data, error } = await supabase.rpc('get_available_slots', {
     p_tenant_id: tenantId,
@@ -100,6 +107,8 @@ export async function fetchSlots(tenantId, serviceId, desde, hasta, {
     p_to: hasta,
     p_staff_id: staffId,
     p_location_kind: locationKind,
+    // Traslado de la zona elegida; sin el, la base usa el fijo del negocio.
+    p_travel_min: travelMin,
   });
   if (error) {
     console.error('fetchSlots:', error.message);
@@ -201,14 +210,15 @@ export async function removeTimeOff(tenantId, id) {
  * Duracion y margen de un servicio. Se edita aca y no en el editor de
  * productos para que la dueña lo cargue donde esta armando la agenda.
  */
-export async function saveServiceTiming(tenantId, serviceId, { duration_min, buffer_after_min }) {
+export async function saveServiceTiming(tenantId, serviceId, { duration_min, buffer_after_min, is_addon }) {
   const dur = duration_min === '' || duration_min == null ? null : Math.round(Number(duration_min));
   const buf = Math.max(0, Math.round(Number(buffer_after_min) || 0));
   if (dur != null && !(dur > 0)) {
     return { __error: 'duracion', message: 'La duración tiene que ser mayor a cero.' };
   }
   const { error } = await supabase.from('products')
-    .update({ duration_min: dur, buffer_after_min: buf })
+    // is_addon solo se toca si viene: los llamados viejos no lo pisan.
+    .update({ duration_min: dur, buffer_after_min: buf, ...(is_addon === undefined ? {} : { is_addon: !!is_addon }) })
     .eq('id', serviceId).eq('tenant_id', tenantId);
   if (error) {
     console.error('saveServiceTiming:', error.message);
@@ -240,6 +250,46 @@ export async function saveStaffServices(tenantId, staffId, serviceIds) {
     }
   }
   return { ok: true };
+}
+
+/* ───────────────────────── Zonas de domicilio ───────────────────────── */
+
+/**
+ * Una zona es una localidad o barrio con su tiempo de viaje. Alta o edicion.
+ * El traslado depende de la direccion de quien reserva: se elige la zona al
+ * reservar y esos minutos viajan en el turno (travel_min) y en la consulta de
+ * huecos.
+ */
+export async function saveZone(tenantId, { id, name, travel_min }) {
+  const limpio = String(name || '').trim();
+  if (!limpio) return { __error: 'sin_nombre', message: 'Poné el nombre de la zona.' };
+  // Number('') es 0: un campo vacio no puede guardarse como "cero minutos".
+  const vacio = travel_min === '' || travel_min == null || String(travel_min).trim() === '';
+  const min = Math.round(Number(travel_min));
+  if (vacio || !Number.isFinite(min) || min < 0) {
+    return { __error: 'minutos', message: 'Poné los minutos de viaje (cero o más).' };
+  }
+  const fila = { name: limpio, travel_min: min };
+  const q = id
+    ? supabase.from('booking_zones').update(fila).eq('id', id).eq('tenant_id', tenantId)
+    : supabase.from('booking_zones').insert({ ...fila, tenant_id: tenantId });
+  const { data, error } = await q.select(COLS_ZONE).single();
+  if (error) {
+    console.error('saveZone:', error.message);
+    return { __error: 'db', message: traducir(error.message) };
+  }
+  return { ok: true, zona: data };
+}
+
+/** Baja logica: los turnos viejos conservan la zona que tenian. */
+export async function removeZone(tenantId, id) {
+  const { error } = await supabase.from('booking_zones')
+    .update({ active: false }).eq('id', id).eq('tenant_id', tenantId);
+  if (error) {
+    console.error('removeZone:', error.message);
+    return false;
+  }
+  return true;
 }
 
 /* ─────────────────────────── Reglas de reserva ─────────────────────── */

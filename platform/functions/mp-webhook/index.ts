@@ -74,6 +74,71 @@ async function firmaValida(
   return diff === 0;
 }
 
+/** "turno:<uuid>" -> el uuid; cualquier otra referencia (un pedido) -> null. */
+function turnoDeSena(ref: unknown): string | null {
+  const m = String(ref ?? "").match(/^turno:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
+  return m ? m[1].toLowerCase() : null;
+}
+
+/**
+ * Una sena aprobada confirma el turno y libera la retencion del hueco.
+ *
+ * - El turno tiene que ser de ESTE negocio (la pista ?tenant= no se cree).
+ * - El pago tiene que cubrir la sena que fijo la base: un pago menor no confirma.
+ * - Idempotente: MP reintenta, y solo la primera vez pasa de 'booked' a 'confirmed'.
+ * - Si la sena llega cuando el hueco ya se habia liberado (cancelado por
+ *   vencimiento), la plata entro igual: se registra y se le avisa al negocio
+ *   en vez de perderla de vista.
+ */
+// deno-lint-ignore no-explicit-any
+async function procesarSena(supabase: any, tenant: { id: string; slug: string }, turnoId: string, pago: Record<string, any>) {
+  const OK = new Response("OK", { status: 200 });
+  const { data: turno } = await supabase.from("appointments")
+    .select("id, tenant_id, status, deposit_amount, deposit_status, customer_name")
+    .eq("id", turnoId).maybeSingle();
+  if (!turno || turno.tenant_id !== tenant.id) {
+    console.error("mp-webhook: el turno no es de ese negocio", turnoId, tenant.slug);
+    return OK;
+  }
+  if (pago.status !== "approved") return OK;
+  if (turno.deposit_status === "paid") return OK;
+
+  const pagado = Number(pago.transaction_amount) || 0;
+  if (pagado < Number(turno.deposit_amount)) {
+    console.error("mp-webhook: el pago no cubre la seña", turnoId, pagado, turno.deposit_amount);
+    return OK;
+  }
+
+  const confirmar = turno.status === "booked";
+  const { error } = await supabase.from("appointments")
+    .update({
+      deposit_status: "paid",
+      hold_until: null,
+      ...(confirmar ? { status: "confirmed" } : {}),
+    })
+    .eq("id", turno.id).eq("tenant_id", tenant.id)
+    .in("status", ["booked", "cancelled"]);
+  if (error) {
+    console.error("mp-webhook: no se pudo registrar la seña", error);
+    return new Response("Update failed", { status: 500 });
+  }
+
+  try {
+    await supabase.functions.invoke("send-push", {
+      body: {
+        tenant_slug: tenant.slug,
+        title: confirmar ? "Seña recibida" : "Seña recibida de un turno cancelado",
+        body: `${turno.customer_name || "Clienta"}${confirmar ? "" : " · el hueco ya se había liberado: coordiná con ella"}`,
+        url: "/admin?tab=agenda",
+        target: { role: "admin" },
+      },
+    });
+  } catch (e) {
+    console.warn("mp-webhook: push de seña (no bloqueante):", (e as Error)?.message);
+  }
+  return OK;
+}
+
 Deno.serve(async (req) => {
   // MP no manda preflight: POST directo.
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
@@ -134,6 +199,13 @@ Deno.serve(async (req) => {
 
     const orderId = pago.external_reference;
     if (!orderId) return new Response("OK", { status: 200 });
+
+    // La sena de un turno (agenda) viaja con external_reference "turno:<id>":
+    // no es un pedido y se procesa aparte.
+    const turnoId = turnoDeSena(orderId);
+    if (turnoId) {
+      return await procesarSena(supabase, tenant, turnoId, pago);
+    }
 
     const { data: order } = await supabase.from("orders")
       .select("id, tenant_id, status, paid_at, customer_name, total")

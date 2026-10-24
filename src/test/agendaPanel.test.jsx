@@ -19,6 +19,8 @@ vi.mock('../services/platformAgenda', () => ({
   saveServiceTiming: vi.fn(),
   saveStaffServices: vi.fn(),
   saveBookingSettings: vi.fn(),
+  saveZone: vi.fn(),
+  removeZone: vi.fn(),
   REGLAS_POR_DEFECTO: {},
 }));
 vi.mock('../services/platformScheduling', () => ({
@@ -58,6 +60,7 @@ const baseCompleta = (over = {}) => ({
   relaciones: [],
   reglas: { ...REGLAS },
   reglasGuardadas: true,
+  zonas: [],
   ...over,
 });
 
@@ -354,5 +357,233 @@ describe('Horarios y reglas', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Guardar horario' }));
     expect(await screen.findByText(/dos tramos se pisan/)).toBeInTheDocument();
     expect(agenda.saveWeeklySchedule).not.toHaveBeenCalled();
+  });
+});
+
+describe('Zonas de domicilio y adicionales', () => {
+  const slots = [{ staff_id: 'ana', starts_at: iso(15), ends_at: iso(16) }];
+  const ZONAS = [
+    { id: 'z1', name: 'Del Viso', travel_min: 25, active: true },
+    { id: 'z2', name: 'Pilar centro', travel_min: 10, active: true },
+  ];
+  const conDomicilio = (over = {}) => baseCompleta({
+    reglas: { ...REGLAS, offers_home: true, travel_min: 20 }, ...over,
+  });
+
+  it('agrega una zona, la guarda con saveZone y se ve', async () => {
+    agenda.saveZone.mockResolvedValue({ ok: true, zona: { id: 'z9' } });
+    montar();
+    fireEvent.click(await screen.findByRole('button', { name: 'Horarios y reglas' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Agregar zona' }));
+    fireEvent.change(screen.getByLabelText('Zona nueva'), { target: { value: 'Del Viso' } });
+    fireEvent.change(screen.getByLabelText('Viaje (min)'), { target: { value: '25' } });
+    agenda.fetchAgendaBase.mockResolvedValue(baseCompleta({ zonas: [{ id: 'z9', name: 'Del Viso', travel_min: 25, active: true }] }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar zonas' }));
+    await waitFor(() => expect(agenda.saveZone).toHaveBeenCalledWith('t', { name: 'Del Viso', travel_min: '25' }));
+    expect(await screen.findByText('Zonas guardadas.')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('Del Viso')).toBeInTheDocument();
+  });
+
+  it('quitar una zona pide confirmacion antes de tocar la base', async () => {
+    agenda.fetchAgendaBase.mockResolvedValue(conDomicilio({ zonas: ZONAS }));
+    agenda.removeZone.mockResolvedValue(true);
+    montar();
+    fireEvent.click(await screen.findByRole('button', { name: 'Horarios y reglas' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Quitar zona Del Viso' }));
+    expect(agenda.removeZone).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Sí, quitar zona' }));
+    await waitFor(() => expect(agenda.removeZone).toHaveBeenCalledWith('t', 'z1'));
+  });
+
+  it('un error al guardar una zona se dice en lenguaje llano', async () => {
+    agenda.saveZone.mockResolvedValue({ __error: 'db', message: 'Ya hay una zona con ese nombre.' });
+    montar();
+    fireEvent.click(await screen.findByRole('button', { name: 'Horarios y reglas' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Agregar zona' }));
+    fireEvent.change(screen.getByLabelText('Zona nueva'), { target: { value: 'Pilar' } });
+    fireEvent.change(screen.getByLabelText('Viaje (min)'), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar zonas' }));
+    expect(await screen.findByText('Ya hay una zona con ese nombre.')).toBeInTheDocument();
+  });
+
+  it('marcar un servicio como adicional guarda is_addon y deja de ser pendiente', async () => {
+    const servicios = (addon) => [
+      { id: 'sv1', name: 'Uñas', duration_min: 60, buffer_after_min: 0, active: true },
+      { id: 'sv2', name: 'Flores 3D', duration_min: null, buffer_after_min: 0, active: true, is_addon: addon },
+    ];
+    agenda.fetchAgendaBase.mockResolvedValue(baseCompleta({ servicios: servicios(false) }));
+    agenda.saveServiceTiming.mockResolvedValue({ ok: true });
+    montar();
+    expect(await screen.findByText(/1 servicio\(s\) sin duración: Flores 3D/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Completar en Horarios y reglas' }));
+    expect(await screen.findByText('Falta la duración')).toBeInTheDocument();
+    fireEvent.click(screen.getAllByLabelText(/Es un adicional/)[1]);
+    // Marcado: la duracion pasa a opcional y ya no figura como falta.
+    expect(screen.queryByText('Falta la duración')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Duración (min, opcional)')).toBeInTheDocument();
+    agenda.fetchAgendaBase.mockResolvedValue(baseCompleta({ servicios: servicios(true) }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar servicios' }));
+    await waitFor(() => expect(agenda.saveServiceTiming).toHaveBeenCalledWith('t', 'sv2',
+      expect.objectContaining({ is_addon: true, duration_min: '' })));
+    expect(await screen.findByText('Servicios guardados.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Agenda' }));
+    await screen.findAllByRole('button', { name: 'Nuevo turno' });
+    expect(screen.queryByText(/sin duración/)).not.toBeInTheDocument();
+  });
+
+  it('a domicilio exige zona y manda el viaje de la zona a los horarios y a la reserva', async () => {
+    agenda.fetchAgendaBase.mockResolvedValue(conDomicilio({ zonas: ZONAS }));
+    agenda.fetchSlots.mockResolvedValue({ ok: true, slots });
+    sched.createAppointment.mockResolvedValue({ ok: true, appointment: { id: 'n1' } });
+    montar();
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Nuevo turno' }))[0]);
+    const dialogo = await screen.findByRole('dialog');
+    fireEvent.change(within(dialogo).getByLabelText('Servicio'), { target: { value: 'sv1' } });
+    fireEvent.click(within(dialogo).getByLabelText('A domicilio'));
+    expect(within(dialogo).getByRole('option', { name: 'Del Viso · 25 min' })).toBeInTheDocument();
+    expect(within(dialogo).queryByRole('button', { name: '15:00' })).not.toBeInTheDocument();
+
+    // Sin zona no reserva.
+    fireEvent.change(within(dialogo).getByLabelText('Nombre'), { target: { value: 'Marta' } });
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Reservar' }));
+    expect(await within(dialogo).findByRole('alert')).toHaveTextContent('Elegí la zona');
+    expect(sched.createAppointment).not.toHaveBeenCalled();
+
+    fireEvent.change(within(dialogo).getByLabelText('Zona'), { target: { value: 'z1' } });
+    fireEvent.click(await within(dialogo).findByRole('button', { name: '15:00' }));
+    expect(agenda.fetchSlots).toHaveBeenCalledWith('t', 'sv1', HOY, HOY,
+      expect.objectContaining({ locationKind: 'home', travelMin: 25 }));
+    expect(within(dialogo).getByText('Se reservan 25 min antes para el traslado.')).toBeInTheDocument();
+
+    // Cambiar de zona recalcula y descarta el horario elegido.
+    fireEvent.change(within(dialogo).getByLabelText('Zona'), { target: { value: 'z2' } });
+    await waitFor(() => expect(agenda.fetchSlots).toHaveBeenCalledWith('t', 'sv1', HOY, HOY,
+      expect.objectContaining({ travelMin: 10 })));
+    const hora = await within(dialogo).findByRole('button', { name: '15:00' });
+    expect(hora).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(hora);
+    fireEvent.change(within(dialogo).getByLabelText('Dirección'), { target: { value: 'Mitre 123' } });
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Reservar' }));
+    await waitFor(() => expect(sched.createAppointment).toHaveBeenCalledTimes(1));
+    expect(sched.createAppointment).toHaveBeenCalledWith('t', expect.objectContaining({
+      locationKind: 'home', zoneId: 'z2', travelMin: 10, address: 'Mitre 123',
+    }));
+  });
+
+  it('sin zonas cargadas avisa y usa el traslado fijo de las reglas', async () => {
+    agenda.fetchAgendaBase.mockResolvedValue(conDomicilio());
+    agenda.fetchSlots.mockResolvedValue({ ok: true, slots });
+    sched.createAppointment.mockResolvedValue({ ok: true, appointment: { id: 'n1' } });
+    montar();
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Nuevo turno' }))[0]);
+    const dialogo = await screen.findByRole('dialog');
+    fireEvent.change(within(dialogo).getByLabelText('Servicio'), { target: { value: 'sv1' } });
+    fireEvent.click(within(dialogo).getByLabelText('A domicilio'));
+    expect(within(dialogo).getByText(/Todavía no hay zonas de domicilio cargadas/)).toBeInTheDocument();
+    expect(within(dialogo).queryByLabelText('Zona')).not.toBeInTheDocument();
+    fireEvent.click(await within(dialogo).findByRole('button', { name: '15:00' }));
+    fireEvent.change(within(dialogo).getByLabelText('Nombre'), { target: { value: 'Marta' } });
+    fireEvent.change(within(dialogo).getByLabelText('Dirección'), { target: { value: 'Mitre 123' } });
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Reservar' }));
+    await waitFor(() => expect(sched.createAppointment).toHaveBeenCalledTimes(1));
+    expect(sched.createAppointment).toHaveBeenCalledWith('t', expect.objectContaining({
+      travelMin: 20, zoneId: null, locationKind: 'home',
+    }));
+    expect(agenda.fetchSlots).toHaveBeenCalledWith('t', 'sv1', HOY, HOY,
+      expect.objectContaining({ locationKind: 'home', travelMin: 20 }));
+  });
+
+  it('el selector de servicio no ofrece adicionales', async () => {
+    agenda.fetchAgendaBase.mockResolvedValue(baseCompleta({
+      servicios: [
+        { id: 'sv1', name: 'Uñas', duration_min: 60, active: true },
+        { id: 'sv2', name: 'Flores 3D', duration_min: 15, active: true, is_addon: true },
+      ],
+    }));
+    montar();
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Nuevo turno' }))[0]);
+    const dialogo = await screen.findByRole('dialog');
+    expect(within(dialogo).getByRole('option', { name: /Uñas/ })).toBeInTheDocument();
+    expect(within(dialogo).queryByRole('option', { name: /Flores 3D/ })).not.toBeInTheDocument();
+  });
+
+  it('el detalle muestra la zona y Mover busca huecos con el viaje del turno', async () => {
+    agenda.fetchAgendaBase.mockResolvedValue(conDomicilio({ zonas: ZONAS }));
+    hay([turno({ location_kind: 'home', address: 'Mitre 123', travel_min: 25, zone_id: 'z1' })]);
+    montar();
+    fireEvent.click(await screen.findByText('Lucía Pérez'));
+    const dialogo = await screen.findByRole('dialog');
+    expect(within(dialogo).getByText('Del Viso')).toBeInTheDocument();
+    expect(within(dialogo).getByText('25 min antes')).toBeInTheDocument();
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Mover' }));
+    await waitFor(() => expect(agenda.fetchSlots).toHaveBeenCalledWith('t', 'sv1', expect.any(String), expect.any(String),
+      expect.objectContaining({ locationKind: 'home', travelMin: 25 })));
+  });
+
+  it('minutos vacios no se guardan como cero: se muestra el error y el foco va a los minutos', async () => {
+    agenda.fetchAgendaBase.mockResolvedValue(conDomicilio({ zonas: ZONAS }));
+    agenda.saveZone.mockResolvedValue({ __error: 'minutos', message: 'Poné los minutos de viaje (cero o más).' });
+    montar();
+    fireEvent.click(await screen.findByRole('button', { name: 'Horarios y reglas' }));
+    const minutos = (await screen.findAllByLabelText('Viaje (min)'))[0];
+    fireEvent.change(minutos, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar zonas' }));
+    expect(await screen.findByText(/Poné los minutos de viaje/)).toBeInTheDocument();
+    expect(document.activeElement).toBe(minutos);
+  });
+
+  it('si falla la tercera fila, las dos primeras quedan reflejadas', async () => {
+    agenda.saveZone
+      .mockResolvedValueOnce({ ok: true }).mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ __error: 'db', message: 'Ya hay una zona con ese nombre.' });
+    montar();
+    fireEvent.click(await screen.findByRole('button', { name: 'Horarios y reglas' }));
+    for (const [n, m] of [['Alfa', '5'], ['Beta', '6'], ['Gama', '7']]) {
+      fireEvent.click(await screen.findByRole('button', { name: 'Agregar zona' }));
+      const nombres = screen.getAllByLabelText('Zona nueva');
+      fireEvent.change(nombres[nombres.length - 1], { target: { value: n } });
+      const mins = screen.getAllByLabelText('Viaje (min)');
+      fireEvent.change(mins[mins.length - 1], { target: { value: m } });
+    }
+    const antes = agenda.fetchAgendaBase.mock.calls.length;
+    agenda.fetchAgendaBase.mockResolvedValue(baseCompleta({ zonas: [
+      { id: 'a', name: 'Alfa', travel_min: 5, active: true }, { id: 'b', name: 'Beta', travel_min: 6, active: true },
+    ] }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar zonas' }));
+    expect(await screen.findByText('Ya hay una zona con ese nombre.')).toBeInTheDocument();
+    await waitFor(() => expect(agenda.fetchAgendaBase.mock.calls.length).toBeGreaterThan(antes));
+    expect(await screen.findByDisplayValue('Alfa')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Beta')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Gama')).toBeInTheDocument();
+    expect(screen.getAllByLabelText('Zona nueva')).toHaveLength(1);
+  });
+
+  it('la confirmacion de quitar recibe el foco y lo devuelve al cerrar', async () => {
+    agenda.fetchAgendaBase.mockResolvedValue(conDomicilio({ zonas: ZONAS }));
+    agenda.removeZone.mockResolvedValue(true);
+    montar();
+    fireEvent.click(await screen.findByRole('button', { name: 'Horarios y reglas' }));
+    const quitar = await screen.findByRole('button', { name: 'Quitar zona Del Viso' });
+    fireEvent.click(quitar);
+    const confirma = screen.getByRole('alertdialog');
+    expect(document.activeElement).toBe(confirma);
+    expect(confirma).toHaveAttribute('aria-describedby');
+    fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Quitar zona Del Viso' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar zona Del Viso' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sí, quitar zona' }));
+    await waitFor(() => expect(agenda.removeZone).toHaveBeenCalled());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Agregar zona' })));
+  });
+
+  it('el detalle muestra la zona aunque se haya dado de baja', async () => {
+    agenda.fetchAgendaBase.mockResolvedValue(conDomicilio({
+      zonas: [], zonasTodas: [{ id: 'z3', name: 'Escobar', travel_min: 40, active: false }],
+    }));
+    hay([turno({ location_kind: 'home', address: 'Mitre 123', travel_min: 40, zone_id: 'z3' })]);
+    montar();
+    fireEvent.click(await screen.findByText('Lucía Pérez'));
+    const dialogo = await screen.findByRole('dialog');
+    expect(within(dialogo).getByText('Escobar')).toBeInTheDocument();
   });
 });
