@@ -14,7 +14,7 @@
 const business = {
   // ── Plataforma (edificio multi-tenant) ─────────────────────
   platform: true,
-  slug: 'cochi',
+  slug: 'monare',
 
   // ── Core identity ──────────────────────────────────────────
   name: 'Dico',
