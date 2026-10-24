@@ -30,6 +30,7 @@ import BadgeTag from "../components/BadgeTag";
 import PromoCarousel from "./PromoCarousel";
 import SuperCombos from "./SuperCombos";
 import OrderStatusCard from "./OrderStatusCard";
+import ReservarEntrada from "./ReservarEntrada";
 import { getActiveOrders } from "../lib/activeOrders";
 
 export default function HomeScreen({
@@ -269,6 +270,9 @@ export default function HomeScreen({
           ))}
         </div>
       )}
+
+      {/* ===== RESERVA ONLINE (solo negocios con el canal online_booking) ===== */}
+      <ReservarEntrada settings={settings} />
 
       {/* ===== QUICK REORDER (si hay pedido previo) ===== */}
       {lastOrderItems.length > 0 && (

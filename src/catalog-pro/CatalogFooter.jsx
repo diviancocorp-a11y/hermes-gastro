@@ -228,6 +228,7 @@ export default function CatalogFooter({ settings = {} }) {
           ]} />
 
           <FooterCol title="Ayuda" items={[
+            ...(settings?.online_booking ? [{ label: "Reservar turno", href: "/reservar" }] : []),
             { label: "Preguntas frecuentes", onClick: () => open("faq") },
           ]} />
 

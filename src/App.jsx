@@ -31,6 +31,9 @@ const InfoPagesAdmin = lazyReload(() => import('./pages/admin/InfoPages'))
 const OrderTracker = lazyReload(() => import('./pages/OrderTracker'))
 const MyAccount = lazyReload(() => import('./pages/MyAccount'))
 const MpStatus = lazyReload(() => import('./pages/MpStatus'))
+// Reserva online de turnos (publica, sin cuenta): el flujo y la pagina del turno.
+const Reservar = lazyReload(() => import('./catalog-pro/Reservar'))
+const ReservarTurno = lazyReload(() => import('./catalog-pro/ReservarTurno'))
 // El diagnostico como pagina propia: la home lo abre en el lugar, asi que
 // /diagnostico es un chunk aparte para links viejos y de afuera.
 const Diagnostico = lazyReload(() => import('./pages/Diagnostico'))
@@ -107,6 +110,8 @@ export default function App() {
               <Route path="/entrar" element={<Login />} />
               <Route path="/q/:slug" element={<QrRedirect />} />
               <Route path="/info/:slug" element={<InfoPage />} />
+              <Route path="/reservar" element={<Reservar />} />
+              <Route path="/reservar/turno/:token" element={<ReservarTurno />} />
               {/* El panel del edificio. El ERP legacy (pages/Admin) se borro
                   el 29/sep: ningun build lo servia y viajaba en el bundle. */}
               <Route path="/admin" element={<PlatformAdmin />} />
