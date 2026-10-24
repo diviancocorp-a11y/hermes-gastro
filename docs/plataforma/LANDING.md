@@ -11,7 +11,31 @@
 
 ### Revision visual de Ricky — 24/oct
 
-**Decision posterior confirmada:** Ricky elige el boton **Marfil en movimiento**
+**Ajuste mas reciente:** Ricky pide boton **dorado**, burbuja **negra** y flecha
+**azul volt**. Se conserva la forma y la expansion al diagnostico. El titulo
+sigue siendo **Tu tiempo vuelve a ser tuyo.** Hero y circuito comparten el
+negro zinc `#09090B` mediante `--pl-suelo-continuo`; el grano entra gradualmente
+en 128 px para evitar el corte de tono. La expansion tambien empieza negra.
+
+Verificacion de este ajuste: Chrome 390x844 y 1440x900, CTA 202,61x56 px,
+sin desborde ni errores JS. Texto sobre oro 9,31:1 (hover 6,89:1), flecha
+sobre negro 4,50:1, foco visible. Union a 2 px antes/despues: de
+`9,9,11 -> 12,12,14` a `9,9,11 -> 9,9,11` en ambos anchos. Abre el mismo
+diagnostico a ancho y alto del viewport con foco en la pregunta; movimiento
+reducido evita View Transition. Detector estatico 17 warnings/6 advisory antes
+y despues; detector renderizado 390x844 y 1280x800: 0 hallazgos antes/despues.
+Flujo `/diseno`, pulido con `impeccable`, constructor y auditor independientes;
+auditoria cerrada sin hallazgos P0-P3.
+No se cambian contenido, geometria ni logica del segmento 2 en este ajuste.
+
+Preview de la rama (requiere sesion Vercel):
+https://hermes-platform-git-landing-213595-diviancocorp-a11ys-projects.vercel.app/landing
+CI y revision del codigo en el mismo PR #52:
+https://github.com/diviancocorp-a11y/hermes-gastro/pull/52
+Siguiente paso: recibir los cambios de Ricky para el segmento 2. Rubros y
+demas bloques siguen pendientes; no se considera aprobado todo el circuito.
+
+**Historial de la eleccion anterior:** Ricky elige el boton **Marfil en movimiento**
 con la burbuja **dorada** y confirma el titulo **Tu tiempo vuelve a ser tuyo.**
 La burbuja debe ser el origen de la expansion por la pantalla al diagnostico
 existente. Autoriza continuar el apartado 2, con Dico central y fondo negro

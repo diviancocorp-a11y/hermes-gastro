@@ -15,6 +15,14 @@
 
 ### Ultima continuacion — 24/oct (leer primero)
 
+- Ajuste posterior de Ricky: CTA dorado, burbuja negra y flecha volt; conserva
+  forma, hover y expansion. Suelo compartido zinc950 en hero/circuito/home del
+  diagnostico; grano aparece gradualmente en 128 px, sin costura de tono.
+  Chrome390/1440: union9,9,11 a ambos lados, CTA202,61x56,0overflow/erroresJS,
+  apertura/foco y reduced verificados. Contrastes9,31/6,89/4,50:1; detector
+  estatico17/6 y render390/1280 sin hallazgos, sin aumento de deuda. Solo3CSS
+  y estas notas. Siguiente: cambios de Ricky al segmento2, no avanzar rubros.
+  LANDING seccion1 contiene el preview estable de rama y el PR#52 para CI.
 - Ricky aprobo el parallax y eligio la capsula **Marfil en movimiento** con
   burbuja dorada y el titulo **Tu tiempo vuelve a ser tuyo.** Bajada de gestion
   aplicada. La burbuja origina la expansion al diagnostico existente: ancho

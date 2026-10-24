@@ -489,7 +489,7 @@
 /* El morph es solo de la portada: /diagnostico conserva su composicion. */
 .pl-hero-tiempo .dg-embudo:not(.dg-cerrado) {
   min-height: 100svh;
-  --pc-suelo: var(--ds-color-zinc-950);
+  --pc-suelo: var(--pl-suelo-continuo);
   --pc-suelo-2: var(--ds-color-zinc-900);
   --pc-suelo-3: var(--ds-color-zinc-800);
   --pc-tinta: var(--ds-color-zinc-50);
@@ -539,7 +539,7 @@
 @keyframes dg-burbuja-sale { from { opacity: 1; } to { opacity: 0; } }
 @keyframes dg-panel-entra { from { opacity: 0; } to { opacity: 1; } }
 @keyframes dg-expansion-forma {
-  from { border-radius: var(--ds-radius-pill); background: var(--ds-color-brand-gold-500); }
+  from { border-radius: var(--ds-radius-pill); background: var(--ds-color-zinc-950); }
   to { border-radius: 0; background: var(--ds-color-zinc-950); }
 }
 @media (max-width: 699px) and (prefers-reduced-motion: no-preference) {

@@ -1,6 +1,6 @@
 /* El circuito conserva la geometria; los datos cuentan cada momento. */
 .cn-root {
-  --cn-suelo: var(--ds-color-zinc-950);
+  --cn-suelo: var(--pl-suelo-continuo);
   --cn-pieza: var(--ds-color-zinc-900);
   --cn-borde: var(--ds-color-zinc-800);
   --cn-tinta: var(--ds-color-neutral-50);
@@ -21,6 +21,7 @@
   z-index: -1;
   inset: 0;
   background-image: url('/brand/landing/zinc-grain.svg');
+  mask-image: linear-gradient(to bottom, transparent, var(--ds-color-neutral-0) calc(var(--ds-space-layout-16) * 2));
   opacity: 0.025;
   pointer-events: none;
 }
