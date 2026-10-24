@@ -432,13 +432,29 @@ async function turnoPorToken(supabase: ReturnType<typeof createClient>, tenantId
 
 async function accionGet(supabase: ReturnType<typeof createClient>, tenant: Fila, reglas: Fila, body: Fila) {
   const turno = await turnoPorToken(supabase, tenant.id, body.token);
-  if (!turno) return jsonRes({ error: "No encontramos ese turno" }, 404);
-  return await respuestaDelTurno(supabase, tenant, turno, null, false, reglas);
+  if (!turno) return jsonRes({ error: "No encontramos ese turno", code: "no_encontrado" }, 404);
+
+  // Una sena pendiente que todavia retiene el hueco: se devuelve el link de
+  // pago otra vez (la clave de idempotencia de MP da la misma preferencia), asi
+  // quien recarga la pagina o vuelve de MP sin pagar no pierde el turno.
+  let pago: { init_point: string | null } | null = null;
+  if (
+    turno.deposit_status === "pending" && turno.status === "booked"
+    && turno.hold_until && Date.parse(turno.hold_until) > Date.now()
+  ) {
+    const { data: integ } = await supabase.rpc("mp_credenciales", { p_tenant_id: tenant.id }).maybeSingle();
+    if ((integ as Fila | null)?.access_token) {
+      const { data: servicio } = await supabase.from("products")
+        .select("id, name").eq("id", turno.service_id).maybeSingle();
+      pago = await armarPreferencia(tenant, turno, servicio as Fila, Number(turno.deposit_amount), integ as Fila);
+    }
+  }
+  return await respuestaDelTurno(supabase, tenant, turno, pago, false, reglas);
 }
 
 async function accionCancel(supabase: ReturnType<typeof createClient>, tenant: Fila, reglas: Fila, body: Fila) {
   const turno = await turnoPorToken(supabase, tenant.id, body.token);
-  if (!turno) return jsonRes({ error: "No encontramos ese turno" }, 404);
+  if (!turno) return jsonRes({ error: "No encontramos ese turno", code: "no_encontrado" }, 404);
   if (!["booked", "confirmed"].includes(turno.status)) {
     return jsonRes({ error: "Ese turno ya no se puede cancelar.", status: turno.status }, 409);
   }
@@ -500,6 +516,9 @@ async function respuestaDelTurno(
       puede_cancelar: ["booked", "confirmed"].includes(turno.status)
         && puedeCancelarSola(turno.starts_at, Date.now(), Number(reglas.cancel_window_hours)),
       cancel_window_hours: reglas.cancel_window_hours,
+      // La hora del servidor: la cuenta regresiva de la sena no puede depender
+      // del reloj del celular de la clienta.
+      server_now: new Date().toISOString(),
     },
   });
 }
