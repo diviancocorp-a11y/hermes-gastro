@@ -45,6 +45,7 @@ export default function TurnoDetalle({
   const servicio = base.servicios.find(s => s.id === turno.service_id);
   const staff = base.staff.find(s => s.id === turno.staff_id);
   const domicilio = turno.location_kind === 'home';
+  const zona = (base.zonasTodas || base.zonas || []).find(z => z.id === turno.zone_id);
   const siguientes = siguientesEstados(turno.status);
   const [principal, ...otros] = siguientes.filter(e => !SALIDAS[e]);
   const salidas = siguientes.filter(e => SALIDAS[e]);
@@ -111,7 +112,7 @@ export default function TurnoDetalle({
         </p>
         {turno.service_id ? (
           <BuscaHorarios tenantId={tenantId} serviceId={turno.service_id} staffId={turno.staff_id}
-            locationKind={domicilio ? 'home' : 'local'} dia={dia}
+            locationKind={domicilio ? 'home' : 'local'} travelMin={domicilio ? (Number(turno.travel_min) || 0) : null} dia={dia}
             onDia={(d) => { setDia(d); setGrupo(null); }}
             elegido={grupo?.hora} onElegir={setGrupo} version={version} />
         ) : (
@@ -166,6 +167,7 @@ export default function TurnoDetalle({
           <div><dt>Profesional</dt><dd>{staff ? <><Punto color={staff.color} /> {staff.name}</> : 'Sin asignar'}</dd></div>
           <div><dt>Teléfono</dt><dd>{turno.customer_phone || 'Sin teléfono'}</dd></div>
           <div><dt>Dónde</dt><dd>{domicilio ? `A domicilio${turno.address ? `: ${turno.address}` : ''}` : 'Local'}</dd></div>
+          {domicilio && zona && <div><dt>Zona</dt><dd>{zona.name}</dd></div>}
           {domicilio && turno.travel_min > 0 && <div><dt>Traslado</dt><dd>{turno.travel_min} min antes</dd></div>}
           {turno.notes && <div><dt>Notas</dt><dd>{turno.notes}</dd></div>}
         </dl>

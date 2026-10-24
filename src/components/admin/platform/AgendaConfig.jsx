@@ -10,6 +10,7 @@ import { diaLocal, hhmm, etiquetaDelDia } from '../../../modules/agenda';
 import { Punto, PieGuardar, Aviso } from './AgendaHoja';
 import AgendaProfesionales from './AgendaProfesionales';
 import AgendaReglas from './AgendaReglas';
+import AgendaZonas from './AgendaZonas';
 
 /* ───────────────────────────── Servicios ───────────────────────────── */
 
@@ -33,6 +34,7 @@ function Servicios({ base, tenantId, onGuardado }) {
       const r = await saveServiceTiming(tenantId, id, {
         duration_min: valor(s, 'duration_min'),
         buffer_after_min: valor(s, 'buffer_after_min'),
+        is_addon: !!valor(s, 'is_addon'),
       });
       if (r?.__error) {
         setGuardando(false);
@@ -51,26 +53,32 @@ function Servicios({ base, tenantId, onGuardado }) {
       <header>
         <h3 id="ag-agd-h-serv">Servicios</h3>
         <p className="ag-agd-ayuda">
-          La duración es lo que ocupa el turno. El margen es el tiempo libre que queda después, para ordenar o descansar.
+          La duración es lo que ocupa el turno. El margen es el tiempo libre que queda después, para ordenar o descansar. Un adicional se suma a otro servicio y no se reserva solo.
         </p>
       </header>
       {!base.servicios.length && <Aviso>No hay servicios cargados. Se cargan en Productos.</Aviso>}
       <ul className="ag-agd-dias">
         {base.servicios.map(s => {
-          const falta = !(Number(valor(s, 'duration_min')) > 0);
+          const adicional = !!valor(s, 'is_addon');
+          const falta = !adicional && !(Number(valor(s, 'duration_min')) > 0);
           return (
             <li key={s.id} className="ag-agd-fila-serv" data-falta={falta}>
               <div className="ag-agd-nombre">
                 {s.name}
                 {falta && <span className="ag-agd-chip" data-tono="alerta"><i aria-hidden="true" />Falta la duración</span>}
+                {adicional && <span className="ag-agd-chip" data-tono="neutro"><i aria-hidden="true" />Adicional</span>}
               </div>
+              <label className="ag-agd-opcion" data-ancho="completo">
+                <input type="checkbox" checked={adicional} onChange={(e) => editar(s, 'is_addon', e.target.checked)} />
+                Es un adicional (se suma a otro servicio, no se reserva solo)
+              </label>
               <div className="ag-agd-campo">
-                <label htmlFor={`ag-s-d-${s.id}`}>Duración (min)</label>
+                <label htmlFor={`ag-s-d-${s.id}`}>{adicional ? 'Duración (min, opcional)' : 'Duración (min)'}</label>
                 <input id={`ag-s-d-${s.id}`} className="ag-agd-input" type="number" inputMode="numeric" min={1}
                   value={valor(s, 'duration_min')} onChange={(e) => editar(s, 'duration_min', e.target.value)} />
               </div>
               <div className="ag-agd-campo">
-                <label htmlFor={`ag-s-m-${s.id}`}>Margen (min)</label>
+                <label htmlFor={`ag-s-m-${s.id}`}>{adicional ? 'Margen (min, opcional)' : 'Margen (min)'}</label>
                 <input id={`ag-s-m-${s.id}`} className="ag-agd-input" type="number" inputMode="numeric" min={0}
                   value={valor(s, 'buffer_after_min')} onChange={(e) => editar(s, 'buffer_after_min', e.target.value)} />
               </div>
@@ -219,6 +227,7 @@ export default function AgendaConfig({ base, tenantId, onGuardado }) {
       <AgendaProfesionales base={base} tenantId={tenantId} onGuardado={onGuardado} />
       <Ausencias base={base} tenantId={tenantId} onGuardado={onGuardado} />
       <AgendaReglas base={base} tenantId={tenantId} onGuardado={onGuardado} />
+      <AgendaZonas base={base} tenantId={tenantId} onGuardado={onGuardado} />
     </>
   );
 }
