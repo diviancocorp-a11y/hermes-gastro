@@ -592,12 +592,23 @@
 
 .pl-lineas .pl-linea-in { display: block; }
 
+/* El vivo y el molde ocupan la misma celda: el instrumento toma el alto del
+   rubro mas alto y la pieza oscura queda con el suyo. */
 .pl-instrumento {
+  display: grid;
+  width: min(100%, 440px);
+}
+
+.pl-instrumento-vivo,
+.pl-instrumento-molde {
+  grid-area: 1 / 1;
+  align-self: start;
   display: grid;
   justify-items: start;
   gap: var(--ds-space-3);
-  width: min(100%, 440px);
 }
+
+.pl-instrumento-molde { visibility: hidden; }
 
 .pl-instrumento-nota {
   font-size: var(--pl-t5);
@@ -619,112 +630,6 @@
   grid-template-columns: repeat(12, minmax(0, 1fr));
   column-gap: var(--pl-g);
   padding: var(--pl-hueco) var(--pl-m) 0;
-}
-
-/* Que hace Dico: el panel como lamina, con notas en los dos margenes */
-.pl-plancha {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 400px) minmax(0, 1fr);
-  column-gap: clamp(var(--ds-space-8), 4.5vw, var(--ds-space-layout-16));
-}
-
-.pl-plancha-titulo {
-  grid-column: 1;
-  grid-row: 1;
-  justify-self: end;
-  align-self: start;
-  text-align: right;
-}
-
-.pl-plancha-intro {
-  grid-column: 3;
-  grid-row: 1;
-  align-self: start;
-  max-width: 30ch;
-  margin-top: 0;
-}
-
-.pl-plancha-tapa {
-  grid-column: 2;
-  grid-row: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding-bottom: var(--ds-space-2);
-  border-radius: var(--pc-radio-pieza) var(--pc-radio-pieza) 0 0;
-}
-
-.pl-plancha-parte {
-  grid-column: 2;
-  padding-block: var(--ds-space-4);
-  border-radius: 0;
-  transition: background-color var(--pc-t-estandar) var(--pc-curva);
-}
-
-.pl-plancha-parte .pl-pieza-cab { margin-bottom: var(--ds-space-1); }
-.pl-plancha-parte .pl-fila { padding: var(--ds-space-1) 0; }
-
-.pl-plancha-parte.ultima {
-  padding-bottom: var(--ds-space-6);
-  border-radius: 0 0 var(--pc-radio-pieza) var(--pc-radio-pieza);
-}
-
-/* La parte de la nota que se senala: un paso de tono, nada se apaga. */
-.pl-plancha-parte.activa { background: var(--pl-pieza-paso); }
-.pl-plancha-parte.activa .pl-pieza-titulo { color: var(--pc-producto-volt); }
-
-.pl-plancha-cifra {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--ds-space-4);
-  margin-top: var(--ds-space-2);
-  font-size: var(--pl-t5);
-  color: var(--pc-producto-tinta-suave);
-}
-
-.pl-plancha-cifra span:last-child {
-  font-size: var(--ds-type-xl);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.pl-r2 { grid-row: 2; }
-.pl-r3 { grid-row: 3; }
-.pl-r4 { grid-row: 4; }
-.pl-r5 { grid-row: 5; }
-.pl-r6 { grid-row: 6; }
-.pl-r7 { grid-row: 7; }
-
-.pl-nota {
-  max-width: 30ch;
-  padding-block: var(--ds-space-4);
-}
-
-.pl-nota-izq {
-  grid-column: 1;
-  justify-self: end;
-  text-align: right;
-}
-
-.pl-nota-der {
-  grid-column: 3;
-  justify-self: start;
-}
-
-.pl-nota-nombre {
-  font-size: var(--pl-t3);
-  font-weight: 500;
-  line-height: 1.3;
-  letter-spacing: -0.005em;
-}
-
-.pl-nota-texto {
-  margin-top: var(--ds-space-1);
-  font-size: var(--pl-t4);
-  line-height: 1.5;
-  color: var(--pc-tinta-suave);
 }
 
 /* Rubros: filas de dos puntas. Los tres rubros son listas paralelas, asi que
@@ -972,28 +877,7 @@
   .pl-split-col { padding: calc(var(--ds-space-layout-16) + var(--ds-space-8)) var(--pl-m) var(--ds-space-layout-12); }
   .pl-split-lado { padding: var(--ds-space-layout-12) var(--pl-m) var(--ds-space-layout-16); }
 
-  /* El panel en rebanadas: cada parte con su nota debajo. */
-  .pl-plancha { grid-template-columns: minmax(0, 1fr); }
-  .pl-plancha > * { grid-column: 1; grid-row: auto; }
-  .pl-plancha-titulo { justify-self: start; text-align: left; }
-  .pl-plancha-intro { max-width: 36ch; margin: var(--ds-space-3) 0 var(--ds-space-8); }
-  /* La tapa es decorativa (aria-hidden): en rebanadas cada parte es su
-     propia pieza, con todas sus esquinas. */
-  .pl-plancha-tapa { display: none; }
-  .pl-plancha-parte,
-  .pl-plancha-parte.ultima {
-    max-width: 440px;
-    padding-block: var(--ds-space-4) var(--ds-space-6);
-    border-radius: var(--pc-radio-pieza);
-  }
-  .pl-nota,
-  .pl-nota-izq,
-  .pl-nota-der {
-    justify-self: start;
-    max-width: 44ch;
-    padding: var(--ds-space-4) 0 var(--ds-space-layout-12);
-    text-align: left;
-  }
+
 }
 
 @media (max-width: 699px) {
@@ -1143,4 +1027,140 @@
 @keyframes pl-deriva {
   from { transform: scale(1) translate(0, 0); }
   to { transform: scale(1.08) translate(-2%, -1.5%); }
+}
+
+
+/* Referencia Osmo: cielo, montana, titulo y caminante, en ese orden.
+   Un solo encuadre compartido conserva el registro de los tres recortes. */
+.pl-hero-tiempo { --pc-producto: var(--ds-color-zinc-950); background: var(--pc-producto); }
+.pl-hero-tiempo .pl-cabecera { z-index: 8; color: var(--pc-producto-tinta); }
+.pl-hero-tiempo.pl-hero-diagnostico .pl-cabecera { color: var(--ds-color-zinc-50); }
+.pl-hero-tiempo .dg-cerrado {
+  position: relative;
+  display: block;
+  height: 120svh;
+  min-height: 0;
+  isolation: isolate;
+  overflow: clip;
+  color: var(--pc-producto-tinta);
+}
+.pl-hero-tiempo .dg-cerrado .pl-split-col,
+.pl-hero-tiempo .dg-cerrado .pl-split-lado,
+.pl-hero-tiempo .pl-portada { display: contents; }
+.pl-hero-tiempo .dg-cerrado::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(transparent 42%, var(--pc-producto) 100%); /* taste-skill-ignore: scrim neutro de contraste sobre fotografia, excepcion de la skill. */
+}
+.pl-tiempo-escena { position: absolute; inset: 0; }
+.pl-tiempo-escena::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--pc-producto) 50%, transparent);
+  pointer-events: none;
+}
+.pl-anim .dg-cerrado .pl-split-lado > .pl-tiempo-escena { opacity: 1; animation: none; }
+.pl-tiempo-capa {
+  position: absolute;
+  top: -17.5%;
+  left: 0;
+  width: 100%;
+  height: 117.5%;
+  object-fit: cover;
+  object-position: center;
+}
+.pl-tiempo-cielo { z-index: 1; }
+.pl-tiempo-montana { z-index: 2; }
+.pl-tiempo-frente { z-index: 4; }
+.pl-hero-tiempo .pl-h1 {
+  position: absolute;
+  z-index: 3;
+  top: 14svh;
+  left: var(--pl-m);
+  right: var(--pl-m);
+  font-family: var(--ds-font-soul);
+  font-size: clamp(64px, 8.4vw, 136px);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 0.94;
+  text-align: center;
+}
+.pl-hero-tiempo .pl-h1 > span { display: block; }
+.pl-tiempo-propuesta {
+  position: absolute;
+  z-index: 6;
+  top: 69svh;
+  left: var(--pl-m);
+  max-width: min(39ch, 42%);
+}
+.pl-hero-tiempo .pl-bajada { margin-top: 0; font-size: var(--ds-type-lg); line-height: 1.4; }
+.pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-6); gap: var(--ds-space-4) var(--ds-space-6); }
+.pl-hero-tiempo .pl-hero-origen {
+  min-height: calc(var(--ds-control-height-touch) + var(--ds-space-2));
+  gap: var(--ds-space-6);
+  padding: var(--ds-space-2) var(--ds-space-4) var(--ds-space-2) var(--ds-space-8);
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-color-neutral-50);
+  color: var(--ds-color-zinc-900);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.pl-hero-etiqueta { font-size: var(--ds-type-lg); }
+.pl-hero-burbuja {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--ds-control-height-default);
+  height: var(--ds-control-height-default);
+  border-radius: var(--ds-radius-pill);
+  background: var(--pc-oro);
+  color: var(--pc-sobre-oro);
+  font-size: var(--ds-type-xl);
+  transition: transform var(--ds-motion-standard) var(--pc-curva);
+}
+.pl-hero-tiempo .pl-hero-origen:is(:hover, :focus-visible) { background: var(--ds-color-neutral-50); }
+.pl-hero-tiempo .pl-hero-origen:is(:hover, :focus-visible) .pl-hero-burbuja { transform: translateX(var(--ds-space-2)); }
+.pl-hero-tiempo .pl-hero-origen:focus-visible { outline-color: var(--pc-oro); }
+@media (prefers-reduced-motion: reduce) {
+  .pl-hero-burbuja { transition: none; }
+  .pl-hero-tiempo .pl-hero-origen:is(:hover, :focus-visible) .pl-hero-burbuja { transform: none; }
+}
+.pl-hero-ayuda { margin-top: var(--ds-space-3); font-size: var(--ds-type-sm); }
+.pl-tiempo-credito {
+  position: absolute;
+  z-index: 6;
+  top: 104svh;
+  right: var(--pl-m);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ds-control-height-touch);
+  font-size: var(--ds-type-sm);
+  color: var(--pc-producto-tinta);
+  text-underline-offset: 0.24em;
+}
+.pl-hero-tiempo .dg-cerrado :focus-visible,
+.pl-hero-tiempo:not(.pl-hero-diagnostico) .pl-cabecera :focus-visible {
+  outline-color: var(--pc-producto-volt);
+}
+@media (max-width: 999px) {
+  .pl-tiempo-capa { object-position: 32% center; }
+  .pl-hero-tiempo .pl-h1 { top: 18svh; font-size: clamp(56px, 8.4vw, 96px); }
+  .pl-tiempo-propuesta { top: 68svh; max-width: min(38ch, 55%); }
+}
+@media (max-width: 599px) {
+  .pl-hero-tiempo .pl-h1 { top: 18svh; font-size: clamp(36px, 9.8vw, 56px); }
+  .pl-tiempo-capa { object-position: 36% center; }
+  .pl-tiempo-propuesta { top: 57svh; right: var(--pl-m); max-width: 36ch; }
+  .pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-4); }
+  .pl-hero-tiempo .pl-acciones > .pl-enlace { display: none; }
+  .pl-hero-tiempo .pl-bajada { font-size: var(--ds-type-lg); }
+  .pl-tiempo-credito { top: 108svh; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-tiempo-capa, .pl-hero-tiempo .pl-h1 { transform: none; }
 }

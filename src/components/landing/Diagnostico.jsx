@@ -30,6 +30,7 @@
 // guardado posterior; volver a ver el mismo resultado no guarda otra fila.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { marcarEvento } from '../../lib/analiticaPlataforma';
 import { AGENDA_URL } from '../../lib/contactoPlataforma';
 import {
@@ -246,7 +247,7 @@ function arranque(modo) {
  *   `abrir` para los otros botones de la pagina.
  * modo 'pagina': arranca abierto. `nivel` es la etiqueta del enunciado.
  */
-export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, nivel = 'h1' }) {
+export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, onAbiertoChange, nivel = 'h1' }) {
   const [inicio] = useState(() => arranque(modo));
   const [respuestas, setRespuestas] = useState(inicio.respuestas);
   const [abierto, setAbierto] = useState(inicio.abierto);
@@ -267,12 +268,17 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const vista = useRef(null); // ultimo `abierto|paso|fase` atendido
   const marcoInicio = useRef(false);
   const marcoResultado = useRef(null);
+  const aperturaEnCurso = useRef(false);
 
   const recorrido = recorridoDe(respuestas.vertical);
   const pasoIdx = Math.min(indice, recorrido.length - 1);
   const paso = recorrido[pasoIdx];
   const listo = completo(paso, respuestas);
   const conDesde = () => window.history.state?.desde === true;
+
+  useEffect(() => {
+    onAbiertoChange?.(abierto);
+  }, [abierto, onAbiertoChange]);
 
   // Caras de Dico precargadas: cambiar de estado no tiene que parpadear.
   useEffect(() => {
@@ -369,16 +375,37 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   const abrir = useCallback(() => {
     if (!abierto) {
-      empujar(0);
-      setIndice(0);
-      setFase('preguntas');
-      setAbierto(true);
+      if (aperturaEnCurso.current) return;
+      aperturaEnCurso.current = true;
+      let mostrado = false;
+      const mostrar = () => {
+        if (mostrado) return;
+        mostrado = true;
+        const siguiente = primerFaltante(respuestasRef.current);
+        empujar(siguiente);
+        setIndice(siguiente);
+        setFase('preguntas');
+        setAbierto(true);
+        aperturaEnCurso.current = false;
+      };
+      // La transicion une el boton con la pregunta real. El estado y el
+      // historial se actualizan una sola vez, tambien si la API no existe.
+      const reducir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      if (modo === 'home' && document.startViewTransition && !reducir) {
+        try {
+          const transicion = document.startViewTransition(() => flushSync(mostrar));
+          transicion.updateCallbackDone?.catch(() => mostrar());
+          transicion.finished.catch(() => {});
+        } catch {
+          mostrar();
+        }
+      } else mostrar();
       return;
     }
     // Ya abierto (un boton de mas abajo): solo traerlo a la vista.
     raizRef.current?.scrollIntoView({ block: 'start' });
     tituloRef.current?.focus({ preventScroll: true });
-  }, [abierto]);
+  }, [abierto, modo]);
 
   useEffect(() => {
     if (abrirRef) abrirRef.current = abrir;

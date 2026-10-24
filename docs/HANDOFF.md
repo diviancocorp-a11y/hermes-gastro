@@ -11,14 +11,123 @@
 
 ---
 
-## 23/oct/2026 — La landing se sigue desde un solo lugar (Claude)
+## 24/oct/2026 — Landing: boton elegido y circuito con Dico central (Codex)
+
+### Ultima continuacion — 24/oct (leer primero)
+
+- Ricky aprobo el parallax y eligio la capsula **Marfil en movimiento** con
+  burbuja dorada y el titulo **Tu tiempo vuelve a ser tuyo.** Bajada de gestion
+  aplicada. La burbuja origina la expansion al diagnostico existente: ancho
+  completo, minimo100svh en home, con alternativa inmediata sin API/reduced.
+- Apartado 2 implementado: `CircuitoNegocio.jsx` + CSS scoped, pet vigente
+  `DicoPhysical` central y cinco piezas (catalogo/pedidos/stock/caja/resultado).
+  Tres momentos por scroll nativo en escritorio y seleccion manual/teclado;
+  en movil, selector -> diagrama -> explicacion. Negro zinc continuo desde
+  el hero, grano SVG propio estatico de baja opacidad en public/brand/landing.
+- Gastronomia de ejemplo: recibir no descuenta ni cobra; completar descuenta
+  receta; registrar cobro es accion distinta. Neto$669.000 del dia completo,
+  mismas cifras de Piezas, sin datos privados ni nueva promesa IA.
+- Verificado:78tests/7archivos, poolthreads/maxWorkers2; JSXlint, tipos y build.
+  Chrome320/390/768/1280x600/1440:0overflow, titular2lineas,CTAvisible,
+  seleccion3estados, foco y apertura. Estatico17warnings/6advisory sin cambio;
+  inspector0FAIL/3WARN conocidos. Auditor independiente sin pendientes al
+  cierre: P2 sticky bajo corregido; teclado ya no manda foco fuera de vista.
+- Sin paquetes/backend nuevos. El unico recurso final nuevo fuera de
+  src/docs/platform/scripts es zinc-grain.svg, necesario para servir el grano;
+  no se modificaron los masters ni los assets del pet. Agenda intacta.
+- Codigo `3eef553` y parche `3a53c9d` subidos al PR#52 en borrador; preview READY:
+  https://hermes-platform-byaa0i2ua-diviancocorp-a11ys-projects.vercel.app/landing#que-hace
+  El CI encontro alertas nuevas de undici via jsdom: parche solo del lockfile
+  7.30.0 -> 7.30.1, sin dependencias nuevas. Audit local 0 vulnerabilidades e
+  instalacion coherente con 466 paquetes. CI de `3a53c9d` SUCCESS: Lint,
+  Typecheck, Unit Tests, Security Audit, Build (run40105727258), tambien
+  Playwright (run40105727150); smoke produccion SKIPPED. 78 pruebas pertinentes
+  tambien pasan con el parche. Chrome local con backend ficticio; preview
+  requiere sesion Vercel. No se mergeo ni se publico en main.
+  Ricky revisa apartado2 antes de seguir. Misma rama landing/rediseno. Fases3/4 aun
+  pendientes: rubros, logos/Instagram, pasos, planes, FAQ/footer. Digital14999
+  sigue documentado, sin aplicar aqui. LANDINGseccion1 es el estado vivo.
+
+### Historial — 23/oct: reemplazo del hero rechazado
+
+### Ultima decision de Ricky y reemplazo (leer primero)
+
+- Ricky rechazo el hero de concreto/dispositivos de `b4084ad`: textura rara,
+  profundidad insuficiente y laptop deformada al abrir el ejemplo. Los checks
+  anteriores no equivalian a aprobacion visual. No extender esa direccion.
+- Se reemplazo por la composicion original de Parallax Scrolling de Osmo:
+  paisaje, montana, titulo y caminante en cuatro planos. Mensaje **Mas tiempo
+  para vivir.**, bajada de pedidos/stock/caja/resultados y tiempo para los tuyos.
+  Quiero Dico mantiene el diagnostico. Recursos originales CC0, 192.604 bytes,
+  procedencia y licencia en `docs/marca/referencias/parallax-osmo.md`.
+- Misma worktree y PR #52. Se retiro la textura huerfana de public; las tres
+  capas WebP son los nuevos archivos finales fuera de src/docs/platform/scripts,
+  necesarios para servir la escena localmente. Sin paquetes ni backend nuevos.
+- Verificado localmente: 61 tests/5 archivos, tipos, build y check:diseno.
+  Chrome en 1440/768/390/320/1280 sin overflow; CTA visible y abre con foco.
+  Scroll288 mueve cielo236,16/montana187,20/titulo95,04/frente34,56 px.
+  Movimiento reducido cancela las cuatro animaciones, sin errores de JS.
+- Auditor independiente: 0 hallazgos nuevos. P2 heredado Entrar38,86x44px;
+  contraste AA fotografico completo no certificado. Detector17/6 sin cambio;
+  inspector real pasa de1FAIL/3WARN a0FAIL/3WARN (se retira details que daba
+  falso positivo). Los tres warnings preexistentes se explican en LANDING.
+  CTA de una linea revalidado en320px, sin desborde.
+- Codigo `58afd2b`, PR #52 en borrador. Vercel READY del mismo SHA:
+  https://hermes-platform-gnwx2hljm-diviancocorp-a11ys-projects.vercel.app/landing
+  CI: Lint, Typecheck, Unit Tests, Security Audit, Build y Playwright SUCCESS;
+  smoke produccion SKIPPED. Runtime remoto no verificado por proteccion de
+  Vercel; no se intento bypass en esta entrega. Temporales propios retirados.
+- La aceptacion visual sigue pendiente de Ricky; cuerpo y planes siguen
+  pendientes de fases3/4. Este preview requiere su sesion de Vercel.
+  Detalle y evidencia viva en LANDING secciones1/11. Agenda intacta.
+
+### Historial de la entrega anterior (reemplazada)
 
 - `docs/plataforma/LANDING.md` es la guia unica de la landing: estado, mapa de
   archivos, reglas de honestidad y de marca (resumen del RC5), lo aprendido de
   IMAN y el plan. Ricky la sigue desde Codex.
-- Pendiente: rama `landing/resultado-del-dia` (auditada, con preview, sin PR).
-  Antes del PR, arreglar el Security Audit de `main`, rojo desde el 22/oct por
-  `vite` 8.3.0-8.3.2 y `vitest` <=4.1.11.
+- Continuacion Codex: Ricky eligio la estructura completa y autorizo avanzar.
+  Plan de 5 fases con pasos y criterios en seccion 10; seccion 1 registra el
+  estado y debe actualizarse al cerrar cada fase. Se reutilizo la worktree
+  limpia `landing-rediseno` y se incorporo la rama de resultado del dia.
+- Fase 2: hero de concreto, laptop/tablet/celular con HTML de ejemplo, KPI y
+  desglose nativo; Quiero Dico abre el diagnostico existente mediante morph
+  nativo o alternativa accesible, sin duplicar respuestas ni guardados.
+  Una sola presencia Dico por estado; fuentes locales y tokens Zinc existentes.
+- Codigo `b4084ad`, integrado con main `645181e` en `c9cf4dc`.
+  PR #52 **en borrador**: https://github.com/diviancocorp-a11y/hermes-gastro/pull/52
+  Preview READY del SHA c9cf4dc:
+  https://hermes-platform-q0jlduys8-diviancocorp-a11ys-projects.vercel.app/landing
+  Entrada separada en el mismo host: /diagnostico. No se publico a main.
+- Verificacion: 57 tests/5 archivos con Vitest4.1.12 y pool threads; ESLint,
+  tipos, build y gates del repo pasaron. CI del PR en c9cf4dc: Lint, Typecheck,
+  Unit Tests, Build, Security Audit y Playwright SUCCESS. El arreglo vite/vitest
+  ya estaba mergeado en main, no se repitio. Smoke produccion SKIPPED.
+- Auditor independiente: 2 P1 corregidos (KPI700 y foco inicialmente oculto),
+  0 P0/P1 pendientes. Detector estatico 17warnings/6advisory antes/despues;
+  sin desborde en390/768/1280/1440, tambien con desglose/diagnostico abiertos.
+  Inspector reporta un falso positivo comprobado de rectangulos de contenido
+  en details cerrado; no se altero UI ni detector para esquivarlo.
+- Navegador local con conexion ficticia: cuatro rubros hasta registro con
+  parametros correctos; recarga, error/reintento y no duplicacion de guardado.
+  Preview remoto: version.json200/buildIdc9cf4dca y READY verificados. Runtime
+  remoto no verificado: navegador llego al login de Vercel. Revision automatica
+  rechazo enlace temporal/fetch protegido por bypass de acceso. Proteccion intacta.
+- Pendiente inmediato: fases3/4 (circuito, rubros, logos con Instagram, pasos,
+  planes, FAQ y footer con logo del admin). Siguen con UI anterior en el preview.
+  Ricky aprobo Digital **$14.999/mes**; anual sin definir. Aun no se cambiaron
+  precios en landing, diagnostico ni tabla plans; sincronizar en fase4.
+  No confundir cuenta sin tarjeta con plan gratis. No publicar este borrador
+  como landing completa. No hay migraciones, funciones ni billing nuevos.
+- Instalacion: se detecto node_modules compartido al sincronizar dependencias.
+  Se restauro el principal desde su propio lockfile y se dejo landing aislada;
+  check:install-state paso en ambas (466 paquetes). Codigo/agenda principal
+  intactos. En adelante verificar realpath e install-state antes de npm ci.
+- Recursos finales dentro del repo: maqueta en docs/marca/referencias y textura
+  optimizada en public/brand/landing/concreto-hero.webp (1536x1024,171KB).
+  Public es el unico archivo final nuevo fuera de src/docs/platform/scripts,
+  necesario para servir el fondo; ImageGen conserva original en su cache.
+  Prompt y procedencia en LANDING. Temporales de prueba se limpian al entregar.
 
 ---
 
@@ -315,82 +424,3 @@
 - Pendientes que siguen vigentes de las secciones a archivar: primer error
   real desminificado de Sentry y existencia/alta de MiaEstudio no verificados
   en esta tarea. GerenteDico etapas 2/3 se describen en las secciones siguientes.
-
-## 19/oct/2026 — Carga inicial de Monare (Codex)
-
-### Hecho y verificado en el edificio
-
-- Solo datos del tenant `monare` (`1367edee-7754-4169-a616-45310d98c045`),
-  sin cambios de codigo, schema, otros tenants ni condiciones comerciales.
-- 53 productos simples: 20 activos con precio, 32 del PDF inactivos por
-  falta de precio actualizado y una caja de Opalo Syrah inactiva por confirmar.
-  Incluyen 36 presentaciones de Mauricio Lorca, 8 espumantes, 5 cajas x6
-  y 4 lotes de hielo. Louis Rose se tomo como el "Lois rose" del mensaje.
-- Precios de los mensajes del 15/oct tienen prioridad sobre PDF e imagen:
-  Louis Rose $17.390 / caja x6 $102.000; Lorca Joven Malbec $8.190 / $49.200;
-  Opalo Syrah $13.290 / $48.600 (caja pendiente); Fantasia Chardonnay y
-  Cabernet Sauvignon $9.490 / $54.590 cada caja x6. No se importaron
-  los precios, costos ni promociones del PDF. Sin stock inventado.
-- Hielo: lotes de 15/30 bolsas de 2 kg a $27.000/$51.000 y de 15 kg a
-  $94.500/$180.000. Los importes publicados son por lote completo.
-- Medios internos: transferencia, efectivo y credito segun acuerdo;
-  MercadoPago desactivado. Cuenta de transferencia en checkout con datos
-  a coordinar (sin alias, CBU ni titular inventados). La tarjeta solo queda
-  como medio interno, no como pasarela online.
-- Pagina `/info/compras-y-envios`: horario informado 8:30-20:30, pagos,
-  CABA y Provincia, entrega gratis en CABA para pedidos mayores a $95.000
-  en 24 horas; express cotizado por zona (Flex/Uber). No se activo el umbral
-  global de envio gratis porque tambien aplicaria a Provincia.
-- `settings.has_physical_store=false` ya existia, pero el espejo del tenant
-  no tenia esa clave: `get_catalog` devolvia true. Se alineo la clave del JSON
-  a false sin cambiar el trigger compartido. Pendiente del sistema: el
-  trigger `espejar_settings_a_tenant` no copia esa columna.
-- La cuenta existente de `importacionmarcano@gmail.com` ya era owner.
-  Se configuro por Supabase Auth Admin la clave pedida y se verifico login;
-  no se guarda la clave en archivos ni en este documento.
-- Readback SQL: 53 filas, 20 activas, 33 inactivas, 0 diferencias contra los
-  datos preparados, 0 activas a $0 y todo el stock NULL. RPC como anon:
-  20 productos y `has_physical_store=false`. Browser de produccion muestra
-  los 20 productos con precios; sigue "Cerrado: todavia no toma pedidos".
-- Continuacion confirmada por Ricky: todos los dias (lunes a domingo),
-  08:30-20:30, guardados en `store_hours` (indices 0-6). WhatsApp
-  `+5491123901855`. `store_address` = CABA, explicitamente provisorio;
-  actualizado tambien el texto de `/info/compras-y-envios` y el aviso de
-  entrega en CABA y Provincia. Readback de tabla y RPC publico coinciden.
-- Ricky eligio dejar pendiente la caja x6 de Opalo Syrah; sigue inactiva.
-- Actualizacion posterior: Instagram `monare.boutique`; despacho provisorio
-  autorizado en Av. de los Incas 4000, CABA. USIG normalizo esa direccion y
-  devolvio lat/lng `-34.577830, -58.467925` (OSM coincide). Creada sucursal
-  default activa "Despacho provisorio", con telefono y direccion marcados
-  como provisorios. `get_catalog` como anon devuelve `catalogo_activo=true`;
-  siguen 20 productos activos y no hay local de atencion al publico. Browser
-  de produccion muestra "Abierto: 08:30 a 20:30" y los links correctos de
-  Instagram y WhatsApp. No se envio ningun pedido de prueba.
-- Envio sin tarifa automatica: con `delivery_pricing=NULL` el checkout usa
-  tarifas genericas de $500 a $5.000 que Monare nunca informo. Se guardo un
-  escalon con costo 0 y aviso explicito: el total online incluye productos;
-  el envio se cotiza/cobra aparte segun zona y cantidad, coordinar antes de
-  pagar. La pagina de condiciones lo explica; CABA > $95.000 conserva envio
-  sin costo en 24 horas. Esto no implementa una cotizacion automatica por zona.
-
-### Pendiente de datos de Ricky / Monare
-
-- Reemplazar el despacho provisorio de Av. de los Incas 4000 por el real
-  cuando Monare lo confirme (direccion y coordenadas de la sucursal default).
-- Alias/CBU para transferencias.
-- Caja x6 de Opalo Syrah a $48.600 frente a $13.290 por unidad: Ricky
-  pidio dejarla pendiente, sin corregir ni publicar su precio.
-- Precios actualizados de las otras 32 presentaciones del PDF. Los ejemplos
-  de la planilla vacia de Drive NO son datos reales ni se importaron.
-- Pendientes heredados sin verificar en esta sesion: primer error Sentry
-  desminificado; diferencia de productos de Crazy Miga y existencia de
-  MiaEstudio en el edificio. Las etapas 2/3 de GerenteDico y el barrido de
-  policies tienen secciones posteriores a la de Sentry, consultar esas.
-
-### Archivos y evidencia
-
-- Solo documentacion en `docs/`. PDF e imagen del usuario se leyeron en sus
-  ubicaciones originales. Imagenes temporales de inspeccion en el temp del
-  sistema y `.preview/monare-import/` (ignorado), eliminadas al terminar.
-- Codigo desplegado al iniciar: `5076010`, produccion READY en Vercel.
-  La carga es de datos y no requiere deploy ni migracion.
