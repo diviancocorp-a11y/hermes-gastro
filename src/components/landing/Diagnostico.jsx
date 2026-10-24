@@ -272,6 +272,8 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const aperturaEnCurso = useRef(false);
   const viaje = useRef(null);
   const caraRef = useRef(null);
+  const abiertoRef = useRef(abierto);
+  const scrollPortada = useRef(0);
 
   const recorrido = recorridoDe(respuestas.vertical);
   const pasoIdx = Math.min(indice, recorrido.length - 1);
@@ -280,6 +282,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const conDesde = () => window.history.state?.desde === true;
 
   useEffect(() => {
+    abiertoRef.current = abierto;
     onAbiertoChange?.(abierto);
   }, [abierto, onAbiertoChange]);
 
@@ -330,7 +333,8 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     if (primera) return;
     const raiz = raizRef.current;
     if (!raiz) return;
-    if (abierto && !aperturaEnCurso.current) {
+    if (aperturaEnCurso.current) return;
+    if (abierto) {
       tituloRef.current?.focus({ preventScroll: true });
       const arriba = raiz.getBoundingClientRect().top;
       if (arriba < 0 || arriba > window.innerHeight * 0.5) {
@@ -344,35 +348,72 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   // Atras y Adelante del navegador recorren los pasos.
   useEffect(() => {
     const alVolver = (e) => {
-      // Retirar inert antes del commit: su efecto ya puede devolver el foco
-      // al CTA. Cancelar no enfoca el heading que está por desmontarse.
+      const interrumpido = aperturaEnCurso.current;
       viaje.current?.cancelar();
       clearTimeout(avance.current);
       const s = e.state?.dg;
-      if (s === undefined || s === null) {
-        if (modo === 'home') {
-          setAbierto(false);
-          setFase('preguntas');
-          setIndice(0);
-          // Durante expansión todavía no se montó la pregunta: no habrá
-          // cambio de estado ni efecto de foco al volver al mismo CTA.
-          raizRef.current?.querySelector('[data-abrir]')?.focus({ preventScroll: true });
+      const cerrar = s === undefined || s === null;
+      const aplicarHistoria = () => {
+        if (cerrar) {
+          if (modo === 'home') {
+            setAbierto(false);
+            setFase('preguntas');
+            setIndice(0);
+          }
+          return;
         }
-        return;
-      }
-      setAbierto(true);
-      if (s === 'resultado') {
-        if (todoCompleto(respuestasRef.current)) { setFase('resultado'); return; }
-        // Pantalla e historial tienen que coincidir: si faltan respuestas, la
-        // entrada pasa a ser la primera pregunta sin contestar.
-        const falta = primerFaltante(respuestasRef.current);
-        window.history.replaceState({ ...window.history.state, dg: falta }, '');
+        setAbierto(true);
+        if (s === 'resultado') {
+          if (todoCompleto(respuestasRef.current)) { setFase('resultado'); return; }
+          const falta = primerFaltante(respuestasRef.current);
+          window.history.replaceState({ ...window.history.state, dg: falta }, '');
+          setFase('preguntas');
+          setIndice(falta);
+          return;
+        }
         setFase('preguntas');
-        setIndice(falta);
+        setIndice(Number(s) || 0);
+      };
+      // Un paso interno nunca reproduce el viaje. Si otra navegación corta
+      // un recorrido en curso, gana su estado más reciente inmediatamente.
+      if (!cerrar || modo !== 'home' || !abiertoRef.current || interrumpido) {
+        flushSync(aplicarHistoria);
+        if (cerrar && modo === 'home') {
+          raizRef.current?.querySelector('[data-abrir]')?.focus({ preventScroll: true });
+        } else tituloRef.current?.focus({ preventScroll: true });
         return;
       }
-      setFase('preguntas');
-      setIndice(Number(s) || 0);
+      aperturaEnCurso.current = true;
+      let mostrado = false;
+      const mostrar = () => {
+        if (mostrado) return;
+        mostrado = true;
+        flushSync(aplicarHistoria);
+        window.scrollTo({ top: scrollPortada.current, behavior: 'instant' });
+        const boton = raizRef.current?.querySelector('[data-abrir]');
+        const rect = boton?.getBoundingClientRect();
+        if (rect && (rect.top < 0 || rect.bottom > window.innerHeight)) {
+          boton.scrollIntoView({ block: 'center', behavior: 'instant' });
+        }
+      };
+      const origen = caraRef.current;
+      viaje.current = viajarConDico({
+        origen,
+        prepararOrigen: () => {
+          const rectCara = origen?.getBoundingClientRect();
+          if (rectCara && (rectCara.top < 0 || rectCara.bottom > window.innerHeight)) {
+            raizRef.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
+          }
+        },
+        raiz: raizRef.current?.closest('.pl-root'),
+        mostrar,
+        destino: () => raizRef.current?.querySelector('.pl-hero-burbuja'),
+        sentido: 'vuelta',
+        alTerminar: ({ enfocar = true } = {}) => {
+          aperturaEnCurso.current = false;
+          if (enfocar && mostrado) raizRef.current?.querySelector('[data-abrir]')?.focus({ preventScroll: true });
+        },
+      });
     };
     window.addEventListener('popstate', alVolver);
     return () => window.removeEventListener('popstate', alVolver);
@@ -390,6 +431,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const abrir = useCallback((evento) => {
     if (aperturaEnCurso.current) return;
     if (!abierto) {
+      scrollPortada.current = window.scrollY;
       aperturaEnCurso.current = true;
       let mostrado = false;
       const mostrar = () => {

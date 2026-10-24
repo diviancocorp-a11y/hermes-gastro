@@ -1,5 +1,5 @@
 import { createElement, createRef } from 'react';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Diagnostico from '../components/landing/Diagnostico';
 
@@ -8,7 +8,7 @@ vi.mock('../lib/analiticaPlataforma', () => ({ marcarEvento: vi.fn() }));
 
 const pregunta = () => screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' });
 function Portada({ onAbrir }) {
-  return <button type="button" data-abrir onClick={onAbrir}>Quiero Dico</button>;
+  return <button type="button" data-abrir onClick={onAbrir}>Quiero Dico<span className="pl-hero-burbuja" /></button>;
 }
 function montar() {
   const abrirRef = createRef();
@@ -25,6 +25,7 @@ describe('Dico acompaña del CTA al diagnóstico real', () => {
   beforeEach(() => {
     sessionStorage.clear();
     window.history.replaceState({}, '');
+    window.history.scrollRestoration = 'auto';
     push = vi.spyOn(window.history, 'pushState');
     window.scrollTo = vi.fn();
     Element.prototype.scrollIntoView = vi.fn();
@@ -35,16 +36,25 @@ describe('Dico acompaña del CTA al diagnóstico real', () => {
     vi.stubGlobal('requestAnimationFrame', vi.fn((callback) => { cuadros.push(callback); return cuadros.length; }));
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
     animarOriginal = Element.prototype.animate;
-    Element.prototype.animate = vi.fn((frames) => {
+    const estiloOriginal = window.getComputedStyle;
+    vi.stubGlobal('getComputedStyle', (elemento) => {
+      if (!elemento.matches('.pl-viaje-dico')) return estiloOriginal(elemento);
+      return { getPropertyValue: (token) => ({
+        '--pl-viaje-expansion': '800ms', '--pl-viaje-pantalla': '120ms',
+        '--pl-viaje-compresion': '800ms', '--pl-viaje-curva': 'cubic-bezier(0.65, 0, 0.35, 1)',
+      }[token] || '') };
+    });
+    Element.prototype.animate = vi.fn((frames, opciones) => {
       let terminar;
       let rechazar;
       const finished = new Promise((resolve, reject) => { terminar = resolve; rechazar = reject; });
-      const animacion = { frames, finished, terminar, rechazar, cancel: vi.fn() };
+      const animacion = { frames, opciones, finished, terminar, rechazar, cancel: vi.fn() };
       animaciones.push(animacion);
       return animacion;
     });
     vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function () {
       if (this.matches('[data-abrir]')) return { top: 500, bottom: 556, left: 20, right: 240, width: 220, height: 56 };
+      if (this.matches('.pl-hero-burbuja')) return { top: 508, bottom: 548, left: 192, right: 232, width: 40, height: 40 };
       if (this.matches('.dg-guia-cara')) return { top: 96, bottom: 144, left: 20, right: 68, width: 48, height: 48 };
       return { top: 0, bottom: 800, left: 0, right: 390, width: 390, height: 800 };
     });
@@ -59,11 +69,26 @@ describe('Dico acompaña del CTA al diagnóstico real', () => {
     document.documentElement.style.overflow = '';
   });
   const abrir = () => fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
-  const cubrir = async () => {
-    await act(async () => animaciones[0].terminar());
+  const cubrir = async (indice = 0) => {
+    await act(async () => animaciones[indice].terminar());
     expect(document.querySelector('[data-viaje="pantalla"]')).toBeInTheDocument();
     await act(async () => cuadros.shift()());
     await act(async () => cuadros.shift()());
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 130)));
+  };
+  const completarIda = async () => {
+    abrir();
+    await cubrir();
+    await act(async () => animaciones[1].terminar());
+  };
+  const arrancarVuelta = async () => {
+    expect(document.querySelector('[data-sentido="vuelta"]').hidden).toBe(true);
+    await act(async () => cuadros.shift()());
+  };
+  const completarVuelta = async () => {
+    await arrancarVuelta();
+    await cubrir(2);
+    await act(async () => animaciones[3].terminar());
   };
 
   it('cubre toda la pantalla antes de montar una única pregunta y comprime hacia su cara', async () => {
@@ -95,6 +120,155 @@ describe('Dico acompaña del CTA al diagnóstico real', () => {
     expect(animaciones).toHaveLength(2);
     expect(push).toHaveBeenCalledOnce();
     await act(async () => animaciones[1].terminar());
+  });
+
+  it('Volver al inicio recorre cara → pantalla dorada → burbuja del CTA, sin perder respuestas ni agregar historial', async () => {
+    montar();
+    await completarIda();
+    fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Volver al inicio' }));
+    await waitFor(() => expect(document.querySelector('[data-sentido="vuelta"]')).toBeInTheDocument());
+    await arrancarVuelta();
+    expect(pregunta()).toBeInTheDocument();
+    expect(animaciones[2].frames[0].clipPath).toContain('round 24px');
+    expect(window.history.scrollRestoration).toBe('auto');
+    await cubrir(2);
+    expect(screen.getByRole('button', { name: 'Quiero Dico' })).toBeInTheDocument();
+    expect(animaciones[3].frames.at(-1).clipPath).toContain('508px');
+    expect(animaciones[3].frames.at(-1).clipPath).toContain('round 20px');
+    await act(async () => animaciones[3].terminar());
+    expect(screen.getByRole('button', { name: 'Quiero Dico' })).toHaveFocus();
+    expect(window.history.scrollRestoration).toBe('auto');
+    expect(push).toHaveBeenCalledOnce();
+    expect(JSON.parse(sessionStorage.getItem('dico:diagnostico-en-curso')).respuestas.vertical).toBe('gastronomia');
+    abrir();
+    await cubrir(4);
+    await act(async () => animaciones[5].terminar());
+    expect(screen.getByRole('heading', { name: '¿Qué es lo que más te preocupa hoy?' })).toHaveFocus();
+    expect(push).toHaveBeenCalledTimes(2);
+  });
+
+  it('Atrás del navegador también reproduce la vuelta al cerrar, con el mismo foco final', async () => {
+    montar();
+    await completarIda();
+    act(() => window.history.back());
+    await waitFor(() => expect(document.querySelector('[data-sentido="vuelta"]')).toBeInTheDocument());
+    await completarVuelta();
+    expect(screen.getByRole('button', { name: 'Quiero Dico' })).toHaveFocus();
+    expect(push).toHaveBeenCalledOnce();
+  });
+
+  it('Atrás entre preguntas mantiene navegación normal, sin iniciar una vuelta', async () => {
+    montar();
+    await completarIda();
+    fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Seguir' }));
+    expect(screen.getByRole('heading', { name: '¿Qué es lo que más te preocupa hoy?' })).toHaveFocus();
+    act(() => window.history.back());
+    await waitFor(() => expect(pregunta()).toHaveFocus());
+    expect(animaciones).toHaveLength(2);
+    expect(document.querySelector('.pl-viaje-dico')).not.toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Gastronomía' })).toBeChecked();
+  });
+
+  it.each(['expansion', 'llegada'])('una navegación nueva durante %s de vuelta gana sobre callbacks tardíos', async (fase) => {
+    montar();
+    await completarIda();
+    fireEvent.popState(window, { state: {} });
+    await arrancarVuelta();
+    if (fase === 'llegada') await cubrir(2);
+    const anterior = animaciones.at(-1);
+    fireEvent.popState(window, { state: { dg: 0, desde: true } });
+    expect(pregunta()).toHaveFocus();
+    expect(document.querySelector('.pl-viaje-dico')).not.toBeInTheDocument();
+    expect(anterior.cancel).toHaveBeenCalledOnce();
+    await act(async () => anterior.terminar());
+    expect(pregunta()).toHaveFocus();
+    expect(push).toHaveBeenCalledOnce();
+  });
+
+  it('otra acción Atrás durante la vuelta cancela, devuelve el CTA y no crea otro recorrido', async () => {
+    montar();
+    await completarIda();
+    fireEvent.popState(window, { state: {} });
+    await arrancarVuelta();
+    fireEvent.popState(window, { state: {} });
+    await act(async () => animaciones[2].terminar());
+    expect(screen.getByRole('button', { name: 'Quiero Dico' })).toHaveFocus();
+    expect(animaciones).toHaveLength(3);
+    expect(document.querySelector('.pl-viaje-dico')).not.toBeInTheDocument();
+    expect(push).toHaveBeenCalledOnce();
+  });
+
+  it('resize durante la vuelta termina en el hero y restaura la interacción', async () => {
+    const { container } = montar();
+    await completarIda();
+    fireEvent.popState(window, { state: {} });
+    fireEvent.resize(window);
+    expect(screen.getByRole('button', { name: 'Quiero Dico' })).toHaveFocus();
+    expect(container.firstChild.inert).not.toBe(true);
+    expect(window.history.scrollRestoration).toBe('auto');
+    expect(push).toHaveBeenCalledOnce();
+  });
+
+  it('desmontar durante la vuelta limpia la capa sin cambiar tarde DOM ni historial', async () => {
+    const { unmount } = montar();
+    await completarIda();
+    fireEvent.popState(window, { state: {} });
+    await arrancarVuelta();
+    unmount();
+    await act(async () => animaciones[2].terminar());
+    expect(document.querySelector('.pl-viaje-dico')).not.toBeInTheDocument();
+    expect(window.history.scrollRestoration).toBe('auto');
+    expect(document.documentElement.style.overflow).toBe('');
+    expect(push).toHaveBeenCalledOnce();
+  });
+
+  it.each(['reducido', 'sin API', 'API rechazada'])('%s permite volver directamente al CTA', async (modo) => {
+    montar();
+    await completarIda();
+    if (modo === 'reducido') media.matches = true;
+    if (modo === 'sin API') delete Element.prototype.animate;
+    fireEvent.popState(window, { state: {} });
+    if (modo === 'API rechazada') {
+      await arrancarVuelta();
+      await act(async () => animaciones[2].rechazar(new Error('Cancelada')));
+    }
+    expect(screen.getByRole('button', { name: 'Quiero Dico' })).toHaveFocus();
+    expect(document.querySelector('.pl-viaje-dico')).not.toBeInTheDocument();
+    expect(push).toHaveBeenCalledOnce();
+  });
+
+  it.each(['auto', 'manual'])('no escribe scrollRestoration ni durante la ida ni durante la vuelta con modo inicial %s', async (modo) => {
+    const anterior = Object.getOwnPropertyDescriptor(window.history, 'scrollRestoration');
+    const escribir = vi.fn();
+    Object.defineProperty(window.history, 'scrollRestoration', {
+      configurable: true, get: () => modo, set: escribir,
+    });
+    try {
+      montar();
+      await completarIda();
+      fireEvent.popState(window, { state: {} });
+      await completarVuelta();
+      expect(escribir).not.toHaveBeenCalled();
+      expect(window.history.scrollRestoration).toBe(modo);
+    } finally { Object.defineProperty(window.history, 'scrollRestoration', anterior); }
+  });
+
+  it('cancelar la vuelta antes del RAF no muestra oro ni bloquea la interacción después', async () => {
+    const { container } = montar();
+    await completarIda();
+    fireEvent.popState(window, { state: {} });
+    const capa = document.querySelector('[data-sentido="vuelta"]');
+    expect(capa.hidden).toBe(true);
+    expect(animaciones).toHaveLength(2);
+    const pendiente = cuadros.shift();
+    fireEvent.popState(window, { state: { dg: 0, desde: true } });
+    await act(async () => pendiente());
+    expect(pregunta()).toHaveFocus();
+    expect(container.firstChild.inert).not.toBe(true);
+    expect(document.querySelector('.pl-viaje-dico')).not.toBeInTheDocument();
+    expect(animaciones).toHaveLength(2);
   });
 
   it.each(['expansion', 'llegada'])('un rechazo de WAAPI durante %s abre y libera el formulario', async (fase) => {
@@ -174,6 +348,8 @@ describe('Dico acompaña del CTA al diagnóstico real', () => {
       montar();
       abrir();
       act(() => vi.advanceTimersByTime(1600));
+      expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(1120));
       expect(pregunta()).toHaveFocus();
       expect(push).toHaveBeenCalledOnce();
       expect(document.querySelector('.pl-viaje-dico')).not.toBeInTheDocument();

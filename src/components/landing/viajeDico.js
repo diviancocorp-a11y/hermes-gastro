@@ -1,8 +1,8 @@
 /** Una sola superficie dorada; el formulario real se monta debajo una vez. */
-export function viajarConDico({ origen, raiz, mostrar, destino, alTerminar }) {
+export function viajarConDico({ origen, raiz, mostrar, destino, alTerminar, sentido = 'ida', prepararOrigen }) {
   const reducir = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-  const rect = origen?.getBoundingClientRect();
-  if (!rect || rect.width <= 0 || rect.height <= 0 || rect.bottom <= 0 || rect.top >= window.innerHeight
+  let rect = origen?.getBoundingClientRect();
+  if (!rect || rect.width <= 0 || rect.height <= 0 || (sentido === 'ida' && (rect.bottom <= 0 || rect.top >= window.innerHeight))
     || reducir?.matches || !Element.prototype.animate) {
     mostrar();
     alTerminar();
@@ -13,10 +13,21 @@ export function viajarConDico({ origen, raiz, mostrar, destino, alTerminar }) {
   capa.className = 'pl-viaje-dico';
   capa.setAttribute('aria-hidden', 'true');
   capa.dataset.viaje = 'expansion';
+  capa.dataset.sentido = sentido;
+  capa.hidden = sentido === 'vuelta';
   document.body.append(capa);
   const estilo = getComputedStyle(capa);
   const duracion = (token) => parseFloat(estilo.getPropertyValue(token));
-  const curva = estilo.getPropertyValue('--pc-curva').trim();
+  const expansion = duracion('--pl-viaje-expansion');
+  const pausa = duracion('--pl-viaje-pantalla');
+  const compresion = duracion('--pl-viaje-compresion');
+  const curva = estilo.getPropertyValue('--pl-viaje-curva').trim();
+  if (![expansion, pausa, compresion].every(Number.isFinite)) {
+    capa.remove();
+    mostrar();
+    alTerminar();
+    return null;
+  }
   const ancho = window.innerWidth;
   const alto = window.innerHeight;
   const recorte = (r, radio) => `inset(${r.top}px ${ancho - r.right}px ${alto - r.bottom}px ${r.left}px round ${radio}px)`;
@@ -29,11 +40,12 @@ export function viajarConDico({ origen, raiz, mostrar, destino, alTerminar }) {
   let animacion;
   let marco;
   let limite;
+  let pausaCompleta;
   const limpiar = (enfocar = true) => {
     clearTimeout(limite);
+    clearTimeout(pausaCompleta);
     cancelAnimationFrame(marco);
     window.removeEventListener('resize', interrumpir);
-    window.removeEventListener('popstate', volver);
     document.removeEventListener('visibilitychange', visibilidad);
     reducir?.removeEventListener?.('change', interrumpir);
     capa.remove();
@@ -49,14 +61,12 @@ export function viajarConDico({ origen, raiz, mostrar, destino, alTerminar }) {
     limpiar(abrir);
   };
   const interrumpir = () => cancelar(true);
-  const volver = () => cancelar(false);
   const visibilidad = () => { if (document.hidden) interrumpir(); };
   window.addEventListener('resize', interrumpir);
-  window.addEventListener('popstate', volver);
   document.addEventListener('visibilitychange', visibilidad);
   reducir?.addEventListener?.('change', interrumpir);
   // Incluso una implementación incompleta de WAAPI no puede dejar la página inerte.
-  limite = setTimeout(interrumpir, 1600);
+  limite = setTimeout(interrumpir, expansion + pausa + compresion + 1000);
   const animar = async (fotogramas, tiempo) => {
     animacion = capa.animate(fotogramas, { duration: tiempo, easing: curva, fill: 'forwards' });
     await animacion.finished;
@@ -66,10 +76,23 @@ export function viajarConDico({ origen, raiz, mostrar, destino, alTerminar }) {
   });
   (async () => {
     try {
-      await animar([{ clipPath: recorte(rect, rect.height / 2) }, { clipPath: completo }], duracion('--pc-t-estructura'));
+      if (sentido === 'vuelta') {
+        // popstate aún puede restaurar su scroll nativo al terminar el evento.
+        // Medir después evita cambiar modos que pertenecen a cada history entry.
+        await new Promise((resolve) => { marco = requestAnimationFrame(resolve); });
+        if (cancelado) return;
+        prepararOrigen?.();
+        rect = origen.getBoundingClientRect();
+        if (rect.bottom <= 0 || rect.top >= window.innerHeight) { cancelar(true); return; }
+        capa.hidden = false;
+      }
+      await animar([{ clipPath: recorte(rect, rect.height / 2) }, { clipPath: completo }], expansion);
       if (cancelado) return;
       capa.dataset.viaje = 'pantalla';
-      await pintarCompleto();
+      await Promise.all([
+        pintarCompleto(),
+        new Promise((resolve) => { pausaCompleta = setTimeout(resolve, pausa); }),
+      ]);
       if (cancelado) return;
       mostrar();
       const cara = destino()?.getBoundingClientRect();
@@ -77,9 +100,9 @@ export function viajarConDico({ origen, raiz, mostrar, destino, alTerminar }) {
       capa.dataset.viaje = 'llegada';
       await animar([
         { clipPath: completo, opacity: 1 },
-        { clipPath: recorte(cara, cara.width / 2), opacity: 1, offset: 0.82 },
+        { clipPath: recorte(cara, cara.width / 2), opacity: 1, offset: 0.9 },
         { clipPath: recorte(cara, cara.width / 2), opacity: 0 },
-      ], duracion('--pc-t-personaje'));
+      ], compresion);
       if (!cancelado) { cancelado = true; limpiar(); }
     } catch {
       if (!cancelado) cancelar(true);

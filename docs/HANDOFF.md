@@ -15,6 +15,19 @@
 
 ### Ultima continuacion — 24/oct (leer primero)
 
+- Ricky rechazo el ritmo de 5e1f8a5 por rapido. Referencia Hero Button Expendable
+  de 21st: superficie continua desde CTA; ahora800+120+800ms con curva simetrica,
+  excepcion focal posterior a la regla general, sin cambiar otros controles.
+  Confirma vuelta tanto Volveralinicio como Atrasnativo: cara48 -> oro -> Dico
+  en burbuja40delCTA. Atras entre preguntas normal, respuestas conservadas.
+  Chrome5viewports320-1440 ambasvueltas sin overflow/JSerrors; foco correcto,
+  oro329.160pixelesuniformes y fotogramasintermedios inspeccionados.
+  P2scrollRestoration corregido: ninguna escritura al modo del navegador,
+  RAFcancelable antes de medir vuelta. Auto/manual preservados en390/1440
+  con Forward/Back/interrupciones. 56tests/4files, poolthreads; detector17/6
+  sin cambios, render390/1280y scopednativo sin hallazgos, auditor2sin pendientes.
+  LANDINGseccion1 tiene detalle y preview estable. Pendiente Ricky revise ritmo;
+  luego cambiosdel segmento2. No avanzaron rubros ni otros bloques.
 - Cambio mas reciente: reemplazar flecha por Dico2D dorado sobre circulo negro,
   guino al hover/foco y boton que cubre viewport de oro y se comprime hacia
   la cara real del diagnostico. Ricky confirma guia antes de pregunta movil.

@@ -11,7 +11,39 @@
 
 ### Revision visual de Ricky — 24/oct
 
-**Cambio mas reciente — Dico acompana al diagnostico:** Ricky pide retirar la
+**Cambio mas reciente — ritmo legible y recorrido inverso:** Ricky considera
+demasiado rapida la secuencia de `5e1f8a5`. Referencia visual:
+https://21st.dev/@moazamtrade/components/hero-button-expendable
+Se toma la continuidad de la misma superficie desde el boton, la geometria
+sin cortes y un ritmo que permita seguir el cambio. No se incorpora software
+de la referencia. Confirma la inversa **tanto con Volver al inicio como con
+Atras del navegador al regresar al hero**; entre preguntas, Atras sigue normal.
+
+Ritmo local nuevo: **800 ms expansion + 120 ms pantalla dorada + 800 ms
+compresion**, curva simetrica `cubic-bezier(0.65,0,0.35,1)`. Esta secuencia
+focal mas lenta es una decision posterior del usuario; no cambia los tokens
+generales de 160-480 ms ni el guino. Ida desde el CTA hasta la cara de 48 px;
+vuelta desde esa cara hasta Dico en la burbuja de 40 px del CTA original.
+El contenido cambia bajo el oro completo y el foco llega al destino. La
+vuelta conserva respuestas y no crea entradas de historial adicionales.
+
+Chrome 320/390/768/1280/1440 confirma ambas formas de volver, sin overflow
+ni errores JS; fotogramas intermedios inspeccionados. Oro 390x844: 329.160
+pixeles, ninguno fuera de oro. Corregido P2 de restauracion de scroll por
+entrada: el helper ya no toca `history.scrollRestoration`; espera un RAF
+cancelable antes de medir la vuelta. Ciclos reales auto/manual en 390/1440
+conservan el modo original incluso al usar Forward o interrumpir la vuelta.
+Atras entre preguntas no aumenta el numero de viajes; al reabrir se conserva
+gastronomia y continua en la primera pregunta sin responder.
+
+56 pruebas pertinentes en cuatro archivos pasan con pool threads; detector
+estatico 17 warnings/6 advisory antes y despues, renderizado 390x844/1280x800
+sin hallazgos antes/despues y detector nativo scoped sin hallazgos. Auditor
+independiente cerro la segunda pasada sin pendientes. Misma rama y PR #52,
+preview estable en el enlace de abajo. Siguiente: revision visual del ritmo
+por Ricky y luego sus cambios del segmento 2; no avanzar rubros por esto.
+
+**Historial — primera secuencia de Dico:** Ricky pide retirar la
 flecha y poner la misma cara 2D dorada del diagnostico sobre el circulo negro.
 Un guino al pasar el mouse (tambien con foco de teclado) y una secuencia:
 boton dorado -> pantalla completamente dorada -> compresion hacia la cara
