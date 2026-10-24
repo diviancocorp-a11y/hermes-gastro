@@ -15,6 +15,19 @@
 
 ### Ultima continuacion — 24/oct (leer primero)
 
+- Cambio mas reciente: reemplazar flecha por Dico2D dorado sobre circulo negro,
+  guino al hover/foco y boton que cubre viewport de oro y se comprime hacia
+  la cara real del diagnostico. Ricky confirma guia antes de pregunta movil.
+  DicoBoton/viajeDico nuevos, sin modificar assets/masters ni dependencias.
+  Expansion300ms -> fotograma completo -> compresion480ms. Un montaje/history;
+  reduced/sinAPI/error/cancelacion mantienen acceso y restauran inert/scroll.
+  Chrome320/390/768/1280/1440: sin overflow/erroresJS; cara48x48visible.
+  Oro390x844:329.160pixeles,0fueraoro; guinoinspeccionado3x. P2 de foco con
+  Atras durante llegada corregido y confirmado en390/1440; /diagnostico propia
+  conserva disposicion. Detector17/6sin cambios, render390/1280sin hallazgos.
+  42tests/4archivos(poolthreads) y ESLint pasan, auditoria2sin pendientes.
+  Actualiza LANDINGseccion1; segmento2/parallax/zinc sin cambio. Todavia
+  pendiente recibir mas cambios del segmento2, no avanzar rubros.
 - Ajuste posterior de Ricky: CTA dorado, burbuja negra y flecha volt; conserva
   forma, hover y expansion. Suelo compartido zinc950 en hero/circuito/home del
   diagnostico; grano aparece gradualmente en 128 px, sin costura de tono.

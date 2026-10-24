@@ -400,8 +400,7 @@
 /* ─────────────── Telefono ─────────────── */
 
 @media (max-width: 999px) {
-  /* Durante las preguntas, la ficha repite lo elegido: en el telefono queda
-     Dico solo, despues de las acciones. En el resultado la ficha vuelve. */
+  /* Una sola guia antes de la pregunta. La ficha vuelve en el resultado. */
   .dg-fase-preguntas .dg-ficha-envoltura,
   .dg-fase-analizando .dg-ficha-envoltura { display: none; }
 
@@ -410,6 +409,12 @@
     align-items: stretch;
     padding-block: var(--ds-space-6);
   }
+  .pl-hero-tiempo .dg-fase-preguntas .pl-split-lado,
+  .pl-hero-tiempo .dg-fase-analizando .pl-split-lado { padding-top: calc(var(--ds-space-layout-16) + var(--ds-space-8)); }
+  .pl-hero-tiempo .dg-fase-preguntas,
+  .pl-hero-tiempo .dg-fase-analizando { grid-template-rows: auto 1fr; }
+  .pl-hero-tiempo .dg-fase-preguntas .dg-col,
+  .pl-hero-tiempo .dg-fase-analizando .dg-col { padding-top: var(--ds-space-6); }
 
   .dg-lado-dentro { position: static; }
 
@@ -505,45 +510,16 @@
 }
 .pl-hero-tiempo .dg-embudo:not(.dg-cerrado) .dg-lado { background: var(--pc-suelo-2); }
 .pl-hero-tiempo .dg-titulo:focus-visible { outline: 2px solid var(--pc-volt); outline-offset: var(--ds-space-2); }
-/* El foco se asigna al montar. En la home el morph nativo se encarga de la
-   entrada; el titulo y las opciones reales permanecen visibles desde ahi. */
+/* La capa de viaje descubre el formulario real; no hay entradas duplicadas. */
 .pl-hero-tiempo .dg-entra,
 .pl-hero-tiempo .dg-entra .dg-opcion { animation: none; }
 
 
-@media (prefers-reduced-motion: no-preference) {
-  .pl-hero-tiempo .pl-hero-burbuja,
-  .pl-hero-tiempo .dg-embudo:not(.dg-cerrado) { view-transition-name: dico-diagnostico; }
-  ::view-transition-group(dico-diagnostico) { animation-duration: var(--pc-t-personaje); animation-timing-function: var(--pc-curva); }
-  ::view-transition-old(dico-diagnostico) {
-    height: 100%;
-    object-fit: none;
-    object-position: center;
-    animation: dg-burbuja-sale var(--pc-t-rapido) var(--pc-curva) both;
-  }
-  ::view-transition-new(dico-diagnostico) {
-    height: 100%;
-    object-fit: none;
-    object-position: center top;
-    animation: dg-panel-entra var(--pc-t-personaje) var(--pc-curva) both;
-  }
-  ::view-transition-image-pair(dico-diagnostico) {
-    overflow: clip;
-    isolation: isolate;
-    animation: dg-expansion-forma var(--pc-t-personaje) var(--pc-curva) both;
-  }
-  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+.pl-viaje-dico {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  background: var(--pc-oro);
+  pointer-events: auto;
 }
-
 .pl-hero-diagnostico .pl-cabecera { background: var(--ds-color-zinc-950); color: var(--ds-color-zinc-50); }
-@keyframes dg-burbuja-sale { from { opacity: 1; } to { opacity: 0; } }
-@keyframes dg-panel-entra { from { opacity: 0; } to { opacity: 1; } }
-@keyframes dg-expansion-forma {
-  from { border-radius: var(--ds-radius-pill); background: var(--ds-color-zinc-950); }
-  to { border-radius: 0; background: var(--ds-color-zinc-950); }
-}
-@media (max-width: 699px) and (prefers-reduced-motion: no-preference) {
-  ::view-transition-group(dico-diagnostico),
-  ::view-transition-image-pair(dico-diagnostico),
-  ::view-transition-new(dico-diagnostico) { animation-duration: var(--pc-t-estructura); }
-}

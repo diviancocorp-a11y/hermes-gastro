@@ -25,7 +25,6 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
-  delete document.startViewTransition;
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -55,65 +54,7 @@ describe('hero y diagnóstico comparten un solo recorrido', () => {
     expect(JSON.parse(sessionStorage.getItem('dico:diagnostico-en-curso')).respuestas.vertical).toBe('gastronomia');
   });
 
-  it('la mejora visual hace una sola entrada de historial y una sola pregunta real', () => {
-    document.startViewTransition = vi.fn((actualizar) => {
-      actualizar();
-      return { finished: Promise.resolve() };
-    });
-    const push = vi.spyOn(window.history, 'pushState');
-    montar();
-    fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
-    expect(document.startViewTransition).toHaveBeenCalledOnce();
-    expect(push).toHaveBeenCalledOnce();
-    expect(screen.getAllByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveLength(1);
-  });
 
-  it('dos clics antes del callback visual producen una sola apertura', () => {
-    let actualizar;
-    document.startViewTransition = vi.fn((callback) => {
-      actualizar = callback;
-      return { finished: Promise.resolve() };
-    });
-    const push = vi.spyOn(window.history, 'pushState');
-    montar();
-    const boton = screen.getByRole('button', { name: 'Quiero Dico' });
-    fireEvent.click(boton);
-    fireEvent.click(boton);
-    expect(document.startViewTransition).toHaveBeenCalledOnce();
-    act(() => actualizar());
-    expect(push).toHaveBeenCalledOnce();
-    expect(screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveFocus();
-  });
-
-  it('un rechazo asíncrono antes del callback también abre el formulario', async () => {
-    document.startViewTransition = vi.fn(() => ({
-      updateCallbackDone: Promise.reject(new Error('Transición cancelada')),
-      finished: Promise.resolve(),
-    }));
-    const push = vi.spyOn(window.history, 'pushState');
-    montar();
-    fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
-    await waitFor(() => expect(screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveFocus());
-    expect(push).toHaveBeenCalledOnce();
-  });
-
-  it('movimiento reducido conserva el recorrido sin iniciar la transición', () => {
-    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
-    document.startViewTransition = vi.fn();
-    montar();
-    fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
-    expect(document.startViewTransition).not.toHaveBeenCalled();
-    expect(screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveFocus();
-  });
-
-  it('una API de transición que falla no impide abrir ni duplica el historial', () => {
-    document.startViewTransition = vi.fn(() => { throw new Error('No disponible'); });
-    const push = vi.spyOn(window.history, 'pushState');
-    montar();
-    fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
-    expect(screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveFocus();
-    expect(push).toHaveBeenCalledOnce();
-  });
 });
 
 

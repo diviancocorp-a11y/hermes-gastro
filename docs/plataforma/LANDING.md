@@ -11,7 +11,42 @@
 
 ### Revision visual de Ricky — 24/oct
 
-**Ajuste mas reciente:** Ricky pide boton **dorado**, burbuja **negra** y flecha
+**Cambio mas reciente — Dico acompana al diagnostico:** Ricky pide retirar la
+flecha y poner la misma cara 2D dorada del diagnostico sobre el circulo negro.
+Un guino al pasar el mouse (tambien con foco de teclado) y una secuencia:
+boton dorado -> pantalla completamente dorada -> compresion hacia la cara
+real del diagnostico. Confirma **Dico arriba de la primera pregunta en movil**.
+Esto autoriza expresamente su presencia dentro del CTA, como excepcion al
+criterio anterior de mantener al personaje fuera de los botones.
+
+Implementado con `DicoBoton.jsx` y `viajeDico.js`: PNG neutral vigente y guino
+localizado en un ojo en runtime, sin modificar masters, derivados ni vocabulario
+global. Una capa dorada, expansion de 300 ms, al menos un fotograma completo
+y compresion de 480 ms hacia las coordenadas medidas de la cara real. Retira
+el morph nativo anterior; no estira imagenes ni texto ni clona el formulario.
+Se monta una pregunta y una entrada de historial. Sin API, con movimiento
+reducido, error o interrupcion se conserva el acceso. Limpia capa, listeners,
+inert y bloqueo de scroll al terminar, cancelar o desmontar.
+
+Chrome 320/390/768/1280/1440: sin overflow ni errores JS, destino de 48x48
+visible; en movil queda antes de la pregunta. Pantalla dorada comprobada en
+390x844: **329.160 pixeles de oro, ninguno de otro color**. Reposo y guino
+inspeccionados a 3x. Doble clic, reduced, sin API, error, resize y Atras
+verificados. Un P2 de foco al volver durante la llegada se corrigio: cancelar
+retira inert antes del cambio de historial; en 390/1440 Atras devuelve foco
+al CTA y el camino normal conserva foco en la pregunta. `/diagnostico`
+independiente conserva su disposicion original. Parallax, suelo zinc y
+segmento 2 permanecen como estaban.
+
+Detector estatico 17 warnings/6 advisory antes y despues; renderizado en
+390x844 y 1280x800 sin hallazgos antes/despues. `/diseno` con `impeccable
+animate`, constructor y auditor independientes; segunda pasada sin pendientes.
+42 pruebas en cuatro archivos pasan con pool threads (incluye regresion de
+Atras durante llegada); ESLint sin errores ni advertencias. El preview estable y el CI
+se consultan en los enlaces de rama/PR de abajo. Siguiente: cambios de Ricky
+para el segmento 2; no avanzar rubros ni cerrar esa fase por esta entrega.
+
+**Historial — ajuste de color anterior:** Ricky pide boton **dorado**, burbuja **negra** y flecha
 **azul volt**. Se conserva la forma y la expansion al diagnostico. El titulo
 sigue siendo **Tu tiempo vuelve a ser tuyo.** Hero y circuito comparten el
 negro zinc `#09090B` mediante `--pl-suelo-continuo`; el grano entra gradualmente

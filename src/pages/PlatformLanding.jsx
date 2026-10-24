@@ -53,6 +53,7 @@ import {
 import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
 import CircuitoNegocio from '../components/landing/CircuitoNegocio';
+import DicoBoton from '../components/landing/DicoBoton';
 import { CLIENTES, FOTOS } from '../components/landing/clientes';
 import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
@@ -140,9 +141,9 @@ export default function PlatformLanding() {
 /* ─────────────── La portada: la frase y el boton ─────────────── */
 
 function Portada({ onAbrir }) {
-  const alAbrir = () => {
+  const alAbrir = (evento) => {
     marcarEvento('diagnostico-cta');
-    onAbrir();
+    onAbrir(evento);
   };
   return (
     <div className="pl-portada">
@@ -156,7 +157,7 @@ function Portada({ onAbrir }) {
         </p>
         <div className="pl-acciones">
           <button type="button" className="pl-boton pl-hero-origen" data-abrir onClick={alAbrir}>
-            <span className="pl-hero-etiqueta">Quiero Dico</span> <span className="pl-hero-burbuja" aria-hidden="true">↗</span>
+            <span className="pl-hero-etiqueta">Quiero Dico</span> <span className="pl-hero-burbuja" aria-hidden="true"><DicoBoton /></span>
           </button>
           <a className="pl-enlace" href="#que-hace">Qué hace Dico</a>
         </div>

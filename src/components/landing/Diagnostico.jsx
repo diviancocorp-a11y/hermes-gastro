@@ -39,6 +39,7 @@ import {
   planRecomendado, recordarDiagnosticoPendiente, solucion,
 } from '../../lib/diagnostico';
 import { PiezaPorNombre } from './Piezas';
+import { viajarConDico } from './viajeDico';
 
 // Lo que dura el "estoy leyendo" de Dico. Tope del brief: 1,2 s.
 const ANALISIS_MS = 1000;
@@ -269,6 +270,8 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const marcoInicio = useRef(false);
   const marcoResultado = useRef(null);
   const aperturaEnCurso = useRef(false);
+  const viaje = useRef(null);
+  const caraRef = useRef(null);
 
   const recorrido = recorridoDe(respuestas.vertical);
   const pasoIdx = Math.min(indice, recorrido.length - 1);
@@ -289,6 +292,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   }, [modo, inicio.indice, inicio.corregir]);
 
   useEffect(() => () => clearTimeout(avance.current), []);
+  useEffect(() => () => viaje.current?.cancelar(), []);
   useEffect(() => { respuestasRef.current = respuestas; }, [respuestas]);
 
   // Respuestas e id en la sesion: Atras y una recarga no las pierden.
@@ -326,7 +330,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     if (primera) return;
     const raiz = raizRef.current;
     if (!raiz) return;
-    if (abierto) {
+    if (abierto && !aperturaEnCurso.current) {
       tituloRef.current?.focus({ preventScroll: true });
       const arriba = raiz.getBoundingClientRect().top;
       if (arriba < 0 || arriba > window.innerHeight * 0.5) {
@@ -340,10 +344,20 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   // Atras y Adelante del navegador recorren los pasos.
   useEffect(() => {
     const alVolver = (e) => {
+      // Retirar inert antes del commit: su efecto ya puede devolver el foco
+      // al CTA. Cancelar no enfoca el heading que está por desmontarse.
+      viaje.current?.cancelar();
       clearTimeout(avance.current);
       const s = e.state?.dg;
       if (s === undefined || s === null) {
-        if (modo === 'home') { setAbierto(false); setFase('preguntas'); setIndice(0); }
+        if (modo === 'home') {
+          setAbierto(false);
+          setFase('preguntas');
+          setIndice(0);
+          // Durante expansión todavía no se montó la pregunta: no habrá
+          // cambio de estado ni efecto de foco al volver al mismo CTA.
+          raizRef.current?.querySelector('[data-abrir]')?.focus({ preventScroll: true });
+        }
         return;
       }
       setAbierto(true);
@@ -373,9 +387,9 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     setIndice(i);
   }, []);
 
-  const abrir = useCallback(() => {
+  const abrir = useCallback((evento) => {
+    if (aperturaEnCurso.current) return;
     if (!abierto) {
-      if (aperturaEnCurso.current) return;
       aperturaEnCurso.current = true;
       let mostrado = false;
       const mostrar = () => {
@@ -383,23 +397,24 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
         mostrado = true;
         const siguiente = primerFaltante(respuestasRef.current);
         empujar(siguiente);
-        setIndice(siguiente);
-        setFase('preguntas');
-        setAbierto(true);
-        aperturaEnCurso.current = false;
+        flushSync(() => {
+          setIndice(siguiente);
+          setFase('preguntas');
+          setAbierto(true);
+        });
+        const arriba = raizRef.current?.getBoundingClientRect().top || 0;
+        window.scrollTo({ top: Math.max(0, window.scrollY + arriba), behavior: 'instant' });
       };
-      // La transicion une el boton con la pregunta real. El estado y el
-      // historial se actualizan una sola vez, tambien si la API no existe.
-      const reducir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-      if (modo === 'home' && document.startViewTransition && !reducir) {
-        try {
-          const transicion = document.startViewTransition(() => flushSync(mostrar));
-          transicion.updateCallbackDone?.catch(() => mostrar());
-          transicion.finished.catch(() => {});
-        } catch {
-          mostrar();
-        }
-      } else mostrar();
+      viaje.current = viajarConDico({
+        origen: modo === 'home' ? evento?.currentTarget : null,
+        raiz: raizRef.current?.closest('.pl-root'),
+        mostrar,
+        destino: () => caraRef.current,
+        alTerminar: ({ enfocar = true } = {}) => {
+          aperturaEnCurso.current = false;
+          if (enfocar && mostrado) tituloRef.current?.focus({ preventScroll: true });
+        },
+      });
       return;
     }
     // Ya abierto (un boton de mas abajo): solo traerlo a la vista.
@@ -534,7 +549,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     <aside className="pl-split-lado dg-lado" aria-label="Tu ficha de diagnóstico">
       <div className="dg-lado-dentro">
         <div className="dg-guia">
-          <span className="dg-guia-cara" key={`${cara}-${gesto}`} data-gesto={gesto > 0 ? '' : undefined}>
+          <span className="dg-guia-cara" ref={caraRef} key={`${cara}-${gesto}`} data-gesto={gesto > 0 ? '' : undefined}>
             <img src={DICO(cara)} alt="" width="256" height="256" />
           </span>
           <p className="pl-dico-dice dg-guia-dice" key={dice}>{dice}</p>
@@ -573,6 +588,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   /* ── Preguntas (y el segundo en que Dico lee) ── */
   return (
     <div className={`pl-split dg-embudo dg-fase-${fase}`} ref={raizRef}>
+      {modo === 'home' && instrumento}
       <div className="pl-split-col dg-col">
         {/* El avance arriba es solo la barra; la cuenta en texto va al pie
             del paso, al lado de las acciones (arriba seria una etiqueta
@@ -615,7 +631,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
           />
         )}
       </div>
-      {instrumento}
+      {modo !== 'home' && instrumento}
     </div>
   );
 }
