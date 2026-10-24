@@ -102,9 +102,9 @@ export default function PlatformLanding() {
   useEntradas(raizRef);
 
   // Los botones de mas abajo abren el mismo diagnostico, arriba.
-  const abrirDiagnostico = () => {
+  const abrirDiagnostico = (evento) => {
     marcarEvento('diagnostico-cta');
-    abrirRef.current?.();
+    abrirRef.current?.({ disparador: evento?.currentTarget });
   };
 
   return (

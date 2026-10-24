@@ -15,6 +15,14 @@
 
 ### Ultima continuacion — 24/oct (leer primero)
 
+- Pedido posterior de Ricky: construir sin subagentes ni auditorias
+  intermedias para ahorrar uso; auditoria integral despues de aprobar diseno.
+  Diagnostico ahora en card zinc sobre oro persistente: una expansion640ms,
+  card180ms, contraccion480ms al boton al cerrar. Dico arriba en movil,
+  X/Escape desde cualquier paso, respuestas conservadas y hero montado debajo.
+  CTA oro con contorno y circulo azul volt detras de Dico. Comprobacion basica
+  390/1280 y cierre/reapertura en pregunta2; revision integral pendiente.
+  Misma rama landing/rediseno y PR52. Proximo: cambios del segmento2.
 - Ricky rechazo el ritmo de 5e1f8a5 por rapido. Referencia Hero Button Expendable
   de 21st: superficie continua desde CTA; ahora800+120+800ms con curva simetrica,
   excepcion focal posterior a la regla general, sin cambiar otros controles.

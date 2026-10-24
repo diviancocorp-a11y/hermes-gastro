@@ -1108,6 +1108,8 @@
   border-radius: var(--ds-radius-pill);
   background: var(--pc-oro);
   color: var(--pc-sobre-oro);
+  outline: 2px solid var(--ds-color-intelligence-volt);
+  outline-offset: 3px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -1119,13 +1121,13 @@
   width: var(--ds-control-height-default);
   height: var(--ds-control-height-default);
   border-radius: var(--ds-radius-pill);
-  background: var(--pl-suelo-continuo);
+  background: var(--ds-color-intelligence-volt);
   color: var(--ds-color-zinc-950);
 }
 .pl-hero-cara { display: block; width: 100%; height: 100%; }
 .pl-hero-guino { opacity: 0; }
 .pl-hero-tiempo .pl-hero-origen:is(:hover, :focus-visible) { background: var(--pc-oro-hover); }
-.pl-hero-tiempo .pl-hero-origen:focus-visible { outline-color: var(--pc-oro); }
+.pl-hero-tiempo .pl-hero-origen:focus-visible { outline-offset: var(--ds-space-2); }
 @media (prefers-reduced-motion: no-preference) {
   .pl-hero-origen:is(:hover, :focus-visible) .pl-hero-guino { animation: pl-dico-guina var(--pc-t-personaje) steps(1) both; }
 }

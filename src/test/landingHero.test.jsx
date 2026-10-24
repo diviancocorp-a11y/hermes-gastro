@@ -144,16 +144,14 @@ describe('parallax fotográfico', () => {
     expect(preferencia.removeEventListener).toHaveBeenCalledWith('change', cambiar);
   });
 
-  it('abrir el diagnóstico retira la escena, cancela animaciones y limpia listeners', () => {
-    const quitar = vi.spyOn(window, 'removeEventListener');
+  it('abrir la card conserva el mismo parallax montado debajo', () => {
     render(<Diagnostico modo="home" Portada={Portada} lado={createElement(EscenaHero)} />);
-    expect(screen.getByRole('figure')).toBeInTheDocument();
+    const escena = screen.getByRole('figure');
     fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
-    expect(screen.queryByRole('figure')).not.toBeInTheDocument();
-    expect(desconectar).toHaveBeenCalledOnce();
-    animaciones.forEach((animacion) => expect(animacion.cancel).toHaveBeenCalledOnce());
-    expect(quitar).toHaveBeenCalledWith('scroll', expect.any(Function));
-    expect(quitar).toHaveBeenCalledWith('resize', expect.any(Function));
+    expect(screen.getByRole('figure')).toBe(escena);
+    expect(desconectar).not.toHaveBeenCalled();
+    animaciones.forEach((animacion) => expect(animacion.cancel).not.toHaveBeenCalled());
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveFocus();
   });
 });

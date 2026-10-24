@@ -491,41 +491,97 @@
 }
 
 
-/* El morph es solo de la portada: /diagnostico conserva su composicion. */
-.pl-hero-tiempo .dg-embudo:not(.dg-cerrado) {
-  min-height: 100svh;
-  --pc-suelo: var(--pl-suelo-continuo);
+/* Card pública sobre la misma superficie dorada que nace del CTA. */
+.dg-modal {
+  --pc-suelo: var(--ds-color-zinc-950);
   --pc-suelo-2: var(--ds-color-zinc-900);
   --pc-suelo-3: var(--ds-color-zinc-800);
   --pc-tinta: var(--ds-color-zinc-50);
   --pc-tinta-suave: var(--ds-color-zinc-400);
   --pc-volt: var(--ds-color-intelligence-label);
   --pc-sobre-volt: var(--ds-color-zinc-950);
-  background: var(--pc-suelo);
-  color: var(--pc-tinta);
-}
-.pl-hero-tiempo .dg-boton:not(:disabled):hover {
-  background: var(--pc-producto-tinta-suave);
-  color: var(--pc-producto);
-}
-.pl-hero-tiempo .dg-embudo:not(.dg-cerrado) .dg-lado { background: var(--pc-suelo-2); }
-.pl-hero-tiempo .dg-titulo:focus-visible { outline: 2px solid var(--pc-volt); outline-offset: var(--ds-space-2); }
-/* La capa de viaje descubre el formulario real; no hay entradas duplicadas. */
-.pl-hero-tiempo .dg-entra,
-.pl-hero-tiempo .dg-entra .dg-opcion { animation: none; }
-
-
-.pl-viaje-dico {
-  /* Recorrido focal aprobado por Ricky: ida y vuelta legibles, sin cambiar
-     los tiempos de los controles ni el guiño del personaje. */
-  --pl-viaje-expansion: 800ms;
-  --pl-viaje-pantalla: 120ms;
-  --pl-viaje-compresion: 800ms;
-  --pl-viaje-curva: cubic-bezier(0.65, 0, 0.35, 1);
+  --dg-modal-margen: clamp(var(--ds-space-4), 4vw, var(--ds-space-layout-16));
   position: fixed;
   inset: 0;
   z-index: 2147483647;
-  background: var(--pc-oro);
-  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: var(--dg-modal-margen);
+  overflow: hidden;
+  background: none;
+  color: var(--pc-tinta);
 }
-.pl-hero-diagnostico .pl-cabecera { background: var(--ds-color-zinc-950); color: var(--ds-color-zinc-50); }
+.dg-modal:focus { outline: none; }
+.dg-modal-card {
+  position: relative;
+  width: min(100%, calc(var(--pl-columna) * 2));
+  min-width: 0;
+  max-height: calc(100dvh - var(--dg-modal-margen) * 2);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--ds-radius-4);
+  background: var(--pc-suelo);
+  scrollbar-color: var(--pc-suelo-3) var(--pc-suelo);
+  scrollbar-width: thin;
+}
+.dg-modal-cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  background: var(--pc-suelo);
+}
+.dg-modal-cerrar {
+  display: grid;
+  place-items: center;
+  width: var(--ds-control-height-touch);
+  height: var(--ds-control-height-touch);
+  padding: var(--ds-space-3);
+  border: 0;
+  border-radius: var(--ds-radius-3);
+  background: var(--pc-suelo-2);
+  color: var(--pc-tinta);
+  cursor: pointer;
+}
+.dg-modal-cerrar svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; }
+.dg-modal-cerrar:hover { background: var(--pc-suelo-3); }
+.dg-modal :focus-visible { outline: 2px solid var(--pc-volt); outline-offset: var(--ds-space-1); }
+.dg-modal .dg-embudo { min-height: 0; }
+.dg-modal .pl-split-col,
+.dg-modal .pl-split-lado { padding: var(--ds-space-6) var(--ds-space-8) var(--ds-space-8); }
+.dg-modal .dg-lado-dentro { position: static; width: 100%; }
+.dg-modal .dg-guia-dice { font-size: var(--ds-type-md); }
+.dg-modal .dg-entra,
+.dg-modal .dg-entra .dg-opcion { animation: none; }
+.dg-modal .dg-boton:not(:disabled):hover { background: var(--pc-producto-tinta-suave); color: var(--pc-producto); }
+.dg-modal .dg-res-cuerpo { padding-top: var(--ds-space-6); }
+.dg-modal .dg-progreso { margin-bottom: var(--ds-space-6); }
+.pl-viaje-dico {
+  --pl-viaje-expansion: 640ms;
+  --pl-viaje-contraccion: 480ms;
+  --pl-viaje-curva: cubic-bezier(0.2, 0.7, 0.2, 1);
+  position: absolute;
+  inset: 0;
+  background: var(--pc-oro);
+  pointer-events: none;
+}
+.pl-viaje-css { animation: pl-viaje-superficie var(--pl-viaje-duracion) var(--pl-viaje-curva) both; }
+@keyframes pl-viaje-superficie {
+  from { clip-path: var(--pl-viaje-desde); }
+  to { clip-path: var(--pl-viaje-hasta); }
+}
+@media (max-width: 999px) {
+  .dg-modal .pl-split { grid-template-rows: auto 1fr; }
+  .dg-modal .pl-split-col,
+  .dg-modal .pl-split-lado { padding: var(--ds-space-6); }
+  .dg-modal .dg-lado { background: var(--pc-suelo); }
+  .dg-modal .dg-col { padding-top: var(--ds-space-2); }
+  .dg-modal .dg-fase-resultado .dg-res-cab { padding-bottom: var(--ds-space-6); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dg-modal-card { animation: dg-card-aparece 180ms var(--pc-curva) both; }
+}
+@keyframes dg-card-aparece { from { opacity: 0; } to { opacity: 1; } }

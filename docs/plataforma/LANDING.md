@@ -11,7 +11,28 @@
 
 ### Revision visual de Ricky — 24/oct
 
-**Cambio mas reciente — ritmo legible y recorrido inverso:** Ricky considera
+**Actual — diagnostico en card y boton con volt:** implementada una sola
+expansion del boton al oro (640 ms), que permanece como fondo de la card
+zinc. Al cerrar, el oro se contrae directo al boton (480 ms), sin segundo
+tramo hacia la cara. Card con aparicion de 180 ms, Dico antes de la pregunta
+en movil, cierre visible y Escape desde cualquier paso. Atras entre preguntas
+conserva su recorrido; cerrar conserva respuestas. Hero/parallax siguen
+montados debajo. El CTA mantiene oro, Dico y guino; contorno y circulo detras
+de Dico ahora usan azul volt, por pedido posterior con referencia visual.
+
+Comprobacion basica local: card en 390/1280 px, oro persistente, foco y
+restauracion de inert/scroll; cierre desde pregunta 2 y reapertura conservando
+respuesta. Build y pruebas pertinentes se verifican antes del push. Preview
+de esta entrega en el mismo PR #52; no confundirlo con previews anteriores.
+
+**Proceso pedido por Ricky:** construir de forma economica, sin subagentes
+ni auditorias intermedias. La auditoria integral se hace despues de aprobar
+el diseno, antes del cierre final. Esta instruccion posterior reemplaza el
+flujo de auditoria por cada ajuste para el trabajo de esta landing. La card
+y el boton quedan para revision visual; siguiente: segmento 2, «Cada parte
+conectada. Todo mas claro». No hay aprobacion final ni publicacion en main.
+
+**Historial — ritmo legible y recorrido inverso:** Ricky considera
 demasiado rapida la secuencia de `5e1f8a5`. Referencia visual:
 https://21st.dev/@moazamtrade/components/hero-button-expendable
 Se toma la continuidad de la misma superficie desde el boton, la geometria

@@ -40,6 +40,7 @@ import {
 } from '../../lib/diagnostico';
 import { PiezaPorNombre } from './Piezas';
 import { viajarConDico } from './viajeDico';
+import DiagnosticoCard from './DiagnosticoCard';
 
 // Lo que dura el "estoy leyendo" de Dico. Tope del brief: 1,2 s.
 const ANALISIS_MS = 1000;
@@ -252,6 +253,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const [inicio] = useState(() => arranque(modo));
   const [respuestas, setRespuestas] = useState(inicio.respuestas);
   const [abierto, setAbierto] = useState(inicio.abierto);
+  const [overlayActivo, setOverlayActivo] = useState(modo === 'home' && inicio.abierto);
   const [indice, setIndice] = useState(inicio.indice);
   const [fase, setFase] = useState(inicio.fase); // preguntas | analizando | resultado
   const [id, setId] = useState(inicio.id);
@@ -271,7 +273,12 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const marcoResultado = useRef(null);
   const aperturaEnCurso = useRef(false);
   const viaje = useRef(null);
-  const caraRef = useRef(null);
+  const portadaRef = useRef(null);
+  const oroRef = useRef(null);
+  const disparadorRef = useRef(null);
+  const overlayRef = useRef(overlayActivo);
+  const cerrandoRef = useRef(false);
+  const cierreSolicitado = useRef(false);
   const abiertoRef = useRef(abierto);
   const scrollPortada = useRef(0);
 
@@ -283,8 +290,9 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   useEffect(() => {
     abiertoRef.current = abierto;
-    onAbiertoChange?.(abierto);
-  }, [abierto, onAbiertoChange]);
+    overlayRef.current = overlayActivo;
+    onAbiertoChange?.(modo === 'home' ? overlayActivo : abierto);
+  }, [abierto, overlayActivo, modo, onAbiertoChange]);
 
   // Caras de Dico precargadas: cambiar de estado no tiene que parpadear.
   useEffect(() => {
@@ -321,105 +329,114 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     marcarUnaVez('diagnostico-resultado', firma);
   }, [fase, respuestas]);
 
-  // Cada paso lleva el foco a su enunciado (el lector lo anuncia y el teclado
-  // sigue desde ahi) y trae el embudo a la vista. Al cerrar, el foco vuelve
-  // al boton que lo abrio. Solo cuando algo cambio de verdad: ni en el primer
-  // pintado ni en la segunda pasada de efectos de StrictMode.
+  // El mismo formulario vive en la card en home y en su ruta propia.
   useEffect(() => {
     const clave = `${abierto}|${paso}|${fase}`;
     if (vista.current === clave) return;
     const primera = vista.current === null;
     vista.current = clave;
-    if (primera) return;
-    const raiz = raizRef.current;
-    if (!raiz) return;
-    if (aperturaEnCurso.current) return;
+    if (primera || aperturaEnCurso.current) return;
     if (abierto) {
-      tituloRef.current?.focus({ preventScroll: true });
-      const arriba = raiz.getBoundingClientRect().top;
-      if (arriba < 0 || arriba > window.innerHeight * 0.5) {
-        window.scrollTo({ top: Math.max(0, window.scrollY + arriba) });
+      if (modo === 'home') {
+        const card = tituloRef.current?.closest('.dg-modal-card');
+        if (card) card.scrollTop = 0;
       }
-    } else {
-      raiz.querySelector('[data-abrir]')?.focus({ preventScroll: true });
+      tituloRef.current?.focus({ preventScroll: true });
+      if (modo === 'pagina') {
+        const arriba = raizRef.current?.getBoundingClientRect().top || 0;
+        if (arriba < 0 || arriba > window.innerHeight * 0.5) window.scrollTo({ top: Math.max(0, window.scrollY + arriba) });
+      }
     }
-  }, [abierto, paso, fase]);
+  }, [abierto, paso, fase, modo]);
 
-  // Atras y Adelante del navegador recorren los pasos.
+  const cerrarAnimado = useCallback(() => {
+    if (!overlayRef.current || cerrandoRef.current) return;
+    viaje.current?.cancelar();
+    clearTimeout(avance.current);
+    aperturaEnCurso.current = true;
+    cerrandoRef.current = true;
+    flushSync(() => setAbierto(false));
+    const boton = () => {
+      const guardado = disparadorRef.current;
+      return guardado && document.contains(guardado) ? guardado : portadaRef.current?.querySelector('[data-abrir]');
+    };
+    viaje.current = viajarConDico({
+      capa: oroRef.current,
+      origen: boton,
+      sentido: 'vuelta',
+      prepararDestino: () => {
+        window.scrollTo({ top: scrollPortada.current, behavior: 'instant' });
+        const elemento = boton();
+        const rect = elemento?.getBoundingClientRect();
+        if (rect && (rect.top < 0 || rect.bottom > window.innerHeight)) elemento.scrollIntoView({ block: 'center', behavior: 'instant' });
+      },
+      alTerminar: () => {
+        aperturaEnCurso.current = false;
+        cerrandoRef.current = false;
+        cierreSolicitado.current = false;
+        flushSync(() => { setOverlayActivo(false); setAbierto(false); setFase('preguntas'); setIndice(0); });
+        boton()?.focus({ preventScroll: true });
+      },
+    });
+  }, []);
+
+  const cerrar = useCallback(() => {
+    if (modo !== 'home' || !overlayRef.current || cierreSolicitado.current || cerrandoRef.current) return;
+    cierreSolicitado.current = true;
+    clearTimeout(avance.current);
+    const profundidad = window.history.state?.dgProfundidad;
+    if (Number.isInteger(profundidad) && profundidad > 0 && profundidad < window.history.length) {
+      window.history.go(-profundidad);
+    } else {
+      // Una sesión de una versión anterior no declara su profundidad. No se
+      // adivina cuántas entradas atrás hay: se cierra sin añadir otra.
+      const estado = { ...window.history.state };
+      delete estado.dg;
+      delete estado.desde;
+      delete estado.dgProfundidad;
+      window.history.replaceState(estado, '');
+      cerrarAnimado();
+    }
+  }, [modo, cerrarAnimado]);
+
+  // Atrás entre preguntas conserva su recorrido. Sólo salir del diagnóstico
+  // contrae el oro; Adelante durante una salida gana sobre el cierre pendiente.
   useEffect(() => {
     const alVolver = (e) => {
-      const interrumpido = aperturaEnCurso.current;
-      viaje.current?.cancelar();
       clearTimeout(avance.current);
+      cierreSolicitado.current = false;
       const s = e.state?.dg;
-      const cerrar = s === undefined || s === null;
-      const aplicarHistoria = () => {
-        if (cerrar) {
-          if (modo === 'home') {
-            setAbierto(false);
-            setFase('preguntas');
-            setIndice(0);
-          }
-          return;
-        }
-        setAbierto(true);
-        if (s === 'resultado') {
-          if (todoCompleto(respuestasRef.current)) { setFase('resultado'); return; }
-          const falta = primerFaltante(respuestasRef.current);
-          window.history.replaceState({ ...window.history.state, dg: falta }, '');
-          setFase('preguntas');
-          setIndice(falta);
-          return;
-        }
-        setFase('preguntas');
-        setIndice(Number(s) || 0);
-      };
-      // Un paso interno nunca reproduce el viaje. Si otra navegación corta
-      // un recorrido en curso, gana su estado más reciente inmediatamente.
-      if (!cerrar || modo !== 'home' || !abiertoRef.current || interrumpido) {
-        flushSync(aplicarHistoria);
-        if (cerrar && modo === 'home') {
-          raizRef.current?.querySelector('[data-abrir]')?.focus({ preventScroll: true });
-        } else tituloRef.current?.focus({ preventScroll: true });
+      if (s === undefined || s === null) {
+        if (modo === 'home') cerrarAnimado();
         return;
       }
-      aperturaEnCurso.current = true;
-      let mostrado = false;
-      const mostrar = () => {
-        if (mostrado) return;
-        mostrado = true;
-        flushSync(aplicarHistoria);
-        window.scrollTo({ top: scrollPortada.current, behavior: 'instant' });
-        const boton = raizRef.current?.querySelector('[data-abrir]');
-        const rect = boton?.getBoundingClientRect();
-        if (rect && (rect.top < 0 || rect.bottom > window.innerHeight)) {
-          boton.scrollIntoView({ block: 'center', behavior: 'instant' });
-        }
-      };
-      const origen = caraRef.current;
-      viaje.current = viajarConDico({
-        origen,
-        prepararOrigen: () => {
-          const rectCara = origen?.getBoundingClientRect();
-          if (rectCara && (rectCara.top < 0 || rectCara.bottom > window.innerHeight)) {
-            raizRef.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
-          }
-        },
-        raiz: raizRef.current?.closest('.pl-root'),
-        mostrar,
-        destino: () => raizRef.current?.querySelector('.pl-hero-burbuja'),
-        sentido: 'vuelta',
-        alTerminar: ({ enfocar = true } = {}) => {
-          aperturaEnCurso.current = false;
-          if (enfocar && mostrado) raizRef.current?.querySelector('[data-abrir]')?.focus({ preventScroll: true });
-        },
+      viaje.current?.cancelar();
+      aperturaEnCurso.current = false;
+      cerrandoRef.current = false;
+      if (oroRef.current) oroRef.current.style.clipPath = 'inset(0px 0px 0px 0px round 0px)';
+      flushSync(() => {
+        if (modo === 'home') setOverlayActivo(true);
+        setAbierto(true);
+        if (s === 'resultado' && todoCompleto(respuestasRef.current)) { setFase('resultado'); return; }
+        setFase('preguntas');
+        if (s === 'resultado') {
+          const falta = primerFaltante(respuestasRef.current);
+          window.history.replaceState({ ...window.history.state, dg: falta }, '');
+          setIndice(falta);
+        } else setIndice(Number(s) || 0);
       });
+      tituloRef.current?.focus({ preventScroll: true });
     };
     window.addEventListener('popstate', alVolver);
     return () => window.removeEventListener('popstate', alVolver);
-  }, [modo]);
+  }, [modo, cerrarAnimado]);
 
-  const empujar = (dg) => window.history.pushState({ ...window.history.state, dg, desde: true }, '');
+  const empujar = (dg, primero = false) => {
+    const estado = { ...window.history.state, dg, desde: true };
+    if (primero) estado.dgProfundidad = 1;
+    else if (Number.isInteger(estado.dgProfundidad)) estado.dgProfundidad += 1;
+    window.history.pushState(estado, '');
+  };
 
   const irA = useCallback((i) => {
     clearTimeout(avance.current);
@@ -430,39 +447,29 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   const abrir = useCallback((evento) => {
     if (aperturaEnCurso.current) return;
-    if (!abierto) {
+    if (!abiertoRef.current) {
       scrollPortada.current = window.scrollY;
+      const activo = document.activeElement;
+      disparadorRef.current = evento?.currentTarget || evento?.disparador || (activo instanceof HTMLElement && activo !== document.body ? activo : null);
       aperturaEnCurso.current = true;
-      let mostrado = false;
-      const mostrar = () => {
-        if (mostrado) return;
-        mostrado = true;
-        const siguiente = primerFaltante(respuestasRef.current);
-        empujar(siguiente);
-        flushSync(() => {
-          setIndice(siguiente);
-          setFase('preguntas');
-          setAbierto(true);
-        });
-        const arriba = raizRef.current?.getBoundingClientRect().top || 0;
-        window.scrollTo({ top: Math.max(0, window.scrollY + arriba), behavior: 'instant' });
-      };
+      cerrandoRef.current = false;
+      cierreSolicitado.current = false;
+      flushSync(() => setOverlayActivo(true));
       viaje.current = viajarConDico({
-        origen: modo === 'home' ? evento?.currentTarget : null,
-        raiz: raizRef.current?.closest('.pl-root'),
-        mostrar,
-        destino: () => caraRef.current,
-        alTerminar: ({ enfocar = true } = {}) => {
+        capa: oroRef.current,
+        origen: evento?.currentTarget,
+        alTerminar: () => {
           aperturaEnCurso.current = false;
-          if (enfocar && mostrado) tituloRef.current?.focus({ preventScroll: true });
+          const siguiente = primerFaltante(respuestasRef.current);
+          empujar(siguiente, true);
+          flushSync(() => { setIndice(siguiente); setFase('preguntas'); setAbierto(true); });
+          tituloRef.current?.focus({ preventScroll: true });
         },
       });
       return;
     }
-    // Ya abierto (un boton de mas abajo): solo traerlo a la vista.
-    raizRef.current?.scrollIntoView({ block: 'start' });
     tituloRef.current?.focus({ preventScroll: true });
-  }, [abierto, modo]);
+  }, []);
 
   useEffect(() => {
     if (abrirRef) abrirRef.current = abrir;
@@ -511,6 +518,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   const volver = () => {
     clearTimeout(avance.current);
+    if (modo === 'home' && pasoIdx === 0) { cerrar(); return; }
     if (conDesde()) { window.history.back(); return; }
     // Sin entrada propia atras (se entro directo a un paso): se retrocede en
     // el lugar, sin sacar al visitante de la pagina.
@@ -560,15 +568,24 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     }
   };
 
-  /* ── Cerrado (solo en la home): la portada y el instrumento ── */
-  if (!abierto) {
-    return (
-      <div className="pl-split dg-embudo dg-cerrado" ref={raizRef}>
-        <div className="pl-split-col">{Portada && <Portada onAbrir={abrir} />}</div>
-        <div className="pl-split-lado">{lado}</div>
-      </div>
-    );
-  }
+  const portada = modo === 'home' && (
+    <div className="pl-split dg-embudo dg-cerrado" ref={portadaRef}>
+      <div className="pl-split-col">{Portada && <Portada onAbrir={abrir} />}</div>
+      <div className="pl-split-lado">{lado}</div>
+    </div>
+  );
+  const envolver = (contenido) => modo === 'home' ? (
+    <>
+      {portada}
+      {overlayActivo && (
+        <DiagnosticoCard visible={abierto} fondoRef={portadaRef}
+          oroRef={oroRef} tituloRef={tituloRef} tituloId={fase === 'resultado' ? 'dg-resultado-titulo' : 'dg-pregunta'} onCerrar={cerrar}>
+          {contenido}
+        </DiagnosticoCard>
+      )}
+    </>
+  ) : contenido;
+  if (!abierto) return envolver(null);
 
   const sol = fase === 'resultado' ? solucion(respuestas.desafio, respuestas.vertical) : null;
 
@@ -591,7 +608,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     <aside className="pl-split-lado dg-lado" aria-label="Tu ficha de diagnóstico">
       <div className="dg-lado-dentro">
         <div className="dg-guia">
-          <span className="dg-guia-cara" ref={caraRef} key={`${cara}-${gesto}`} data-gesto={gesto > 0 ? '' : undefined}>
+          <span className="dg-guia-cara" key={`${cara}-${gesto}`} data-gesto={gesto > 0 ? '' : undefined}>
             <img src={DICO(cara)} alt="" width="256" height="256" />
           </span>
           <p className="pl-dico-dice dg-guia-dice" key={dice}>{dice}</p>
@@ -610,10 +627,10 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   /* ── El resultado ── */
   if (fase === 'resultado' && sol) {
-    return (
+    return envolver(
       <div className="pl-split dg-embudo dg-fase-resultado" ref={raizRef}>
         <div className="pl-split-col dg-res-cab">
-          <Titulo className="dg-titulo dg-entra" ref={tituloRef} tabIndex={-1}>{sol.titulo}</Titulo>
+          <Titulo className="dg-titulo dg-entra" id="dg-resultado-titulo" ref={tituloRef} tabIndex={-1}>{sol.titulo}</Titulo>
         </div>
         {instrumento}
         <Resultado
@@ -628,7 +645,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   }
 
   /* ── Preguntas (y el segundo en que Dico lee) ── */
-  return (
+  return envolver(
     <div className={`pl-split dg-embudo dg-fase-${fase}`} ref={raizRef}>
       {modo === 'home' && instrumento}
       <div className="pl-split-col dg-col">
@@ -651,7 +668,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
         {fase === 'analizando' ? (
           <div className="dg-paso dg-entra" key="analizando">
-            <Titulo className="dg-titulo" ref={tituloRef} tabIndex={-1}>Estoy leyendo tus respuestas.</Titulo>
+            <Titulo className="dg-titulo" id="dg-pregunta" ref={tituloRef} tabIndex={-1}>Estoy leyendo tus respuestas.</Titulo>
           </div>
         ) : (
           <Pregunta
