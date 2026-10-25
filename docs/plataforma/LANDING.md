@@ -11,6 +11,20 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — segmento 3, 25/oct:** armado «Tu rubro, tu forma de trabajar»
+con tres paneles seleccionables: Gastronomia, Comercio y Servicios. Expansion
+280 ms por clic/toque/teclado; sin autoplay y cambio inmediato con movimiento
+reducido. Fondo negro zinc y lectura volt. Cada rubro tiene tres capacidades,
+pendientes explicitos y detalle del alcance completo. Se conserva la lista
+de prestaciones; Agenda interna ahora figura disponible (registry y panel
+actuales), diferenciada de la reserva online todavia pendiente. Las opciones
+comunes pendientes quedan en su propio desplegable. CTA al mismo diagnostico,
+sin preseleccionar rubro ni alterar respuestas. Verificado en Chrome 390/1280:
+expansion, teclado y apertura/cierre del diagnostico, sin overflow. Segmento 2
+no se modifica: Ricky lo esta revisando. Ambos segmentos pendientes de su
+aprobacion; no avanzar segmento 4 por esta entrega. Auditoria integral al
+aprobar el diseno completo, sin subagentes intermedios.
+
 **Actual — segmento 2, 25/oct:** Ricky aprueba el hero («perfecto»). Pide
 sustituir el circuito con mascota por la composicion de su captura: «Un
 pedido. Todo en orden», tres momentos y la interfaz real a la derecha,

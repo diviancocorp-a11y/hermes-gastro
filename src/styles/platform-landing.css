@@ -633,60 +633,6 @@
   padding: var(--pl-hueco) var(--pl-m) 0;
 }
 
-/* Rubros: filas de dos puntas. Los tres rubros son listas paralelas, asi que
-   van lado a lado (una columna angosta cada una) para compararlos de un
-   vistazo; el titulo, en el margen. */
-.pl-rubros-titulo { grid-column: 1 / 4; align-self: start; }
-
-.pl-lista {
-  grid-column: 4 / -1;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--ds-space-layout-12) var(--pl-g);
-}
-
-.pl-lista-grupo-nombre {
-  margin-bottom: var(--ds-space-1);
-  font-size: var(--pl-t4);
-  font-weight: 400;
-  color: var(--pc-tinta-suave);
-}
-
-.pl-lista-fila {
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) auto;
-  align-items: baseline;
-  column-gap: var(--ds-space-2);
-  padding-block: var(--ds-space-2);
-  font-size: var(--pl-t4);
-  line-height: 1.45;
-}
-
-.pl-lista-punto {
-  width: 10px;
-  height: 10px;
-  border-radius: var(--ds-radius-pill);
-  background: var(--pc-tinta);
-}
-
-.pl-lista-fila.pendiente .pl-lista-punto { background: var(--pc-suelo-3); }
-
-.pl-lista-estado {
-  padding-left: var(--ds-space-6);
-  font-size: var(--pl-t5);
-  color: var(--pc-tinta-suave);
-  font-variant-numeric: tabular-nums;
-}
-
-.pl-lista-fila.pendiente .pl-lista-estado { color: var(--pc-tinta); font-weight: 500; }
-
-.pl-lista-cierre {
-  grid-column: 2 / -1;
-  align-self: end;
-  max-width: 40ch;
-  font-size: var(--pl-t3);
-}
-
 /* Clientes: la tabla sin lineas y sus productos */
 .pl-escalon {
   grid-column: 1 / 8;
@@ -849,13 +795,7 @@
 @media (max-width: 1099px) {
   .pl-cierre-dentro { grid-column: 3 / span 8; }
   .pl-planes-cab,
-  .pl-rubros-titulo,
   .pl-preguntas-titulo { grid-column: 1 / -1; }
-  .pl-lista {
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: var(--ds-space-8);
-  }
   .pl-carta,
   .pl-lectura-texto { grid-column: 1 / -1; margin-top: var(--ds-space-8); }
   .pl-fotos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -888,7 +828,6 @@
 
   .pl-seccion { grid-template-columns: minmax(0, 1fr); }
   .pl-seccion > *,
-  .pl-rubros-titulo,
   .pl-cierre-dentro,
   .pl-escalon,
   .pl-carta,
@@ -908,10 +847,6 @@
   .pl-pedido { grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--ds-space-2); }
   .pl-pedido-n { display: none; }
 
-  .pl-lista { grid-template-columns: minmax(0, 1fr); }
-  .pl-lista-cierre { grid-column: 1; }
-  .pl-lista-fila { min-height: 44px; padding-block: 10px; }
-  .pl-lista-estado { padding-left: var(--ds-space-3); }
 
   .pl-escalon-2 { padding-left: 1.2em; }
 

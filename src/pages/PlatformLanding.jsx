@@ -53,6 +53,7 @@ import {
 import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
 import CircuitoNegocio from '../components/landing/CircuitoNegocio';
+import RubrosNegocio from '../components/landing/RubrosNegocio';
 import { CLIENTES, FOTOS } from '../components/landing/clientes';
 import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
@@ -130,7 +131,7 @@ export default function PlatformLanding() {
         />
       </section>
       <CircuitoNegocio onDiagnostico={abrirDiagnostico} />
-      <Rubros />
+      <RubrosNegocio onDiagnostico={abrirDiagnostico} />
       <Clientes />
       <Planes onDiagnostico={abrirDiagnostico} />
       <Preguntas />
@@ -170,105 +171,6 @@ function Portada({ onAbrir }) {
 }
 
 /* ─────────────── Lo que hace hoy cada rubro ─────────────── */
-
-const HOY = 'Hoy';
-const DESARROLLO = 'En desarrollo';
-
-// De src/modules/registry.js: `implementado: true` es Hoy. Lo demas, en
-// desarrollo (agenda de turnos y variantes estan en false). El resultado del
-// dia (0103) es Hoy en los tres rubros; el costo de lo vendido sale solo de
-// las recetas, asi que fuera de gastronomia el dia va sin el. Desde la 0104 (aplicada el 20/oct) completar un
-// pedido descuenta la receta en gastronomia y el articulo sin receta en
-// comercio y en los productos que vende un servicio. No existen: el minimo
-// por articulo con aviso (min_stock es solo de insumos) y que un servicio
-// descuente los insumos que usa.
-const RUBROS = [
-  {
-    nombre: 'Gastronomía',
-    filas: [
-      ['Catálogo online y pedidos de salón, mostrador y delivery', HOY],
-      ['Mesas y comandas del salón', HOY],
-      ['Cocina en pantalla, por sector', HOY],
-      ['Recetas con el costo de cada plato', HOY],
-      ['Stock de insumos con compras, conteos y mínimo', HOY],
-      ['Cada venta descuenta los insumos de su receta', HOY],
-      ['Caja y arqueo por medio de pago', HOY],
-      ['Fichaje y costo del personal por día', HOY],
-      ['Gastos y resultado del mes', HOY],
-      ['La ganancia neta de cada noche, por sucursal', HOY],
-    ],
-  },
-  {
-    nombre: 'Comercio',
-    filas: [
-      ['Catálogo online y pedidos de mostrador', HOY],
-      ['Stock por artículo: cada venta lo descuenta', HOY],
-      ['Caja y arqueo por medio de pago', HOY],
-      ['Fichaje y costo del personal por día', HOY],
-      ['Compras, gastos y resultado del mes', HOY],
-      ['El resultado de cada día (ventas, personal y gastos)', HOY],
-      ['El costo de lo vendido por artículo', DESARROLLO],
-      ['Mínimo por artículo con aviso', DESARROLLO],
-      ['Talles y colores por artículo', DESARROLLO],
-    ],
-  },
-  {
-    nombre: 'Servicios',
-    filas: [
-      ['Catálogo de servicios online, con precio', HOY],
-      ['Ventas y cobros de cada servicio', HOY],
-      ['Caja y arqueo por medio de pago', HOY],
-      ['Stock de insumos, con mínimo', HOY],
-      ['Productos que vendés: cada venta los descuenta', HOY],
-      ['Fichaje y costo del personal por día', HOY],
-      ['Gastos y resultado del mes', HOY],
-      ['El resultado de cada día (ventas, personal y gastos)', HOY],
-      ['El costo de lo vendido por artículo', DESARROLLO],
-      ['Que cada servicio descuente los insumos que usa', DESARROLLO],
-      ['Agenda de turnos online', DESARROLLO],
-    ],
-  },
-  {
-    nombre: 'En todos los rubros',
-    filas: [
-      ['Facturación electrónica ARCA', DESARROLLO],
-      ['Pedidos de Rappi y PedidosYa', 'Sin fecha'],
-    ],
-  },
-];
-
-function Rubros() {
-  return (
-    <section className="pl-seccion pl-rubros" id="rubros" aria-labelledby="pl-rubros-titulo">
-      <span className="pl-ancla" id="modulos" aria-hidden="true" />
-      <span className="pl-ancla" id="integraciones" aria-hidden="true" />
-      <h2 id="pl-rubros-titulo" className="pl-h2 pl-rubros-titulo" data-reveal>Lo que hace hoy, por rubro</h2>
-      <div className="pl-lista">
-        {RUBROS.map((r, i) => (
-          <div className="pl-lista-grupo" key={r.nombre} data-reveal={(i % 3) + 1}>
-            <h3 className="pl-lista-grupo-nombre">{r.nombre}</h3>
-            <ul>
-              {r.filas.map(([que, estado]) => (
-                <li className={`pl-lista-fila${estado === HOY ? '' : ' pendiente'}`} key={que}>
-                  <span className="pl-lista-punto" aria-hidden="true" />
-                  <span className="pl-lista-que">{que}</span>
-                  <span className="pl-lista-estado">{estado}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-        <p className="pl-lista-cierre" data-reveal>
-          ¿Tu negocio necesita algo que está en desarrollo, o que no está en la
-          lista? Lo desarrollamos con vos.{' '}
-          <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
-            Contanos qué necesitás
-          </a>
-        </p>
-      </div>
-    </section>
-  );
-}
 
 /* ─────────────── Clientes: una tabla y sus productos ─────────────── */
 
