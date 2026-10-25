@@ -11,6 +11,18 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — franja de negocios, 25/oct:** apartado 4 reubicado entre hero y
+segmento 2, con titulo «Negocios que ya usan Dico». Cuatro logos originales
+(La Nona Pato, Crazy Miga, Monare, MiaEstudio), tomados de las fuentes publicas
+registradas abajo y optimizados en WebP: unos 46 KB en total. Una sola fila
+fija, sin duplicar marcas, siguiendo la excepcion expresa de Ricky para
+pocos negocios. En movil se desliza con el dedo. Grises en reposo y colores
+originales con hover/foco; cada enlace abre el Instagram configurado en otra
+pestana. Retirada la tabla y galeria anteriores. Verificados orden de bloques,
+cuatro imagenes/destinos, color al hover, desplazamiento movil y ausencia de
+overflow en 390/1280. Segmentos 2 y 3 conservados. Revision visual pendiente;
+auditoria integral al aprobar el diseno completo.
+
 **Ultima revision del segmento 2 — 25/oct:** CTA «Quiero ordenar mi negocio»
 ahora dorado, con circulo negro/flecha oro y relleno negro al hover, como el
 hero. Las tres capturas avanzan cada 7 segundos mientras la seccion esta

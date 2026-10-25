@@ -633,42 +633,7 @@
   padding: var(--pl-hueco) var(--pl-m) 0;
 }
 
-/* Clientes: la tabla sin lineas y sus productos */
-.pl-escalon {
-  grid-column: 1 / 8;
-  display: grid;
-}
-
-.pl-escalon-2 { padding-left: calc((100% + var(--pl-g)) / 7); }
-
-.pl-tabla {
-  grid-column: 1 / -1;
-  width: 100%;
-  margin-top: var(--ds-space-layout-16);
-  border-collapse: collapse;
-  font-size: var(--pl-t3);
-  text-align: left;
-}
-
-.pl-tabla th,
-.pl-tabla td {
-  padding: var(--ds-space-3) var(--pl-g) var(--ds-space-3) 0;
-  vertical-align: baseline;
-  font-weight: 400;
-}
-
-.pl-tabla th:first-child,
-.pl-tabla td:first-child { padding-left: var(--ds-space-4); }
-
-.pl-tabla thead th {
-  font-size: var(--pl-t5);
-  color: var(--pc-tinta-suave);
-}
-
-.pl-tabla tbody th { font-weight: 500; width: 25%; }
-.pl-tabla tbody td:nth-child(2) { width: 33%; }
-.pl-tabla tbody tr:nth-child(odd) { background: var(--pc-suelo-2); }
-
+/* Galeria compartida con /diagnostico. */
 .pl-fotos {
   grid-column: 1 / -1;
   display: grid;
@@ -798,7 +763,6 @@
   .pl-preguntas-titulo { grid-column: 1 / -1; }
   .pl-carta,
   .pl-lectura-texto { grid-column: 1 / -1; margin-top: var(--ds-space-8); }
-  .pl-fotos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .pl-planes-foto { display: none; }
 }
 
@@ -829,7 +793,6 @@
   .pl-seccion { grid-template-columns: minmax(0, 1fr); }
   .pl-seccion > *,
   .pl-cierre-dentro,
-  .pl-escalon,
   .pl-carta,
   .pl-lectura-texto,
   .pl-planes-cab,
@@ -848,26 +811,6 @@
   .pl-pedido-n { display: none; }
 
 
-  .pl-escalon-2 { padding-left: 1.2em; }
-
-  /* La tabla en bloques de dos lineas */
-  .pl-tabla { margin-top: var(--ds-space-8); }
-  .pl-tabla thead { display: none; }
-  .pl-tabla,
-  .pl-tabla tbody,
-  .pl-tabla tr,
-  .pl-tabla th,
-  .pl-tabla td { display: block; width: auto; }
-  .pl-tabla tr { padding: var(--ds-space-4); }
-  .pl-tabla th,
-  .pl-tabla td,
-  .pl-tabla th:first-child,
-  .pl-tabla td:first-child { padding: 0; }
-  .pl-tabla tbody th { width: auto; }
-  .pl-tabla tbody td:nth-child(2) { width: auto; }
-  .pl-tabla td { font-size: var(--pl-t4); color: var(--pc-tinta-suave); }
-
-  .pl-fotos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-3); }
 
   .pl-carta,
   .pl-lectura-texto { columns: 1; }
@@ -1123,3 +1066,6 @@
 @media (prefers-reduced-motion: reduce) {
   .pl-hero-tiempo .pl-hero-origen::before, .pl-hero-tiempo .pl-hero-origen, .pl-hero-burbuja { transition: none; }
 }
+
+@media (max-width: 1099px) { .pl-fotos { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 699px) { .pl-fotos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-3); } }

@@ -41,9 +41,10 @@
 // lo resuelve) -> que hace hoy cada rubro y que esta en desarrollo -> clientes
 // -> planes -> preguntas -> una frase y el boton -> una linea de pie.
 //
-// PRUEBA SOCIAL: solo nombres y fotos reales de productos de clientes que
-// corren sobre Dico (La Nona Pato y Crazy Miga). Sin cifras de resultados.
-// Las cifras de las piezas del producto son ejemplos y cierran entre si.
+// PRUEBA SOCIAL: logos originales de La Nona Pato, Crazy Miga, Monare y
+// MiaEstudio, con enlaces a sus Instagram configurados. Sin cifras ni
+// testimonios inventados. Franja compacta entre hero y demostracion.
+
 
 import { useEffect, useRef, useState } from 'react';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
@@ -54,7 +55,7 @@ import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
 import CircuitoNegocio from '../components/landing/CircuitoNegocio';
 import RubrosNegocio from '../components/landing/RubrosNegocio';
-import { CLIENTES, FOTOS } from '../components/landing/clientes';
+import NegociosDico from '../components/landing/NegociosDico';
 import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
 import '../styles/platform-landing.css';
@@ -130,9 +131,9 @@ export default function PlatformLanding() {
           lado={<EscenaHero />}
         />
       </section>
+      <NegociosDico />
       <CircuitoNegocio onDiagnostico={abrirDiagnostico} />
       <RubrosNegocio onDiagnostico={abrirDiagnostico} />
-      <Clientes />
       <Planes onDiagnostico={abrirDiagnostico} />
       <Preguntas />
       <Cierre onDiagnostico={abrirDiagnostico} />
@@ -171,43 +172,6 @@ function Portada({ onAbrir }) {
 }
 
 /* ─────────────── Lo que hace hoy cada rubro ─────────────── */
-
-/* ─────────────── Clientes: una tabla y sus productos ─────────────── */
-
-function Clientes() {
-  return (
-    <section className="pl-seccion pl-clientes" aria-labelledby="pl-clientes-titulo">
-      <h2 id="pl-clientes-titulo" className="pl-h2 pl-escalon" data-reveal>
-        <span>Ya trabajan</span> <span className="pl-escalon-2">con Dico</span>
-      </h2>
-      <table className="pl-tabla" data-reveal="1">
-        <caption className="pl-oculto">Negocios que usan Dico</caption>
-        <thead>
-          <tr><th scope="col">Negocio</th><th scope="col">Rubro</th><th scope="col">Lo que venden</th></tr>
-        </thead>
-        <tbody>
-          {CLIENTES.map(([negocio, rubro, venden]) => (
-            <tr key={negocio}>
-              <th scope="row">{negocio}</th>
-              <td>{rubro}</td>
-              <td>{venden}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="pl-fotos">
-        {FOTOS.map((f, i) => (
-          <figure className="pl-foto" key={f.src} data-reveal={(i % 3) + 1}>
-            <span className="pl-foto-marco">
-              <img src={f.src} alt={f.alt} width={f.ancho} height={f.alto} loading="lazy" />
-            </span>
-            <figcaption>{f.pie}, de {f.de}</figcaption>
-          </figure>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 /* ─────────────── Planes, como una carta ─────────────── */
 

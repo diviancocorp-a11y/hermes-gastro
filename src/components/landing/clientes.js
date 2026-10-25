@@ -1,14 +1,14 @@
-// src/components/landing/clientes.js
-// Los clientes que muestran la landing y /diagnostico, con las fotos de sus
-// productos (public/brand/landing). Solo negocios que corren sobre Dico: cada
-// foto lleva el nombre del negocio y nunca se presenta como un ejemplo de Dico.
-
-// Solo tenants reales del edificio (verificado en la base el 19/oct/2026).
-export const CLIENTES = [
-  ['La Nona Pato', 'Panadería', 'Empanadas, alfajores de maicena, bruschettas, picadas y tortilla'],
-  ['Crazy Miga', 'Cookies con delivery en Zona Norte', 'Órbita Blanca, Choco Eclipse y Dulce Nebulosa'],
+// Marcas autorizadas por Ricky. Fuentes originales y destinos configurados:
+// docs/plataforma/LANDING.md, «Evidencia de contenido y recursos» (23/oct/2026).
+// Copias WebP optimizadas de sus logos públicos; sin logos ni cuentas inventadas.
+export const NEGOCIOS = [
+  { nombre: 'La Nona Pato', logo: 'la-nona-pato', instagram: 'lanonapato.ar' },
+  { nombre: 'Crazy Miga', logo: 'crazy-miga', instagram: 'crazymiga.ok' },
+  { nombre: 'Monare', logo: 'monare', instagram: 'monare.boutique' },
+  { nombre: 'MiaEstudio', logo: 'mia-estudio', instagram: 'miaestudiok' },
 ];
 
+// Galeria de productos usada por la pagina independiente /diagnostico.
 export const FOTOS = [
   { src: '/brand/landing/lnp-empanadas.webp', ancho: 789, alto: 374, alt: 'Fuente blanca con empanadas horneadas sobre una tabla de madera', pie: 'Empanadas', de: 'La Nona Pato' },
   { src: '/brand/landing/crazy-orbita-blanca.webp', ancho: 900, alto: 900, alt: 'Cookie con chips de chocolate blanco sobre una piedra oscura', pie: 'Órbita Blanca', de: 'Crazy Miga' },
