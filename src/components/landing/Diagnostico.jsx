@@ -107,7 +107,7 @@ const PASOS = {
   },
   inversion: {
     pregunta: '¿Cuánto pensás invertir por mes?',
-    ayuda: 'Hay un plan gratis. Esto es para mostrarte el que te sirve.',
+    ayuda: 'Esto nos ayuda a recomendarte un plan acorde a tu negocio.',
     dico: 'Sin compromiso: no te pido tarjeta ni email.',
     cara: 'question',
   },
@@ -870,15 +870,11 @@ function Resultado({ sol, respuestas, id, guardado, onReintentar }) {
   const inversion = labelDe(INVERSIONES, respuestas.inversion);
   const alta = `/registro?${paramsDelAlta(respuestas, id)}`;
   const urgente = respuestas.urgencia === 'ya';
-  const pago = planId !== 'digital';
-
-  let sobreInversion = null;
-  if (pago && respuestas.inversion === 'gratis') {
-    sobreInversion = `Querés empezar gratis: la cuenta arranca en el plan Digital y pasás a ${plan.nombre} cuando lo necesites.`;
+  let sobreInversion = 'El diagnóstico no realiza ningún cobro. Podés crear tu cuenta sin tarjeta.';
+  if (respuestas.inversion === 'gratis') {
+    sobreInversion = `Preferís evaluar antes de pagar. El plan recomendado cuesta ${plan.precio}; el diagnóstico no contrata una suscripción.`;
   } else if (planId === 'cadena' && respuestas.inversion === 'hasta_60k') {
-    sobreInversion = 'Para varias sucursales el plan es Cadena. Podés empezar gratis con un local y sumar los demás después.';
-  } else if (pago) {
-    sobreInversion = `La cuenta empieza gratis y sin tarjeta. Pasás al plan ${plan.nombre} cuando quieras.`;
+    sobreInversion = 'Para varias sucursales el plan es Cadena. Su precio se calcula por local; podés comparar las modalidades antes de contratar.';
   }
 
   return (
@@ -932,7 +928,7 @@ function Resultado({ sol, respuestas, id, guardado, onReintentar }) {
           <span>{plan.precio}</span>
         </p>
         <p className="dg-parrafo dg-suave">{plan.detalle}</p>
-        {inversion && !(pago && respuestas.inversion === 'gratis') && (
+        {inversion && respuestas.inversion !== 'gratis' && (
           <p className="dg-parrafo">Elegiste: {inversion.charAt(0).toLowerCase() + inversion.slice(1)}.</p>
         )}
         {sobreInversion && <p className="dg-parrafo">{sobreInversion}</p>}
@@ -940,7 +936,7 @@ function Resultado({ sol, respuestas, id, guardado, onReintentar }) {
 
       <div className="dg-cierre">
         <a className="pl-boton" href={alta}>
-          {urgente ? 'Crear mi cuenta y empezar hoy' : 'Crear mi cuenta gratis'}
+          {urgente ? 'Crear mi cuenta y empezar hoy' : 'Crear mi cuenta'}
         </a>
         <a
           className="pl-enlace dg-agenda"

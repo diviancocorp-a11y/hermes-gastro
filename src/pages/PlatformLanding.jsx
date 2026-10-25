@@ -57,6 +57,7 @@ import CircuitoNegocio from '../components/landing/CircuitoNegocio';
 import RubrosNegocio from '../components/landing/RubrosNegocio';
 import NegociosDico from '../components/landing/NegociosDico';
 import ComoEmpezar from '../components/landing/ComoEmpezar';
+import PlanesNegocio from '../components/landing/PlanesNegocio';
 import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
 import '../styles/platform-landing.css';
@@ -136,7 +137,7 @@ export default function PlatformLanding() {
       <CircuitoNegocio onDiagnostico={abrirDiagnostico} />
       <RubrosNegocio onDiagnostico={abrirDiagnostico} />
       <ComoEmpezar onDiagnostico={abrirDiagnostico} />
-      <Planes onDiagnostico={abrirDiagnostico} />
+      <PlanesNegocio onDiagnostico={abrirDiagnostico} />
       <Preguntas />
       <Cierre onDiagnostico={abrirDiagnostico} />
       <Pie />
@@ -174,74 +175,6 @@ function Portada({ onAbrir }) {
 }
 
 /* ─────────────── Lo que hace hoy cada rubro ─────────────── */
-
-/* ─────────────── Planes, como una carta ─────────────── */
-
-// Los precios salen de la tabla `plans` del edificio (migracion 0052). El plan
-// `total` queda afuera a proposito: esta modelado y marcado no disponible.
-const PLANES = [
-  {
-    grupo: 'Para empezar',
-    nombre: 'Digital',
-    precio: 'Gratis',
-    texto: 'Catálogo online con link propio, pedidos, caja y arqueo, stock, equipo y el resultado de cada día y de cada mes. En gastronomía, también recetas con costo y la ganancia neta de cada noche.',
-  },
-  {
-    grupo: 'Un local',
-    nombre: 'Local',
-    precio: '$59.000',
-    texto: 'Todo lo de Digital, con soporte por mail y chat, y lo que llega cuando salga: facturación ARCA.',
-    anual: 'O $47.200 por mes pagando el año.',
-  },
-  {
-    grupo: 'Varias sucursales',
-    nombre: 'Cadena',
-    precio: '$99.000',
-    texto: 'Por local. Sucursales sin tope, consolidado y comparativa entre locales, roles por local y soporte por teléfono.',
-    anual: 'O $79.200 por mes pagando el año.',
-  },
-];
-
-function Planes({ onDiagnostico }) {
-  return (
-    <section className="pl-seccion pl-planes" id="precios" aria-labelledby="pl-planes-titulo">
-      <div className="pl-planes-cab">
-        <h2 id="pl-planes-titulo" className="pl-h2" data-reveal>Planes</h2>
-        <figure className="pl-foto pl-planes-foto" data-reveal="1">
-          <span className="pl-foto-marco">
-            <img
-              className="pl-deriva"
-              src="/brand/landing/crazy-dulce-nebulosa.webp"
-              alt="Cookie con chips de dulce de leche sobre una piedra oscura"
-              width="900" height="900" loading="lazy"
-            />
-          </span>
-          <figcaption>Dulce Nebulosa, de Crazy Miga</figcaption>
-        </figure>
-      </div>
-      <div className="pl-carta" data-reveal="2">
-        {PLANES.map((p) => (
-          <div className="pl-carta-grupo" key={p.nombre}>
-            <h3 className="pl-carta-item">
-              <span>{p.nombre}</span>
-              <span>{p.precio === 'Gratis' ? p.precio : `${p.precio} por mes`}</span>
-            </h3>
-            <p className="pl-carta-texto"><strong>{p.grupo}.</strong> {p.texto}</p>
-            {p.anual && <p className="pl-carta-texto">{p.anual}</p>}
-          </div>
-        ))}
-        <p className="pl-carta-nota">
-          Precios en pesos, por local, sin IVA. Sin cargo por usuario ni por
-          pedido. La cuenta empieza gratis y sin tarjeta.{' '}
-          <button type="button" className="pl-enlace pl-enlace-boton" onClick={onDiagnostico}>
-            El diagnóstico te dice cuál te conviene
-          </button>
-          , o <a className="pl-enlace" href="/registro">probá gratis sin diagnóstico</a>.
-        </p>
-      </div>
-    </section>
-  );
-}
 
 /* ─────────────── Preguntas, como texto de lectura ─────────────── */
 
@@ -368,7 +301,7 @@ function Pie() {
           Reuniones {AGENDA_HORARIO}
         </a>
         <a className="pl-enlace" href="mailto:hola@divianco.app">hola@divianco.app</a>
-        <a className="pl-enlace" href="/registro">Probar gratis</a>
+        <a className="pl-enlace" href="/registro">Crear mi cuenta</a>
         <a className="pl-enlace" href="/entrar">Entrar</a>
       </p>
       <p className="pl-pie-legal">

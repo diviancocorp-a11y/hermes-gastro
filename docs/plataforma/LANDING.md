@@ -11,6 +11,29 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — ajustes del 5 y segmento 6, 25/oct:** circulos de los tres pasos
+en oro y pulso dorado sobre la conexion volt, de izquierda a derecha; vertical
+en movil y sin animacion con movimiento reducido. Implementadas tres cards
+zinc Digital/Local/Cadena y selector Mensual/Anual comun, con importes animados
+280 ms y valores finales accesibles, sin saltos de ancho.
+
+Ricky confirma **Digital solo mensual: $14.999**. Al elegir Anual permanece
+en mensual y lo aclara. Local conserva $59.000/mes o $566.400/ano ($47.200/mes);
+Cadena $99.000/mes por local o $950.400/ano por local ($79.200/mes). Pesos,
+por local y sin IVA, condiciones visibles. Un CTA dorado al diagnostico y
+registro directo secundario. Se retira la carta y foto anterior de planes.
+
+La oferta publica de preview y los textos del diagnostico comparten ahora
+src/lib/planesPlataforma.js. Digital deja de presentarse como plan gratis;
+los ids de respuestas (incluido gratis) se conservan para compatibilidad,
+con una etiqueta que permite evaluar antes de pagar. No se modificaron la
+base, las suscripciones ni los cobros. Antes de publicar esta oferta en main,
+validar/sincronizar la tabla plans del edificio en la fase de cierre comercial.
+36 pruebas pertinentes pasan. Chrome 390/1280 confirma importes finales,
+selector, CTA, pulso y movimiento reducido sin overflow. Revision visual del
+segmento 6 pendiente; luego segmento 7. Auditoria integral al aprobar el diseno
+completo, sin subagentes intermedios.
+
 **Actual — segmento 5, 25/oct:** Ricky aprueba la franja de negocios y pide
 continuar con «Como empezas». Implementado «Empeza a tu ritmo» con los tres
 pasos acordados: diagnostico, alta del negocio y puesta en marcha. Conexion
@@ -1113,8 +1136,9 @@ el selector Mensual/Anual y el movimiento de importes de la opcion 3.
   acompanado del equivalente mensual para comparar; aclarar el pago anual,
   precio por local e IVA. Aplicar solo el descuento anual ya definido; no
   inventar promociones ni dar a entender debitos mensuales del plan anual.
-- Digital permanece Gratis en los dos periodos. No animarlo como si fuera
-  una promocion ni atribuirle ahorro artificial.
+- Decision posterior de Ricky: Digital cuesta $14.999 por mes y solo tiene
+  pago mensual (confirmado 25/oct). Mantenerlo mensual al elegir Anual, con
+  aclaracion visible, sin inventar descuento ni total anual.
 - Los numeros transicionan brevemente (240-320 ms) al cambiar de periodo;
   etiquetas de periodo y valores finales permanecen claros. Reservar espacio
   para evitar saltos y usar numeros tabulares. Lectores de pantalla reciben
@@ -1303,7 +1327,7 @@ Salida: cada bloque explica una afirmacion y su prueba; auditoria sin P0/P1.
 ### Fase 4 — Comparacion y cierre
 
 1. Mantener Digital/Local/Cadena. **Digital: $14.999 por mes, aprobado por
-   Ricky el 23/oct; anual pendiente de definir.** Local y Cadena mantienen
+   Ricky el 23/oct; solo mensual confirmado el 25/oct.** Local y Cadena mantienen
    los importes verificados. Sincronizar landing, diagnostico y fuente de
    planes al implementar; no confundir precio de plan con alta sin tarjeta.
    Selector

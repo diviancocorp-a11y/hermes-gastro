@@ -12,6 +12,7 @@
 // los tres.
 
 import { supabase } from './supabase';
+import { PLANES_DIAGNOSTICO } from './planesPlataforma';
 
 export const VERTICALES = [
   { id: 'gastronomia', label: 'Gastronomía', rubro: 'gastro' },
@@ -111,9 +112,9 @@ export const URGENCIAS = [
   { id: 'explorando', label: 'Estoy mirando opciones' },
 ];
 
-// Rangos alineados a los planes: Digital gratis, Local $59.000, Cadena $99.000.
+// Se conserva el id historico gratis para compatibilidad con respuestas guardadas.
 export const INVERSIONES = [
-  { id: 'gratis', label: 'Quiero empezar gratis' },
+  { id: 'gratis', label: 'Prefiero evaluar antes de pagar' },
   { id: 'hasta_60k', label: 'Hasta $60.000 por mes' },
   { id: 'hasta_100k', label: 'Hasta $100.000 por mes' },
   { id: 'mas_de_100k', label: 'Más de $100.000 por mes' },
@@ -129,18 +130,14 @@ export const ORDEN_PASOS = [
 ];
 
 /** Plan recomendado. Cadena = varias sucursales; Local = un local con equipo o
- *  que ya usa un sistema; Digital = el resto. El alta empieza siempre gratis. */
+ *  que ya usa un sistema; Digital = el resto. Crear la cuenta no contrata el plan. */
 export function planRecomendado({ locales, equipo, gestion_actual: gestion }) {
   if (locales === 'dos_tres' || locales === 'cuatro_o_mas') return 'cadena';
   if (equipo === 'de_6_a_15' || equipo === 'mas_de_15' || gestion === 'otro_sistema') return 'local';
   return 'digital';
 }
 
-export const PLANES = {
-  digital: { nombre: 'Digital', precio: 'Gratis', detalle: 'Todo el sistema para empezar, sin pagar.' },
-  local: { nombre: 'Local', precio: '$59.000 por mes', detalle: 'Un local con soporte; o $47.200 por mes pagando el año. Sin IVA.' },
-  cadena: { nombre: 'Cadena', precio: '$99.000 por mes por local', detalle: 'Varias sucursales con consolidado; o $79.200 por mes pagando el año. Sin IVA.' },
-};
+export const PLANES = PLANES_DIAGNOSTICO;
 
 /** Lo que Dico contesta. `hoy` es lo que el producto ya hace; `pendiente`, lo
  *  que esta en desarrollo y se dice como tal. `pieza` nombra el fragmento de
