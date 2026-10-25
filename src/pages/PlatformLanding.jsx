@@ -48,9 +48,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
-import {
-  AGENDA_HORARIO, AGENDA_URL, WHATSAPP_HORARIO, WHATSAPP_URL, WHATSAPP_VISIBLE,
-} from '../lib/contactoPlataforma';
 import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
 import CircuitoNegocio from '../components/landing/CircuitoNegocio';
@@ -58,6 +55,8 @@ import RubrosNegocio from '../components/landing/RubrosNegocio';
 import NegociosDico from '../components/landing/NegociosDico';
 import ComoEmpezar from '../components/landing/ComoEmpezar';
 import PlanesNegocio from '../components/landing/PlanesNegocio';
+import PreguntasNegocio from '../components/landing/PreguntasNegocio';
+import CierreNegocio from '../components/landing/CierreNegocio';
 import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
 import '../styles/platform-landing.css';
@@ -67,10 +66,6 @@ const TITULO = 'Dico — Todo tu negocio, en un solo lugar';
 // <= 160 caracteres, lo que muestran los buscadores. Igual en api/og.js.
 const DESCRIPCION = 'Ventas, costos, sueldos, stock, caja, pedidos y el resultado de cada día '
   + 'de tu gastronomía, comercio o servicio. Empezá con un diagnóstico, sin email.';
-
-// Telefono, agenda y horarios: src/lib/contactoPlataforma.js.
-const marcarWhatsApp = () => marcarEvento('whatsapp');
-const marcarAgenda = () => marcarEvento('agenda');
 
 /** Escribe el titulo y los meta de la raiz. El index.html del build lleva los
  *  del cliente que se horneo (clients/edificio), asi que sin esto la pestania de
@@ -138,9 +133,8 @@ export default function PlatformLanding() {
       <RubrosNegocio onDiagnostico={abrirDiagnostico} />
       <ComoEmpezar onDiagnostico={abrirDiagnostico} />
       <PlanesNegocio onDiagnostico={abrirDiagnostico} />
-      <Preguntas />
-      <Cierre onDiagnostico={abrirDiagnostico} />
-      <Pie />
+      <PreguntasNegocio />
+      <CierreNegocio onDiagnostico={abrirDiagnostico} />
     </div>
   );
 }
@@ -171,142 +165,5 @@ function Portada({ onAbrir }) {
         <p className="pl-hero-ayuda">Diagnóstico breve, sin dejar tu email.</p>
       </div>
     </div>
-  );
-}
-
-/* ─────────────── Lo que hace hoy cada rubro ─────────────── */
-
-/* ─────────────── Preguntas, como texto de lectura ─────────────── */
-
-const FAQ = [
-  {
-    p: '¿Qué es el diagnóstico?',
-    r: 'Son unas pocas preguntas sobre tu negocio: el rubro, lo que más te preocupa, '
-      + 'los canales, el tamaño, cómo lo controlás hoy, para cuándo lo querés y cuánto '
-      + 'pensás invertir. Con eso Dico te dice qué resolver primero, cómo lo resuelve y '
-      + 'qué plan te conviene. No pide email ni tarjeta.',
-  },
-  {
-    p: '¿Qué pasa si se cae el sistema en pleno servicio?',
-    r: 'Te lo digo derecho: hoy no hay modo offline. Si se cae la conexión o el '
-      + 'servicio, no vas a poder cargar pedidos hasta que vuelva. No es algo que '
-      + 'pase seguido, pero prometerte que seguís cobrando sin internet sería '
-      + 'mentirte. El modo offline está en la lista de lo que falta.',
-  },
-  {
-    p: '¿Puedo migrar desde el sistema que uso hoy?',
-    r: 'Sí. El catálogo, el stock y los clientes los importamos si los tenés '
-      + 'digitalizados. Las recetas y el equipo se cargan una vez, y ahí se va '
-      + 'el grueso del tiempo.',
-  },
-  {
-    p: 'No entiendo nada de tecnología. ¿Igual lo puedo usar?',
-    r: 'Por eso la puesta en marcha la hacemos juntos: te muestro cada módulo y '
-      + 'lo practicás con tus propios datos. Después es cargar pedidos y mirar '
-      + 'el número. Si algo no se entiende, WhatsApp.',
-    whatsapp: true,
-  },
-  {
-    p: '¿Cuánto tarda la puesta en marcha?',
-    r: 'Crear la cuenta y tener el catálogo online es cuestión de minutos, y eso '
-      + 'lo hacés solo. Dejarlo completo, con recetas costeadas, equipo y '
-      + 'horarios cargados, es un par de horas conmigo.',
-  },
-  {
-    p: '¿Y si mi negocio necesita algo que Dico no hace?',
-    r: 'Contanos qué es. Lo que está en desarrollo, como la agenda de turnos o '
-      + 'los talles y colores, se puede adelantar para tu negocio, y lo que no '
-      + 'está en la lista lo desarrollamos con vos.',
-  },
-  {
-    p: '¿Y si abro una segunda sucursal?',
-    r: 'Pasás al plan Cadena cuando quieras, sin penalidad. Cada local tiene su '
-      + 'resultado y sus roles, y arriba ves el consolidado.',
-  },
-  {
-    p: 'Si dejo de pagar, ¿pierdo mis datos?',
-    r: 'No se borran. Perdés el acceso hasta que retomes, y cuando volvés está '
-      + 'todo donde lo dejaste.',
-  },
-  {
-    p: '¿Sirve con mi caja registradora vieja?',
-    r: 'Si es una máquina mecánica, no se conecta. Dico trae su propia caja, con '
-      + 'efectivo, tarjeta y MercadoPago, y el arqueo al cerrar.',
-  },
-  {
-    p: '¿Quién ve qué adentro de mi negocio?',
-    r: 'Cada rol ve lo suyo: un mozo o un vendedor no ve el resultado ni los '
-      + 'sueldos. Y un negocio nunca ve los números de otro: eso lo separa la '
-      + 'base de datos, no una pantalla.',
-  },
-];
-
-function Preguntas() {
-  return (
-    <section className="pl-seccion pl-preguntas" id="preguntas" aria-labelledby="pl-preguntas-titulo">
-      <span className="pl-ancla" id="seguridad" aria-hidden="true" />
-      <h2 id="pl-preguntas-titulo" className="pl-h2 pl-preguntas-titulo" data-reveal>Preguntas</h2>
-      <div className="pl-lectura-texto" data-reveal="1">
-        {FAQ.map((f) => (
-          <p className="pl-respuesta" key={f.p}>
-            <strong>{f.p}</strong>{' '}
-            {f.r}
-            {f.whatsapp && (
-              <>
-                {' '}
-                <a className="pl-enlace" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
-                  Escribime al {WHATSAPP_VISIBLE}
-                </a>
-                , {WHATSAPP_HORARIO}.
-              </>
-            )}
-          </p>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────── Cierre: una frase y el boton ─────────────── */
-
-function Cierre({ onDiagnostico }) {
-  return (
-    <section className="pl-seccion pl-cierre" id="contacto" aria-label="Empezar">
-      <div className="pl-cierre-dentro" data-reveal>
-        <p className="pl-cierre-frase">
-          Unas pocas preguntas, sin email, y sabés qué resolver primero en tu negocio.
-        </p>
-        <div className="pl-acciones">
-          <button type="button" className="pl-boton" onClick={onDiagnostico}>Quiero Dico</button>
-          <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
-            Agendá una reunión
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────── Pie: una linea ─────────────── */
-
-function Pie() {
-  return (
-    <footer className="pl-pie">
-      <p className="pl-pie-que">Dico, de Grupo Divianco. Buenos Aires.</p>
-      <p className="pl-pie-links">
-        <a className="pl-enlace" href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={marcarWhatsApp}>
-          WhatsApp {WHATSAPP_VISIBLE}
-        </a>
-        <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={marcarAgenda}>
-          Reuniones {AGENDA_HORARIO}
-        </a>
-        <a className="pl-enlace" href="mailto:hola@divianco.app">hola@divianco.app</a>
-        <a className="pl-enlace" href="/registro">Crear mi cuenta</a>
-        <a className="pl-enlace" href="/entrar">Entrar</a>
-      </p>
-      <p className="pl-pie-legal">
-        © {new Date().getFullYear()} Grupo Divianco. Fotos: productos de La Nona Pato y Crazy Miga.
-      </p>
-    </footer>
   );
 }

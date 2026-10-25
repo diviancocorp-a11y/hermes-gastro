@@ -11,6 +11,22 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — segmentos 7 y 8, 25/oct:** completados para revision conjunta.
+Preguntas frecuentes en acordeon centrado, con apertura independiente,
+teclado nativo y acentos volt. Respuestas ajustadas al alcance real: Digital
+solo mensual, conexion necesaria, funciones en desarrollo y puesta en marcha
+sin prometer plazos. Cierre en panel zinc con «Todo tu negocio en un solo
+lugar» y CTA dorado «Quiero Dico» al mismo diagnostico integrado.
+
+Footer centrado con el logo original grande de Dico al fondo, navegacion,
+WhatsApp, email y agenda existentes. No hay paginas publicas de Terminos ni
+Privacidad en el repo: el enlace permite consultas legales por email, sin
+inventar politicas. Retirados los bloques anteriores y su CSS huerfano;
+conservado el pie compartido por /diagnostico. ESLint y comprobacion Chrome
+en 390/1280: acordeon, teclado, apertura/cierre y sin overflow horizontal.
+Los ocho segmentos quedan para correcciones de Ricky; auditoria integral
+pendiente hasta aprobar el diseno, sin subagentes intermedios.
+
 **Actual — ajustes del 5 y segmento 6, 25/oct:** circulos de los tres pasos
 en oro y pulso dorado sobre la conexion volt, de izquierda a derecha; vertical
 en movil y sin animacion con movimiento reducido. Implementadas tres cards

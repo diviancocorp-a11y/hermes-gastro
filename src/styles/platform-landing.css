@@ -644,41 +644,6 @@
 
 .pl-fotos .pl-foto-marco { aspect-ratio: 4 / 5; }
 
-/* Preguntas: texto de lectura en dos columnas */
-.pl-preguntas-titulo { grid-column: 1 / 4; align-self: start; }
-
-.pl-lectura-texto {
-  grid-column: 4 / -1;
-  columns: 2;
-  column-gap: var(--ds-space-layout-12);
-}
-
-.pl-respuesta {
-  break-inside: avoid;
-  padding-bottom: var(--ds-space-6);
-  font-size: var(--pl-t3);
-  line-height: 1.55;
-}
-
-.pl-respuesta strong { font-weight: 600; }
-
-/* Cierre: una frase y el boton, en la columna */
-.pl-cierre { padding-top: max(var(--pl-hueco), 20svh); }
-
-.pl-cierre-dentro {
-  grid-column: 4 / span 5;
-  max-width: var(--pl-columna);
-}
-
-.pl-cierre-frase {
-  max-width: 30ch;
-  margin-bottom: var(--ds-space-6);
-  font-size: var(--ds-type-xl);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-}
-
 /* Pie: una linea */
 .pl-pie {
   display: grid;
@@ -707,12 +672,6 @@
 
 /* ─────────────── Tableta y telefono ─────────────── */
 
-@media (max-width: 1099px) {
-  .pl-cierre-dentro { grid-column: 3 / span 8; }
-  .pl-preguntas-titulo { grid-column: 1 / -1; }
-  .pl-lectura-texto { grid-column: 1 / -1; margin-top: var(--ds-space-8); }
-}
-
 @media (max-width: 999px) {
   .pl-split {
     grid-template-columns: minmax(0, 1fr);
@@ -738,10 +697,7 @@
   }
 
   .pl-seccion { grid-template-columns: minmax(0, 1fr); }
-  .pl-seccion > *,
-  .pl-cierre-dentro,
-  .pl-lectura-texto,
-  .pl-preguntas-titulo { grid-column: 1; }
+  .pl-seccion > * { grid-column: 1; }
 
   .pl-marca img { height: 24px; }
 
@@ -757,7 +713,6 @@
 
 
 
-  .pl-lectura-texto { columns: 1; }
 
   .pl-pie {
     grid-template-columns: minmax(0, 1fr);

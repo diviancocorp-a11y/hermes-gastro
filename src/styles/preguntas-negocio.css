@@ -1,0 +1,21 @@
+.pn-root { position: relative; isolation: isolate; padding: var(--ds-space-layout-16) var(--pl-m) var(--pl-hueco); background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-50); }
+.pn-root::before { content: ''; position: absolute; z-index: -1; inset: 0; background-image: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
+.pn-dentro { max-width: 900px; margin-inline: auto; }
+.pn-root h2 { text-align: center; font-size: clamp(36px, 4.2vw, 64px); font-weight: 500; line-height: 1.08; letter-spacing: -.035em; }
+.pn-intro { margin-top: var(--ds-space-4); text-align: center; color: var(--ds-color-zinc-400); font-size: var(--ds-type-lg); }
+.pn-lista { margin-top: var(--ds-space-layout-12); border-top: 1px solid var(--ds-color-zinc-800); }
+.pn-pregunta { border-bottom: 1px solid var(--ds-color-zinc-800); }
+.pn-pregunta summary { display: flex; align-items: center; justify-content: space-between; gap: var(--ds-space-6); min-height: 76px; padding: var(--ds-space-6) var(--ds-space-2); list-style: none; font-size: var(--ds-type-lg); line-height: 1.4; cursor: pointer; }
+.pn-pregunta summary::-webkit-details-marker { display: none; }
+.pn-pregunta summary svg { flex: none; width: 22px; height: 22px; fill: none; stroke: var(--ds-color-intelligence-label); stroke-width: 1.5; transition: transform 220ms ease; }
+.pn-pregunta[open] summary { color: var(--ds-color-intelligence-label); }
+.pn-pregunta[open] summary svg { transform: rotate(45deg); }
+.pn-respuesta { padding: 0 var(--ds-space-2) var(--ds-space-6); max-width: 72ch; color: var(--ds-color-zinc-400); font-size: var(--ds-type-md); line-height: 1.7; }
+.pn-respuesta a { display: inline-flex; align-items: center; min-height: var(--ds-control-height-touch); margin-top: var(--ds-space-2); color: var(--ds-color-intelligence-label); }
+.pn-contacto { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--ds-space-2) var(--ds-space-4); margin-top: var(--ds-space-8); font-size: var(--ds-type-md); }
+.pn-contacto a { display: inline-flex; align-items: center; min-height: var(--ds-control-height-touch); color: var(--ds-color-intelligence-label); }
+.pn-contacto > span { flex-basis: 100%; text-align: center; color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); }
+.pn-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: var(--ds-space-1); }
+@media (prefers-reduced-motion: no-preference) { .pn-pregunta[open] .pn-respuesta { animation: pn-abre 160ms ease-out; } }
+@keyframes pn-abre { from { opacity: .3; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pn-pregunta summary svg { transition: none; } }
