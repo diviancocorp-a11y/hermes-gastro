@@ -11,6 +11,17 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Ultima revision del segmento 2 — 25/oct:** CTA «Quiero ordenar mi negocio»
+ahora dorado, con circulo negro/flecha oro y relleno negro al hover, como el
+hero. Las tres capturas avanzan cada 7 segundos mientras la seccion esta
+visible; se congelan con cursor encima, foco de teclado, pestana oculta o
+pausa explicita. Movimiento reducido conserva seleccion manual. Luz dorada
+suave en movimiento detras del marco, pausada al explorar, sin alterar los
+acentos volt de la interfaz. Descripcion bajo «Interfaz real» ampliada y a
+15 px para explicar cada pantalla. Cinco pruebas pertinentes pasan; Chrome
+confirma avance real, pausa por hover, CTA/diagnostico y ausencia de overflow
+a 320 px. Segmento 3 sin modificaciones; ambos pendientes de aprobacion visual.
+
 **Actual — segmento 3, 25/oct:** armado «Tu rubro, tu forma de trabajar»
 con tres paneles seleccionables: Gastronomia, Comercio y Servicios. Expansion
 280 ms por clic/toque/teclado; sin autoplay y cambio inmediato con movimiento
