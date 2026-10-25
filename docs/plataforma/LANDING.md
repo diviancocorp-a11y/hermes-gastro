@@ -11,6 +11,23 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — nueva composicion del segmento 3, 25/oct:** Ricky elige escenas
+3D por rubro, con dolor/respuesta a la izquierda, barra superior y momentos
+bajo la escena. Sustituidos los paneles expansibles por una barra accesible
+Gastronomia/Comercio/Servicios. El cambio sincroniza lateral, momentos y alcance.
+Los momentos explican la zona y la intervencion real; se reinician al cambiar
+de rubro y se deseleccionan al repetir clic. Conservadas todas las prestaciones
+y pendientes, sin ampliar promesas comerciales.
+
+La escena es un espacio reservado rotulado «en preparacion», no un 3D terminado.
+Ricky prepara el artefacto; prompt y contrato de integracion en
+LANDING-ESCENAS-3D.md. rubro usa gastronomia/comercio/servicios; momento concreto
+pausa e ilumina, null permitira recorrido automatico. No hay motor ni dependencia
+nueva. A diferencia del segmento 2, el lateral cuenta un dolor en tipografia
+editorial y la seleccion de momentos se ubica bajo el escenario, sin capturas
+de la app ni lista de pasos lateral. Chrome 390/1280 verifica barra por teclado, reinicio del momento, zonas y
+CTA al diagnostico. Sin auditorias ni subagentes intermedios.
+
 **Actual — segmentos 7 y 8, 25/oct:** completados para revision conjunta.
 Preguntas frecuentes en acordeon centrado, con apertura independiente,
 teclado nativo y acentos volt. Respuestas ajustadas al alcance real: Digital

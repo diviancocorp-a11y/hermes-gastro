@@ -64,87 +64,99 @@ const RUBROS = [
 
 const ENFOQUES = [
   {
-    para: 'Restaurantes, panaderías y delivery.',
-    titulo: 'De la receta al resultado.',
-    texto: 'Sabé cuánto cuesta lo que vendés y cómo cerró el día.',
-    capacidades: ['Pedidos, mesas y cocina conectados.', 'Recetas con costo y stock de insumos.', 'Caja, personal y ganancia neta por día.'],
+    id: 'gastronomia', para: 'Restaurantes, panaderías y delivery.',
+    dolor: 'Entre el salón y la cocina, todo pasa por vos.',
+    respuesta: 'Dico conecta pedidos, mesas y cocina para que el equipo siga la operación desde el mismo sistema. Vos podés mirar cómo viene el negocio sin ir juntando la información de cada sector.',
+    momentos: [
+      { id: 'pedido', nombre: 'Entra un pedido', zona: 'Salón y cocina', texto: 'El pedido queda en Dico y las comandas llegan a la pantalla del sector de cocina correspondiente.' },
+      { id: 'stock', nombre: 'Se completa', zona: 'Depósito', texto: 'Al completar el pedido se descuentan los insumos de su receta. Recibir el pedido todavía no modifica las existencias.' },
+      { id: 'cobro', nombre: 'Se cobra', zona: 'Caja', texto: 'El cobro se registra por su medio de pago. Registrar el cobro y completar el pedido son acciones distintas.' },
+    ],
   },
   {
-    para: 'Tiendas y comercios.',
-    titulo: 'Lo que vendés, bajo control.',
-    texto: 'Catálogo, artículos y cobros en el mismo lugar.',
-    capacidades: ['Catálogo online y pedidos de mostrador.', 'Stock por artículo al completar el pedido.', 'Compras, caja y resultado del mes.'],
+    id: 'comercio', para: 'Tiendas y comercios.',
+    dolor: 'Vendés por un lado. Controlás lo que queda por otro.',
+    respuesta: 'Dico reúne el catálogo, los pedidos y el stock por artículo. Al completar un pedido se actualizan las existencias; los cobros y gastos quedan en el mismo sistema.',
+    momentos: [
+      { id: 'pedido', nombre: 'Eligen un producto', zona: 'Mostrador', texto: 'El catálogo online y los pedidos de mostrador reúnen los artículos que el cliente quiere comprar.' },
+      { id: 'stock', nombre: 'Se completa', zona: 'Depósito', texto: 'Al completar el pedido se descuenta el stock de los artículos vendidos. Talles, colores y avisos de mínimo por artículo siguen en desarrollo.' },
+      { id: 'cobro', nombre: 'Se cobra', zona: 'Caja', texto: 'Registrás el cobro y su medio de pago. Las ventas, el personal y los gastos se reúnen en el resultado del día; el costo de lo vendido por artículo sigue en desarrollo.' },
+    ],
   },
   {
-    para: 'Barberías, peluquerías y estética.',
-    titulo: 'Más atención. Menos administración.',
-    texto: 'Organizá los turnos desde el panel y registrá lo que cobrás.',
-    capacidades: ['Catálogo de servicios con sus precios.', 'Agenda interna de turnos.', 'Cobros, equipo y resultado del mes.'],
+    id: 'servicios', para: 'Barberías, peluquerías y estética.',
+    dolor: 'Atender bien requiere tiempo. Organizar todo, también.',
+    respuesta: 'Dico reúne la agenda interna, los servicios y sus cobros. Organizás los turnos desde el panel y registrás la atención en el mismo lugar, sin depender de una reserva online que todavía está en desarrollo.',
+    momentos: [
+      { id: 'turno', nombre: 'Organizás el turno', zona: 'Recepción', texto: 'El equipo organiza los turnos en la agenda interna del panel. El cliente todavía no puede reservar online.' },
+      { id: 'atencion', nombre: 'Registrás el servicio', zona: 'Puestos de atención', texto: 'Registrás la venta del servicio con su precio. El descuento automático de los insumos usados en cada servicio sigue en desarrollo.' },
+      { id: 'cobro', nombre: 'Se cobra', zona: 'Caja', texto: 'Registrás el cobro por medio de pago y consultás las ventas, el personal y los gastos del día.' },
+    ],
   },
 ];
 
 export default function RubrosNegocio({ onDiagnostico }) {
   const [activo, setActivo] = useState(0);
+  const [momento, setMomento] = useState(null);
   const botones = useRef([]);
+  const elegir = indice => { setActivo(indice); setMomento(null); };
   const teclado = (evento, indice) => {
-    const direcciones = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+    const direcciones = { ArrowRight: 1, ArrowLeft: -1 };
     let siguiente;
     if (evento.key === 'Home') siguiente = 0;
     else if (evento.key === 'End') siguiente = 2;
     else if (direcciones[evento.key]) siguiente = (indice + direcciones[evento.key] + 3) % 3;
     else return;
     evento.preventDefault();
-    setActivo(siguiente);
+    elegir(siguiente);
     botones.current[siguiente]?.focus({ preventScroll: true });
   };
+  const rubro = RUBROS[activo];
+  const enfoque = ENFOQUES[activo];
+  const seleccionado = enfoque.momentos.find(item => item.id === momento);
   return (
     <section className="rn-root" id="rubros" aria-labelledby="rn-titulo">
       <span className="pl-ancla" id="modulos" aria-hidden="true" />
       <span className="pl-ancla" id="integraciones" aria-hidden="true" />
       <header className="rn-cabecera">
         <h2 id="rn-titulo">Tu rubro,<br />tu forma de trabajar.</h2>
-        <p>La misma base. Las herramientas que necesita tu negocio.</p>
+        <p>Tu negocio tiene su propio ritmo.<br />Dico se adapta a tu operación.</p>
       </header>
-      <div className="rn-paneles" data-activo={activo}>
-        {RUBROS.slice(0, 3).map((rubro, indice) => {
-          const abierto = activo === indice;
-          const enfoque = ENFOQUES[indice];
-          const pendientes = rubro.filas.filter(([, estado]) => estado !== HOY);
-          return (
-            <article className={`rn-panel${abierto ? ' rn-abierto' : ''}`} key={rubro.nombre}>
-              <h3>
-                <button type="button" id={`rn-selector-${indice}`} className="rn-selector"
-                  aria-expanded={abierto} aria-controls={`rn-contenido-${indice}`}
-                  onClick={() => setActivo(abierto ? null : indice)} onKeyDown={evento => teclado(evento, indice)}
-                  ref={elemento => { botones.current[indice] = elemento; }}>
-                  <span>{rubro.nombre}</span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14" /></svg>
-                </button>
-              </h3>
-              <p className="rn-para">{enfoque.para}</p>
-              <div className="rn-expansion" inert={!abierto} aria-hidden={!abierto}>
-                <div className="rn-interior">
-                  <div className="rn-contenido" id={`rn-contenido-${indice}`} role="region" aria-labelledby={`rn-selector-${indice}`}>
-                    <p className="rn-promesa">{enfoque.titulo}</p>
-                    <p className="rn-explicacion">{enfoque.texto}</p>
-                    <ul className="rn-capacidades">
-                      {enfoque.capacidades.map(texto => <li key={texto}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4 10-10" /></svg>{texto}</li>)}
-                    </ul>
-                    {pendientes.length > 0 && (
-                      <div className="rn-pendiente"><p>En desarrollo</p><ul>{pendientes.map(([texto]) => <li key={texto}>{texto}</li>)}</ul></div>
-                    )}
-                    <details className="rn-alcance">
-                      <summary>Ver el alcance completo</summary>
-                      <ul>{rubro.filas.map(([texto, estado]) => <li key={texto}><span>{texto}</span><span>{estado === HOY ? 'Disponible' : estado}</span></li>)}</ul>
-                    </details>
-                    <button type="button" className="rn-cta pl-enlace pl-enlace-boton" onClick={onDiagnostico}>Ver qué necesita mi negocio <span aria-hidden="true">→</span></button>
-                  </div>
-                </div>
-              </div>
-            </article>
-          );
-        })}
+      <div className="rn-rubros" role="tablist" aria-label="Elegí tu rubro">
+        {ENFOQUES.map((item, indice) => (
+          <button key={item.id} type="button" role="tab" id={`rn-selector-${item.id}`}
+            aria-selected={activo === indice} aria-controls="rn-experiencia" tabIndex={activo === indice ? 0 : -1}
+            onClick={() => elegir(indice)} onKeyDown={evento => teclado(evento, indice)}
+            ref={elemento => { botones.current[indice] = elemento; }}>
+            <span className="rn-indice" aria-hidden="true">0{indice + 1}</span>{RUBROS[indice].nombre}
+          </button>
+        ))}
       </div>
+      <div className="rn-experiencia" id="rn-experiencia" role="tabpanel" aria-labelledby={`rn-selector-${enfoque.id}`} tabIndex={0}>
+        <div className="rn-relato" key={enfoque.id}>
+          <p className="rn-para">{enfoque.para}</p>
+          <h3>{enfoque.dolor}</h3>
+          <p className="rn-respuesta-titulo">Así se adapta Dico</p>
+          <p className="rn-explicacion">{enfoque.respuesta}</p>
+          <button type="button" className="rn-cta pl-enlace pl-enlace-boton" onClick={onDiagnostico}>Ver qué necesita mi negocio <span aria-hidden="true">→</span></button>
+        </div>
+        <div className="rn-visual">
+          {/* Integrar EscenaRubro({ rubro: enfoque.id, momento }) en este espacio. */}
+          <div className="rn-escena" data-rubro={enfoque.id} data-momento={momento || 'automatico'}>
+            <span className="rn-escena-rubro">{rubro.nombre}</span>
+            <div className="rn-reserva"><p>Acá vas a ver<br />tu negocio en movimiento.</p><span>Escena 3D en preparación</span></div>
+            <span className="rn-zona">{seleccionado ? `Zona: ${seleccionado.zona}` : 'Explorá los momentos de abajo'}</span>
+          </div>
+          <div className="rn-momentos" role="group" aria-label={`Momentos de ${rubro.nombre}`}>
+            {enfoque.momentos.map((item, indice) => <button type="button" key={item.id} aria-pressed={momento === item.id} onClick={() => setMomento(momento === item.id ? null : item.id)}><span aria-hidden="true">0{indice + 1}</span>{item.nombre}</button>)}
+          </div>
+          <p className="rn-momento-texto" aria-live="polite" aria-atomic="true">{seleccionado ? seleccionado.texto : 'Elegí un momento para conocer dónde interviene Dico y qué hace en esa parte de tu negocio.'}</p>
+        </div>
+      </div>
+      <details className="rn-alcance" key={enfoque.id}>
+        <summary>Consultar disponibilidad y alcance de {rubro.nombre.toLowerCase()}</summary>
+        <ul>{rubro.filas.map(([texto, estado]) => <li key={texto}><span>{texto}</span><span>{estado === HOY ? 'Disponible' : estado}</span></li>)}</ul>
+      </details>
       <details className="rn-comun">
         <summary>Lo que todavía no está disponible en ningún rubro</summary>
         <ul>{RUBROS[3].filas.map(([texto, estado]) => <li key={texto}><span>{texto}</span><span>{estado}</span></li>)}</ul>
