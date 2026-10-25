@@ -115,7 +115,10 @@ export default function PlatformLanding() {
           <a className="pl-marca" href="/">
             <img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
           </a>
-          <a className="pl-enlace pl-cabecera-link" href="/entrar">Entrar</a>
+          <nav className="pl-cabecera-accesos" aria-label="Acceso a Dico">
+            <a className="pl-enlace pl-cabecera-link" href="/entrar">Entrar</a>
+            <a className="pl-enlace pl-cabecera-link" href="/registro">Registrate</a>
+          </nav>
         </header>
         <Diagnostico
           modo="home"

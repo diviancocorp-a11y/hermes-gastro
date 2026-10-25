@@ -11,6 +11,15 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Correccion posterior — 25/oct:** recorte vertical de las tres capas bajado
+sin deformarlas y sujeto centrado tambien en movil. Boton y textos quedan
+arriba de la cabeza, comprobado en 390/768/1280/1613 px. Relleno hover ahora
+por crecimiento del circulo negro real (transform, 480 ms), texto por encima
+de la superficie. Cabecera incluye Entrar y Registrate con sus rutas reales.
+Referencia React pegada revisada: misma continuidad boton/card, adaptada al
+stack existente sin incorporar TypeScript, shaders ni dependencias nuevas.
+Comprobadas fases intermedias del hover/apertura y cierre en Chrome.
+
 **Actual — cierre visual del hero, 25/oct:** hero centrado segun las capturas
 nuevas: titulo vigente, «Menos tiempo gestionando tu negocio. Mas tiempo para
 vos y los tuyos», CTA «Empezar mi diagnostico», enlace «Ver como funciona»

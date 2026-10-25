@@ -1035,6 +1035,7 @@
    Un solo encuadre compartido conserva el registro de los tres recortes. */
 .pl-hero-tiempo { --pc-producto: var(--pl-suelo-continuo); background: var(--pc-producto); }
 .pl-hero-tiempo .pl-cabecera { z-index: 8; color: var(--pc-producto-tinta); }
+.pl-cabecera-accesos { display: flex; align-items: center; gap: var(--ds-space-6); }
 .pl-hero-tiempo.pl-hero-diagnostico .pl-cabecera { color: var(--ds-color-zinc-50); }
 .pl-hero-tiempo .dg-cerrado {
   position: relative;
@@ -1068,7 +1069,7 @@
 .pl-anim .dg-cerrado .pl-split-lado > .pl-tiempo-escena { opacity: 1; animation: none; }
 .pl-tiempo-capa {
   position: absolute;
-  top: -17.5%;
+  top: -3%;
   left: 0;
   width: 100%;
   height: 117.5%;
@@ -1118,8 +1119,10 @@
   font-weight: 500;
   white-space: nowrap;
 }
-.pl-hero-etiqueta { font-size: var(--ds-type-lg); }
+.pl-hero-etiqueta { position: relative; z-index: 1; font-size: var(--ds-type-lg); }
 .pl-hero-burbuja {
+  position: relative;
+  z-index: 1;
   display: grid;
   flex: none;
   place-items: center;
@@ -1133,13 +1136,20 @@
 .pl-hero-cara { display: block; width: 100%; height: 100%; }
 .pl-hero-guino { opacity: 0; }
 .pl-hero-tiempo .pl-hero-origen::before {
-  content: ''; position: absolute; inset: 0; z-index: -1;
-  border-radius: inherit; background: var(--ds-color-zinc-950);
-  clip-path: circle(0% at calc(100% - 36px) 50%);
-  transition: clip-path 480ms cubic-bezier(.2,.7,.2,1);
+  content: '';
+  position: absolute;
+  z-index: 0;
+  right: var(--ds-space-4);
+  top: 50%;
+  width: var(--ds-control-height-default);
+  height: var(--ds-control-height-default);
+  border-radius: 50%;
+  background: var(--ds-color-zinc-950);
+  transform: translateY(-50%) scale(1);
+  transition: transform 480ms cubic-bezier(.2,.7,.2,1);
 }
 .pl-hero-tiempo .pl-hero-origen:is(:hover, :focus-visible, .pl-hero-regresando) { color: var(--ds-color-zinc-50); }
-.pl-hero-tiempo .pl-hero-origen:is(:hover, :focus-visible, .pl-hero-regresando)::before { clip-path: circle(150% at calc(100% - 36px) 50%); }
+.pl-hero-tiempo .pl-hero-origen:is(:hover, :focus-visible, .pl-hero-regresando)::before { transform: translateY(-50%) scale(18); }
 .pl-hero-origen:is(:hover, :focus-visible) .pl-hero-burbuja { background: transparent; }
 .pl-hero-burbuja svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .pl-hero-regresando { animation: pl-boton-regresa 320ms ease; }
@@ -1170,13 +1180,13 @@
   outline-color: var(--pc-producto-volt);
 }
 @media (max-width: 999px) {
-  .pl-tiempo-capa { object-position: 32% center; }
+  .pl-tiempo-capa { object-position: center; }
   .pl-hero-tiempo .pl-h1 { top: 18svh; font-size: clamp(56px, 8.4vw, 96px); }
-  .pl-tiempo-propuesta { top: 42svh; }
+  .pl-tiempo-propuesta { top: 34svh; }
 }
 @media (max-width: 599px) {
   .pl-hero-tiempo .pl-h1 { top: 16svh; font-size: clamp(36px, 9.8vw, 56px); }
-  .pl-tiempo-capa { object-position: 36% center; }
+  .pl-tiempo-capa { object-position: center; }
   .pl-tiempo-propuesta { top: 34svh; }
   .pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-4); }
   .pl-hero-tiempo .pl-acciones > .pl-enlace { display: inline-flex; }
