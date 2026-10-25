@@ -1081,11 +1081,11 @@
 .pl-hero-tiempo .pl-h1 {
   position: absolute;
   z-index: 3;
-  top: 14svh;
+  top: 11svh;
   left: var(--pl-m);
   right: var(--pl-m);
   font-family: var(--ds-font-soul);
-  font-size: clamp(64px, 8.4vw, 136px);
+  font-size: clamp(64px, 6.5vw, 104px);
   font-weight: 400;
   letter-spacing: -0.045em;
   line-height: 0.94;
@@ -1095,12 +1095,13 @@
 .pl-tiempo-propuesta {
   position: absolute;
   z-index: 6;
-  top: 69svh;
+  top: clamp(300px, 31svh, 380px);
   left: var(--pl-m);
-  max-width: min(39ch, 42%);
+  right: var(--pl-m);
+  text-align: center;
 }
-.pl-hero-tiempo .pl-bajada { margin-top: 0; font-size: var(--ds-type-lg); line-height: 1.4; }
-.pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-6); gap: var(--ds-space-4) var(--ds-space-6); }
+.pl-hero-tiempo .pl-bajada { margin-inline: auto; margin-top: 0; font-size: clamp(20px, 1.9vw, 30px); line-height: 1.3; }
+.pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-6); gap: var(--ds-space-4); flex-direction: column; align-items: center; }
 .pl-hero-tiempo .pl-hero-origen {
   min-height: calc(var(--ds-control-height-touch) + var(--ds-space-2));
   gap: var(--ds-space-6);
@@ -1108,8 +1109,12 @@
   border-radius: var(--ds-radius-pill);
   background: var(--pc-oro);
   color: var(--pc-sobre-oro);
-  outline: 2px solid var(--ds-color-intelligence-volt);
-  outline-offset: 3px;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--pc-oro);
+  outline: none;
+  transition: color 320ms ease;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -1121,12 +1126,24 @@
   width: var(--ds-control-height-default);
   height: var(--ds-control-height-default);
   border-radius: var(--ds-radius-pill);
-  background: var(--ds-color-intelligence-volt);
-  color: var(--ds-color-zinc-950);
+  background: var(--ds-color-zinc-950);
+  color: var(--pc-oro);
+  transition: background 320ms ease;
 }
 .pl-hero-cara { display: block; width: 100%; height: 100%; }
 .pl-hero-guino { opacity: 0; }
-.pl-hero-tiempo .pl-hero-origen:is(:hover, :focus-visible) { background: var(--pc-oro-hover); }
+.pl-hero-tiempo .pl-hero-origen::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  border-radius: inherit; background: var(--ds-color-zinc-950);
+  clip-path: circle(0% at calc(100% - 36px) 50%);
+  transition: clip-path 480ms cubic-bezier(.2,.7,.2,1);
+}
+.pl-hero-tiempo .pl-hero-origen:is(:hover, :focus-visible, .pl-hero-regresando) { color: var(--ds-color-zinc-50); }
+.pl-hero-tiempo .pl-hero-origen:is(:hover, :focus-visible, .pl-hero-regresando)::before { clip-path: circle(150% at calc(100% - 36px) 50%); }
+.pl-hero-origen:is(:hover, :focus-visible) .pl-hero-burbuja { background: transparent; }
+.pl-hero-burbuja svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pl-hero-regresando { animation: pl-boton-regresa 320ms ease; }
+@keyframes pl-boton-regresa { from { opacity: .99; } to { opacity: 1; } }
 .pl-hero-tiempo .pl-hero-origen:focus-visible { outline-offset: var(--ds-space-2); }
 @media (prefers-reduced-motion: no-preference) {
   .pl-hero-origen:is(:hover, :focus-visible) .pl-hero-guino { animation: pl-dico-guina var(--pc-t-personaje) steps(1) both; }
@@ -1155,17 +1172,21 @@
 @media (max-width: 999px) {
   .pl-tiempo-capa { object-position: 32% center; }
   .pl-hero-tiempo .pl-h1 { top: 18svh; font-size: clamp(56px, 8.4vw, 96px); }
-  .pl-tiempo-propuesta { top: 68svh; max-width: min(38ch, 55%); }
+  .pl-tiempo-propuesta { top: 42svh; }
 }
 @media (max-width: 599px) {
-  .pl-hero-tiempo .pl-h1 { top: 18svh; font-size: clamp(36px, 9.8vw, 56px); }
+  .pl-hero-tiempo .pl-h1 { top: 16svh; font-size: clamp(36px, 9.8vw, 56px); }
   .pl-tiempo-capa { object-position: 36% center; }
-  .pl-tiempo-propuesta { top: 57svh; right: var(--pl-m); max-width: 36ch; }
+  .pl-tiempo-propuesta { top: 34svh; }
   .pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-4); }
-  .pl-hero-tiempo .pl-acciones > .pl-enlace { display: none; }
+  .pl-hero-tiempo .pl-acciones > .pl-enlace { display: inline-flex; }
   .pl-hero-tiempo .pl-bajada { font-size: var(--ds-type-lg); }
   .pl-tiempo-credito { top: 108svh; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pl-tiempo-capa, .pl-hero-tiempo .pl-h1 { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-hero-tiempo .pl-hero-origen::before, .pl-hero-tiempo .pl-hero-origen, .pl-hero-burbuja { transition: none; }
 }

@@ -1,5 +1,5 @@
 /** Anima una superficie persistente. La sesión modal es dueña del scroll/inert. */
-export function viajarConDico({ capa, origen, sentido = 'ida', prepararDestino, alTerminar }) {
+export function viajarConDico({ capa, origen, destino, sentido = 'ida', prepararDestino, alTerminar }) {
   let terminado = false;
   let animacion;
   let limite;
@@ -7,7 +7,10 @@ export function viajarConDico({ capa, origen, sentido = 'ida', prepararDestino, 
   let diferido;
   let quitarCss = () => {};
   const reducir = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-  const completo = 'inset(0px 0px 0px 0px round 0px)';
+  const destinoElemento = typeof destino === 'function' ? destino() : destino;
+  const caja = destinoElemento?.getBoundingClientRect();
+  const radio = destinoElemento ? getComputedStyle(destinoElemento).borderRadius || '0px' : '0px';
+  const completo = caja?.width ? `inset(${caja.top}px ${window.innerWidth - caja.right}px ${window.innerHeight - caja.bottom}px ${caja.left}px round ${radio})` : 'inset(0px 0px 0px 0px round 0px)';
   const elemento = () => typeof origen === 'function' ? origen() : origen;
   const recorte = (rect) => `inset(${rect.top}px ${window.innerWidth - rect.right}px ${window.innerHeight - rect.bottom}px ${rect.left}px round ${rect.height / 2}px)`;
   const detener = () => { try { animacion?.cancel?.(); } catch { /* motor incompleto */ } };
@@ -52,7 +55,7 @@ export function viajarConDico({ capa, origen, sentido = 'ida', prepararDestino, 
     const rect = elemento()?.getBoundingClientRect();
     if (!rect?.width || !rect.height || rect.bottom <= 0 || rect.top >= window.innerHeight) return false;
     if (sentido === 'ida') { desde = recorte(rect); hasta = completo; }
-    else { desde = capa.style.clipPath || completo; hasta = recorte(rect); }
+    else { desde = completo; hasta = recorte(rect); }
     return true;
   };
   if (reducir?.matches || !Number.isFinite(tiempo) || (sentido === 'ida' && !preparar())) {

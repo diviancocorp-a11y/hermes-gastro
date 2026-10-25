@@ -362,6 +362,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     };
     viaje.current = viajarConDico({
       capa: oroRef.current,
+      destino: () => oroRef.current?.parentElement.querySelector('.dg-modal-card'),
       origen: boton,
       sentido: 'vuelta',
       prepararDestino: () => {
@@ -375,7 +376,14 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
         cerrandoRef.current = false;
         cierreSolicitado.current = false;
         flushSync(() => { setOverlayActivo(false); setAbierto(false); setFase('preguntas'); setIndice(0); });
-        boton()?.focus({ preventScroll: true });
+        const origen = boton();
+        origen?.classList.add('pl-hero-regresando');
+        origen?.focus({ preventScroll: true });
+        if (origen) {
+          const limpiar = () => origen.classList.remove('pl-hero-regresando');
+          origen.addEventListener('animationend', limpiar, { once: true });
+          setTimeout(limpiar, 400);
+        }
       },
     });
   }, []);
@@ -413,7 +421,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       viaje.current?.cancelar();
       aperturaEnCurso.current = false;
       cerrandoRef.current = false;
-      if (oroRef.current) oroRef.current.style.clipPath = 'inset(0px 0px 0px 0px round 0px)';
+      if (oroRef.current) oroRef.current.dataset.viaje = 'abierto';
       flushSync(() => {
         if (modo === 'home') setOverlayActivo(true);
         setAbierto(true);
@@ -458,6 +466,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       viaje.current = viajarConDico({
         capa: oroRef.current,
         origen: evento?.currentTarget,
+        destino: () => oroRef.current?.parentElement.querySelector('.dg-modal-card'),
         alTerminar: () => {
           aperturaEnCurso.current = false;
           const siguiente = primerFaltante(respuestasRef.current);
@@ -585,7 +594,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       )}
     </>
   ) : contenido;
-  if (!abierto) return envolver(null);
+  if (!abierto && !overlayActivo) return envolver(null);
 
   const sol = fase === 'resultado' ? solucion(respuestas.desafio, respuestas.vertical) : null;
 

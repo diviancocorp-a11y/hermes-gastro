@@ -15,6 +15,12 @@
 
 ### Ultima continuacion — 24/oct (leer primero)
 
+- 25/oct: hero centrado segun nuevas capturas. CTA «Empezar mi diagnostico»
+  oro con circulo negro/flecha oro; relleno negro desde derecha al hover.
+  Apertura negra hasta card, hero difuminado alrededor, volt interno intacto.
+  Cierre negro al boton y retorno al oro. Sustituye el fondo oro persistente
+  descripto debajo. 29 pruebas, build y Chrome 390/1280 verificados.
+  Esperar aprobacion visual del hero antes de avanzar segmento 2.
 - Pedido posterior de Ricky: construir sin subagentes ni auditorias
   intermedias para ahorrar uso; auditoria integral despues de aprobar diseno.
   Diagnostico ahora en card zinc sobre oro persistente: una expansion640ms,

@@ -29,20 +29,18 @@ function Sesion({ visible, fondoRef, oroRef, tituloRef, tituloId, onCerrar, chil
     if (visible) tituloRef.current?.focus({ preventScroll: true });
   }, [visible, tituloRef]);
   return (
-    <div className="pl-root dg-modal" role="dialog" aria-modal="true"
+    <div className="pl-root dg-modal" data-visible={visible} role="dialog" aria-modal="true"
       aria-labelledby={visible ? tituloId : undefined} aria-label={visible ? undefined : 'Diagnóstico de Dico'}
       ref={contenedorRef} tabIndex={-1}>
       <div className="pl-viaje-dico" ref={oroRef} aria-hidden="true" />
-      {visible && (
-        <section className="dg-modal-card">
+      <section className="dg-modal-card" data-visible={visible} aria-hidden={!visible} inert={!visible}>
           <div className="dg-modal-cabecera">
             <button type="button" className="dg-modal-cerrar" aria-label="Cerrar diagnóstico" onClick={onCerrar}>
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18" /></svg>
             </button>
           </div>
           {children}
-        </section>
-      )}
+      </section>
     </div>
   );
 }

@@ -53,7 +53,6 @@ import {
 import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
 import CircuitoNegocio from '../components/landing/CircuitoNegocio';
-import DicoBoton from '../components/landing/DicoBoton';
 import { CLIENTES, FOTOS } from '../components/landing/clientes';
 import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
@@ -153,15 +152,15 @@ function Portada({ onAbrir }) {
       </h1>
       <div className="pl-tiempo-propuesta">
         <p className="pl-bajada">
-          Dico simplifica la gestión de tu negocio para que tengas más tiempo para vos y los tuyos.
+          Menos tiempo gestionando tu negocio.<br />Más tiempo para vos y los tuyos.
         </p>
         <div className="pl-acciones">
           <button type="button" className="pl-boton pl-hero-origen" data-abrir onClick={alAbrir}>
-            <span className="pl-hero-etiqueta">Quiero Dico</span> <span className="pl-hero-burbuja" aria-hidden="true"><DicoBoton /></span>
+            <span className="pl-hero-etiqueta">Empezar mi diagnóstico</span> <span className="pl-hero-burbuja" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span>
           </button>
-          <a className="pl-enlace" href="#que-hace">Qué hace Dico</a>
+          <a className="pl-enlace" href="#que-hace">Ver cómo funciona</a>
         </div>
-        <p className="pl-hero-ayuda">Empezamos con un diagnóstico breve, sin email.</p>
+        <p className="pl-hero-ayuda">Diagnóstico breve, sin dejar tu email.</p>
       </div>
       <a className="pl-tiempo-credito" href="https://webflow.com/made-in-webflow/website/osmo-parallax-image-layers" target="_blank" rel="noreferrer">Escena: Osmo · CC0</a>
     </div>

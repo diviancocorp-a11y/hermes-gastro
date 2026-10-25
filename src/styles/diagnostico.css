@@ -491,7 +491,7 @@
 }
 
 
-/* Card pública sobre la misma superficie dorada que nace del CTA. */
+/* Card oscura que nace del CTA, sobre el hero difuminado. */
 .dg-modal {
   --pc-suelo: var(--ds-color-zinc-950);
   --pc-suelo-2: var(--ds-color-zinc-900);
@@ -512,7 +512,15 @@
   background: none;
   color: var(--pc-tinta);
 }
+.dg-modal::before {
+  content: ''; position: absolute; inset: 0;
+  background: color-mix(in srgb, var(--ds-color-zinc-950) 24%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
 .dg-modal:focus { outline: none; }
+.dg-modal-card[data-visible="false"] { visibility: hidden; }
+.dg-modal:has(.pl-viaje-dico[data-sentido="vuelta"])::before { opacity: 0; transition: opacity 480ms ease; }
 .dg-modal-card {
   position: relative;
   width: min(100%, calc(var(--pl-columna) * 2));
@@ -565,9 +573,10 @@
   --pl-viaje-curva: cubic-bezier(0.2, 0.7, 0.2, 1);
   position: absolute;
   inset: 0;
-  background: var(--pc-oro);
+  background: var(--ds-color-zinc-950);
   pointer-events: none;
 }
+.pl-viaje-dico[data-viaje="abierto"] { visibility: hidden; }
 .pl-viaje-css { animation: pl-viaje-superficie var(--pl-viaje-duracion) var(--pl-viaje-curva) both; }
 @keyframes pl-viaje-superficie {
   from { clip-path: var(--pl-viaje-desde); }
@@ -582,6 +591,6 @@
   .dg-modal .dg-fase-resultado .dg-res-cab { padding-bottom: var(--ds-space-6); }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .dg-modal-card { animation: dg-card-aparece 180ms var(--pc-curva) both; }
+  .dg-modal-card[data-visible="true"] { animation: dg-card-aparece 180ms var(--pc-curva) both; }
 }
 @keyframes dg-card-aparece { from { opacity: 0; } to { opacity: 1; } }

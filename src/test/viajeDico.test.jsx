@@ -17,7 +17,7 @@ function montar(modo = 'home') {
   return { ...montaje, abrirRef };
 }
 
-describe('diagnóstico en card sobre el oro persistente', () => {
+describe('diagnóstico en card oscura sobre el hero', () => {
   let animaciones;
   let cuadros;
   let secuencia;
@@ -53,6 +53,7 @@ describe('diagnóstico en card sobre el oro persistente', () => {
       getPropertyValue: (token) => ({ '--pl-viaje-expansion': '640ms', '--pl-viaje-contraccion': '480ms', '--pl-viaje-curva': 'cubic-bezier(0.2, 0.7, 0.2, 1)' }[token] || ''),
     } : estiloOriginal(elemento));
     vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      if (this.matches('.dg-modal-card')) return { top: 80, bottom: 680, left: 40, right: 984, width: 944, height: 600 };
       if (this.matches('[data-abrir], [data-footer]')) return { top: 500, bottom: 556, left: 20, right: 240, width: 220, height: 56 };
       return { top: 0, bottom: 800, left: 0, right: 390, width: 390, height: 800 };
     });
@@ -90,7 +91,7 @@ describe('diagnóstico en card sobre el oro persistente', () => {
     await act(async () => oro().dispatchEvent(evento));
   };
 
-  it('expande una sola vez, conserva el oro y monta un único formulario sobre el hero persistente', async () => {
+  it('expande una sola vez hasta la card y monta un único formulario sobre el hero persistente', async () => {
     const { container } = montar();
     const escena = screen.getByTestId('escena');
     boton().focus();
@@ -98,7 +99,7 @@ describe('diagnóstico en card sobre el oro persistente', () => {
     expect(screen.queryByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).not.toBeInTheDocument();
     expect(container.firstChild).toHaveAttribute('inert');
     expect(animaciones).toHaveLength(1);
-    expect(animaciones[0].frames.at(-1).clipPath).toBe('inset(0px 0px 0px 0px round 0px)');
+    expect(animaciones[0].frames.at(-1).clipPath).toBe('inset(80px 40px 88px 40px round 0px)');
     const superficie = oro();
     await act(async () => animaciones[0].terminar());
     expect(oro()).toBe(superficie);
@@ -119,7 +120,7 @@ describe('diagnóstico en card sobre el oro persistente', () => {
     await medirCierre();
     expect(screen.queryByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).not.toBeInTheDocument();
     expect(animaciones).toHaveLength(2);
-    expect(animaciones[1].frames[0].clipPath).toBe('inset(0px 0px 0px 0px round 0px)');
+    expect(animaciones[1].frames[0].clipPath).toBe('inset(80px 40px 88px 40px round 0px)');
     expect(animaciones[1].frames.at(-1).clipPath).toContain('round 28px');
     expect(container.firstChild).toHaveAttribute('inert');
     await act(async () => animaciones[1].terminar());
@@ -252,7 +253,7 @@ describe('diagnóstico en card sobre el oro persistente', () => {
     expect(boton()).toHaveFocus();
   });
 
-  it('sin WAAPI expande y contrae mediante CSS, conservando el oro entre ambas', async () => {
+  it('sin WAAPI expande y contrae mediante CSS, conservando la superficie entre ambas', async () => {
     delete Element.prototype.animate;
     montar();
     fireEvent.click(boton());

@@ -11,19 +11,19 @@
 
 ### Revision visual de Ricky — 24/oct
 
-**Actual — diagnostico en card y boton con volt:** implementada una sola
-expansion del boton al oro (640 ms), que permanece como fondo de la card
-zinc. Al cerrar, el oro se contrae directo al boton (480 ms), sin segundo
-tramo hacia la cara. Card con aparicion de 180 ms, Dico antes de la pregunta
-en movil, cierre visible y Escape desde cualquier paso. Atras entre preguntas
-conserva su recorrido; cerrar conserva respuestas. Hero/parallax siguen
-montados debajo. El CTA mantiene oro, Dico y guino; contorno y circulo detras
-de Dico ahora usan azul volt, por pedido posterior con referencia visual.
+**Actual — cierre visual del hero, 25/oct:** hero centrado segun las capturas
+nuevas: titulo vigente, «Menos tiempo gestionando tu negocio. Mas tiempo para
+vos y los tuyos», CTA «Empezar mi diagnostico», enlace «Ver como funciona»
+y ayuda sin email. Boton dorado con circulo negro y flecha dorada; al hover
+se rellena de negro desde la derecha, con borde oro y texto claro.
 
-Comprobacion basica local: card en 390/1280 px, oro persistente, foco y
-restauracion de inert/scroll; cierre desde pregunta 2 y reapertura conservando
-respuesta. Build y pruebas pertinentes se verifican antes del push. Preview
-de esta entrega en el mismo PR #52; no confundirlo con previews anteriores.
+El negro se expande desde el boton hasta los limites de la card (640 ms),
+sobre el hero difuminado, sin pantalla dorada. La card conserva los detalles
+volt. Cerrar contrae la superficie oscura al boton (480 ms), despues vuelve
+al estado natural dorado; se mantienen cierre X/Escape/Atras, respuestas,
+foco y scroll. Parallax y segmento 2 se conservan. Verificacion basica:
+29 pruebas pertinentes, apertura/cierre en Chrome 390/1280. Auditoria integral
+pendiente hasta aprobacion visual de Ricky; misma rama y PR #52.
 
 **Proceso pedido por Ricky:** construir de forma economica, sin subagentes
 ni auditorias intermedias. La auditoria integral se hace despues de aprobar
