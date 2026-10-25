@@ -11,6 +11,18 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — segmento 5, 25/oct:** Ricky aprueba la franja de negocios y pide
+continuar con «Como empezas». Implementado «Empeza a tu ritmo» con los tres
+pasos acordados: diagnostico, alta del negocio y puesta en marcha. Conexion
+volt discreta, horizontal en escritorio y vertical en movil; fondo negro
+zinc, sin nueva secuencia de scroll. Un CTA dorado «Hacer mi diagnostico» al
+mismo embudo integrado, conservando respuestas. No promete minutos, carga
+automatica ni reunion previa al alta. Verificacion visual y funcional en
+390/1280: tres pasos, sin overflow, CTA y respuestas conservadas al reabrir.
+Segmentos anteriores intactos. Precios y apartado 6 todavia pendientes;
+revision visual del segmento 5 antes de avanzar. Auditoria integral al aprobar
+el diseno completo, sin subagentes intermedios.
+
 **Actual — franja de negocios, 25/oct:** apartado 4 reubicado entre hero y
 segmento 2, con titulo «Negocios que ya usan Dico». Cuatro logos originales
 (La Nona Pato, Crazy Miga, Monare, MiaEstudio), tomados de las fuentes publicas

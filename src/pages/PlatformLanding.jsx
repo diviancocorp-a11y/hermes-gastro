@@ -56,6 +56,7 @@ import EscenaHero from '../components/landing/EscenaHero';
 import CircuitoNegocio from '../components/landing/CircuitoNegocio';
 import RubrosNegocio from '../components/landing/RubrosNegocio';
 import NegociosDico from '../components/landing/NegociosDico';
+import ComoEmpezar from '../components/landing/ComoEmpezar';
 import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
 import '../styles/platform-landing.css';
@@ -134,6 +135,7 @@ export default function PlatformLanding() {
       <NegociosDico />
       <CircuitoNegocio onDiagnostico={abrirDiagnostico} />
       <RubrosNegocio onDiagnostico={abrirDiagnostico} />
+      <ComoEmpezar onDiagnostico={abrirDiagnostico} />
       <Planes onDiagnostico={abrirDiagnostico} />
       <Preguntas />
       <Cierre onDiagnostico={abrirDiagnostico} />

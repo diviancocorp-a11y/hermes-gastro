@@ -1,0 +1,31 @@
+/* Tres pasos, una sola entrada al diagnóstico. Sin una segunda secuencia de scroll. */
+.ce-root { position: relative; isolation: isolate; padding: var(--ds-space-layout-16) var(--pl-m) var(--pl-hueco); background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-50); }
+.ce-root::before { content: ''; position: absolute; z-index: -1; inset: 0; background-image: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
+.ce-dentro { max-width: 1280px; margin-inline: auto; text-align: center; }
+.ce-root h2 { margin: 0; font-size: clamp(36px, 4.2vw, 64px); font-weight: 500; line-height: 1.08; letter-spacing: -.035em; }
+.ce-pasos { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ds-space-layout-16); margin-top: var(--ds-space-layout-16); }
+.ce-pasos::before { content: ''; position: absolute; z-index: -1; left: calc(100% / 6); right: calc(100% / 6); top: 24px; height: 1px; background: color-mix(in srgb, var(--ds-color-intelligence-volt) 40%, transparent); }
+.ce-pasos li { display: flex; flex-direction: column; align-items: center; gap: var(--ds-space-6); min-width: 0; }
+.ce-numero { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border: 1px solid var(--ds-color-intelligence-label); border-radius: var(--ds-radius-pill); background: var(--pl-suelo-continuo); color: var(--ds-color-intelligence-label); font-size: var(--ds-type-md); font-variant-numeric: tabular-nums; }
+.ce-pasos h3 { margin: 0; font-size: var(--ds-type-xl); font-weight: 500; line-height: 1.25; letter-spacing: -.02em; }
+.ce-pasos p { max-width: 30ch; margin: var(--ds-space-3) auto 0; color: var(--ds-color-zinc-400); font-size: var(--ds-type-md); line-height: 1.6; }
+.ce-accion { margin-top: var(--ds-space-layout-16); }
+.ce-accion > p { margin-top: var(--ds-space-4); color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); line-height: 1.5; }
+.ce-root .ce-boton { position: relative; isolation: isolate; overflow: hidden; min-height: 58px; gap: var(--ds-space-6); padding: var(--ds-space-2) var(--ds-space-4) var(--ds-space-2) var(--ds-space-6); border: 1px solid var(--pc-oro); border-radius: var(--ds-radius-pill); background: var(--pc-oro); color: var(--pc-sobre-oro); font-weight: 500; transition: color 320ms ease; }
+.ce-boton::before { content: ''; position: absolute; z-index: 0; right: var(--ds-space-4); top: 50%; width: 40px; height: 40px; border-radius: 50%; background: var(--pl-suelo-continuo); transform: translateY(-50%) scale(1); transition: transform 480ms cubic-bezier(.2,.7,.2,1); }
+.ce-etiqueta { position: relative; z-index: 1; }
+.ce-root .ce-boton:is(:hover, :focus-visible) { color: var(--ds-color-zinc-50); }
+.ce-boton:is(:hover, :focus-visible)::before { transform: translateY(-50%) scale(18); }
+.ce-boton:is(:hover, :focus-visible) .pl-hero-burbuja { background: transparent; }
+.ce-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: var(--ds-space-1); }
+@media (max-width: 999px) { .ce-pasos { gap: var(--ds-space-6); } .ce-pasos h3 { font-size: 21px; } }
+@media (max-width: 599px) {
+  .ce-pasos { grid-template-columns: 1fr; gap: var(--ds-space-8); margin-top: var(--ds-space-8); text-align: left; }
+  .ce-pasos::before { top: 24px; bottom: 24px; left: 23px; right: auto; width: 1px; height: auto; }
+  .ce-pasos li { flex-direction: row; align-items: start; gap: var(--ds-space-4); }
+  .ce-pasos h3 { font-size: var(--ds-type-lg); }
+  .ce-pasos p { margin-inline: 0; max-width: 30ch; }
+  .ce-accion { margin-top: var(--ds-space-8); }
+  .ce-root .ce-boton { max-width: 100%; gap: var(--ds-space-4); font-size: var(--ds-type-md); }
+}
+@media (prefers-reduced-motion: reduce) { .ce-root .ce-boton, .ce-boton::before, .ce-boton .pl-hero-burbuja { transition: none; } }
