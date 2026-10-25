@@ -117,7 +117,7 @@ export default function PlatformLanding() {
           </a>
           <nav className="pl-cabecera-accesos" aria-label="Acceso a Dico">
             <a className="pl-enlace pl-cabecera-link" href="/entrar">Entrar</a>
-            <a className="pl-enlace pl-cabecera-link" href="/registro">Registrate</a>
+            <a className="pl-enlace pl-cabecera-link pl-cabecera-registro" href="/registro">Registrate</a>
           </nav>
         </header>
         <Diagnostico
@@ -153,7 +153,7 @@ function Portada({ onAbrir }) {
         <span>Tu tiempo vuelve</span>{' '}
         <span>a ser tuyo.</span>
       </h1>
-      <div className="pl-tiempo-propuesta">
+      <div className="pl-tiempo-propuesta" data-tiempo-capa="0.33">
         <p className="pl-bajada">
           Menos tiempo gestionando tu negocio.<br />Más tiempo para vos y los tuyos.
         </p>
@@ -165,7 +165,6 @@ function Portada({ onAbrir }) {
         </div>
         <p className="pl-hero-ayuda">Diagnóstico breve, sin dejar tu email.</p>
       </div>
-      <a className="pl-tiempo-credito" href="https://webflow.com/made-in-webflow/website/osmo-parallax-image-layers" target="_blank" rel="noreferrer">Escena: Osmo · CC0</a>
     </div>
   );
 }

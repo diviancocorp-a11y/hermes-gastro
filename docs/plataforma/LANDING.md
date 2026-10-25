@@ -11,6 +11,12 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Ultimo ajuste — 25/oct:** bajada, CTA, enlace y ayuda comparten la
+velocidad parallax 0.33 del titulo, para que conserven su distancia al hacer
+scroll. Registrate en oro. Retirado credito visible Osmo; fuente y licencia
+CC0 conservadas en docs/marca/referencias/parallax-osmo.md. Sin cambios al
+segmento 2 ni auditoria integral; pendiente aprobacion del hero.
+
 **Correccion posterior — 25/oct:** recorte vertical de las tres capas bajado
 sin deformarlas y sujeto centrado tambien en movil. Boton y textos quedan
 arriba de la cabeza, comprobado en 390/768/1280/1613 px. Relleno hover ahora

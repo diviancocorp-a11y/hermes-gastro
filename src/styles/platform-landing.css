@@ -1036,6 +1036,7 @@
 .pl-hero-tiempo { --pc-producto: var(--pl-suelo-continuo); background: var(--pc-producto); }
 .pl-hero-tiempo .pl-cabecera { z-index: 8; color: var(--pc-producto-tinta); }
 .pl-cabecera-accesos { display: flex; align-items: center; gap: var(--ds-space-6); }
+.pl-hero-tiempo .pl-cabecera-registro { color: var(--pc-oro); }
 .pl-hero-tiempo.pl-hero-diagnostico .pl-cabecera { color: var(--ds-color-zinc-50); }
 .pl-hero-tiempo .dg-cerrado {
   position: relative;
@@ -1163,18 +1164,6 @@
   25%, 80% { opacity: 1; }
 }
 .pl-hero-ayuda { margin-top: var(--ds-space-3); font-size: var(--ds-type-sm); }
-.pl-tiempo-credito {
-  position: absolute;
-  z-index: 6;
-  top: 104svh;
-  right: var(--pl-m);
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--ds-control-height-touch);
-  font-size: var(--ds-type-sm);
-  color: var(--pc-producto-tinta);
-  text-underline-offset: 0.24em;
-}
 .pl-hero-tiempo .dg-cerrado :focus-visible,
 .pl-hero-tiempo:not(.pl-hero-diagnostico) .pl-cabecera :focus-visible {
   outline-color: var(--pc-producto-volt);
@@ -1191,10 +1180,9 @@
   .pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-4); }
   .pl-hero-tiempo .pl-acciones > .pl-enlace { display: inline-flex; }
   .pl-hero-tiempo .pl-bajada { font-size: var(--ds-type-lg); }
-  .pl-tiempo-credito { top: 108svh; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pl-tiempo-capa, .pl-hero-tiempo .pl-h1 { transform: none; }
+  .pl-tiempo-capa, .pl-hero-tiempo .pl-h1, .pl-tiempo-propuesta { transform: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
