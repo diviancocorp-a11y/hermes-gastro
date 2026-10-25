@@ -11,6 +11,20 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — segmento 2, 25/oct:** Ricky aprueba el hero («perfecto»). Pide
+sustituir el circuito con mascota por la composicion de su captura: «Un
+pedido. Todo en orden», tres momentos y la interfaz real a la derecha,
+mas volt y menos oro. Implementado selector manual/teclado de Pedidos,
+Stock y Resultado del dia, con capturas de los componentes de produccion
+renderizados con datos ficticios. Ninguna captura contiene datos de clientes.
+Se generaron con scripts/capturas-landing.mjs, sin acceso a Supabase; viven
+en public/brand/landing/interfaz/. El admin no se modifica ni se carga su
+codigo en la landing. Los colores internos de las capturas son los reales;
+los indicadores, lectura y CTA de la seccion usan volt. Fondo negro/zinc
+continuo. CTA abre el mismo diagnostico. En movil la captura se desplaza y
+se puede ampliar en otra pestana. Pendiente revision visual de este segmento;
+auditoria integral al aprobar el diseno completo, sin subagentes intermedios.
+
 **Ultimo ajuste — 25/oct:** bajada, CTA, enlace y ayuda comparten la
 velocidad parallax 0.33 del titulo, para que conserven su distancia al hacer
 scroll. Registrate en oro. Retirado credito visible Osmo; fuente y licencia

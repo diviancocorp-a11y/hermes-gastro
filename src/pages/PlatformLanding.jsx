@@ -129,7 +129,7 @@ export default function PlatformLanding() {
           lado={<EscenaHero />}
         />
       </section>
-      <CircuitoNegocio ocultarDico={diagnosticoAbierto} />
+      <CircuitoNegocio onDiagnostico={abrirDiagnostico} />
       <Rubros />
       <Clientes />
       <Planes onDiagnostico={abrirDiagnostico} />
