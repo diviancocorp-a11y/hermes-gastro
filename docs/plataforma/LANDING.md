@@ -11,6 +11,29 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — hero encuadrado y circuitos, 26/oct:** hero pasa de 120svh a
+100svh menos 120 px, reservados para la franja compacta de clientes reales.
+En Chrome 1440x900, 1280x720, 768x1024 y 390x844 el borde inferior de la
+franja coincide con el primer viewport; tambien comprobado 390x667 sin
+overflow. Se conserva la persona sin deformar las capas fotograficas, el
+parallax y el diagnostico oscuro con apertura/cierre desde el disparador.
+
+Subtitulo aprobado de la referencia: «Toda la gestion de tu negocio,
+conectada.» y «Para gastronomia, comercios y servicios.». Circuitos laterales
+con CRM y clientes, Pedidos, Stock, Compras, Analisis, Proveedores, Caja y
+Equipo. Pulsos volt recorren cada lado y destacan sucesivamente los nombres;
+cada herramienta abre el mismo diagnostico, sin preseleccionar respuestas.
+En movil los ocho nombres se compactan en dos filas al pie del hero, sin
+invadir el centro. Los pulsos se detienen al
+salir de pantalla o esconder la pestana; con movimiento reducido quedan
+estaticos. Titulo, propuesta y circuitos comparten desplazamiento .33.
+
+Chrome verifica apertura desde ambos lados y movil, CTA principal, cierre
+y retorno de foco al disparador; los ocho nombres reciben el cursor. ESLint
+pasa, sin errores JS en la comprobacion. Sin dependencias, subagentes ni
+auditoria integral; preview para aprobacion visual. Logos, destinos Instagram,
+precios, escenas 3D y funciones del producto sin cambios.
+
 **Actual — logo de contornos y corte final, 26/oct:** footer con trazado
 vectorial del logo original, solo contornos volt gruesos, incluidos los ojos,
 sin relleno, sombra, degradado ni blur. El viewBox recorta la parte inferior

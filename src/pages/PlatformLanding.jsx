@@ -49,6 +49,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import Diagnostico from '../components/landing/Diagnostico';
+import CircuitosHero from '../components/landing/CircuitosHero';
 import EscenaHero from '../components/landing/EscenaHero';
 import CircuitoNegocio from '../components/landing/CircuitoNegocio';
 import RubrosNegocio from '../components/landing/RubrosNegocio';
@@ -148,13 +149,15 @@ function Portada({ onAbrir }) {
   };
   return (
     <div className="pl-portada">
+      <CircuitosHero onAbrir={alAbrir} />
       <h1 className="pl-h1" data-tiempo-capa="0.33">
         <span>Tu tiempo vuelve</span>{' '}
         <span>a ser tuyo.</span>
       </h1>
       <div className="pl-tiempo-propuesta" data-tiempo-capa="0.33">
         <p className="pl-bajada">
-          Menos tiempo gestionando tu negocio.<br />Más tiempo para vos y los tuyos.
+          <strong>Toda la gestión de tu negocio, conectada.</strong>
+          <span>Para gastronomía, comercios y servicios.</span>
         </p>
         <div className="pl-acciones">
           <button type="button" className="pl-boton pl-hero-origen" data-abrir onClick={alAbrir}>

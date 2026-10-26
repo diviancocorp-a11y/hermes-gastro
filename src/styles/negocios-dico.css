@@ -27,3 +27,13 @@
   .nc-nombre { font-size: var(--ds-type-md); }
 }
 @media (prefers-reduced-motion: reduce) { .nc-negocio img, .nc-nombre, .nc-destino { transition: none; } }
+
+/* La franja completa cierra el primer viewport junto al hero. */
+.pl-hero-tiempo + .nc-root { box-sizing: border-box; height: 120px; padding-block: 8px; }
+.pl-hero-tiempo + .nc-root h2 { font-size: var(--ds-type-sm); line-height: 20px; }
+.pl-hero-tiempo + .nc-root .nc-deslizable { margin-top: 4px; }
+.pl-hero-tiempo + .nc-root .nc-fila { padding-block: 0; }
+.pl-hero-tiempo + .nc-root .nc-negocio { min-height: 76px; padding-block: 4px; gap: 12px; }
+.pl-hero-tiempo + .nc-root .nc-negocio img { width: 48px; height: 48px; }
+.pl-hero-tiempo + .nc-root .nc-nombre { font-size: var(--ds-type-md); }
+.pl-hero-tiempo + .nc-root .nc-destino { left: 60px; bottom: 0; }
