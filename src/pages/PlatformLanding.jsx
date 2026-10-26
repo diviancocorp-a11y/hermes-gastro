@@ -133,7 +133,7 @@ export default function PlatformLanding() {
       <RubrosNegocio onDiagnostico={abrirDiagnostico} />
       <ComoEmpezar onDiagnostico={abrirDiagnostico} />
       <PlanesNegocio onDiagnostico={abrirDiagnostico} />
-      <PreguntasNegocio />
+      <PreguntasNegocio onDiagnostico={abrirDiagnostico} />
       <CierreNegocio onDiagnostico={abrirDiagnostico} />
     </div>
   );

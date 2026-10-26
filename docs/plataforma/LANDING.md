@@ -11,6 +11,30 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — FAQ guiada con busqueda local, 26/oct:** segmento 7 adaptado a las
+dos referencias de Ricky. Inicio compacto con «Sacate la duda. Preguntale a
+Dico», mascota corporal vigente del admin (DicoPhysical), saludo, cuatro
+preguntas rapidas y buscador redondo dorado. Al elegir se abre conversacion,
+cuatro temas, respuesta preparada, enlaces pertinentes y sugerencias. Una
+sola mascota por bloque, sin microfono, adjuntos ni simulacion de tipeo.
+
+Las 12 respuestas existentes se trasladan sin cambiar su contenido a
+src/lib/preguntasPlataforma.js: fuente unica para conversacion, busqueda y
+«Ver todas las preguntas» con acordeones. Precios desde planesPlataforma.
+Busqueda determinista sin tildes/mayusculas, terminos habituales y ranking;
+solo ofrece preguntas existentes. Sin IA, llamadas de red ni persistencia
+de consultas/historial. Sin coincidencias ofrece el WhatsApp oficial sin
+enviar automaticamente la consulta. Historial en memoria de tres intercambios,
+respuestas accesibles y foco/scroll dentro de la conversacion. CTA de las
+respuestas abre el diagnostico integrado conservando el estado de FAQ.
+
+Cinco pruebas de busqueda pasan (incluye evitar astronomia/gastronomia).
+Chrome 1280/390 confirma inicio, preguntas rapidas, temas, respuestas,
+busqueda, fallback, 12 preguntas completas, diagnostico ida/vuelta y ausencia
+de errores JS/overflow. Verificado teclado y movimiento reducido; foco del
+buscador rodea todo el campo. No dependencias ni assets nuevos. Revision
+visual del conjunto y auditoria integral siguen pendientes.
+
 **Actual — cards de planes progresivas con scroll, 26/oct:** Ricky aprueba
 la presentacion pero pide mas tiempo para leer el titulo. La entrada de las
 cards deja de depender del reloj en navegadores con animation-timeline:view:
