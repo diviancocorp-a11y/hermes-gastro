@@ -1,6 +1,6 @@
 .pp-root { position: relative; isolation: isolate; padding: var(--ds-space-layout-16) var(--pl-m) var(--pl-hueco); background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-50); }
 .pp-root::before { content: ''; position: absolute; z-index: -1; inset: 0; background-image: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
-.pp-dentro { max-width: 1400px; margin-inline: auto; }
+.pp-dentro { max-width: 1480px; margin-inline: auto; }
 .pp-cabecera { text-align: center; }
 .pp-cabecera h2 { font-size: clamp(36px, 4.2vw, 64px); font-weight: 500; line-height: 1.08; letter-spacing: -.035em; }
 .pp-cabecera > p { margin-top: var(--ds-space-4); font-size: var(--ds-type-lg); color: var(--ds-color-zinc-400); }
@@ -8,27 +8,46 @@
 .pp-periodo label { position: relative; cursor: pointer; }
 .pp-periodo input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .pp-periodo label > span { display: grid; place-items: center; min-width: 120px; min-height: var(--ds-control-height-touch); border-radius: var(--ds-radius-pill); color: var(--ds-color-zinc-400); font-size: var(--ds-type-md); }
-.pp-periodo input:checked + span { background: var(--ds-color-intelligence-volt); color: var(--ds-color-zinc-50); }
+.pp-periodo input:checked + span { background: var(--ds-color-zinc-800); box-shadow: inset 0 0 0 1px var(--ds-color-zinc-400); color: var(--ds-color-zinc-50); }
 .pp-periodo input:focus-visible + span { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: 2px; }
-.pp-ahorro { min-height: 24px; margin-top: var(--ds-space-3); color: var(--ds-color-intelligence-label); text-align: center; font-size: var(--ds-type-sm); line-height: 1.5; }
+.pp-ahorro { min-height: 24px; margin-top: var(--ds-space-3); color: var(--ds-color-zinc-400); text-align: center; font-size: var(--ds-type-sm); line-height: 1.5; }
 .pp-planes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ds-space-6); margin-top: var(--ds-space-8); }
-.pp-plan { min-width: 0; display: flex; flex-direction: column; padding: clamp(20px, 2.5vw, 36px); border: 1px solid var(--ds-color-zinc-800); border-radius: var(--ds-radius-4); background: var(--ds-color-zinc-900); }
-.pp-para { color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); }
-.pp-plan h3 { margin-top: var(--ds-space-2); font-size: 32px; font-weight: 500; line-height: 1.1; }
-.pp-descripcion { min-height: 3em; margin-top: var(--ds-space-4); color: var(--ds-color-zinc-400); font-size: var(--ds-type-md); line-height: 1.5; }
-.pp-precio { margin-block: var(--ds-space-8); font-variant-numeric: tabular-nums; }
-.pp-importe { display: flex; align-items: baseline; gap: var(--ds-space-1); white-space: nowrap; font-size: clamp(32px, 3.1vw, 46px); line-height: 1.2; font-weight: 600; letter-spacing: -.035em; }
+.pp-plan { position: relative; isolation: isolate; min-width: 0; display: flex; flex-direction: column; padding: clamp(20px, 2vw, 32px); border: 1px solid var(--ds-color-zinc-800); border-radius: var(--ds-radius-4); background: var(--ds-color-zinc-900); }
+.pp-plan::before { content: ''; position: absolute; z-index: -1; inset: -1px; padding: 2px; border-radius: inherit; background: radial-gradient(200px circle at var(--pp-x, 50%) var(--pp-y, 0%), var(--ds-color-intelligence-volt), transparent 75%); mask: linear-gradient(var(--ds-color-zinc-50) 0 0) content-box, linear-gradient(var(--ds-color-zinc-50) 0 0); mask-composite: exclude; filter: drop-shadow(0 0 5px var(--ds-color-intelligence-volt)); opacity: 0; transition: opacity 160ms ease; pointer-events: none; }
+.pp-plan::after { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: inherit; background: radial-gradient(200px circle at var(--pp-x, 50%) var(--pp-y, 0%), color-mix(in srgb, var(--ds-color-intelligence-volt) 16%, transparent), transparent); filter: blur(8px); opacity: 0; transition: opacity 160ms ease; pointer-events: none; }
+.pp-plan:focus-within::before, .pp-plan:focus-within::after { opacity: 1; }
+@media (hover: hover) and (pointer: fine) { .pp-plan:hover::before, .pp-plan:hover::after { opacity: 1; } }
+.pp-para { color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); text-transform: uppercase; letter-spacing: .05em; }
+.pp-nombre { display: flex; align-items: center; gap: var(--ds-space-4); min-height: 40px; margin-top: var(--ds-space-2); }
+.pp-plan h3 { margin: 0; font-size: 32px; font-weight: 500; line-height: 1.1; }
+.pp-descuento { display: inline-flex; align-items: center; min-height: 28px; padding: var(--ds-space-1) var(--ds-space-2); border: 1px solid var(--pc-oro); border-radius: var(--ds-radius-pill); color: var(--pc-oro); font-size: var(--ds-type-sm); font-weight: 500; white-space: nowrap; }
+.pp-descripcion { min-height: 3em; margin-top: var(--ds-space-2); color: var(--ds-color-zinc-400); font-size: var(--ds-type-md); line-height: 1.5; }
+.pp-precio { margin-block: var(--ds-space-4) var(--ds-space-6); font-variant-numeric: tabular-nums; }
+.pp-importe { display: flex; align-items: baseline; gap: var(--ds-space-2); white-space: nowrap; font-size: clamp(36px, 3.3vw, 52px); line-height: 1.2; font-weight: 600; letter-spacing: -.035em; }
 .pp-unidad { color: var(--ds-color-zinc-400); font-size: var(--ds-type-md); font-weight: 400; letter-spacing: 0; }
-.pp-equivalente { min-height: 3em; margin-top: var(--ds-space-2); color: var(--ds-color-intelligence-label); font-size: var(--ds-type-sm); line-height: 1.5; }
-.pp-por-local { color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); }
-.pp-incluye { display: grid; align-content: start; gap: var(--ds-space-4); padding-top: var(--ds-space-6); border-top: 1px solid var(--ds-color-zinc-800); }
+.pp-equivalente { margin-top: var(--ds-space-2); color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); line-height: 1.5; }
+.pp-por-local { min-height: 3em; margin-top: var(--ds-space-2); color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); line-height: 1.5; }
+.pp-incluye { display: grid; align-content: start; gap: var(--ds-space-2); padding-top: var(--ds-space-4); border-top: 1px solid var(--ds-color-zinc-800); }
 .pp-incluye li { display: flex; align-items: start; gap: var(--ds-space-3); font-size: var(--ds-type-md); line-height: 1.45; }
-.pp-incluye svg { flex: none; width: 18px; height: 18px; fill: none; stroke: var(--ds-color-intelligence-label); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.pp-condiciones { margin-top: var(--ds-space-6); color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); line-height: 1.7; text-align: center; }
-.pp-accion { display: grid; justify-items: center; gap: var(--ds-space-4); margin-top: var(--ds-space-8); text-align: center; }
-.pp-root .pp-boton { gap: var(--ds-space-6); min-height: 58px; padding: var(--ds-space-2) var(--ds-space-4) var(--ds-space-2) var(--ds-space-6); border-radius: var(--ds-radius-pill); background: var(--pc-oro); color: var(--pc-sobre-oro); font-weight: 500; }
+.pp-incluye svg { flex: none; width: 18px; height: 18px; margin-top: 2px; fill: none; stroke: var(--pc-oro); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pp-elegir { display: flex; align-items: center; justify-content: center; gap: var(--ds-space-2); width: 100%; min-height: 48px; margin-top: var(--ds-space-6); padding: var(--ds-space-3); border: 1px solid var(--pc-oro); border-radius: var(--ds-radius-3); background: transparent; color: var(--pc-oro); font: inherit; font-weight: 500; cursor: pointer; }
+.pp-elegir:hover { background: var(--pc-oro); color: var(--pc-sobre-oro); }
+.pp-plan > .pp-incluye { flex: 1; }
+.pp-comparar { margin-top: var(--ds-space-4); }
+.pp-comparar > summary { display: flex; align-items: center; justify-content: center; gap: var(--ds-space-2); width: fit-content; min-height: var(--ds-control-height-touch); margin-inline: auto; padding: var(--ds-space-2); font-size: var(--ds-type-md); text-decoration: underline; text-underline-offset: .2em; cursor: pointer; }
+.pp-comparar > summary::-webkit-details-marker { display: none; }
+.pp-comparar summary svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.pp-comparar[open] summary svg { transform: rotate(180deg); }
+.pp-comparacion { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ds-space-6); padding: var(--ds-space-6) 0; }
+.pp-comparacion section { min-width: 0; padding: var(--ds-space-4); }
+.pp-comparacion h3 { margin-bottom: var(--ds-space-4); font-size: var(--ds-type-xl); font-weight: 500; }
+.pp-condiciones { margin-top: var(--ds-space-2); color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); line-height: 1.7; text-align: center; }
+.pp-accion { display: grid; justify-items: center; gap: var(--ds-space-3); margin-top: var(--ds-space-6); text-align: center; }
+.pp-root .pp-boton { gap: var(--ds-space-6); min-height: 48px; padding: var(--ds-space-2) var(--ds-space-4) var(--ds-space-2) var(--ds-space-6); border-radius: var(--ds-radius-pill); background: var(--pc-oro); color: var(--pc-sobre-oro); font-weight: 500; }
 .pp-accion > a { display: inline-flex; align-items: center; min-height: var(--ds-control-height-touch); font-size: var(--ds-type-md); }
 .pp-accion > p { color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); }
 .pp-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: var(--ds-space-1); }
-@media (max-width: 999px) { .pp-planes { gap: var(--ds-space-4); } .pp-plan { padding: var(--ds-space-4); } .pp-importe { flex-wrap: wrap; font-size: 30px; } }
-@media (max-width: 699px) { .pp-planes { grid-template-columns: minmax(0, 1fr); } .pp-plan { padding: var(--ds-space-6); } .pp-importe { font-size: 42px; } .pp-descripcion, .pp-equivalente { min-height: 0; } }
+@media (max-width: 999px) { .pp-planes, .pp-comparacion { gap: var(--ds-space-4); } .pp-plan { padding: var(--ds-space-4); } .pp-importe { flex-wrap: wrap; font-size: 30px; } }
+@media (max-width: 699px) { .pp-planes, .pp-comparacion { grid-template-columns: minmax(0, 1fr); } .pp-plan { padding: var(--ds-space-6); } .pp-importe { font-size: 42px; } .pp-descripcion, .pp-equivalente { min-height: 0; } }
+
+@media (prefers-reduced-motion: reduce) { .pp-plan::before, .pp-plan::after { transition: none; } }

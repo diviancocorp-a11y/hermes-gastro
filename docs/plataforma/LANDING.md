@@ -11,6 +11,26 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — presentacion compacta de planes, 26/oct:** segmento 6 adaptado a
+la referencia: tres beneficios resumidos por tarjeta, precios alineados,
+accion dorada de contorno «Elegir Digital/Local/Cadena» al diagnostico y
+lista completa existente en «Comparar todas las funciones». No se toman
+los beneficios provisionales de la maqueta como nueva oferta: se conservan
+los textos de planesPlataforma.js y la advertencia por rubro/ARCA.
+
+Selector mensual inicial conservado. En anual Local muestra $47.200/mes como
+equivalente y $566.400 al ano; Cadena $79.200/mes y $950.400 al ano por local.
+Digital $14.999 solo mensual, sin descuento. Badges -20% solo en Local/Cadena
+al ver anual. Calculos y fuente comercial sin cambios, sin modificar DB,
+registro, cobros ni precios efectivos del edificio. Elegir abre el embudo;
+no preselecciona ni contrata un plan en el alta.
+
+Borde volt localizado segun cursor, sin renders React por movimiento; foco
+por teclado tambien visible. Chrome 390/1280 verifica importes, totales,
+dos badges, 13 beneficios completos, CTA y ausencia de overflow. Tarjetas
+escritorio pasan de 567 a 516 px, con precios a la misma altura. Revision
+visual pendiente; auditoria integral sigue diferida hasta aprobar el conjunto.
+
 **Actual — Gastronomia 3D integrada, 26/oct:** incorporado el paquete final
 entregado por Ricky (EscenaRubro-gastronomia.zip), con componente, motor,
 CSS scoped e imagen alternativa. Three.js 0.186.1 fijado en package/lock:
