@@ -855,7 +855,7 @@
 }
 .pl-tiempo-cielo { z-index: 1; }
 .pl-tiempo-montana { z-index: 2; }
-.pl-tiempo-frente { z-index: 4; }
+.pl-tiempo-frente { z-index: 4; scale: .8; transform-origin: 50% 80%; }
 .pl-hero-tiempo .pl-h1 {
   position: absolute;
   z-index: 3;

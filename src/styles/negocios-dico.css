@@ -6,27 +6,20 @@
 .nc-fila li { flex: none; }
 .nc-negocio { position: relative; display: flex; align-items: center; gap: var(--ds-space-4); min-height: 96px; padding-block: var(--ds-space-3); text-decoration: none; color: inherit; }
 .nc-negocio img { width: 72px; height: 72px; max-width: none; object-fit: cover; border-radius: var(--ds-radius-pill); filter: grayscale(1); opacity: .65; transition: filter 240ms ease, opacity 240ms ease; }
-.nc-nombre { font-size: var(--ds-type-lg); white-space: nowrap; transition: color 240ms ease; }
 .nc-negocio:is(:hover, :focus-visible) { color: var(--ds-color-zinc-50); }
 .nc-negocio:is(:hover, :focus-visible) img { filter: grayscale(0); opacity: 1; }
-.nc-destino { display: inline-flex; align-items: center; gap: var(--ds-space-1); position: absolute; bottom: -10px; left: 88px; white-space: nowrap; color: var(--ds-color-zinc-50); font-size: var(--ds-type-xs); opacity: 0; transition: opacity 160ms ease; }
-.nc-destino svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; }
-.nc-negocio:is(:hover, :focus-visible) .nc-destino { opacity: 1; }
 .nc-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: 2px; border-radius: var(--ds-radius-2); }
 .nc-root + .cn-root { padding-top: var(--ds-space-layout-16); }
 @media (max-width: 999px) {
   .nc-fila { justify-content: flex-start; gap: var(--ds-space-8); }
   .nc-negocio img { width: 60px; height: 60px; }
   .nc-negocio { min-height: 84px; }
-  .nc-destino { left: 76px; }
 }
 @media (max-width: 599px) {
   .nc-root { padding-block: var(--ds-space-6) var(--ds-space-8); }
   .nc-root h2 { font-size: var(--ds-type-md); }
   .nc-deslizable { margin-top: var(--ds-space-3); }
-  .nc-nombre { font-size: var(--ds-type-md); }
 }
-@media (prefers-reduced-motion: reduce) { .nc-negocio img, .nc-nombre, .nc-destino { transition: none; } }
 
 /* La franja completa cierra el primer viewport junto al hero. */
 .pl-hero-tiempo + .nc-root { box-sizing: border-box; height: 120px; padding-block: 8px; }
@@ -35,5 +28,4 @@
 .pl-hero-tiempo + .nc-root .nc-fila { padding-block: 0; }
 .pl-hero-tiempo + .nc-root .nc-negocio { min-height: 76px; padding-block: 4px; gap: 12px; }
 .pl-hero-tiempo + .nc-root .nc-negocio img { width: 48px; height: 48px; }
-.pl-hero-tiempo + .nc-root .nc-nombre { font-size: var(--ds-type-md); }
-.pl-hero-tiempo + .nc-root .nc-destino { left: 60px; bottom: 0; }
+@media (prefers-reduced-motion: reduce) { .nc-negocio img { transition: none; } }

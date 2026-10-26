@@ -11,6 +11,16 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — logos solos y aire sobre la persona, 26/oct:** franja conserva
+sus 120 px y cuatro logos reales, sin nombres ni texto al pasar cursor.
+Los enlaces Instagram conservan su nombre accesible. Se elimina CSS que
+queda sin uso. Primer plano del caminante a escala uniforme .8, anclado al
+suelo; mantiene proporciones y parallax, separando cabeza de «Ver como
+funciona» y de la aclaracion del diagnostico sin cambiar el titulo.
+Chrome 1440x900, 1536x864, 1280x720, 390x844 y 390x667 confirma franja
+completa al abrir, cuatro imagenes sin texto y sin overflow. Sin dependencias,
+subagentes ni auditoria intermedia; revision visual de Ricky pendiente.
+
 **Actual — hero encuadrado y circuitos, 26/oct:** hero pasa de 120svh a
 100svh menos 120 px, reservados para la franja compacta de clientes reales.
 En Chrome 1440x900, 1280x720, 768x1024 y 390x844 el borde inferior de la
