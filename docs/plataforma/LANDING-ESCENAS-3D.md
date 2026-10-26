@@ -121,3 +121,14 @@ los estilos del motor estan incluidos en el repo, sin requerir el ZIP externo.
 Comprobado en Chrome a 390/1280, movimiento reducido y navegador sin WebGL.
 Pendientes: telefono real (tacto, fps, bateria), Safari y Firefox. No se
 reproduce la escena de Gastronomia en los rubros todavia no construidos.
+
+## Comercio integrado — 26/oct/2026
+
+EscenaRubro-comercio.zip entregado por Ricky se incorporo sin dependencias
+nuevas en src/components/landing/EscenaComercio/. Usa el Three 0.186.1 ya
+instalado. Wrapper y motor separados del de Gastronomia, carga diferida por
+rubro y CSS encapsulado. Contrato y fuentes en LANDING-COMERCIO-3D.md.
+El padre adapta onDisponibilidad (estados de texto) al control de vista
+estatica, conserva los siete IDs originales y sincroniza sus explicaciones.
+El cambio de pestana desmonta el motor anterior. La escena de Servicios aun
+no esta integrada. Comprobaciones locales y pendientes en LANDING.md, seccion 1.

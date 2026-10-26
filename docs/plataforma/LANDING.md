@@ -11,6 +11,30 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — Comercio 3D integrado, 26/oct:** recibido EscenaRubro-comercio.zip.
+Motor, wrapper, CSS encapsulado e imagen alternativa viven en
+src/components/landing/EscenaComercio/. README original con procedencia en
+docs/plataforma/LANDING-COMERCIO-3D.md; sus pruebas declaradas por el creador
+se distinguen de las comprobaciones locales. Se conserva la escena aprobada,
+las dos historias y ciclo de 82,2 s. Sin dependencias nuevas: Three 0.186.1
+ya instalado. Adaptaciones del motor: marca no-jsx-check para HTML interno
+y dos catch sin variable no utilizada; sin cambios narrativos o visuales.
+
+Comercio se carga diferido al elegir su pestana, con imagen propia durante
+carga o sin WebGL. Siete momentos sincronizados: eleccion/venta/cobro
+presencial y pedido/preparacion/retiro/cobro online. Seleccion congela;
+Reanudar continua. Textos distinguen preparar, completar y cobrar. Controles
+compactos en cuatro columnas, dos en movil. Gastronomia conserva su escena;
+Servicios sigue pendiente y no se muestra una escena ajena en su lugar.
+
+Chrome 1280/390 confirma automatico avanzando, siete selecciones, pausa
+estable (capturas identicas), reanudacion desde preparacion, rueda que
+desplaza la pagina, un canvas al alternar rubros y cero en Servicios.
+Movimiento reducido muestra vista quieta con seleccion manual. Sin WebGL:
+alternativa 960x720 cargada, descripcion accesible y cero canvas. Sin errores
+JS ni overflow movil en estas comprobaciones. Telefono real, Safari/Firefox
+y rendimiento real pendientes; auditoria integral sigue diferida.
+
 **Actual — logos solos y aire sobre la persona, 26/oct:** franja conserva
 sus 120 px y cuatro logos reales, sin nombres ni texto al pasar cursor.
 Los enlaces Instagram conservan su nombre accesible. Se elimina CSS que

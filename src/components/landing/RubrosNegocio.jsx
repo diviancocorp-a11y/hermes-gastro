@@ -1,8 +1,10 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import imagenGastronomia from './EscenaRubro/assets/gastronomia-estatica.webp';
+import imagenComercio from './EscenaComercio/assets/comercio-estatica.webp';
 import '../../styles/rubros-negocio.css';
 
 const EscenaRubro = lazy(() => import('./EscenaRubro/EscenaRubro'));
+const EscenaComercio = lazy(() => import('./EscenaComercio/EscenaComercio'));
 const HOY = 'Hoy';
 const DESARROLLO = 'En desarrollo';
 
@@ -80,9 +82,13 @@ const ENFOQUES = [
     dolor: 'Vendés por un lado. Controlás lo que queda por otro.',
     respuesta: 'Dico reúne el catálogo, los pedidos y el stock por artículo. Al completar un pedido se actualizan las existencias; los cobros y gastos quedan en el mismo sistema.',
     momentos: [
-      { id: 'pedido', nombre: 'Eligen un producto', zona: 'Mostrador', texto: 'El catálogo online y los pedidos de mostrador reúnen los artículos que el cliente quiere comprar.' },
-      { id: 'stock', nombre: 'Se completa', zona: 'Depósito', texto: 'Al completar el pedido se descuenta el stock de los artículos vendidos. Talles, colores y avisos de mínimo por artículo siguen en desarrollo.' },
-      { id: 'cobro', nombre: 'Se cobra', zona: 'Caja', texto: 'Registrás el cobro y su medio de pago. Las ventas, el personal y los gastos se reúnen en el resultado del día; el costo de lo vendido por artículo sigue en desarrollo.' },
+      { id: 'p-eleccion', nombre: 'Elegís en el local', zona: 'Estanterías', texto: 'Compra presencial: el cliente toma el producto de la estantería y se acerca a caja. Todavía no se registró la venta.' },
+      { id: 'p-venta', nombre: 'Registrás la venta', zona: 'Caja y depósito', texto: 'En caja se registra y completa el pedido. Al completarlo se descuenta el stock del artículo; el cobro se registra aparte.' },
+      { id: 'p-cobro', nombre: 'Cobrás en el local', zona: 'Caja', texto: 'El equipo registra el cobro de la compra presencial y su medio de pago.' },
+      { id: 'o-pedido', nombre: 'Pedido desde casa', zona: 'Casa y mostrador', texto: 'Compra online con retiro: el cliente elige desde su casa y el pedido llega al local. Recibirlo todavía no descuenta stock.' },
+      { id: 'o-preparacion', nombre: 'Preparás la compra', zona: 'Estanterías y vereda', texto: 'Mientras el cliente camina hasta el local, el equipo prepara los productos y los deja en entrega. Preparar todavía no descuenta stock.' },
+      { id: 'o-completar', nombre: 'Retira el pedido', zona: 'Entrega y depósito', texto: 'El cliente llega y retira la compra. El equipo completa el pedido y recién entonces se actualiza el stock de los artículos.' },
+      { id: 'o-cobro', nombre: 'Cobrás el retiro', zona: 'Caja', texto: 'Se registra el pago de la compra online como una acción aparte. El cliente sale del local llevando su bolsa.' },
     ],
   },
   {
@@ -117,7 +123,7 @@ export default function RubrosNegocio({ onDiagnostico }) {
     if (observador) observador.observe(visual.current);
     return () => { observador?.disconnect(); mq.removeEventListener('change', actualizar); };
   }, []);
-  const elegir = indice => { setActivo(indice); setMomento(null); setMomentoAuto('pedido'); };
+  const elegir = indice => { setActivo(indice); setMomento(null); setMomentoAuto(ENFOQUES[indice].momentos[0].id); setEscenaDisponible(true); };
   const teclado = (evento, indice) => {
     const direcciones = { ArrowRight: 1, ArrowLeft: -1 };
     let siguiente;
@@ -133,8 +139,10 @@ export default function RubrosNegocio({ onDiagnostico }) {
   const enfoque = ENFOQUES[activo];
   const seleccionado = enfoque.momentos.find(item => item.id === momento);
   const escenaGastronomia = enfoque.id === 'gastronomia';
-  const actual = seleccionado || (escenaGastronomia && enfoque.momentos.find(item => item.id === momentoAuto));
-  const alternativa = <img className="rn-alternativa" src={imagenGastronomia} alt="Maqueta de un restaurante con salón, cocina, depósito y caja conectados por Dico." width="1200" height="900" loading="lazy" />;
+  const escenaComercio = enfoque.id === 'comercio';
+  const escenaIntegrada = escenaGastronomia || escenaComercio;
+  const actual = seleccionado || (escenaIntegrada && (enfoque.momentos.find(item => item.id === momentoAuto) || enfoque.momentos[0]));
+  const alternativa = <img className="rn-alternativa" src={escenaComercio ? imagenComercio : imagenGastronomia} alt={escenaComercio ? "Maqueta de una tienda con compra presencial y online, retiro, stock y caja conectados por Dico." : "Maqueta de un restaurante con salón, cocina, depósito y caja conectados por Dico."} width="1200" height="900" loading="lazy" />;
   return (
     <section className="rn-root" id="rubros" aria-labelledby="rn-titulo">
       <span className="pl-ancla" id="modulos" aria-hidden="true" />
@@ -162,9 +170,9 @@ export default function RubrosNegocio({ onDiagnostico }) {
           <button type="button" className="rn-cta pl-enlace pl-enlace-boton" onClick={onDiagnostico}>Ver qué necesita mi negocio <span aria-hidden="true">→</span></button>
         </div>
         <div className="rn-visual" ref={visual}>
-          {escenaGastronomia ? (
-            <div className="rn-escena rn-escena-integrada" data-rubro={enfoque.id} data-momento={momento || 'automatico'}>
-              {cargarEscena ? <Suspense fallback={alternativa}><EscenaRubro rubro="gastronomia" momento={momento} onMomento={setMomentoAuto} onDisponibilidad={setEscenaDisponible} /></Suspense> : alternativa}
+          {escenaIntegrada ? (
+            <div key={enfoque.id} className="rn-escena rn-escena-integrada" data-rubro={enfoque.id} data-momento={momento || 'automatico'}>
+              {cargarEscena ? <Suspense fallback={alternativa}>{escenaComercio ? <EscenaComercio momento={momento} onMomento={setMomentoAuto} onDisponibilidad={estado => setEscenaDisponible(estado !== 'sin-webgl' && estado !== 'contexto-perdido')} /> : <EscenaRubro rubro="gastronomia" momento={momento} onMomento={setMomentoAuto} onDisponibilidad={setEscenaDisponible} />}</Suspense> : alternativa}
             </div>
           ) : (
             <div className="rn-escena" data-rubro={enfoque.id} data-momento={momento || 'automatico'}>
@@ -173,10 +181,10 @@ export default function RubrosNegocio({ onDiagnostico }) {
               <span className="rn-zona">{seleccionado ? `Zona: ${seleccionado.zona}` : 'Explorá los momentos de abajo'}</span>
             </div>
           )}
-          <div className="rn-momentos" role="group" aria-label={`Momentos de ${rubro.nombre}`}>
+          <div className={`rn-momentos${escenaComercio ? ' rn-momentos-comercio' : ''}`} role="group" aria-label={`Momentos de ${rubro.nombre}`}>
             {enfoque.momentos.map((item, indice) => <button type="button" key={item.id} aria-pressed={momento === item.id} onClick={() => setMomento(momento === item.id ? null : item.id)}><span aria-hidden="true">0{indice + 1}</span>{item.nombre}</button>)}
           </div>
-          {escenaGastronomia && <div className="rn-reproduccion"><span>{!escenaDisponible ? 'Vista estática' : reducido ? 'Vista sin animación' : momento ? `En pausa · ${seleccionado.nombre}` : `Recorrido automático · ${actual.nombre}`}</span>{!reducido && escenaDisponible && <button type="button" onClick={() => setMomento(momento ? null : momentoAuto)}>{momento ? 'Reanudar recorrido' : 'Pausar recorrido'}</button>}</div>}
+          {escenaIntegrada && <div className="rn-reproduccion"><span>{!escenaDisponible ? 'Vista estática' : reducido ? 'Vista sin animación' : momento ? `En pausa · ${seleccionado.nombre}` : `Recorrido automático · ${actual.nombre}`}</span>{!reducido && escenaDisponible && <button type="button" onClick={() => setMomento(momento ? null : momentoAuto)}>{momento ? 'Reanudar recorrido' : 'Pausar recorrido'}</button>}</div>}
           <p className="rn-momento-texto" aria-live={momento ? 'polite' : 'off'} aria-atomic="true">{actual ? actual.texto : 'Elegí un momento para conocer dónde interviene Dico y qué hace en esa parte de tu negocio.'}</p>
         </div>
       </div>

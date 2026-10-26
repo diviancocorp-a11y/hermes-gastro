@@ -66,3 +66,8 @@
 .rn-alternativa { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
 .rn-reproduccion { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--ds-space-2) var(--ds-space-4); margin-top: var(--ds-space-3); color: var(--rn-suave); font-size: var(--ds-type-sm); }
 .rn-reproduccion button { min-height: var(--ds-control-height-touch); padding: var(--ds-space-2) 0; border: 0; background: transparent; color: var(--rn-lectura); font: inherit; text-decoration: underline; text-underline-offset: .2em; cursor: pointer; }
+
+/* Dos historias de Comercio: siete momentos compactos, sin perder controles. */
+.rn-momentos-comercio { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.rn-momentos-comercio button { min-height: 76px; padding: var(--ds-space-3); gap: var(--ds-space-1); }
+@media (max-width: 599px) { .rn-momentos-comercio { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
