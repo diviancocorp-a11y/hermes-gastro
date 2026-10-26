@@ -1,0 +1,46 @@
+.ag-catalog-profile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--ds-space-2) var(--ds-space-3);
+  margin-block-end: var(--ds-space-6);
+  font-family: var(--ag-font);
+}
+.ag-catalog-profile-field {
+  flex: 1 1 200px;
+  max-width: 360px;
+  min-width: 0;
+}
+.ag-catalog-profile label {
+  display: block;
+  margin-block-end: var(--ds-space-2);
+  font-size: var(--ds-type-sm);
+  color: var(--ag-ink-2);
+}
+.ag-catalog-profile select {
+  width: 100%;
+  min-height: var(--ds-control-height-touch);
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border: 1px solid var(--ag-line-strong);
+  border-radius: var(--ag-r-sm);
+  background: var(--ag-bg-card);
+  color: var(--ag-ink);
+  font: inherit;
+}
+.ag-catalog-profile button {
+  min-height: var(--ds-control-height-touch);
+}
+.ag-catalog-profile :is(select, button):focus-visible {
+  outline: 2px solid var(--ag-volt);
+  outline-offset: 2px;
+}
+.ag-catalog-profile p {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--ds-type-sm);
+  line-height: 1.5;
+  color: var(--ag-ink-2);
+}
+.ag-catalog-profile .ag-catalog-profile-error {
+  color: var(--ag-c-orders-ink);
+}

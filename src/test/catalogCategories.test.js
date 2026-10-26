@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildCatalogGroups, matchesCatalogCategory, buildCatalogDealParents } from '../lib/catalogCategories';
+import { buildCatalogGroups, buildCatalogDisplayGroups, matchesCatalogCategory, buildCatalogDealParents } from '../lib/catalogCategories';
 
 const fallback = [{ name: 'Panaderia', subs: ['Pan'] }];
 const products = [
@@ -12,6 +12,36 @@ const idsFor = (groups, name) => products
   .map(product => product.id);
 
 describe('categorias publicas del tenant', () => {
+  it('la navegación usa categorías explícitas, sin bodegas ni Todos duplicado', () => {
+    const configured = [{ name: 'Bodega A', subs: ['Producto legacy'] }, { name: 'Cajas', subs: ['Producto legacy'] }];
+    const classified = [{ category: 'Producto legacy', catalog_attributes: { category: 'Espumantes', brand: 'Bodega A', presentation: 'Caja x6' } }];
+    const groups = buildCatalogDisplayGroups(configured, fallback, classified, { catalog_profile: 'beverages' });
+    expect(groups.map(group => group.name)).toEqual(['Espumantes']);
+    expect(matchesCatalogCategory(classified[0], groups[0])).toBe(true);
+    expect(matchesCatalogCategory(classified[0], configured[0])).toBe(false);
+    expect(matchesCatalogCategory(classified[0], configured[1])).toBe(false);
+    expect(buildCatalogDealParents(configured)).toEqual({ 'Producto legacy': 'Cajas' });
+  });
+
+  it('la presentación legacy y los descuentos permanecen intactos sin atributos', () => {
+    const configured = [{ name: 'Panadería', subs: ['Pan'] }];
+    const legacy = [{ category: 'Pan' }];
+    expect(buildCatalogDisplayGroups(configured, fallback, legacy, { vertical: 'gastro' }))
+      .toEqual(buildCatalogGroups(configured, fallback, legacy));
+    expect(matchesCatalogCategory(legacy[0], configured[0])).toBe(true);
+    expect(buildCatalogDealParents(configured)).toEqual({ Pan: 'Panadería' });
+  });
+
+  it('los productos aún no clasificados conservan acceso por su categoría legacy', () => {
+    const mixed = [
+      { category: 'Legacy vino', catalog_attributes: { category: 'Tintos' } },
+      { category: 'Hielo' },
+    ];
+    const groups = buildCatalogDisplayGroups([], [], mixed, { catalog_profile: 'beverages' });
+    expect(groups.map(group => group.name)).toEqual(['Tintos', 'Hielo']);
+    expect(matchesCatalogCategory(mixed[1], groups[1])).toBe(true);
+  });
+
   it('reemplaza el fallback y permite filtrar una presentacion por bodega o formato', () => {
     const groups = buildCatalogGroups([
       { name: 'Mauricio Lorca', subcategories: ['Lorca Malbec', 'Lorca Malbec x6'] },

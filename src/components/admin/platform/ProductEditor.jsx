@@ -7,6 +7,8 @@
  * stock, y ninguna de las dos ve campos que no le sirven.
  */
 import { useState } from 'react';
+import { resolveCatalogProfile, FEATURE_LABELS, getProductFeatures } from '../../../lib/catalogFacets';
+import './product-editor-catalog.css';
 import ToggleSwitch from '../shared/forms/ToggleSwitch';
 import RecipeEditor from './RecipeEditor';
 import ImagePicker from './ImagePicker';
@@ -57,11 +59,32 @@ export default function ProductEditor({
     station_id: product?.station_id ?? '',
     description: product?.description ?? '',
     image_url: product?.image_url ?? '',
+    catalog_attributes: {
+      ...(product?.catalog_attributes || {}),
+      features: getProductFeatures(product || {}),
+    },
   }));
   const [errs, setErrs] = useState([]);
   const [saving, setSaving] = useState(false);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const profile = resolveCatalogProfile({ ...settings, vertical: settings?.vertical || vertical });
+  const classificationFields = profile.id === 'beverages'
+    ? [{ key: 'category', label: 'Categoría del catálogo' }, ...profile.facets]
+    : profile.facets;
+  const setAttribute = (key, value) => setForm(f => ({
+    ...f, catalog_attributes: { ...f.catalog_attributes, [key]: value },
+  }));
+  const setFeature = (feature, checked) => setForm(f => ({
+    ...f,
+    catalog_attributes: {
+      ...f.catalog_attributes,
+      features: checked
+        ? [...new Set([...f.catalog_attributes.features, feature])]
+        : f.catalog_attributes.features.filter(item => item !== feature),
+    },
+  }));
 
   const t = terminologia(vertical);
   const usaDuracion = usaCampo(vertical, 'duration_min');
@@ -72,6 +95,7 @@ export default function ProductEditor({
 
   const submit = async (e) => {
     e.preventDefault();
+    if (saving) return;
     const normalizado = {
       ...form,
       name: normalizarNombreProducto(form.name),
@@ -92,12 +116,18 @@ export default function ProductEditor({
     const tipo = conReceta && lineas.length > 0
       ? 'composite'
       : (product?.type || tipoPorDefecto(vertical));
-    await onSave({ ...normalizado, type: tipo }, conReceta ? lineas : null);
-    setSaving(false);
+    try {
+      await onSave({ ...normalizado, type: tipo }, conReceta ? lineas : null);
+    } catch (error) {
+      setErrs([error?.message || 'No se pudo guardar. Volvé a intentarlo.']);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <form onSubmit={submit} style={{ padding: '4px 2px 20px' }}>
+    <form onSubmit={submit} className="pe-catalog-editor" aria-busy={saving}>
+      <fieldset className="pe-editor-fields" disabled={saving}>
       {errs.length > 0 && (
         <div style={{
           padding: '10px 12px', marginBottom: 14, borderRadius: 10,
@@ -148,7 +178,7 @@ export default function ProductEditor({
       </div>
 
       <div style={row}>
-        <label style={lbl} htmlFor="pe-cat">Categoría</label>
+        <label style={lbl} htmlFor="pe-cat">{classificationFields.length > 0 ? 'Grupo interno' : 'Categoría'}</label>
         <input
           id="pe-cat" style={input} type="text" list="pe-cats" value={form.category}
           onChange={e => set('category', e.target.value)}
@@ -159,9 +189,59 @@ export default function ProductEditor({
           {categories.map(c => <option key={c} value={c} />)}
         </datalist>
         <div style={{ fontSize: 11, color: 'var(--ag-ink-3)', marginTop: 5 }}>
-          Agrupa el catalogo. Si escribis una nueva, se crea sola.
+          {classificationFields.length > 0
+            ? 'Organiza los productos en el panel. La categoría del catálogo, si la definís abajo, prevalece en la tienda.'
+            : 'Agrupa el catalogo. Si escribis una nueva, se crea sola.'}
         </div>
       </div>
+
+      {classificationFields.length > 0 && (
+        <section className="pe-catalog-section" aria-labelledby="pe-classification-title">
+          <h3 id="pe-classification-title">Clasificación del catálogo</h3>
+          <p>{profile.id === 'beverages'
+            ? 'La categoría del catálogo define dónde aparece en la tienda y prevalece sobre el grupo interno. Completá los otros campos para combinar filtros.'
+            : 'Ayuda a encontrar y combinar productos en los filtros de la tienda.'}</p>
+          <div className="pe-catalog-grid">
+            {classificationFields.map(({ key, label }) => {
+              const values = [...new Set(products.map(item => item.catalog_attributes?.[key]).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, 'es'));
+              return (
+                <div className="pe-catalog-field" key={key}>
+                  <label htmlFor={`pe-attribute-${key}`}>{label}</label>
+                  <input
+                    id={`pe-attribute-${key}`} type="text" list={`pe-options-${key}`}
+                    value={form.catalog_attributes[key] || ''}
+                    onChange={e => setAttribute(key, e.target.value)}
+                    onBlur={e => setAttribute(key, e.target.value.trim())}
+                  />
+                  <datalist id={`pe-options-${key}`}>
+                    {values.map(value => <option key={value} value={value} />)}
+                  </datalist>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {profile.features.length > 0 && (
+        <section className="pe-catalog-section" aria-labelledby="pe-features-title">
+          <h3 id="pe-features-title">Características</h3>
+          <p id="pe-features-help">Marcá solo lo confirmado en la etiqueta o ficha del producto.</p>
+          <div className="pe-catalog-features">
+            {profile.features.map(feature => (
+              <label className="pe-catalog-feature" key={feature}>
+                <input
+                  type="checkbox" checked={form.catalog_attributes.features.includes(feature)}
+                  aria-describedby="pe-features-help"
+                  onChange={e => setFeature(feature, e.target.checked)}
+                />
+                <span>{FEATURE_LABELS[feature]}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* La estacion decide en QUE pantalla de produccion aparece el plato.
           Sin ella el pedido entra igual pero nadie lo ve en cocina, que es el
@@ -260,6 +340,7 @@ export default function ProductEditor({
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
       </div>
+      </fieldset>
     </form>
   );
 }

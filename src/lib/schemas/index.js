@@ -301,6 +301,7 @@ export const SettingsInputSchema = z.object({
   birthday_coupon_pct: z.number().min(0).max(100).nullable().optional(),
   // Grupos de cat / daily deals
   cat_groups: z.json().nullable().optional(),
+  catalog_profile: z.enum(['gastro', 'beverages', 'retail', 'barber']).nullable().optional(),
   daily_deals: z.json().nullable().optional(),
   deal_pct: z.number().min(0).max(100).nullable().optional(),
   // Multi-tenant edge functions
@@ -456,4 +457,20 @@ export const RecipeCardInputSchema = z.object({
 // Actualizacion parcial de products; no reemplaza el producto completo.
 export const ProductAllergensInputSchema = z.object({
   allergens: z.array(requiredText(100)).max(50),
+}).strict();
+
+export const CatalogAttributesSchema = z.object({
+  category: z.string().trim().max(120).optional(),
+  brand: z.string().trim().max(120).optional(),
+  line: z.string().trim().max(120).optional(),
+  varietal: z.string().trim().max(120).optional(),
+  presentation: z.string().trim().max(120).optional(),
+  features: z.array(z.enum(['vegetarian', 'vegan', 'gluten_free'])).max(3)
+    .refine(values => new Set(values).size === values.length, 'Características repetidas').optional(),
+}).strict();
+
+// Metadatos opcionales: omitirlos conserva lo guardado por clientes anteriores.
+export const ProductMetadataInputSchema = z.object({
+  allergens: ProductAllergensInputSchema.shape.allergens.optional(),
+  catalog_attributes: CatalogAttributesSchema.optional(),
 }).strict();
