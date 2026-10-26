@@ -11,6 +11,19 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — ajuste del segmento 5 a la captura, 25/oct:** circulos negros
+con contorno y numeros dorados; conexion fina y pulso azul volt con estela y
+punta luminosa. Recorre 1 a 2 a 3 en un solo bucle de 4,8 s; vertical en
+movil, estatico con movimiento reducido. Composicion mas amplia, CTA dorado
+con burbuja negra y textos exactos de la referencia: «Registras tu negocio»,
+«Cargas tus datos y te acompanamos para empezar a usar Dico» y «Empezar mi
+diagnostico», con los acentos correspondientes en la UI. Conserva respuestas
+al abrir el mismo diagnostico. Chrome 390/1280 confirma recorrido del pulso,
+CTA, movimiento reducido y sin overflow. Gastronomia 3D sigue en revision
+externa, sin integrar; no se modifica el segmento 3 por este ajuste.
+El hook smoke usaba forks y bloqueo el commit por timeout de workers en
+Windows: corregido a threads con dos workers, siguiendo AGENTS.md.
+
 **Actual — nueva composicion del segmento 3, 25/oct:** Ricky elige escenas
 3D por rubro, con dolor/respuesta a la izquierda, barra superior y momentos
 bajo la escena. Sustituidos los paneles expansibles por una barra accesible

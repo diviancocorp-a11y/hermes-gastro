@@ -81,7 +81,7 @@ echo "→ Typecheck..."
 npm run typecheck
 
 echo "→ Smoke unit tests..."
-npx vitest run src/test/utils.test.js src/test/schemas.test.js --no-coverage --silent
+npx vitest run src/test/utils.test.js src/test/schemas.test.js --no-coverage --silent --pool=threads --maxWorkers=2
 
 # Vite build sólo si tocaste archivos de src/ — atrapa imports rotos / missing exports
 # (lo que rompió 9 deploys seguidos por buildRecos faltante en homeHelpers.js)
