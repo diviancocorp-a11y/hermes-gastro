@@ -8,7 +8,7 @@
  * combos: el edificio no tiene modelo de costos todavia. Un producto es
  * nombre + precio + categoria.
  */
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useConfirm } from '../../ConfirmSlideProvider';
 import ProductEditor from './ProductEditor';
 import { categoriesFrom, normalizarCategoriaProducto } from '../../../services/platformAdmin';
@@ -19,6 +19,8 @@ import GestionProductosPanel from './GestionProductosPanel';
 import RecetarioPanel from './RecetarioPanel';
 import { puedeEditar, vePrecios } from '../../../modules/roles';
 import useMediaQuery from '../../../lib/useMediaQuery';
+import { CATALOG_PROFILES, resolveCatalogProfile } from '../../../modules/catalogProfiles';
+import './products-catalog-profile.css';
 
 function money(n) {
   return `$${Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
@@ -72,6 +74,35 @@ const ProductsPanel = forwardRef(function ProductsPanel({
   const [menuPos, setMenuPos] = useState(null);
   const [detalleProducto, setDetalleProducto] = useState(null);
   const esMobile = useMediaQuery('(max-width: 768px)');
+  const effectiveProfile = resolveCatalogProfile({ ...settings, vertical: settings?.vertical || vertical }).id;
+  const [profileInput, setProfileInput] = useState(effectiveProfile);
+  const [savedProfile, setSavedProfile] = useState(effectiveProfile);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const profileSavingRef = useRef(false);
+  useEffect(() => {
+    setProfileInput(effectiveProfile);
+    setSavedProfile(effectiveProfile);
+  }, [effectiveProfile]);
+
+  const guardarPerfil = async (event) => {
+    event.preventDefault();
+    if (profileSavingRef.current || !roles.includes('owner') || !onSaveSettings) return;
+    profileSavingRef.current = true;
+    setSavingProfile(true);
+    setProfileError('');
+    try {
+      const saved = await onSaveSettings({ catalog_profile: profileInput });
+      if (!saved || saved.__error) throw new Error(saved?.message || 'No se pudo guardar el perfil. Volvé a intentarlo.');
+      setSavedProfile(profileInput);
+      showToast?.('Perfil del catálogo actualizado');
+    } catch (error) {
+      setProfileError(error?.message || 'No se pudo guardar el perfil. Volvé a intentarlo.');
+    } finally {
+      profileSavingRef.current = false;
+      setSavingProfile(false);
+    }
+  };
 
   useEffect(() => {
     if (!menuProducto) return undefined;
@@ -286,6 +317,27 @@ const ProductsPanel = forwardRef(function ProductsPanel({
           en dos tipografias distintas: Butler el del shell, DM Sans clavado a
           mano el de aca. Era el sintoma mas visible de "mezcla de eras" y el
           unico lugar de la pantalla que forzaba una familia tipografica. */}
+
+      {roles.includes('owner') && onSaveSettings && (
+        <form className="ag-catalog-profile" onSubmit={guardarPerfil} aria-busy={savingProfile}>
+          <div className="ag-catalog-profile-field">
+            <label htmlFor="ag-catalog-profile">Perfil del catálogo</label>
+            <select id="ag-catalog-profile" value={profileInput} disabled={savingProfile}
+              aria-describedby="ag-catalog-profile-help"
+              onChange={event => { setProfileInput(event.target.value); setProfileError(''); }}>
+              {Object.values(CATALOG_PROFILES).map(profile => (
+                <option key={profile.id} value={profile.id}>{profile.label}</option>
+              ))}
+            </select>
+          </div>
+          <button type="submit" className="ag-btn-ghost"
+            disabled={savingProfile || profileInput === savedProfile}>
+            {savingProfile ? 'Guardando perfil…' : 'Guardar perfil'}
+          </button>
+          <p id="ag-catalog-profile-help">Define los filtros disponibles para este rubro.</p>
+          {profileError && <p className="ag-catalog-profile-error" role="alert">{profileError}</p>}
+        </form>
+      )}
 
       {/* ── C · Toolbar ──────────────────────────────────────────────── */}
       {products.length > 0 && (

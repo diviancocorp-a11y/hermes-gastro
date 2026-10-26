@@ -53,7 +53,8 @@
         "daily_deals",
         "deal_pct",
         "store_name",
-        "app_url"
+        "app_url",
+        "catalog_profile"
       ],
       "serverOnly": [
         "id",
@@ -207,12 +208,13 @@
       ]
     },
     "products": {
-      "schema": "ProductAllergensInputSchema",
+      "schema": "ProductMetadataInputSchema",
       "columns": [
-        "allergens"
+        "allergens",
+        "catalog_attributes"
       ],
       "serverOnly": [],
-      "$comment": "Schema de actualizacion parcial de alergenos; el guardado general sigue en platformAdmin."
+      "$comment": "Metadatos validados al guardar productos del edificio; alergenos mantienen su API parcial."
     }
   }
 }

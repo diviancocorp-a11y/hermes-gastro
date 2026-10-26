@@ -31,7 +31,7 @@ export const CAMPOS_EDITABLES = [
   'store_address', 'prep_time_min', 'delivery_time_min',
   // Catalogo
   'min_order_amount', 'hidden_cats', 'cat_names', 'cat_images', 'cat_groups',
-  'daily_deals', 'deal_pct',
+  'catalog_profile', 'daily_deals', 'deal_pct',
   // Cobro y envio
   'payment_methods', 'catalog_payment_methods', 'payment_accounts', 'delivery_pricing',
   'free_delivery_over', 'delivery_zone', 'lead_time_hours',
@@ -48,7 +48,7 @@ export const CAMPOS_EDITABLES = [
 // sin haber validado nada — un verde que miente es peor que un rojo.
 // Que no se separe de CAMPOS_EDITABLES lo cuida un test (settings.test.js),
 // mismo patron que los slugs reservados y los estados de pedido.
-const COLS = 'tenant_id, biz_name, logo_letter, logo_color, logo_url, favicon_url, cover_url, og_image_url, slogan, banner_text, banner_color, catalog_font, catalog_theme, whatsapp, instagram, facebook, tiktok, linkedin, twitter, youtube, telegram, store_open, store_hours, show_hours_on_catalog, has_physical_store, store_address, prep_time_min, delivery_time_min, min_order_amount, hidden_cats, cat_names, cat_images, cat_groups, daily_deals, deal_pct, payment_methods, catalog_payment_methods, payment_accounts, delivery_pricing, free_delivery_over, delivery_zone, lead_time_hours, music_url, catalog_music, music_volume, promo_cumple, promo_programados, coupon_default_pct, birthday_coupon_pct, waste_pct, expense_pct, min_product_margin_pct, usar_targets, exp_cats, ing_cats, updated_at';
+const COLS = 'tenant_id, biz_name, logo_letter, logo_color, logo_url, favicon_url, cover_url, og_image_url, slogan, banner_text, banner_color, catalog_font, catalog_theme, whatsapp, instagram, facebook, tiktok, linkedin, twitter, youtube, telegram, store_open, store_hours, show_hours_on_catalog, has_physical_store, store_address, prep_time_min, delivery_time_min, min_order_amount, hidden_cats, cat_names, cat_images, cat_groups, catalog_profile, daily_deals, deal_pct, payment_methods, catalog_payment_methods, payment_accounts, delivery_pricing, free_delivery_over, delivery_zone, lead_time_hours, music_url, catalog_music, music_volume, promo_cumple, promo_programados, coupon_default_pct, birthday_coupon_pct, waste_pct, expense_pct, min_product_margin_pct, usar_targets, exp_cats, ing_cats, updated_at';
 
 export { COLS as SELECT_COLS };
 
@@ -95,6 +95,10 @@ export async function fetchSettings(tenantId) {
  */
 export function validateSettings(patch) {
   const errs = [];
+
+  if (patch.catalog_profile != null && !['gastro', 'beverages', 'retail', 'barber'].includes(patch.catalog_profile)) {
+    errs.push('Perfil de catálogo inválido');
+  }
 
   if (patch.catalog_theme != null && !TEMAS_CATALOGO.includes(patch.catalog_theme)) {
     errs.push(`Tema invalido: ${patch.catalog_theme}`);

@@ -26,7 +26,7 @@
 
 import { supabase } from '../lib/supabase';
 import { resolveTenantSlug } from '../lib/activeTenant';
-import { ProductAllergensInputSchema } from '../lib/schemas/index.js';
+import { ProductAllergensInputSchema, CatalogAttributesSchema } from '../lib/schemas/index.js';
 
 /**
  * Falla fuerte si falta el tenant. Un tenantId undefined haria una consulta
@@ -149,7 +149,7 @@ export async function fetchMyTenant() {
 
 /* ─────────────────────────── Productos ─────────────────────────── */
 
-const PRODUCT_COLS = 'id, type, name, price, active, is_archived, category, description, image_url, requires_age_gate, duration_min, stock, station_id, allergens, created_at';
+const PRODUCT_COLS = 'id, type, name, price, active, is_archived, category, description, image_url, requires_age_gate, duration_min, stock, station_id, allergens, catalog_attributes, created_at';
 
 function compactarTexto(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');
@@ -232,6 +232,9 @@ export function validateProduct(p, products = []) {
   if (p?.allergens !== undefined && !ProductAllergensInputSchema.safeParse({ allergens: p.allergens }).success) {
     errs.push('Alergenos invalidos');
   }
+  if (p?.catalog_attributes !== undefined && !CatalogAttributesSchema.safeParse(p.catalog_attributes).success) {
+    errs.push('Clasificación o características del catálogo inválidas');
+  }
   return errs;
 }
 
@@ -258,6 +261,8 @@ function toRow(p, tenantId) {
     station_id: p.station_id || null,
     ...(p.allergens !== undefined
       ? ProductAllergensInputSchema.parse({ allergens: p.allergens }) : {}),
+    ...(p.catalog_attributes !== undefined
+      ? { catalog_attributes: CatalogAttributesSchema.parse(p.catalog_attributes) } : {}),
   };
 }
 
