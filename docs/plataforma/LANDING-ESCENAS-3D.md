@@ -132,3 +132,14 @@ El padre adapta onDisponibilidad (estados de texto) al control de vista
 estatica, conserva los siete IDs originales y sincroniza sus explicaciones.
 El cambio de pestana desmonta el motor anterior. La escena de Servicios aun
 no esta integrada. Comprobaciones locales y pendientes en LANDING.md, seccion 1.
+
+## Servicios integrado en preview — 26/oct/2026
+
+EscenaRubro-servicios.zip entregado por Ricky se incorporo en
+src/components/landing/EscenaServicios/, con Three 0.186.1 ya instalado.
+Carga diferida por rubro, CSS encapsulado y alternativa propia; contrato y
+fuente en LANDING-SERVICIOS-3D.md. El padre comparte montaje para las tres
+escenas y conserva los cuatro IDs llegada/reserva/cancelacion/recuperado.
+QR, reservas/cancelaciones online y avisos se identifican como simulacion de
+funciones en desarrollo. No pasar esta escena a produccion antes de validar
+las capacidades representadas. Verificaciones locales y pendientes en LANDING.md.

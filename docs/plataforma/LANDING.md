@@ -11,6 +11,33 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — Servicios 3D integrado solo en preview, 26/oct:** recibido
+EscenaRubro-servicios.zip. Wrapper, motor, CSS y alternativa viven en
+src/components/landing/EscenaServicios/; README original con procedencia en
+LANDING-SERVICIOS-3D.md. Conserva distribucion, personajes, reloj, agenda,
+lineas volt, pulsos dorados/rojos y ciclo de 93,1 s. Sin dependencias nuevas.
+Motor adaptado solo con no-jsx-check para HTML interno y catch sin variable
+no utilizada. ESLint no tiene errores; tres advertencias de helpers sin uso
+heredados del paquete (shell, mirror, phone), sin alterar su escena.
+
+Cuatro momentos del padre: llegada, reserva, cancelacion y recuperado. Texto
+y controles sincronizados; seleccion congela y reanudar continua. Los tres
+rubros ahora tienen escena propia diferida; se retira el placeholder ya sin
+uso y se comparte el montaje/estado de disponibilidad. Servicios muestra un
+aviso de simulacion: reserva/cancelacion online, QR y avisos a profesionales
+son funciones objetivo en desarrollo. El alcance actual sigue separado.
+NO PUBLICAR en produccion hasta validar esas funciones; esta integracion no
+las implementa ni conecta APIs, QR real, reservas o notificaciones.
+
+Chrome 1280/390 confirma cuatro momentos, reloj 16:01/16:05/16:20/16:31,
+Juan cancelado y Bruno asignado en la misma fila 16:30. Pausa estable por
+capturas identicas; reanudar desde cancelacion avanza a horario recuperado.
+Un canvas al alternar los tres rubros, scroll vertical sobre la escena,
+movimiento reducido con seleccion manual y sin overflow ni errores JS.
+Sin WebGL: alternativa 960x720 cargada, descripcion y cero canvas. Telefono
+real, Safari/Firefox y rendimiento pendientes. Sin subagentes ni auditoria
+integral; revision visual final de Ricky pendiente.
+
 **Actual — Comercio 3D integrado, 26/oct:** recibido EscenaRubro-comercio.zip.
 Motor, wrapper, CSS encapsulado e imagen alternativa viven en
 src/components/landing/EscenaComercio/. README original con procedencia en

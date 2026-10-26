@@ -1,10 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import imagenGastronomia from './EscenaRubro/assets/gastronomia-estatica.webp';
 import imagenComercio from './EscenaComercio/assets/comercio-estatica.webp';
+import imagenServicios from './EscenaServicios/assets/servicios-estatica.webp';
 import '../../styles/rubros-negocio.css';
 
 const EscenaRubro = lazy(() => import('./EscenaRubro/EscenaRubro'));
 const EscenaComercio = lazy(() => import('./EscenaComercio/EscenaComercio'));
+const EscenaServicios = lazy(() => import('./EscenaServicios/EscenaServicios'));
 const HOY = 'Hoy';
 const DESARROLLO = 'En desarrollo';
 
@@ -96,9 +98,10 @@ const ENFOQUES = [
     dolor: 'Atender bien requiere tiempo. Organizar todo, también.',
     respuesta: 'Dico reúne la agenda interna, los servicios y sus cobros. Organizás los turnos desde el panel y registrás la atención en el mismo lugar, sin depender de una reserva online que todavía está en desarrollo.',
     momentos: [
-      { id: 'turno', nombre: 'Organizás el turno', zona: 'Recepción', texto: 'El equipo organiza los turnos en la agenda interna del panel. El cliente todavía no puede reservar online.' },
-      { id: 'atencion', nombre: 'Registrás el servicio', zona: 'Puestos de atención', texto: 'Registrás la venta del servicio con su precio. El descuento automático de los insumos usados en cada servicio sigue en desarrollo.' },
-      { id: 'cobro', nombre: 'Se cobra', zona: 'Caja', texto: 'Registrás el cobro por medio de pago y consultás las ventas, el personal y los gastos del día.' },
+      { id: 'llegada', nombre: 'Llega el cliente', zona: 'Entrada y caja', texto: 'En esta simulación, el cliente confirma su llegada con QR y espera. Se cobra la atención anterior y la información llega al resumen del dueño.' },
+      { id: 'reserva', nombre: 'Entra una reserva', zona: 'Casa y puestos', texto: 'Mientras el equipo atiende, una persona reserva las 17:00 desde casa. La información viaja a la agenda y a los teléfonos de los profesionales: funciones objetivo en desarrollo.' },
+      { id: 'cancelacion', nombre: 'Se libera un turno', zona: 'Vereda y agenda', texto: 'El cliente cancela las 16:30 desde la vereda. Una señal roja distingue el aviso y esa misma fila queda disponible. Cancelación online representada como función futura.' },
+      { id: 'recuperado', nombre: 'Ocupás el horario', zona: 'Caja y puestos', texto: 'Llega otro cliente sin turno y el equipo le asigna el horario libre de las 16:30. La misma fila cambia a asignado y el cliente pasa al puesto disponible.' },
     ],
   },
 ];
@@ -138,11 +141,12 @@ export default function RubrosNegocio({ onDiagnostico }) {
   const rubro = RUBROS[activo];
   const enfoque = ENFOQUES[activo];
   const seleccionado = enfoque.momentos.find(item => item.id === momento);
-  const escenaGastronomia = enfoque.id === 'gastronomia';
   const escenaComercio = enfoque.id === 'comercio';
-  const escenaIntegrada = escenaGastronomia || escenaComercio;
-  const actual = seleccionado || (escenaIntegrada && (enfoque.momentos.find(item => item.id === momentoAuto) || enfoque.momentos[0]));
-  const alternativa = <img className="rn-alternativa" src={escenaComercio ? imagenComercio : imagenGastronomia} alt={escenaComercio ? "Maqueta de una tienda con compra presencial y online, retiro, stock y caja conectados por Dico." : "Maqueta de un restaurante con salón, cocina, depósito y caja conectados por Dico."} width="1200" height="900" loading="lazy" />;
+  const escenaServicios = enfoque.id === 'servicios';
+  const actual = seleccionado || enfoque.momentos.find(item => item.id === momentoAuto) || enfoque.momentos[0];
+  const EscenaActiva = escenaComercio ? EscenaComercio : escenaServicios ? EscenaServicios : EscenaRubro;
+  const disponibilidad = estado => setEscenaDisponible(typeof estado === 'boolean' ? estado : estado !== 'sin-webgl' && estado !== 'contexto-perdido');
+  const alternativa = <img className="rn-alternativa" src={escenaComercio ? imagenComercio : escenaServicios ? imagenServicios : imagenGastronomia} alt={escenaComercio ? "Maqueta de una tienda con compra presencial y online, retiro, stock y caja conectados por Dico." : escenaServicios ? "Maqueta de una barbería con casa, agenda, puestos, caja y oficina. Simulación de funciones en desarrollo." : "Maqueta de un restaurante con salón, cocina, depósito y caja conectados por Dico."} width="1200" height="900" loading="lazy" />;
   return (
     <section className="rn-root" id="rubros" aria-labelledby="rn-titulo">
       <span className="pl-ancla" id="modulos" aria-hidden="true" />
@@ -170,21 +174,14 @@ export default function RubrosNegocio({ onDiagnostico }) {
           <button type="button" className="rn-cta pl-enlace pl-enlace-boton" onClick={onDiagnostico}>Ver qué necesita mi negocio <span aria-hidden="true">→</span></button>
         </div>
         <div className="rn-visual" ref={visual}>
-          {escenaIntegrada ? (
-            <div key={enfoque.id} className="rn-escena rn-escena-integrada" data-rubro={enfoque.id} data-momento={momento || 'automatico'}>
-              {cargarEscena ? <Suspense fallback={alternativa}>{escenaComercio ? <EscenaComercio momento={momento} onMomento={setMomentoAuto} onDisponibilidad={estado => setEscenaDisponible(estado !== 'sin-webgl' && estado !== 'contexto-perdido')} /> : <EscenaRubro rubro="gastronomia" momento={momento} onMomento={setMomentoAuto} onDisponibilidad={setEscenaDisponible} />}</Suspense> : alternativa}
-            </div>
-          ) : (
-            <div className="rn-escena" data-rubro={enfoque.id} data-momento={momento || 'automatico'}>
-              <span className="rn-escena-rubro">{rubro.nombre}</span>
-              <div className="rn-reserva"><p>Acá vas a ver<br />tu negocio en movimiento.</p><span>Escena 3D en preparación</span></div>
-              <span className="rn-zona">{seleccionado ? `Zona: ${seleccionado.zona}` : 'Explorá los momentos de abajo'}</span>
-            </div>
-          )}
-          <div className={`rn-momentos${escenaComercio ? ' rn-momentos-comercio' : ''}`} role="group" aria-label={`Momentos de ${rubro.nombre}`}>
+          {escenaServicios && <p className="rn-aviso-escena">Simulación de funciones en desarrollo: reserva y cancelación online, llegada por QR y avisos a profesionales.</p>}
+          <div key={enfoque.id} className="rn-escena rn-escena-integrada" data-rubro={enfoque.id} data-momento={momento || 'automatico'}>
+            {cargarEscena ? <Suspense fallback={alternativa}><EscenaActiva rubro={enfoque.id} momento={momento} onMomento={setMomentoAuto} onDisponibilidad={disponibilidad} /></Suspense> : alternativa}
+          </div>
+          <div className={`rn-momentos${escenaComercio ? ' rn-momentos-comercio' : escenaServicios ? ' rn-momentos-servicios' : ''}`} role="group" aria-label={`Momentos de ${rubro.nombre}`}>
             {enfoque.momentos.map((item, indice) => <button type="button" key={item.id} aria-pressed={momento === item.id} onClick={() => setMomento(momento === item.id ? null : item.id)}><span aria-hidden="true">0{indice + 1}</span>{item.nombre}</button>)}
           </div>
-          {escenaIntegrada && <div className="rn-reproduccion"><span>{!escenaDisponible ? 'Vista estática' : reducido ? 'Vista sin animación' : momento ? `En pausa · ${seleccionado.nombre}` : `Recorrido automático · ${actual.nombre}`}</span>{!reducido && escenaDisponible && <button type="button" onClick={() => setMomento(momento ? null : momentoAuto)}>{momento ? 'Reanudar recorrido' : 'Pausar recorrido'}</button>}</div>}
+          <div className="rn-reproduccion"><span>{!escenaDisponible ? 'Vista estática' : reducido ? 'Vista sin animación' : momento ? `En pausa · ${seleccionado.nombre}` : `Recorrido automático · ${actual.nombre}`}</span>{!reducido && escenaDisponible && <button type="button" onClick={() => setMomento(momento ? null : momentoAuto)}>{momento ? 'Reanudar recorrido' : 'Pausar recorrido'}</button>}</div>
           <p className="rn-momento-texto" aria-live={momento ? 'polite' : 'off'} aria-atomic="true">{actual ? actual.texto : 'Elegí un momento para conocer dónde interviene Dico y qué hace en esa parte de tu negocio.'}</p>
         </div>
       </div>
