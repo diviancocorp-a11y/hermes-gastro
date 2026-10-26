@@ -7,9 +7,30 @@
 
 ---
 
-## 1. Estado al 24/oct/2026
+## 1. Estado al 26/oct/2026
 
 ### Revision visual de Ricky — 24/oct
+
+**Actual — Gastronomia 3D integrada, 26/oct:** incorporado el paquete final
+entregado por Ricky (EscenaRubro-gastronomia.zip), con componente, motor,
+CSS scoped e imagen alternativa. Three.js 0.186.1 fijado en package/lock:
+version compatible declarada por el creador, licencia MIT verificada y
+npm install sin vulnerabilidades. Geometria e imagen generadas para Divianco;
+no usa modelos, fuentes, servicios externos ni datos de clientes.
+
+La escena se carga en un chunk diferido al acercarse al segmento 3, conserva
+el recorrido aprobado de Mesa 6, camara, sombras y pulsos. Pedido/Stock/Cobro
+la detienen en sus encuadres; control explicito Pausar/Reanudar y texto del
+momento automatico sincronizado. Cambiar de rubro desmonta el motor; Comercio
+y Servicios mantienen su espacio pendiente, sin mostrar Gastronomia por error.
+Respetado movimiento reducido; sin WebGL se muestra la imagen accesible y se
+oculta la reproduccion. No se integraron interfaces ni contadores de prueba.
+
+Verificacion Chrome 390/1280: sin peticiones al motor antes de acercarse,
+un canvas por montaje, seleccion/reanudacion, desmontaje al cambiar de rubro,
+movimiento reducido, sin errores JS ni overflow. Verificado tambien sin WebGL.
+No se midio rendimiento ni tacto en celular real; Safari y Firefox pendientes.
+Auditoria integral de diseno sigue pendiente hasta aprobacion del conjunto.
 
 **Actual — ajuste del segmento 5 a la captura, 25/oct:** circulos negros
 con contorno y numeros dorados; conexion fina y pulso azul volt con estela y

@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import imagenGastronomia from './EscenaRubro/assets/gastronomia-estatica.webp';
 import '../../styles/rubros-negocio.css';
 
+const EscenaRubro = lazy(() => import('./EscenaRubro/EscenaRubro'));
 const HOY = 'Hoy';
 const DESARROLLO = 'En desarrollo';
 
@@ -99,7 +101,23 @@ export default function RubrosNegocio({ onDiagnostico }) {
   const [activo, setActivo] = useState(0);
   const [momento, setMomento] = useState(null);
   const botones = useRef([]);
-  const elegir = indice => { setActivo(indice); setMomento(null); };
+  const visual = useRef(null);
+  const [cargarEscena, setCargarEscena] = useState(() => typeof IntersectionObserver === 'undefined');
+  const [escenaDisponible, setEscenaDisponible] = useState(true);
+  const [momentoAuto, setMomentoAuto] = useState('pedido');
+  const [reducido, setReducido] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const actualizar = () => setReducido(mq.matches);
+    actualizar();
+    mq.addEventListener('change', actualizar);
+    const observador = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entrada]) => {
+      if (entrada.isIntersecting) { setCargarEscena(true); observador.disconnect(); }
+    }, { rootMargin: '300px' });
+    if (observador) observador.observe(visual.current);
+    return () => { observador?.disconnect(); mq.removeEventListener('change', actualizar); };
+  }, []);
+  const elegir = indice => { setActivo(indice); setMomento(null); setMomentoAuto('pedido'); };
   const teclado = (evento, indice) => {
     const direcciones = { ArrowRight: 1, ArrowLeft: -1 };
     let siguiente;
@@ -114,6 +132,9 @@ export default function RubrosNegocio({ onDiagnostico }) {
   const rubro = RUBROS[activo];
   const enfoque = ENFOQUES[activo];
   const seleccionado = enfoque.momentos.find(item => item.id === momento);
+  const escenaGastronomia = enfoque.id === 'gastronomia';
+  const actual = seleccionado || (escenaGastronomia && enfoque.momentos.find(item => item.id === momentoAuto));
+  const alternativa = <img className="rn-alternativa" src={imagenGastronomia} alt="Maqueta de un restaurante con salón, cocina, depósito y caja conectados por Dico." width="1200" height="900" loading="lazy" />;
   return (
     <section className="rn-root" id="rubros" aria-labelledby="rn-titulo">
       <span className="pl-ancla" id="modulos" aria-hidden="true" />
@@ -140,17 +161,23 @@ export default function RubrosNegocio({ onDiagnostico }) {
           <p className="rn-explicacion">{enfoque.respuesta}</p>
           <button type="button" className="rn-cta pl-enlace pl-enlace-boton" onClick={onDiagnostico}>Ver qué necesita mi negocio <span aria-hidden="true">→</span></button>
         </div>
-        <div className="rn-visual">
-          {/* Integrar EscenaRubro({ rubro: enfoque.id, momento }) en este espacio. */}
-          <div className="rn-escena" data-rubro={enfoque.id} data-momento={momento || 'automatico'}>
-            <span className="rn-escena-rubro">{rubro.nombre}</span>
-            <div className="rn-reserva"><p>Acá vas a ver<br />tu negocio en movimiento.</p><span>Escena 3D en preparación</span></div>
-            <span className="rn-zona">{seleccionado ? `Zona: ${seleccionado.zona}` : 'Explorá los momentos de abajo'}</span>
-          </div>
+        <div className="rn-visual" ref={visual}>
+          {escenaGastronomia ? (
+            <div className="rn-escena rn-escena-integrada" data-rubro={enfoque.id} data-momento={momento || 'automatico'}>
+              {cargarEscena ? <Suspense fallback={alternativa}><EscenaRubro rubro="gastronomia" momento={momento} onMomento={setMomentoAuto} onDisponibilidad={setEscenaDisponible} /></Suspense> : alternativa}
+            </div>
+          ) : (
+            <div className="rn-escena" data-rubro={enfoque.id} data-momento={momento || 'automatico'}>
+              <span className="rn-escena-rubro">{rubro.nombre}</span>
+              <div className="rn-reserva"><p>Acá vas a ver<br />tu negocio en movimiento.</p><span>Escena 3D en preparación</span></div>
+              <span className="rn-zona">{seleccionado ? `Zona: ${seleccionado.zona}` : 'Explorá los momentos de abajo'}</span>
+            </div>
+          )}
           <div className="rn-momentos" role="group" aria-label={`Momentos de ${rubro.nombre}`}>
             {enfoque.momentos.map((item, indice) => <button type="button" key={item.id} aria-pressed={momento === item.id} onClick={() => setMomento(momento === item.id ? null : item.id)}><span aria-hidden="true">0{indice + 1}</span>{item.nombre}</button>)}
           </div>
-          <p className="rn-momento-texto" aria-live="polite" aria-atomic="true">{seleccionado ? seleccionado.texto : 'Elegí un momento para conocer dónde interviene Dico y qué hace en esa parte de tu negocio.'}</p>
+          {escenaGastronomia && <div className="rn-reproduccion"><span>{!escenaDisponible ? 'Vista estática' : reducido ? 'Vista sin animación' : momento ? `En pausa · ${seleccionado.nombre}` : `Recorrido automático · ${actual.nombre}`}</span>{!reducido && escenaDisponible && <button type="button" onClick={() => setMomento(momento ? null : momentoAuto)}>{momento ? 'Reanudar recorrido' : 'Pausar recorrido'}</button>}</div>}
+          <p className="rn-momento-texto" aria-live={momento ? 'polite' : 'off'} aria-atomic="true">{actual ? actual.texto : 'Elegí un momento para conocer dónde interviene Dico y qué hace en esa parte de tu negocio.'}</p>
         </div>
       </div>
       <details className="rn-alcance" key={enfoque.id}>

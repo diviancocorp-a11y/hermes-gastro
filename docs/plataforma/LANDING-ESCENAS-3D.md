@@ -98,12 +98,26 @@ licencias y rutas relativas, sin depender de archivos privados ni credenciales.
 
 ---
 
-## Punto de integración en el repo
+## Integracion realizada — 26/oct/2026
 
-src/components/landing/RubrosNegocio.jsx: reemplazar el interior de .rn-escena
-por EscenaRubro con rubro=enfoque.id y momento=momento. El padre ya permite
-seleccionar y deseleccionar un momento (null) y reinicia al cambiar de rubro.
-No duplicar botones, texto explicativo, alcance ni navegación en la escena.
-Cuando haya reproducción real, agregar indicación de pausa y acción visible
-«Reanudar recorrido» que establezca momento=null. Hoy no se muestra un control
-de reproducción porque el artefacto todavía no está integrado.
+La escena aprobada se integro en src/components/landing/EscenaRubro/.
+RubrosNegocio.jsx monta el componente solo para gastronomia, mediante import
+diferido al acercarse al segmento. Three.js 0.186.1 es la unica dependencia
+nueva, fijada en package.json y lockfile. Licencia MIT de mrdoob/three.js.
+La geometria y el WebP fueron generados para Divianco por el creador del paquete.
+
+El componente conserva rubro y momento y agrega callbacks onMomento para
+sincronizar el texto externo con la historia y onDisponibilidad para distinguir
+la alternativa estatica sin WebGL. El padre ofrece Pausar/Reanudar; no hay
+controles, leyendas ni contador de rendimiento dentro de la escena.
+
+Fuente recibida: EscenaRubro-gastronomia.zip. El archivo escenaGastronomia.js
+suelto era identico al motor incluido. Se preservo el motor visual aprobado;
+adaptaciones locales: comentario de version, catch sin variable inutilizada,
+callbacks del wrapper, composicion en la landing y seleccion explicita de
+PCFShadowMap (Three 0.186.1 ya convierte PCFSoftShadowMap a ese modo y avisa). La imagen alternativa y
+los estilos del motor estan incluidos en el repo, sin requerir el ZIP externo.
+
+Comprobado en Chrome a 390/1280, movimiento reducido y navegador sin WebGL.
+Pendientes: telefono real (tacto, fps, bateria), Safari y Firefox. No se
+reproduce la escena de Gastronomia en los rubros todavia no construidos.

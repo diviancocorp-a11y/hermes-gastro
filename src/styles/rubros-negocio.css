@@ -60,3 +60,9 @@
   .rn-alcance li { grid-template-columns: 1fr; gap: var(--ds-space-1); }
 }
 @media (prefers-reduced-motion: reduce) { .rn-rubros button { transition: none; } }
+
+/* El motor se monta al acercarse a la sección y conserva su proporción. */
+.rn-escena-integrada { display: block; min-height: 0; aspect-ratio: 4 / 3; padding: 0; overflow: hidden; background: var(--rn-fondo); }
+.rn-alternativa { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.rn-reproduccion { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--ds-space-2) var(--ds-space-4); margin-top: var(--ds-space-3); color: var(--rn-suave); font-size: var(--ds-type-sm); }
+.rn-reproduccion button { min-height: var(--ds-control-height-touch); padding: var(--ds-space-2) 0; border: 0; background: transparent; color: var(--rn-lectura); font: inherit; text-decoration: underline; text-underline-offset: .2em; cursor: pointer; }
