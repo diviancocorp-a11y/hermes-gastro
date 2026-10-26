@@ -11,6 +11,21 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — cards de planes progresivas con scroll, 26/oct:** Ricky aprueba
+la presentacion pero pide mas tiempo para leer el titulo. La entrada de las
+cards deja de depender del reloj en navegadores con animation-timeline:view:
+opacidad, blur y desplazamiento avanzan segun su entrada en viewport. Rangos
+15-75%, 25-85%, 35-95% para Digital/Local/Cadena; al detener scroll se detiene
+el progreso. En movil cada card se revela al llegar a su altura. Titulo y
+selector conservan la entrada anterior. Sin soporte de scroll timeline queda
+un fallback mas lento (900 ms y demoras 320/500/680 ms). Teclado revela la card
+inmediatamente; movimiento reducido muestra todo sin animacion.
+
+Chrome 1280/390 confirma progreso parcial estable al esperar un segundo,
+final visible al seguir desplazando, foco accesible y ausencia de overflow.
+Precios, contenido, botones y brillo del cursor conservados. Sin dependencias,
+subagentes ni auditoria intermedia; aprobacion visual final pendiente.
+
 **Actual — entrada y fondo volt de planes, 26/oct:** adaptado el recurso
 pegado por Ricky a React JS/CSS del repo, sin instalar Motion, NumberFlow,
 Lucide ni shadcn. Titulo y selector entran primero; cards con desplazamiento

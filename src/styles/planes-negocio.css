@@ -60,3 +60,16 @@
   .pl-anim .pp-root [data-reveal].is-in { opacity: 1; transform: none; filter: none; }
   .pl-anim .pp-root [data-reveal]:focus-within { opacity: 1; transform: none; filter: none; transition-delay: 0ms; }
 }
+
+/* El desplazamiento, no el reloj, revela las tarjetas. */
+@media (prefers-reduced-motion: no-preference) {
+  .pl-anim .pp-root .pp-plan[data-reveal] { transition-duration: 900ms; }
+  @supports (animation-timeline: view()) {
+    .pl-anim .pp-root .pp-plan[data-reveal] { animation: pp-entrada-scroll linear both; animation-timeline: view(block); animation-range: entry var(--pp-inicio) entry var(--pp-fin); transition: none; }
+    .pl-anim .pp-root .pp-plan[data-reveal]:focus-within { animation: none; opacity: 1; transform: none; filter: none; }
+  }
+}
+@keyframes pp-entrada-scroll {
+  from { opacity: 0; transform: translateY(-20px); filter: blur(8px); }
+  to { opacity: 1; transform: none; filter: none; }
+}

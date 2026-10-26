@@ -68,7 +68,7 @@ export default function PlanesNegocio({ onDiagnostico }) {
           {PLANES_COMERCIALES.map((plan, indice) => {
             const precio = precioDelPeriodo(plan, anual);
             return (
-              <article className="pp-plan" key={plan.id} aria-labelledby={`pp-${plan.id}`} data-reveal={indice + 2} style={{ '--pp-demora': `${160 + indice * 100}ms` }} onPointerEnter={seguirBorde} onPointerMove={seguirBorde} onPointerLeave={soltarBorde} onFocusCapture={evento => evento.currentTarget.classList.add('is-in')}>
+              <article className="pp-plan" key={plan.id} aria-labelledby={`pp-${plan.id}`} data-reveal={indice + 2} style={{ '--pp-demora': `${320 + indice * 180}ms`, '--pp-inicio': `${15 + indice * 10}%`, '--pp-fin': `${75 + indice * 10}%` }} onPointerEnter={seguirBorde} onPointerMove={seguirBorde} onPointerLeave={soltarBorde} onFocusCapture={evento => evento.currentTarget.classList.add('is-in')}>
                 <p className="pp-para">{plan.para}</p>
                 <div className="pp-nombre"><h3 id={`pp-${plan.id}`}>{plan.nombre}</h3>{precio.equivalente !== null && <span className="pp-descuento" aria-label="20% menos respecto al pago mensual">−20%</span>}</div>
                 <p className="pp-descripcion">{plan.descripcion}</p>
