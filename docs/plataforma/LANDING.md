@@ -11,6 +11,17 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — logo de contornos y corte final, 26/oct:** footer con trazado
+vectorial del logo original, solo contornos volt gruesos, incluidos los ojos,
+sin relleno, sombra, degradado ni blur. El viewBox recorta la parte inferior
+de letras y circulos justo debajo de ambos ojos completos. El borde inferior
+del logo coincide con footer y final de pagina: sin margen o espacio posterior.
+Corregido WhatsApp reutilizando el glifo completo existente en Suppliers,
+sin deformarlo con stroke. Contactos y demas contenido conservados.
+Chrome 1280/390 verifica ojos completos, fill none, sin overflow y final de
+pagina coincidente con el corte (redondeo subpixel menor de 1 px). Sin
+subagentes ni auditoria intermedia; aprobacion visual pendiente.
+
 **Actual — cierre y footer, 26/oct:** segmento 8 con «Tu negocio mas
 ordenado. Tu tiempo mas tuyo.», bajada «Descubri por donde empezar con Dico.»,
 una accion «Empezar mi diagnostico» y aclaracion sin email. Card oscura con
