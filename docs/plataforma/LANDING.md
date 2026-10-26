@@ -11,6 +11,24 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — entrada y fondo volt de planes, 26/oct:** adaptado el recurso
+pegado por Ricky a React JS/CSS del repo, sin instalar Motion, NumberFlow,
+Lucide ni shadcn. Titulo y selector entran primero; cards con desplazamiento
+de -20 px, blur 8 px a nitido y opacidad en 480 ms, escalonadas 160/260/360 ms.
+Se reutiliza useEntradas/IntersectionObserver existente, una sola entrada por
+elemento, contenido visible sin movimiento reducido. Luz volt radial detras
+del encabezado y las tarjetas. Botones Elegir subidos sobre las prestaciones.
+Oferta, selector, importes animados y comparacion completa conservados.
+
+Corregido el borde: dependia del media query hover/fine. Reproducido en Chrome
+con hover=false y cursor sin foco: opacity 0. Ahora pointerenter/move activa
+cada card y sigue las coordenadas, pointerleave limpia el estado; no requiere
+clic ni volver del diagnostico. Foco de teclado conservado, tacto sin hover
+forzado. Verificados los tres bordes sin clic (opacity 1), secuencia y estado
+final nitido, botones antes de beneficios, anual correcto, cierre del embudo
+y movimiento reducido a 390 px sin overflow ni errores JS. Sin subagentes
+ni auditoria integral; revision visual del conjunto pendiente.
+
 **Actual — presentacion compacta de planes, 26/oct:** segmento 6 adaptado a
 la referencia: tres beneficios resumidos por tarjeta, precios alineados,
 accion dorada de contorno «Elegir Digital/Local/Cadena» al diagnostico y

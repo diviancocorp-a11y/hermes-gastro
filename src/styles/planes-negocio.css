@@ -1,5 +1,6 @@
 .pp-root { position: relative; isolation: isolate; padding: var(--ds-space-layout-16) var(--pl-m) var(--pl-hueco); background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-50); }
 .pp-root::before { content: ''; position: absolute; z-index: -1; inset: 0; background-image: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
+.pp-luz-fondo { position: absolute; z-index: -1; inset: 0; background: radial-gradient(ellipse 65% 50% at 50% 36%, color-mix(in srgb, var(--ds-color-intelligence-volt) 26%, transparent), transparent 75%); pointer-events: none; }
 .pp-dentro { max-width: 1480px; margin-inline: auto; }
 .pp-cabecera { text-align: center; }
 .pp-cabecera h2 { font-size: clamp(36px, 4.2vw, 64px); font-weight: 500; line-height: 1.08; letter-spacing: -.035em; }
@@ -16,7 +17,7 @@
 .pp-plan::before { content: ''; position: absolute; z-index: -1; inset: -1px; padding: 2px; border-radius: inherit; background: radial-gradient(200px circle at var(--pp-x, 50%) var(--pp-y, 0%), var(--ds-color-intelligence-volt), transparent 75%); mask: linear-gradient(var(--ds-color-zinc-50) 0 0) content-box, linear-gradient(var(--ds-color-zinc-50) 0 0); mask-composite: exclude; filter: drop-shadow(0 0 5px var(--ds-color-intelligence-volt)); opacity: 0; transition: opacity 160ms ease; pointer-events: none; }
 .pp-plan::after { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: inherit; background: radial-gradient(200px circle at var(--pp-x, 50%) var(--pp-y, 0%), color-mix(in srgb, var(--ds-color-intelligence-volt) 16%, transparent), transparent); filter: blur(8px); opacity: 0; transition: opacity 160ms ease; pointer-events: none; }
 .pp-plan:focus-within::before, .pp-plan:focus-within::after { opacity: 1; }
-@media (hover: hover) and (pointer: fine) { .pp-plan:hover::before, .pp-plan:hover::after { opacity: 1; } }
+.pp-plan[data-puntero="true"]::before, .pp-plan[data-puntero="true"]::after { opacity: 1; }
 .pp-para { color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); text-transform: uppercase; letter-spacing: .05em; }
 .pp-nombre { display: flex; align-items: center; gap: var(--ds-space-4); min-height: 40px; margin-top: var(--ds-space-2); }
 .pp-plan h3 { margin: 0; font-size: 32px; font-weight: 500; line-height: 1.1; }
@@ -30,7 +31,7 @@
 .pp-incluye { display: grid; align-content: start; gap: var(--ds-space-2); padding-top: var(--ds-space-4); border-top: 1px solid var(--ds-color-zinc-800); }
 .pp-incluye li { display: flex; align-items: start; gap: var(--ds-space-3); font-size: var(--ds-type-md); line-height: 1.45; }
 .pp-incluye svg { flex: none; width: 18px; height: 18px; margin-top: 2px; fill: none; stroke: var(--pc-oro); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.pp-elegir { display: flex; align-items: center; justify-content: center; gap: var(--ds-space-2); width: 100%; min-height: 48px; margin-top: var(--ds-space-6); padding: var(--ds-space-3); border: 1px solid var(--pc-oro); border-radius: var(--ds-radius-3); background: transparent; color: var(--pc-oro); font: inherit; font-weight: 500; cursor: pointer; }
+.pp-elegir { display: flex; align-items: center; justify-content: center; gap: var(--ds-space-2); width: 100%; min-height: 48px; margin: 0 0 var(--ds-space-6); padding: var(--ds-space-3); border: 1px solid var(--pc-oro); border-radius: var(--ds-radius-3); background: transparent; color: var(--pc-oro); font: inherit; font-weight: 500; cursor: pointer; }
 .pp-elegir:hover { background: var(--pc-oro); color: var(--pc-sobre-oro); }
 .pp-plan > .pp-incluye { flex: 1; }
 .pp-comparar { margin-top: var(--ds-space-4); }
@@ -51,3 +52,11 @@
 @media (max-width: 699px) { .pp-planes, .pp-comparacion { grid-template-columns: minmax(0, 1fr); } .pp-plan { padding: var(--ds-space-6); } .pp-importe { font-size: 42px; } .pp-descripcion, .pp-equivalente { min-height: 0; } }
 
 @media (prefers-reduced-motion: reduce) { .pp-plan::before, .pp-plan::after { transition: none; } }
+
+/* Usa el observador de entradas existente: una sola entrada por elemento. */
+@media (prefers-reduced-motion: no-preference) {
+  .pl-anim .pp-root [data-reveal] { opacity: 0; transform: translateY(-20px); filter: blur(8px); transition: opacity 480ms var(--pc-curva), transform 480ms var(--pc-curva), filter 480ms var(--pc-curva); transition-delay: var(--pp-demora, 0ms); }
+  .pl-anim .pp-root [data-reveal="1"] { transition-delay: 80ms; }
+  .pl-anim .pp-root [data-reveal].is-in { opacity: 1; transform: none; filter: none; }
+  .pl-anim .pp-root [data-reveal]:focus-within { opacity: 1; transform: none; filter: none; transition-delay: 0ms; }
+}

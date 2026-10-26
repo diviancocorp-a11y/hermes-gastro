@@ -30,14 +30,16 @@ function Importe({ valor }) {
 }
 
 function seguirBorde(evento) {
-  if (evento.pointerType !== 'mouse') return;
+  if (evento.pointerType === 'touch') return;
   const tarjeta = evento.currentTarget;
+  tarjeta.dataset.puntero = 'true';
   const rect = tarjeta.getBoundingClientRect();
   tarjeta.style.setProperty('--pp-x', `${evento.clientX - rect.left}px`);
   tarjeta.style.setProperty('--pp-y', `${evento.clientY - rect.top}px`);
 }
 
 function soltarBorde(evento) {
+  delete evento.currentTarget.dataset.puntero;
   evento.currentTarget.style.removeProperty('--pp-x');
   evento.currentTarget.style.removeProperty('--pp-y');
 }
@@ -50,22 +52,23 @@ export default function PlanesNegocio({ onDiagnostico }) {
   const [anual, setAnual] = useState(false);
   return (
     <section className="pp-root" id="precios" aria-labelledby="pp-titulo">
+      <div className="pp-luz-fondo" aria-hidden="true" />
       <div className="pp-dentro">
-        <header className="pp-cabecera">
+        <header className="pp-cabecera" data-reveal="0">
           <h2 id="pp-titulo">Un plan para cada etapa.</h2>
           <p>Elegí cómo querés empezar.</p>
         </header>
-        <fieldset className="pp-periodo">
+        <fieldset className="pp-periodo" data-reveal="1" onFocusCapture={evento => evento.currentTarget.classList.add('is-in')}>
           <legend className="pl-oculto">Período de pago</legend>
           <label><input type="radio" name="periodo-plan" checked={!anual} onChange={() => setAnual(false)} /><span>Mensual</span></label>
           <label><input type="radio" name="periodo-plan" checked={anual} onChange={() => setAnual(true)} /><span>Anual</span></label>
         </fieldset>
-        <p className="pp-ahorro">20% menos en Local y Cadena con pago anual.</p>
+        <p className="pp-ahorro" data-reveal="1">20% menos en Local y Cadena con pago anual.</p>
         <div className="pp-planes">
-          {PLANES_COMERCIALES.map(plan => {
+          {PLANES_COMERCIALES.map((plan, indice) => {
             const precio = precioDelPeriodo(plan, anual);
             return (
-              <article className="pp-plan" key={plan.id} aria-labelledby={`pp-${plan.id}`} onPointerMove={seguirBorde} onPointerLeave={soltarBorde}>
+              <article className="pp-plan" key={plan.id} aria-labelledby={`pp-${plan.id}`} data-reveal={indice + 2} style={{ '--pp-demora': `${160 + indice * 100}ms` }} onPointerEnter={seguirBorde} onPointerMove={seguirBorde} onPointerLeave={soltarBorde} onFocusCapture={evento => evento.currentTarget.classList.add('is-in')}>
                 <p className="pp-para">{plan.para}</p>
                 <div className="pp-nombre"><h3 id={`pp-${plan.id}`}>{plan.nombre}</h3>{precio.equivalente !== null && <span className="pp-descuento" aria-label="20% menos respecto al pago mensual">−20%</span>}</div>
                 <p className="pp-descripcion">{plan.descripcion}</p>
@@ -74,8 +77,8 @@ export default function PlanesNegocio({ onDiagnostico }) {
                   <p className="pp-equivalente">{precio.equivalente !== null ? 'Equivalente mensual · Pago anual' : plan.anualPorMes === null ? 'Solo pago mensual' : 'Pago mensual'}</p>
                   <p className="pp-por-local">{precio.equivalente !== null ? `${pesosDelPlan(precio.importe)} al año · ` : ''}Por local · Sin IVA</p>
                 </div>
-                <Beneficios items={plan.incluye.slice(0, 3)} />
                 <button type="button" className="pp-elegir" onClick={onDiagnostico}>Elegir {plan.nombre} <span aria-hidden="true">→</span></button>
+                <Beneficios items={plan.incluye.slice(0, 3)} />
               </article>
             );
           })}
