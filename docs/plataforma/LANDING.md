@@ -11,6 +11,25 @@
 
 ### Revision visual de Ricky — 24/oct
 
+**Actual — cierre y footer, 26/oct:** segmento 8 con «Tu negocio mas
+ordenado. Tu tiempo mas tuyo.», bajada «Descubri por donde empezar con Dico.»,
+una accion «Empezar mi diagnostico» y aclaracion sin email. Card oscura con
+luces volt y oro detras; movimiento ambiental suave solo sin movimiento
+reducido. Boton dorado con relleno negro radial al pasar cursor, abre el
+mismo diagnostico integrado.
+
+Footer centrado con navegacion, Instagram/WhatsApp/email, contactos, agenda
+y horarios existentes, copyright y logo original grande. Ricky confirma
+Instagram @dico.arg y @grupodivianco: «Hecho por Grupo Divianco» es enlace
+simple, sin burbuja. Autoriza dejar Terminos, Privacidad y Preferencias de
+cookies como botones desactivados pendientes de sus textos/destinos. No hay
+paginas legales inventadas ni gestor de consentimiento implementado.
+
+ESLint pasa. Chrome 1280/390 verifica enlaces, tres botones desactivados,
+relleno negro, diagnostico ida/vuelta, logo cargado y ausencia de overflow
+movil. Movimiento reducido detiene luces. Sin dependencias, subagentes ni
+auditoria integral; aprobacion visual del conjunto pendiente.
+
 **Actual — FAQ guiada con busqueda local, 26/oct:** segmento 7 adaptado a las
 dos referencias de Ricky. Inicio compacto con «Sacate la duda. Preguntale a
 Dico», mascota corporal vigente del admin (DicoPhysical), saludo, cuatro
