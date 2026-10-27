@@ -5,6 +5,7 @@
 // Opciones: calidad 'auto' | 'alta' | 'media' | 'baja' · proporcion '4 / 3' (null llena el contenedor)
 //           imagenAlternativa: URL de la imagen que se muestra si no hay WebGL · onMomento(id) en el recorrido automático
 import * as THREE from 'three';
+import { crearRecorridoGuiado } from '../../../../lib/recorridoGuiado';
 
 const PI = Math.PI;
 const F = { N: PI, S: 0, E: PI / 2, W: -PI / 2 };
@@ -572,9 +573,9 @@ function buildGastronomia(kit) {
   const loopEnd = '@clientesDePie+5.2';
 
   const moments = [
-    { id: 'pedido', start: 0, end: '@stockStart', hold: '@fx:plancha+0.25', zones: ['salon', 'cocina'] },
-    { id: 'stock', start: '@stockStart', end: '@cobroStart', hold: '@fx:deposito+0.3', zones: ['deposito'] },
-    { id: 'cobro', start: '@cobroStart', end: '@T', hold: '@fx:caja+0.35', zones: ['caja'] },
+    { id: 'pedido', guideStart: '@pedidoRegistrado-1', guideEnd: '@fx:frios+1.2', start: 0, end: '@stockStart', hold: '@fx:plancha+0.25', zones: ['salon', 'cocina'] },
+    { id: 'stock', guideStart: '@completado-1', guideEnd: '@fx:deposito+1.2', start: '@stockStart', end: '@cobroStart', hold: '@fx:deposito+0.3', zones: ['deposito'] },
+    { id: 'cobro', guideStart: '@cobroRegistrado-1', guideEnd: '@fx:caja+1.2', start: '@cobroStart', end: '@T', hold: '@fx:caja+0.35', zones: ['caja'] },
   ];
 
   const chips = [
@@ -875,7 +876,7 @@ export function createDicoScene(container, options = {}) {
       layer.appendChild(el);
       return { ...c, el, v: new THREE.Vector3(...c.at), t0: resolve(c.t, M), t1: resolve(c.until, M), w: 0, h: 0, on: false, rect: null };
     });
-    const moments = def.moments.map((m) => ({ ...m, s: resolve(m.start, M), e: resolve(m.end, M), h: resolve(m.hold, M) }));
+    const moments = def.moments.map((m) => ({ ...m, s: resolve(m.start, M), e: resolve(m.end, M), h: resolve(m.hold, M), g: Math.max(0, resolve(m.guideStart ?? m.start, M)), ge: Math.min(M.T - .001, resolve(m.guideEnd ?? m.end, M)) }));
     const shots = def.shots.map((s) => ({ from: resolve(s.from, M), to: resolve(s.to, M), shot: s.shot }));
     content = { group, def, M, T: M.T, fxs, people, extras, gold, zoneEls, chips, moments, shots };
   }
@@ -1028,10 +1029,12 @@ export function createDicoScene(container, options = {}) {
     if (destroyed || !content || lost) return;
     const dt = last ? Math.min(.05, (now - last) / 1000) : 0;
     last = now;
-    const playing = fixedIdx < 0 && !reduced;
+    let playing = fixedIdx < 0 && !reduced;
     if (playing) storyTime += dt;
+    const finalGuiado = recorridoGuiado.avanzar(storyTime);
+    if (finalGuiado) { storyTime = finalGuiado.tiempo; fixedIdx = finalGuiado.indice; playing = false; dirty = true; }
     const t = mainTime();
-    const idx = fixedIdx >= 0 ? fixedIdx : momentAt(t);
+    const idx = recorridoGuiado.indice ?? (fixedIdx >= 0 ? fixedIdx : momentAt(t));
     if (idx !== lastIdx) enterMoment(idx);
     let active = playing || !!drag;
 
@@ -1052,7 +1055,7 @@ export function createDicoScene(container, options = {}) {
     if (blendStart >= 0) { blendK = clamp((now - blendStart) / BLEND_MS); if (blendK >= 1) blendStart = -1; active = true; }
 
     if (active || dirty) {
-      const frozenId = fixedIdx >= 0 ? content.moments[fixedIdx].id : (reduced ? content.moments[idx].id : null);
+      const frozenId = recorridoGuiado.activo ? null : fixedIdx >= 0 ? content.moments[fixedIdx].id : (reduced ? content.moments[idx].id : null);
       updatePeople(t, blendK);
       content.def.respond(t, content.M, frozenId);
       updateLightsFX(t, frozenId);
@@ -1117,7 +1120,7 @@ export function createDicoScene(container, options = {}) {
   renderer.domElement.addEventListener('webglcontextrestored', onRestored);
   const onVis = () => { if (document.hidden) { if (raf) cancelAnimationFrame(raf); raf = 0; last = 0; } else kick(); };
   document.addEventListener('visibilitychange', onVis);
-  const onMQ = (e) => { reduced = e.matches; if (content) { if (reduced && fixedIdx < 0) frozenHold(0); lastIdx = -1; } kick(); };
+  const onMQ = (e) => { reduced = e.matches; if (content) { if (reduced && recorridoGuiado.activo) { const fin = recorridoGuiado.reducir(); if (fin) { storyTime = fin.tiempo; fixedIdx = fin.indice; } } else if (reduced && fixedIdx < 0) frozenHold(0); lastIdx = -1; } kick(); };
   mq && mq.addEventListener && mq.addEventListener('change', onMQ);
   const io = typeof IntersectionObserver !== 'undefined'
     ? new IntersectionObserver((es) => { onScreen = es[es.length - 1].isIntersecting; if (!onScreen) { if (raf) cancelAnimationFrame(raf); raf = 0; last = 0; } else kick(); })
@@ -1125,6 +1128,21 @@ export function createDicoScene(container, options = {}) {
   io && io.observe(stage);
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
   ro && ro.observe(stage);
+
+  const recorridoGuiado = crearRecorridoGuiado(id => { if (!destroyed) opts.onFinMomento?.(id); });
+  function aplicarGuia(o) {
+    const indice = content.moments.findIndex(m => m.id === o.momento);
+    const m = content.moments[indice];
+    const estado = recorridoGuiado.configurar(o.guia, m && { id: m.id, indice, inicio: m.g, fin: Math.max(m.g + .01, m.ge), resultado: m.h }, mainTime(), reduced);
+    if (!estado) return false;
+    storyTime = estado.tiempo;
+    fixedIdx = estado.fijo ? indice : -1;
+    blendStart = camBlendStart = -1;
+    lastIdx = -1;
+    last = 0;
+    kick();
+    return true;
+  }
 
   function set(o = {}) {
     if (destroyed) return;
@@ -1139,8 +1157,10 @@ export function createDicoScene(container, options = {}) {
       if (fixedIdx >= 0) frozenHold(fixedIdx); else if (reduced) frozenHold(0);
       lastIdx = -1;
       resize();
+      aplicarGuia(o);
       return;
     }
+    if (aplicarGuia(o)) return;
     const ids = content.moments.map((m) => m.id);
     const next = ids.indexOf(o.momento);
     if (next === fixedIdx) return;

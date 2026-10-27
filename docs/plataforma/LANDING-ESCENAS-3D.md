@@ -143,3 +143,25 @@ escenas y conserva los cuatro IDs llegada/reserva/cancelacion/recuperado.
 QR, reservas/cancelaciones online y avisos se identifican como simulacion de
 funciones en desarrollo. No pasar esta escena a produccion antes de validar
 las capacidades representadas. Verificaciones locales y pendientes en LANDING.md.
+
+## Control guiado opcional — 27/oct/2026
+
+Los tres wrappers aceptan guia, revision y onFinMomento ademas del contrato
+anterior. El motor recibe set({ rubro, momento, guia }); guia admite preparar,
+reproducir, pausar o continuar. Sin guia mantiene su comportamiento anterior.
+revision fuerza una nueva orden para repetir el mismo momento. onFinMomento
+se pasa al crear el motor y avisa una sola vez al alcanzar el final del tramo.
+
+Cada momento define guideStart/guideEnd mediante marcas de la historia, para
+preparar antes de la accion real (no solo usar el inicio del bloque narrativo).
+El helper src/lib/recorridoGuiado.js limita el tiempo y controla la pausa sin
+reloj de pared. El frame congela el resultado antes de avanzar al proximo
+tramo. En modo guiado no se aplica el resplandor forzado de los antiguos
+encuadres fijos. Con movimiento reducido se usa la vista representativa;
+cambiar esa preferencia durante reproduccion tambien detiene la guia.
+
+Herramientas agrupadas y explicaciones en herramientasRubros.js; sus filas
+apuntan al alcance vigente de RubrosNegocio.jsx. Mantener cobertura de todas
+las filas al agregar una herramienta: hoy 10/9/12 por rubro. LecturaRubro.jsx
+maneja foco, Escape y clic fuera; respeta el modal del diagnostico y conserva
+la lectura al volver. Servicios permanece solo en preview.

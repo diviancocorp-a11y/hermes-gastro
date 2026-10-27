@@ -7,9 +7,40 @@
 
 ---
 
-## 1. Estado al 26/oct/2026
+## 1. Estado al 27/oct/2026
 
-### Revision visual de Ricky — 24/oct
+### Revision visual de Ricky
+
+**Actual — lateral de herramientas y demostracion guiada, 27/oct:** segmento
+3 reorganizado con lateral de aproximadamente 25% y maqueta ocupando el resto
+(340/996 px a 1440). Alto de escena adaptable al viewport en escritorio;
+camara y objetos conservan proporciones. Dolor compacto, 31 herramientas
+agrupadas por problema (10 Gastronomia, 9 Comercio, 12 Servicios), estado de
+alcance tomado de las filas existentes y CTA dorado. Cada herramienta abre
+una lectura no modal sobre el lateral, sin tapar el centro del 3D; una sola
+lectura abierta, cierre con Escape/clic fuera y retorno al disparador.
+En movil primero maqueta y momentos, herramientas desplegables debajo y
+lectura inferior; el encuadre deja la escena completa arriba de la tarjeta.
+
+Entrada conserva recorrido automatico. Seleccionar un momento prepara la
+escena ANTES de la accion y abre explicacion/sector a mirar. «Ver en escena»
+reproduce solo ese tramo, se detiene en el resultado y ofrece Repetir,
+Siguiente momento y Volver al recorrido. Incluye pausa/continuacion exacta.
+Los tres motores comparten src/lib/recorridoGuiado.js: marcas simbolicas de
+inicio/fin, callback onFinMomento y comandos opcionales; sin cambiar las
+historias automaticas. No se fuerza el resplandor del resultado al preparar.
+Movimiento reducido muestra resultado quieto; sin WebGL queda vista de
+referencia con lectura. Servicios sigue identificado como simulacion de
+funciones futuras y NO debe publicarse antes de validarlas.
+
+Siete pruebas del control de tiempo pasan (inicio, limite final, aviso unico,
+pausa/continuidad, repetir, movimiento reducido y salida). Chrome verifica
+Gastronomia pedido/stock, Comercio cobro antes/despues y repetir, Servicios
+cancelacion Reservado a Disponible, un canvas entre rubros y 31 herramientas.
+Lectura movil, foco/Escape, siguiente/salida, diagnostico ida/vuelta desde la
+lectura conservada, cambio de preferencia durante guia y alternativa sin
+WebGL comprobados; sin errores JS ni overflow en esas pruebas. Sin nuevas
+dependencias ni subagentes; auditoria integral y telefono real pendientes.
 
 **Actual — Servicios 3D integrado solo en preview, 26/oct:** recibido
 EscenaRubro-servicios.zip. Wrapper, motor, CSS y alternativa viven en

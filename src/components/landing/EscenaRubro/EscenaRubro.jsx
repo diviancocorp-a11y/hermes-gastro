@@ -8,17 +8,18 @@ import './EscenaRubro.css';
 
 const srcDe = (img) => (typeof img === 'string' ? img : img?.src ?? null);
 
-export default function EscenaRubro({ rubro = 'gastronomia', momento = null, onMomento, onDisponibilidad }) {
+export default function EscenaRubro({ rubro = 'gastronomia', momento = null, guia = null, revision = 0, onFinMomento, onMomento, onDisponibilidad }) {
   const hostRef = useRef(null);
   const sceneRef = useRef(null);
   const onMomentoRef = useRef(onMomento);
+  const onFinRef = useRef(onFinMomento);
   const disponibilidadRef = useRef(onDisponibilidad);
-  useEffect(() => { onMomentoRef.current = onMomento; disponibilidadRef.current = onDisponibilidad; }, [onMomento, onDisponibilidad]);
+  useEffect(() => { onFinRef.current = onFinMomento; onMomentoRef.current = onMomento; disponibilidadRef.current = onDisponibilidad; }, [onFinMomento, onMomento, onDisponibilidad]);
 
   // Un motor por montaje. En StrictMode React monta, desmonta y vuelve a montar:
   // dispose() libera todo y el segundo montaje arranca limpio.
   useEffect(() => {
-    const escena = createDicoScene(hostRef.current, { imagenAlternativa: srcDe(imagenAlternativa), onMomento: id => onMomentoRef.current?.(id) });
+    const escena = createDicoScene(hostRef.current, { imagenAlternativa: srcDe(imagenAlternativa), onFinMomento: id => onFinRef.current?.(id), onMomento: id => onMomentoRef.current?.(id) });
     sceneRef.current = escena;
     disponibilidadRef.current?.(escena.stats().calidad !== 'sin-webgl');
     return () => {
@@ -28,8 +29,8 @@ export default function EscenaRubro({ rubro = 'gastronomia', momento = null, onM
   }, []);
 
   useEffect(() => {
-    sceneRef.current?.set({ rubro, momento });
-  }, [rubro, momento]);
+    sceneRef.current?.set({ rubro, momento, guia });
+  }, [rubro, momento, guia, revision]);
 
   return <div ref={hostRef} className="dse-host" />;
 }

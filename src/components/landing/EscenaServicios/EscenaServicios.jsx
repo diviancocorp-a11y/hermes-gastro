@@ -13,24 +13,27 @@ import { createDicoScene } from './motor/escenaServicios.js';
 import imagenAlternativa from './assets/servicios-estatica.webp';
 import './EscenaServicios.css';
 
-export default function EscenaServicios({ momento = null, onMomento, onDisponibilidad }) {
+export default function EscenaServicios({ momento = null, guia = null, revision = 0, onFinMomento, onMomento, onDisponibilidad }) {
   const hostRef = useRef(null);
   const sceneRef = useRef(null);
   const momentoRef = useRef(momento);
   const onMomentoRef = useRef(onMomento);
+  const onFinRef = useRef(onFinMomento);
   const onDisponibilidadRef = useRef(onDisponibilidad);
 
   // los callbacks pueden cambiar en cada render sin recrear la escena
   useEffect(() => {
+    onFinRef.current = onFinMomento;
     onMomentoRef.current = onMomento;
     onDisponibilidadRef.current = onDisponibilidad;
-  }, [onMomento, onDisponibilidad]);
+  }, [onFinMomento, onMomento, onDisponibilidad]);
 
   // Un motor por montaje. En StrictMode React monta, desmonta y vuelve a montar:
   // dispose() libera canvas, listeners y observers, y el segundo montaje arranca limpio.
   useEffect(() => {
     const escena = createDicoScene(hostRef.current, {
       imagenAlternativa,
+      onFinMomento: id => onFinRef.current?.(id),
       onMomento: (id) => onMomentoRef.current?.(id),
       onDisponibilidad: (estado) => onDisponibilidadRef.current?.(estado),
     });
@@ -44,8 +47,8 @@ export default function EscenaServicios({ momento = null, onMomento, onDisponibi
 
   useEffect(() => {
     momentoRef.current = momento;
-    sceneRef.current?.set({ rubro: 'servicios', momento });
-  }, [momento]);
+    sceneRef.current?.set({ rubro: 'servicios', momento, guia });
+  }, [momento, guia, revision]);
 
   return <div ref={hostRef} className="dse-servicios-host" />;
 }
