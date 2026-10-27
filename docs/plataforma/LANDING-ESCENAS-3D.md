@@ -165,3 +165,19 @@ apuntan al alcance vigente de RubrosNegocio.jsx. Mantener cobertura de todas
 las filas al agregar una herramienta: hoy 10/9/12 por rubro. LecturaRubro.jsx
 maneja foco, Escape y clic fuera; respeta el modal del diagnostico y conserva
 la lectura al volver. Servicios permanece solo en preview.
+
+### Pausa por interaccion y marco adaptable — 27/oct/2026
+
+Los tres wrappers reciben `pausado` (false por defecto) y llaman la nueva
+API opcional `motor.pausar(boolean)`. Conserva storyTime y reinicia solo el
+reloj de cuadro para evitar saltos al continuar. No reutiliza set/guia, que
+prepara el tramo y podria reiniciarlo. El lienzo recibe clic/tap (<6px de
+movimiento), mientras un arrastre queda reservado a la camara. El boton
+accesible de pausa se revela al foco; sin WebGL o con movimiento reducido
+queda deshabilitado. La lectura vuelve inert al lienzo mientras esta abierta.
+
+Los wrappers pasan `proporcion: null` para llenar el alto adaptable del padre;
+el ResizeObserver del motor recalcula la camara. No se escala ni deforma el
+canvas. Selector dentro de la card y momentos debajo, activos en volt.
+Explicacion no modal pequena centrada sobre lienzo difuminado, herramientas
+independientes en acordeon del lateral derecho.

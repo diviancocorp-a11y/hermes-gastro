@@ -13,7 +13,7 @@ import { createDicoScene } from './motor/escenaServicios.js';
 import imagenAlternativa from './assets/servicios-estatica.webp';
 import './EscenaServicios.css';
 
-export default function EscenaServicios({ momento = null, guia = null, revision = 0, onFinMomento, onMomento, onDisponibilidad }) {
+export default function EscenaServicios({ momento = null, guia = null, revision = 0, pausado = false, onFinMomento, onMomento, onDisponibilidad }) {
   const hostRef = useRef(null);
   const sceneRef = useRef(null);
   const momentoRef = useRef(momento);
@@ -32,6 +32,7 @@ export default function EscenaServicios({ momento = null, guia = null, revision 
   // dispose() libera canvas, listeners y observers, y el segundo montaje arranca limpio.
   useEffect(() => {
     const escena = createDicoScene(hostRef.current, {
+      proporcion: null,
       imagenAlternativa,
       onFinMomento: id => onFinRef.current?.(id),
       onMomento: (id) => onMomentoRef.current?.(id),
@@ -49,6 +50,8 @@ export default function EscenaServicios({ momento = null, guia = null, revision 
     momentoRef.current = momento;
     sceneRef.current?.set({ rubro: 'servicios', momento, guia });
   }, [momento, guia, revision]);
+
+  useEffect(() => { sceneRef.current?.pausar?.(pausado); }, [pausado]);
 
   return <div ref={hostRef} className="dse-servicios-host" />;
 }

@@ -916,6 +916,7 @@ export function createDicoScene(container, options = {}) {
 
   let historia = null;
   let content = null, rubro = null, fixedIdx = -1, storyTime = 0, lastIdx = -1, lastReported = null;
+  let pausado = false;
   let W = 1, H = 1, fitR = 30;
   const BASE = { theta: .52, phi: .98 };
   let thetaUser = 0, phiUser = 0, thetaGoal = 0, phiGoal = 0;
@@ -1133,7 +1134,7 @@ export function createDicoScene(container, options = {}) {
     if (destroyed || !content || lost) return;
     const dt = last ? Math.min(.05, (now - last) / 1000) : 0;
     last = now;
-    let playing = fixedIdx < 0 && !reduced;
+    let playing = fixedIdx < 0 && !reduced && !pausado;
     if (playing) storyTime += dt;
     const finalGuiado = recorridoGuiado.avanzar(storyTime);
     if (finalGuiado) { storyTime = finalGuiado.tiempo; fixedIdx = finalGuiado.indice; playing = false; dirty = true; }
@@ -1316,9 +1317,16 @@ export function createDicoScene(container, options = {}) {
   }
 
   // Lectura de rendimiento para pruebas en dispositivos reales
+  function pausar(valor) {
+    if (destroyed) return;
+    pausado = Boolean(valor);
+    last = 0;
+    kick();
+  }
+
   function stats() { return { fps: Math.round(1 / frameEMA), calidad: tier }; }
 
   if (tier !== 'alta') applyQuality(); else resize();
   notify(reduced ? 'estatica' : 'animada');
-  return { set, dispose, stats };
+  return { set, dispose, stats, pausar };
 }

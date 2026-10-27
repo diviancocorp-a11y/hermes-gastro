@@ -11,6 +11,32 @@
 
 ### Revision visual de Ricky
 
+**Actual — siete ajustes de rubros y densidad, 27/oct:** maqueta a la izquierda
+con selector de rubro compacto dentro de su card; herramientas a la derecha
+con iconos y acordeones nativos. Abrir/cerrar conserva las demas opciones;
+en escritorios bajos la lista tiene scroll propio. Titulo en una linea en
+escritorio y mensaje de ritmo debajo de la maqueta. Disponibles/en desarrollo
+quedan centrados en dos columnas, con aclarado al hover/foco.
+
+Se retiran descripcion duplicada y pausa externa. Clic/tap en la escena
+pausa/reanuda exactamente; arrastrar no pausa, y hay control accesible por
+teclado. Momentos activos en volt. Explicaciones centradas sobre maqueta
+con fondo difuminado; conservan preparar, reproducir, resultado y siguiente.
+Los tres motores agregan pausar(boolean) sin reiniciar la guia. Contenedor
+adaptable al viewport, con proporcion de camara recalculada, sin deformar.
+CTA de herramientas con relleno negro radial sobre dorado.
+
+Toda la landing reduce separaciones verticales y alturas de piezas para
+lectura al 100%, sin aplicar zoom ni reducir la escala de la pagina. Hero,
+franja de logos y corte del footer conservan su estructura aprobada.
+Chrome comprueba 1280x720, 1440x900 y movil 390: sin overflow, acordeon,
+pausa exacta por capturas, reanudacion, teclado, arrastre, guia centrada con
+blur/resultado, cambio de rubros con un canvas y sin errores JS. Movimiento
+reducido y alternativa sin WebGL comprobados. Servicios sigue solo preview.
+Sin dependencias ni subagentes; auditoria integral diferida por Ricky.
+
+**Estado anterior (antes de estos siete ajustes):**
+
 **Actual — lateral de herramientas y demostracion guiada, 27/oct:** segmento
 3 reorganizado con lateral de aproximadamente 25% y maqueta ocupando el resto
 (340/996 px a 1440). Alto de escena adaptable al viewport en escritorio;

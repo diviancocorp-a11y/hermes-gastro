@@ -31,9 +31,11 @@
   --pl-t5: var(--ds-type-sm);
 
   /* Espacio: un par de margenes, una grilla, un hueco entre secciones */
-  --pl-m: clamp(20px, 2.8vw, 40px);
-  --pl-g: clamp(16px, 1.7vw, 24px);
-  --pl-hueco: clamp(112px, 10vw, 160px);
+  --pl-m: clamp(16px, 2.3vw, 32px);
+  --pl-g: clamp(16px, 1.7vw, 20px);
+  --pl-hueco: clamp(56px, 6vw, 88px);
+  --ds-space-layout-12: 32px;
+  --ds-space-layout-16: 48px;
   --pl-arriba: clamp(112px, 22svh, 220px);
   --pl-columna: 560px;
 
@@ -1021,3 +1023,18 @@
 
 @media (max-width: 1099px) { .pl-fotos { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 699px) { .pl-fotos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-3); } }
+
+/* Densidad de lectura al 100%: menos alturas y aire, sin escalar la página. */
+@media (min-width: 1000px) {
+  .pl-root .cn-cabecera h2, .pl-root .ce-root h2, .pl-root .pp-cabecera h2, .pl-root .pn-root h2 { font-size: clamp(32px, 3.3vw, 48px); }
+  .pl-root .ce-dentro { --ce-circulo: 56px; }
+  .pl-root .ce-recorrido { margin-top: 32px; }
+  .pl-root .ce-pasos li { gap: 24px; }
+  .pl-root .ce-boton { min-height: 58px; font-size: 18px; }
+  .pl-root .pp-plan { padding: 24px; }
+  .pl-root .pp-importe { font-size: clamp(36px, 3.1vw, 46px); }
+  .pl-root .pn-guia { padding: 28px; }
+  .pl-root .cf-panel { padding: 48px 32px; }
+  .pl-root .cf-panel h2 { font-size: clamp(36px, 4.4vw, 64px); }
+  .pl-root .ce-accion { margin-top: 40px; }
+}

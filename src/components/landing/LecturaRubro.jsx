@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useId, useRef } from 'react';
 
-// Lectura no modal: ocupa el lateral, no bloquea ni oscurece la maqueta.
+// Explicación no modal centrada dentro de la maqueta.
 export default function LecturaRubro({ titulo, contexto, onCerrar, origen, children }) {
   const id = useId();
   const panel = useRef(null);
@@ -11,7 +11,6 @@ export default function LecturaRubro({ titulo, contexto, onCerrar, origen, child
     const disparador = origen.current || document.activeElement;
     const hayModal = () => document.querySelector('[role="dialog"][aria-modal="true"]');
     if (!hayModal()) encabezado.current?.focus({ preventScroll: true });
-    if (!hayModal() && window.matchMedia('(min-width: 1000px)').matches) panel.current?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
     const teclado = e => {
       if (hayModal()) return;
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrarRef.current(); }
