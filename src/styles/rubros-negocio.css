@@ -7,7 +7,8 @@
   background: var(--rn-fondo); color: var(--rn-tinta);
 }
 .rn-root::before { content: ''; position: absolute; inset: 0; z-index: -1; background: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
-.rn-firma { max-width: 1632px; margin-inline: auto; padding: 20px 16px 16px; border-radius: 16px; background: var(--pc-oro); }
+.rn-firma { position: relative; isolation: isolate; max-width: 1632px; margin-inline: auto; padding: 20px 16px 16px; }
+.rn-firma::before { content: ''; position: absolute; z-index: -1; inset: -32px calc(50% - 50vw); background: linear-gradient(to bottom, transparent, var(--pc-oro) 32px, var(--pc-oro) calc(100% - 32px), transparent); pointer-events: none; }
 .rn-firma .rn-cabecera h2, .rn-firma .rn-lema, .rn-firma .rn-aviso-escena { color: var(--pc-sobre-oro); }
 .rn-cabecera, .rn-experiencia { max-width: 1600px; margin-inline: auto; }
 .rn-cabecera { margin-bottom: 24px; }
@@ -67,7 +68,7 @@
 .rn-root .rn-cta::before { content: ''; position: absolute; z-index: -1; right: 12px; top: 50%; width: 36px; height: 36px; border-radius: 50%; background: var(--rn-fondo); transform: translateY(-50%) scale(0); transition: transform 480ms cubic-bezier(.22,1,.36,1); }
 .rn-root .rn-cta:hover::before, .rn-root .rn-cta:focus-visible::before { transform: translateY(-50%) scale(24); }
 .rn-root .rn-cta:hover, .rn-root .rn-cta:focus-visible { color: var(--rn-tinta); }
-.rn-disponibilidad-grupos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 840px; margin: 16px auto 0; }
+.rn-disponibilidad-grupos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 840px; margin: 48px auto 0; }
 .rn-alcance { min-width: 0; font-size: 13px; color: var(--rn-suave); }
 .rn-alcance summary { min-height: 44px; padding: 10px 0; cursor: pointer; text-align: center; opacity: .7; transition: opacity 160ms, color 160ms; }
 .rn-alcance summary:hover, .rn-alcance summary:focus-visible, .rn-alcance[open] summary { opacity: 1; color: var(--rn-tinta); }
@@ -82,7 +83,7 @@
 }
 @media (max-width: 599px) {
   .rn-root { padding-top: 32px; }
-  .rn-firma { padding: 16px 8px 12px; border-radius: 12px; }
+  .rn-firma { padding: 16px 8px 12px; }
   .rn-cabecera { margin-bottom: 16px; }
   .rn-barra-maqueta { padding: 4px; }
   .rn-rubros { gap: 0; flex: 1; }

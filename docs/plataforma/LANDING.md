@@ -7,9 +7,16 @@
 
 ---
 
-## 1. Estado al 27/oct/2026
+## 1. Estado al 28/oct/2026
 
 ### Revision visual de Ricky
+
+**Actual — franja dorada continua, 28/oct:** firma dorada a todo el ancho de
+pantalla, sin esquinas ni recuadro. Entrada/salida con degradado vertical de
+32px, color solido detras del contenido para mantener contraste. Las opciones
+de disponibilidad quedan despues del fundido, sobre negro. No cambia el
+ancho de contenido ni la escena.
+
 
 **Actual — dorado como firma, 27/oct:** el bloque de titulo, maqueta y
 herramientas queda contenido en un marco dorado Dico, separado del fondo
