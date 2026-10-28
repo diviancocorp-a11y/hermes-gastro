@@ -11,6 +11,18 @@
 
 ### Revision visual de Ricky
 
+**Actual — planes con Local destacado, 28/oct:** se conserva entrada con scroll,
+fondo volt y seguimiento del cursor en las tres cards. Digital acento marfil
+con icono de pantalla; Local profundo azul, borde volt, etiqueta «Plan destacado»
+y CTA solido; Cadena oro con locales conectados. Beneficios antes del boton,
+acciones alineadas al pie. Cuarto CTA grande reemplazado por «¿No sabes cual
+elegir? Hace el diagnostico». Precios y beneficios siguen en planesPlataforma.js,
+sin inventar diferencias ni decir «mas comprado». Falta definir mejor la
+diferencia de valor de Local antes del cierre comercial/produccion.
+Acompanamiento CERRADO por Ricky en b68ea44; junto a Rubros, no retocar mientras
+se completa el resto. Este cambio solo toca Planes y esta guia.
+
+
 **Actual — encendido dorado y promesa persistente, 28/oct:** se retira el aro
 exterior azul. El propio borde, numero y superficie del circulo se intensifican
 en dorado al pasar el pulso, con luz suave, y vuelven a su tono habitual despues.
