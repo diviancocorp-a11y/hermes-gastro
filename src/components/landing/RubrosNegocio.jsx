@@ -223,6 +223,10 @@ export default function RubrosNegocio({ onDiagnostico }) {
             </div>
           </div>
           <p className="rn-lema">Tu negocio tiene su propio ritmo. Dico se adapta a tu operación.</p>
+      <div className="rn-disponibilidad-grupos" key={enfoque.id}>
+        <details className="rn-alcance"><summary>Herramientas disponibles</summary><ul>{rubro.filas.filter(([, estado]) => estado === HOY).map(([texto]) => <li key={texto}>{texto}</li>)}</ul></details>
+        <details className="rn-alcance"><summary>Herramientas en desarrollo</summary><ul>{[...rubro.filas.filter(([, estado]) => estado !== HOY), ...RUBROS[3].filas].map(([texto, estado]) => <li key={texto}><span>{texto}</span><span>{estado}</span></li>)}</ul></details>
+      </div>
           {escenaServicios && <p className="rn-aviso-escena">Simulación de funciones en desarrollo: reserva y cancelación online, llegada por QR y avisos a profesionales.</p>}
         </div>
         <aside className="rn-relato" key={enfoque.id} aria-label={`Herramientas de ${rubro.nombre}`}>
@@ -237,10 +241,7 @@ export default function RubrosNegocio({ onDiagnostico }) {
         </aside>
       </div>
       </div>
-      <div className="rn-disponibilidad-grupos" key={enfoque.id}>
-        <details className="rn-alcance"><summary>Herramientas disponibles</summary><ul>{rubro.filas.filter(([, estado]) => estado === HOY).map(([texto]) => <li key={texto}>{texto}</li>)}</ul></details>
-        <details className="rn-alcance"><summary>Herramientas en desarrollo</summary><ul>{[...rubro.filas.filter(([, estado]) => estado !== HOY), ...RUBROS[3].filas].map(([texto, estado]) => <li key={texto}><span>{texto}</span><span>{estado}</span></li>)}</ul></details>
-      </div>
+
     </section>
   );
 }

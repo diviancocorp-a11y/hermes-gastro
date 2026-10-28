@@ -11,6 +11,14 @@
 
 ### Revision visual de Ricky
 
+**Actual — desplegables bajo maqueta, 28/oct:** ambos enlaces viven dentro
+de la columna visual, centrados como el lema, separados 24px y alineados
+arriba al desplegar. Pulso volt de 7s bajo el borde dorado, detras de las
+cards; se oculta con movimiento reducido. Alto de escena ajustado al viewport
+por rubro (compensa filas de momentos/aviso) para ver el segmento a zoom 100%
+en escritorio, sin achicar texto. Movil conserva sus alturas anteriores.
+
+
 **Actual — ajuste de lectura, 28/oct:** cabecera alineada al ancho de contenido,
 mas aire vertical (32px; 28 movil) y dorado extendido 24px tras la parte alta
 de las cards para integrarlas, sin franja separada por espacio negro.
