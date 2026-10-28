@@ -11,6 +11,14 @@
 
 ### Revision visual de Ricky
 
+**Actual — borde elevado de acompanamiento, 28/oct:** se agrega solo en
+ComoEmpezar una luz dorada posterior que fluye lateralmente en 9s, proyectada
+52px hacia arriba desde su junta superior. Linea de apoyo tenue para sugerir
+relieve; sin halo en cards, sin modificar el segmento de rubros BLOQUEADO.
+Con movimiento reducido queda iluminacion fija tenue. No cambia medidas ni
+el pulso volt de una sola pasada entre los tres pasos.
+
+
 **Actual — segmento 5 / acompanamiento, 28/oct:** rubros sigue BLOQUEADO;
 solo se modifica ComoEmpezar. Titulo «No tenes que resolver todo de golpe.
 Te acompanamos desde el primer paso». Pasos: descubris por donde empezar,

@@ -1,6 +1,9 @@
 /* Tres pasos, una sola entrada al diagnóstico. Sin una segunda secuencia de scroll. */
-.ce-root { position: relative; isolation: isolate; padding: 32px var(--pl-m) 36px; background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-50); }
+.ce-root { position: relative; isolation: isolate; padding: 32px var(--pl-m) 36px; background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-50); box-shadow: 0 -1px 0 color-mix(in srgb, var(--pc-oro) 12%, transparent); }
 .ce-root::before { content: ''; position: absolute; z-index: -1; inset: 0; background-image: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
+/* Luz posterior del borde: nace en la junta y se proyecta hacia arriba. */
+.ce-root::after { content: ''; position: absolute; z-index: -1; top: -52px; left: 0; right: 0; height: 52px; background: radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--pc-oro) 55%, transparent), transparent 70%) -60% 100% / 36% 100% no-repeat; pointer-events: none; animation: ce-luz-borde 9s linear infinite; }
+@keyframes ce-luz-borde { from { background-position: -60% 100%; } to { background-position: 160% 100%; } }
 .ce-dentro { --ce-circulo: clamp(56px, 4.5vw, 76px); max-width: 1600px; margin-inline: auto; text-align: center; }
 .ce-root h2 { margin: 0; font-size: clamp(36px, 4.2vw, 64px); font-weight: 500; line-height: 1.08; letter-spacing: -.035em; }
 .ce-root h2 span { display: block; }
@@ -47,6 +50,7 @@
 }
 @keyframes ce-pulso-vertical { from { top: -22%; } to { top: 78%; } }
 @media (prefers-reduced-motion: reduce) {
+  .ce-root::after { animation: none; background-position: 50% 100%; opacity: .4; }
   .ce-root .ce-boton, .ce-boton::before, .ce-boton .pl-hero-burbuja, .ce-pasos h3, .ce-numero { transition: none; }
   .ce-pulso { animation: none; display: none; }
 }
