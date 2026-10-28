@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import '../../styles/como-empezar.css';
 
 const PASOS = [
@@ -9,26 +9,62 @@ const PASOS = [
 
 export default function ComoEmpezar({ onDiagnostico }) {
   const recorridoRef = useRef(null);
-  const [recorrido, setRecorrido] = useState('espera');
   useEffect(() => {
+    const elemento = recorridoRef.current;
+    const circulos = [...elemento.querySelectorAll('.ce-numero')];
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const reducir = () => { if (mq.matches) setRecorrido('finalizado'); };
-    reducir();
-    mq.addEventListener('change', reducir);
-    const iniciar = () => setRecorrido(actual => actual === 'espera' ? (mq.matches ? 'finalizado' : 'animando') : actual);
-    const observador = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entrada]) => {
-      if (entrada.isIntersecting) { iniciar(); observador.disconnect(); }
-    }, { threshold: .25 });
-    if (observador) observador.observe(recorridoRef.current);
-    else iniciar();
-    return () => { observador?.disconnect(); mq.removeEventListener('change', reducir); };
+    let cuadro = 0, actual = 0, destino = 0, medir = true;
+    const limitar = valor => Math.max(0, Math.min(1, valor));
+    const pintar = valor => {
+      elemento.style.setProperty('--ce-avance', `${valor * 100}%`);
+      const visible = mq.matches ? 0 : limitar(Math.min(valor / .06, (1 - valor) / .06)) * .6;
+      elemento.style.setProperty('--ce-pulso-opacidad', visible);
+      circulos.forEach((circulo, indice) => {
+        const halo = mq.matches || valor <= 0 || valor >= 1 ? 0 : Math.max(0, 1 - Math.abs(valor - indice / 2) / .09);
+        circulo.style.setProperty('--ce-halo', halo * .65);
+      });
+    };
+    const avanzar = () => {
+      cuadro = 0;
+      if (medir) {
+        const primero = circulos[0].getBoundingClientRect();
+        const ultimo = circulos[2].getBoundingClientRect();
+        const inicio = primero.top + primero.height / 2;
+        const distancia = ultimo.top + ultimo.height / 2 - inicio + innerHeight * .44;
+        const progreso = limitar((innerHeight * .76 - inicio) / distancia);
+        destino = progreso < .005 ? 0 : progreso > .995 ? 1 : progreso;
+        medir = false;
+      }
+      if (mq.matches) { actual = destino; pintar(actual); return; }
+      actual += (destino - actual) * .2;
+      if (Math.abs(destino - actual) < .001) actual = destino;
+      pintar(actual);
+      if (actual !== destino) cuadro = requestAnimationFrame(avanzar);
+    };
+    const actualizar = () => {
+      medir = true;
+      if (!cuadro) cuadro = requestAnimationFrame(avanzar);
+    };
+    window.addEventListener('scroll', actualizar, { passive: true });
+    window.addEventListener('resize', actualizar);
+    mq.addEventListener('change', actualizar);
+    const observador = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(actualizar);
+    observador?.observe(elemento);
+    actualizar();
+    return () => {
+      cancelAnimationFrame(cuadro);
+      observador?.disconnect();
+      window.removeEventListener('scroll', actualizar);
+      window.removeEventListener('resize', actualizar);
+      mq.removeEventListener('change', actualizar);
+    };
   }, []);
   return (
-    <section className="ce-root" data-recorrido={recorrido} id="como-empezar" aria-labelledby="ce-titulo">
+    <section className="ce-root" id="como-empezar" aria-labelledby="ce-titulo">
       <div className="ce-dentro">
-        <h2 id="ce-titulo"><span>No tenés que resolver todo de golpe.</span><span>Te acompañamos desde el primer paso.</span></h2>
+        <h2 id="ce-titulo"><span className="ce-intro">No tenés que resolver todo de golpe.</span><span>Te acompañamos desde el primer paso.</span></h2>
         <div className="ce-recorrido" ref={recorridoRef}>
-          <div className="ce-via" aria-hidden="true"><span className="ce-pulso" onAnimationEnd={evento => { if (evento.target === evento.currentTarget) setRecorrido('finalizado'); }} /></div>
+          <div className="ce-via" aria-hidden="true"><span className="ce-pulso" /></div>
           <ol className="ce-pasos">
           {PASOS.map(([titulo, texto], indice) => (
             <li key={titulo}>

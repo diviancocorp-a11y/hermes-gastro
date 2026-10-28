@@ -11,6 +11,16 @@
 
 ### Revision visual de Ricky
 
+**Actual — acompanamiento guiado por scroll, 28/oct:** frase inicial menor y
+gris; titular principal conserva protagonismo. Tres titulos blancos y tres
+circulos/numeros dorados siempre. Pulso volt corto/tenue ligado al scroll,
+reversible al subir; halos exteriores breves al cruzar cada paso, sin seleccion
+persistente al final. En movil recorre la linea vertical. Suavizado RAF solo
+hasta alcanzar el destino, listeners pasivos/ResizeObserver y limpieza al
+salir; sin bloquear scroll ni agregar altura. Movimiento reducido sin pulso
+ni halos. Se conserva la luz dorada de la junta y el CTA. Rubros BLOQUEADO.
+
+
 **Actual — borde elevado de acompanamiento, 28/oct:** se agrega solo en
 ComoEmpezar una luz dorada posterior que fluye lateralmente en 9s, proyectada
 52px hacia arriba desde su junta superior. Linea de apoyo tenue para sugerir
