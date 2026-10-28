@@ -11,6 +11,15 @@
 
 ### Revision visual de Ricky
 
+**Actual — dorado extendido y pulso posterior, 28/oct:** retirado el halo azul
+de la card por recargar. La franja dorada cubre tambien el aire superior e
+inferior y las opciones de disponibilidad, acercandose a los segmentos vecinos.
+Fundidos de 80px; texto de disponibilidad oscuro para conservar contraste.
+Pulso volt de 8s por debajo de la capa dorada, visible solo en los fundidos
+superior/inferior; no pasa sobre las cards. Sin movimiento reducido se anima;
+con esa preferencia se oculta. No cambia layout ni controles.
+
+
 **Actual — luz volt tras la maqueta, 28/oct:** halo azul difuso detras de la
 card 3D, sobre la franja dorada. Usa el token volt, sin cambiar fondo de la
 escena, controles, texto ni medidas.

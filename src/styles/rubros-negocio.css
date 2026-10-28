@@ -6,16 +6,18 @@
   position: relative; isolation: isolate; padding: 40px var(--pl-m) var(--pl-hueco);
   background: var(--rn-fondo); color: var(--rn-tinta);
 }
-.rn-root::before { content: ''; position: absolute; inset: 0; z-index: -1; background: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
+/* La luz viaja debajo de la capa dorada: solo asoma por sus fundidos. */
+.rn-root::before { content: ''; position: absolute; z-index: -2; top: -44px; bottom: -36px; left: -280px; width: 280px; background: radial-gradient(ellipse at 50% 0%, var(--ds-color-intelligence-volt), transparent 68%) center top / 100% 100px no-repeat, radial-gradient(ellipse at 50% 100%, var(--ds-color-intelligence-volt), transparent 68%) center bottom / 100% 100px no-repeat; filter: blur(8px); pointer-events: none; animation: rn-pulso-profundo 8s linear infinite; }
+.rn-root::after { content: ''; position: absolute; z-index: -1; inset: -40px 0 -32px; background: linear-gradient(to bottom, transparent, var(--pc-oro) 80px, var(--pc-oro) calc(100% - 80px), transparent); pointer-events: none; }
+@keyframes rn-pulso-profundo { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 560px)); } }
 .rn-firma { position: relative; isolation: isolate; max-width: 1632px; margin-inline: auto; padding: 20px 16px 16px; }
-.rn-firma::before { content: ''; position: absolute; z-index: -1; inset: -32px calc(50% - 50vw); background: linear-gradient(to bottom, transparent, var(--pc-oro) 32px, var(--pc-oro) calc(100% - 32px), transparent); pointer-events: none; }
 .rn-firma .rn-cabecera h2, .rn-firma .rn-lema, .rn-firma .rn-aviso-escena { color: var(--pc-sobre-oro); }
 .rn-cabecera, .rn-experiencia { max-width: 1600px; margin-inline: auto; }
 .rn-cabecera { margin-bottom: 24px; }
 .rn-cabecera h2 { font-size: clamp(28px, 3.3vw, 48px); line-height: 1.12; font-weight: 500; letter-spacing: -.035em; }
 .rn-experiencia { display: grid; grid-template-columns: minmax(0, 1fr) clamp(270px, 24%, 320px); gap: 16px; align-items: start; }
 .rn-visual { min-width: 0; }
-.rn-maqueta { overflow: hidden; border: 1px solid var(--rn-linea); border-radius: 12px; background: var(--rn-fondo); box-shadow: 0 0 28px 6px color-mix(in srgb, var(--ds-color-intelligence-volt) 65%, transparent); }
+.rn-maqueta { overflow: hidden; border: 1px solid var(--rn-linea); border-radius: 12px; background: var(--rn-fondo); }
 .rn-barra-maqueta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--rn-linea); }
 .rn-rubros { display: flex; gap: 6px; min-width: 0; }
 .rn-rubros button, .rn-volver-automatico { min-height: 44px; padding: 8px 16px; border: 1px solid transparent; border-radius: 24px; background: transparent; color: var(--rn-suave); font: inherit; font-size: 14px; cursor: pointer; }
@@ -69,9 +71,9 @@
 .rn-root .rn-cta:hover::before, .rn-root .rn-cta:focus-visible::before { transform: translateY(-50%) scale(24); }
 .rn-root .rn-cta:hover, .rn-root .rn-cta:focus-visible { color: var(--rn-tinta); }
 .rn-disponibilidad-grupos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 840px; margin: 48px auto 0; }
-.rn-alcance { min-width: 0; font-size: 13px; color: var(--rn-suave); }
+.rn-alcance { min-width: 0; font-size: 13px; color: var(--pc-sobre-oro); }
 .rn-alcance summary { min-height: 44px; padding: 10px 0; cursor: pointer; text-align: center; opacity: .7; transition: opacity 160ms, color 160ms; }
-.rn-alcance summary:hover, .rn-alcance summary:focus-visible, .rn-alcance[open] summary { opacity: 1; color: var(--rn-tinta); }
+.rn-alcance summary:hover, .rn-alcance summary:focus-visible, .rn-alcance[open] summary { opacity: 1; color: var(--pc-sobre-oro); }
 .rn-alcance ul { display: grid; gap: 12px; padding-top: 12px; }
 .rn-alcance li { display: flex; justify-content: space-between; gap: 16px; line-height: 1.5; }
 .rn-alcance li > span:last-child { flex-shrink: 0; }
@@ -97,4 +99,4 @@
   .rn-disponibilidad-grupos { gap: 16px; }
   .rn-alcance li { flex-direction: column; gap: 2px; }
 }
-@media (prefers-reduced-motion: reduce) { .rn-root *, .rn-root *::before { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { .rn-root::before { animation: none; opacity: 0; } .rn-root *, .rn-root *::before { transition: none !important; } }
