@@ -7,6 +7,8 @@
   background: var(--rn-fondo); color: var(--rn-tinta);
 }
 .rn-root::before { content: ''; position: absolute; inset: 0; z-index: -1; background: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
+.rn-firma { max-width: 1632px; margin-inline: auto; padding: 20px 16px 16px; border-radius: 16px; background: var(--pc-oro); }
+.rn-firma .rn-cabecera h2, .rn-firma .rn-lema, .rn-firma .rn-aviso-escena { color: var(--pc-sobre-oro); }
 .rn-cabecera, .rn-experiencia { max-width: 1600px; margin-inline: auto; }
 .rn-cabecera { margin-bottom: 24px; }
 .rn-cabecera h2 { font-size: clamp(28px, 3.3vw, 48px); line-height: 1.12; font-weight: 500; letter-spacing: -.035em; }
@@ -20,7 +22,7 @@
 .rn-rubros button:hover, .rn-volver-automatico:hover { border-color: var(--rn-linea); color: var(--rn-tinta); }
 .rn-rubros button[aria-selected="true"]:hover { color: var(--pc-sobre-oro); }
 .rn-volver-automatico { width: 44px; padding: 8px; font-size: 23px; }
-.rn-escena { position: relative; height: clamp(300px, calc(100svh - 285px), 570px); background: var(--rn-fondo); }
+.rn-escena { position: relative; height: clamp(300px, calc(100svh - 321px), 570px); background: var(--rn-fondo); }
 .rn-lienzo, .rn-lienzo > [class$="-host"] { height: 100%; }
 .rn-lienzo { position: relative; transition: filter 240ms ease; }
 .rn-escena[data-lectura="true"] .rn-lienzo { filter: blur(5px); }
@@ -80,6 +82,7 @@
 }
 @media (max-width: 599px) {
   .rn-root { padding-top: 32px; }
+  .rn-firma { padding: 16px 8px 12px; border-radius: 12px; }
   .rn-cabecera { margin-bottom: 16px; }
   .rn-barra-maqueta { padding: 4px; }
   .rn-rubros { gap: 0; flex: 1; }

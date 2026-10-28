@@ -186,6 +186,7 @@ export default function RubrosNegocio({ onDiagnostico }) {
     <section className="rn-root" id="rubros" aria-labelledby="rn-titulo">
       <span className="pl-ancla" id="modulos" aria-hidden="true" />
       <span className="pl-ancla" id="integraciones" aria-hidden="true" />
+      <div className="rn-firma">
       <header className="rn-cabecera"><h2 id="rn-titulo">Tu rubro, tu forma de trabajar.</h2></header>
       <div className="rn-experiencia">
         <div className="rn-visual" ref={visual}>
@@ -234,6 +235,7 @@ export default function RubrosNegocio({ onDiagnostico }) {
           </div>
           <button type="button" className="rn-cta" onClick={diagnosticar}><span>Ver qué necesita mi negocio</span><span aria-hidden="true">→</span></button>
         </aside>
+      </div>
       </div>
       <div className="rn-disponibilidad-grupos" key={enfoque.id}>
         <details className="rn-alcance"><summary>Herramientas disponibles</summary><ul>{rubro.filas.filter(([, estado]) => estado === HOY).map(([texto]) => <li key={texto}>{texto}</li>)}</ul></details>

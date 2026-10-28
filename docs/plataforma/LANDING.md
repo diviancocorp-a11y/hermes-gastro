@@ -11,6 +11,13 @@
 
 ### Revision visual de Ricky
 
+**Actual — dorado como firma, 27/oct:** el bloque de titulo, maqueta y
+herramientas queda contenido en un marco dorado Dico, separado del fondo
+negro de la seccion. Escena y lista conservan sus superficies oscuras; titulo,
+lema y aviso sobre dorado usan tinta oscura. Ajuste de alto del lienzo para
+compensar el marco al 100%. No cambia recorrido, controles ni contenido.
+
+
 **Actual — siete ajustes de rubros y densidad, 27/oct:** maqueta a la izquierda
 con selector de rubro compacto dentro de su card; herramientas a la derecha
 con iconos y acordeones nativos. Abrir/cerrar conserva las demas opciones;
