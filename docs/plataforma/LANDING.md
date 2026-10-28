@@ -11,6 +11,15 @@
 
 ### Revision visual de Ricky
 
+**Actual — encendido dorado y promesa persistente, 28/oct:** se retira el aro
+exterior azul. El propio borde, numero y superficie del circulo se intensifican
+en dorado al pasar el pulso, con luz suave, y vuelven a su tono habitual despues.
+Al completar el recorrido «Seguimos con vos» queda dorado y encendido durante
+la visita, incluso al volver hacia arriba; el pulso sigue reversible. Con
+movimiento reducido no se animan circulos, pero se conserva la promesa al
+alcanzar el final. Sin cambios en rubros BLOQUEADO ni en la luz de la junta.
+
+
 **Actual — luz dorada organica de la junta, 28/oct:** se retira el barrido
 lateral fijo. Tres focos decorativos independientes con ritmos de 13.7/19.3/
 23.1s, fases diferentes y fluctuacion de intensidad, amplitud y altura;

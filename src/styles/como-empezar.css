@@ -32,11 +32,12 @@
 .ce-via { position: absolute; z-index: 0; left: calc(100% / 6); right: calc(100% / 6); top: calc(var(--ce-circulo) / 2); height: 1px; overflow: hidden; overflow: clip; overflow-clip-margin: 18px; background: color-mix(in srgb, var(--ds-color-intelligence-label) 45%, transparent); pointer-events: none; }
 .ce-pulso { position: absolute; left: calc(var(--ce-avance, 0%) - 12%); top: -1px; width: 12%; height: 3px; border-radius: var(--ds-radius-pill); background: linear-gradient(90deg, transparent, var(--ds-color-intelligence-volt)); box-shadow: 0 0 5px var(--ds-color-intelligence-volt); opacity: var(--ce-pulso-opacidad, 0); }
 .ce-pulso::after { content: ''; position: absolute; right: 0; top: -1px; width: 5px; height: 5px; border-radius: var(--ds-radius-pill); background: var(--ds-color-intelligence-label); box-shadow: 0 0 6px var(--ds-color-intelligence-volt); }
-.ce-numero::after { content: ''; position: absolute; inset: -7px; border: 1px solid var(--ds-color-intelligence-label); border-radius: inherit; box-shadow: 0 0 12px color-mix(in srgb, var(--ds-color-intelligence-volt) 35%, transparent); opacity: var(--ce-halo, 0); pointer-events: none; }
 .ce-pasos { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 0; }
 .ce-pasos li { display: flex; flex-direction: column; align-items: center; gap: var(--ds-space-8); padding-inline: var(--ds-space-3); min-width: 0; }
-.ce-numero { position: relative; z-index: 1; display: grid; place-items: center; flex: none; width: var(--ce-circulo); height: var(--ce-circulo); border: 2px solid var(--pc-oro); border-radius: var(--ds-radius-pill); background: var(--pl-suelo-continuo); color: var(--pc-oro); font-size: clamp(22px, 1.7vw, 28px); font-weight: 500; font-variant-numeric: tabular-nums; }
+.ce-numero { position: relative; z-index: 1; display: grid; place-items: center; flex: none; width: var(--ce-circulo); height: var(--ce-circulo); border: 2px solid color-mix(in srgb, var(--pc-oro), var(--ds-color-zinc-50) calc(var(--ce-encendido, 0) * 35%)); border-radius: var(--ds-radius-pill); background: color-mix(in srgb, var(--pl-suelo-continuo), var(--pc-oro) calc(var(--ce-encendido, 0) * 26%)); color: color-mix(in srgb, var(--pc-oro), var(--ds-color-zinc-50) calc(var(--ce-encendido, 0) * 35%)); box-shadow: 0 0 16px color-mix(in srgb, var(--pc-oro) calc(var(--ce-encendido, 0) * 55%), transparent), inset 0 0 12px color-mix(in srgb, var(--pc-oro) calc(var(--ce-encendido, 0) * 35%), transparent); font-size: clamp(22px, 1.7vw, 28px); font-weight: 500; font-variant-numeric: tabular-nums; }
 .ce-pasos h3 { margin: 0; font-size: clamp(22px, 1.85vw, 30px); font-weight: 500; line-height: 1.25; letter-spacing: -.025em; }
+.ce-pasos h3 { transition: color 480ms ease, text-shadow 480ms ease; }
+.ce-recorrido[data-promesa="true"] .ce-pasos li:last-child h3 { color: var(--pc-oro); text-shadow: 0 0 16px color-mix(in srgb, var(--pc-oro) 25%, transparent); }
 .ce-pasos p { max-width: 31ch; margin: var(--ds-space-4) auto 0; color: var(--ds-color-zinc-400); font-size: clamp(16px, 1.35vw, 22px); line-height: 1.65; }
 .ce-accion { margin-top: clamp(64px, 6.5vw, 104px); }
 .ce-accion > p { margin-top: 12px; color: var(--ds-color-zinc-400); font-size: var(--ds-type-md); line-height: 1.5; }
@@ -68,5 +69,5 @@
 @media (prefers-reduced-motion: reduce) {
   .ce-luces-borde span:nth-child(n) { animation: none; transform: scale(.9, .5); opacity: .18; }
   .ce-root .ce-boton, .ce-boton::before, .ce-boton .pl-hero-burbuja, .ce-pasos h3, .ce-numero { transition: none; }
-  .ce-pulso, .ce-numero::after { display: none; }
+  .ce-pulso { display: none; }
 }

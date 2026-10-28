@@ -14,14 +14,19 @@ export default function ComoEmpezar({ onDiagnostico }) {
     const circulos = [...elemento.querySelectorAll('.ce-numero')];
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     let cuadro = 0, actual = 0, destino = 0, medir = true;
+    let promesaEncendida = false;
     const limitar = valor => Math.max(0, Math.min(1, valor));
     const pintar = valor => {
+      if (!promesaEncendida && valor >= .995) {
+        promesaEncendida = true;
+        elemento.dataset.promesa = 'true';
+      }
       elemento.style.setProperty('--ce-avance', `${valor * 100}%`);
       const visible = mq.matches ? 0 : limitar(Math.min(valor / .06, (1 - valor) / .06)) * .6;
       elemento.style.setProperty('--ce-pulso-opacidad', visible);
       circulos.forEach((circulo, indice) => {
-        const halo = mq.matches || valor <= 0 || valor >= 1 ? 0 : Math.max(0, 1 - Math.abs(valor - indice / 2) / .09);
-        circulo.style.setProperty('--ce-halo', halo * .65);
+        const intensidad = mq.matches || valor <= 0 || valor >= 1 ? 0 : Math.max(0, 1 - Math.abs(valor - indice / 2) / .09);
+        circulo.style.setProperty('--ce-encendido', intensidad);
       });
     };
     const avanzar = () => {
