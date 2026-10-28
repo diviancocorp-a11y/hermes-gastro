@@ -61,6 +61,7 @@ export default function ComoEmpezar({ onDiagnostico }) {
   }, []);
   return (
     <section className="ce-root" id="como-empezar" aria-labelledby="ce-titulo">
+      <div className="ce-luces-borde" aria-hidden="true"><span /><span /><span /></div>
       <div className="ce-dentro">
         <h2 id="ce-titulo"><span className="ce-intro">No tenés que resolver todo de golpe.</span><span>Te acompañamos desde el primer paso.</span></h2>
         <div className="ce-recorrido" ref={recorridoRef}>

@@ -11,6 +11,15 @@
 
 ### Revision visual de Ricky
 
+**Actual — luz dorada organica de la junta, 28/oct:** se retira el barrido
+lateral fijo. Tres focos decorativos independientes con ritmos de 13.7/19.3/
+23.1s, fases diferentes y fluctuacion de intensidad, amplitud y altura;
+aparecen/se disipan en varios sectores, sin avanzar en fila. La luz sigue
+proyectada hacia arriba y detras del segmento. Sin JS ni nuevos servicios;
+movimiento reducido con luz fija tenue. No cambia el pulso volt con scroll
+ni rubros BLOQUEADO.
+
+
 **Actual — acompanamiento guiado por scroll, 28/oct:** frase inicial menor y
 gris; titular principal conserva protagonismo. Tres titulos blancos y tres
 circulos/numeros dorados siempre. Pulso volt corto/tenue ligado al scroll,
