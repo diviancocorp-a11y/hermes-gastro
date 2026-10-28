@@ -793,8 +793,8 @@ export function createDicoScene(container, options = {}) {
   scene.background = new THREE.Color(PAL.bg);
   scene.fog = new THREE.Fog(PAL.bg, 33, 58);
   const camera = new THREE.PerspectiveCamera(32, 4 / 3, .5, 140);
-  scene.add(new THREE.HemisphereLight(0xc9cfff, 0x101013, 1.05));
-  const key = new THREE.DirectionalLight(0xffe9d2, 1.55);
+  scene.add(new THREE.HemisphereLight(0xc9cfff, 0x24242b, 1.8));
+  const key = new THREE.DirectionalLight(0xffe9d2, 2.3);
   key.position.set(-5, 15, 9); key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024); key.shadow.bias = -.0006; key.shadow.normalBias = .02;
   Object.assign(key.shadow.camera, { left: -11, right: 11, top: 11, bottom: -11, near: 1, far: 40 });
@@ -1088,7 +1088,7 @@ export function createDicoScene(container, options = {}) {
     renderer.setSize(W, H, false);
     camera.aspect = W / H; camera.updateProjectionMatrix();
     const half = THREE.MathUtils.degToRad(camera.fov / 2);
-    fitR = 8.1 / Math.sin(Math.min(half, Math.atan(Math.tan(half) * camera.aspect)));
+    fitR = (W < 520 ? 8.1 : 7.1) / Math.sin(Math.min(half, Math.atan(Math.tan(half) * camera.aspect)));
     if (content) { content.zoneEls.forEach((z) => { z.w = 0; }); content.chips.forEach((c) => { c.w = 0; }); }
     kick();
   }

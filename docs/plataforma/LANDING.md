@@ -11,6 +11,16 @@
 
 ### Revision visual de Ricky
 
+**Actual — prueba de jerarquia, 28/oct:** dorado limitado a cabecera de borde
+a borde con corte limpio; cuerpo negro zinc, sin fundidos ni pulso decorativo.
+Gastronomia prueba luz hemisferica 1.8/key 2.3 y encuadre 7.1 (antes 8.1),
+aproximadamente 14% mas cercano en escritorio, conservando sombras y camara
+proporcional. Bajo 520px mantiene 8.1 para no recortar la escena.
+Comercio/Servicios conservan sus motores hasta aprobar esta prueba.
+Lateral al 30% (320-420px), herramientas a 15px y descripciones a 14px.
+Desplegables acercados a 12px del contenido y menor espacio inferior.
+
+
 **Actual — dorado extendido y pulso posterior, 28/oct:** retirado el halo azul
 de la card por recargar. La franja dorada cubre tambien el aire superior e
 inferior y las opciones de disponibilidad, acercandose a los segmentos vecinos.
