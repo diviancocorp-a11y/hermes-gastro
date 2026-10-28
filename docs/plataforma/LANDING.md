@@ -11,6 +11,18 @@
 
 ### Revision visual de Ricky
 
+**BLOQUEADO POR RICKY — segmento 3 / rubros, 28/oct/2026.** El usuario
+aprobo detener las iteraciones y pidio: «bloquealo no me dejes hacer mas
+cambios hasta que termine el resto». Conservar diseno, textos, encuadre,
+iluminacion, controles y efectos en el estado de `c5b1794`:
+https://hermes-platform-k5ictlv6s-diviancocorp-a11ys-projects.vercel.app/landing#rubros
+No proponer ni aplicar nuevos retoques en este segmento hasta terminar el
+resto de la landing. Si Ricky pide otro retoque antes, recordarle este acuerdo
+y continuar con lo pendiente; un pedido rutinario de cambio no levanta el
+bloqueo. Solo retomarlo al completar el resto o si Ricky revoca explicitamente
+este acuerdo. La auditoria integral sigue pendiente para el cierre general.
+
+
 **Actual — desplegables bajo maqueta, 28/oct:** ambos enlaces viven dentro
 de la columna visual, centrados como el lema, separados 24px y alineados
 arriba al desplegar. Pulso volt de 7s bajo el borde dorado, detras de las
