@@ -11,6 +11,11 @@
 
 ### Revision visual de Ricky
 
+**Actual — luz volt tras la maqueta, 28/oct:** halo azul difuso detras de la
+card 3D, sobre la franja dorada. Usa el token volt, sin cambiar fondo de la
+escena, controles, texto ni medidas.
+
+
 **Actual — franja dorada continua, 28/oct:** firma dorada a todo el ancho de
 pantalla, sin esquinas ni recuadro. Entrada/salida con degradado vertical de
 32px, color solido detras del contenido para mantener contraste. Las opciones
