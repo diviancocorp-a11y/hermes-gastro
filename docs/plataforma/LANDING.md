@@ -11,6 +11,18 @@
 
 ### Revision visual de Ricky
 
+**Actual — segmento 5 / acompanamiento, 28/oct:** rubros sigue BLOQUEADO;
+solo se modifica ComoEmpezar. Titulo «No tenes que resolver todo de golpe.
+Te acompanamos desde el primer paso». Pasos: descubris por donde empezar,
+configuramos Dico con vos, seguimos con vos; textos concretos aprobados por
+Ricky: ayuda para crear cuenta/cargar informacion y seguimiento de uso con
+mejoras operativas. Ricky confirma este acompanamiento directo como oferta
+actual, sin restringirlo a un plan; revisar la promesa cuando cambie su
+capacidad. Fondo negro, menos altura/inferior, un CTA con nota sin email.
+Pulso volt una sola vez al entrar; al terminar queda destacado Seguimos con
+vos. Movimiento reducido muestra estado final quieto. Sin llamadas de red.
+
+
 **BLOQUEADO POR RICKY — segmento 3 / rubros, 28/oct/2026.** El usuario
 aprobo detener las iteraciones y pidio: «bloquealo no me dejes hacer mas
 cambios hasta que termine el resto». Conservar diseno, textos, encuadre,
