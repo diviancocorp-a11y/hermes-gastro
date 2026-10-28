@@ -11,6 +11,14 @@
 
 ### Revision visual de Ricky
 
+**Actual — ajuste de lectura, 28/oct:** cabecera alineada al ancho de contenido,
+mas aire vertical (32px; 28 movil) y dorado extendido 24px tras la parte alta
+de las cards para integrarlas, sin franja separada por espacio negro.
+«Consumo de insumos por receta» reemplaza «Descuento por receta» en herramientas.
+Lema a 16px, aviso de simulacion a 14px y desplegables a 15px; zinc-300 sin
+opacidad reducida, aclarado al hover/foco. Sin nuevos efectos ni cambios de motor.
+
+
 **Actual — prueba de jerarquia, 28/oct:** dorado limitado a cabecera de borde
 a borde con corte limpio; cuerpo negro zinc, sin fundidos ni pulso decorativo.
 Gastronomia prueba luz hemisferica 1.8/key 2.3 y encuadre 7.1 (antes 8.1),

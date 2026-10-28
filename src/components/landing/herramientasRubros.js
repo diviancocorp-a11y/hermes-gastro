@@ -9,7 +9,7 @@ export const HERRAMIENTAS_RUBROS = {
     { titulo: 'Saber qué queda y cuánto cuesta', items: [
       { fila: 3, nombre: 'Recetas y costo por plato', texto: 'Cargás los ingredientes de cada receta para calcular su costo con los porcentajes de merma y gastos configurados. Ese cálculo no incluye mano de obra.' },
       { fila: 4, nombre: 'Stock, compras y conteos', texto: 'Registrás compras y conteos para mantener las existencias de los ingredientes. También consultás el mínimo configurado para cada insumo.' },
-      { fila: 5, nombre: 'Descuento por receta', texto: 'Al completar un pedido, Dico descuenta los insumos de su receta. Recibir el pedido o cobrarlo son acciones distintas.' },
+      { fila: 5, nombre: 'Consumo de insumos por receta', texto: 'Al completar un pedido, Dico descuenta los insumos de su receta. Recibir el pedido o cobrarlo son acciones distintas.' },
     ] },
     { titulo: 'Entender los números', items: [
       { fila: 6, nombre: 'Caja y arqueo', texto: 'Registrás cobros por medio de pago y revisás el cierre de caja con su arqueo.' },
