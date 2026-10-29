@@ -11,6 +11,18 @@
 
 ### Revision visual de Ricky
 
+**Hero — parallax extendido y cascadas, 29/oct:** tramo de 180svh con escena
+sticky de 100svh y scroll nativo; clientes inmediatamente despues del tramo.
+Quitados offsets diferentes por breakpoint que desalineaban cielo (incluye
+montana) y recorte de montana, provocando doble silueta. Misma escala y origen
+para ambos; cielo quieto y montana hacia arriba mantienen tapada la copia.
+Primer plano pasa de escala .8 a .64 (persona 20% menor). Progreso normalizado
+al tramo; titulo y bajada conservan velocidad compartida. Dos listas laterales
+transparentes con herramientas por rubro viajan en sentidos opuestos con scroll,
+sin circuitos ni cajas. Movimiento reducido sin tramo sticky adicional.
+Resto de segmentos cerrados sin cambios.
+
+
 **Hero en revision — version limpia, 29/oct:** paisaje ocupa 100svh completo,
 sin circuitos laterales (componente y estilos retirados). Titular crece aprox.
 15%, bajada en peso medio, rubros menores y mas aire entre titulo y bajada.

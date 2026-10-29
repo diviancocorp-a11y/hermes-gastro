@@ -14,12 +14,13 @@ export default function EscenaHero() {
       limpiar();
       limpiar = () => {};
       if (preferencia.matches) return;
+      const tramo = raiz.closest('.pl-hero-tiempo');
       const capas = [...raiz.querySelectorAll('[data-tiempo-capa]')].map((el) => {
         const velocidad = Number(el.dataset.tiempoCapa);
         const animacion = el.animate([
           { transform: 'translate3d(0, 0, 0)' },
-          { transform: `translate3d(0, ${velocidad * 3000}px, 0)` },
-        ], { duration: 3000, fill: 'both' });
+          { transform: `translate3d(0, ${velocidad * 100}svh, 0)` },
+        ], { duration: 1, fill: 'both' });
         animacion.pause();
         return animacion;
       });
@@ -28,7 +29,7 @@ export default function EscenaHero() {
       const dibujar = () => {
         cuadro = 0;
         if (!visible) return;
-        const recorrido = Math.max(0, Math.min(3000, -raiz.getBoundingClientRect().top));
+        const recorrido = Math.max(0, Math.min(1, -tramo.getBoundingClientRect().top / Math.max(1, tramo.offsetHeight - raiz.offsetHeight)));
         capas.forEach((animacion) => { animacion.currentTime = recorrido; });
       };
       const solicitar = () => {
@@ -57,9 +58,9 @@ export default function EscenaHero() {
 
   return (
     <figure className="pl-tiempo-escena" ref={escena} aria-label="Una persona contempla las montañas desde una cresta">
-      <img className="pl-tiempo-capa pl-tiempo-cielo" data-tiempo-capa="0.82" src="/brand/landing/parallax/cielo.webp" width="2000" height="1906" alt="" fetchPriority="high" />
-      <img className="pl-tiempo-capa pl-tiempo-montana" data-tiempo-capa="0.65" src="/brand/landing/parallax/montana.webp" width="2000" height="1906" alt="" />
-      <img className="pl-tiempo-capa pl-tiempo-frente" data-tiempo-capa="0.12" src="/brand/landing/parallax/primer-plano.webp" width="2000" height="1906" alt="" />
+      <img className="pl-tiempo-capa pl-tiempo-cielo" data-tiempo-capa="0" src="/brand/landing/parallax/cielo.webp" width="2000" height="1906" alt="" fetchPriority="high" />
+      <img className="pl-tiempo-capa pl-tiempo-montana" data-tiempo-capa="-0.10" src="/brand/landing/parallax/montana.webp" width="2000" height="1906" alt="" />
+      <img className="pl-tiempo-capa pl-tiempo-frente" data-tiempo-capa="-0.04" src="/brand/landing/parallax/primer-plano.webp" width="2000" height="1906" alt="" />
     </figure>
   );
 }
