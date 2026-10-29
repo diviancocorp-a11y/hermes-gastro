@@ -12,7 +12,8 @@ export default function NegociosDico() {
             <li key={negocio.logo}>
               <a className="nc-negocio" href={`https://www.instagram.com/${negocio.instagram}/`}
                 target="_blank" rel="noopener noreferrer" aria-label={`${negocio.nombre}: ver Instagram (abre en otra pestaña)`}>
-                <img src={`/brand/landing/clientes/${negocio.logo}.webp`} alt="" width="72" height="72" loading="lazy" />
+                <span className="nc-burbuja"><img src={`/brand/landing/clientes/${negocio.logo}.webp`} alt="" width="48" height="48" loading="lazy" /></span>
+                <span className="nc-nombre">{negocio.nombre}</span>
               </a>
             </li>
           ))}

@@ -50,8 +50,8 @@ export default function CierreNegocio({ onDiagnostico }) {
         </div>
       </section>
       <footer className="pf-root" aria-label="Contacto y navegación de Dico">
+        <NegociosDico />
         <div className="pf-contenido">
-          <NegociosDico />
           <p className="pf-marca-texto"><a href={INSTAGRAM_DIVIANCO_URL} target="_blank" rel="noopener noreferrer">Un producto de Grupo Divianco</a></p>
           <nav className="pf-nav" aria-label="Navegación del pie">
             <a href="#rubros">Cómo funciona</a><a href="#rubros">Tu rubro</a><a href="#precios">Planes</a><a href="#preguntas">Preguntale a Dico</a><a href="/entrar">Iniciá sesión</a>

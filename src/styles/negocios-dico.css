@@ -1,13 +1,17 @@
-/* Clientes integrados en el marfil del footer, sin franja ni apertura. */
-.nc-root { padding: 0 0 var(--ds-space-6); color: var(--ds-color-zinc-800); }
-.nc-root h2 { margin: 0 0 12px; text-align: center; color: var(--ds-color-zinc-800); font-size: var(--ds-type-md); line-height: 24px; font-weight: 400; }
-.nc-root h2 span { color: var(--ds-color-brand-gold-700); font-weight: 500; }
-.nc-panel { padding-block: 5px; color: var(--ds-color-zinc-800); }
-.nc-deslizable { max-width: 720px; margin-inline: auto; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-color: var(--ds-color-neutral-400) var(--ds-color-neutral-100); scrollbar-width: thin; }
-.nc-fila { display: flex; justify-content: space-between; gap: clamp(24px, 5vw, 72px); width: max-content; min-width: 100%; padding-inline: var(--ds-space-2); }
+/* Clientes dentro del footer: negro, burbujas doradas y cierre volt. */
+.nc-root { margin: calc(-1 * var(--ds-space-8)) calc(-1 * var(--pl-m)) var(--ds-space-6); padding: var(--ds-space-6) var(--pl-m); border-bottom: 3px solid var(--ds-color-intelligence-volt); background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-300); }
+.nc-root h2 { margin: 0 0 12px; text-align: center; color: var(--ds-color-zinc-400); font-size: var(--ds-type-md); line-height: 24px; font-weight: 400; }
+.nc-root h2 span { color: var(--pc-oro); font-weight: 500; }
+.nc-panel { padding-block: 5px; }
+.nc-deslizable { max-width: 720px; margin-inline: auto; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-color: var(--ds-color-zinc-700) var(--pl-suelo-continuo); scrollbar-width: thin; }
+.nc-fila { display: flex; justify-content: space-between; gap: clamp(24px, 5vw, 72px); width: max-content; min-width: 100%; padding: var(--ds-space-2); }
 .nc-fila li { flex: none; }
-.nc-negocio { display: flex; align-items: center; min-height: 60px; padding-block: 4px; text-decoration: none; color: inherit; }
+.pf-root .nc-negocio { display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 60px; padding-block: 4px; text-decoration: none; }
+.nc-burbuja { display: grid; place-items: center; width: 56px; height: 56px; border: 1px solid var(--pc-oro); border-radius: var(--ds-radius-pill); transition: border-color 240ms ease, box-shadow 240ms ease; }
+.nc-nombre { color: var(--ds-color-zinc-300); font-size: var(--ds-type-sm); line-height: 1.5; white-space: nowrap; }
 .nc-negocio img { width: 48px; height: 48px; max-width: none; object-fit: cover; border-radius: var(--ds-radius-pill); filter: grayscale(1); opacity: .9; transition: filter 240ms ease, opacity 240ms ease; }
 .nc-negocio:is(:hover, :focus-visible) img { filter: grayscale(0); opacity: 1; }
+.nc-negocio:is(:hover, :focus-visible) .nc-burbuja { border-color: var(--ds-color-brand-gold-300); box-shadow: 0 0 14px color-mix(in srgb, var(--pc-oro) 55%, transparent); }
+.nc-negocio:is(:hover, :focus-visible) .nc-nombre { color: var(--pc-oro); }
 .nc-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-trace); outline-offset: 2px; border-radius: var(--ds-radius-2); }
-@media (prefers-reduced-motion: reduce) { .nc-negocio img { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .nc-negocio img, .nc-burbuja { transition: none; } }

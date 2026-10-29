@@ -11,6 +11,12 @@
 
 ### Revision visual de Ricky
 
+**Clientes negro dentro del footer, 29/oct:** se conserva la ubicacion dentro
+del footer, encima de la firma. Ricky pide fondo negro a todo el ancho, borde
+inferior volt3px contra el marfil; burbujas con contorno dorado que se ilumina
+al hover/foco y nombres debajo. Sin apertura. Logos y destinos intactos.
+
+
 **Clientes al pie, 29/oct:** por pedido de Ricky se mueve NegociosDico desde
 el hero al INTERIOR del footer marfil, antes de «Un producto de Grupo
 Divianco». Sin fondo negro, franja propia ni bordes azules: comparte el marfil
