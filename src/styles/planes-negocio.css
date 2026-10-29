@@ -3,7 +3,8 @@
 .pp-luz-fondo { position: absolute; z-index: -1; inset: 0; background: radial-gradient(ellipse 65% 50% at 50% 36%, color-mix(in srgb, var(--ds-color-intelligence-volt) 26%, transparent), transparent 75%); pointer-events: none; }
 .pp-dentro { max-width: 1480px; margin-inline: auto; }
 .pp-cabecera { text-align: center; }
-.pp-antetitulo { display: block; margin-bottom: 8px; color: var(--ds-color-intelligence-label); font-size: 12px; letter-spacing: .24em; text-transform: uppercase; }
+.pp-antetitulo { display: block; margin-bottom: 8px; color: var(--ds-color-zinc-400); font-size: 12px; letter-spacing: .24em; text-transform: uppercase; }
+.pp-antetitulo > span { color: var(--pc-oro); }
 .pp-cabecera h2 { font-size: clamp(36px, 4.2vw, 64px); font-weight: 500; line-height: 1.08; letter-spacing: -.035em; }
 .pp-cabecera > p { margin-top: 8px; font-size: var(--ds-type-lg); color: var(--ds-color-zinc-400); }
 .pp-periodo { display: flex; width: max-content; max-width: 100%; margin: 16px auto 0; padding: var(--ds-space-1); border: 1px solid var(--ds-color-zinc-800); border-radius: var(--ds-radius-pill); background: var(--ds-color-zinc-900); }

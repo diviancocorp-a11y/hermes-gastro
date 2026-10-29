@@ -77,7 +77,7 @@ export default function PlanesNegocio({ onDiagnostico }) {
       <div className="pp-luz-fondo" aria-hidden="true" />
       <div className="pp-dentro">
         <header className="pp-cabecera" data-reveal="0">
-          <span className="pp-antetitulo">Planes Dico</span>
+          <span className="pp-antetitulo">Planes <span>Dico</span></span>
           <h2 id="pp-titulo">Un plan para cada etapa.</h2>
           <p>Elegí según cómo funciona tu negocio.</p>
         </header>

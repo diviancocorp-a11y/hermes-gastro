@@ -11,6 +11,9 @@
 
 ### Revision visual de Ricky
 
+**Actual — antetitulo de planes, 28/oct:** «PLANES» gris zinc y «DICO» dorado
+encima del titulo, conservando posicion, tipo y espaciado. Resto sin cambios.
+
 **Actual — tabla negra y borde localizado, 28/oct:** fondo negro zinc OPACO
 en contenedor, tabla, cabecera y celdas para que no se filtre el azul ambiental.
 Se recupera el seguimiento del cursor SOLO en el borde mediante mascara y
