@@ -15,9 +15,8 @@
 .pp-ahorro { min-height: 20px; margin-top: 6px; color: var(--ds-color-zinc-400); text-align: center; font-size: var(--ds-type-sm); line-height: 1.5; }
 .pp-planes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ds-space-6); margin-top: 32px; }
 .pp-plan { --pp-acento: var(--ds-color-zinc-50); position: relative; isolation: isolate; min-width: 0; display: flex; flex-direction: column; padding: clamp(20px, 2vw, 32px); border: 1px solid var(--ds-color-zinc-800); border-radius: var(--ds-radius-4); background: var(--ds-color-zinc-900); }
-.pp-plan::before { content: ''; position: absolute; z-index: -1; inset: -1px; border: 1px solid var(--ds-color-zinc-50); border-radius: inherit; box-shadow: 0 0 14px color-mix(in srgb, var(--ds-color-zinc-50) 20%, transparent); opacity: 0; transition: opacity 200ms ease; pointer-events: none; }
-.pp-plan:focus-within::before { opacity: 1; }
-@media (hover: hover) { .pp-plan:hover::before { opacity: 1; } }
+.pp-plan::before { content: ''; position: absolute; z-index: -1; inset: -1px; padding: 2px; border-radius: inherit; background: radial-gradient(180px circle at var(--pp-x, 50%) var(--pp-y, 0%), var(--ds-color-zinc-50), transparent 75%); mask: linear-gradient(var(--ds-color-zinc-50) 0 0) content-box, linear-gradient(var(--ds-color-zinc-50) 0 0); mask-composite: exclude; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--ds-color-zinc-50) 35%, transparent)); opacity: 0; transition: opacity 160ms ease; pointer-events: none; }
+.pp-plan:focus-within::before, .pp-plan[data-puntero="true"]::before { opacity: 1; }
 .pp-plan[data-plan="cadena"] { --pp-acento: var(--pc-oro); }
 .pp-root .pp-plan[data-destacado="true"] { --pp-acento: var(--ds-color-intelligence-label); margin-top: -20px; padding-top: 44px; border-color: var(--ds-color-intelligence-volt); background: color-mix(in srgb, var(--ds-color-zinc-950) 86%, var(--ds-color-intelligence-volt)); box-shadow: 0 0 0 1px var(--ds-color-intelligence-volt), 0 0 24px color-mix(in srgb, var(--ds-color-intelligence-volt) 22%, transparent); }
 .pp-linea { position: absolute; top: -1px; left: 20px; width: 42%; height: 2px; background: var(--pp-acento); }
@@ -55,12 +54,12 @@
 .pp-comparar summary svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; }
 .pp-comparar[open] summary svg { transform: rotate(180deg); }
 .pp-comparacion { padding-top: 16px; }
-.pp-tabla-scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--ds-color-zinc-800); border-radius: 12px; }
-.pp-tabla { width: 100%; min-width: 580px; border-collapse: separate; border-spacing: 0; font-size: 15px; line-height: 1.5; }
-.pp-tabla th, .pp-tabla td { padding: 14px 20px; border-bottom: 1px solid var(--ds-color-zinc-800); text-align: center; }
+.pp-tabla-scroll { background: var(--ds-color-zinc-950); max-width: 100%; overflow-x: auto; border: 1px solid var(--ds-color-zinc-800); border-radius: 12px; }
+.pp-tabla { background: var(--ds-color-zinc-950); width: 100%; min-width: 580px; border-collapse: separate; border-spacing: 0; font-size: 15px; line-height: 1.5; }
+.pp-tabla th, .pp-tabla td { background: var(--ds-color-zinc-950); padding: 14px 20px; border-bottom: 1px solid var(--ds-color-zinc-800); text-align: center; }
 .pp-tabla th:first-child { position: sticky; left: 0; z-index: 1; width: 46%; text-align: left; background: var(--ds-color-zinc-950); }
-.pp-tabla thead th { background: var(--ds-color-zinc-900); font-size: 18px; font-weight: 600; }
-.pp-tabla thead th:first-child { background: var(--ds-color-zinc-900); }
+.pp-tabla thead th { background: var(--ds-color-zinc-950); font-size: 18px; font-weight: 600; }
+.pp-tabla thead th:first-child { background: var(--ds-color-zinc-950); }
 .pp-tabla tbody th { font-weight: 400; }
 .pp-tabla tr:last-child > * { border-bottom: 0; }
 .pp-tabla [data-plan="local"] { color: var(--ds-color-intelligence-label); }

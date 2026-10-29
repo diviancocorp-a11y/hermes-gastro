@@ -29,6 +29,21 @@ function Importe({ valor }) {
   return <><span className="pl-oculto">{pesosDelPlan(valor)}</span><span aria-hidden="true" ref={texto}>{pesosDelPlan(valor)}</span></>;
 }
 
+function seguirBorde(evento) {
+  if (evento.pointerType === 'touch') return;
+  const tarjeta = evento.currentTarget;
+  const rect = tarjeta.getBoundingClientRect();
+  tarjeta.dataset.puntero = 'true';
+  tarjeta.style.setProperty('--pp-x', `${evento.clientX - rect.left}px`);
+  tarjeta.style.setProperty('--pp-y', `${evento.clientY - rect.top}px`);
+}
+
+function soltarBorde(evento) {
+  delete evento.currentTarget.dataset.puntero;
+  evento.currentTarget.style.removeProperty('--pp-x');
+  evento.currentTarget.style.removeProperty('--pp-y');
+}
+
 // La comparativa reutiliza la oferta actual; su alcance final queda pendiente.
 const COMPARACION_PLANES = PLANES_COMERCIALES.reduce((planes, plan) => {
   const herencia = plan.incluye.find(texto => texto.startsWith('Todo lo de '));
@@ -76,7 +91,7 @@ export default function PlanesNegocio({ onDiagnostico }) {
           {PLANES_COMERCIALES.map((plan, indice) => {
             const precio = precioDelPeriodo(plan, anual);
             return (
-              <article className="pp-plan" data-plan={plan.id} data-destacado={plan.id === 'local'} key={plan.id} aria-labelledby={`pp-${plan.id}`} data-reveal={indice + 2} style={{ '--pp-demora': `${320 + indice * 180}ms`, '--pp-inicio': `${15 + indice * 10}%`, '--pp-fin': `${75 + indice * 10}%` }} onFocusCapture={evento => evento.currentTarget.classList.add('is-in')}>
+              <article className="pp-plan" data-plan={plan.id} data-destacado={plan.id === 'local'} key={plan.id} aria-labelledby={`pp-${plan.id}`} data-reveal={indice + 2} style={{ '--pp-demora': `${320 + indice * 180}ms`, '--pp-inicio': `${15 + indice * 10}%`, '--pp-fin': `${75 + indice * 10}%` }} onPointerEnter={seguirBorde} onPointerMove={seguirBorde} onPointerLeave={soltarBorde} onFocusCapture={evento => evento.currentTarget.classList.add('is-in')}>
                 <span className="pp-linea" aria-hidden="true" />
                 {plan.id === 'local' && <p className="pp-destacado">Plan destacado</p>}
                 <div className="pp-identidad">

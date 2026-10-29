@@ -11,6 +11,15 @@
 
 ### Revision visual de Ricky
 
+**Actual — tabla negra y borde localizado, 28/oct:** fondo negro zinc OPACO
+en contenedor, tabla, cabecera y celdas para que no se filtre el azul ambiental.
+Se recupera el seguimiento del cursor SOLO en el borde mediante mascara y
+radial marfil; no hay capa de luz sobre el interior de la card. El brillo
+aparece al acercarse a un borde, sin contorno uniforme completo. Touch no
+activa el seguimiento; foco de teclado conserva indicacion. Resto de planes,
+espaciado compacto y segmentos cerrados sin cambios.
+
+
 **Actual — compactar espacios de Planes, 28/oct:** menor aire de entrada
 (32px), antetitulo/subtitulo a 8px, selector a 16px, ahorro a 6px y cards a
 32px, conservando margen para la banda elevada de Local. Pie acercado:
