@@ -16,7 +16,7 @@ sticky de 100svh y scroll nativo; clientes inmediatamente despues del tramo.
 Quitados offsets diferentes por breakpoint que desalineaban cielo (incluye
 montana) y recorte de montana, provocando doble silueta. Misma escala y origen
 para ambos; cielo quieto y montana hacia arriba mantienen tapada la copia.
-Primer plano pasa de escala .8 a .64 (persona 20% menor). Progreso normalizado
+Primer plano pasa de escala .8 a .96 (persona 20% mayor, correccion de Ricky). Progreso normalizado
 al tramo; titulo y bajada conservan velocidad compartida. Dos listas laterales
 transparentes con herramientas por rubro viajan en sentidos opuestos con scroll,
 sin circuitos ni cajas. Movimiento reducido sin tramo sticky adicional.

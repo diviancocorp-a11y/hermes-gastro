@@ -858,7 +858,7 @@
 }
 .pl-tiempo-cielo { z-index: 1; }
 .pl-tiempo-montana { z-index: 2; }
-.pl-tiempo-frente { z-index: 4; scale: .64; transform-origin: 50% 80%; mask-image: linear-gradient(to right, transparent, black 25%, black 75%, transparent); }
+.pl-tiempo-frente { z-index: 4; scale: .96; transform-origin: 50% 80%; mask-image: linear-gradient(to right, transparent, black 25%, black 75%, transparent); }
 .pl-hero-herramientas { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .pl-hero-cascada { position: absolute; top: 42%; width: 22%; max-width: 280px; display: grid; gap: 28px; padding: 24px; color: var(--ds-color-zinc-50); opacity: .72; font-size: clamp(14px, 1.3vw, 20px); line-height: 1.4; font-weight: 400; }
 .pl-hero-cascada-izquierda { left: 0; text-align: left; }
