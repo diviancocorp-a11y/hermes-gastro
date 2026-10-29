@@ -64,3 +64,6 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          # Para buscar en los PRs abiertos el archivo de una migracion o una
+          # funcion que falta (scripts/pendientes-en-pr.mjs). Solo lectura.
+          GH_TOKEN: ${{ github.token }}
