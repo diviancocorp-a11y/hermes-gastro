@@ -28,19 +28,31 @@
 .pf-root a { display: inline-flex; align-items: center; min-height: var(--ds-control-height-touch); color: inherit; text-decoration: none; font-size: var(--ds-type-md); }
 .pf-nav a { color: var(--ds-color-zinc-50); }
 .pf-root a:hover { color: var(--ds-color-intelligence-label); }
-.pf-redes { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--ds-space-8); margin-top: var(--ds-space-6); }
-.pf-redes a { flex-direction: column; gap: var(--ds-space-2); color: var(--ds-color-zinc-50); }
-.pf-icono { display: grid; place-items: center; width: 64px; height: 64px; border: 1px solid var(--ds-color-zinc-800); border-radius: var(--ds-radius-pill); }
-.pf-icono svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.pf-icono .pf-whatsapp-glifo { fill: currentColor; stroke: none; }
-.pf-whatsapp .pf-icono { border-color: var(--pc-oro); color: var(--pc-oro); }
-.pf-datos { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--ds-space-1) var(--ds-space-2); margin-top: var(--ds-space-6); color: var(--ds-color-zinc-50); }
+.pf-redes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; max-width: 1020px; margin: var(--ds-space-6) auto var(--ds-space-4); }
+.pf-contacto { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.pf-root .pf-capsula { display: flex; justify-content: center; gap: 12px; width: 64px; height: 64px; min-height: 64px; padding-inline: 16px; border: 1px solid var(--ds-color-zinc-400); border-radius: var(--ds-radius-pill); overflow: hidden; color: var(--ds-color-zinc-50); transition: width 320ms cubic-bezier(.2,.7,.2,1), border-color 160ms ease; }
+.pf-capsula svg { flex: 0 0 28px; width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.pf-capsula .pf-whatsapp-glifo { fill: currentColor; stroke: none; }
+.pf-mensaje { display: none; align-items: center; gap: 10px; white-space: nowrap; font-size: 16px; font-weight: 500; }
+.pf-root .pf-capsula:is(:hover, :focus-visible) { width: 100%; border-color: var(--pc-oro); color: var(--ds-color-zinc-50); }
+.pf-capsula:is(:hover, :focus-visible) .pf-mensaje { display: inline-flex; }
+.pf-capsula:is(:hover, :focus-visible) svg, .pf-mensaje > span { color: var(--pc-oro); }
+.pf-root .pf-whatsapp { border-color: var(--pc-oro); }
+.pf-whatsapp svg { color: var(--pc-oro); }
+.pf-contacto-nombre { margin-top: 8px; color: var(--ds-color-zinc-50); font-size: var(--ds-type-md); }
+.pf-contacto-dato { min-height: 44px; display: flex; align-items: center; color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); line-height: 1.6; }
+.pf-email-dato { display: flex; align-items: center; gap: 4px; }
+.pf-copiar { display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: var(--ds-radius-1); background: transparent; color: var(--ds-color-zinc-400); cursor: pointer; }
+.pf-copiar:hover { color: var(--pc-oro); }
+.pf-copiar svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.pf-copia-estado { position: absolute; top: 100%; font-size: 12px; color: var(--pc-oro); }
 .pf-root .pf-agenda { gap: var(--ds-space-2); text-decoration: underline; text-underline-offset: .2em; }
-.pf-horarios { margin-top: var(--ds-space-4); font-size: var(--ds-type-sm); line-height: 1.7; }
+.pf-horarios { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 24px; margin-top: var(--ds-space-2); font-size: var(--ds-type-sm); line-height: 1.7; }
 .pf-legales { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--ds-space-2) var(--ds-space-8); margin-top: var(--ds-space-6); padding-top: var(--ds-space-4); border-top: 1px solid var(--ds-color-zinc-800); }
-.pf-legales button { min-height: var(--ds-control-height-touch); padding: var(--ds-space-2); border: 0; background: transparent; color: var(--ds-color-zinc-400); font-family: inherit; cursor: not-allowed; opacity: .65; font-size: var(--ds-type-sm); text-decoration: underline; text-underline-offset: .2em; }
+.pf-legales button { min-height: var(--ds-control-height-touch); padding: var(--ds-space-2); border: 0; background: transparent; color: var(--ds-color-zinc-400); font-family: inherit; cursor: not-allowed; opacity: 1; font-size: var(--ds-type-sm); text-decoration: underline; text-underline-offset: .2em; }
+.pf-legal-pendiente { flex-basis: 100%; font-size: 12px; color: var(--ds-color-zinc-400); }
 .pf-copyright { margin-top: var(--ds-space-4); font-size: var(--ds-type-sm); line-height: 1.6; }
-.pf-logo { position: relative; width: calc(100% + 2 * var(--pl-m)); margin: var(--ds-space-6) calc(-1 * var(--pl-m)) 0; overflow: hidden; pointer-events: none; color: var(--ds-color-intelligence-volt); line-height: 0; }
+.pf-logo { position: relative; width: calc(100% + 2 * var(--pl-m)); margin: var(--ds-space-6) calc(-1 * var(--pl-m)) 0; overflow: hidden; pointer-events: none; color: var(--ds-color-intelligence-volt); opacity: .22; line-height: 0; }
 .pf-logo svg { display: block; width: 100%; height: auto; }
 .pl-root .cf-root :focus-visible, .pl-root .pf-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: var(--ds-space-1); border-radius: var(--ds-radius-1); }
 .pl-root .cf-root .cf-boton:focus-visible { outline-color: var(--ds-color-zinc-50); border-radius: var(--ds-radius-pill); }
@@ -49,8 +61,13 @@
   .cf-root .cf-boton { min-height: 64px; max-width: 100%; padding-left: var(--ds-space-4); gap: var(--ds-space-3); font-size: 16px; }
   .pf-root { padding-top: var(--ds-space-8); }
   .pf-nav { gap: var(--ds-space-2) var(--ds-space-4); }
-  .pf-datos > span { display: none; }
-  .pf-datos { flex-direction: column; }
-  .pf-redes { gap: var(--ds-space-6); }
+  .pf-redes { grid-template-columns: minmax(0, 1fr); max-width: 340px; gap: var(--ds-space-6); }
+  .pf-root .pf-capsula { width: 100%; }
+  .pf-mensaje { display: inline-flex; }
+  .pf-horarios { flex-direction: column; }
 }
 @media (prefers-reduced-motion: reduce) { .cf-compuerta { display: none; } .cf-root { border-block-color: var(--pc-oro); } .cf-root .cf-boton, .cf-boton::before, .cf-boton .pl-hero-burbuja { transition: none; } }
+
+@media (min-width: 600px) and (max-width: 999px) { .pf-redes { grid-template-columns: minmax(0, 340px); justify-content: center; } .pf-root .pf-capsula { width: 100%; } .pf-mensaje { display: inline-flex; } }
+@media (hover: none) and (min-width: 600px) { .pf-redes { grid-template-columns: minmax(0, 340px); justify-content: center; } .pf-root .pf-capsula, .pf-root .pf-capsula:is(:hover, :focus-visible) { width: 100%; } .pf-mensaje, .pf-capsula:is(:hover, :focus-visible) .pf-mensaje { display: inline-flex; } }
+@media (prefers-reduced-motion: reduce) { .pf-root .pf-capsula { transition: none; } }

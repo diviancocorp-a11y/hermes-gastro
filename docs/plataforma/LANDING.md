@@ -11,6 +11,16 @@
 
 ### Revision visual de Ricky
 
+**Footer en revision, 29/oct:** firma «Un producto de Grupo Divianco» con link
+al Instagram de Grupo Divianco. Tres contactos independientes con espacio
+reservado para expandir circulos en capsulas al hover/foco, sin pulsos ni
+conexiones. En celular/tactil textos visibles. Datos debajo de cada contacto,
+email con copia y aviso de resultado; eliminada fila duplicada. Reunion y
+horarios juntos, legales con contraste y aviso explicito de publicacion
+pendiente. Logo original de contornos al 22%, estatico, mismo corte inferior.
+Cierre azul y demas segmentos cerrados sin cambios.
+
+
 **CIERRE CERRADO visualmente por Ricky, 29/oct:** bordes de la compuerta y
 franja final engrosados a 3px. Conserva apertura reversible ligada al scroll,
 CTA usable durante apertura parcial y escala ampliada. No hacer mas cambios
