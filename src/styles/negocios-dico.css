@@ -21,8 +21,8 @@
   .nc-deslizable { margin-top: var(--ds-space-3); }
 }
 
-/* Franja compacta inmediatamente despues del primer viewport, sin tramo vacio. */
-.pl-hero-tiempo + .nc-root { box-sizing: border-box; height: 120px; padding-block: 8px; }
+/* Respiro negro breve entre la salida del parallax y los clientes. */
+.pl-hero-tiempo + .nc-root { --nc-respiro: clamp(24px, 4svh, 48px); box-sizing: border-box; height: calc(120px + var(--nc-respiro)); padding-block: calc(8px + var(--nc-respiro)) 8px; }
 .pl-hero-tiempo + .nc-root h2 { font-size: var(--ds-type-sm); line-height: 20px; }
 .pl-hero-tiempo + .nc-root .nc-deslizable { margin-top: 4px; }
 .pl-hero-tiempo + .nc-root .nc-fila { padding-block: 0; }

@@ -11,6 +11,14 @@
 
 ### Revision visual de Ricky
 
+**Hero — remate para cierre, 29/oct:** respiro negro de 24–48px antes de
+clientes. Auroras suaves azul volt y dorado entre cielo y recorte de montana,
+con movimiento organico lento de 19/27s, pausado fuera de pantalla y estatico
+con movimiento reducido. Comparten desplazamiento de montana para quedar
+detras de la silueta. Parallax natural, persona .96, CTA y textos sin cambios.
+Ricky pide este remate para cerrar el hero; pendiente su visto en preview.
+
+
 **Hero — correccion de movimiento, 29/oct:** Ricky rechazo las cascadas y la
 escena sticky; retiradas ambas. Vuelve el parallax original con scroll libre:
 velocidades cielo .82, montana .65, titulo/bajada .33, primer plano .12; al bajar

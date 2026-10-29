@@ -856,6 +856,13 @@
   object-position: center;
 }
 .pl-tiempo-cielo { z-index: 1; }
+.pl-auroras { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.pl-aurora { position: absolute; top: 24%; width: 76%; height: 28%; border-radius: 50%; filter: blur(36px); mix-blend-mode: screen; opacity: .28; animation: pl-aurora-fluye 19s ease-in-out infinite alternate paused; }
+.pl-aurora-volt { left: -12%; background: radial-gradient(ellipse at 50% 60%, var(--ds-color-intelligence-volt), transparent 68%); }
+.pl-aurora-oro { top: 30%; right: -14%; height: 24%; background: radial-gradient(ellipse at 50% 55%, var(--pc-oro), transparent 68%); animation-duration: 27s; animation-delay: -9s; animation-direction: alternate-reverse; }
+.pl-tiempo-visible .pl-aurora { animation-play-state: running; }
+@keyframes pl-aurora-fluye { from { transform: translate(-8%, 8%) rotate(-9deg) skewX(-12deg) scale(1, .8); opacity: .32; } to { transform: translate(10%, -12%) rotate(7deg) skewX(14deg) scale(1.18, 1.12); opacity: .58; } }
+@media (prefers-reduced-motion: reduce) { .pl-aurora { animation: none; opacity: .18; } }
 .pl-tiempo-montana { z-index: 2; }
 .pl-tiempo-frente { z-index: 4; scale: .96; transform-origin: 50% 80%; mask-image: linear-gradient(to right, transparent, black 25%, black 75%, transparent); }
 .pl-hero-tiempo .pl-h1 {
