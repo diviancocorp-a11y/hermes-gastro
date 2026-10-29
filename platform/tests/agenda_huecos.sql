@@ -1,12 +1,12 @@
--- Test de la 0109 y la 0110: get_available_slots (huecos libres de la agenda).
+-- Test de la 0109, 0110 y 0113: get_available_slots (huecos libres de la agenda).
 -- Correr cada vez que se toque la funcion, staff_schedules, staff_time_off,
 -- staff_services, booking_settings o las columnas nuevas de appointments.
 --
 -- No deja nada en la base: todo corre en un solo DO que TERMINA SIEMPRE EN
 -- ERROR a proposito, y el error deshace la siembra entera. El resultado viene
 -- en el mensaje del error:
---   'AGENDA_HUECOS 19/19 ok'                  -> verde
---   'AGENDA_HUECOS 17/19 ok | margen (...)'   -> lo que fallo
+--   'AGENDA_HUECOS 20/20 ok'                  -> verde
+--   'AGENDA_HUECOS 18/20 ok | margen (...)'   -> lo que fallo
 --
 -- Correr: pegar en el SQL editor, o via MCP execute_sql.
 -- Para probar la migracion ANTES de aplicarla, reemplazar la linea
@@ -201,6 +201,21 @@ begin
      and c.relrowsecurity;
   total := total + 1; if n <> 5 then
     fallas := fallas || format('RLS (%s de 5 tablas)', n); end if;
+
+  /* 15. Como la llama la edge function booking: con el ROL service_role de
+         verdad, no como postgres. Un permiso del esquema private (0113) paso
+         inadvertido hasta la primera prueba en vivo porque estos tests corrian
+         como superusuario. */
+  perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  perform set_config('role', 'service_role', true);
+  begin
+    select count(*) into n from public.get_available_slots(t, svc, d, d, sa);
+    total := total + 1; if n = 0 then
+      fallas := fallas || 'service_role sin horarios'; end if;
+  exception when others then
+    total := total + 1; fallas := fallas || format('service_role fallo: %s', sqlerrm);
+  end;
+  perform set_config('role', 'none', true);
 
   raise exception 'AGENDA_HUECOS %/% ok%', total - cardinality(fallas), total,
     case when cardinality(fallas) = 0 then '' else ' | ' || array_to_string(fallas, ' | ') end;
