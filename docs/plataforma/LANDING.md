@@ -11,6 +11,14 @@
 
 ### Revision visual de Ricky
 
+**Actual — compactar espacios de Planes, 28/oct:** menor aire de entrada
+(32px), antetitulo/subtitulo a 8px, selector a 16px, ahorro a 6px y cards a
+32px, conservando margen para la banda elevada de Local. Pie acercado:
+Comparar a 8px de las cards y sin margenes extra entre ayuda/condiciones;
+salida a 48px. Sin cambios de tipo, precios, funciones, tabla o entrada con
+scroll. Rubros y Acompanamiento siguen cerrados.
+
+
 **Actual — matriz de planes y borde marfil, 28/oct:** «Lo mas destacado»
 reemplaza Incluye. Comparativa en tabla: una fila comun por funcion y tres
 columnas con check/guion; se deriva de planesPlataforma.js, incluyendo herencia

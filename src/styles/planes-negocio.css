@@ -1,19 +1,19 @@
-.pp-root { position: relative; isolation: isolate; padding: var(--ds-space-layout-16) var(--pl-m) var(--pl-hueco); background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-50); }
+.pp-root { position: relative; isolation: isolate; padding: 32px var(--pl-m) 48px; background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-50); }
 .pp-root::before { content: ''; position: absolute; z-index: -1; inset: 0; background-image: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
 .pp-luz-fondo { position: absolute; z-index: -1; inset: 0; background: radial-gradient(ellipse 65% 50% at 50% 36%, color-mix(in srgb, var(--ds-color-intelligence-volt) 26%, transparent), transparent 75%); pointer-events: none; }
 .pp-dentro { max-width: 1480px; margin-inline: auto; }
 .pp-cabecera { text-align: center; }
-.pp-antetitulo { display: block; margin-bottom: 12px; color: var(--ds-color-intelligence-label); font-size: 12px; letter-spacing: .24em; text-transform: uppercase; }
+.pp-antetitulo { display: block; margin-bottom: 8px; color: var(--ds-color-intelligence-label); font-size: 12px; letter-spacing: .24em; text-transform: uppercase; }
 .pp-cabecera h2 { font-size: clamp(36px, 4.2vw, 64px); font-weight: 500; line-height: 1.08; letter-spacing: -.035em; }
-.pp-cabecera > p { margin-top: var(--ds-space-4); font-size: var(--ds-type-lg); color: var(--ds-color-zinc-400); }
-.pp-periodo { display: flex; width: max-content; max-width: 100%; margin: var(--ds-space-8) auto 0; padding: var(--ds-space-1); border: 1px solid var(--ds-color-zinc-800); border-radius: var(--ds-radius-pill); background: var(--ds-color-zinc-900); }
+.pp-cabecera > p { margin-top: 8px; font-size: var(--ds-type-lg); color: var(--ds-color-zinc-400); }
+.pp-periodo { display: flex; width: max-content; max-width: 100%; margin: 16px auto 0; padding: var(--ds-space-1); border: 1px solid var(--ds-color-zinc-800); border-radius: var(--ds-radius-pill); background: var(--ds-color-zinc-900); }
 .pp-periodo label { position: relative; cursor: pointer; }
 .pp-periodo input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .pp-periodo label > span { display: grid; place-items: center; min-width: 120px; min-height: var(--ds-control-height-touch); border-radius: var(--ds-radius-pill); color: var(--ds-color-zinc-400); font-size: var(--ds-type-md); }
 .pp-periodo input:checked + span { background: var(--ds-color-zinc-800); box-shadow: inset 0 0 0 1px var(--ds-color-zinc-400); color: var(--ds-color-zinc-50); }
 .pp-periodo input:focus-visible + span { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: 2px; }
-.pp-ahorro { min-height: 24px; margin-top: var(--ds-space-3); color: var(--ds-color-zinc-400); text-align: center; font-size: var(--ds-type-sm); line-height: 1.5; }
-.pp-planes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ds-space-6); margin-top: 44px; }
+.pp-ahorro { min-height: 20px; margin-top: 6px; color: var(--ds-color-zinc-400); text-align: center; font-size: var(--ds-type-sm); line-height: 1.5; }
+.pp-planes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ds-space-6); margin-top: 32px; }
 .pp-plan { --pp-acento: var(--ds-color-zinc-50); position: relative; isolation: isolate; min-width: 0; display: flex; flex-direction: column; padding: clamp(20px, 2vw, 32px); border: 1px solid var(--ds-color-zinc-800); border-radius: var(--ds-radius-4); background: var(--ds-color-zinc-900); }
 .pp-plan::before { content: ''; position: absolute; z-index: -1; inset: -1px; border: 1px solid var(--ds-color-zinc-50); border-radius: inherit; box-shadow: 0 0 14px color-mix(in srgb, var(--ds-color-zinc-50) 20%, transparent); opacity: 0; transition: opacity 200ms ease; pointer-events: none; }
 .pp-plan:focus-within::before { opacity: 1; }
@@ -49,7 +49,7 @@
 .pp-root .pp-plan[data-destacado="true"] .pp-elegir:hover { background: color-mix(in srgb, var(--ds-color-intelligence-volt) 85%, var(--ds-color-zinc-950)); }
 .pp-incluye-titulo { padding-top: 16px; border-top: 1px solid var(--ds-color-zinc-800); color: color-mix(in srgb, var(--ds-color-zinc-50) 76%, var(--ds-color-zinc-950)); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; }
 .pp-plan > .pp-incluye { flex: 1; border-top: 0; padding-top: 14px; gap: 12px; }
-.pp-comparar { margin-top: var(--ds-space-4); }
+.pp-comparar { margin-top: 8px; }
 .pp-comparar > summary { display: flex; align-items: center; justify-content: center; gap: var(--ds-space-2); width: fit-content; min-height: var(--ds-control-height-touch); margin-inline: auto; padding: var(--ds-space-2); font-size: var(--ds-type-md); text-decoration: underline; text-underline-offset: .2em; cursor: pointer; color: var(--ds-color-intelligence-label); }
 .pp-comparar > summary::-webkit-details-marker { display: none; }
 .pp-comparar summary svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; }
@@ -68,8 +68,8 @@
 .pp-tabla-check { display: inline-block; width: 24px; height: 24px; vertical-align: middle; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .pp-no-incluido { color: var(--ds-color-zinc-400); }
 .pp-comparacion-nota { margin-top: 12px; text-align: center; font-size: 13px; color: var(--ds-color-zinc-400); }
-.pp-condiciones { margin-top: var(--ds-space-2); color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); line-height: 1.7; text-align: center; }
-.pp-accion { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 4px; color: var(--ds-color-zinc-50); font-size: 15px; text-align: center; }
+.pp-condiciones { margin-top: 0; color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); line-height: 1.7; text-align: center; }
+.pp-accion { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 0; color: var(--ds-color-zinc-50); font-size: 15px; text-align: center; }
 .pp-ayuda { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 0; border: 0; background: transparent; color: var(--pc-oro); font: inherit; text-decoration: underline; text-underline-offset: .22em; cursor: pointer; }
 .pp-ayuda:hover { color: var(--ds-color-zinc-50); }
 .pp-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: var(--ds-space-1); }
