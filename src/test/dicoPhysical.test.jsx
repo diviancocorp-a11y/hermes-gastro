@@ -125,6 +125,16 @@ describe('la animacion no se sale de su fila', () => {
     expect(cuadroVisible(container)).toBe(0);
   });
 
+  it('permite bajar el ritmo de una instancia sin cambiar la cadencia predeterminada', () => {
+    const normal = montar({ pose: 'explain' });
+    const pausado = montar({ pose: 'explain', ritmo: .5 });
+    act(() => { vi.advanceTimersByTime(100); });
+    expect(cuadroVisible(normal.container)).toBe(1);
+    expect(cuadroVisible(pausado.container)).toBe(0);
+    act(() => { vi.advanceTimersByTime(100); });
+    expect(cuadroVisible(pausado.container)).toBe(1);
+  });
+
   it('nunca pasa por una columna vacia', () => {
     // Las filas se llenan de izquierda a derecha y el resto queda transparente.
     // Animar las ocho columnas de `idle` haria desaparecer a Dico dos veces

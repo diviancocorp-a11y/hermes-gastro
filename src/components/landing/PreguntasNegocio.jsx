@@ -6,6 +6,7 @@ import { marcarEvento } from '../../lib/analiticaPlataforma';
 import useMediaQuery from '../../lib/useMediaQuery';
 import '../../styles/preguntas-negocio.css';
 
+const GESTOS_DICO = [{ pose: 'explain' }, { pose: 'idle', animacion: 'revisa' }, { pose: 'pointUp' }, { pose: 'pointDown' }];
 const flecha = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>;
 
 function EnlaceRespuesta({ pregunta, onDiagnostico }) {
@@ -25,6 +26,10 @@ export default function PreguntasNegocio({ onDiagnostico }) {
   const [seleccion, setSeleccion] = useState(null);
   const [fase, setFase] = useState('quieto');
   const [saludando, setSaludando] = useState(false);
+  const [gesto, setGesto] = useState(0);
+  const [reaccion, setReaccion] = useState(null);
+  const turno = useRef(0);
+  const finReaccion = useRef(null);
   const reducido = useMediaQuery('(prefers-reduced-motion: reduce)');
   const guia = useRef(null);
   const personaje = useRef(null);
@@ -39,7 +44,7 @@ export default function PreguntasNegocio({ onDiagnostico }) {
 
   useEffect(() => {
     let saludo;
-    const saludar = () => { setSaludando(true); saludo = setTimeout(() => setSaludando(false), 850); };
+    const saludar = () => { setSaludando(true); saludo = setTimeout(() => setSaludando(false), 1250); };
     const observador = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entrada]) => {
       if (entrada.isIntersecting) { saludar(); observador.disconnect(); }
     }, { threshold: .2 });
@@ -47,6 +52,8 @@ export default function PreguntasNegocio({ onDiagnostico }) {
     else saludar();
     return () => { observador?.disconnect(); clearTimeout(saludo); };
   }, []);
+
+  useEffect(() => () => clearTimeout(finReaccion.current), []);
 
   useLayoutEffect(() => {
     const colocar = () => {
@@ -67,8 +74,8 @@ export default function PreguntasNegocio({ onDiagnostico }) {
 
   useEffect(() => {
     if (!seleccion || reducido) return undefined;
-    const mostrar = setTimeout(() => setFase('respondiendo'), 300);
-    const reposar = setTimeout(() => setFase('quieto'), 1050);
+    const mostrar = setTimeout(() => setFase('respondiendo'), 480);
+    const reposar = setTimeout(() => setFase('quieto'), 2000);
     return () => { clearTimeout(mostrar); clearTimeout(reposar); };
   }, [seleccion, reducido]);
 
@@ -81,6 +88,9 @@ export default function PreguntasNegocio({ onDiagnostico }) {
 
   const preguntar = pregunta => {
     if (seleccion?.id === pregunta.id) return;
+    clearTimeout(finReaccion.current);
+    setReaccion(null);
+    setGesto(turno.current++ % GESTOS_DICO.length);
     origenScroll.current = window.scrollY;
     setSeleccion(pregunta);
     setFase(reducido ? 'quieto' : 'pensando');
@@ -97,15 +107,21 @@ export default function PreguntasNegocio({ onDiagnostico }) {
     cambiarTema(TEMAS_DICO[siguiente].id);
     tabs.current[siguiente]?.focus({ preventScroll: true });
   };
-  const pose = seleccion ? (pensando ? 'thinking' : 'explain') : saludando ? 'explain' : 'idle';
+  const reaccionar = evento => {
+    if (reducido || reaccion || pensando || respondiendo || (evento.type === 'pointerenter' && evento.pointerType === 'touch')) return;
+    clearTimeout(finReaccion.current);
+    setReaccion(GESTOS_DICO[turno.current++ % GESTOS_DICO.length]);
+    finReaccion.current = setTimeout(() => setReaccion(null), 1600);
+  };
+  const movimiento = reaccion || (seleccion ? pensando ? { pose: 'thinking' } : respondiendo ? GESTOS_DICO[gesto] : { pose: 'idle' } : { pose: saludando ? 'explain' : 'idle' });
   return (
     <section className="pn-root" id="preguntas" aria-labelledby="pn-titulo">
       <span className="pl-ancla" id="seguridad" aria-hidden="true" />
       <div className="pn-dentro">
-        <h2 id="pn-titulo">Sacate la duda. Preguntale a Dico.</h2>
+        <h2 id="pn-titulo">Sacate la duda. Preguntale a <span className="pn-titulo-dico">Dico</span>.</h2>
         <p className="pn-intro">Respuestas claras para empezar.</p>
         <div className="pn-guia" data-pregunta={Boolean(seleccion)} data-fase={pensando ? 'pensando' : respondiendo ? 'respondiendo' : 'quieto'} ref={guia}>
-          <div className="pn-mascota" ref={personaje} aria-hidden="true"><DicoPhysical pose={pose} reducedMotion={reducido || !(saludando || pensando || respondiendo)} /></div>
+          <button type="button" className="pn-mascota" ref={personaje} aria-label="Saludar a Dico" onPointerEnter={reaccionar} onFocus={reaccionar} onClick={reaccionar}><span aria-hidden="true"><DicoPhysical pose={movimiento.pose} animacion={movimiento.animacion ?? null} ritmo={.55} reducedMotion={reducido || !(saludando || pensando || respondiendo || reaccion)} /></span></button>
           <header className="pn-saludo"><span className="pn-ancla-mascota" ref={anclaSaludo} aria-hidden="true" /><h3>¿Qué querés saber?</h3></header>
           <div className="pn-temas" role="tablist" aria-label="Temas de preguntas">
             {TEMAS_DICO.map((item, indice) => <button type="button" role="tab" id={`pn-tema-${item.id}`} key={item.id} aria-selected={tema === item.id} aria-controls="pn-preguntas-tema" tabIndex={tema === item.id ? 0 : -1} onClick={() => cambiarTema(item.id)} onKeyDown={evento => tecladoTema(evento, indice)} ref={nodo => { tabs.current[indice] = nodo; }}>{item.nombre}</button>)}

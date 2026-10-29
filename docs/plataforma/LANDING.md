@@ -11,6 +11,16 @@
 
 ### Revision visual de Ricky
 
+**Actual — personalidad final de FAQ, 28/oct:** Dico en dorado en el titulo.
+Gestos al 55% del ritmo habitual solo en FAQ; saludo mas pausado, pensamiento
+480ms y respuesta con alternancia entre saludo, revision y miradas, seguida de
+reposo. Hover/foco/clic en la mascota dispara una reaccion breve y variada,
+sin interrumpir respuesta ni mover la pagina. DicoPhysical agrega prop opcional
+ritmo (default 1 intacto para el resto de la app), con prueba de independencia
+de cadencia. Misma instancia/tamano, movimiento reducido respetado y timers
+limpios al salir. Segmentos cerrados sin cambios.
+
+
 **Actual — FAQ guiada con Dico, 28/oct:** retirados buscador libre, historial
 y lista duplicada. Cuatro temas con preguntas visibles; una respuesta preparada
 activa, que se reemplaza al elegir otra. Mismo DicoPhysical/atlas del admin,
