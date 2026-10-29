@@ -1,0 +1,100 @@
+.cp-root .cp-filters {
+  padding: var(--ds-space-6) var(--ds-space-6) 0;
+  color: var(--tx);
+  font-family: var(--font-body);
+}
+.cp-root .cp-filter-row {
+  display: flex;
+  gap: var(--ds-space-2);
+  overflow-x: auto;
+  padding-block: var(--ds-space-2);
+}
+.cp-root .cp-filter-button {
+  flex: 0 0 auto;
+  min-height: var(--ds-control-height-touch);
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--ds-radius-pill);
+  background: var(--bg);
+  color: var(--tx);
+  font: inherit;
+  cursor: pointer;
+}
+.cp-root .cp-filter-button[aria-pressed="true"] {
+  background: var(--tx);
+  color: var(--bg);
+  border-color: var(--tx);
+}
+.cp-root .cp-filter-button:hover { border-color: var(--tx); }
+.cp-root .cp-filter-button small { margin-inline-start: var(--ds-space-2); }
+.cp-root .cp-facet-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: var(--ds-space-3);
+  margin-block: var(--ds-space-3);
+}
+.cp-root .cp-facet-field { display: grid; gap: var(--ds-space-1); min-width: 0; }
+.cp-root .cp-facet-field > span { font-size: var(--ds-type-sm); }
+.cp-root .cp-facet-field select {
+  min-width: 0;
+  width: 100%;
+  min-height: var(--ds-control-height-touch);
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--ds-radius-3);
+  background: var(--bg);
+  color: var(--tx);
+  font: inherit;
+  font-size: 16px;
+}
+.cp-root .cp-facet-field option { background: var(--bg); color: var(--tx); }
+.cp-root .cp-filters :is(button, select, summary, input):focus-visible,
+.cp-root .cp-filter-empty button:focus-visible {
+  outline: 2px solid var(--tx);
+  outline-offset: var(--ds-space-1);
+}
+.cp-root .cp-more-filters summary {
+  min-height: var(--ds-control-height-touch);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: var(--ds-space-1);
+}
+.cp-root .cp-feature-option {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ds-control-height-touch);
+  gap: var(--ds-space-2);
+  margin-inline-end: var(--ds-space-4);
+  cursor: pointer;
+}
+.cp-root .cp-feature-option input { accent-color: var(--tx); }
+.cp-root .cp-filter-status { margin-block: var(--ds-space-3); font-size: 14px; }
+.cp-root .cp-filter-empty { padding: var(--ds-space-6); text-align: center; color: var(--tx); }
+.cp-root.cp-characteristics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-1);
+  margin: var(--ds-space-1) 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-body);
+  color: var(--tx);
+}
+.cp-root.cp-characteristics li {
+  padding: var(--ds-space-1) var(--ds-space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--ds-radius-1);
+  font-size: var(--ds-type-xs);
+  line-height: 1.4;
+}
+.cp-root .cp-product-details { margin-block: var(--ds-space-4); }
+.cp-root .cp-product-details-title { font: 500 var(--ds-type-md) var(--font-body); color: var(--tx); }
+.cp-root .cp-product-details-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: var(--ds-space-3);
+}
+.cp-root .cp-product-details-list dt { font-size: var(--ds-type-sm); color: var(--t2); }
+.cp-root .cp-product-details-list dd { margin: 0; color: var(--tx); overflow-wrap: anywhere; }

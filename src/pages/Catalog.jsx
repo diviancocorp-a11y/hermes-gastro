@@ -9,7 +9,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { getGuestUser } from "../lib/guestUser.js";
 import business, { waLink } from "@business";
 import { paymentLabel, paymentIcon } from "../lib/payments";
-import { buildCatalogGroups, matchesCatalogCategory, buildCatalogDealParents } from "../lib/catalogCategories";
+import { buildCatalogDisplayGroups, matchesCatalogCategory, buildCatalogDealParents } from "../lib/catalogCategories";
 
 // ── Extracted components ──
 import WelcomeSplash from "../catalog-pro/WelcomeSplash";
@@ -79,8 +79,10 @@ export default function Catalog() {
     [serverNow],
   );
   const catGroups = useMemo(
-    () => buildCatalogGroups(sett.cat_groups, FALLBACK_CAT_GROUPS, products),
-    [sett.cat_groups, products],
+    () => buildCatalogDisplayGroups(sett.cat_groups, FALLBACK_CAT_GROUPS, products, {
+      catalog_profile: sett.catalog_profile, vertical: sett.vertical,
+    }),
+    [sett.cat_groups, sett.catalog_profile, sett.vertical, products],
   );
   const subToParent = useMemo(
     () => buildCatalogDealParents(Array.isArray(sett.cat_groups) ? sett.cat_groups : FALLBACK_CAT_GROUPS),

@@ -11,6 +11,45 @@
 
 ---
 
+## 24/oct/2026 — Catálogo por rubro preparado para revisión (Codex)
+
+- Rama `codex/catalogo-filtros-rubro`, PR borrador #56. No fusionada ni publicada
+  en producción. Preview separado `codex/catalogo-filtros-rubro-preview`: sólo
+  ese branch cambia el fallback a Monare; NO fusionar su commit a main.
+- Preview verificado: https://hermes-platform-li3ohpykf-diviancocorp-a11ys-projects.vercel.app/
+  (protección Vercel: obtener share link vigente por MCP si hace falta).
+- Perfiles gastro/bebidas/retail/barber configurables desde Productos por owner.
+  Categoría, bodega/marca, línea, cepa y presentación combinables; Cajas es
+  presentación. Gastronomía conserva filtros rápidos. Características explícitas
+  en editor, tarjeta y detalle; nunca inferidas de nombres o descripciones.
+- Migraciones 0114/0115 aplicadas vía MCP y releídas. 53 productos Monare con
+  clasificación, 40 activos/13 inactivos; precios, imágenes, descripción,
+  disponibilidad y categorías legacy sin cambios. Perfil beverages. Cero
+  características asignadas: Ricky espera listado de Vegano/Sin TACC de la clienta.
+  Skin Contact queda en Vinos hasta confirmar estilo; envases de 3L pendientes.
+- Datos nuevos validados en DB/Zod/servicios; omitir catalog_attributes conserva
+  datos desde formularios anteriores. get_catalog conserva contrato previo.
+- Verificación: 84 tests específicos, 87 smoke pre-commit, build, typecheck,
+  columnas, schema, compatibilidad, definer y check:diseno. CI inicial pasó
+  unit tests, lint, build y Playwright; audit detectó undici 7.30.0 (dev/jsdom).
+  Parche compatible actualizado a 7.30.1, npm audit: cero vulnerabilidades.
+- Diseño: antes/después 17 warnings + 6 advisory conocidos; ninguno nuevo.
+  Auditor independiente: cero pendientes tras corregir tokens y copy del editor.
+  390x844 y 1280x800 sin desborde; categorías 16 -> 5; controles nuevos 48px,
+  contraste 15,34:1, foco visible. Probado Espumantes+Chandon=1, Cajas=7,
+  Hielo=4 (descarta combinación incompatible), detalle con clasificación.
+- El navegador no abrió localhost; revisión visual hecha en Vercel. Editor
+  y selector de perfil cubiertos por pruebas de interacción; no guardados sobre
+  productos reales durante QA. La publicación espera OK explícito de Ricky.
+- Worktree real dentro de `.claude/worktrees/catalogo-filtros-rubro`.
+  La herramienta creó además un checkout vacío externo bajo `.codex/worktrees/`;
+  archive_worktree rechazó archivarlo por estar protegido por tarea/workspace fijado.
+  No se editó ni se usó ese checkout. El HANDOFF de precios previo se conserva aquí.
+
+---
+
+---
+
 ## 24/oct/2026 — Landing: boton elegido y circuito con Dico central (Codex)
 
 ### Ultima continuacion — 24/oct (leer primero)
@@ -130,6 +169,8 @@
   Detalle y evidencia viva en LANDING secciones1/11. Agenda intacta.
 
 ### Historial de la entrega anterior (reemplazada)
+
+## 23/oct/2026 — La landing se sigue desde un solo lugar (Claude)
 
 - `docs/plataforma/LANDING.md` es la guia unica de la landing: estado, mapa de
   archivos, reglas de honestidad y de marca (resumen del RC5), lo aprendido de
@@ -338,6 +379,24 @@
   Detalle: `docs/operacion/CARGA-K6.md` y la seccion archivada de 17-19/oct.
 
 ## 19/oct/2026 — Monare: imágenes, filtros y dirección de Boedo (Codex)
+
+### Actualización 24/oct — precios por línea y audios
+
+- Ricky confirmó que los nuevos precios aplican a todas las cepas: Ancestral
+  caja x3 $93.571; por botella Fantasía $9.125, Gran Ópalo $25.090, Grandes
+  Varietales $35.490, Poético $14.950 y Zapam Zucum $9.590. Actualizados 22
+  productos; 20 pasaron de borrador a activo. No se recalcularon cajas x6.
+- Readback de los 53 productos y catálogo público: 40 activos, 13 inactivos,
+  precios correctos y campos ajenos preservados. Tres Ancestral ahora indican
+  caja de madera x3, confirmada por audio. No se modificaron cantidades de stock.
+- Dos audios transcritos con Descript tras autorización explícita de subida:
+  proyecto privado https://web.descript.com/08e2d238-eda8-412b-a297-fbe13635c608 .
+  La clienta confirma igual precio por cepa y falta de stock de los productos
+  que no cotizó. Los audios y transcripciones no se copiaron al repo.
+- Planilla actualizada: 20 filas con precio confirmado; contador 13 pendientes.
+  Doce sin precio y sin stock (anotado en observaciones); Ópalo Syrah caja x6
+  sigue pendiente. El $68.600 de C39 es informado, no confirmado; D39 vacío,
+  sin trasladarlo a la base. Dos Fantasía ya activos cambiaron $9.490 -> $9.125.
 
 ### Planilla para completar precios y revisar descripciones
 

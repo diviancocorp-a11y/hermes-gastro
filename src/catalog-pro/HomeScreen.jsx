@@ -30,7 +30,14 @@ import BadgeTag from "../components/BadgeTag";
 import PromoCarousel from "./PromoCarousel";
 import SuperCombos from "./SuperCombos";
 import OrderStatusCard from "./OrderStatusCard";
+import ReservarEntrada from "./ReservarEntrada";
 import { getActiveOrders } from "../lib/activeOrders";
+import ProductCharacteristics from "./ProductCharacteristics";
+import {
+  applyCatalogFacets, getCatalogCategories, getFacetOptions, normalizeCatalogFacets,
+  matchesCatalogCategory, resolveCatalogProfile, getProductFeatures, FEATURE_LABELS,
+  BOX_PRESENTATION, isBoxPresentation,
+} from "../lib/catalogFacets";
 
 export default function HomeScreen({
   store = {}, userName, products = [], categories = [],
@@ -60,6 +67,24 @@ export default function HomeScreen({
   const [activeCat, setActiveCat] = useState("Todos");
   const [activeFilter, setActiveFilter] = useState(null);
   const [storyIdx, setStoryIdx] = useState(0);
+  const [facets, setFacets] = useState({});
+  const profile = resolveCatalogProfile(settings);
+  const catalogCategories = useMemo(() => getCatalogCategories(products, categories, profile), [products, categories, profile]);
+  const filterContext = { category: activeCat, categories: catalogCategories, facets, profile };
+  const facetOptions = getFacetOptions(products, filterContext);
+  const featureOptions = profile.features.filter(feature =>
+    products.some(product => matchesCatalogCategory(product, activeCat, catalogCategories) && getProductFeatures(product).includes(feature))
+  );
+  const boxesAvailable = products.some(product => matchesCatalogCategory(product, activeCat, catalogCategories) && isBoxPresentation(product));
+  const hasFilters = activeCat !== "Todos" || activeFilter || Object.values(facets).some(value => Array.isArray(value) ? value.length : value);
+  const clearFilters = () => { setActiveCat("Todos"); setActiveFilter(null); setFacets({}); };
+  const selectCategory = category => {
+    setActiveCat(category);
+    setFacets(normalizeCatalogFacets(products, { ...filterContext, category }));
+  };
+  const selectFacet = (key, value) => {
+    setFacets(normalizeCatalogFacets(products, { ...filterContext, facets: { ...facets, [key]: value } }, key));
+  };
 
   const stories = useMemo(() => buildStories(products, hasDeal), [products, hasDeal]);
   // Saludo: viene de la session unificada (phone-only o magic link).
@@ -81,43 +106,14 @@ export default function HomeScreen({
   const searching = (searchQuery || "").trim().length >= 1;
 
   const gridProducts = useMemo(() => {
-    let list = products;
-    if (activeCat && activeCat !== "Todos") {
-      const cat = categories.find(c => c.name === activeCat);
-      if (cat) {
-        // Trim para tolerar trailing spaces en recipe.category (data legacy).
-        const catName = (cat.name || "").trim();
-        const subs = (cat.subs || []).map(s => (s || "").trim());
-        list = list.filter(p => {
-          const pc = (p.category || "").trim();
-          return pc === catName || subs.includes(pc);
-        });
-      }
-    }
-    const q = (searchQuery || "").trim().toLowerCase();
-    if (q) {
-      list = list.filter(p =>
-        (p.name || "").toLowerCase().includes(q) ||
-        (p.description || "").toLowerCase().includes(q)
-      );
-    }
-    // Quick filters
-    if (activeFilter === "deal") {
-      list = list.filter(p => hasDeal?.(p));
-    } else if (activeFilter === "veg") {
-      list = list.filter(p => p.is_vegetarian || /veg|vegan|vegetal/i.test(p.tags || p.description || ""));
-    } else if (activeFilter === "new") {
-      // Nuevos: creados en los ultimos 30 dias
-      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      list = list.filter(p => p.created_at && new Date(p.created_at).getTime() > cutoff);
-    } else if (activeFilter === "top") {
-      // Mas pedidos: ordenar por sale_count o veces que aparece en orders.
-      list = [...list].sort((a, b) => (b.sale_count || 0) - (a.sale_count || 0));
-    }
+    let list = applyCatalogFacets(products, {
+      category: activeCat, categories: catalogCategories, facets,
+      search: searchQuery, quickFilter: activeFilter, hasDeal,
+    });
     // Combos al final de la carta (sort estable: el resto conserva su orden)
     list = [...list].sort((a, b) => (a.is_combo ? 1 : 0) - (b.is_combo ? 1 : 0));
     return list.map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault, soldOutIds }));
-  }, [products, categories, activeCat, searchQuery, activeFilter, hasDeal, dealPrice, prepDefault, soldOutIds]);
+  }, [products, catalogCategories, activeCat, facets, searchQuery, activeFilter, hasDeal, dealPrice, prepDefault, soldOutIds]);
 
   // Categorias ordenadas por hora del dia (personalizacion).
   // Si una categoria matchea palabras clave del momento, aparece primera.
@@ -129,11 +125,11 @@ export default function HomeScreen({
     else if (h >= 16 && h < 19) kws = ["merienda", "cafe", "café", "dulce", "torta", "pasteleria"];
     else kws = ["cena", "pizza", "pasta", "hamburguesa", "sanguche"];
     const matches = (name) => kws.some(k => name.toLowerCase().includes(k));
-    const todos = categories.find(c => c.name === "Todos");
-    const rest = categories.filter(c => c.name !== "Todos");
-    rest.sort((a, b) => Number(matches(b.name)) - Number(matches(a.name)));
+    const todos = catalogCategories.find(c => c.name === "Todos");
+    const rest = catalogCategories.filter(c => c.name !== "Todos");
+    if (profile.id === "gastro") rest.sort((a, b) => Number(matches(b.name)) - Number(matches(a.name)));
     return todos ? [todos, ...rest] : rest;
-  }, [categories]);
+  }, [catalogCategories, profile]);
 
   useEffect(() => {
     if (stories.length === 0) return;
@@ -141,12 +137,7 @@ export default function HomeScreen({
     return () => clearInterval(t);
   }, [stories.length]);
 
-  const quickFilters = [
-    { id: "deal", name: "En oferta" },
-    { id: "veg", name: "Vegetariano" },
-    { id: "new", name: "Nuevos" },
-    { id: "top", name: "Más pedidos" },
-  ];
+  const quickFilters = profile.quickFilters;
 
   const totalCount = products.length;
   const greeting = (() => {
@@ -269,6 +260,9 @@ export default function HomeScreen({
           ))}
         </div>
       )}
+
+      {/* ===== RESERVA ONLINE (solo negocios con el canal online_booking) ===== */}
+      <ReservarEntrada settings={settings} />
 
       {/* ===== QUICK REORDER (si hay pedido previo) ===== */}
       {lastOrderItems.length > 0 && (
@@ -400,6 +394,7 @@ export default function HomeScreen({
                   )}
                 </div>
                 <div style={{ fontFamily: "var(--font-heading)", fontSize: 14.5, color: "var(--tx)", marginTop: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+                <ProductCharacteristics product={p._raw} />
                 <div style={{ marginTop: 2 }}><PriceTag price={p.price} oldPrice={p.oldPrice} size="sm" /></div>
               </div>
             ))}
@@ -439,65 +434,66 @@ export default function HomeScreen({
         transition: "filter 300ms ease, opacity 300ms ease",
       }} aria-hidden={searching}>
 
-      {/* ===== CATEGORÍAS CHIPS ===== */}
-      <div style={{ paddingTop: 28 }}>
-        <div style={{ padding: "0 22px 12px" }}>
-          <div className="caption">Carta · {totalCount} productos</div>
-        </div>
-        <div className="cp-no-scrollbar" style={{ display: "flex", gap: 6, padding: "0 22px", overflowX: "auto" }}>
-          {sortedCategories.map(c => {
-            const isActive = activeCat === c.name;
-            const catName = (c.name || "").trim();
-            const subs = (c.subs || []).map(s => (s || "").trim());
-            const count = c.name === "Todos"
-              ? totalCount
-              : products.filter(p => {
-                  const pc = (p.category || "").trim();
-                  return pc === catName || subs.includes(pc);
-                }).length;
-            return (
-              <button key={c.name} onClick={() => setActiveCat(c.name)} aria-pressed={isActive} style={{
-                flex: "0 0 auto", height: "var(--ds-control-height-touch)", padding: "0 14px", borderRadius: 999,
-                background: isActive ? "var(--tx)" : "transparent",
-                color: isActive ? "var(--bg)" : "var(--t2)",
-                border: isActive ? "1px solid var(--tx)" : "1px solid var(--line)",
-                fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 500,
-                cursor: "pointer", whiteSpace: "nowrap", transition: "all 120ms var(--ease)",
-                display: "inline-flex", alignItems: "center", gap: 6,
-              }}>
-                {c.displayName || c.name}
-                <span style={{ fontSize: 10, color: "inherit", fontWeight: 400 }}>{count}</span>
-              </button>
-            );
-          })}
-        </div>
-        {/* Quick filters */}
-        <div className="cp-no-scrollbar" style={{ display: "flex", gap: 6, padding: "12px 22px 0", overflowX: "auto" }}>
-          {quickFilters.map(f => (
-            <button key={f.id} onClick={() => {
-              const next = activeFilter === f.id ? null : f.id;
-              setActiveFilter(next);
-              // Anti falso-positivo: activar un quick filter resetea la
-              // categoria a Todos; despues puede combinar eligiendo categoria
-              if (next) setActiveCat("Todos");
-            }} style={{
-              flex: "0 0 auto", height: 28, padding: "0 11px", borderRadius: 6,
-              background: activeFilter === f.id ? "color-mix(in oklab, var(--ac) 14%, transparent)" : "transparent",
-              color: activeFilter === f.id ? "var(--ac)" : "var(--t2)",
-              border: "1px solid " + (activeFilter === f.id ? "var(--ac)" : "var(--line)"),
-              fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 500,
-              cursor: "pointer", whiteSpace: "nowrap", transition: "all 120ms var(--ease)",
-            }}>{f.name}</button>
+      {/* Categorías y dimensiones independientes según el perfil del rubro. */}
+      <section className="cp-filters" aria-label="Filtros del catálogo">
+        <div className="caption">Catálogo · {totalCount} productos</div>
+        <div className="cp-filter-row" aria-label="Categorías">
+          {sortedCategories.map(category => (
+            <button type="button" className="cp-filter-button" key={category.name}
+              onClick={() => selectCategory(category.name)} aria-pressed={activeCat === category.name}>
+              {category.displayName || category.name}
+              <small>{products.filter(product => matchesCatalogCategory(product, category.name, catalogCategories)).length}</small>
+            </button>
           ))}
         </div>
-      </div>
+        {profile.facets.length > 0 && (
+          <div className="cp-facet-fields">
+            {profile.facets.map(({ key, label }) => {
+              const options = facetOptions[key] || [];
+              if (!options.length && !facets[key]) return null;
+              return (
+                <label className="cp-facet-field" key={key}>
+                  <span>{label}</span>
+                  <select value={facets[key] || ""} onChange={event => selectFacet(key, event.target.value)}>
+                    <option value="">Todas las opciones</option>
+                    {key === "presentation" && facets[key] === BOX_PRESENTATION && <option value={BOX_PRESENTATION}>Cajas</option>}
+                    {options.map(value => <option key={value} value={value}>{value}</option>)}
+                  </select>
+                </label>
+              );
+            })}
+          </div>
+        )}
+        <div className="cp-filter-row" aria-label="Filtros rápidos">
+          {boxesAvailable && <button type="button" className="cp-filter-button"
+            aria-pressed={facets.presentation === BOX_PRESENTATION}
+            onClick={() => selectFacet("presentation", facets.presentation === BOX_PRESENTATION ? "" : BOX_PRESENTATION)}>Cajas</button>}
+          {quickFilters.map(filter => <button type="button" className="cp-filter-button" key={filter.id}
+            aria-pressed={activeFilter === filter.id}
+            onClick={() => setActiveFilter(activeFilter === filter.id ? null : filter.id)}>{filter.name}</button>)}
+          {hasFilters && <button type="button" className="cp-filter-button" onClick={clearFilters}>Limpiar filtros</button>}
+        </div>
+        {featureOptions.length > 0 && (
+          <details className="cp-more-filters">
+            <summary>Más filtros{facets.features?.length ? ` (${facets.features.length})` : ""}</summary>
+            {featureOptions.map(feature => <label className="cp-feature-option" key={feature}>
+              <input type="checkbox" checked={facets.features?.includes(feature) || false}
+                onChange={event => selectFacet("features", event.target.checked
+                  ? [...(facets.features || []), feature] : facets.features.filter(item => item !== feature))} />
+              {FEATURE_LABELS[feature]}
+            </label>)}
+          </details>
+        )}
+        <p className="cp-filter-status" role="status">{gridProducts.length} producto{gridProducts.length === 1 ? "" : "s"}</p>
+      </section>
 
 
       {/* ===== CARTA — TODOS los productos filtrados por categoria + busqueda ===== */}
       <SectionHeader title="Nuestra" em="carta" />
       {gridProducts.length === 0 && (
-        <div style={{ padding: "20px 22px", color: "var(--t3)", fontSize: 14, textAlign: "center" }}>
-          No encontramos productos con ese filtro.
+        <div className="cp-filter-empty">
+          <p>No encontramos productos con estos filtros.</p>
+          <button type="button" className="cp-filter-button" onClick={clearFilters}>Limpiar filtros</button>
         </div>
       )}
       <div style={{ padding: "0 22px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 14 }}>
@@ -558,6 +554,7 @@ export default function HomeScreen({
                 letterSpacing: "-0.005em", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
                 overflow: "hidden", minHeight: 44,
               }}>{p.name}</div>
+              <ProductCharacteristics product={p._raw} />
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
                 <Rating value={p.rating} />
                 <span className="body-s" style={{ fontSize: 11, color: "var(--t3)" }}>· {p.prepMin} min</span>

@@ -33,12 +33,20 @@ export default function NuevoTurno({
   const [version, setVersion] = useState(0);
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
+  const [zonaId, setZonaId] = useState('');
   const [direccion, setDireccion] = useState('');
   const [notas, setNotas] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [invalido, setInvalido] = useState('');   // campo con error de validacion
   const [salir, setSalir] = useState(false);       // pide confirmar antes de descartar
+
+  // A domicilio el viaje depende de la zona. Sin zonas cargadas se cae al
+  // traslado fijo de las reglas (el aviso de abajo lo dice).
+  const zonas = base.zonas || [];
+  const aDomicilio = modalidad === 'home';
+  const zona = aDomicilio ? zonas.find(z => z.id === zonaId) : null;
+  const viaje = aDomicilio ? (zona ? Number(zona.travel_min) || 0 : (zonas.length ? null : (Number(reglas.travel_min) || 0))) : 0;
 
   const profesionales = servicioId
     ? quienHace(servicioId, base.staff, base.relaciones).filter(s => !propio || s.id === miStaffId)
@@ -49,7 +57,7 @@ export default function NuevoTurno({
 
   // Con datos escritos, cerrar no descarta en silencio: Escape o Cancelar piden
   // confirmacion, y un toque en el fondo se ignora.
-  const hayDatos = !!(servicioId || nombre || telefono || direccion || notas || grupo);
+  const hayDatos = !!(servicioId || nombre || telefono || direccion || notas || grupo || zonaId);
   const intentarCerrar = () => { if (hayDatos) setSalir(s => !s); else onCerrar(); };
 
   const fallar = (campo, texto, enfocar) => {
@@ -61,6 +69,7 @@ export default function NuevoTurno({
   const reservar = async () => {
     setInvalido('');
     if (!servicioId) return fallar('servicio', 'Elegí un servicio.', 'ag-agd-servicio');
+    if (aDomicilio && zonas.length && !zona) return fallar('zona', 'Elegí la zona: de ahí sale el tiempo de viaje.', 'ag-agd-zona');
     if (!grupo) return fallar('hora', 'Elegí un horario.', () => document.querySelector('.ag-agd-hora') || document.getElementById('ag-agd-busca-dia'));
     if (!nombre.trim()) return fallar('nombre', 'Poné el nombre de quien reserva.', 'ag-agd-nombre');
     if (modalidad === 'home' && !direccion.trim()) return fallar('direccion', 'A domicilio hace falta la dirección.', 'ag-agd-dir');
@@ -77,7 +86,8 @@ export default function NuevoTurno({
       notes: notas,
       locationKind: modalidad,
       address: direccion,
-      travelMin: reglas.travel_min,
+      travelMin: viaje ?? 0,
+      zoneId: zona ? zona.id : null,
       source: 'panel',
     });
     setEnviando(false);
@@ -129,12 +139,31 @@ export default function NuevoTurno({
             {[['local', 'En el local'], ['home', 'A domicilio']].map(([v, t]) => (
               <label key={v} className="ag-agd-opcion">
                 <input type="radio" name="ag-agd-modalidad" checked={modalidad === v}
-                  onChange={() => { setModalidad(v); reiniciarHorario(); }} />
+                  onChange={() => { setModalidad(v); setZonaId(''); reiniciarHorario(); }} />
                 {t}
               </label>
             ))}
           </div>
         </fieldset>
+      )}
+
+      {aDomicilio && (
+        zonas.length ? (
+          <div className="ag-agd-campo">
+            <label htmlFor="ag-agd-zona">Zona</label>
+            <select id="ag-agd-zona" className="ag-agd-input" value={zonaId} aria-invalid={invalido === 'zona'}
+              aria-describedby="ag-agd-zona-a"
+              onChange={(e) => { setZonaId(e.target.value); reiniciarHorario(); }}>
+              <option value="">Elegí la zona</option>
+              {zonas.map(z => <option key={z.id} value={z.id}>{z.name} · {z.travel_min} min</option>)}
+            </select>
+            <span id="ag-agd-zona-a" className="ag-agd-ayuda">Los horarios descuentan el viaje hasta esa zona.</span>
+          </div>
+        ) : (
+          <Aviso>
+            Todavía no hay zonas de domicilio cargadas. Se usa el traslado fijo de {Number(reglas.travel_min) || 0} min; las zonas se cargan en Horarios y reglas.
+          </Aviso>
+        )
       )}
 
       {servicioId && !propio && (
@@ -157,10 +186,13 @@ export default function NuevoTurno({
         </fieldset>
       )}
 
-      {servicioId && (
+      {servicioId && aDomicilio && zonas.length > 0 && !zona && (
+        <p className="ag-agd-ayuda">Elegí la zona para ver los horarios.</p>
+      )}
+      {servicioId && viaje !== null && (
         <BuscaHorarios tenantId={tenantId} serviceId={servicioId}
           staffId={staffElegido === 'any' ? null : staffElegido}
-          locationKind={modalidad} dia={dia}
+          locationKind={modalidad} travelMin={aDomicilio ? viaje : null} dia={dia}
           onDia={(d) => { setDia(d); reiniciarHorario(); }}
           elegido={grupo?.hora} onElegir={setGrupo} version={version} />
       )}
@@ -183,8 +215,8 @@ export default function NuevoTurno({
             <label htmlFor="ag-agd-dir">Dirección</label>
             <input id="ag-agd-dir" className="ag-agd-input" value={direccion} autoComplete="off" aria-invalid={invalido === 'direccion'}
               onChange={(e) => setDireccion(e.target.value)} />
-            {reglas.travel_min > 0 && (
-              <span className="ag-agd-ayuda">Se reservan {reglas.travel_min} min antes para el traslado.</span>
+            {viaje > 0 && (
+              <span className="ag-agd-ayuda">Se reservan {viaje} min antes para el traslado.</span>
             )}
           </div>
         )}

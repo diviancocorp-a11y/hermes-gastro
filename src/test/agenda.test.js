@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   diaLocal, sumarDias, rangoDelDia, weekdayDe, aMinutos, deMinutos,
   siguientesEstados, ventanaDelDia, posicionDeTurno, resumenDeHorario,
-  validarTramos, agruparPorHora, faltaConfigurar, quienHace,
+  validarTramos, agruparPorHora, faltaConfigurar, quienHace, reservables, adicionales,
   telefonoParaWhatsApp, linkWhatsApp, mensajeDeRecordatorio,
 } from '../modules/agenda.js';
 
@@ -146,6 +146,29 @@ describe('que falta configurar', () => {
     }));
     expect(r.map(f => f.id)).toEqual(['duraciones', 'horarios']);
     expect(r[1].texto).toMatch(/Mía/);
+  });
+  it('un adicional sin duracion no es una pendiente ni se reserva solo', () => {
+    const servicios = [
+      { id: 'a', name: 'Soft gel', duration_min: 150 },
+      { id: 'f', name: 'Flores 3D', duration_min: null, is_addon: true },
+    ];
+    expect(faltaConfigurar(base({
+      staff: [{ id: 's1', name: 'Mía' }], servicios, horarios: [tramo(1, '10:00', '18:00')],
+    }))).toEqual([]);
+    expect(reservables(servicios).map(s => s.id)).toEqual(['a']);
+    expect(adicionales(servicios).map(s => s.id)).toEqual(['f']);
+  });
+  it('a domicilio sin zonas ni traslado fijo avisa; con zonas o traslado, no', () => {
+    const completa = {
+      staff: [{ id: 's1', name: 'Mía' }],
+      servicios: [{ id: 'a', name: 'Soft gel', duration_min: 150 }],
+      horarios: [tramo(1, '10:00', '18:00')],
+    };
+    const ids = (extra) => faltaConfigurar(base({ ...completa, ...extra })).map(f => f.id);
+    expect(ids({ reglas: { offers_home: true, travel_min: 0 }, zonas: [] })).toEqual(['zonas']);
+    expect(ids({ reglas: { offers_home: true, travel_min: 0 }, zonas: [{ id: 'z', name: 'Del Viso', travel_min: 25 }] })).toEqual([]);
+    expect(ids({ reglas: { offers_home: true, travel_min: 30 }, zonas: [] })).toEqual([]);
+    expect(ids({ reglas: { offers_home: false, travel_min: 0 }, zonas: [] })).toEqual([]);
   });
   it('todo cargado: nada falta', () => {
     expect(faltaConfigurar(base({
