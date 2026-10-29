@@ -11,6 +11,16 @@
 
 ### Revision visual de Ricky
 
+**Actual — compuerta de cierre con scroll, 29/oct:** dos hojas negras cubren
+la franja azul conservando su alto. Junta gris al entrar, dorado al alcanzar
+92% del viewport, apertura rapida de 480ms al llegar al 72%, con minimo 180ms
+de junta dorada si se baja rapido. Quedan bordes dorados limpios, sin pulso.
+No fija ni bloquea el scroll, no empuja el footer y conserva el CTA existente.
+Se rearma solo al volver completamente por encima del tramo; foco de teclado
+abre de inmediato y movimiento reducido muestra la franja abierta. Footer y
+segmentos cerrados sin cambios.
+
+
 **Actual — cierre azul de la landing, 29/oct:** franja volt uniforme de borde
 a borde; promesa Butler a la izquierda y CTA dorado con nota sin email a la
 derecha. Quitados subtitulo repetido, contenedor oscuro y destellos animados.

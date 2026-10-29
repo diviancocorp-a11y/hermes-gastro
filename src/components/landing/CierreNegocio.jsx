@@ -1,11 +1,57 @@
+import { useEffect, useRef, useState } from 'react';
+import useMediaQuery from '../../lib/useMediaQuery';
 import { AGENDA_URL, AGENDA_HORARIO, WHATSAPP_URL, WHATSAPP_HORARIO, WHATSAPP_VISIBLE, INSTAGRAM_DICO_URL, INSTAGRAM_DIVIANCO_URL } from '../../lib/contactoPlataforma';
 import { marcarEvento } from '../../lib/analiticaPlataforma';
 import '../../styles/cierre-negocio.css';
 
 export default function CierreNegocio({ onDiagnostico }) {
+  const cierre = useRef(null);
+  const yaAbierta = useRef(false);
+  const reducido = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const [compuerta, setCompuerta] = useState('cerrada');
+  useEffect(() => {
+    if (reducido) {
+      const cuadro = requestAnimationFrame(() => { yaAbierta.current = true; setCompuerta('abierta'); });
+      return () => cancelAnimationFrame(cuadro);
+    }
+    let cuadro = 0, apertura = 0, metalDesde = 0;
+    const medir = () => {
+      cuadro = 0;
+      const rect = cierre.current.getBoundingClientRect();
+      const alto = window.innerHeight;
+      if (rect.top > alto + 80) {
+        clearTimeout(apertura); apertura = 0; metalDesde = 0;
+        yaAbierta.current = false;
+        setCompuerta(actual => actual === 'cerrada' ? actual : 'cerrada');
+        return;
+      }
+      if (yaAbierta.current || rect.bottom <= 0) return;
+      const junta = rect.top + rect.height / 2;
+      if (junta <= alto * .92 && !metalDesde) {
+        metalDesde = performance.now();
+        setCompuerta('dorada');
+      }
+      if (junta <= alto * .72 && !apertura) {
+        apertura = setTimeout(() => {
+          apertura = 0;
+          const actual = cierre.current.getBoundingClientRect();
+          if (actual.top + actual.height / 2 <= window.innerHeight * .72 && actual.bottom > 0) {
+            yaAbierta.current = true;
+            setCompuerta('abierta');
+          }
+        }, Math.max(0, 180 - (performance.now() - metalDesde)));
+      }
+    };
+    const actualizar = () => { if (!cuadro) cuadro = requestAnimationFrame(medir); };
+    window.addEventListener('scroll', actualizar, { passive: true });
+    window.addEventListener('resize', actualizar);
+    actualizar();
+    return () => { cancelAnimationFrame(cuadro); clearTimeout(apertura); window.removeEventListener('scroll', actualizar); window.removeEventListener('resize', actualizar); };
+  }, [reducido]);
   return (
     <>
-      <section className="cf-root" id="contacto" aria-labelledby="cf-titulo">
+      <section className="cf-root" id="contacto" aria-labelledby="cf-titulo" ref={cierre} data-compuerta={reducido ? 'abierta' : compuerta} onFocusCapture={() => { yaAbierta.current = true; setCompuerta('abierta'); }}>
+        <div className="cf-compuerta" aria-hidden="true"><span className="cf-hoja cf-hoja-superior" /><span className="cf-hoja cf-hoja-inferior" /></div>
         <div className="cf-panel">
           <h2 id="cf-titulo"><span>Tu negocio más ordenado.</span><span>Tu tiempo más tuyo.</span></h2>
           <div className="cf-accion">
