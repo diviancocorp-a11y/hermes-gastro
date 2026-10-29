@@ -6,15 +6,15 @@ export default function CierreNegocio({ onDiagnostico }) {
   return (
     <>
       <section className="cf-root" id="contacto" aria-labelledby="cf-titulo">
-        <div className="cf-destellos" aria-hidden="true"><span className="cf-luz-volt" /><span className="cf-luz-oro" /></div>
         <div className="cf-panel">
           <h2 id="cf-titulo"><span>Tu negocio más ordenado.</span><span>Tu tiempo más tuyo.</span></h2>
-          <p>Descubrí por dónde empezar con Dico.</p>
+          <div className="cf-accion">
           <button type="button" className="pl-boton cf-boton" onClick={onDiagnostico}>
             <span className="cf-etiqueta">Empezar mi diagnóstico</span>
             <span className="pl-hero-burbuja" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span>
           </button>
-          <span className="cf-ayuda">Diagnóstico breve, sin dejar tu email.</span>
+          <p className="cf-ayuda">Diagnóstico breve, sin dejar tu email.</p>
+          </div>
         </div>
       </section>
       <footer className="pf-root" aria-label="Contacto y navegación de Dico">

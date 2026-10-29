@@ -1034,7 +1034,5 @@
   .pl-root .pp-plan { padding: 24px; }
   .pl-root .pp-importe { font-size: clamp(36px, 3.1vw, 46px); }
   .pl-root .pn-guia { padding: 28px; }
-  .pl-root .cf-panel { padding: 48px 32px; }
-  .pl-root .cf-panel h2 { font-size: clamp(36px, 4.4vw, 64px); }
   .pl-root .ce-accion { margin-top: 40px; }
 }

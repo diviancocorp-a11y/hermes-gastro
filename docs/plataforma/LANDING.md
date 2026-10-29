@@ -7,9 +7,18 @@
 
 ---
 
-## 1. Estado al 28/oct/2026
+## 1. Estado al 29/oct/2026
 
 ### Revision visual de Ricky
+
+**Actual — cierre azul de la landing, 29/oct:** franja volt uniforme de borde
+a borde; promesa Butler a la izquierda y CTA dorado con nota sin email a la
+derecha. Quitados subtitulo repetido, contenedor oscuro y destellos animados.
+En movil, mensaje antes del boton y altura contenida. Conserva expansion del
+diagnostico y relleno negro al hover. Footer expresamente sin cambios: Ricky
+lo revisara despues. FAQ CERRADA visualmente por Ricky en 7bf61b6, junto a
+Rubros, Acompanamiento y Planes; solo este cierre se esta trabajando.
+
 
 **Actual — personalidad final de FAQ, 28/oct:** Dico en dorado en el titulo.
 Gestos al 55% del ritmo habitual solo en FAQ; saludo mas pausado, pensamiento
