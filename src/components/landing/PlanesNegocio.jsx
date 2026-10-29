@@ -29,20 +29,14 @@ function Importe({ valor }) {
   return <><span className="pl-oculto">{pesosDelPlan(valor)}</span><span aria-hidden="true" ref={texto}>{pesosDelPlan(valor)}</span></>;
 }
 
-function seguirBorde(evento) {
-  if (evento.pointerType === 'touch') return;
-  const tarjeta = evento.currentTarget;
-  tarjeta.dataset.puntero = 'true';
-  const rect = tarjeta.getBoundingClientRect();
-  tarjeta.style.setProperty('--pp-x', `${evento.clientX - rect.left}px`);
-  tarjeta.style.setProperty('--pp-y', `${evento.clientY - rect.top}px`);
-}
-
-function soltarBorde(evento) {
-  delete evento.currentTarget.dataset.puntero;
-  evento.currentTarget.style.removeProperty('--pp-x');
-  evento.currentTarget.style.removeProperty('--pp-y');
-}
+// La comparativa reutiliza la oferta actual; su alcance final queda pendiente.
+const COMPARACION_PLANES = PLANES_COMERCIALES.reduce((planes, plan) => {
+  const herencia = plan.incluye.find(texto => texto.startsWith('Todo lo de '));
+  const base = planes.find(anterior => herencia === `Todo lo de ${anterior.nombre}`);
+  const funciones = new Set([...(base?.funciones ?? []), ...plan.incluye.filter(texto => !texto.startsWith('Todo lo de '))]);
+  return [...planes, { id: plan.id, nombre: plan.nombre, funciones }];
+}, []);
+const FUNCIONES_COMPARADAS = [...new Set(COMPARACION_PLANES.flatMap(plan => [...plan.funciones]))];
 
 const DESCRIPCIONES = {
   digital: 'Tu negocio online y su gestión diaria.',
@@ -82,7 +76,7 @@ export default function PlanesNegocio({ onDiagnostico }) {
           {PLANES_COMERCIALES.map((plan, indice) => {
             const precio = precioDelPeriodo(plan, anual);
             return (
-              <article className="pp-plan" data-plan={plan.id} data-destacado={plan.id === 'local'} key={plan.id} aria-labelledby={`pp-${plan.id}`} data-reveal={indice + 2} style={{ '--pp-demora': `${320 + indice * 180}ms`, '--pp-inicio': `${15 + indice * 10}%`, '--pp-fin': `${75 + indice * 10}%` }} onPointerEnter={seguirBorde} onPointerMove={seguirBorde} onPointerLeave={soltarBorde} onFocusCapture={evento => evento.currentTarget.classList.add('is-in')}>
+              <article className="pp-plan" data-plan={plan.id} data-destacado={plan.id === 'local'} key={plan.id} aria-labelledby={`pp-${plan.id}`} data-reveal={indice + 2} style={{ '--pp-demora': `${320 + indice * 180}ms`, '--pp-inicio': `${15 + indice * 10}%`, '--pp-fin': `${75 + indice * 10}%` }} onFocusCapture={evento => evento.currentTarget.classList.add('is-in')}>
                 <span className="pp-linea" aria-hidden="true" />
                 {plan.id === 'local' && <p className="pp-destacado">Plan destacado</p>}
                 <div className="pp-identidad">
@@ -97,7 +91,7 @@ export default function PlanesNegocio({ onDiagnostico }) {
                   <p className="pp-equivalente">{precio.equivalente !== null ? 'Equivalente mensual · Pago anual' : plan.anualPorMes === null ? 'Solo pago mensual' : 'Pago mensual'}</p>
                   <p className="pp-por-local">{precio.equivalente !== null ? `${pesosDelPlan(precio.importe)} al año · ` : ''}Por local · Sin IVA</p>
                 </div>
-                <p className="pp-incluye-titulo">Incluye</p>
+                <p className="pp-incluye-titulo">Lo más destacado</p>
                 <Beneficios items={plan.incluye.slice(0, 3)} />
                 <button type="button" className="pp-elegir" onClick={onDiagnostico}>Elegir {plan.nombre} <span aria-hidden="true">→</span></button>
               </article>
@@ -106,10 +100,24 @@ export default function PlanesNegocio({ onDiagnostico }) {
         </div>
         <details className="pp-comparar">
           <summary>Comparar todas las funciones <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary>
-          <div className="pp-comparacion">{PLANES_COMERCIALES.map(plan => <section key={plan.id} aria-labelledby={`pp-comparar-${plan.id}`}><h3 id={`pp-comparar-${plan.id}`}>{plan.nombre}</h3><Beneficios items={plan.incluye} /></section>)}</div>
+          <div className="pp-comparacion">
+            <div className="pp-tabla-scroll" role="region" aria-label="Comparación de funciones por plan" tabIndex={0}>
+              <table className="pp-tabla">
+                <caption className="pl-oculto">Las mismas funciones comparadas entre Digital, Local y Cadena</caption>
+                <thead><tr><th scope="col">Funciones</th>{COMPARACION_PLANES.map(plan => <th scope="col" data-plan={plan.id} key={plan.id}>{plan.nombre}</th>)}</tr></thead>
+                <tbody>{FUNCIONES_COMPARADAS.map(funcion => <tr key={funcion}>
+                  <th scope="row">{funcion}</th>
+                  {COMPARACION_PLANES.map(plan => <td data-plan={plan.id} key={plan.id}>
+                    {plan.funciones.has(funcion) ? <><svg className="pp-tabla-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4 10-10" /></svg><span className="pl-oculto">Incluido</span></> : <><span className="pp-no-incluido" aria-hidden="true">—</span><span className="pl-oculto">No incluido</span></>}
+                  </td>)}
+                </tr>)}</tbody>
+              </table>
+            </div>
+            <p className="pp-comparacion-nota">Contenido de los planes en definición.</p>
+          </div>
         </details>
         <p className="pp-accion">¿No sabés cuál elegir? <button type="button" className="pp-ayuda" onClick={onDiagnostico}>Hacé el diagnóstico <span aria-hidden="true">→</span></button></p>
-        <div className="pp-condiciones"><p>Precios en pesos argentinos, por local y sin IVA. Sin cargo por usuario ni por pedido.</p><p>Funciones disponibles según el rubro. Facturación electrónica ARCA en desarrollo.</p></div>
+        <div className="pp-condiciones"><p>Precios en pesos argentinos, por local y sin IVA. Sin cargo por usuario ni por pedido.</p></div>
       </div>
     </section>
   );

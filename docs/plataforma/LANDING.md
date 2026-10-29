@@ -11,6 +11,17 @@
 
 ### Revision visual de Ricky
 
+**Actual — matriz de planes y borde marfil, 28/oct:** «Lo mas destacado»
+reemplaza Incluye. Comparativa en tabla: una fila comun por funcion y tres
+columnas con check/guion; se deriva de planesPlataforma.js, incluyendo herencia
+«Todo lo de Digital/Local», sin inventar un alcance nuevo. Contenido provisorio
+senalado dentro del desplegable, pendiente de la informacion final de Ricky.
+Tabla con cabeceras semanticas, nombres de fila fijos y scroll horizontal en
+movil. El cursor ya no posiciona una linterna: borde marfil uniforme al hover
+o foco en cualquiera de las cards, conservando identidad y Local destacado.
+Retirada linea repetida de rubro/ARCA. Rubros y Acompanamiento sin cambios.
+
+
 **Actual — planes con Local destacado, 28/oct:** se conserva entrada con scroll,
 fondo volt y seguimiento del cursor en las tres cards. Digital acento marfil
 con icono de pantalla; Local profundo azul, borde volt, etiqueta «Plan destacado»
