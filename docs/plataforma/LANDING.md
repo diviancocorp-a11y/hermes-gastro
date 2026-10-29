@@ -11,6 +11,12 @@
 
 ### Revision visual de Ricky
 
+**Clientes — titulo fuera y barra menor, 29/oct:** rotulo encima de la barra,
+sobre negro: texto gris y Dico dorado. Franja marfil de112px (antes148), solo
+logos; bordes azules3px y junta gris/azul/apertura conservados. Titulo con12px
+de separacion, no se recorta con el revelado. Mismos logos, enlaces y respiro.
+
+
 **Clientes — vuelta exacta a81f53dd, 29/oct:** Ricky rechazo el corte rapido
 contra el marfil de5593b5f. Restaurados componente y CSS de clientes tal cual
 antes de esa ultima modificacion: respiro negro bajo parallax, junta gris que

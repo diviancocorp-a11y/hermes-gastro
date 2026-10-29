@@ -26,10 +26,10 @@ export default function NegociosDico() {
   }, []);
   return (
     <section className="nc-root" id="negocios" aria-labelledby="nc-titulo">
+      <h2 id="nc-titulo">Negocios que ya usan <span>Dico</span></h2>
       <div className="nc-marco" ref={panel} onFocusCapture={() => { forzar.current = true; panel.current.style.setProperty('--nc-apertura', 1); panel.current.style.setProperty('--nc-contenido', 1); panel.current.dataset.visible = true; panel.current.dataset.luz = true; }}>
       <span className="nc-junta" aria-hidden="true" />
       <div className="nc-panel">
-      <h2 id="nc-titulo">Negocios que ya usan <span>Dico</span></h2>
       <div className="nc-deslizable" role="region" aria-label="Negocios que usan Dico. Deslizá para ver todos." tabIndex={0}>
         <ul className="nc-fila">
           {NEGOCIOS.map(negocio => (
