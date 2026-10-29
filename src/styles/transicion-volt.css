@@ -1,4 +1,2 @@
 .hv-root { position: relative; min-height: clamp(240px, 34svh, 360px); padding: var(--ds-space-6) var(--pl-m); overflow: hidden; background: var(--pl-suelo-continuo); }
-.hv-root > span { position: absolute; top: 0; left: 0; width: clamp(64px, 8vw, 120px); height: 2px; opacity: 0; pointer-events: none; background: linear-gradient(90deg, transparent, var(--ds-color-intelligence-volt)); }
-.hv-root > span::after { content: ''; position: absolute; right: 0; top: -1px; width: 4px; height: 4px; border-radius: 50%; background: var(--ds-color-intelligence-label); box-shadow: 0 0 12px var(--ds-color-intelligence-volt); }
-@media (prefers-reduced-motion: reduce) { .hv-root > span { display: none; } }
+.hv-root > canvas { position: absolute; inset: 0; }

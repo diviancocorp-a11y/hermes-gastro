@@ -11,6 +11,14 @@
 
 ### Revision visual de Ricky
 
+**Mesh drift dorado/volt, 29/oct:** Ricky descarta los pulsos y aporta el
+ShaderBackground de21st.dev. Se integra el shader original, convertido a JSX
+sin TypeScript/shadcn/dependencias nuevas. Paleta leida de tokens negro,
+dorado y volt, misma altura240–360px. Pausa fuera de pantalla/pestana oculta;
+movimiento reducido produce un cuadro fijo sin interaccion del cursor.
+Sin WebGL conserva fondo negro. Se mantiene el resto de la landing.
+
+
 **Prueba de pulsos volt, 29/oct:** Ricky quita el primer saludo de Dico,
 conservando exactamente la altura negra240–360px entre hero y Rubros. Se
 prueban tres trazos volt con posiciones, direcciones y tiempos aleatorios;
