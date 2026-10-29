@@ -48,6 +48,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
+import { SEO_PLATAFORMA } from '../lib/seoPlataforma';
 import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
 import RubrosNegocio from '../components/landing/RubrosNegocio';
@@ -61,10 +62,8 @@ import '../styles/plataforma-claro.css';
 import '../styles/platform-landing.css';
 import '../styles/diagnostico.css';
 
-const TITULO = 'Dico — Todo tu negocio, en un solo lugar';
-// <= 160 caracteres, lo que muestran los buscadores. Igual en api/og.js.
-const DESCRIPCION = 'Ventas, costos, sueldos, stock, caja, pedidos y el resultado de cada día '
-  + 'de tu gastronomía, comercio o servicio. Empezá con un diagnóstico, sin email.';
+const TITULO = SEO_PLATAFORMA.titulo;
+const DESCRIPCION = SEO_PLATAFORMA.descripcion;
 
 /** Escribe el titulo y los meta de la raiz. El index.html del build lleva los
  *  del cliente que se horneo (clients/edificio), asi que sin esto la pestania de

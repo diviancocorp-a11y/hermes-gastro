@@ -5,6 +5,7 @@ import path from 'path'
 import fs from 'fs'
 import { pathToFileURL } from 'url'
 import { resolveBuildIdentity } from './scripts/build-identity.mjs'
+import { plataformaSeoPlugin } from './scripts/seo-platform.mjs'
 
 // El build de produccion es clients/edificio, y es el default: Vercel no manda
 // CLIENT. El otro que queda es clients/dico-qa-lite, el fixture local.
@@ -176,7 +177,7 @@ async function sentryPlugins() {
 }
 
 export default defineConfig(async () => ({
-  plugins: [businessHtmlPlugin(), versionJsonPlugin(), tailwindcss(), react(), ...(await sentryPlugins())],
+  plugins: [businessHtmlPlugin(), versionJsonPlugin(), plataformaSeoPlugin({ client: CLIENT, buildId: BUILD_ID }), tailwindcss(), react(), ...(await sentryPlugins())],
   resolve: {
     alias: {
       '@business': path.resolve(__dirname, `clients/${CLIENT}/business.js`),

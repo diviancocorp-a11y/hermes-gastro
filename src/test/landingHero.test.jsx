@@ -100,18 +100,18 @@ describe('parallax fotográfico', () => {
     </div>,
   );
 
-  it('sincroniza cuatro planos al scroll y al resize sin un loop permanente', () => {
+  it('sincroniza los planos y la luz al scroll y al resize sin un loop permanente', () => {
     const { container } = montarEscena();
     const raiz = container.firstChild;
     vi.spyOn(raiz, 'getBoundingClientRect').mockReturnValue({ top: -400 });
-    expect(animar).toHaveBeenCalledTimes(4);
+    expect(animar).toHaveBeenCalledTimes(5);
     expect(animar.mock.calls.map(([frames]) => frames[1].transform)).toEqual([
       'translate3d(0, 990px, 0)', 'translate3d(0, 2460px, 0)',
-      'translate3d(0, 1950px, 0)', 'translate3d(0, 360px, 0)',
+      'translate3d(0, 1950px, 0)', 'translate3d(0, 1950px, 0)', 'translate3d(0, 360px, 0)',
     ]);
     act(() => visibilidad([{ isIntersecting: true }]));
     act(() => cuadro());
-    expect(animaciones.map((animacion) => animacion.currentTime)).toEqual([400, 400, 400, 400]);
+    expect(animaciones.map((animacion) => animacion.currentTime)).toEqual([400, 400, 400, 400, 400]);
     expect(requestAnimationFrame).toHaveBeenCalledOnce();
     fireEvent.resize(window);
     expect(requestAnimationFrame).toHaveBeenCalledTimes(2);
@@ -136,7 +136,7 @@ describe('parallax fotográfico', () => {
     const cambiar = preferencia.addEventListener.mock.calls[0][1];
     preferencia.matches = false;
     act(() => cambiar());
-    expect(animar).toHaveBeenCalledTimes(4);
+    expect(animar).toHaveBeenCalledTimes(5);
     preferencia.matches = true;
     act(() => cambiar());
     animaciones.forEach((animacion) => expect(animacion.cancel).toHaveBeenCalledOnce());

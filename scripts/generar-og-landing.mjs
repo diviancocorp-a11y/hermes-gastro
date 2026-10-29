@@ -45,7 +45,7 @@ const RUTAS = [
 // vista apaisada, que es donde el titular se lee.
 const CSS_OG = `
   html, body { margin: 0; }
-  body { width: ${ANCHO}px; height: ${ALTO}px; overflow: hidden; }
+  body { width: ${ANCHO}px; height: ${ALTO}px; overflow: hidden; background: var(--ds-color-zinc-950); color: var(--ds-color-zinc-50); }
   .og.pl-root { min-height: 0; height: ${ALTO}px; }
   .og .pl-hero {
     display: flex;
@@ -86,10 +86,10 @@ const HTML = `<!doctype html>
     <section class="pl-hero">
       <img class="og-logo" src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
       <h1 class="pl-titular">
-        <span class="pl-titular-fijo">Sabé cuánto ganás,</span>
-        <span class="pl-titular-alma pl-serif">no solo cuánto vendés.</span>
+        <span class="pl-titular-fijo">Tu tiempo vuelve</span>
+        <span class="pl-titular-alma pl-serif">a ser tuyo.</span>
       </h1>
-      <p class="pl-pill"><span class="pl-pill-dot"></span>Gestión para gastronomía&nbsp;· divianco.app</p>
+      <p class="pl-pill"><span class="pl-pill-dot"></span>Gastronomía, comercios y servicios · divianco.app</p>
     </section>
   </div>
 </body>
@@ -121,7 +121,7 @@ async function servir(route) {
 }
 
 async function main() {
-  const navegador = await chromium.launch()
+  const navegador = await chromium.launch(process.env.OG_BROWSER_CHANNEL ? { channel: process.env.OG_BROWSER_CHANNEL } : {})
   try {
     const pagina = await navegador.newPage({
       viewport: { width: ANCHO, height: ALTO },
@@ -139,7 +139,7 @@ async function main() {
     // cara coincide, asi que no sirve para detectar el fallback.
     const estado = await pagina.evaluate(async (caras) => {
       const d = globalThis.document
-      const texto = 'Sabé cuánto ganás, no solo cuánto vendés. Gestión para gastronomía · divianco.app'
+      const texto = 'Tu tiempo vuelve a ser tuyo. Gestión para gastronomía · divianco.app'
       for (const c of caras) await d.fonts.load(c.muestra, texto)
       await d.fonts.ready
       const todas = [...d.fonts].map((f) => ({

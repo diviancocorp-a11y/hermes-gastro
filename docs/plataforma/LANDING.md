@@ -11,6 +11,18 @@
 
 ### Revision visual de Ricky
 
+**Publicacion y SEO en curso, 29/oct:** Ricky autoriza publicar la landing en
+la raiz divianco.app. Integra main (agenda/catalogo existentes se conservan).
+Excepcion autorizada: marketing:seo-audit no esta instalada; se usan docs
+oficiales Google/Bing/OpenAI/Vite, sin dependencias nuevas. Build genera
+plataforma.html desde los componentes reales, metadatos/canonical/OG/Twitter y
+JSON-LD Organization/WebSite/SoftwareApplication. Rewrite SOLO host raiz; mismo
+HTML para personas y bots, tenants mantienen index.html. Formularios y paneles
+noindex; sitemap solo home; robots permite buscadores, llms corrige precios y
+alcance. Clave publica IndexNow para avisar la home despues del despliegue.
+Pendiente terminar pruebas, fusionar PR52, verificar main/CI y dominio publico.
+
+
 **Separacion Clientes/Rubros, 29/oct:** ajuste pedido tras retirar el segmento
 de pedido: negro inferior de clientes48px (antes16) y barra marfil76px
 (antes88). Logos48px y apertura intactos. Rubros y demas segmentos sin cambios.
