@@ -11,6 +11,16 @@
 
 ### Revision visual de Ricky
 
+**Clientes — direccion final simple, 29/oct:** franja marfil de 170px desktop,
+sin bordes/sombras ni hueco negro adicional; titulo completo en carbon.
+Cuatro logos nitidos a color, opacidad1, nombres debajo; hover/foco escala1.06
+y «Ver negocio» en espacio reservado, Instagram en otra pestana. Movil2x2 de
+328px con accion siempre visible. Revelado breve ligado a scroll solo del
+fondo; contenido aparece completo al haber espacio, sin escalar. Progreso
+acumulado: una vez abierto no se cierra, sale naturalmente con el scroll.
+Demostracion a32px. Altura reservada, foco/reducido abren directamente.
+
+
 **Clientes — junta gris/azul y composicion, 29/oct:** linea gris independiente
 visible en reposo; se enciende azul al centro llegar a 92% del viewport, antes
 de abrir al 82%. El marfil se expande desde el centro, sin linea marfil previa.
