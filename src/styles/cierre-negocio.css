@@ -55,7 +55,8 @@
 .pf-logo { position: relative; width: calc(100% + 2 * var(--pl-m)); margin: var(--ds-space-6) calc(-1 * var(--pl-m)) 0; overflow: hidden; pointer-events: none; color: var(--ds-color-zinc-950); line-height: 0; }
 .pf-logo svg { display: block; width: 100%; height: auto; }
 .pf-logo path { opacity: .32; }
-.pf-logo :is(circle, ellipse) { stroke: var(--ds-color-brand-gold-500); opacity: .65; }
+.pf-logo circle { stroke: var(--ds-color-brand-gold-500); opacity: .65; }
+.pf-logo ellipse { stroke: var(--ds-color-intelligence-volt); opacity: .65; }
 .pl-root .cf-root :focus-visible, .pl-root .pf-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: var(--ds-space-1); border-radius: var(--ds-radius-1); }
 .pl-root .pf-root :focus-visible { outline-color: var(--ds-color-intelligence-trace); }
 .pl-root .cf-root .cf-boton:focus-visible { outline-color: var(--ds-color-zinc-50); border-radius: var(--ds-radius-pill); }

@@ -12,7 +12,8 @@
 ### Revision visual de Ricky
 
 **FOOTER CERRADO visualmente por Ricky, 29/oct:** ultimo ajuste del logo:
-letras de contorno gris al 32% y cara/ojos dorados al 65% sobre marfil, segun
+letras de contorno gris al 32%, circulos dorados y ojos azul volt al 65%
+sobre marfil, segun
 referencia final. Conserva geometria original, ojos completos y corte inferior
 sin espacio adicional; sin rellenos ni efectos. Contactos y capsulas aprobados.
 No mas cambios visuales hasta revision final; textos legales aun pendientes.
