@@ -11,6 +11,12 @@
 
 ### Revision visual de Ricky
 
+**CIERRE CERRADO visualmente por Ricky, 29/oct:** bordes de la compuerta y
+franja final engrosados a 3px. Conserva apertura reversible ligada al scroll,
+CTA usable durante apertura parcial y escala ampliada. No hacer mas cambios
+a este segmento hasta terminar el resto; footer pendiente de revision.
+
+
 **Retoque de cierre, 29/oct:** CTA usable durante la apertura parcial en la
 zona ya visible; las hojas tapan tambien los clics sobre contenido oculto.
 Solo foco visible de teclado abre de inmediato: el clic no fuerza la apertura.

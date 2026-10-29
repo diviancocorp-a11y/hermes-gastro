@@ -1,10 +1,10 @@
-.cf-root { position: relative; border-block: 1px solid var(--pl-suelo-continuo); padding: 96px var(--pl-m); background: var(--ds-color-intelligence-volt); color: var(--ds-color-zinc-50); }
+.cf-root { position: relative; border-block: 3px solid var(--pl-suelo-continuo); padding: 96px var(--pl-m); background: var(--ds-color-intelligence-volt); color: var(--ds-color-zinc-50); }
 .cf-panel { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 40px; max-width: 1480px; margin-inline: auto; }
 .cf-root[data-compuerta="abierta"] { border-block-color: var(--pc-oro); }
 .cf-compuerta { position: absolute; z-index: 2; inset: 0; overflow: hidden; pointer-events: none; }
 .cf-hoja { position: absolute; left: 0; right: 0; height: 50%; pointer-events: auto; background: var(--pl-suelo-continuo); border-color: var(--ds-color-zinc-800); transition: border-color 160ms ease; }
-.cf-hoja-superior { top: 0; border-bottom: 1px solid var(--ds-color-zinc-800); }
-.cf-hoja-inferior { bottom: 0; border-top: 1px solid var(--ds-color-zinc-800); }
+.cf-hoja-superior { top: 0; border-bottom: 3px solid var(--ds-color-zinc-800); }
+.cf-hoja-inferior { bottom: 0; border-top: 3px solid var(--ds-color-zinc-800); }
 .cf-root[data-compuerta="abriendo"] .cf-hoja, .cf-root[data-compuerta="dorada"] .cf-hoja, .cf-root[data-compuerta="abierta"] .cf-hoja { border-color: var(--pc-oro); }
 .cf-hoja-superior { transform: translateY(calc(-1 * var(--cf-apertura, 0%))); }
 .cf-hoja-inferior { transform: translateY(var(--cf-apertura, 0%)); }
