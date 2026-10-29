@@ -11,6 +11,12 @@
 
 ### Revision visual de Ricky
 
+**Color final del footer, 29/oct:** fondo marfil neutral-100, tipografia
+zinc oscura y contactos activos en azul volt/trace, segun referencia de Ricky.
+Logo azul al 22% sobre marfil, sin animacion; se conservan capsulas, copia del
+email, destinos y corte inferior. Legales siguen pendientes. Sin cambios en
+el cierre azul aprobado ni en los otros segmentos.
+
 **Footer en revision, 29/oct:** firma «Un producto de Grupo Divianco» con link
 al Instagram de Grupo Divianco. Tres contactos independientes con espacio
 reservado para expandir circulos en capsulas al hover/foco, sin pulsos ni
