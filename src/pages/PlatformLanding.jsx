@@ -148,15 +148,11 @@ function Portada({ onAbrir }) {
   };
   return (
     <div className="pl-portada">
-      <div className="pl-hero-herramientas" role="group" aria-label="Algunas herramientas de Dico, según tu rubro">
-        <ul className="pl-hero-cascada pl-hero-cascada-izquierda" data-tiempo-capa="-0.24">{['Pedidos', 'Mesas y cocina', 'Recetas y costos', 'Stock'].map(texto => <li key={texto}>{texto}</li>)}</ul>
-        <ul className="pl-hero-cascada pl-hero-cascada-derecha" data-tiempo-capa="0.24">{['Caja y cobros', 'Compras y gastos', 'Personal', 'Resultados'].map(texto => <li key={texto}>{texto}</li>)}</ul>
-      </div>
-      <h1 className="pl-h1" data-tiempo-capa="-0.12">
+      <h1 className="pl-h1" data-tiempo-capa="0.33">
         <span>Tu tiempo vuelve</span>{' '}
         <span>a ser tuyo.</span>
       </h1>
-      <div className="pl-tiempo-propuesta" data-tiempo-capa="-0.12">
+      <div className="pl-tiempo-propuesta" data-tiempo-capa="0.33">
         <p className="pl-bajada">
           <strong>Toda la gestión de tu negocio, conectada.</strong>
           <span>Para gastronomía, comercios y servicios.</span>

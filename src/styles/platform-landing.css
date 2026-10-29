@@ -811,14 +811,13 @@
 
 /* Referencia Osmo: cielo, montana, titulo y caminante, en ese orden.
    Un solo encuadre compartido conserva el registro de los tres recortes. */
-.pl-hero-tiempo { --pl-hero-alto: 100svh; min-height: 180svh; --pl-hero-titulo: clamp(56px, 5.3vw, 92px); --pc-producto: var(--pl-suelo-continuo); background: var(--pc-producto); }
+.pl-hero-tiempo { --pl-hero-alto: 100svh; --pl-hero-titulo: clamp(56px, 5.3vw, 92px); --pc-producto: var(--pl-suelo-continuo); background: var(--pc-producto); }
 .pl-hero-tiempo .pl-cabecera { z-index: 8; color: var(--pc-producto-tinta); }
 .pl-cabecera-accesos { display: flex; align-items: center; gap: var(--ds-space-6); }
 .pl-hero-tiempo .pl-cabecera-registro { color: var(--pc-oro); }
 .pl-hero-tiempo.pl-hero-diagnostico .pl-cabecera { color: var(--ds-color-zinc-50); }
 .pl-hero-tiempo .dg-cerrado {
-  position: sticky;
-  top: 0;
+  position: relative;
   display: block;
   height: var(--pl-hero-alto);
   min-height: 0;
@@ -859,11 +858,6 @@
 .pl-tiempo-cielo { z-index: 1; }
 .pl-tiempo-montana { z-index: 2; }
 .pl-tiempo-frente { z-index: 4; scale: .96; transform-origin: 50% 80%; mask-image: linear-gradient(to right, transparent, black 25%, black 75%, transparent); }
-.pl-hero-herramientas { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
-.pl-hero-cascada { position: absolute; top: 42%; width: 22%; max-width: 280px; display: grid; gap: 28px; padding: 24px; color: var(--ds-color-zinc-50); opacity: .72; font-size: clamp(14px, 1.3vw, 20px); line-height: 1.4; font-weight: 400; }
-.pl-hero-cascada-izquierda { left: 0; text-align: left; }
-.pl-hero-cascada-derecha { right: 0; text-align: right; }
-@media (max-width: 699px) { .pl-hero-cascada { top: 55%; width: 31%; gap: 24px; padding: 12px; font-size: 12px; } }
 .pl-hero-tiempo .pl-h1 {
   position: absolute;
   z-index: 3;
@@ -984,8 +978,6 @@
   .pl-hero-tiempo .pl-bajada { font-size: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pl-hero-tiempo { min-height: 100svh; }
-  .pl-hero-tiempo .dg-cerrado { position: relative; }
   .pl-tiempo-capa, .pl-hero-tiempo .pl-h1, .pl-tiempo-propuesta { transform: none; }
 }
 

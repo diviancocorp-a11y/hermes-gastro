@@ -11,6 +11,15 @@
 
 ### Revision visual de Ricky
 
+**Hero — correccion de movimiento, 29/oct:** Ricky rechazo las cascadas y la
+escena sticky; retiradas ambas. Vuelve el parallax original con scroll libre:
+velocidades cielo .82, montana .65, titulo/bajada .33, primer plano .12; al bajar
+el primer plano sube mas rapido en pantalla que el paisaje. Escena de 100svh,
+clientes inmediatamente despues. Se conserva persona 20% mayor (escala .96)
+y alineacion identica cielo/montana en todos los breakpoints para evitar doble
+silueta. Sin herramientas laterales. Las notas anteriores son historial.
+
+
 **Hero — parallax extendido y cascadas, 29/oct:** tramo de 180svh con escena
 sticky de 100svh y scroll nativo; clientes inmediatamente despues del tramo.
 Quitados offsets diferentes por breakpoint que desalineaban cielo (incluye
