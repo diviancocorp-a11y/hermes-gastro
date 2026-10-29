@@ -11,6 +11,13 @@
 
 ### Revision visual de Ricky
 
+**HERO Y CLIENTES CERRADOS visualmente por Ricky, 29/oct:** ultimo ajuste:
+logos48px y barra marfil88px, titulo gris/Dico dorado fuera sobre negro.
+Se conservan respiro, junta gris que enciende azul, bordes3px y apertura scroll.
+Hero con parallax natural, persona20% mayor y luz azul/dorada suave sin auroras.
+No cambiar estos segmentos hasta revision final del conjunto.
+
+
 **Clientes — titulo fuera y barra menor, 29/oct:** rotulo encima de la barra,
 sobre negro: texto gris y Dico dorado. Franja marfil de112px (antes148), solo
 logos; bordes azules3px y junta gris/azul/apertura conservados. Titulo con12px
