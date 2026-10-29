@@ -11,6 +11,12 @@
 
 ### Revision visual de Ricky
 
+**Retoque de cierre, 29/oct:** CTA usable durante la apertura parcial en la
+zona ya visible; las hojas tapan tambien los clics sobre contenido oculto.
+Solo foco visible de teclado abre de inmediato: el clic no fuerza la apertura.
+Franja mas alta, titular y CTA proporcionados, menor separacion hasta el footer.
+El resto del footer permanece igual.
+
 **Actual — compuerta de cierre ligada al scroll, 29/oct:** dos hojas negras
 cubren la franja azul conservando su alto. Junta gris al entrar y dorada al
 92% del viewport; apertura progresiva entre el 86% y el 42%, sin temporizador.
