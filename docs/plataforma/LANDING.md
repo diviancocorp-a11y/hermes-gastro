@@ -11,6 +11,13 @@
 
 ### Revision visual de Ricky
 
+**Clientes — rotulo y apertura, 29/oct:** titulo «Negocios que ya usan Dico»
+en dorado legible sobre marfil; bordes superior/inferior azul volt de 3px,
+mismo grosor que cierre. Revelado empieza con el centro al 82% del viewport
+(antes 98%) y termina al 60%, para apreciar el recorrido bajando mas. Alto
+reservado de 148px intacto; no desplaza el siguiente segmento.
+
+
 **Hero — luz de horizonte, 29/oct:** Ricky descarta las auroras. Retiradas
 cintas SVG, animaciones y clases de activacion; queda luz difusa estatica azul
 volt/dorada detras de la montana, siguiendo su capa de parallax. Sin cambios

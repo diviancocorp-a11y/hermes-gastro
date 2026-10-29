@@ -11,7 +11,7 @@ export default function NegociosDico() {
     const medir = () => {
       cuadro = 0;
       const rect = panel.current.getBoundingClientRect();
-      const progreso = preferencia.matches || forzar.current ? 1 : Math.max(0, Math.min(1, (window.innerHeight * .98 - rect.top - rect.height / 2) / (window.innerHeight * .22)));
+      const progreso = preferencia.matches || forzar.current ? 1 : Math.max(0, Math.min(1, (window.innerHeight * .82 - rect.top - rect.height / 2) / (window.innerHeight * .22)));
       panel.current.style.setProperty('--nc-apertura', progreso);
       panel.current.style.setProperty('--nc-contenido', Math.max(0, Math.min(1, (progreso - .45) / .55)));
       panel.current.dataset.visible = progreso >= .85;
