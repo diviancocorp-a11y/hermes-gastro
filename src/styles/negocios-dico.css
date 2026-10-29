@@ -1,8 +1,8 @@
-/* Clientes al pie: franja compacta y siempre visible, sin apertura. */
-.nc-root { padding: var(--ds-space-6) 0; background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-400); }
-.nc-root h2 { margin: 0 0 12px; text-align: center; color: var(--ds-color-zinc-400); font-size: var(--ds-type-md); line-height: 24px; font-weight: 400; }
-.nc-root h2 span { color: var(--pc-oro); font-weight: 500; }
-.nc-panel { padding: 5px var(--pl-m); border-block: 3px solid var(--ds-color-intelligence-volt); background: var(--ds-color-neutral-100); color: var(--ds-color-zinc-800); }
+/* Clientes integrados en el marfil del footer, sin franja ni apertura. */
+.nc-root { padding: 0 0 var(--ds-space-6); color: var(--ds-color-zinc-800); }
+.nc-root h2 { margin: 0 0 12px; text-align: center; color: var(--ds-color-zinc-800); font-size: var(--ds-type-md); line-height: 24px; font-weight: 400; }
+.nc-root h2 span { color: var(--ds-color-brand-gold-700); font-weight: 500; }
+.nc-panel { padding-block: 5px; color: var(--ds-color-zinc-800); }
 .nc-deslizable { max-width: 720px; margin-inline: auto; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-color: var(--ds-color-neutral-400) var(--ds-color-neutral-100); scrollbar-width: thin; }
 .nc-fila { display: flex; justify-content: space-between; gap: clamp(24px, 5vw, 72px); width: max-content; min-width: 100%; padding-inline: var(--ds-space-2); }
 .nc-fila li { flex: none; }

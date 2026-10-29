@@ -12,8 +12,9 @@
 ### Revision visual de Ricky
 
 **Clientes al pie, 29/oct:** por pedido de Ricky se mueve NegociosDico desde
-el hero hasta despues del cierre azul y antes de «Un producto de Grupo
-Divianco». Se elimina la apertura por scroll y su listener; logos siempre
+el hero al INTERIOR del footer marfil, antes de «Un producto de Grupo
+Divianco». Sin fondo negro, franja propia ni bordes azules: comparte el marfil
+del footer (correccion explicita de Ricky). Se elimina la apertura por scroll y su listener; logos siempre
 visibles, mismos cuatro negocios/enlaces/hover y barra compacta. El inicio
 queda Hero → Rubros → Acompanamiento → Planes. Registro: propuesta de dos
 pasos revisada, pendiente implementar tras definir el flujo; hoy recupera
