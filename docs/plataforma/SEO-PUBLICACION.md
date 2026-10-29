@@ -4,6 +4,21 @@
 marketing:seo-audit no esta instalada; autorizo usar las fuentes oficiales
 listadas abajo sin instalar dependencias.
 
+## Resultado comprobado
+
+- PR52 y PR58 fusionados. Produccion3973675 READY, CI/E2E/smoke aprobados.
+- Home200 con HTML completo para navegador, Googlebot y OAI-SearchBot;
+  visible sin JavaScript. Escritorio1440 y movil390 sin desborde ni errores,
+  diagnostico abre sin enviar datos durante la prueba.
+- Robots, sitemap, llms, OG y clave IndexNow200; registro noindex. Catalogo
+  crazy-miga200 sin canonical de plataforma. /landing308 hacia /.
+- IndexNow respondio202 el29/oct: aviso recibido, no prueba indexacion.
+- Redireccion exacta de la raiz www agregada tras detectar que el comodin
+  redirigia subrutas pero no la raiz. Se mantiene tambien la regla general.
+- No se agregaron dependencias ni cambios en base. Search Console no tiene
+  propiedad verificada disponible en esta sesion; el titular puede solicitar
+  rastreo y consultar informes con su acceso.
+
 ## Que se configura
 
 - `scripts/seo-platform.mjs` genera `dist/plataforma.html` a partir de los

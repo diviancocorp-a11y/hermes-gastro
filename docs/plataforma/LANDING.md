@@ -11,20 +11,28 @@
 
 ### Revision visual de Ricky
 
-**Publicacion y SEO en curso, 29/oct:** Ricky autoriza publicar la landing en
-la raiz divianco.app. Integra main (agenda/catalogo existentes se conservan).
-Excepcion autorizada: marketing:seo-audit no esta instalada; se usan docs
-oficiales Google/Bing/OpenAI/Vite, sin dependencias nuevas. Build genera
-plataforma.html desde los componentes reales, metadatos/canonical/OG/Twitter y
-JSON-LD Organization/WebSite/SoftwareApplication. Rewrite SOLO host raiz; mismo
-HTML para personas y bots, tenants reciben el shell app.html. Formularios y paneles
-noindex; sitemap solo home; robots permite buscadores, llms corrige precios y
-alcance. Clave publica IndexNow para avisar la home despues del despliegue.
-PR52 fusionado en main (04dd594), landing publicada. Verificacion publica
-detecto que el index estatico ganaba al rewrite de la raiz: se renombra el
-shell a app.html para que Vercel seleccione el HTML por hostname. Build y
-pruebas focalizadas pasan; pendiente verificar el arreglo en produccion y
-notificar IndexNow.
+**Landing publicada y SEO habilitado, 29/oct:** PR52 y correccion PR58
+fusionados en main. Produccion verificada en 3973675: divianco.app entrega el
+HTML real de la landing, canonical, OG/Twitter y JSON-LD. El shell app.html
+mantiene separados los tenants; no se emite index.html porque Vercel lo
+priorizaba sobre el rewrite. www y /landing tienen redireccion a la raiz;
+se agrega regla exacta para la raiz de www tras detectar que el comodin solo
+redirigia sus subrutas. Sin cambios visuales ni de base.
+
+Verificacion publica: escritorio1440 y celular390, diagnostico abre, sin
+scroll horizontal ni errores JS; titular visible sin JavaScript. HTML200
+identico para navegador, Googlebot y OAI-SearchBot. Robots, sitemap, llms e
+imagen OG200; registro noindex. Catalogo crazy-miga200 sin canonical de
+plataforma. CI, E2E y smoke de produccion de3973675 aprobados; se actualizo
+el smoke al titular vigente (buscaba la clase de la landing vieja).
+
+IndexNow enviado para la home:202 (recibido, pendiente de verificacion del
+buscador; no significa indexacion). Clave publica comprobada. Search Console
+sin propiedad verificada disponible en esta sesion: solicitud manual e
+informes quedan para el acceso del titular; sitemap publico ya disponible.
+Excepcion SEO autorizada por Ricky: skill marketing:seo-audit no instalada,
+se usaron docs oficiales sin dependencias nuevas. Detalle y fuentes en
+SEO-PUBLICACION.md. Los segmentos aprobados siguen cerrados.
 
 
 **Separacion Clientes/Rubros, 29/oct:** ajuste pedido tras retirar el segmento
