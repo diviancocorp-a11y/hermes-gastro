@@ -49,7 +49,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import Diagnostico from '../components/landing/Diagnostico';
-import CircuitosHero from '../components/landing/CircuitosHero';
 import EscenaHero from '../components/landing/EscenaHero';
 import CircuitoNegocio from '../components/landing/CircuitoNegocio';
 import RubrosNegocio from '../components/landing/RubrosNegocio';
@@ -116,8 +115,8 @@ export default function PlatformLanding() {
             <img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
           </a>
           <nav className="pl-cabecera-accesos" aria-label="Acceso a Dico">
-            <a className="pl-enlace pl-cabecera-link" href="/entrar">Entrar</a>
-            <a className="pl-enlace pl-cabecera-link pl-cabecera-registro" href="/registro">Registrate</a>
+            <a className="pl-enlace pl-cabecera-link" href="/entrar">Iniciá sesión</a>
+            <a className="pl-enlace pl-cabecera-link pl-cabecera-registro" href="/registro">Registrá tu negocio</a>
           </nav>
         </header>
         <Diagnostico
@@ -149,7 +148,6 @@ function Portada({ onAbrir }) {
   };
   return (
     <div className="pl-portada">
-      <CircuitosHero onAbrir={alAbrir} />
       <h1 className="pl-h1" data-tiempo-capa="0.33">
         <span>Tu tiempo vuelve</span>{' '}
         <span>a ser tuyo.</span>

@@ -11,6 +11,16 @@
 
 ### Revision visual de Ricky
 
+**Hero en revision — version limpia, 29/oct:** paisaje ocupa 100svh completo,
+sin circuitos laterales (componente y estilos retirados). Titular crece aprox.
+15%, bajada en peso medio, rubros menores y mas aire entre titulo y bajada.
+Navegacion «Inicia sesion» / «Registra tu negocio» con voseo acentuado en UI.
+Logos solo imagen, algo mas visibles, en franja compacta inmediatamente despues
+del primer viewport; sin tramo extra ni fijacion del scroll. Se conserva el
+parallax de capas, persona centrada, CTA dorado y transicion al diagnostico.
+Resto de segmentos cerrados sin cambios.
+
+
 **Siguiente foco — hero, 29/oct:** footer cerrado tras confirmar ojos dorados.
 Se retoma el hero para los proximos ajustes que indique Ricky.
 

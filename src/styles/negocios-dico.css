@@ -5,7 +5,7 @@
 .nc-fila { display: flex; justify-content: center; gap: clamp(32px, 5vw, 80px); width: max-content; min-width: 100%; padding: var(--ds-space-4) var(--ds-space-2); }
 .nc-fila li { flex: none; }
 .nc-negocio { position: relative; display: flex; align-items: center; gap: var(--ds-space-4); min-height: 96px; padding-block: var(--ds-space-3); text-decoration: none; color: inherit; }
-.nc-negocio img { width: 72px; height: 72px; max-width: none; object-fit: cover; border-radius: var(--ds-radius-pill); filter: grayscale(1); opacity: .65; transition: filter 240ms ease, opacity 240ms ease; }
+.nc-negocio img { width: 72px; height: 72px; max-width: none; object-fit: cover; border-radius: var(--ds-radius-pill); filter: grayscale(1); opacity: .8; transition: filter 240ms ease, opacity 240ms ease; }
 .nc-negocio:is(:hover, :focus-visible) { color: var(--ds-color-zinc-50); }
 .nc-negocio:is(:hover, :focus-visible) img { filter: grayscale(0); opacity: 1; }
 .nc-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: 2px; border-radius: var(--ds-radius-2); }
@@ -21,11 +21,11 @@
   .nc-deslizable { margin-top: var(--ds-space-3); }
 }
 
-/* La franja completa cierra el primer viewport junto al hero. */
+/* Franja compacta inmediatamente despues del primer viewport, sin tramo vacio. */
 .pl-hero-tiempo + .nc-root { box-sizing: border-box; height: 120px; padding-block: 8px; }
 .pl-hero-tiempo + .nc-root h2 { font-size: var(--ds-type-sm); line-height: 20px; }
 .pl-hero-tiempo + .nc-root .nc-deslizable { margin-top: 4px; }
 .pl-hero-tiempo + .nc-root .nc-fila { padding-block: 0; }
 .pl-hero-tiempo + .nc-root .nc-negocio { min-height: 76px; padding-block: 4px; gap: 12px; }
-.pl-hero-tiempo + .nc-root .nc-negocio img { width: 48px; height: 48px; }
+.pl-hero-tiempo + .nc-root .nc-negocio img { width: 56px; height: 56px; }
 @media (prefers-reduced-motion: reduce) { .nc-negocio img { transition: none; } }

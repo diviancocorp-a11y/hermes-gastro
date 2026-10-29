@@ -811,7 +811,7 @@
 
 /* Referencia Osmo: cielo, montana, titulo y caminante, en ese orden.
    Un solo encuadre compartido conserva el registro de los tres recortes. */
-.pl-hero-tiempo { --pl-hero-alto: calc(100svh - 120px); --pc-producto: var(--pl-suelo-continuo); background: var(--pc-producto); }
+.pl-hero-tiempo { --pl-hero-alto: 100svh; --pl-hero-titulo: clamp(56px, 5.3vw, 92px); --pc-producto: var(--pl-suelo-continuo); background: var(--pc-producto); }
 .pl-hero-tiempo .pl-cabecera { z-index: 8; color: var(--pc-producto-tinta); }
 .pl-cabecera-accesos { display: flex; align-items: center; gap: var(--ds-space-6); }
 .pl-hero-tiempo .pl-cabecera-registro { color: var(--pc-oro); }
@@ -865,7 +865,7 @@
   left: var(--pl-m);
   right: var(--pl-m);
   font-family: var(--ds-font-soul);
-  font-size: clamp(48px, 4.6vw, 80px);
+  font-size: var(--pl-hero-titulo);
   font-weight: 400;
   letter-spacing: -0.045em;
   line-height: 0.94;
@@ -875,14 +875,14 @@
 .pl-tiempo-propuesta {
   position: absolute;
   z-index: 6;
-  top: calc(max(72px, var(--pl-hero-alto) * .095) + clamp(48px, 4.6vw, 80px) * 1.88 + 8px);
+  top: calc(max(72px, var(--pl-hero-alto) * .095) + var(--pl-hero-titulo) * 1.88 + 20px);
   left: var(--pl-m);
   right: var(--pl-m);
   text-align: center;
 }
 .pl-hero-tiempo .pl-bajada { margin-inline: auto; margin-top: 0; font-size: clamp(18px, 1.55vw, 26px); line-height: 1.3; }
-.pl-hero-tiempo .pl-bajada strong { display: block; font-weight: 600; }
-.pl-hero-tiempo .pl-bajada > span { display: block; margin-top: var(--ds-space-1); font-size: .85em; font-weight: 400; }
+.pl-hero-tiempo .pl-bajada strong { display: block; font-weight: 500; }
+.pl-hero-tiempo .pl-bajada > span { display: block; margin-top: var(--ds-space-1); font-size: .8em; font-weight: 400; }
 .pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-4); gap: var(--ds-space-2); flex-direction: column; align-items: center; }
 .pl-hero-tiempo .pl-hero-origen {
   min-height: calc(var(--ds-control-height-touch) + var(--ds-space-2));
@@ -948,60 +948,25 @@
 .pl-hero-tiempo:not(.pl-hero-diagnostico) .pl-cabecera :focus-visible {
   outline-color: var(--pc-producto-volt);
 }
-/* Circuitos de herramientas: cada lado recorre cuatro nodos sin invadir el centro. */
-.pl-circuitos { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
-.pl-circuito-lado { position: absolute; top: 20%; width: 25%; height: 54%; display: grid; grid-template-rows: repeat(4, 1fr); }
-.pl-circuito-izquierdo { left: 0; }
-.pl-circuito-derecho { right: 0; }
-.pl-circuito-rama { position: relative; min-height: 0; }
-.pl-circuito-rama svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; fill: none; stroke: var(--ds-color-intelligence-label); stroke-width: 1; }
-.pl-circuito-derecho svg { transform: scaleX(-1); }
-.pl-circuito-trazo { opacity: .35; }
-.pl-circuito-pulso { stroke: var(--ds-color-intelligence-volt); stroke-width: 2.5; stroke-dasharray: 12 112; stroke-dashoffset: 12; opacity: 0; filter: drop-shadow(0 0 4px var(--ds-color-intelligence-volt)); }
-.pl-circuito-nombre { position: absolute; top: 60%; left: 50%; transform: translateY(-50%); margin-left: 14px; padding: var(--ds-space-2) 0; min-height: 44px; border: 0; background: transparent; color: var(--ds-color-intelligence-label); font: inherit; font-size: clamp(13px, 1.15vw, 18px); white-space: nowrap; cursor: pointer; pointer-events: auto; }
-.pl-circuito-derecho .pl-circuito-nombre { left: auto; right: 50%; margin-left: 0; margin-right: 14px; }
-.pl-circuito-nombre::before { content: ''; position: absolute; top: 50%; left: -20px; width: 10px; height: 10px; border: 1.5px solid currentColor; border-radius: 50%; background: var(--pl-suelo-continuo); transform: translateY(-50%); }
-.pl-circuito-derecho .pl-circuito-nombre::before { left: auto; right: -20px; }
-.pl-circuito-nombre:is(:hover, :focus-visible) { animation: none; color: var(--ds-color-zinc-50); text-decoration: underline; text-underline-offset: .2em; }
-@media (prefers-reduced-motion: no-preference) {
-  .pl-circuito-pulso { animation: pl-circuito-viaje 12s linear var(--circuito-demora) infinite; }
-  .pl-circuito-nombre { animation: pl-circuito-enfasis 12s linear var(--circuito-demora) infinite; }
-  .pl-circuitos :is(.pl-circuito-pulso, .pl-circuito-nombre) { animation-play-state: paused; }
-  .pl-circuitos-activos :is(.pl-circuito-pulso, .pl-circuito-nombre) { animation-play-state: running; }
-}
-@keyframes pl-circuito-viaje {
-  0% { stroke-dashoffset: 12; opacity: 0; }
-  2% { opacity: 1; }
-  20% { stroke-dashoffset: -100; opacity: 1; }
-  25%, 100% { stroke-dashoffset: -100; opacity: 0; }
-}
-@keyframes pl-circuito-enfasis {
-  0%, 14%, 30%, 100% { color: var(--ds-color-intelligence-label); stroke: var(--ds-color-intelligence-label); }
-  20%, 24% { color: var(--ds-color-zinc-50); stroke: var(--ds-color-zinc-50); }
-}
 @media (max-width: 999px) {
-  .pl-hero-tiempo .pl-h1 { font-size: clamp(48px, 6.4vw, 64px); }
-  .pl-tiempo-propuesta { top: calc(72px + clamp(48px, 6.4vw, 64px) * 1.88 + 8px); }
-  .pl-circuito-lado { width: 24%; }
-  .pl-circuito-nombre { font-size: 12px; }
+  .pl-hero-tiempo { --pl-hero-titulo: clamp(56px, 7.4vw, 74px); }
+  .pl-tiempo-propuesta { top: calc(max(72px, var(--pl-hero-alto) * .095) + var(--pl-hero-titulo) * 1.88 + 20px); }
 }
 @media (max-width: 699px) {
-  .pl-hero-tiempo .pl-h1 { top: 88px; font-size: clamp(36px, 9.8vw, 56px); }
-  .pl-tiempo-propuesta { top: calc(88px + clamp(36px, 9.8vw, 56px) * 1.88 + 16px); }
+  .pl-hero-tiempo { --pl-hero-titulo: clamp(42px, 11.3vw, 64px); }
+  .pl-hero-tiempo .pl-h1 { top: 88px; }
+  .pl-tiempo-propuesta { top: calc(88px + var(--pl-hero-titulo) * 1.88 + 20px); }
   .pl-hero-tiempo .pl-bajada { max-width: 32ch; font-size: var(--ds-type-lg); }
   .pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-3); }
   .pl-hero-tiempo .pl-acciones > .pl-enlace { display: inline-flex; }
   .pl-hero-tiempo .pl-hero-origen { padding-left: var(--ds-space-4); gap: var(--ds-space-3); }
   .pl-hero-tiempo .pl-hero-etiqueta { font-size: var(--ds-type-md); }
-  .pl-circuito-lado { top: auto; bottom: 12px; width: 50%; height: 104px; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
-  .pl-circuito-rama svg { display: none; }
-  .pl-circuito-nombre, .pl-circuito-derecho .pl-circuito-nombre { position: relative; top: auto; left: auto; right: auto; transform: none; margin: 0; width: 100%; padding: var(--ds-space-1); font-size: 11px; }
-  .pl-circuito-nombre::before, .pl-circuito-derecho .pl-circuito-nombre::before { content: ''; position: static; transform: none; display: inline-block; width: 4px; height: 4px; margin-right: 5px; border-radius: 50%; background: currentColor; }
 }
 @media (max-height: 740px) and (min-width: 700px) {
   .pl-tiempo-montana, .pl-tiempo-frente { top: 0; }
-  .pl-hero-tiempo .pl-h1 { top: 64px; font-size: 48px; }
-  .pl-tiempo-propuesta { top: calc(64px + 48px * 1.88 + 8px); }
+  .pl-hero-tiempo { --pl-hero-titulo: 56px; }
+  .pl-hero-tiempo .pl-h1 { top: 64px; }
+  .pl-tiempo-propuesta { top: calc(64px + var(--pl-hero-titulo) * 1.88 + 16px); }
   .pl-hero-tiempo .pl-bajada { font-size: 18px; }
   .pl-hero-tiempo .pl-acciones { margin-top: 10px; gap: 2px; }
   .pl-hero-ayuda { margin-top: 2px; }
@@ -1009,8 +974,9 @@
 }
 @media (max-width: 699px) and (max-height: 740px) {
   .pl-tiempo-montana, .pl-tiempo-frente { top: 10%; }
-  .pl-hero-tiempo .pl-h1 { top: 76px; font-size: 36px; }
-  .pl-tiempo-propuesta { top: 152px; }
+  .pl-hero-tiempo { --pl-hero-titulo: 42px; }
+  .pl-hero-tiempo .pl-h1 { top: 76px; }
+  .pl-tiempo-propuesta { top: calc(76px + var(--pl-hero-titulo) * 1.88 + 16px); }
   .pl-hero-tiempo .pl-bajada { font-size: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
