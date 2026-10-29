@@ -11,6 +11,14 @@
 
 ### Revision visual de Ricky
 
+**Actual — ultimo retoque visual de Planes, 28/oct:** Local sin contorno azul
+ni resplandor fijo; borde neutro como las otras cards, conservando etiqueta
+«Plan destacado», fondo y boton aprobados. Brillo marfil localizado ampliado
+a 420px con caida al 85% para responder tambien desde el centro; sigue
+recortado al borde, sin iluminar el interior. Contenido final de planes aun
+pendiente de Ricky. Rubros y Acompanamiento sin cambios.
+
+
 **Actual — antetitulo de planes, 28/oct:** «PLANES» gris zinc y «DICO» dorado
 encima del titulo, conservando posicion, tipo y espaciado. Resto sin cambios.
 
