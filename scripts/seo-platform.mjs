@@ -41,6 +41,13 @@ export function crearHtmlPlataforma(html, contenido) {
 export function plataformaSeoPlugin({ client, buildId }) {
   return {
     name: 'dico-platform-seo', apply: 'build', enforce: 'post',
+    configurePreviewServer(server) {
+      if (client !== 'edificio') return;
+      server.middlewares.use((req, _res, next) => {
+        if (req.headers.accept?.includes('text/html') && !path.extname((req.url || '').split('?')[0])) req.url = '/app.html';
+        next();
+      });
+    },
     async generateBundle(_opciones, bundle) {
       if (client !== 'edificio') return;
       const index = bundle['index.html'];
@@ -57,6 +64,10 @@ export function plataformaSeoPlugin({ client, buildId }) {
         }
         if (/src="\/src\//.test(contenido)) throw new Error('Una imagen prerenderizada no tiene URL de produccion');
         this.emitFile({ type: 'asset', fileName: 'plataforma.html', source: crearHtmlPlataforma(String(index.source), contenido) });
+        // Un index estatico gana a los rewrites de Vercel en /. Dejamos que
+        // el hostname elija plataforma.html o el shell de los tenants.
+        this.emitFile({ type: 'asset', fileName: 'app.html', source: index.source });
+        delete bundle['index.html'];
       } finally { await server.close(); }
     },
   };

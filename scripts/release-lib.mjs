@@ -213,7 +213,7 @@ export function auditOutput(outDir, expectedShort, { expectTitle = 'Dico' } = {}
   }
 
   // index.html + manifest: que sea el tenant del edificio y no otro.
-  const indexPath = join(outDir, 'index.html');
+  const indexPath = join(outDir, existsSync(join(outDir, 'app.html')) ? 'app.html' : 'index.html');
   if (!existsSync(indexPath)) {
     problemas.push('Falta index.html en el output.');
   } else {
