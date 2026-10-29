@@ -11,6 +11,15 @@
 
 ### Revision visual de Ricky
 
+**Union suelo/mesh panoramico, 29/oct:** el suelo de primer plano mide RGB
+14/14/13; se usa el neutral950 existente15/14/13 como puente calido. El hero
+funde hacia ese tono, el primer tramo lo conserva y baja gradualmente al zinc
+de la pagina. El canvas entra/sale con mascara vertical sin borde de card.
+Mesh drift adapta su campo al ancho panoramico y reduce la vineta para que
+oro y volt alcancen ambos laterales, no solo el centro. Misma altura, sin
+cambiar Rubros ni el resto. Siguiente foco pedido: diagnostico.
+
+
 **Mesh drift dorado/volt, 29/oct:** Ricky descarta los pulsos y aporta el
 ShaderBackground de21st.dev. Se integra el shader original, convertido a JSX
 sin TypeScript/shadcn/dependencias nuevas. Paleta leida de tokens negro,

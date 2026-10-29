@@ -231,6 +231,9 @@ void main() {
     }
   }
 
+  // La franja es panoramica: repartir el campo por todo el ancho, no por
+  // el lado corto del canvas. El cursor conserva sus coordenadas de pantalla.
+  p.x *= min(1.0, 1.4 * u_resolution.y / u_resolution.x);
   // Keep presets that read uv (rather than p) in the same warped space.
   uv = p * min(u_resolution.x, u_resolution.y) / u_resolution.xy + 0.5;
   p *= u_scale;
@@ -297,7 +300,7 @@ const UNIFORMS = {
   brightness: -0.020,
   saturation: 0.680,
   hue: 0.0000,
-  vignette: 0.540,
+  vignette: 0.180,
   blur: 0.0000,
   grain: 0.220,
   seed: 1.0,
