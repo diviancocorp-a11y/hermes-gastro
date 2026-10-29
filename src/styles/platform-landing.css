@@ -856,16 +856,10 @@
   object-position: center;
 }
 .pl-tiempo-cielo { z-index: 1; }
-.pl-auroras { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
-.pl-aurora { position: absolute; top: 12%; width: 86%; height: 42%; filter: blur(9px); mix-blend-mode: screen; animation: pl-aurora-fluye 8s ease-in-out infinite alternate paused; }
-.pl-aurora svg { width: 100%; height: 100%; overflow: visible; fill: none; stroke: currentColor; stroke-width: 22; }
-.pl-aurora path:nth-child(2) { stroke-width: 12; opacity: .55; }
-.pl-aurora path:nth-child(3) { stroke-width: 8; opacity: .4; }
-.pl-aurora-volt { left: -24%; color: var(--ds-color-intelligence-volt); }
-.pl-aurora-oro { top: 20%; right: -24%; color: var(--pc-oro); animation-duration: 11s; animation-delay: -4s; animation-direction: alternate-reverse; }
-.pl-tiempo-visible .pl-aurora { animation-play-state: running; }
-@keyframes pl-aurora-fluye { from { transform: translate(-8%, 8%) rotate(-12deg) skewX(-16deg) scale(1, .7); opacity: .6; } to { transform: translate(12%, -12%) rotate(10deg) skewX(18deg) scale(1.2, 1.2); opacity: .95; } }
-@media (prefers-reduced-motion: reduce) { .pl-aurora { animation: none; opacity: .4; } }
+.pl-luz-horizonte { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.pl-luz-horizonte span { position: absolute; top: 34%; width: 62%; height: 24%; filter: blur(28px); opacity: .55; }
+.pl-luz-volt { left: -2%; background: radial-gradient(ellipse, var(--ds-color-intelligence-volt), transparent 70%); }
+.pl-luz-oro { right: -2%; background: radial-gradient(ellipse, var(--pc-oro), transparent 70%); }
 .pl-tiempo-montana { z-index: 2; }
 .pl-tiempo-frente { z-index: 4; scale: .96; transform-origin: 50% 80%; mask-image: linear-gradient(to right, transparent, black 25%, black 75%, transparent); }
 .pl-hero-tiempo .pl-h1 {

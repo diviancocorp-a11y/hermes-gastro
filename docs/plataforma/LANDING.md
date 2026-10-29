@@ -11,6 +11,12 @@
 
 ### Revision visual de Ricky
 
+**Hero — luz de horizonte, 29/oct:** Ricky descarta las auroras. Retiradas
+cintas SVG, animaciones y clases de activacion; queda luz difusa estatica azul
+volt/dorada detras de la montana, siguiendo su capa de parallax. Sin cambios
+en el movimiento del hero, el respiro negro ni el revelado marfil de clientes.
+
+
 **Hero/clientes — ajuste de remate, 29/oct:** negro agregado debajo de la
 escena (64–96px antes de clientes); fundido de foto acotado al ultimo 14%,
 sin subir negro hacia el cielo. Auroras pasan de manchas a cintas SVG curvas
