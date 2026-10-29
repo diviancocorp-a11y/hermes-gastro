@@ -106,6 +106,12 @@
   ],
   "redirects": [
     {
+      "source": "/",
+      "has": [{ "type": "host", "value": "www.divianco.app" }],
+      "destination": "https://divianco.app/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {

@@ -31,6 +31,7 @@ describe('SEO de la plataforma sin mezclar tenants', () => {
     expect(regla.source).toBe('/');
     expect(regla.has).toEqual([{ type: 'host', value: 'divianco.app' }]);
     expect(config.rewrites.at(-1).destination).toBe('/app.html');
+    expect(config.redirects).toContainEqual({ source: '/', has: [{ type: 'host', value: 'www.divianco.app' }], destination: 'https://divianco.app/', permanent: true });
     expect(JSON.stringify(regla)).not.toMatch(/user-agent|Googlebot/);
   });
   it('no genera la landing para el fixture de otro cliente', async () => {
