@@ -233,6 +233,16 @@ describe('geometria y limites del atlas', () => {
 });
 
 describe('lo que DicoPhysical no hace', () => {
+  it('permite recorrer el saludo con scroll sin que el reloj avance el cuadro', () => {
+    const { container, rerender, unmount } = montar({ animacion: 'saluda', cuadroControlado: 1 });
+    act(() => vi.advanceTimersByTime(2000));
+    expect(cuadroVisible(container)).toBe(1);
+    rerender(React.createElement(DicoPhysical, { animacion: 'saluda', cuadroControlado: 3 }));
+    expect(cuadroVisible(container)).toBe(3);
+    rerender(React.createElement(DicoPhysical, { animacion: 'saluda', cuadroControlado: 0 }));
+    expect(cuadroVisible(container)).toBe(0);
+    unmount();
+  });
   it('no rasteriza texto ni monta una cara encima', () => {
     // El atlas ya trae la cara. Una capa de tinta arriba seria una cara sobre
     // otra cara, y el texto va SIEMPRE en la burbuja.

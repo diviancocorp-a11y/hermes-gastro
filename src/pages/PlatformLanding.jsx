@@ -51,6 +51,7 @@ import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import { SEO_PLATAFORMA } from '../lib/seoPlataforma';
 import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
+import SaludoDico from '../components/landing/SaludoDico';
 import RubrosNegocio from '../components/landing/RubrosNegocio';
 import ComoEmpezar from '../components/landing/ComoEmpezar';
 import PlanesNegocio from '../components/landing/PlanesNegocio';
@@ -125,6 +126,7 @@ export default function PlatformLanding() {
           lado={<EscenaHero />}
         />
       </section>
+      <SaludoDico />
       <span className="pl-ancla-rubros" id="que-hace" aria-hidden="true" />
       <span className="pl-ancla-rubros" id="pilares" aria-hidden="true" />
       <span className="pl-ancla-rubros" id="flujo" aria-hidden="true" />

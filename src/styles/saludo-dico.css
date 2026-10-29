@@ -1,0 +1,4 @@
+.sd-root { display: grid; place-items: center; min-height: clamp(240px, 34svh, 360px); padding: var(--ds-space-6) var(--pl-m); background: var(--pl-suelo-continuo); }
+.sd-personaje { width: clamp(144px, 16vw, 180px); opacity: var(--sd-entrada, 1); transform: translateY(calc((1 - var(--sd-entrada, 1)) * 28px)); }
+.sd-personaje .dico-pose { width: 100%; height: auto; aspect-ratio: 192 / 208; }
+@media (prefers-reduced-motion: reduce) { .sd-personaje { opacity: 1; transform: none; } }

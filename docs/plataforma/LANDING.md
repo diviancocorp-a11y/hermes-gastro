@@ -11,6 +11,14 @@
 
 ### Revision visual de Ricky
 
+**Primer saludo de Dico, 29/oct:** tramo negro entre hero y cabecera dorada
+Rubros, altura responsive240–360px. Personaje vigente del atlas del pet,
+144–180px, saludo y entrada ligados al scroll, sin bucle de reloj: detenerse
+congela el gesto y subir lo retrocede. Sin texto ni CTA nuevos. Movimiento
+reducido muestra Dico quieto. Se agrega cuadroControlado opcional al primitive
+sin cambiar sus consumidores anteriores; FAQ conserva sus interacciones.
+
+
 **Clientes negro dentro del footer, 29/oct:** se conserva la ubicacion dentro
 del footer, encima de la firma. Ricky pide fondo negro a todo el ancho, borde
 inferior volt3px contra el marfil; burbujas con contorno dorado que se ilumina
