@@ -11,6 +11,13 @@
 
 ### Revision visual de Ricky
 
+**FOOTER CERRADO visualmente por Ricky, 29/oct:** ultimo ajuste del logo:
+letras de contorno gris al 32% y cara/ojos dorados al 65% sobre marfil, segun
+referencia final. Conserva geometria original, ojos completos y corte inferior
+sin espacio adicional; sin rellenos ni efectos. Contactos y capsulas aprobados.
+No mas cambios visuales hasta revision final; textos legales aun pendientes.
+
+
 **Color final del footer, 29/oct:** fondo marfil neutral-100, tipografia
 zinc oscura y contactos activos en azul volt/trace, segun referencia de Ricky.
 Logo azul al 22% sobre marfil, sin animacion; se conservan capsulas, copia del

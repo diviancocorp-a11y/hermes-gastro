@@ -52,8 +52,10 @@
 .pf-legales button { min-height: var(--ds-control-height-touch); padding: var(--ds-space-2); border: 0; background: transparent; color: var(--ds-color-zinc-800); font-family: inherit; cursor: not-allowed; opacity: 1; font-size: var(--ds-type-sm); text-decoration: underline; text-underline-offset: .2em; }
 .pf-legal-pendiente { flex-basis: 100%; font-size: 12px; color: var(--ds-color-zinc-800); }
 .pf-copyright { margin-top: var(--ds-space-4); font-size: var(--ds-type-sm); line-height: 1.6; }
-.pf-logo { position: relative; width: calc(100% + 2 * var(--pl-m)); margin: var(--ds-space-6) calc(-1 * var(--pl-m)) 0; overflow: hidden; pointer-events: none; color: var(--ds-color-intelligence-volt); opacity: .22; line-height: 0; }
+.pf-logo { position: relative; width: calc(100% + 2 * var(--pl-m)); margin: var(--ds-space-6) calc(-1 * var(--pl-m)) 0; overflow: hidden; pointer-events: none; color: var(--ds-color-zinc-950); line-height: 0; }
 .pf-logo svg { display: block; width: 100%; height: auto; }
+.pf-logo path { opacity: .32; }
+.pf-logo :is(circle, ellipse) { stroke: var(--ds-color-brand-gold-500); opacity: .65; }
 .pl-root .cf-root :focus-visible, .pl-root .pf-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: var(--ds-space-1); border-radius: var(--ds-radius-1); }
 .pl-root .pf-root :focus-visible { outline-color: var(--ds-color-intelligence-trace); }
 .pl-root .cf-root .cf-boton:focus-visible { outline-color: var(--ds-color-zinc-50); border-radius: var(--ds-radius-pill); }
