@@ -11,6 +11,15 @@
 
 ### Revision visual de Ricky
 
+**Prueba de pulsos volt, 29/oct:** Ricky quita el primer saludo de Dico,
+conservando exactamente la altura negra240–360px entre hero y Rubros. Se
+prueban tres trazos volt con posiciones, direcciones y tiempos aleatorios;
+solo se animan a la vista, se cancelan fuera de pantalla. Movimiento reducido
+mantiene el espacio negro quieto. Sin texto, mascotas ni controles. Si no se
+aprueba, se quitan los pulsos conservando ese mismo espacio. FAQ intacto;
+se retira el cuadroControlado y su prueba, que solo usaba el saludo retirado.
+
+
 **Primer saludo de Dico, 29/oct:** tramo negro entre hero y cabecera dorada
 Rubros, altura responsive240–360px. Personaje vigente del atlas del pet,
 144–180px, saludo y entrada ligados al scroll, sin bucle de reloj: detenerse

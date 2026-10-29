@@ -89,7 +89,6 @@ export default function DicoPhysical({
   title = 'Dico',
   animacion = null,
   ritmo = 1,
-  cuadroControlado = null,
 }) {
   const actual = physicalPoseCanonica(pose);
   const menosMovimiento = useMediaQuery('(prefers-reduced-motion: reduce)');
@@ -100,7 +99,6 @@ export default function DicoPhysical({
     () => (animacion ? planDeAnimacion(animacion) : planDePose(actual)),
     [actual, animacion],
   );
-  const controlado = Number.isInteger(cuadroControlado);
   const [cuadro, setCuadro] = useState(0);
 
   // El cuadro vuelve a cero al cambiar de pose. Entrar a `falla` por el cuadro
@@ -114,7 +112,7 @@ export default function DicoPhysical({
   }
 
   useEffect(() => {
-    if (controlado || quieto || plan.fps <= 0 || plan.cuadros <= 1) return undefined;
+    if (quieto || plan.fps <= 0 || plan.cuadros <= 1) return undefined;
     const id = setInterval(
       () => setCuadro((c) => {
         if (!plan.bucle && c >= plan.cuadros - 1) return c;
@@ -123,10 +121,9 @@ export default function DicoPhysical({
       Math.round(1000 / (plan.fps * factorRitmo)),
     );
     return () => clearInterval(id);
-  }, [controlado, quieto, plan.fps, plan.cuadros, plan.bucle, factorRitmo]);
+  }, [quieto, plan.fps, plan.cuadros, plan.bucle, factorRitmo]);
 
-  const cuadroVisible = controlado ? Math.max(0, Math.min(plan.cuadros - 1, cuadroControlado)) : cuadro;
-  const columna = plan.cuadros > 1 ? cuadroVisible : plan.columna;
+  const columna = plan.cuadros > 1 ? cuadro : plan.columna;
   const { x, y } = posicionDeCelda(columna, plan.fila);
 
   return (
