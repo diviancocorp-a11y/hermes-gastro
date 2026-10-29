@@ -15,6 +15,7 @@ export default function NegociosDico() {
       panel.current.style.setProperty('--nc-apertura', progreso);
       panel.current.style.setProperty('--nc-contenido', Math.max(0, Math.min(1, (progreso - .45) / .55)));
       panel.current.dataset.visible = progreso >= .85;
+      panel.current.dataset.luz = rect.top + rect.height / 2 <= window.innerHeight * .92;
     };
     const actualizar = () => { if (!cuadro) cuadro = requestAnimationFrame(medir); };
     window.addEventListener('scroll', actualizar, { passive: true });
@@ -25,8 +26,10 @@ export default function NegociosDico() {
   }, []);
   return (
     <section className="nc-root" id="negocios" aria-labelledby="nc-titulo">
-      <div className="nc-panel" ref={panel} onFocusCapture={() => { forzar.current = true; panel.current.style.setProperty('--nc-apertura', 1); panel.current.style.setProperty('--nc-contenido', 1); panel.current.dataset.visible = true; }}>
-      <h2 id="nc-titulo">Negocios que ya usan Dico</h2>
+      <div className="nc-marco" ref={panel} onFocusCapture={() => { forzar.current = true; panel.current.style.setProperty('--nc-apertura', 1); panel.current.style.setProperty('--nc-contenido', 1); panel.current.dataset.visible = true; panel.current.dataset.luz = true; }}>
+      <span className="nc-junta" aria-hidden="true" />
+      <div className="nc-panel">
+      <h2 id="nc-titulo">Negocios que ya usan <span>Dico</span></h2>
       <div className="nc-deslizable" role="region" aria-label="Negocios que usan Dico. Deslizá para ver todos." tabIndex={0}>
         <ul className="nc-fila">
           {NEGOCIOS.map(negocio => (
@@ -38,6 +41,7 @@ export default function NegociosDico() {
             </li>
           ))}
         </ul>
+      </div>
       </div>
       </div>
     </section>

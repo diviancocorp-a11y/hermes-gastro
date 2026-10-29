@@ -11,6 +11,14 @@
 
 ### Revision visual de Ricky
 
+**Clientes — junta gris/azul y composicion, 29/oct:** linea gris independiente
+visible en reposo; se enciende azul al centro llegar a 92% del viewport, antes
+de abrir al 82%. El marfil se expande desde el centro, sin linea marfil previa.
+Titulo gris con solo «Dico» dorado, algo mayor; logos distribuidos en un ancho
+maximo de 720px para dar intencion al conjunto. Alto reservado y bordes3px
+intactos; sin salto de contenido y con acceso por teclado/movimiento reducido.
+
+
 **Clientes — rotulo y apertura, 29/oct:** titulo «Negocios que ya usan Dico»
 en dorado legible sobre marfil; bordes superior/inferior azul volt de 3px,
 mismo grosor que cierre. Revelado empieza con el centro al 82% del viewport
