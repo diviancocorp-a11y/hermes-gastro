@@ -66,7 +66,7 @@ test('landing: divianco.app renderiza', async ({ page }) => {
   const errores = juntarErrores(page)
   const res = await page.goto(`https://${RAIZ}/`)
   expect(res?.status(), 'la landing no respondio 200').toBe(200)
-  await expect(page.locator('h1.pl-titular')).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Tu tiempo vuelve a ser tuyo.' })).toBeVisible()
   await expect(page.locator('a[href="/registro"]').first()).toBeVisible()
   expect(errores, 'errores JS sin atrapar en la landing').toEqual([])
 })

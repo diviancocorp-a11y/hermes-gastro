@@ -16,7 +16,7 @@
     },
     {
       "source": "/((?!api/|assets/|brand/|clients/|icons.svg|favicon|apple-touch-icon|manifest.json|admin-manifest.json|sw.js|robots.txt|sitemap.xml|llms.txt|indexnow-key.txt|_vercel/|offline.html|quack.).*)",
-      "destination": "/index.html"
+      "destination": "/app.html"
     }
   ],
   "headers": [
@@ -86,7 +86,7 @@
       ]
     },
     {
-      "source": "/index.html",
+      "source": "/((?:index|app|plataforma).html)",
       "headers": [
         {
           "key": "Cache-Control",

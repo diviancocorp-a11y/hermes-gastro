@@ -30,13 +30,26 @@ describe('SEO de la plataforma sin mezclar tenants', () => {
     const regla = config.rewrites.find(r => r.destination === '/plataforma.html');
     expect(regla.source).toBe('/');
     expect(regla.has).toEqual([{ type: 'host', value: 'divianco.app' }]);
-    expect(config.rewrites.at(-1).destination).toBe('/index.html');
+    expect(config.rewrites.at(-1).destination).toBe('/app.html');
     expect(JSON.stringify(regla)).not.toMatch(/user-agent|Googlebot/);
   });
   it('no genera la landing para el fixture de otro cliente', async () => {
     const emitFile = vi.fn();
     await plataformaSeoPlugin({ client: 'dico-qa-lite', buildId: 'abc12345' }).generateBundle.call({ emitFile }, {}, {});
     expect(emitFile).not.toHaveBeenCalled();
+  });
+  it('el preview conserva el fallback de navegacion del shell renombrado', () => {
+    const use = vi.fn();
+    plataformaSeoPlugin({ client: 'edificio' }).configurePreviewServer({ middlewares: { use } });
+    const handler = use.mock.calls[0][0];
+    const next = vi.fn();
+    const req = { url: '/admin', headers: { accept: 'text/html' } };
+    handler(req, {}, next);
+    expect(req.url).toBe('/app.html');
+    const asset = { url: '/assets/app.js', headers: { accept: '*/*' } };
+    handler(asset, {}, next);
+    expect(asset.url).toBe('/assets/app.js');
+    expect(next).toHaveBeenCalledTimes(2);
   });
   it('permite descubrir la home pero no anuncia formularios como paginas indexables', () => {
     const robots = readFileSync(new URL('../../public/robots.txt', import.meta.url), 'utf8');

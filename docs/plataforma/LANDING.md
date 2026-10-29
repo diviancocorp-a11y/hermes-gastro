@@ -17,10 +17,14 @@ Excepcion autorizada: marketing:seo-audit no esta instalada; se usan docs
 oficiales Google/Bing/OpenAI/Vite, sin dependencias nuevas. Build genera
 plataforma.html desde los componentes reales, metadatos/canonical/OG/Twitter y
 JSON-LD Organization/WebSite/SoftwareApplication. Rewrite SOLO host raiz; mismo
-HTML para personas y bots, tenants mantienen index.html. Formularios y paneles
+HTML para personas y bots, tenants reciben el shell app.html. Formularios y paneles
 noindex; sitemap solo home; robots permite buscadores, llms corrige precios y
 alcance. Clave publica IndexNow para avisar la home despues del despliegue.
-Pendiente terminar pruebas, fusionar PR52, verificar main/CI y dominio publico.
+PR52 fusionado en main (04dd594), landing publicada. Verificacion publica
+detecto que el index estatico ganaba al rewrite de la raiz: se renombra el
+shell a app.html para que Vercel seleccione el HTML por hostname. Build y
+pruebas focalizadas pasan; pendiente verificar el arreglo en produccion y
+notificar IndexNow.
 
 
 **Separacion Clientes/Rubros, 29/oct:** ajuste pedido tras retirar el segmento

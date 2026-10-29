@@ -12,7 +12,10 @@ listadas abajo sin instalar dependencias.
 - El render de compilacion sustituye el cliente de datos por una barrera que
   rechaza consultas: no necesita credenciales ni lee datos de visitantes.
 - Solo la raiz de `divianco.app` se reescribe a ese archivo. Los subdominios de
-  negocios conservan `index.html` y su resolucion de tenant en runtime. El
+  negocios reciben `app.html` y conservan su resolucion de tenant en runtime.
+  No se emite `dist/index.html`: Vercel le da prioridad sobre el rewrite de
+  la raiz, lo que impedia entregar el prerender. El preview local conserva
+  el fallback al shell y la auditoria de release verifica su identidad. El
   fixture QA no genera la landing prerenderizada.
 - Titulo y descripcion descriptivos, canonical a la raiz, Open Graph y Twitter
   con imagen1200x630, idioma es-AR y JSON-LD de Organization/WebSite/
