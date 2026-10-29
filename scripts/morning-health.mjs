@@ -41,6 +41,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { tenantsAMirar } from './tenants-vivos.mjs';
 import { armarPrueba, dsnDelCodigo } from './sentry-prueba.mjs';
+import {
+  nombresDelDrift, nombresSinArchivo, buscarEnPrs, traerPrsAbiertos, listarConPr,
+} from './pendientes-en-pr.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -124,8 +127,6 @@ async function main() {
      funciones de public. Es el unico que habria visto que `signup_tenant` desplegada no
      la producia ninguna migracion del repo (29/ago). */
   const fnDrift = checkFunctionsDrift();
-  if (fnDrift.rojo) problemas.push(`Funciones DRIFTEADAS vs migraciones — node scripts/check-functions-drift.mjs --verbose`);
-  detalles.push(`funciones: ${fnDrift.texto}`);
 
   /* ── 5b. RLS (opcional, exige service role) ────────────
      El unico que mira el aislamiento entre negocios. Una tabla abierta no
@@ -135,7 +136,25 @@ async function main() {
      alta_de_duenio_con_roles (14/oct) y el repo decia que corria la version
      rota de provision_owner. */
   const sinArchivo = checkMigracionesSinArchivo();
-  if (sinArchivo.rojo) problemas.push(`Migraciones APLICADAS sin archivo en el repo — node scripts/check-migraciones-sin-archivo.mjs`);
+
+  // Con nombres y, si el archivo ya esta en un PR abierto, su numero: el
+  // 29/oct el aviso decia solo "DRIFT" y era la 0113 esperando en el PR 54.
+  const faltan = {
+    funciones: fnDrift.rojo ? nombresDelDrift(fnDrift.salida) : [],
+    migraciones: sinArchivo.rojo ? nombresSinArchivo(sinArchivo.salida) : [],
+  };
+  const enPr = faltan.funciones.length || faltan.migraciones.length
+    ? buscarEnPrs(faltan, await traerPrsAbiertos())
+    : new Map();
+  if (fnDrift.rojo) {
+    const cuales = faltan.funciones.length ? `: ${listarConPr(faltan.funciones, enPr)}` : '';
+    problemas.push(`Funciones DRIFTEADAS vs migraciones${cuales} — node scripts/check-functions-drift.mjs --verbose`);
+  }
+  detalles.push(`funciones: ${fnDrift.texto}`);
+  if (sinArchivo.rojo) {
+    const cuales = faltan.migraciones.length ? `: ${listarConPr(faltan.migraciones, enPr)}` : '';
+    problemas.push(`Migraciones APLICADAS sin archivo en el repo${cuales} — node scripts/check-migraciones-sin-archivo.mjs`);
+  }
   detalles.push(`migraciones: ${sinArchivo.texto}`);
 
   const rls = checkRls();
@@ -272,7 +291,7 @@ function checkFunctionsDrift() {
   const salida = `${r.stdout || ''}${r.stderr || ''}`;
   if (/salteado/.test(salida)) return { rojo: false, texto: 'sin credenciales — salteado' };
   if (r.status === 0) return { rojo: false, texto: '✓ coinciden' };
-  return { rojo: true, texto: 'DRIFT' };
+  return { rojo: true, texto: 'DRIFT', salida };
 }
 
 /** Historial de migraciones del edificio vs archivos de platform/migrations. */
@@ -281,7 +300,7 @@ function checkMigracionesSinArchivo() {
     encoding: 'utf-8', timeout: 60000,
   });
   const salida = `${r.stdout || ''}${r.stderr || ''}`;
-  if (r.status !== 0) return { rojo: true, texto: 'SIN ARCHIVO' };
+  if (r.status !== 0) return { rojo: true, texto: 'SIN ARCHIVO', salida };
   if (/salteado/.test(salida)) return { rojo: false, texto: 'sin credenciales — salteado' };
   return { rojo: false, texto: '✓ todas con archivo' };
 }
