@@ -11,6 +11,16 @@
 
 ### Revision visual de Ricky
 
+**Clientes al pie, 29/oct:** por pedido de Ricky se mueve NegociosDico desde
+el hero hasta despues del cierre azul y antes de «Un producto de Grupo
+Divianco». Se elimina la apertura por scroll y su listener; logos siempre
+visibles, mismos cuatro negocios/enlaces/hover y barra compacta. El inicio
+queda Hero → Rubros → Acompanamiento → Planes. Registro: propuesta de dos
+pasos revisada, pendiente implementar tras definir el flujo; hoy recupera
+nombre/rubro/ID del diagnostico, pero los botones de planes no conservan el
+plan elegido. Sin cambios en Signup ni backend en esta entrega.
+
+
 **Landing publicada y SEO habilitado, 29/oct:** PR52 y correccion PR58
 fusionados en main. Produccion verificada en 3973675: divianco.app entrega el
 HTML real de la landing, canonical, OG/Twitter y JSON-LD. El shell app.html

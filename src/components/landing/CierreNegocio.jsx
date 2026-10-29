@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import useMediaQuery from '../../lib/useMediaQuery';
 import { AGENDA_URL, AGENDA_HORARIO, WHATSAPP_URL, WHATSAPP_HORARIO, WHATSAPP_VISIBLE, INSTAGRAM_DICO_URL, INSTAGRAM_DIVIANCO_URL } from '../../lib/contactoPlataforma';
 import { marcarEvento } from '../../lib/analiticaPlataforma';
+import NegociosDico from './NegociosDico';
 import '../../styles/cierre-negocio.css';
 
 export default function CierreNegocio({ onDiagnostico }) {
@@ -48,6 +49,7 @@ export default function CierreNegocio({ onDiagnostico }) {
           </div>
         </div>
       </section>
+      <NegociosDico />
       <footer className="pf-root" aria-label="Contacto y navegación de Dico">
         <div className="pf-contenido">
           <p className="pf-marca-texto"><a href={INSTAGRAM_DIVIANCO_URL} target="_blank" rel="noopener noreferrer">Un producto de Grupo Divianco</a></p>
