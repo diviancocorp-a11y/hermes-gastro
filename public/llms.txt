@@ -1,41 +1,35 @@
 # Dico
 
-> Dico es un sistema de gestión para gastronomía (restaurantes, parrillas, cafés y cocinas de delivery) hecho por Divianco. Su promesa: sabé cuánto ganás, no solo cuánto vendés. Junta en un solo lugar la receta con costo por insumo, el costo por hora del equipo con fichaje y el P&L con merma y gastos, y muestra la ganancia neta de cada noche.
+> Dico es el sistema de gestión de Grupo Divianco para gastronomía, comercios y servicios. Conecta la operación del negocio para recuperar tiempo. Sitio oficial: https://divianco.app/.
 
-Cada negocio tiene su catálogo público en su propio subdominio (`<nombre>.divianco.app`) que el dueño crea solo desde /registro, en minutos. Dejarlo completo (recetas costeadas, equipo y horarios) se hace en una puesta en marcha acompañada.
+## Producto y alcance
 
-## Qué hace hoy
+- Catálogo online y pedidos, caja y arqueo, compras, gastos y gestión del equipo.
+- Gastronomía: mesas, comandas por sector, recetas, costos y consumo de insumos al completar pedidos.
+- Comercio: catálogo, pedidos y stock por artículo al completar la venta. El costo de lo vendido por artículo se informa como en desarrollo.
+- Servicios: operación, productos y equipo. La maqueta de turnos y cancelaciones ilustra funciones objetivo; consultar el alcance disponible antes de contratar.
+- Resultados del negocio por día y por mes. El cálculo depende del rubro y de los datos registrados.
+- Completar un pedido y registrar su cobro son acciones distintas.
+- Facturación electrónica ARCA en desarrollo. Rappi y PedidosYa sin fecha. Se necesita conexión a internet.
 
-- Catálogo público con link propio y QR para la mesa (activo)
-- Pedidos y salón: mapa de mesas, comandas y pedidos para llevar (activo)
-- Caja y arqueo: cobros por medio de pago y cierre con control del encargado (activo)
-- Stock y compras: insumos, compras, recepciones y merma (activo)
-- Recetas con costo real: costo automático por plato y margen al lado del precio (activo)
-- Reportes y P&L: ganancia por día, por mes y por categoría (activo)
-- Equipo y horarios: legajos, fichaje, costo por hora y costo laboral sobre venta (activo)
-- Cocina en pantalla: comanda digital por sector (en pruebas)
-- Integraciones activas: MercadoPago (Checkout Pro, solo Argentina), respuesta de pedidos por WhatsApp, avisos push, exportar a CSV o PDF
+## Planes publicados
 
-## Qué todavía no hace
+Importes en pesos argentinos, por local y sin IVA:
 
-- Facturación electrónica ARCA: en desarrollo
-- Rappi y Pedidos Ya: sin fecha
-- Modo offline: no hay; sin conexión no se cargan pedidos
+- Digital: $14.999 por mes. Solo pago mensual.
+- Local: $59.000 por mes, o $566.400 al año (equivalente a $47.200 por mes).
+- Cadena: $99.000 por mes, o $950.400 al año por local (equivalente a $79.200 por mes).
 
-## Planes (pesos argentinos, por local, sin IVA)
+El alcance y la puesta en marcha se coordinan según el negocio. No se promete facturación electrónica ni funciones marcadas en desarrollo como disponibles.
 
-- Digital: gratis. Todo el sistema, sin pagar.
-- Local: $59.000 por mes por local, o $47.200 por mes pagando el año.
-- Cadena: $99.000 por mes por local, o $79.200 por mes pagando el año. Varias sucursales con consolidado.
+## Empezar y contacto
 
-## Seguridad
+- [Diagnóstico breve sin email](https://divianco.app/diagnostico)
+- [Planes y comparación](https://divianco.app/#precios)
+- [Herramientas por rubro y disponibilidad](https://divianco.app/#rubros)
+- [Crear una cuenta](https://divianco.app/registro)
+- [Iniciar sesión](https://divianco.app/entrar)
+- [Instagram oficial de Dico](https://www.instagram.com/dico.arg/)
+- Email: hola@divianco.app. WhatsApp: +54 9 11 2182-9893.
 
-- Cada rol ve lo suyo, y el permiso se aplica en la base de datos.
-- Cada negocio es un inquilino separado con seguridad por fila.
-- Los avisos de Dico son cálculos deterministas sobre los datos cargados, no un modelo entrenado con la información del negocio.
-
-## Links
-
-- [Sitio](https://divianco.app/): landing con módulos, planes y preguntas frecuentes
-- [Crear un negocio](https://divianco.app/registro): alta gratis
-- [Entrar](https://divianco.app/entrar): acceso al panel
+La landing es la fuente de precios y alcance publicados. Las condiciones y privacidad se consultan por email mientras se publican los textos legales.

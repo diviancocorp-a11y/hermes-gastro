@@ -1,5 +1,8 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /consola
+Disallow: /bienvenido
+Disallow: /api/
 
 Sitemap: https://divianco.app/sitemap.xml

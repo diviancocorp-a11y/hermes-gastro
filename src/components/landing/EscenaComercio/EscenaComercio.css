@@ -1,0 +1,47 @@
+/* Escena 3D de Comercio · Dico.
+   CSS plano encapsulado: todas las reglas cuelgan de .dse-comercio-host o .dse-comercio,
+   no toca html, body ni estilos globales y no choca con otras escenas de rubro. */
+
+.dse-comercio-host{position:relative;display:block;width:100%;min-width:0}
+
+.dse-comercio.dse-root{position:relative;width:100%;display:flex;flex-direction:column;background:#09090b}
+.dse-comercio.dse-root.dse-fill{height:100%}
+.dse-comercio .dse-stage{position:relative;width:100%;overflow:hidden;background:#09090b;touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.dse-comercio.dse-fill .dse-stage{flex:1 1 auto;min-height:0}
+.dse-comercio.dse-drag .dse-stage{cursor:grabbing}
+.dse-comercio .dse-stage canvas{display:block;width:100%;height:100%;outline:none}
+.dse-comercio .dse-vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 95% at 52% 46%,rgba(9,9,11,0) 52%,rgba(9,9,11,.62) 100%)}
+.dse-comercio .dse-dip{position:absolute;inset:0;pointer-events:none;background:#09090b;opacity:0}
+.dse-comercio .dse-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+
+/* etiquetas de sector */
+.dse-comercio .dse-zone,.dse-comercio .dse-chip{position:absolute;left:0;top:0;will-change:transform}
+.dse-comercio .dse-zone{font-size:10.5px;font-weight:600;line-height:1;letter-spacing:.09em;text-transform:uppercase;color:#e4e4e7;white-space:nowrap;padding:4px 7px;border-radius:5px;background:rgba(9,9,11,.84);border:1px solid rgba(255,255,255,.14);opacity:.8;transition:opacity .4s,color .4s,border-color .4s}
+.dse-comercio .dse-zone.on{opacity:1;color:#f0cf86;font-size:12px;border-color:rgba(224,172,60,.4);background:rgba(9,9,11,.78)}
+.dse-comercio .dse-zone.off{opacity:0}
+
+/* fichas que forman parte de la escena */
+.dse-comercio .dse-chip{background:rgba(20,20,23,.94);border:1px solid rgba(61,107,255,.55);color:#e4e4e7;border-radius:8px;padding:6px 9px;font-size:12px;font-weight:500;line-height:1.35;white-space:nowrap;box-shadow:0 8px 22px rgba(0,0,0,.45);opacity:0;visibility:hidden;transition:opacity .3s,visibility 0s .3s}
+.dse-comercio .dse-chip.on{opacity:1;visibility:visible;transition:opacity .3s}
+.dse-comercio .dse-chip b{display:block;color:#93b4ff;font-weight:600;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
+.dse-comercio .dse-chip i{font-style:normal;color:#e0ac3c;font-weight:600}
+.dse-comercio .dse-chip .dse-s{color:#a1a1aa;font-size:11px}
+.dse-comercio .dse-chip .dse-m{display:inline-block;padding:1px 6px;margin:2px 4px 2px 0;border:1px solid #3f3f46;border-radius:999px;color:#a1a1aa;font-size:11px}
+.dse-comercio .dse-chip .dse-m.on{border-color:#3d6bff;background:rgba(61,107,255,.2);color:#f4f4f5}
+.dse-comercio .dse-short{display:none}
+
+/* menos de 440 px de ancho: ficha corta y etiquetas más chicas */
+.dse-comercio.dse-narrow .dse-body{display:none}
+.dse-comercio.dse-narrow .dse-short{display:block}
+.dse-comercio.dse-narrow .dse-chip{font-size:11px;padding:5px 7px}
+.dse-comercio.dse-narrow .dse-chip b{font-size:9.5px;margin-bottom:0}
+.dse-comercio.dse-narrow .dse-zone{font-size:9.5px;padding:3px 6px}
+.dse-comercio.dse-narrow .dse-zone.on{font-size:10.5px}
+
+@media (prefers-reduced-motion:reduce){
+  .dse-comercio .dse-chip,.dse-comercio .dse-chip.on,.dse-comercio .dse-zone{transition:none}
+}
+
+/* alternativa estática sin WebGL */
+.dse-comercio.dse-fallback .dse-stage{cursor:default;display:flex;align-items:center;justify-content:center;background:#09090b center/cover no-repeat}
+.dse-comercio .dse-fallback-msg{position:absolute;left:12px;right:12px;bottom:12px;margin:0;font-size:12px;line-height:1.4;color:#d4d4d8;background:rgba(9,9,11,.82);border:1px solid #27272a;border-radius:8px;padding:7px 10px;text-align:center}

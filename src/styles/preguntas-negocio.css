@@ -1,0 +1,52 @@
+.pn-root { position: relative; isolation: isolate; padding: 32px var(--pl-m) 48px; background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-50); }
+.pn-root::before { content: ''; position: absolute; z-index: -1; inset: 0; background: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
+.pn-dentro { max-width: 1280px; margin-inline: auto; }
+.pn-root h2 { text-align: center; font-size: clamp(32px, 3.5vw, 56px); font-weight: 500; line-height: 1.1; letter-spacing: -.035em; }
+.pn-titulo-dico { color: var(--pc-oro); }
+.pn-intro { margin-top: 12px; text-align: center; color: var(--ds-color-zinc-400); font-size: var(--ds-type-lg); line-height: 1.5; }
+.pn-guia { --pn-personaje: 104px; position: relative; margin-top: 24px; padding: 24px; border: 1px solid var(--ds-color-zinc-800); border-radius: 16px; background: var(--ds-color-zinc-900); }
+.pn-guia::before { content: ''; position: absolute; inset: -1px; padding: 1px; border-radius: inherit; background: linear-gradient(110deg, var(--ds-color-intelligence-volt), var(--ds-color-zinc-800) 42%, var(--ds-color-zinc-800) 58%, var(--pc-oro)); mask: linear-gradient(var(--ds-color-zinc-50) 0 0) content-box, linear-gradient(var(--ds-color-zinc-50) 0 0); mask-composite: exclude; pointer-events: none; opacity: .75; transition: opacity 200ms ease; }
+.pn-guia[data-fase="pensando"]::before, .pn-guia:focus-within::before { opacity: 1; }
+.pn-mascota { position: absolute; top: 0; left: 0; z-index: 2; width: var(--pn-personaje); padding: 0; border: 0; background: transparent; transform: translate3d(var(--pn-x, 0px), var(--pn-y, 0px), 0); transition: transform 480ms cubic-bezier(.22,1,.36,1); opacity: 0; pointer-events: auto; }
+.pn-mascota[data-listo="true"] { opacity: 1; }
+.pn-ancla-mascota { display: block; width: var(--pn-personaje); aspect-ratio: 192 / 208; flex: none; }
+.pn-saludo { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.pn-saludo h3 { font-size: clamp(24px, 2.3vw, 32px); font-weight: 500; line-height: 1.2; letter-spacing: -.02em; transition: transform 480ms cubic-bezier(.22,1,.36,1); }
+.pn-guia[data-pregunta="true"] .pn-saludo h3 { transform: translateX(calc((var(--pn-personaje) + 16px) / -2)); }
+.pn-temas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; border-bottom: 1px solid var(--ds-color-zinc-800); }
+.pn-root button { font-family: inherit; cursor: pointer; }
+.pn-temas button { min-height: 48px; padding: 8px 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--ds-color-zinc-400); font-size: 16px; }
+.pn-temas button[aria-selected="true"] { color: var(--pc-oro); border-bottom-color: var(--pc-oro); }
+.pn-temas button:hover { color: var(--ds-color-zinc-50); }
+.pn-opciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 20px; }
+.pn-opciones button { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 76px; padding: 14px 18px; border: 1px solid var(--ds-color-zinc-800); border-radius: 12px; background: transparent; color: var(--ds-color-zinc-50); font-size: 15px; line-height: 1.4; text-align: left; }
+.pn-opciones button[aria-pressed="true"] { border-color: var(--pc-oro); background: color-mix(in srgb, var(--pc-oro) 9%, transparent); }
+.pn-opciones button:hover { border-color: var(--pc-oro); }
+.pn-opciones svg { width: 20px; height: 20px; fill: none; stroke: var(--pc-oro); stroke-width: 1.6; flex: none; }
+.pn-elegida { display: grid; place-items: center; flex: 0 0 26px; width: 26px; height: 26px; border-radius: 50%; background: var(--pc-oro); color: var(--pc-sobre-oro); font-size: 16px; }
+.pn-zona-respuesta { display: grid; grid-template-columns: var(--pn-personaje) minmax(0, 1fr); align-items: start; gap: 16px; margin-top: 20px; min-height: 180px; }
+.pn-respuesta { min-width: 0; }
+.pn-globo { position: relative; min-height: 180px; padding: 20px 24px; border: 1px solid var(--ds-color-zinc-800); border-radius: 16px; background: var(--ds-color-zinc-950); font-size: 16px; line-height: 1.55; }
+.pn-globo::before { content: ''; position: absolute; left: -8px; top: 28px; width: 14px; height: 14px; border-left: 1px solid var(--ds-color-zinc-800); border-bottom: 1px solid var(--ds-color-zinc-800); background: var(--ds-color-zinc-950); transform: rotate(45deg); }
+.pn-autor { margin-bottom: 6px; color: var(--pc-oro); font-weight: 600; }
+.pn-texto[data-visible="false"] { visibility: hidden; }
+.pn-pensando { position: absolute; top: 66px; left: 24px; display: flex; gap: 5px; }
+.pn-pensando > span:not(.pl-oculto) { width: 5px; height: 5px; border-radius: 50%; background: var(--pc-oro); }
+.pn-root .pn-enlace-respuesta { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 8px; padding: 4px 0; border: 0; background: transparent; color: var(--pc-oro); font-size: 15px; text-decoration: underline; text-underline-offset: .22em; }
+.pn-enlace-respuesta svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+.pn-pie { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 8px; margin-top: 12px; font-size: 16px; }
+.pn-pie a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--pc-oro); text-underline-offset: .22em; }
+.pl-root .pn-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: 3px; }
+@media (max-width: 699px) {
+  .pn-guia { --pn-personaje: 80px; }
+  .pn-temas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pn-temas button { font-size: 14px; }
+  .pn-opciones { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .pn-opciones button { min-height: 88px; padding: 10px; gap: 8px; font-size: 14px; }
+  .pn-opciones svg { width: 16px; height: 16px; }
+  .pn-zona-respuesta { gap: 12px; min-height: 280px; }
+  .pn-globo { min-height: 280px; padding: 16px; font-size: 15px; }
+  .pn-pensando { left: 16px; }
+}
+@media (max-width: 399px) { .pn-guia { padding: 16px; } .pn-opciones button { padding: 8px; } }
+@media (prefers-reduced-motion: reduce) { .pn-mascota, .pn-saludo h3, .pn-guia::before { transition: none; } }

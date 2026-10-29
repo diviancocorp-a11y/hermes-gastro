@@ -31,14 +31,17 @@
   --pl-t5: var(--ds-type-sm);
 
   /* Espacio: un par de margenes, una grilla, un hueco entre secciones */
-  --pl-m: clamp(20px, 2.8vw, 40px);
-  --pl-g: clamp(16px, 1.7vw, 24px);
-  --pl-hueco: clamp(112px, 10vw, 160px);
+  --pl-m: clamp(16px, 2.3vw, 32px);
+  --pl-g: clamp(16px, 1.7vw, 20px);
+  --pl-hueco: clamp(56px, 6vw, 88px);
+  --ds-space-layout-12: 32px;
+  --ds-space-layout-16: 48px;
   --pl-arriba: clamp(112px, 22svh, 220px);
   --pl-columna: 560px;
 
   /* Superficie de la pieza oscura: un paso arriba del fondo del producto */
   --pl-pieza-paso: var(--ds-color-neutral-800);
+  --pl-suelo-continuo: var(--ds-color-zinc-950);
 
   min-height: 100dvh;
   background: var(--pc-suelo);
@@ -592,12 +595,23 @@
 
 .pl-lineas .pl-linea-in { display: block; }
 
+/* El vivo y el molde ocupan la misma celda: el instrumento toma el alto del
+   rubro mas alto y la pieza oscura queda con el suyo. */
 .pl-instrumento {
+  display: grid;
+  width: min(100%, 440px);
+}
+
+.pl-instrumento-vivo,
+.pl-instrumento-molde {
+  grid-area: 1 / 1;
+  align-self: start;
   display: grid;
   justify-items: start;
   gap: var(--ds-space-3);
-  width: min(100%, 440px);
 }
+
+.pl-instrumento-molde { visibility: hidden; }
 
 .pl-instrumento-nota {
   font-size: var(--pl-t5);
@@ -607,6 +621,7 @@
 /* ─────────────── Secciones: una grilla, dos bordes ─────────────── */
 
 /* Alias de anclas viejas: marcan el arriba de la seccion sin ocupar celda. */
+.pl-ancla-rubros { display: block; height: 0; }
 .pl-ancla {
   position: absolute;
   top: 0;
@@ -621,202 +636,7 @@
   padding: var(--pl-hueco) var(--pl-m) 0;
 }
 
-/* Que hace Dico: el panel como lamina, con notas en los dos margenes */
-.pl-plancha {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 400px) minmax(0, 1fr);
-  column-gap: clamp(var(--ds-space-8), 4.5vw, var(--ds-space-layout-16));
-}
-
-.pl-plancha-titulo {
-  grid-column: 1;
-  grid-row: 1;
-  justify-self: end;
-  align-self: start;
-  text-align: right;
-}
-
-.pl-plancha-intro {
-  grid-column: 3;
-  grid-row: 1;
-  align-self: start;
-  max-width: 30ch;
-  margin-top: 0;
-}
-
-.pl-plancha-tapa {
-  grid-column: 2;
-  grid-row: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding-bottom: var(--ds-space-2);
-  border-radius: var(--pc-radio-pieza) var(--pc-radio-pieza) 0 0;
-}
-
-.pl-plancha-parte {
-  grid-column: 2;
-  padding-block: var(--ds-space-4);
-  border-radius: 0;
-  transition: background-color var(--pc-t-estandar) var(--pc-curva);
-}
-
-.pl-plancha-parte .pl-pieza-cab { margin-bottom: var(--ds-space-1); }
-.pl-plancha-parte .pl-fila { padding: var(--ds-space-1) 0; }
-
-.pl-plancha-parte.ultima {
-  padding-bottom: var(--ds-space-6);
-  border-radius: 0 0 var(--pc-radio-pieza) var(--pc-radio-pieza);
-}
-
-/* La parte de la nota que se senala: un paso de tono, nada se apaga. */
-.pl-plancha-parte.activa { background: var(--pl-pieza-paso); }
-.pl-plancha-parte.activa .pl-pieza-titulo { color: var(--pc-producto-volt); }
-
-.pl-plancha-cifra {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--ds-space-4);
-  margin-top: var(--ds-space-2);
-  font-size: var(--pl-t5);
-  color: var(--pc-producto-tinta-suave);
-}
-
-.pl-plancha-cifra span:last-child {
-  font-size: var(--ds-type-xl);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.pl-r2 { grid-row: 2; }
-.pl-r3 { grid-row: 3; }
-.pl-r4 { grid-row: 4; }
-.pl-r5 { grid-row: 5; }
-.pl-r6 { grid-row: 6; }
-.pl-r7 { grid-row: 7; }
-
-.pl-nota {
-  max-width: 30ch;
-  padding-block: var(--ds-space-4);
-}
-
-.pl-nota-izq {
-  grid-column: 1;
-  justify-self: end;
-  text-align: right;
-}
-
-.pl-nota-der {
-  grid-column: 3;
-  justify-self: start;
-}
-
-.pl-nota-nombre {
-  font-size: var(--pl-t3);
-  font-weight: 500;
-  line-height: 1.3;
-  letter-spacing: -0.005em;
-}
-
-.pl-nota-texto {
-  margin-top: var(--ds-space-1);
-  font-size: var(--pl-t4);
-  line-height: 1.5;
-  color: var(--pc-tinta-suave);
-}
-
-/* Rubros: filas de dos puntas. Los tres rubros son listas paralelas, asi que
-   van lado a lado (una columna angosta cada una) para compararlos de un
-   vistazo; el titulo, en el margen. */
-.pl-rubros-titulo { grid-column: 1 / 4; align-self: start; }
-
-.pl-lista {
-  grid-column: 4 / -1;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--ds-space-layout-12) var(--pl-g);
-}
-
-.pl-lista-grupo-nombre {
-  margin-bottom: var(--ds-space-1);
-  font-size: var(--pl-t4);
-  font-weight: 400;
-  color: var(--pc-tinta-suave);
-}
-
-.pl-lista-fila {
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) auto;
-  align-items: baseline;
-  column-gap: var(--ds-space-2);
-  padding-block: var(--ds-space-2);
-  font-size: var(--pl-t4);
-  line-height: 1.45;
-}
-
-.pl-lista-punto {
-  width: 10px;
-  height: 10px;
-  border-radius: var(--ds-radius-pill);
-  background: var(--pc-tinta);
-}
-
-.pl-lista-fila.pendiente .pl-lista-punto { background: var(--pc-suelo-3); }
-
-.pl-lista-estado {
-  padding-left: var(--ds-space-6);
-  font-size: var(--pl-t5);
-  color: var(--pc-tinta-suave);
-  font-variant-numeric: tabular-nums;
-}
-
-.pl-lista-fila.pendiente .pl-lista-estado { color: var(--pc-tinta); font-weight: 500; }
-
-.pl-lista-cierre {
-  grid-column: 2 / -1;
-  align-self: end;
-  max-width: 40ch;
-  font-size: var(--pl-t3);
-}
-
-/* Clientes: la tabla sin lineas y sus productos */
-.pl-escalon {
-  grid-column: 1 / 8;
-  display: grid;
-}
-
-.pl-escalon-2 { padding-left: calc((100% + var(--pl-g)) / 7); }
-
-.pl-tabla {
-  grid-column: 1 / -1;
-  width: 100%;
-  margin-top: var(--ds-space-layout-16);
-  border-collapse: collapse;
-  font-size: var(--pl-t3);
-  text-align: left;
-}
-
-.pl-tabla th,
-.pl-tabla td {
-  padding: var(--ds-space-3) var(--pl-g) var(--ds-space-3) 0;
-  vertical-align: baseline;
-  font-weight: 400;
-}
-
-.pl-tabla th:first-child,
-.pl-tabla td:first-child { padding-left: var(--ds-space-4); }
-
-.pl-tabla thead th {
-  font-size: var(--pl-t5);
-  color: var(--pc-tinta-suave);
-}
-
-.pl-tabla tbody th { font-weight: 500; width: 25%; }
-.pl-tabla tbody td:nth-child(2) { width: 33%; }
-.pl-tabla tbody tr:nth-child(odd) { background: var(--pc-suelo-2); }
-
+/* Galeria compartida con /diagnostico. */
 .pl-fotos {
   grid-column: 1 / -1;
   display: grid;
@@ -826,91 +646,6 @@
 }
 
 .pl-fotos .pl-foto-marco { aspect-ratio: 4 / 5; }
-
-/* Planes: como una carta */
-.pl-planes-cab {
-  grid-column: 1 / 4;
-  display: grid;
-  align-content: start;
-  gap: var(--ds-space-8);
-}
-
-.pl-planes-foto { max-width: 280px; }
-.pl-planes-foto .pl-foto-marco { aspect-ratio: 4 / 5; }
-
-.pl-carta {
-  grid-column: 4 / -1;
-  columns: 2;
-  column-gap: var(--ds-space-layout-16);
-}
-
-.pl-carta-grupo {
-  break-inside: avoid;
-  padding-bottom: var(--ds-space-layout-12);
-}
-
-.pl-carta-item {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--ds-space-4);
-  font-size: var(--pl-t2);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  font-variant-numeric: tabular-nums;
-}
-
-.pl-carta-item span:last-child { color: var(--pc-oro-texto); }
-
-.pl-carta-texto strong { font-weight: 600; color: var(--pc-tinta); }
-
-.pl-carta-texto {
-  max-width: 36ch;
-  margin-top: var(--ds-space-2);
-  font-size: var(--pl-t4);
-  color: var(--pc-tinta-suave);
-}
-
-.pl-carta-nota {
-  break-inside: avoid;
-  max-width: 36ch;
-  font-size: var(--pl-t4);
-}
-
-/* Preguntas: texto de lectura en dos columnas */
-.pl-preguntas-titulo { grid-column: 1 / 4; align-self: start; }
-
-.pl-lectura-texto {
-  grid-column: 4 / -1;
-  columns: 2;
-  column-gap: var(--ds-space-layout-12);
-}
-
-.pl-respuesta {
-  break-inside: avoid;
-  padding-bottom: var(--ds-space-6);
-  font-size: var(--pl-t3);
-  line-height: 1.55;
-}
-
-.pl-respuesta strong { font-weight: 600; }
-
-/* Cierre: una frase y el boton, en la columna */
-.pl-cierre { padding-top: max(var(--pl-hueco), 20svh); }
-
-.pl-cierre-dentro {
-  grid-column: 4 / span 5;
-  max-width: var(--pl-columna);
-}
-
-.pl-cierre-frase {
-  max-width: 30ch;
-  margin-bottom: var(--ds-space-6);
-  font-size: var(--ds-type-xl);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-}
 
 /* Pie: una linea */
 .pl-pie {
@@ -940,22 +675,6 @@
 
 /* ─────────────── Tableta y telefono ─────────────── */
 
-@media (max-width: 1099px) {
-  .pl-cierre-dentro { grid-column: 3 / span 8; }
-  .pl-planes-cab,
-  .pl-rubros-titulo,
-  .pl-preguntas-titulo { grid-column: 1 / -1; }
-  .pl-lista {
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: var(--ds-space-8);
-  }
-  .pl-carta,
-  .pl-lectura-texto { grid-column: 1 / -1; margin-top: var(--ds-space-8); }
-  .pl-fotos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .pl-planes-foto { display: none; }
-}
-
 @media (max-width: 999px) {
   .pl-split {
     grid-template-columns: minmax(0, 1fr);
@@ -972,28 +691,7 @@
   .pl-split-col { padding: calc(var(--ds-space-layout-16) + var(--ds-space-8)) var(--pl-m) var(--ds-space-layout-12); }
   .pl-split-lado { padding: var(--ds-space-layout-12) var(--pl-m) var(--ds-space-layout-16); }
 
-  /* El panel en rebanadas: cada parte con su nota debajo. */
-  .pl-plancha { grid-template-columns: minmax(0, 1fr); }
-  .pl-plancha > * { grid-column: 1; grid-row: auto; }
-  .pl-plancha-titulo { justify-self: start; text-align: left; }
-  .pl-plancha-intro { max-width: 36ch; margin: var(--ds-space-3) 0 var(--ds-space-8); }
-  /* La tapa es decorativa (aria-hidden): en rebanadas cada parte es su
-     propia pieza, con todas sus esquinas. */
-  .pl-plancha-tapa { display: none; }
-  .pl-plancha-parte,
-  .pl-plancha-parte.ultima {
-    max-width: 440px;
-    padding-block: var(--ds-space-4) var(--ds-space-6);
-    border-radius: var(--pc-radio-pieza);
-  }
-  .pl-nota,
-  .pl-nota-izq,
-  .pl-nota-der {
-    justify-self: start;
-    max-width: 44ch;
-    padding: var(--ds-space-4) 0 var(--ds-space-layout-12);
-    text-align: left;
-  }
+
 }
 
 @media (max-width: 699px) {
@@ -1002,14 +700,7 @@
   }
 
   .pl-seccion { grid-template-columns: minmax(0, 1fr); }
-  .pl-seccion > *,
-  .pl-rubros-titulo,
-  .pl-cierre-dentro,
-  .pl-escalon,
-  .pl-carta,
-  .pl-lectura-texto,
-  .pl-planes-cab,
-  .pl-preguntas-titulo { grid-column: 1; }
+  .pl-seccion > * { grid-column: 1; }
 
   .pl-marca img { height: 24px; }
 
@@ -1023,35 +714,8 @@
   .pl-pedido { grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--ds-space-2); }
   .pl-pedido-n { display: none; }
 
-  .pl-lista { grid-template-columns: minmax(0, 1fr); }
-  .pl-lista-cierre { grid-column: 1; }
-  .pl-lista-fila { min-height: 44px; padding-block: 10px; }
-  .pl-lista-estado { padding-left: var(--ds-space-3); }
 
-  .pl-escalon-2 { padding-left: 1.2em; }
 
-  /* La tabla en bloques de dos lineas */
-  .pl-tabla { margin-top: var(--ds-space-8); }
-  .pl-tabla thead { display: none; }
-  .pl-tabla,
-  .pl-tabla tbody,
-  .pl-tabla tr,
-  .pl-tabla th,
-  .pl-tabla td { display: block; width: auto; }
-  .pl-tabla tr { padding: var(--ds-space-4); }
-  .pl-tabla th,
-  .pl-tabla td,
-  .pl-tabla th:first-child,
-  .pl-tabla td:first-child { padding: 0; }
-  .pl-tabla tbody th { width: auto; }
-  .pl-tabla tbody td:nth-child(2) { width: auto; }
-  .pl-tabla td { font-size: var(--pl-t4); color: var(--pc-tinta-suave); }
-
-  .pl-fotos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-3); }
-
-  .pl-carta,
-  .pl-lectura-texto { columns: 1; }
-  .pl-carta-item { font-size: var(--ds-type-xl); }
 
   .pl-pie {
     grid-template-columns: minmax(0, 1fr);
@@ -1143,4 +807,201 @@
 @keyframes pl-deriva {
   from { transform: scale(1) translate(0, 0); }
   to { transform: scale(1.08) translate(-2%, -1.5%); }
+}
+
+
+/* Referencia Osmo: cielo, montana, titulo y caminante, en ese orden.
+   Un solo encuadre compartido conserva el registro de los tres recortes. */
+.pl-hero-tiempo { --pl-hero-alto: 100svh; --pl-hero-titulo: clamp(56px, 5.3vw, 92px); --pc-producto: var(--pl-suelo-continuo); background: var(--pc-producto); }
+.pl-hero-tiempo .pl-cabecera { z-index: 8; color: var(--pc-producto-tinta); }
+.pl-cabecera-accesos { display: flex; align-items: center; gap: var(--ds-space-6); }
+.pl-hero-tiempo .pl-cabecera-registro { color: var(--pc-oro); }
+.pl-hero-tiempo.pl-hero-diagnostico .pl-cabecera { color: var(--ds-color-zinc-50); }
+.pl-hero-tiempo .dg-cerrado {
+  position: relative;
+  display: block;
+  height: var(--pl-hero-alto);
+  min-height: 0;
+  isolation: isolate;
+  overflow: clip;
+  color: var(--pc-producto-tinta);
+}
+.pl-hero-tiempo .dg-cerrado .pl-split-col,
+.pl-hero-tiempo .dg-cerrado .pl-split-lado,
+.pl-hero-tiempo .pl-portada { display: contents; }
+.pl-hero-tiempo .dg-cerrado::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(transparent 86%, var(--pc-producto) 100%); /* taste-skill-ignore: scrim neutro de contraste sobre fotografia, excepcion de la skill. */
+}
+.pl-tiempo-escena { position: absolute; inset: 0; }
+.pl-tiempo-escena::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--pc-producto) 50%, transparent);
+  pointer-events: none;
+}
+.pl-anim .dg-cerrado .pl-split-lado > .pl-tiempo-escena { opacity: 1; animation: none; }
+.pl-tiempo-capa {
+  position: absolute;
+  top: -3%;
+  left: 0;
+  width: 100%;
+  height: 117.5%;
+  object-fit: cover;
+  object-position: center;
+}
+.pl-tiempo-cielo { z-index: 1; }
+.pl-luz-horizonte { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.pl-luz-horizonte span { position: absolute; top: 34%; width: 62%; height: 24%; filter: blur(28px); opacity: .55; }
+.pl-luz-volt { left: -2%; background: radial-gradient(ellipse, var(--ds-color-intelligence-volt), transparent 70%); }
+.pl-luz-oro { right: -2%; background: radial-gradient(ellipse, var(--pc-oro), transparent 70%); }
+.pl-tiempo-montana { z-index: 2; }
+.pl-tiempo-frente { z-index: 4; scale: .96; transform-origin: 50% 80%; mask-image: linear-gradient(to right, transparent, black 25%, black 75%, transparent); }
+.pl-hero-tiempo .pl-h1 {
+  position: absolute;
+  z-index: 3;
+  top: max(72px, calc(var(--pl-hero-alto) * .095));
+  left: var(--pl-m);
+  right: var(--pl-m);
+  font-family: var(--ds-font-soul);
+  font-size: var(--pl-hero-titulo);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 0.94;
+  text-align: center;
+}
+.pl-hero-tiempo .pl-h1 > span { display: block; }
+.pl-tiempo-propuesta {
+  position: absolute;
+  z-index: 6;
+  top: calc(max(72px, var(--pl-hero-alto) * .095) + var(--pl-hero-titulo) * 1.88 + 20px);
+  left: var(--pl-m);
+  right: var(--pl-m);
+  text-align: center;
+}
+.pl-hero-tiempo .pl-bajada { margin-inline: auto; margin-top: 0; font-size: clamp(18px, 1.55vw, 26px); line-height: 1.3; }
+.pl-hero-tiempo .pl-bajada strong { display: block; font-weight: 500; }
+.pl-hero-tiempo .pl-bajada > span { display: block; margin-top: var(--ds-space-1); font-size: .8em; font-weight: 400; }
+.pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-4); gap: var(--ds-space-2); flex-direction: column; align-items: center; }
+.pl-hero-tiempo .pl-hero-origen {
+  min-height: calc(var(--ds-control-height-touch) + var(--ds-space-2));
+  gap: var(--ds-space-6);
+  padding: var(--ds-space-2) var(--ds-space-4) var(--ds-space-2) var(--ds-space-8);
+  border-radius: var(--ds-radius-pill);
+  background: var(--pc-oro);
+  color: var(--pc-sobre-oro);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--pc-oro);
+  outline: none;
+  transition: color 320ms ease;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.pl-hero-etiqueta { position: relative; z-index: 1; font-size: var(--ds-type-lg); }
+.pl-hero-burbuja {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--ds-control-height-default);
+  height: var(--ds-control-height-default);
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-color-zinc-950);
+  color: var(--pc-oro);
+  transition: background 320ms ease;
+}
+.pl-hero-cara { display: block; width: 100%; height: 100%; }
+.pl-hero-guino { opacity: 0; }
+.pl-hero-tiempo .pl-hero-origen::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  right: var(--ds-space-4);
+  top: 50%;
+  width: var(--ds-control-height-default);
+  height: var(--ds-control-height-default);
+  border-radius: 50%;
+  background: var(--ds-color-zinc-950);
+  transform: translateY(-50%) scale(1);
+  transition: transform 480ms cubic-bezier(.2,.7,.2,1);
+}
+.pl-hero-tiempo .pl-hero-origen:is(:hover, :focus-visible, .pl-hero-regresando) { color: var(--ds-color-zinc-50); }
+.pl-hero-tiempo .pl-hero-origen:is(:hover, :focus-visible, .pl-hero-regresando)::before { transform: translateY(-50%) scale(18); }
+.pl-hero-origen:is(:hover, :focus-visible) .pl-hero-burbuja { background: transparent; }
+.pl-hero-burbuja svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pl-hero-regresando { animation: pl-boton-regresa 320ms ease; }
+@keyframes pl-boton-regresa { from { opacity: .99; } to { opacity: 1; } }
+.pl-hero-tiempo .pl-hero-origen:focus-visible { outline-offset: var(--ds-space-2); }
+@media (prefers-reduced-motion: no-preference) {
+  .pl-hero-origen:is(:hover, :focus-visible) .pl-hero-guino { animation: pl-dico-guina var(--pc-t-personaje) steps(1) both; }
+}
+@keyframes pl-dico-guina {
+  0%, 20%, 85%, 100% { opacity: 0; }
+  25%, 80% { opacity: 1; }
+}
+.pl-hero-ayuda { margin-top: var(--ds-space-1); font-size: var(--ds-type-sm); }
+.pl-hero-tiempo .dg-cerrado :focus-visible,
+.pl-hero-tiempo:not(.pl-hero-diagnostico) .pl-cabecera :focus-visible {
+  outline-color: var(--pc-producto-volt);
+}
+@media (max-width: 999px) {
+  .pl-hero-tiempo { --pl-hero-titulo: clamp(56px, 7.4vw, 74px); }
+  .pl-tiempo-propuesta { top: calc(max(72px, var(--pl-hero-alto) * .095) + var(--pl-hero-titulo) * 1.88 + 20px); }
+}
+@media (max-width: 699px) {
+  .pl-hero-tiempo { --pl-hero-titulo: clamp(42px, 11.3vw, 64px); }
+  .pl-hero-tiempo .pl-h1 { top: 88px; }
+  .pl-tiempo-propuesta { top: calc(88px + var(--pl-hero-titulo) * 1.88 + 20px); }
+  .pl-hero-tiempo .pl-bajada { max-width: 32ch; font-size: var(--ds-type-lg); }
+  .pl-hero-tiempo .pl-acciones { margin-top: var(--ds-space-3); }
+  .pl-hero-tiempo .pl-acciones > .pl-enlace { display: inline-flex; }
+  .pl-hero-tiempo .pl-hero-origen { padding-left: var(--ds-space-4); gap: var(--ds-space-3); }
+  .pl-hero-tiempo .pl-hero-etiqueta { font-size: var(--ds-type-md); }
+}
+@media (max-height: 740px) and (min-width: 700px) {
+  .pl-hero-tiempo { --pl-hero-titulo: 56px; }
+  .pl-hero-tiempo .pl-h1 { top: 64px; }
+  .pl-tiempo-propuesta { top: calc(64px + var(--pl-hero-titulo) * 1.88 + 16px); }
+  .pl-hero-tiempo .pl-bajada { font-size: 18px; }
+  .pl-hero-tiempo .pl-acciones { margin-top: 10px; gap: 2px; }
+  .pl-hero-ayuda { margin-top: 2px; }
+  .pl-hero-tiempo .pl-hero-origen { min-height: 52px; padding-block: 5px; }
+}
+@media (max-width: 699px) and (max-height: 740px) {
+  .pl-hero-tiempo { --pl-hero-titulo: 42px; }
+  .pl-hero-tiempo .pl-h1 { top: 76px; }
+  .pl-tiempo-propuesta { top: calc(76px + var(--pl-hero-titulo) * 1.88 + 16px); }
+  .pl-hero-tiempo .pl-bajada { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-tiempo-capa, .pl-hero-tiempo .pl-h1, .pl-tiempo-propuesta { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-hero-tiempo .pl-hero-origen::before, .pl-hero-tiempo .pl-hero-origen, .pl-hero-burbuja { transition: none; }
+}
+
+@media (max-width: 1099px) { .pl-fotos { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 699px) { .pl-fotos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-3); } }
+
+/* Densidad de lectura al 100%: menos alturas y aire, sin escalar la página. */
+@media (min-width: 1000px) {
+  .pl-root .cn-cabecera h2, .pl-root .ce-root h2, .pl-root .pp-cabecera h2, .pl-root .pn-root h2 { font-size: clamp(32px, 3.3vw, 48px); }
+  .pl-root .ce-dentro { --ce-circulo: 56px; }
+  .pl-root .ce-recorrido { margin-top: 32px; }
+  .pl-root .ce-pasos li { gap: 24px; }
+  .pl-root .ce-boton { min-height: 58px; font-size: 18px; }
+  .pl-root .pp-plan { padding: 24px; }
+  .pl-root .pp-importe { font-size: clamp(36px, 3.1vw, 46px); }
+  .pl-root .pn-guia { padding: 28px; }
+  .pl-root .ce-accion { margin-top: 40px; }
 }

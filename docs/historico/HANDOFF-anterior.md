@@ -9,6 +9,87 @@
 
 ---
 
+## 19/oct/2026 — Carga inicial de Monare (Codex)
+
+### Hecho y verificado en el edificio
+
+- Solo datos del tenant `monare` (`1367edee-7754-4169-a616-45310d98c045`),
+  sin cambios de codigo, schema, otros tenants ni condiciones comerciales.
+- 53 productos simples: 20 activos con precio, 32 del PDF inactivos por
+  falta de precio actualizado y una caja de Opalo Syrah inactiva por confirmar.
+  Incluyen 36 presentaciones de Mauricio Lorca, 8 espumantes, 5 cajas x6
+  y 4 lotes de hielo. Louis Rose se tomo como el "Lois rose" del mensaje.
+- Precios de los mensajes del 15/oct tienen prioridad sobre PDF e imagen:
+  Louis Rose $17.390 / caja x6 $102.000; Lorca Joven Malbec $8.190 / $49.200;
+  Opalo Syrah $13.290 / $48.600 (caja pendiente); Fantasia Chardonnay y
+  Cabernet Sauvignon $9.490 / $54.590 cada caja x6. No se importaron
+  los precios, costos ni promociones del PDF. Sin stock inventado.
+- Hielo: lotes de 15/30 bolsas de 2 kg a $27.000/$51.000 y de 15 kg a
+  $94.500/$180.000. Los importes publicados son por lote completo.
+- Medios internos: transferencia, efectivo y credito segun acuerdo;
+  MercadoPago desactivado. Cuenta de transferencia en checkout con datos
+  a coordinar (sin alias, CBU ni titular inventados). La tarjeta solo queda
+  como medio interno, no como pasarela online.
+- Pagina `/info/compras-y-envios`: horario informado 8:30-20:30, pagos,
+  CABA y Provincia, entrega gratis en CABA para pedidos mayores a $95.000
+  en 24 horas; express cotizado por zona (Flex/Uber). No se activo el umbral
+  global de envio gratis porque tambien aplicaria a Provincia.
+- `settings.has_physical_store=false` ya existia, pero el espejo del tenant
+  no tenia esa clave: `get_catalog` devolvia true. Se alineo la clave del JSON
+  a false sin cambiar el trigger compartido. Pendiente del sistema: el
+  trigger `espejar_settings_a_tenant` no copia esa columna.
+- La cuenta existente de `importacionmarcano@gmail.com` ya era owner.
+  Se configuro por Supabase Auth Admin la clave pedida y se verifico login;
+  no se guarda la clave en archivos ni en este documento.
+- Readback SQL: 53 filas, 20 activas, 33 inactivas, 0 diferencias contra los
+  datos preparados, 0 activas a $0 y todo el stock NULL. RPC como anon:
+  20 productos y `has_physical_store=false`. Browser de produccion muestra
+  los 20 productos con precios; sigue "Cerrado: todavia no toma pedidos".
+- Continuacion confirmada por Ricky: todos los dias (lunes a domingo),
+  08:30-20:30, guardados en `store_hours` (indices 0-6). WhatsApp
+  `+5491123901855`. `store_address` = CABA, explicitamente provisorio;
+  actualizado tambien el texto de `/info/compras-y-envios` y el aviso de
+  entrega en CABA y Provincia. Readback de tabla y RPC publico coinciden.
+- Ricky eligio dejar pendiente la caja x6 de Opalo Syrah; sigue inactiva.
+- Actualizacion posterior: Instagram `monare.boutique`; despacho provisorio
+  autorizado en Av. de los Incas 4000, CABA. USIG normalizo esa direccion y
+  devolvio lat/lng `-34.577830, -58.467925` (OSM coincide). Creada sucursal
+  default activa "Despacho provisorio", con telefono y direccion marcados
+  como provisorios. `get_catalog` como anon devuelve `catalogo_activo=true`;
+  siguen 20 productos activos y no hay local de atencion al publico. Browser
+  de produccion muestra "Abierto: 08:30 a 20:30" y los links correctos de
+  Instagram y WhatsApp. No se envio ningun pedido de prueba.
+- Envio sin tarifa automatica: con `delivery_pricing=NULL` el checkout usa
+  tarifas genericas de $500 a $5.000 que Monare nunca informo. Se guardo un
+  escalon con costo 0 y aviso explicito: el total online incluye productos;
+  el envio se cotiza/cobra aparte segun zona y cantidad, coordinar antes de
+  pagar. La pagina de condiciones lo explica; CABA > $95.000 conserva envio
+  sin costo en 24 horas. Esto no implementa una cotizacion automatica por zona.
+
+### Pendiente de datos de Ricky / Monare
+
+- Reemplazar el despacho provisorio de Av. de los Incas 4000 por el real
+  cuando Monare lo confirme (direccion y coordenadas de la sucursal default).
+- Alias/CBU para transferencias.
+- Caja x6 de Opalo Syrah a $48.600 frente a $13.290 por unidad: Ricky
+  pidio dejarla pendiente, sin corregir ni publicar su precio.
+- Precios actualizados de las otras 32 presentaciones del PDF. Los ejemplos
+  de la planilla vacia de Drive NO son datos reales ni se importaron.
+- Pendientes heredados sin verificar en esta sesion: primer error Sentry
+  desminificado; diferencia de productos de Crazy Miga y existencia de
+  MiaEstudio en el edificio. Las etapas 2/3 de GerenteDico y el barrido de
+  policies tienen secciones posteriores a la de Sentry, consultar esas.
+
+### Archivos y evidencia
+
+- Solo documentacion en `docs/`. PDF e imagen del usuario se leyeron en sus
+  ubicaciones originales. Imagenes temporales de inspeccion en el temp del
+  sistema y `.preview/monare-import/` (ignorado), eliminadas al terminar.
+- Codigo desplegado al iniciar: `5076010`, produccion READY en Vercel.
+  La carga es de datos y no requiere deploy ni migracion.
+
+---
+
 ## 17-19/oct/2026 — Orquestador de skills: ruteo por prompt y candado de /diseno (Claude)
 
 **En main y con CI verde.** PR #31 (`7c8bd44`, `d0e6e01`, `8bf93cc`), merge

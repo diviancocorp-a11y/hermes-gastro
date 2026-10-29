@@ -5,7 +5,17 @@
       "destination": "/api/:path*"
     },
     {
-      "source": "/((?!api/|assets/|brand/|clients/|icons.svg|favicon|apple-touch-icon|manifest.json|admin-manifest.json|sw.js|robots.txt|sitemap.xml|llms.txt|_vercel/|offline.html|quack.).*)",
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "divianco.app"
+        }
+      ],
+      "destination": "/plataforma.html"
+    },
+    {
+      "source": "/((?!api/|assets/|brand/|clients/|icons.svg|favicon|apple-touch-icon|manifest.json|admin-manifest.json|sw.js|robots.txt|sitemap.xml|llms.txt|indexnow-key.txt|_vercel/|offline.html|quack.).*)",
       "destination": "/index.html"
     }
   ],
@@ -83,6 +93,39 @@
           "value": "public, max-age=0, must-revalidate"
         }
       ]
+    },
+    {
+      "source": "/((?:admin|consola|entrar|registro|bienvenido|diagnostico)(?:/.*)?)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.divianco.app"
+        }
+      ],
+      "destination": "https://divianco.app/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/landing",
+      "has": [
+        {
+          "type": "host",
+          "value": "divianco.app"
+        }
+      ],
+      "destination": "/",
+      "permanent": true
     }
   ]
 }

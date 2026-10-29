@@ -15,6 +15,10 @@ export const WHATSAPP_HORARIO = 'de lunes a viernes, de 11 a 23 h';
 const WHATSAPP_TEXTO = 'Hola Ricardo, quiero conocer Dico para mi negocio.';
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(WHATSAPP_TEXTO)}`;
 
+// Perfiles oficiales confirmados por Ricky, 26/oct/2026.
+export const INSTAGRAM_DICO_URL = 'https://www.instagram.com/dico.arg/';
+export const INSTAGRAM_DIVIANCO_URL = 'https://www.instagram.com/grupodivianco/';
+
 // La reunion: una hora en la oficina virtual (WorkAdventure).
 export const AGENDA_URL = 'https://cal.com/ricardo.r/reunion';
 export const AGENDA_HORARIO = 'de lunes a viernes, de 10 a 18 h';

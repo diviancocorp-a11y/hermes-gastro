@@ -1,0 +1,68 @@
+/* Escena 3D de Servicios · Dico.
+   CSS plano encapsulado: todas las reglas cuelgan de .dse-servicios-host o .dse-servicios,
+   no toca html, body ni estilos globales y no choca con otras escenas de rubro. */
+
+.dse-servicios-host{position:relative;display:block;width:100%;min-width:0}
+
+.dse-servicios.dse-root{position:relative;width:100%;display:flex;flex-direction:column;background:#09090b}
+.dse-servicios.dse-root.dse-fill{height:100%}
+.dse-servicios .dse-stage{position:relative;width:100%;overflow:hidden;background:#09090b;touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.dse-servicios.dse-fill .dse-stage{flex:1 1 auto;min-height:0}
+.dse-servicios.dse-root.dse-drag .dse-stage{cursor:grabbing}
+.dse-servicios .dse-stage canvas{display:block;width:100%;height:100%;outline:none}
+.dse-servicios .dse-vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 95% at 52% 46%,rgba(9,9,11,0) 52%,rgba(9,9,11,.62) 100%)}
+.dse-servicios .dse-dip{position:absolute;inset:0;pointer-events:none;background:#09090b;opacity:0}
+.dse-servicios .dse-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.dse-servicios .dse-zone,.dse-servicios .dse-chip{position:absolute;left:0;top:0;will-change:transform}
+.dse-servicios .dse-zone{font-size:10.5px;font-weight:600;line-height:1;letter-spacing:.09em;text-transform:uppercase;color:#e4e4e7;white-space:nowrap;padding:4px 7px;border-radius:5px;background:rgba(9,9,11,.84);border:1px solid rgba(255,255,255,.14);opacity:.8;transition:opacity .4s,color .4s,border-color .4s}
+.dse-servicios .dse-zone.on{opacity:1;color:#f0cf86;font-size:12px;border-color:rgba(224,172,60,.4);background:rgba(9,9,11,.78)}
+.dse-servicios .dse-zone.off{opacity:0}
+.dse-servicios .dse-chip{background:rgba(20,20,23,.94);border:1px solid rgba(61,107,255,.55);color:#e4e4e7;border-radius:8px;padding:6px 9px;font-size:12px;font-weight:500;line-height:1.35;white-space:nowrap;box-shadow:0 8px 22px rgba(0,0,0,.45);opacity:0;visibility:hidden;transition:opacity .3s,visibility 0s .3s}
+.dse-servicios .dse-chip.on{opacity:1;visibility:visible;transition:opacity .3s}
+.dse-servicios .dse-chip b{display:block;color:#93b4ff;font-weight:600;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
+.dse-servicios .dse-chip i{font-style:normal;color:#e0ac3c;font-weight:600}
+.dse-servicios .dse-chip .dse-s{color:#a1a1aa;font-size:11px}
+.dse-servicios .dse-chip .dse-m{display:inline-block;padding:1px 6px;margin:2px 4px 2px 0;border:1px solid #3f3f46;border-radius:999px;color:#a1a1aa;font-size:11px}
+.dse-servicios .dse-chip .dse-m.on{border-color:#3d6bff;background:rgba(61,107,255,.2);color:#f4f4f5}
+.dse-servicios .dse-clock{position:absolute;left:12px;top:12px;padding:8px 12px 7px;border-radius:10px;background:rgba(9,9,11,.82);border:1px solid rgba(255,255,255,.12);color:#f4f4f5;pointer-events:none;line-height:1}
+.dse-servicios .dse-clock small{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#a1a1aa;margin-bottom:4px}
+.dse-servicios .dse-clock b{font-size:30px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.dse-servicios .dse-clock .dse-jump{display:block;margin-top:5px;font-size:11px;font-weight:600;color:#e0ac3c;opacity:0;transition:opacity .3s}
+.dse-servicios .dse-clock .dse-jump.on{opacity:1}
+.dse-servicios .dse-agenda{position:absolute;right:12px;top:12px;width:236px;padding:8px 10px;border-radius:10px;background:rgba(9,9,11,.84);border:1px solid rgba(255,255,255,.12);color:#e4e4e7;pointer-events:none;font-size:11.5px}
+.dse-servicios .dse-agenda h4{margin:0 0 5px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#a1a1aa;font-weight:600}
+.dse-servicios .dse-agenda .r{display:grid;grid-template-columns:38px 1fr auto;gap:6px;align-items:center;padding:3px 4px;border-radius:5px;border:1px solid transparent;transition:border-color .3s,background .3s}
+.dse-servicios .dse-agenda .r.hot{border-color:rgba(224,172,60,.7);background:rgba(224,172,60,.1)}
+.dse-servicios .dse-agenda .h{font-variant-numeric:tabular-nums;color:#a1a1aa}
+.dse-servicios .dse-agenda .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dse-servicios .dse-agenda .n i{font-style:normal;color:#71717a}
+.dse-servicios .dse-agenda .s{font-size:10px;padding:1px 6px;border-radius:999px;border:1px solid #3f3f46;color:#a1a1aa;white-space:nowrap}
+.dse-servicios .dse-agenda .s.at{color:#f0cf86;border-color:rgba(224,172,60,.4)}
+.dse-servicios .dse-agenda .s.ll{color:#c7d6ff;border-color:rgba(61,107,255,.6);background:rgba(61,107,255,.18)}
+.dse-servicios .dse-agenda .s.ok{color:#e0ac3c;border-color:rgba(224,172,60,.6)}
+.dse-servicios .dse-agenda .s.dp{color:#9fc4a6;border-color:rgba(130,180,140,.45)}
+.dse-servicios .dse-agenda .s.cx{color:#ffb4aa;border-color:rgba(217,71,58,.7);background:rgba(217,71,58,.18)}
+.dse-servicios .dse-agenda .r.hot.red{border-color:rgba(217,71,58,.75);background:rgba(217,71,58,.12)}
+.dse-servicios .dse-agenda{width:200px;line-height:1.5}
+.dse-servicios.dse-narrow .dse-agenda .n i{display:none}
+.dse-servicios .dse-short{display:none}
+.dse-servicios.dse-narrow .dse-body{display:none}
+.dse-servicios.dse-narrow .dse-short{display:block}
+.dse-servicios.dse-narrow .dse-chip{font-size:11px;padding:5px 7px}
+.dse-servicios.dse-narrow .dse-chip b{font-size:9.5px;margin-bottom:0}
+.dse-servicios.dse-narrow .dse-zone{font-size:9.5px;padding:3px 6px}
+.dse-servicios.dse-narrow .dse-zone.on{font-size:10.5px}
+/* menos de 440 px: reloj en una línea y agenda reducida a la fila que cambia */
+.dse-servicios.dse-narrow .dse-clock{left:6px;top:6px;padding:4px 7px;border-radius:7px}
+.dse-servicios.dse-narrow .dse-clock small{display:none}
+.dse-servicios.dse-narrow .dse-clock b{font-size:15px}
+.dse-servicios.dse-narrow .dse-clock .dse-jump{margin-top:3px;font-size:9.5px}
+.dse-servicios.dse-narrow .dse-agenda{right:6px;top:6px;width:auto;max-width:64%;font-size:10.5px;padding:3px 4px;border-radius:7px;line-height:1.3}
+.dse-servicios.dse-narrow .dse-agenda .r{grid-template-columns:auto auto auto;gap:5px}
+@media (prefers-reduced-motion:reduce){
+  .dse-servicios .dse-chip,.dse-servicios .dse-chip.on,.dse-servicios .dse-zone{transition:none}
+}
+
+/* alternativa estática sin WebGL */
+.dse-servicios.dse-fallback .dse-stage{cursor:default;display:flex;align-items:center;justify-content:center;background:#09090b center/cover no-repeat}
+.dse-servicios .dse-fallback-msg{position:absolute;left:12px;right:12px;bottom:12px;margin:0;font-size:12px;line-height:1.4;color:#d4d4d8;background:rgba(9,9,11,.82);border:1px solid #27272a;border-radius:8px;padding:7px 10px;text-align:center}

@@ -30,6 +30,7 @@
 // guardado posterior; volver a ver el mismo resultado no guarda otra fila.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { marcarEvento } from '../../lib/analiticaPlataforma';
 import { AGENDA_URL } from '../../lib/contactoPlataforma';
 import {
@@ -38,6 +39,8 @@ import {
   planRecomendado, recordarDiagnosticoPendiente, solucion,
 } from '../../lib/diagnostico';
 import { PiezaPorNombre } from './Piezas';
+import { viajarConDico } from './viajeDico';
+import DiagnosticoCard from './DiagnosticoCard';
 
 // Lo que dura el "estoy leyendo" de Dico. Tope del brief: 1,2 s.
 const ANALISIS_MS = 1000;
@@ -104,7 +107,7 @@ const PASOS = {
   },
   inversion: {
     pregunta: '¿Cuánto pensás invertir por mes?',
-    ayuda: 'Hay un plan gratis. Esto es para mostrarte el que te sirve.',
+    ayuda: 'Esto nos ayuda a recomendarte un plan acorde a tu negocio.',
     dico: 'Sin compromiso: no te pido tarjeta ni email.',
     cara: 'question',
   },
@@ -246,10 +249,11 @@ function arranque(modo) {
  *   `abrir` para los otros botones de la pagina.
  * modo 'pagina': arranca abierto. `nivel` es la etiqueta del enunciado.
  */
-export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, nivel = 'h1' }) {
+export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, onAbiertoChange, nivel = 'h1' }) {
   const [inicio] = useState(() => arranque(modo));
   const [respuestas, setRespuestas] = useState(inicio.respuestas);
   const [abierto, setAbierto] = useState(inicio.abierto);
+  const [overlayActivo, setOverlayActivo] = useState(modo === 'home' && inicio.abierto);
   const [indice, setIndice] = useState(inicio.indice);
   const [fase, setFase] = useState(inicio.fase); // preguntas | analizando | resultado
   const [id, setId] = useState(inicio.id);
@@ -267,12 +271,28 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const vista = useRef(null); // ultimo `abierto|paso|fase` atendido
   const marcoInicio = useRef(false);
   const marcoResultado = useRef(null);
+  const aperturaEnCurso = useRef(false);
+  const viaje = useRef(null);
+  const portadaRef = useRef(null);
+  const oroRef = useRef(null);
+  const disparadorRef = useRef(null);
+  const overlayRef = useRef(overlayActivo);
+  const cerrandoRef = useRef(false);
+  const cierreSolicitado = useRef(false);
+  const abiertoRef = useRef(abierto);
+  const scrollPortada = useRef(0);
 
   const recorrido = recorridoDe(respuestas.vertical);
   const pasoIdx = Math.min(indice, recorrido.length - 1);
   const paso = recorrido[pasoIdx];
   const listo = completo(paso, respuestas);
   const conDesde = () => window.history.state?.desde === true;
+
+  useEffect(() => {
+    abiertoRef.current = abierto;
+    overlayRef.current = overlayActivo;
+    onAbiertoChange?.(modo === 'home' ? overlayActivo : abierto);
+  }, [abierto, overlayActivo, modo, onAbiertoChange]);
 
   // Caras de Dico precargadas: cambiar de estado no tiene que parpadear.
   useEffect(() => {
@@ -283,6 +303,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   }, [modo, inicio.indice, inicio.corregir]);
 
   useEffect(() => () => clearTimeout(avance.current), []);
+  useEffect(() => () => viaje.current?.cancelar(), []);
   useEffect(() => { respuestasRef.current = respuestas; }, [respuestas]);
 
   // Respuestas e id en la sesion: Atras y una recarga no las pierden.
@@ -308,57 +329,122 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     marcarUnaVez('diagnostico-resultado', firma);
   }, [fase, respuestas]);
 
-  // Cada paso lleva el foco a su enunciado (el lector lo anuncia y el teclado
-  // sigue desde ahi) y trae el embudo a la vista. Al cerrar, el foco vuelve
-  // al boton que lo abrio. Solo cuando algo cambio de verdad: ni en el primer
-  // pintado ni en la segunda pasada de efectos de StrictMode.
+  // El mismo formulario vive en la card en home y en su ruta propia.
   useEffect(() => {
     const clave = `${abierto}|${paso}|${fase}`;
     if (vista.current === clave) return;
     const primera = vista.current === null;
     vista.current = clave;
-    if (primera) return;
-    const raiz = raizRef.current;
-    if (!raiz) return;
+    if (primera || aperturaEnCurso.current) return;
     if (abierto) {
-      tituloRef.current?.focus({ preventScroll: true });
-      const arriba = raiz.getBoundingClientRect().top;
-      if (arriba < 0 || arriba > window.innerHeight * 0.5) {
-        window.scrollTo({ top: Math.max(0, window.scrollY + arriba) });
+      if (modo === 'home') {
+        const card = tituloRef.current?.closest('.dg-modal-card');
+        if (card) card.scrollTop = 0;
       }
-    } else {
-      raiz.querySelector('[data-abrir]')?.focus({ preventScroll: true });
+      tituloRef.current?.focus({ preventScroll: true });
+      if (modo === 'pagina') {
+        const arriba = raizRef.current?.getBoundingClientRect().top || 0;
+        if (arriba < 0 || arriba > window.innerHeight * 0.5) window.scrollTo({ top: Math.max(0, window.scrollY + arriba) });
+      }
     }
-  }, [abierto, paso, fase]);
+  }, [abierto, paso, fase, modo]);
 
-  // Atras y Adelante del navegador recorren los pasos.
+  const cerrarAnimado = useCallback(() => {
+    if (!overlayRef.current || cerrandoRef.current) return;
+    viaje.current?.cancelar();
+    clearTimeout(avance.current);
+    aperturaEnCurso.current = true;
+    cerrandoRef.current = true;
+    flushSync(() => setAbierto(false));
+    const boton = () => {
+      const guardado = disparadorRef.current;
+      return guardado && document.contains(guardado) ? guardado : portadaRef.current?.querySelector('[data-abrir]');
+    };
+    viaje.current = viajarConDico({
+      capa: oroRef.current,
+      destino: () => oroRef.current?.parentElement.querySelector('.dg-modal-card'),
+      origen: boton,
+      sentido: 'vuelta',
+      prepararDestino: () => {
+        window.scrollTo({ top: scrollPortada.current, behavior: 'instant' });
+        const elemento = boton();
+        const rect = elemento?.getBoundingClientRect();
+        if (rect && (rect.top < 0 || rect.bottom > window.innerHeight)) elemento.scrollIntoView({ block: 'center', behavior: 'instant' });
+      },
+      alTerminar: () => {
+        aperturaEnCurso.current = false;
+        cerrandoRef.current = false;
+        cierreSolicitado.current = false;
+        flushSync(() => { setOverlayActivo(false); setAbierto(false); setFase('preguntas'); setIndice(0); });
+        const origen = boton();
+        origen?.classList.add('pl-hero-regresando');
+        origen?.focus({ preventScroll: true });
+        if (origen) {
+          const limpiar = () => origen.classList.remove('pl-hero-regresando');
+          origen.addEventListener('animationend', limpiar, { once: true });
+          setTimeout(limpiar, 400);
+        }
+      },
+    });
+  }, []);
+
+  const cerrar = useCallback(() => {
+    if (modo !== 'home' || !overlayRef.current || cierreSolicitado.current || cerrandoRef.current) return;
+    cierreSolicitado.current = true;
+    clearTimeout(avance.current);
+    const profundidad = window.history.state?.dgProfundidad;
+    if (Number.isInteger(profundidad) && profundidad > 0 && profundidad < window.history.length) {
+      window.history.go(-profundidad);
+    } else {
+      // Una sesión de una versión anterior no declara su profundidad. No se
+      // adivina cuántas entradas atrás hay: se cierra sin añadir otra.
+      const estado = { ...window.history.state };
+      delete estado.dg;
+      delete estado.desde;
+      delete estado.dgProfundidad;
+      window.history.replaceState(estado, '');
+      cerrarAnimado();
+    }
+  }, [modo, cerrarAnimado]);
+
+  // Atrás entre preguntas conserva su recorrido. Sólo salir del diagnóstico
+  // contrae el oro; Adelante durante una salida gana sobre el cierre pendiente.
   useEffect(() => {
     const alVolver = (e) => {
       clearTimeout(avance.current);
+      cierreSolicitado.current = false;
       const s = e.state?.dg;
       if (s === undefined || s === null) {
-        if (modo === 'home') { setAbierto(false); setFase('preguntas'); setIndice(0); }
+        if (modo === 'home') cerrarAnimado();
         return;
       }
-      setAbierto(true);
-      if (s === 'resultado') {
-        if (todoCompleto(respuestasRef.current)) { setFase('resultado'); return; }
-        // Pantalla e historial tienen que coincidir: si faltan respuestas, la
-        // entrada pasa a ser la primera pregunta sin contestar.
-        const falta = primerFaltante(respuestasRef.current);
-        window.history.replaceState({ ...window.history.state, dg: falta }, '');
+      viaje.current?.cancelar();
+      aperturaEnCurso.current = false;
+      cerrandoRef.current = false;
+      if (oroRef.current) oroRef.current.dataset.viaje = 'abierto';
+      flushSync(() => {
+        if (modo === 'home') setOverlayActivo(true);
+        setAbierto(true);
+        if (s === 'resultado' && todoCompleto(respuestasRef.current)) { setFase('resultado'); return; }
         setFase('preguntas');
-        setIndice(falta);
-        return;
-      }
-      setFase('preguntas');
-      setIndice(Number(s) || 0);
+        if (s === 'resultado') {
+          const falta = primerFaltante(respuestasRef.current);
+          window.history.replaceState({ ...window.history.state, dg: falta }, '');
+          setIndice(falta);
+        } else setIndice(Number(s) || 0);
+      });
+      tituloRef.current?.focus({ preventScroll: true });
     };
     window.addEventListener('popstate', alVolver);
     return () => window.removeEventListener('popstate', alVolver);
-  }, [modo]);
+  }, [modo, cerrarAnimado]);
 
-  const empujar = (dg) => window.history.pushState({ ...window.history.state, dg, desde: true }, '');
+  const empujar = (dg, primero = false) => {
+    const estado = { ...window.history.state, dg, desde: true };
+    if (primero) estado.dgProfundidad = 1;
+    else if (Number.isInteger(estado.dgProfundidad)) estado.dgProfundidad += 1;
+    window.history.pushState(estado, '');
+  };
 
   const irA = useCallback((i) => {
     clearTimeout(avance.current);
@@ -367,18 +453,32 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     setIndice(i);
   }, []);
 
-  const abrir = useCallback(() => {
-    if (!abierto) {
-      empujar(0);
-      setIndice(0);
-      setFase('preguntas');
-      setAbierto(true);
+  const abrir = useCallback((evento) => {
+    if (aperturaEnCurso.current) return;
+    if (!abiertoRef.current) {
+      scrollPortada.current = window.scrollY;
+      const activo = document.activeElement;
+      disparadorRef.current = evento?.currentTarget || evento?.disparador || (activo instanceof HTMLElement && activo !== document.body ? activo : null);
+      aperturaEnCurso.current = true;
+      cerrandoRef.current = false;
+      cierreSolicitado.current = false;
+      flushSync(() => setOverlayActivo(true));
+      viaje.current = viajarConDico({
+        capa: oroRef.current,
+        origen: evento?.currentTarget,
+        destino: () => oroRef.current?.parentElement.querySelector('.dg-modal-card'),
+        alTerminar: () => {
+          aperturaEnCurso.current = false;
+          const siguiente = primerFaltante(respuestasRef.current);
+          empujar(siguiente, true);
+          flushSync(() => { setIndice(siguiente); setFase('preguntas'); setAbierto(true); });
+          tituloRef.current?.focus({ preventScroll: true });
+        },
+      });
       return;
     }
-    // Ya abierto (un boton de mas abajo): solo traerlo a la vista.
-    raizRef.current?.scrollIntoView({ block: 'start' });
     tituloRef.current?.focus({ preventScroll: true });
-  }, [abierto]);
+  }, []);
 
   useEffect(() => {
     if (abrirRef) abrirRef.current = abrir;
@@ -427,6 +527,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   const volver = () => {
     clearTimeout(avance.current);
+    if (modo === 'home' && pasoIdx === 0) { cerrar(); return; }
     if (conDesde()) { window.history.back(); return; }
     // Sin entrada propia atras (se entro directo a un paso): se retrocede en
     // el lugar, sin sacar al visitante de la pagina.
@@ -476,15 +577,24 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     }
   };
 
-  /* ── Cerrado (solo en la home): la portada y el instrumento ── */
-  if (!abierto) {
-    return (
-      <div className="pl-split dg-embudo dg-cerrado" ref={raizRef}>
-        <div className="pl-split-col">{Portada && <Portada onAbrir={abrir} />}</div>
-        <div className="pl-split-lado">{lado}</div>
-      </div>
-    );
-  }
+  const portada = modo === 'home' && (
+    <div className="pl-split dg-embudo dg-cerrado" ref={portadaRef}>
+      <div className="pl-split-col">{Portada && <Portada onAbrir={abrir} />}</div>
+      <div className="pl-split-lado">{lado}</div>
+    </div>
+  );
+  const envolver = (contenido) => modo === 'home' ? (
+    <>
+      {portada}
+      {overlayActivo && (
+        <DiagnosticoCard visible={abierto} fondoRef={portadaRef}
+          oroRef={oroRef} tituloRef={tituloRef} tituloId={fase === 'resultado' ? 'dg-resultado-titulo' : 'dg-pregunta'} onCerrar={cerrar}>
+          {contenido}
+        </DiagnosticoCard>
+      )}
+    </>
+  ) : contenido;
+  if (!abierto && !overlayActivo) return envolver(null);
 
   const sol = fase === 'resultado' ? solucion(respuestas.desafio, respuestas.vertical) : null;
 
@@ -526,10 +636,10 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   /* ── El resultado ── */
   if (fase === 'resultado' && sol) {
-    return (
+    return envolver(
       <div className="pl-split dg-embudo dg-fase-resultado" ref={raizRef}>
         <div className="pl-split-col dg-res-cab">
-          <Titulo className="dg-titulo dg-entra" ref={tituloRef} tabIndex={-1}>{sol.titulo}</Titulo>
+          <Titulo className="dg-titulo dg-entra" id="dg-resultado-titulo" ref={tituloRef} tabIndex={-1}>{sol.titulo}</Titulo>
         </div>
         {instrumento}
         <Resultado
@@ -544,8 +654,9 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   }
 
   /* ── Preguntas (y el segundo en que Dico lee) ── */
-  return (
+  return envolver(
     <div className={`pl-split dg-embudo dg-fase-${fase}`} ref={raizRef}>
+      {modo === 'home' && instrumento}
       <div className="pl-split-col dg-col">
         {/* El avance arriba es solo la barra; la cuenta en texto va al pie
             del paso, al lado de las acciones (arriba seria una etiqueta
@@ -566,7 +677,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
         {fase === 'analizando' ? (
           <div className="dg-paso dg-entra" key="analizando">
-            <Titulo className="dg-titulo" ref={tituloRef} tabIndex={-1}>Estoy leyendo tus respuestas.</Titulo>
+            <Titulo className="dg-titulo" id="dg-pregunta" ref={tituloRef} tabIndex={-1}>Estoy leyendo tus respuestas.</Titulo>
           </div>
         ) : (
           <Pregunta
@@ -588,7 +699,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
           />
         )}
       </div>
-      {instrumento}
+      {modo !== 'home' && instrumento}
     </div>
   );
 }
@@ -759,15 +870,11 @@ function Resultado({ sol, respuestas, id, guardado, onReintentar }) {
   const inversion = labelDe(INVERSIONES, respuestas.inversion);
   const alta = `/registro?${paramsDelAlta(respuestas, id)}`;
   const urgente = respuestas.urgencia === 'ya';
-  const pago = planId !== 'digital';
-
-  let sobreInversion = null;
-  if (pago && respuestas.inversion === 'gratis') {
-    sobreInversion = `Querés empezar gratis: la cuenta arranca en el plan Digital y pasás a ${plan.nombre} cuando lo necesites.`;
+  let sobreInversion = 'El diagnóstico no realiza ningún cobro. Podés crear tu cuenta sin tarjeta.';
+  if (respuestas.inversion === 'gratis') {
+    sobreInversion = `Preferís evaluar antes de pagar. El plan recomendado cuesta ${plan.precio}; el diagnóstico no contrata una suscripción.`;
   } else if (planId === 'cadena' && respuestas.inversion === 'hasta_60k') {
-    sobreInversion = 'Para varias sucursales el plan es Cadena. Podés empezar gratis con un local y sumar los demás después.';
-  } else if (pago) {
-    sobreInversion = `La cuenta empieza gratis y sin tarjeta. Pasás al plan ${plan.nombre} cuando quieras.`;
+    sobreInversion = 'Para varias sucursales el plan es Cadena. Su precio se calcula por local; podés comparar las modalidades antes de contratar.';
   }
 
   return (
@@ -821,7 +928,7 @@ function Resultado({ sol, respuestas, id, guardado, onReintentar }) {
           <span>{plan.precio}</span>
         </p>
         <p className="dg-parrafo dg-suave">{plan.detalle}</p>
-        {inversion && !(pago && respuestas.inversion === 'gratis') && (
+        {inversion && respuestas.inversion !== 'gratis' && (
           <p className="dg-parrafo">Elegiste: {inversion.charAt(0).toLowerCase() + inversion.slice(1)}.</p>
         )}
         {sobreInversion && <p className="dg-parrafo">{sobreInversion}</p>}
@@ -829,7 +936,7 @@ function Resultado({ sol, respuestas, id, guardado, onReintentar }) {
 
       <div className="dg-cierre">
         <a className="pl-boton" href={alta}>
-          {urgente ? 'Crear mi cuenta y empezar hoy' : 'Crear mi cuenta gratis'}
+          {urgente ? 'Crear mi cuenta y empezar hoy' : 'Crear mi cuenta'}
         </a>
         <a
           className="pl-enlace dg-agenda"

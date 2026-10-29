@@ -43,7 +43,7 @@ export default function Diagnostico() {
         <a className="pl-marca" href="/">
           <img src="/brand/dico/logo/dico-claro.png" alt="Dico" width="1368" height="452" />
         </a>
-        <a className="pl-enlace pl-cabecera-link" href="/#que-hace">Qué hace Dico</a>
+        <a className="pl-enlace pl-cabecera-link" href="/#rubros">Qué hace Dico</a>
       </header>
       <Embudo modo="pagina" nivel="h1" />
       <section className="pl-seccion dg-confian" aria-labelledby="dg-confian-titulo">

@@ -14,9 +14,11 @@
 // key, y ante cualquier falla una respuesta generica de Dico — una vista
 // previa de mas vale mas que un 500.
 
+import { SEO_PLATAFORMA } from '../src/lib/seoPlataforma.js';
+
 const PLATFORM_ROOTS = ['divianco.app'];
 // Version de public/brand/og/dico.png (la genera scripts/generar-og-landing.mjs).
-const OG_VERSION = 1;
+const OG_VERSION = 2;
 
 function slugFromHost(host) {
   const h = String(host || '').toLowerCase().replace(/:\d+$/, '');
@@ -43,9 +45,8 @@ export default async function handler(req, res) {
   // Sin tenant (raiz): la marca de la plataforma.
   // Igual que el titulo y la descripcion de la landing (PlatformLanding.jsx):
   // nada que el producto no haga hoy.
-  let title = 'Dico — Todo tu negocio, en un solo lugar';
-  let description = 'Ventas, costos, sueldos, stock, caja y pedidos de tu '
-    + 'gastronomía, comercio o servicio, en un solo lugar. Empezá con un diagnóstico, sin email.';
+  let title = SEO_PLATAFORMA.titulo;
+  let description = SEO_PLATAFORMA.descripcion;
   // La imagen de la raiz la genera scripts/generar-og-landing.mjs. Medidas
   // fijas: con width/height declarados WhatsApp la muestra grande al primer
   // envio, sin esperar a bajarla para saber el tamano.
@@ -55,7 +56,7 @@ export default async function handler(req, res) {
   let image = slug ? null : `https://divianco.app/brand/og/dico.png?v=${OG_VERSION}`;
   const imageMeta = slug ? '' : '<meta property="og:image:width" content="1200">\n'
     + '<meta property="og:image:height" content="630">\n'
-    + '<meta property="og:image:alt" content="Dico: sabé cuánto ganás, no solo cuánto vendés">';
+    + '<meta property="og:image:alt" content="Dico: tu tiempo vuelve a ser tuyo">';
   let color = '#0f0e0d';
 
   if (slug) {
@@ -105,7 +106,7 @@ ${imageMeta}
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 ${image ? `<meta name="twitter:image" content="${esc(image)}">` : ''}
-${slug ? '' : '<meta name="twitter:image:alt" content="Dico: sabé cuánto ganás, no solo cuánto vendés">'}
+${slug ? '' : '<meta name="twitter:image:alt" content="Dico: tu tiempo vuelve a ser tuyo">'}
 </head>
 <body>
 <h1>${esc(title)}</h1>

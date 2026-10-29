@@ -88,10 +88,12 @@ export default function DicoPhysical({
   className = '',
   title = 'Dico',
   animacion = null,
+  ritmo = 1,
 }) {
   const actual = physicalPoseCanonica(pose);
   const menosMovimiento = useMediaQuery('(prefers-reduced-motion: reduce)');
   const quieto = reducedMotion ?? menosMovimiento;
+  const factorRitmo = Number.isFinite(ritmo) ? Math.max(.25, Math.min(2, ritmo)) : 1;
 
   const plan = useMemo(
     () => (animacion ? planDeAnimacion(animacion) : planDePose(actual)),
@@ -116,10 +118,10 @@ export default function DicoPhysical({
         if (!plan.bucle && c >= plan.cuadros - 1) return c;
         return (c + 1) % plan.cuadros;
       }),
-      Math.round(1000 / plan.fps),
+      Math.round(1000 / (plan.fps * factorRitmo)),
     );
     return () => clearInterval(id);
-  }, [quieto, plan.fps, plan.cuadros, plan.bucle]);
+  }, [quieto, plan.fps, plan.cuadros, plan.bucle, factorRitmo]);
 
   const columna = plan.cuadros > 1 ? cuadro : plan.columna;
   const { x, y } = posicionDeCelda(columna, plan.fila);
