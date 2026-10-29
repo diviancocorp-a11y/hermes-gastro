@@ -11,14 +11,13 @@
 
 ### Revision visual de Ricky
 
-**Actual — compuerta de cierre con scroll, 29/oct:** dos hojas negras cubren
-la franja azul conservando su alto. Junta gris al entrar, dorado al alcanzar
-92% del viewport, apertura rapida de 480ms al llegar al 72%, con minimo 180ms
-de junta dorada si se baja rapido. Quedan bordes dorados limpios, sin pulso.
+**Actual — compuerta de cierre ligada al scroll, 29/oct:** dos hojas negras
+cubren la franja azul conservando su alto. Junta gris al entrar y dorada al
+92% del viewport; apertura progresiva entre el 86% y el 42%, sin temporizador.
+Al subir se cierra en sentido inverso. Quedan bordes dorados limpios, sin pulso.
 No fija ni bloquea el scroll, no empuja el footer y conserva el CTA existente.
-Se rearma solo al volver completamente por encima del tramo; foco de teclado
-abre de inmediato y movimiento reducido muestra la franja abierta. Footer y
-segmentos cerrados sin cambios.
+Foco de teclado abre de inmediato y movimiento reducido muestra la franja
+abierta. Footer y segmentos cerrados sin cambios.
 
 
 **Actual — cierre azul de la landing, 29/oct:** franja volt uniforme de borde
