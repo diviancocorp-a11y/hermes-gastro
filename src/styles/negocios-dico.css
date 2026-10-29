@@ -1,26 +1,40 @@
-/* Cuatro clientes fijos: revelado del fondo sin alterar la altura del bloque. */
-.nc-root { background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-800); }
-.nc-marco { position: relative; height: 170px; isolation: isolate; }
-.nc-marco::before { content: ''; position: absolute; z-index: -1; inset: 0; background: var(--ds-color-neutral-100); clip-path: inset(calc((1 - var(--nc-apertura, 0)) * 50%) 0); }
-.nc-panel { height: 100%; padding: 12px var(--pl-m); opacity: var(--nc-contenido, 0); }
-.nc-root h2 { margin: 0; text-align: center; color: var(--ds-color-zinc-800); font-size: 14px; line-height: 20px; font-weight: 400; }
-.nc-clientes { max-width: 760px; margin: 8px auto 0; }
-.nc-fila { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
-.nc-negocio { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 2px 4px; text-align: center; color: inherit; text-decoration: none; }
-.nc-negocio img { width: 64px; height: 64px; object-fit: cover; border-radius: var(--ds-radius-pill); transition: transform 240ms ease; }
-.nc-nombre { font-size: 14px; font-weight: 500; line-height: 20px; }
-.nc-ver { min-height: 16px; font-size: 12px; line-height: 16px; color: var(--ds-color-intelligence-trace); opacity: 0; transition: opacity 160ms ease; }
-.nc-negocio:is(:hover, :focus-visible) img { transform: scale(1.06); }
-.nc-negocio:is(:hover, :focus-visible) .nc-ver { opacity: 1; }
-.nc-marco[data-visible="false"] .nc-negocio { pointer-events: none; }
-.nc-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-trace); outline-offset: 2px; border-radius: var(--ds-radius-2); }
-.nc-root + .cn-root { padding-top: var(--ds-space-8); }
-@media (max-width: 599px) {
-  .nc-marco { height: 328px; }
-  .nc-panel { padding-block: 16px; }
-  .nc-clientes { max-width: 360px; margin-top: 16px; }
-  .nc-fila { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; }
-  .nc-ver { opacity: 1; }
+/* Cuatro negocios: una sola fila, sin repetir marcas ni simular más clientes. */
+.nc-root { padding: var(--ds-space-8) var(--pl-m) var(--ds-space-layout-12); background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-400); }
+.nc-root h2 { margin: 0; text-align: center; color: var(--ds-color-zinc-400); font-size: var(--ds-type-lg); line-height: 1.4; font-weight: 400; }
+.nc-deslizable { max-width: 1400px; margin: var(--ds-space-6) auto 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-color: var(--ds-color-zinc-800) var(--pl-suelo-continuo); scrollbar-width: thin; }
+.nc-fila { display: flex; justify-content: center; gap: clamp(32px, 5vw, 80px); width: max-content; min-width: 100%; padding: var(--ds-space-4) var(--ds-space-2); }
+.nc-fila li { flex: none; }
+.nc-negocio { position: relative; display: flex; align-items: center; gap: var(--ds-space-4); min-height: 96px; padding-block: var(--ds-space-3); text-decoration: none; color: inherit; }
+.nc-negocio img { width: 72px; height: 72px; max-width: none; object-fit: cover; border-radius: var(--ds-radius-pill); filter: grayscale(1); opacity: .8; transition: filter 240ms ease, opacity 240ms ease; }
+.nc-negocio:is(:hover, :focus-visible) { color: var(--ds-color-zinc-50); }
+.nc-negocio:is(:hover, :focus-visible) img { filter: grayscale(0); opacity: 1; }
+.nc-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: 2px; border-radius: var(--ds-radius-2); }
+.nc-root + .cn-root { padding-top: var(--ds-space-layout-16); }
+@media (max-width: 999px) {
+  .nc-fila { justify-content: flex-start; gap: var(--ds-space-8); }
+  .nc-negocio img { width: 60px; height: 60px; }
+  .nc-negocio { min-height: 84px; }
 }
-@media (hover: none) { .nc-ver { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .nc-marco::before { clip-path: none; } .nc-panel { opacity: 1; } .nc-negocio img, .nc-ver { transition: none; } }
+@media (max-width: 599px) {
+  .nc-root { padding-block: var(--ds-space-6) var(--ds-space-8); }
+  .nc-root h2 { font-size: var(--ds-type-md); }
+  .nc-deslizable { margin-top: var(--ds-space-3); }
+}
+
+/* Altura reservada: el fondo se revela sin empujar el siguiente segmento. */
+.pl-hero-tiempo + .nc-root { box-sizing: border-box; padding: clamp(64px, 8svh, 96px) 0 16px; }
+.nc-marco { position: relative; height: 148px; }
+.nc-junta { position: absolute; z-index: 1; left: 0; right: 0; top: 50%; height: 1px; background: var(--ds-color-zinc-400); opacity: calc(1 - var(--nc-apertura, 0) * 8); transition: background-color 160ms ease, height 160ms ease; }
+.nc-marco[data-luz="true"] .nc-junta { height: 3px; background: var(--ds-color-intelligence-volt); }
+.nc-panel { position: relative; height: 100%; border-block: 3px solid var(--ds-color-intelligence-volt); padding: 12px var(--pl-m); isolation: isolate; clip-path: inset(calc((1 - var(--nc-apertura, 0)) * 50%) 0); background: var(--ds-color-neutral-100); color: var(--ds-color-zinc-800); }
+.nc-panel h2, .nc-panel .nc-deslizable { opacity: var(--nc-contenido, 0); }
+.pl-hero-tiempo + .nc-root h2 { color: var(--ds-color-zinc-800); font-size: var(--ds-type-md); line-height: 24px; }
+.nc-panel h2 span { color: var(--ds-color-brand-gold-700); font-weight: 500; }
+.pl-hero-tiempo + .nc-root .nc-deslizable { max-width: 720px; margin-top: 8px; scrollbar-color: var(--ds-color-neutral-400) var(--ds-color-neutral-100); }
+.pl-hero-tiempo + .nc-root .nc-fila { justify-content: space-between; gap: clamp(24px, 5vw, 72px); padding-block: 0; }
+.pl-hero-tiempo + .nc-root .nc-negocio { min-height: 88px; padding-block: 4px; gap: 12px; }
+.pl-hero-tiempo + .nc-root .nc-negocio img { width: 64px; height: 64px; opacity: .9; }
+.nc-marco[data-visible="false"] .nc-negocio { pointer-events: none; }
+.nc-panel :focus-visible { outline-color: var(--ds-color-intelligence-trace); }
+@media (prefers-reduced-motion: reduce) { .nc-junta { display: none; } .nc-panel { clip-path: none; } .nc-panel h2, .nc-panel .nc-deslizable { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .nc-negocio img { transition: none; } }

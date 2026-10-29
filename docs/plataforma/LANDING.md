@@ -11,6 +11,13 @@
 
 ### Revision visual de Ricky
 
+**Clientes — vuelta exacta a81f53dd, 29/oct:** Ricky rechazo el corte rapido
+contra el marfil de5593b5f. Restaurados componente y CSS de clientes tal cual
+antes de esa ultima modificacion: respiro negro bajo parallax, junta gris que
+enciende azul, apertura marfil con bordes azules3px y composicion previa.
+La propuesta de170px/nombres/sin bordes queda descartada. Hero sin cambios.
+
+
 **Clientes — direccion final simple, 29/oct:** franja marfil de 170px desktop,
 sin bordes/sombras ni hueco negro adicional; titulo completo en carbon.
 Cuatro logos nitidos a color, opacidad1, nombres debajo; hover/foco escala1.06
