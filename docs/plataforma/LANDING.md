@@ -11,6 +11,11 @@
 
 ### Revision visual de Ricky
 
+**Separacion Clientes/Rubros, 29/oct:** ajuste pedido tras retirar el segmento
+de pedido: negro inferior de clientes48px (antes16) y barra marfil76px
+(antes88). Logos48px y apertura intactos. Rubros y demas segmentos sin cambios.
+
+
 **Orden final — sin segmento de pedido, 29/oct:** retirado CircuitoNegocio
 del montaje/import de la landing completo (pasos, capturas, explicacion y CTA).
 Inicio: Hero → Clientes → Rubros → Acompanamiento → Planes → FAQ → Cierre →
