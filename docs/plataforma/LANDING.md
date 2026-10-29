@@ -11,6 +11,16 @@
 
 ### Revision visual de Ricky
 
+**Hero/clientes — ajuste de remate, 29/oct:** negro agregado debajo de la
+escena (64–96px antes de clientes); fundido de foto acotado al ultimo 14%,
+sin subir negro hacia el cielo. Auroras pasan de manchas a cintas SVG curvas
+azul/dorado, movimiento visible 8/11s detras de montana, pausa fuera de pantalla
+y version quieta con movimiento reducido. Clientes en franja marfil de 148px
+reservados desde el inicio: apertura vertical desde linea central ligada al
+scroll, contenido aparece despues del 45% sin escalar logos ni titulo. Sin
+salto de la seccion siguiente; foco abre para teclado, reducido revela directo.
+
+
 **Hero — remate para cierre, 29/oct:** respiro negro de 24–48px antes de
 clientes. Auroras suaves azul volt y dorado entre cielo y recorte de montana,
 con movimiento organico lento de 19/27s, pausado fuera de pantalla y estatico

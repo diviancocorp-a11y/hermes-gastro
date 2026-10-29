@@ -60,7 +60,7 @@ export default function EscenaHero() {
   return (
     <figure className="pl-tiempo-escena" ref={escena} aria-label="Una persona contempla las montañas desde una cresta">
       <img className="pl-tiempo-capa pl-tiempo-cielo" data-tiempo-capa="0.82" src="/brand/landing/parallax/cielo.webp" width="2000" height="1906" alt="" fetchPriority="high" />
-      <div className="pl-auroras" data-tiempo-capa="0.65" aria-hidden="true"><span className="pl-aurora pl-aurora-volt" /><span className="pl-aurora pl-aurora-oro" /></div>
+      <div className="pl-auroras" data-tiempo-capa="0.65" aria-hidden="true"><span className="pl-aurora pl-aurora-volt"><svg viewBox="0 0 1000 400" preserveAspectRatio="none" focusable="false"><path d="M-80 300C80 30 180 360 360 150S650 50 820 180 1000 360 1100 40" /><path d="M-80 330C80 60 180 390 360 180S650 80 820 210 1000 390 1100 70" /><path d="M-80 270C80 0 180 330 360 120S650 20 820 150 1000 330 1100 10" /></svg></span><span className="pl-aurora pl-aurora-oro"><svg viewBox="0 0 1000 400" preserveAspectRatio="none" focusable="false"><path d="M-80 300C80 30 180 360 360 150S650 50 820 180 1000 360 1100 40" /><path d="M-80 330C80 60 180 390 360 180S650 80 820 210 1000 390 1100 70" /><path d="M-80 270C80 0 180 330 360 120S650 20 820 150 1000 330 1100 10" /></svg></span></div>
       <img className="pl-tiempo-capa pl-tiempo-montana" data-tiempo-capa="0.65" src="/brand/landing/parallax/montana.webp" width="2000" height="1906" alt="" />
       <img className="pl-tiempo-capa pl-tiempo-frente" data-tiempo-capa="0.12" src="/brand/landing/parallax/primer-plano.webp" width="2000" height="1906" alt="" />
     </figure>
