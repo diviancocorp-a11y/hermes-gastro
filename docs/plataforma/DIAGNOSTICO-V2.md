@@ -120,9 +120,9 @@ Con eso se decide que preguntas sobran con datos, no a ojo.
   desarrollo y el encabezado de `PLAN-AGENDA.md` dice que nada esta
   implementado. Validar que esta publicado en `divianco.app` antes de cambiar
   la promesa.
-- **Rama `landing/resultado-del-dia`** (worktree `.claude/worktrees/landing-dia`,
-  sin PR) toca el resultado del diagnostico. Resolverla (mergear o descartar)
-  antes de redisenar el resultado, o el trabajo choca.
+- **Partir del `main` posterior al PR #59** (`landing/rediseno`, que ya trae
+  `landing/resultado-del-dia`): cambio el resultado de rentabilidad, los
+  planes (`planesPlataforma.js`) y la etiqueta de inversion "gratis".
 - **WhatsApp guarda un dato personal**: la tabla `diagnosticos` hoy no tiene
   ninguno. Hace falta columna nueva, texto de consentimiento junto al campo y
   que la policy no lo exponga.
