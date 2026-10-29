@@ -1,12 +1,12 @@
 import { PLANES_DIAGNOSTICO } from './planesPlataforma';
 
 const RESPUESTAS = [
-  ['¿Qué es el diagnóstico?', 'Son unas pocas preguntas sobre tu rubro, tu operación y lo que más te preocupa. Al final ves por dónde empezar y qué plan puede servirte. No requiere email ni tarjeta.'],
+  ['¿Cómo empiezo?', 'Empezás por un diagnóstico breve sobre tu rubro, tu operación y lo que más te preocupa. Al final ves por dónde empezar y qué plan puede servirte. No requiere email ni tarjeta.'],
   ['¿Cuánto cuesta Dico?', `Digital cuesta ${PLANES_DIAGNOSTICO.digital.precio}, solo con pago mensual. Local y Cadena permiten pago mensual o anual. Los importes son por local y sin IVA.`, 'precios'],
-  ['¿Necesito una reunión antes de crear mi cuenta?', 'No. Podés crear tu cuenta primero y después acceder al acompañamiento para la puesta en marcha. La reunión no es un requisito previo.'],
+  ['¿Necesito una reunión?', 'No. Podés crear tu cuenta primero y después acceder al acompañamiento para la puesta en marcha. La reunión no es un requisito previo.'],
   ['¿Cuánto tarda la puesta en marcha?', 'Depende del catálogo, del equipo y de los datos que tengas preparados. Crear la cuenta y cargar tu operación son pasos distintos; coordinamos el alcance con vos.'],
   ['¿Puedo traer datos del sistema que uso hoy?', 'Si ya tenés catálogo, stock o clientes digitalizados, revisamos su formato para organizar la carga. Las recetas, el equipo y la configuración se preparan según tu negocio.'],
-  ['No tengo experiencia con sistemas. ¿Puedo empezar igual?', 'Podés empezar con el diagnóstico y avanzar paso a paso. Para la puesta en marcha tenés acceso al acompañamiento y un canal de contacto por WhatsApp.'],
+  ['¿Me ayudan a configurar Dico?', 'Sí. Te ayudamos a crear tu cuenta, configurar Dico y cargar la información de tu negocio. Después seguimos con vos para revisar cómo lo estás usando y proponerte mejoras para tu operación.'],
   ['¿Dico funciona sin internet?', 'Hoy necesita conexión y no tiene modo offline. Si se corta internet o el servicio, no vas a poder registrar operaciones hasta que se restablezca.'],
   ['¿Cómo sé qué está disponible para mi rubro?', 'En el apartado de rubros distinguimos las funciones disponibles de las que están en desarrollo. La agenda interna y la reserva online son funciones distintas: la reserva online, los talles y colores y la facturación ARCA siguen en desarrollo.', 'rubros'],
   ['¿Qué pasa si sumo otra sucursal?', 'El plan Cadena contempla varias sucursales, consolidado, comparativas y roles por local. Su precio se calcula por local.'],
@@ -32,7 +32,7 @@ const METADATOS = [
 
 export const TEMAS_DICO = [
   { id: 'planes', nombre: 'Planes y pagos' },
-  { id: 'inicio', nombre: 'Puesta en marcha' },
+  { id: 'inicio', nombre: 'Empezar' },
   { id: 'datos', nombre: 'Mis datos' },
   { id: 'rubro', nombre: 'Mi rubro' },
 ];

@@ -11,6 +11,19 @@
 
 ### Revision visual de Ricky
 
+**Actual — FAQ guiada con Dico, 28/oct:** retirados buscador libre, historial
+y lista duplicada. Cuatro temas con preguntas visibles; una respuesta preparada
+activa, que se reemplaza al elegir otra. Mismo DicoPhysical/atlas del admin,
+una sola instancia y tamano constante entre saludo/respuesta: baja al globo
+con transicion 480ms, gesto de pensar breve y respuesta completa. Espacio
+reservado para lectura; en movil se acerca a la vista solo si queda fuera y
+el usuario no empezo a desplazarse. Borde estatico azul/dorado con enfasis
+breve al interactuar. Subtitulo «Respuestas claras para empezar». Tema Empezar
+y respuesta de ayuda para configurar actualizados al acompanamiento confirmado
+por Ricky. Sin IA, llamadas ni dependencias nuevas; WhatsApp como salida.
+Rubros, Acompanamiento y diseno de Planes cerrados; contenido de planes pendiente.
+
+
 **Actual — ultimo retoque visual de Planes, 28/oct:** Local sin contorno azul
 ni resplandor fijo; borde neutro como las otras cards, conservando etiqueta
 «Plan destacado», fondo y boton aprobados. Brillo marfil localizado ampliado
