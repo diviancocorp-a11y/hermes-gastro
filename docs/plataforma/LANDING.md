@@ -11,6 +11,16 @@
 
 ### Revision visual de Ricky
 
+**Orden final — sin segmento de pedido, 29/oct:** retirado CircuitoNegocio
+del montaje/import de la landing completo (pasos, capturas, explicacion y CTA).
+Inicio: Hero → Clientes → Rubros → Acompanamiento → Planes → FAQ → Cierre →
+Footer. Rubros conserva sus archivos y comportamiento intactos. Hero/footer
+«Como funciona» y enlace de pagina /diagnostico apuntan ahora a #rubros;
+#que-hace, #pilares y #flujo quedan como alias sin altura antes de Rubros para
+links anteriores. Se conserva la separacion existente de16px tras clientes.
+Sin demos ni secciones nuevas, ni cambios de diseno de los otros segmentos.
+
+
 **HERO Y CLIENTES CERRADOS visualmente por Ricky, 29/oct:** ultimo ajuste:
 logos48px y barra marfil88px, titulo gris/Dico dorado fuera sobre negro.
 Se conservan respiro, junta gris que enciende azul, bordes3px y apertura scroll.

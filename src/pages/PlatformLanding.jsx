@@ -50,7 +50,6 @@ import { useEffect, useRef, useState } from 'react';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
-import CircuitoNegocio from '../components/landing/CircuitoNegocio';
 import RubrosNegocio from '../components/landing/RubrosNegocio';
 import NegociosDico from '../components/landing/NegociosDico';
 import ComoEmpezar from '../components/landing/ComoEmpezar';
@@ -129,7 +128,9 @@ export default function PlatformLanding() {
         />
       </section>
       <NegociosDico />
-      <CircuitoNegocio onDiagnostico={abrirDiagnostico} />
+      <span className="pl-ancla-rubros" id="que-hace" aria-hidden="true" />
+      <span className="pl-ancla-rubros" id="pilares" aria-hidden="true" />
+      <span className="pl-ancla-rubros" id="flujo" aria-hidden="true" />
       <RubrosNegocio onDiagnostico={abrirDiagnostico} />
       <ComoEmpezar onDiagnostico={abrirDiagnostico} />
       <PlanesNegocio onDiagnostico={abrirDiagnostico} />
@@ -161,7 +162,7 @@ function Portada({ onAbrir }) {
           <button type="button" className="pl-boton pl-hero-origen" data-abrir onClick={alAbrir}>
             <span className="pl-hero-etiqueta">Empezar mi diagnóstico</span> <span className="pl-hero-burbuja" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span>
           </button>
-          <a className="pl-enlace" href="#que-hace">Ver cómo funciona</a>
+          <a className="pl-enlace" href="#rubros">Ver cómo funciona</a>
         </div>
         <p className="pl-hero-ayuda">Diagnóstico breve, sin dejar tu email.</p>
       </div>

@@ -621,6 +621,7 @@
 /* ─────────────── Secciones: una grilla, dos bordes ─────────────── */
 
 /* Alias de anclas viejas: marcan el arriba de la seccion sin ocupar celda. */
+.pl-ancla-rubros { display: block; height: 0; }
 .pl-ancla {
   position: absolute;
   top: 0;

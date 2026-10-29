@@ -52,7 +52,7 @@ export default function CierreNegocio({ onDiagnostico }) {
         <div className="pf-contenido">
           <p className="pf-marca-texto"><a href={INSTAGRAM_DIVIANCO_URL} target="_blank" rel="noopener noreferrer">Un producto de Grupo Divianco</a></p>
           <nav className="pf-nav" aria-label="Navegación del pie">
-            <a href="#que-hace">Cómo funciona</a><a href="#rubros">Tu rubro</a><a href="#precios">Planes</a><a href="#preguntas">Preguntale a Dico</a><a href="/entrar">Iniciá sesión</a>
+            <a href="#rubros">Cómo funciona</a><a href="#rubros">Tu rubro</a><a href="#precios">Planes</a><a href="#preguntas">Preguntale a Dico</a><a href="/entrar">Iniciá sesión</a>
           </nav>
           <div className="pf-redes">
             <div className="pf-contacto">
