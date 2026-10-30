@@ -1,6 +1,6 @@
 # Diagnostico v2: resultado con valor y lead calificado
 
-> 29/oct/2026. Especificacion acordada con Ricky. **Implementacion preparada en landing/rediseno para revision visual.**
+> 29/oct/2026. Especificacion acordada con Ricky. **Implementacion aprobada por Ricky el 30/oct para publicacion mediante PR #61.**
 > El diagnostico vigente esta descripto en `LANDING.md`; este documento dice
 > hacia donde va y en que orden.
 
@@ -9,7 +9,7 @@
 - Medicion original 8f7bbd1 publicada por PR #60, main fc40d9ed; CI/E2E/smoke verdes.
   El script de Vercel excluye webdriver/Headless: el test automatico confirma
   eventos locales, no una visita humana en el dashboard.
-- V2 en preview: ocho pantallas; tipo integrado al rubro y senal dentro del
+- V2 aprobada para produccion: ocho pantallas; tipo integrado al rubro y senal dentro del
   dolor. Inversion retirada del recorrido; sus ids v1 quedan compatibles.
   Nombre/costo de otro sistema opcionales. Venta incluye desconocido/no responde.
 - Resultado en el orden acordado, sin extrapolar perdidas. Cuenta aparte y

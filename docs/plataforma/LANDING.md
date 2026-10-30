@@ -7,12 +7,12 @@
 
 ---
 
-## 1. Estado al 29/oct/2026
+## 1. Estado al 30/oct/2026
 
-### Revision visual de Ricky
+### Publicacion aprobada por Ricky
 
-**Diagnostico v2 preparado, 29/oct:** medicion de Claude 8f7bbd1 publicada por
-PR #60/main fc40d9ed, CI/E2E/smoke verdes. UI v2 en esta rama para revision: ocho
+**Diagnostico v2 aprobado para produccion, 30/oct:** medicion de Claude 8f7bbd1 publicada por
+PR #60/main fc40d9ed, CI/E2E/smoke verdes. Ricky aprobo publicar el PR #61: ocho
 pantallas, detalle por dolor, otro sistema con nombre/costo, ventas en rangos,
 decisor y nombre opcional. Resultado: prioridad/hallazgos/herramientas-plan/
 contacto opcional. Sin montos inventados ni descarte por venta. 0117 aplicada
@@ -24,7 +24,7 @@ Dico usa el atlas vigente, no las caras 2D anteriores. No se manda WhatsApp
 automaticamente: se guarda una solicitud para atencion de Divianco.
 Pruebas dirigidas 47/47; API v1/v2 y consentimiento probados. En celular el
 resultado no queda detras de la ficha; no hay desborde horizontal. Backend
-compatible ya desplegado; UI v2 pendiente de revision en preview (PR #61).
+compatible ya desplegado; UI v2 aprobada para publicar por PR #61.
 Suite completa: 155 archivos / 2101 pruebas en verde. Recorrido real del
 preview hasta el contacto verificado en la base; datos QA eliminados.
 
