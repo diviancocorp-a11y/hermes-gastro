@@ -225,6 +225,15 @@ export function paramsDelAlta({ vertical, nombre_negocio: nombre }, id) {
   return q.toString();
 }
 
+/** Eventos de analitica al mostrar una pregunta. `antes` y `ahora` son
+ *  { paso, idx }; `antes` es null si no venia de otra pregunta. Volver a un
+ *  paso anterior marca el atras del paso que se dejo. */
+export function eventosDePaso(antes, ahora) {
+  const eventos = [`diagnostico-paso-${ahora.paso}`];
+  if (antes && ahora.idx < antes.idx) eventos.push(`diagnostico-atras-${antes.paso}`);
+  return eventos;
+}
+
 const CLAVE_PENDIENTE = 'dico:diagnostico-pendiente';
 
 /** Guarda el diagnostico (edge function `diagnostico`). Nunca tira: si la red
