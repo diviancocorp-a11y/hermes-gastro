@@ -687,7 +687,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     {guia}{progreso}
     {fase === 'analizando' ? <div className="dg-paso" key="analizando">
       <Titulo className="dg-titulo" id="dg-pregunta" ref={tituloRef} tabIndex={-1}>Estoy leyendo tus respuestas.</Titulo>
-      <p className="dg-analisis-mensaje" role="status" aria-live="polite">{MENSAJES_ANALISIS[analisisEtapa]}</p>
+      <p className="dg-analisis-mensaje" role="status" aria-live="polite"><span className="dg-analisis-cargando" aria-hidden="true" /><span className="dg-analisis-texto">{MENSAJES_ANALISIS[analisisEtapa]}</span></p>
     </div> : <Pregunta paso={paso} nivel={nivel} cuenta={cuenta} respuestas={respuestas}
       tituloRef={tituloRef} listo={listo} resumen={resumen}
       textoVolver={modo === 'home' && pasoIdx === 0 ? 'Volver al inicio' : 'Volver'}

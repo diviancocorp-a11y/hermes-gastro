@@ -9,6 +9,15 @@
 
 ## 1. Estado al 30/oct/2026
 
+### Lectura del estado de analisis — 30/oct
+
+PR #62: mensajes de preparacion en tinta clara con pulso blanco/volt y un
+indicador circular de carga al lado. Se conserva la legibilidad durante todo
+el pulso; no se reduce la opacidad. Movimiento reducido deja texto y aro
+quietos. Verificado en celular y con movimiento reducido; las nueve pruebas
+del recorrido/hero siguen verdes. No cambian tiempos, preguntas ni resultado.
+Sigue en preview.
+
 ### Continuidad del resultado y luces — 30/oct
 
 En el mismo PR #62: la lectura muestra 100% de respuestas completadas y conserva

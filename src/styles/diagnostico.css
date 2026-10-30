@@ -739,3 +739,11 @@
 .dg-resultado-cabecera { padding: var(--ds-space-4) clamp(var(--ds-space-6), 4vw, var(--ds-space-layout-12)) var(--ds-space-6); }
 .dg-resultado-cabecera .dg-avance { margin-bottom: 0; }
 .dg-resultado-contenido { padding: var(--ds-space-6) clamp(var(--ds-space-6), 4vw, var(--ds-space-layout-12)); background: var(--pc-suelo); color: var(--pc-tinta); }
+
+/* Lectura visible mientras Dico prepara la orientacion. */
+.dg-analisis-mensaje { display: flex; align-items: flex-start; gap: var(--ds-space-3); color: var(--pc-tinta); }
+.dg-analisis-texto { min-width: 0; animation: dg-lectura-pulso 2200ms ease-in-out infinite; }
+.dg-analisis-cargando { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 5px; border: 2px solid color-mix(in srgb, var(--pc-volt) 30%, transparent); border-top-color: var(--pc-volt); border-radius: var(--ds-radius-pill); animation: dg-lectura-giro 900ms linear infinite; }
+@keyframes dg-lectura-pulso { 0%, 100% { color: var(--pc-tinta); } 50% { color: var(--pc-volt); } }
+@keyframes dg-lectura-giro { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) { .dg-analisis-texto, .dg-analisis-cargando { animation: none; } }
