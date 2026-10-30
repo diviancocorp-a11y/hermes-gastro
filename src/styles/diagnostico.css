@@ -698,3 +698,40 @@
 }
 
 .dg-modal .dg-titulo:focus-visible { outline: none; }
+
+/* Altura estable: se desplaza el contenido, no la superficie. */
+.dg-modal:has(.dg-unificado) .dg-modal-card {
+  height: min(880px, calc(100dvh - var(--dg-modal-margen) * 2));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 2;
+}
+.dg-modal-cabecera { flex-shrink: 0; }
+.dg-modal .dg-unificado { flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--pc-suelo-3) var(--pc-suelo); }
+.dg-modal .dg-unificado:not(.dg-fase-resultado) { display: flex; flex-direction: column; }
+.dg-modal .dg-unificado > .dg-paso { display: flex; flex-direction: column; flex: 1; min-height: min-content; }
+.dg-modal .dg-acciones { margin-top: auto; flex-shrink: 0; }
+.dg-unificado .dg-guia-cara { padding: 0; border: 0; background: transparent; cursor: pointer; }
+.dg-unificado .dg-guia-cara:focus-visible { outline: 2px solid var(--pc-volt); outline-offset: 3px; border-radius: var(--ds-radius-2); }
+.dg-resumen summary { padding-inline: var(--ds-space-3); color: var(--pc-volt); font-weight: 600; border: 1px solid color-mix(in srgb, var(--pc-volt) 45%, transparent); border-radius: var(--ds-radius-2); background: color-mix(in srgb, var(--pc-volt) 7%, transparent); }
+.dg-resumen summary:hover { color: var(--pc-volt); background: color-mix(in srgb, var(--pc-volt) 14%, transparent); }
+.dg-resumen-fila { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.6fr) auto; align-items: center; gap: var(--ds-space-3); }
+.dg-resumen-fila dd { max-width: none; text-align: left; }
+.dg-resumen-editar { min-height: 44px; padding: 0; border: 0; background: none; color: var(--pc-volt); text-decoration: underline; text-underline-offset: 3px; font: inherit; font-weight: 600; cursor: pointer; }
+.dg-analisis-mensaje { margin-top: var(--ds-space-6); min-height: 4.5em; max-width: 52ch; color: var(--pc-tinta-suave); font-size: var(--ds-type-lg); line-height: 1.5; }
+.dg-modal .dg-fase-analizando .dg-paso { justify-content: center; padding-bottom: var(--ds-space-layout-16); }
+.dg-modal-luces { position: absolute; inset: -10%; z-index: 0; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity 300ms var(--pc-curva); }
+.dg-modal[data-visible='true'] .dg-modal-luces { opacity: 1; }
+.dg-modal-luces::before, .dg-modal-luces::after { content: ''; position: absolute; width: 75vw; height: 105vh; filter: blur(18px); animation-play-state: paused; }
+.dg-modal-luces::before { left: -15%; top: 0; background: radial-gradient(ellipse, color-mix(in srgb, var(--ds-color-brand-gold-500) 24%, transparent), transparent 66%); animation: dg-luz-oro 9s ease-in-out infinite alternate; }
+.dg-modal-luces::after { right: -15%; bottom: -10%; background: radial-gradient(ellipse, color-mix(in srgb, var(--ds-color-intelligence-volt) 30%, transparent), transparent 66%); animation: dg-luz-volt 13s ease-in-out infinite alternate; }
+.dg-modal:not([data-visible='true']) .dg-modal-luces::before,
+.dg-modal:not([data-visible='true']) .dg-modal-luces::after { animation-play-state: paused; }
+.dg-modal .pl-viaje-dico { z-index: 1; }
+@keyframes dg-luz-oro { from { transform: translate(-6%, 2%) scale(.85); } to { transform: translate(38%, -10%) scale(1.1); } }
+@keyframes dg-luz-volt { from { transform: translate(8%, -4%) scale(1.1); } to { transform: translate(-30%, 10%) scale(.9); } }
+@media (prefers-reduced-motion: reduce) {
+  .dg-modal-luces::before, .dg-modal-luces::after { animation: none; }
+  .dg-modal-luces { transition: none; }
+}

@@ -1,4 +1,4 @@
-import DicoPhysical from '../dico/DicoPhysical';
+import DicoGuiaDiagnostico from './DicoGuiaDiagnostico';
 // src/components/landing/Diagnostico.jsx
 // El embudo de la plataforma: el diagnostico de Dico como componente. Lo usan
 // la home (src/pages/PlatformLanding.jsx, adentro del hero: el boton lo abre en
@@ -30,8 +30,14 @@ import ResultadoDiagnostico from './ResultadoDiagnostico';
 import { viajarConDico } from './viajeDico';
 import DiagnosticoCard from './DiagnosticoCard';
 
-// Lo que dura el "estoy leyendo" de Dico. Tope del brief: 1,2 s.
-const ANALISIS_MS = 1000;
+// Lectura pausada pedida por Ricky: mensajes de lo que realmente se revisa.
+const ANALISIS_MS = 9600;
+const MENSAJES_ANALISIS = [
+  'Estoy revisando lo que me contaste.',
+  'Estoy relacionando tu prioridad con las herramientas de Dico.',
+  'Reviso por dónde conviene empezar con tu negocio.',
+  'Un momento más. Estoy preparando tu orientación.',
+];
 // Lo que se ve la eleccion antes de pasar sola a la siguiente (solo con
 // puntero: con el teclado se avanza con Enter o con "Seguir").
 const PAUSA_ELECCION_MS = 320;
@@ -108,6 +114,7 @@ const PASOS = {
 const FICHA = [
   ['vertical', 'Rubro'],
   ['desafio', 'Preocupación'],
+  ['senal', 'Tu referencia'],
   ['establecimiento', 'Negocio'],
   ['canales', 'Canales'],
   ['escala', 'Tamaño'],
@@ -115,6 +122,7 @@ const FICHA = [
   ['urgencia', 'Urgencia'],
   ['venta_mensual', 'Venta mensual'],
   ['decisor', 'Decisión'],
+  ['nombre_negocio', 'Nombre del negocio'],
 ];
 
 const VACIO = {
@@ -162,6 +170,8 @@ function valorDeFicha(clave, r) {
   switch (clave) {
     case 'vertical': return labelDe(VERTICALES, r.vertical);
     case 'desafio': return labelDe(desafiosDe(r.vertical), r.desafio);
+    case 'senal': return labelDe(PREGUNTAS_DOLOR[r.desafio]?.opciones || [], r.senal);
+    case 'nombre_negocio': return r.nombre_negocio.trim() || null;
     case 'establecimiento': return labelDe(ESTABLECIMIENTOS[r.vertical] || [], r.establecimiento);
     case 'canales': return r.canales.length
       ? CANALES.filter((c) => r.canales.includes(c.id)).map((c) => c.label).join(', ')
@@ -169,7 +179,7 @@ function valorDeFicha(clave, r) {
     case 'escala': return r.locales && r.equipo
       ? `${labelDe(LOCALES, r.locales)} · ${labelDe(EQUIPOS, r.equipo)}`
       : labelDe(LOCALES, r.locales) || labelDe(EQUIPOS, r.equipo) || null;
-    case 'gestion_actual': return labelDe(GESTIONES, r.gestion_actual);
+    case 'gestion_actual': return [labelDe(GESTIONES, r.gestion_actual), r.gestion_actual === 'otro_sistema' && r.sistema_nombre, r.gestion_actual === 'otro_sistema' && r.sistema_costo !== '' && r.sistema_costo != null && `$${Number(r.sistema_costo).toLocaleString('es-AR')}/mes`].filter(Boolean).join(' · ') || null;
     case 'urgencia': return labelDe(URGENCIAS, r.urgencia);
     case 'venta_mensual': return labelDe(VENTAS_MENSUALES, r.venta_mensual);
     case 'decisor': return labelDe(DECISORES, r.decisor);
@@ -252,7 +262,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const [id, setId] = useState(inicio.id);
   const [tokenContacto, setTokenContacto] = useState(inicio.token);
   const [guardado, setGuardado] = useState(inicio.id ? 'ok' : 'nada'); // nada | guardando | ok | error
-  const [gesto, setGesto] = useState(0);
+  const [analisisEtapa, setAnalisisEtapa] = useState(0);
 
   const raizRef = useRef(null);
   const tituloRef = useRef(null);
@@ -294,6 +304,13 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       window.history.replaceState({ ...window.history.state, dg: inicio.indice }, '');
     }
   }, [modo, inicio.indice, inicio.corregir]);
+
+
+  useEffect(() => {
+    if (fase !== 'analizando' || !abierto) return undefined;
+    const timer = setInterval(() => setAnalisisEtapa(etapa => Math.min(etapa + 1, MENSAJES_ANALISIS.length - 1)), ANALISIS_MS / MENSAJES_ANALISIS.length);
+    return () => clearInterval(timer);
+  }, [fase, abierto]);
 
   useEffect(() => () => clearTimeout(avance.current), []);
   useEffect(() => () => viaje.current?.cancelar(), []);
@@ -529,6 +546,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const analizar = useCallback(() => {
     clearTimeout(avance.current);
     empujar('resultado');
+    setAnalisisEtapa(0);
     setFase('analizando');
     guardar(datosDe(respuestasRef.current));
     avance.current = setTimeout(() => setFase('resultado'), ANALISIS_MS);
@@ -565,7 +583,6 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     if (campo === 'desafio' && valor !== respuestas.desafio) nuevo = { ...nuevo, senal: null };
     if (campo === 'gestion_actual' && valor !== 'otro_sistema') nuevo = { ...nuevo, sistema_nombre: '', sistema_costo: '' };
     setRespuestas(nuevo);
-    setGesto((g) => g + 1);
     if (porPuntero.current && paso === 'venta_mensual') {
       const siguiente = pasoIdx + 1;
       clearTimeout(avance.current);
@@ -579,7 +596,6 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       ? respuestas.canales.filter((c) => c !== canal)
       : [...respuestas.canales, canal];
     setRespuestas({ ...respuestas, canales });
-    setGesto((g) => g + 1);
     porPuntero.current = false;
   };
 
@@ -616,7 +632,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const sol = fase === 'resultado' ? solucion(respuestas.desafio, respuestas.vertical) : null;
 
   let dice = PASOS[paso].dico;
-  if (fase === 'analizando') { dice = 'Un segundo.'; }
+  if (fase === 'analizando') { dice = 'Estoy pensando por dónde empezar.'; }
   if (fase === 'resultado') {
     const nombre = respuestas.nombre_negocio.trim();
     dice = nombre ? `${nombre}: esto es lo primero que resolvería.` : 'Esto es lo primero que resolvería.';
@@ -629,10 +645,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   const porcentaje = fase === 'resultado' ? 100 : fase === 'analizando' ? 96
     : Math.round(Math.min(pasoIdx + (listo ? 1 : 0), total - 1) / total * 100);
-  const guia = <div className="dg-guia dg-guia-unica">
-    <span className="dg-guia-cara" key={gesto}><DicoPhysical pose={fase === 'analizando' ? 'thinking' : fase === 'resultado' ? 'success' : 'idle'} reducedMotion={fase !== 'analizando'} ritmo={.55} title="Dico" /></span>
-    <p className="dg-guia-mensaje">{dice}</p>
-  </div>;
+  const guia = <DicoGuiaDiagnostico paso={paso} fase={fase} mensaje={dice} />;
   const progreso = <div className={`dg-avance${fase === 'resultado' ? ' dg-avance-completo' : ''}`}>
     <span className="dg-porcentaje" aria-hidden="true">{porcentaje}%</span>
     <div className="dg-progreso-continuo" role="progressbar" aria-label="Avance del diagnóstico"
@@ -642,7 +655,11 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   </div>;
   const resumen = <details className="dg-resumen">
     <summary tabIndex={0}>Ver mis respuestas</summary>
-    <Ficha respuestas={respuestas} />
+    <Ficha respuestas={respuestas} onEditar={clave => {
+      const destino = { establecimiento: 'vertical', senal: 'desafio', decisor: 'urgencia' }[clave] || clave;
+      const posicion = recorrido.indexOf(destino);
+      if (posicion >= 0) irA(posicion);
+    }} />
     {fase === 'resultado' && <button type="button" className="dg-texto-boton" onClick={() => irA(0)}>Cambiar respuestas</button>}
   </details>;
 
@@ -661,6 +678,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     {guia}{progreso}
     {fase === 'analizando' ? <div className="dg-paso" key="analizando">
       <Titulo className="dg-titulo" id="dg-pregunta" ref={tituloRef} tabIndex={-1}>Estoy leyendo tus respuestas.</Titulo>
+      <p className="dg-analisis-mensaje" role="status" aria-live="polite">{MENSAJES_ANALISIS[analisisEtapa]}</p>
     </div> : <Pregunta paso={paso} nivel={nivel} cuenta={cuenta} respuestas={respuestas}
       tituloRef={tituloRef} listo={listo} resumen={resumen}
       textoVolver={modo === 'home' && pasoIdx === 0 ? 'Volver al inicio' : 'Volver'}
@@ -788,10 +806,13 @@ function Opciones({ nombre, lista, valor, onElegir, onPuntero }) {
 
 /* ─────────────── La ficha: lo que Dico lee ─────────────── */
 
-function Ficha({ respuestas }) {
+function Ficha({ respuestas, onEditar }) {
   const filas = FICHA.map(([clave, nombre]) => ({ clave, nombre, valor: valorDeFicha(clave, respuestas) })).filter(f => f.valor);
   return <div className="dg-ficha-lectura">
-    {filas.length ? <dl>{filas.map(({ clave, nombre, valor }) => <div className="dg-resumen-fila" key={clave}><dt>{nombre}</dt><dd>{valor}</dd></div>)}</dl>
+    {filas.length ? <dl>{filas.map(({ clave, nombre, valor }) => <div className="dg-resumen-fila" key={clave}><dt>{nombre}</dt><dd>{valor}</dd><button type="button" className="dg-resumen-editar" aria-label={`Cambiar ${nombre.toLowerCase()}`} onClick={evento => {
+        evento.currentTarget.closest('details')?.removeAttribute('open');
+        onEditar(clave);
+      }}>Cambiar</button></div>)}</dl>
       : <p className="dg-parrafo dg-suave">Tus respuestas aparecerán acá.</p>}
   </div>;
 }

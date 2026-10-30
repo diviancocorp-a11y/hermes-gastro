@@ -60,6 +60,44 @@ describe('hero y diagnóstico comparten un solo recorrido', () => {
     expect(resumen.querySelectorAll('dt')).toHaveLength(2);
   });
 
+  it('editar desde el resumen vuelve a la pregunta conservando respuestas y sin remontar Dico por cada seleccion', () => {
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
+    const personaje = document.querySelector('.dico-pose-celda');
+    fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
+    expect(document.querySelector('.dico-pose-celda')).toBe(personaje);
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
+    fireEvent.click(screen.getByText('Ver mis respuestas'));
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar rubro' }));
+    expect(screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveFocus();
+    expect(screen.getByRole('radio', { name: 'Gastronomía' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Restaurante' })).toBeChecked();
+    expect(document.querySelector('.dg-resumen')).not.toHaveAttribute('open');
+  });
+
+  it('mantiene una lectura pausada con mensajes reales y termina en 100%', async () => {
+    vi.useFakeTimers();
+    try {
+      sessionStorage.setItem('dico:diagnostico-v2-en-curso', JSON.stringify({ version: 2, respuestas: {
+        vertical: 'gastronomia', establecimiento: 'restaurante', desafio: 'costos', senal: 'mensual',
+        canales: ['salon'], locales: 'uno', equipo: 'hasta_5', gestion_actual: 'planillas',
+        venta_mensual: 'no_se', urgencia: 'este_mes', decisor: 'yo', nombre_negocio: 'Prueba',
+      } }));
+      window.history.replaceState({ dg: 7, desde: true }, '');
+      montar();
+      fireEvent.click(screen.getByRole('button', { name: /Ver mi diagnóstico/ }));
+      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '96');
+      expect(screen.getByText('Estoy revisando lo que me contaste.')).toBeInTheDocument();
+      await act(async () => vi.advanceTimersByTime(2500));
+      expect(screen.getByText('Estoy relacionando tu prioridad con las herramientas de Dico.')).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Tu prioridad' })).not.toBeInTheDocument();
+      await act(async () => vi.advanceTimersByTime(7100));
+      expect(screen.getByRole('heading', { name: 'Tu prioridad' })).toBeInTheDocument();
+      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
+    } finally { cleanup(); vi.useRealTimers(); }
+  });
+
   it('volver al inicio devuelve el foco al CTA y las respuestas sobreviven al reabrir', async () => {
     montar();
     fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));

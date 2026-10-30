@@ -9,6 +9,23 @@
 
 ## 1. Estado al 30/oct/2026
 
+### Ajustes del diagnostico en preview — 30/oct
+
+PR #62, rama `codex/diagnostico-panel-unico`: card con altura fija por viewport
+(hasta 880px) y scroll interno, sin cambiar de encuadre al seleccionar. Dico ya
+no se remonta por respuesta: expresion fija por pregunta, saludo de un ciclo
+al hover/foco/tap y lectura animada durante el analisis. Se respeta movimiento
+reducido. Resumen volt visible con acciones Cambiar por dato, conservando las
+otras respuestas y cerrando el desplegable al volver a la pregunta elegida.
+Luces oro/volt detras del modal, movimiento continuo solo mientras se muestra.
+Lectura final de 9,6s con cuatro mensajes de revision/preparacion, sin simular
+calculos financieros ni consultas a IA. Resultado sin redisenar por ahora.
+50 pruebas dirigidas verdes. Navegador con API simulada: card 1040x672 constante
+en seis estados a 1366x768; movil 358x812 antes/despues de elegir, sin desborde.
+Edicion conserva datos, sprite sin remonte en selecciones, saludo termina,
+mensajes cambian y reduced-motion elimina la animacion de luces. No se crearon
+registros reales. Capturas temporales eliminadas. Sigue pendiente de aprobacion.
+
 ### Diagnostico: panel unico en revision — 30/oct
 
 Rama `codex/diagnostico-panel-unico`: preguntas sobre negro en una columna,

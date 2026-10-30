@@ -32,6 +32,7 @@ function Sesion({ visible, fondoRef, oroRef, tituloRef, tituloId, resultado, onC
     <div className="pl-root dg-modal" data-visible={visible} data-resultado={Boolean(resultado)} role="dialog" aria-modal="true"
       aria-labelledby={visible ? tituloId : undefined} aria-label={visible ? undefined : 'Diagnóstico de Dico'}
       ref={contenedorRef} tabIndex={-1}>
+      <div className="dg-modal-luces" aria-hidden="true" />
       <div className="pl-viaje-dico" ref={oroRef} aria-hidden="true" />
       <section className="dg-modal-card" data-visible={visible} aria-hidden={!visible} inert={!visible}>
           <div className="dg-modal-cabecera">
