@@ -35,7 +35,7 @@ import { marcarEvento } from '../../lib/analiticaPlataforma';
 import { AGENDA_URL } from '../../lib/contactoPlataforma';
 import {
   CANALES, EQUIPOS, ESTABLECIMIENTOS, GESTIONES, INVERSIONES, LOCALES, ORDEN_PASOS,
-  PLANES, URGENCIAS, VERTICALES, desafiosDe, guardarDiagnostico, paramsDelAlta,
+  PLANES, URGENCIAS, VERTICALES, desafiosDe, eventosDePaso, guardarDiagnostico, paramsDelAlta,
   planRecomendado, recordarDiagnosticoPendiente, solucion,
 } from '../../lib/diagnostico';
 import { PiezaPorNombre } from './Piezas';
@@ -60,7 +60,7 @@ function marcarUnaVez(evento, clave = '') {
   if (!Array.isArray(hechos)) hechos = [];
   if (hechos.includes(id)) return;
   marcarEvento(evento);
-  try { sessionStorage.setItem(CLAVE_EVENTOS, JSON.stringify([...hechos, id].slice(-20))); } catch { /* sin storage */ }
+  try { sessionStorage.setItem(CLAVE_EVENTOS, JSON.stringify([...hechos, id].slice(-60))); } catch { /* sin storage */ }
 }
 
 const DICO = (cara) => `/brand/dico/dico-2d-${cara}.png`;
@@ -271,6 +271,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const vista = useRef(null); // ultimo `abierto|paso|fase` atendido
   const marcoInicio = useRef(false);
   const marcoResultado = useRef(null);
+  const ultimoPaso = useRef(null); // { paso, idx } de la pregunta a la vista
   const aperturaEnCurso = useRef(false);
   const viaje = useRef(null);
   const portadaRef = useRef(null);
@@ -329,6 +330,23 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     marcarUnaVez('diagnostico-resultado', firma);
   }, [fase, respuestas]);
 
+  // Analitica por paso: cada pregunta vista, cada atras y el abandono (cerrar
+  // o irse de la pagina con una pregunta a la vista). Fuera de las preguntas
+  // no hay paso: volver del resultado no cuenta como atras.
+  useEffect(() => {
+    if (!abierto || fase !== 'preguntas') { ultimoPaso.current = null; return; }
+    const ahora = { paso, idx: pasoIdx };
+    eventosDePaso(ultimoPaso.current, ahora).forEach((ev) => marcarUnaVez(ev));
+    ultimoPaso.current = ahora;
+  }, [abierto, fase, paso, pasoIdx]);
+  const marcarAbandono = useCallback(() => {
+    if (ultimoPaso.current) marcarUnaVez(`diagnostico-abandono-${ultimoPaso.current.paso}`);
+  }, []);
+  useEffect(() => {
+    window.addEventListener('pagehide', marcarAbandono);
+    return () => window.removeEventListener('pagehide', marcarAbandono);
+  }, [marcarAbandono]);
+
   // El mismo formulario vive en la card en home y en su ruta propia.
   useEffect(() => {
     const clave = `${abierto}|${paso}|${fase}`;
@@ -351,6 +369,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   const cerrarAnimado = useCallback(() => {
     if (!overlayRef.current || cerrandoRef.current) return;
+    marcarAbandono();
     viaje.current?.cancelar();
     clearTimeout(avance.current);
     aperturaEnCurso.current = true;
@@ -386,7 +405,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
         }
       },
     });
-  }, []);
+  }, [marcarAbandono]);
 
   const cerrar = useCallback(() => {
     if (modo !== 'home' || !overlayRef.current || cierreSolicitado.current || cerrandoRef.current) return;

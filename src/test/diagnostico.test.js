@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   VERTICALES, ESTABLECIMIENTOS, desafiosDe, planRecomendado, solucion, paramsDelAlta,
-  ORDEN_PASOS, URGENCIAS, INVERSIONES,
+  ORDEN_PASOS, URGENCIAS, INVERSIONES, eventosDePaso,
 } from '../lib/diagnostico';
 
 describe('diagnostico de la landing', () => {
@@ -56,5 +56,13 @@ describe('diagnostico de la landing', () => {
     expect(q.get('rubro')).toBe('retail');
     expect(q.get('negocio')).toBe('Monte');
     expect(q.get('d')).toBe('abc');
+  });
+
+  it('cada pregunta vista marca su paso, y volver marca el atras del que se deja', () => {
+    expect(eventosDePaso(null, { paso: 'vertical', idx: 0 })).toEqual(['diagnostico-paso-vertical']);
+    expect(eventosDePaso({ paso: 'vertical', idx: 0 }, { paso: 'desafio', idx: 1 }))
+      .toEqual(['diagnostico-paso-desafio']);
+    expect(eventosDePaso({ paso: 'canales', idx: 3 }, { paso: 'establecimiento', idx: 2 }))
+      .toEqual(['diagnostico-paso-establecimiento', 'diagnostico-atras-canales']);
   });
 });
