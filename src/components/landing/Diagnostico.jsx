@@ -644,13 +644,13 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   let cuenta = 'Leyendo tus respuestas';
   if (fase === 'preguntas') cuenta = paso === 'nombre_negocio' ? 'Último paso' : `Pregunta ${pasoIdx + 1} de ${total}`;
 
-  const porcentaje = fase === 'resultado' ? 100 : fase === 'analizando' ? 96
+  const porcentaje = fase === 'resultado' ? 100 : fase === 'analizando' ? 100
     : Math.round(Math.min(pasoIdx + (listo ? 1 : 0), total - 1) / total * 100);
   const guia = <DicoGuiaDiagnostico paso={paso} fase={fase} mensaje={dice} />;
   const progreso = <div className={`dg-avance${fase === 'resultado' ? ' dg-avance-completo' : ''}`}>
     <span className="dg-porcentaje" aria-hidden="true">{porcentaje}%</span>
     <div className="dg-progreso-continuo" role="progressbar" aria-label="Avance del diagnóstico"
-      aria-valuemin={0} aria-valuemax={100} aria-valuenow={porcentaje} aria-valuetext={`${porcentaje}% completado`}>
+      aria-valuemin={0} aria-valuemax={100} aria-valuenow={porcentaje} aria-valuetext={fase === 'analizando' ? 'Respuestas completas; preparando tu diagnóstico' : `${porcentaje}% completado`}>
       <span className="dg-progreso-relleno" style={{ width: `${porcentaje}%` }} />
     </div>
   </div>;
@@ -672,12 +672,14 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   if (fase === 'resultado' && sol) {
     return envolver(<div className="dg-embudo dg-unificado dg-fase-resultado" ref={raizRef}>
-      {guia}{progreso}
+      <div className="dg-resultado-cabecera">{guia}{progreso}</div>
+      <div className="dg-resultado-contenido">
       <Titulo className="dg-titulo" id="dg-resultado-titulo" ref={tituloRef} tabIndex={-1}>Tu diagnóstico{respuestas.nombre_negocio.trim() ? ` para ${respuestas.nombre_negocio.trim()}` : ''}</Titulo>
       <ResultadoDiagnostico sol={sol} respuestas={respuestas} id={id} token={tokenContacto}
         onContactoGuardado={() => marcarUnaVez('diagnostico-v2-whatsapp')}
         guardado={guardado} onReintentar={() => guardar(datosDe(respuestas))} />
       {resumen}
+      </div>
     </div>);
   }
 

@@ -87,13 +87,16 @@ describe('hero y diagnóstico comparten un solo recorrido', () => {
       window.history.replaceState({ dg: 7, desde: true }, '');
       montar();
       fireEvent.click(screen.getByRole('button', { name: /Ver mi diagnóstico/ }));
-      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '96');
+      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
       expect(screen.getByText('Estoy revisando lo que me contaste.')).toBeInTheDocument();
+      expect(document.querySelector('.dg-avance')).not.toHaveClass('dg-avance-completo');
       await act(async () => vi.advanceTimersByTime(2500));
       expect(screen.getByText('Estoy relacionando tu prioridad con las herramientas de Dico.')).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'Tu prioridad' })).not.toBeInTheDocument();
       await act(async () => vi.advanceTimersByTime(7100));
       expect(screen.getByRole('heading', { name: 'Tu prioridad' })).toBeInTheDocument();
+      expect(document.querySelector('.dg-avance')).toHaveClass('dg-avance-completo');
+      expect(document.querySelector('#dg-resultado-titulo').closest('.dg-resultado-contenido')).not.toBeNull();
       expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
     } finally { cleanup(); vi.useRealTimers(); }
   });

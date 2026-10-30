@@ -36,7 +36,7 @@ function Sesion({ visible, fondoRef, oroRef, tituloRef, tituloId, resultado, onC
       <div className="pl-viaje-dico" ref={oroRef} aria-hidden="true" />
       <section className="dg-modal-card" data-visible={visible} aria-hidden={!visible} inert={!visible}>
           <div className="dg-modal-cabecera">
-            <img className="dg-modal-logo" src={`/brand/dico/logo/${resultado ? 'dico-claro' : 'dico-oscuro'}.png`} alt="Dico" width="1368" height="452" />
+            <img className="dg-modal-logo" src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
             <button type="button" className="dg-modal-cerrar" aria-label="Cerrar diagnóstico" onClick={onCerrar}>
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18" /></svg>
             </button>

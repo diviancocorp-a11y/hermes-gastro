@@ -9,6 +9,18 @@
 
 ## 1. Estado al 30/oct/2026
 
+### Continuidad del resultado y luces — 30/oct
+
+En el mismo PR #62: la lectura muestra 100% de respuestas completadas y conserva
+el pulso volt mientras prepara la orientacion. Al entregar el resultado pasa
+a dorado. El logo, Dico y progreso siguen sobre negro; el marfil empieza justo
+en el titulo "Tu diagnostico" y continua por todo su contenido. El logo mantiene
+su version para fondo oscuro. Luces con recorrido mas amplio, ciclos de 5/7s,
+sin modificar la preferencia de movimiento reducido. Altura estable intacta.
+32 pruebas UI dirigidas verdes y build. Capturas de escritorio/celular verifican
+cabecera RGB9/9/11 y cuerpo RGB250/245/238, sin desborde; no hubo datos reales.
+Capturas temporales eliminadas. Esta version sigue en preview para Ricky.
+
 ### Ajustes del diagnostico en preview — 30/oct
 
 PR #62, rama `codex/diagnostico-panel-unico`: card con altura fija por viewport
