@@ -187,10 +187,13 @@ describe('diagnóstico en card oscura sobre el hero', () => {
     await abrir();
     const card = pregunta().closest('.dg-modal-card');
     card.scrollTop = 500;
+    const contenido = card.querySelector('.dg-unificado');
+    contenido.scrollTop = 500;
     fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
     fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
     fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
     expect(card.scrollTop).toBe(0);
+    expect(contenido.scrollTop).toBe(0);
   });
 
   it('otras secciones abren directamente y devuelven foco a su disparador al cerrar', async () => {

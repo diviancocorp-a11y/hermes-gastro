@@ -367,6 +367,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       if (modo === 'home') {
         const card = tituloRef.current?.closest('.dg-modal-card');
         if (card) card.scrollTop = 0;
+        if (raizRef.current) raizRef.current.scrollTop = 0;
       }
       tituloRef.current?.focus({ preventScroll: true });
       if (modo === 'pagina') {
@@ -658,7 +659,13 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     <Ficha respuestas={respuestas} onEditar={clave => {
       const destino = { establecimiento: 'vertical', senal: 'desafio', decisor: 'urgencia' }[clave] || clave;
       const posicion = recorrido.indexOf(destino);
-      if (posicion >= 0) irA(posicion);
+      if (posicion >= 0) {
+        irA(posicion);
+        if (posicion === pasoIdx) {
+          if (raizRef.current) raizRef.current.scrollTop = 0;
+          tituloRef.current?.focus({ preventScroll: true });
+        }
+      }
     }} />
     {fase === 'resultado' && <button type="button" className="dg-texto-boton" onClick={() => irA(0)}>Cambiar respuestas</button>}
   </details>;
