@@ -7,9 +7,78 @@
 
 ---
 
-## 1. Estado al 29/oct/2026
+## 1. Estado al 30/oct/2026
 
-### Revision visual de Ricky
+### Publicacion aprobada por Ricky
+
+**Diagnostico v2 aprobado para produccion, 30/oct:** medicion de Claude 8f7bbd1 publicada por
+PR #60/main fc40d9ed, CI/E2E/smoke verdes. Ricky aprobo publicar el PR #61: ocho
+pantallas, detalle por dolor, otro sistema con nombre/costo, ventas en rangos,
+decisor y nombre opcional. Resultado: prioridad/hallazgos/herramientas-plan/
+contacto opcional. Sin montos inventados ni descarte por venta. 0117 aplicada
+via MCP y snapshot actualizado; edge compatible con v1. Contacto protegido por
+RLS staff, consentimiento y capacidad hasheada; sin PII en URL ni Analytics.
+Motivos factuales guardados; puntaje/clasificacion queda pendiente de calibrar.
+Ver DIAGNOSTICO-V2.md para evidencia y limites. UI conserva tarjeta/apertura;
+Dico usa el atlas vigente, no las caras 2D anteriores. No se manda WhatsApp
+automaticamente: se guarda una solicitud para atencion de Divianco.
+Pruebas dirigidas 47/47; API v1/v2 y consentimiento probados. En celular el
+resultado no queda detras de la ficha; no hay desborde horizontal. Backend
+compatible ya desplegado; UI v2 aprobada para publicar por PR #61.
+Suite completa: 155 archivos / 2101 pruebas en verde. Recorrido real del
+preview hasta el contacto verificado en la base; datos QA eliminados.
+
+
+**Union suelo/mesh panoramico, 29/oct:** el suelo de primer plano mide RGB
+14/14/13; se usa el neutral950 existente15/14/13 como puente calido. El hero
+funde hacia ese tono, el primer tramo lo conserva y baja gradualmente al zinc
+de la pagina. El canvas entra/sale con mascara vertical sin borde de card.
+Mesh drift adapta su campo al ancho panoramico y reduce la vineta para que
+oro y volt alcancen ambos laterales, no solo el centro. Misma altura, sin
+cambiar Rubros ni el resto. Siguiente foco pedido: diagnostico.
+
+
+**Mesh drift dorado/volt, 29/oct:** Ricky descarta los pulsos y aporta el
+ShaderBackground de21st.dev. Se integra el shader original, convertido a JSX
+sin TypeScript/shadcn/dependencias nuevas. Paleta leida de tokens negro,
+dorado y volt, misma altura240–360px. Pausa fuera de pantalla/pestana oculta;
+movimiento reducido produce un cuadro fijo sin interaccion del cursor.
+Sin WebGL conserva fondo negro. Se mantiene el resto de la landing.
+
+
+**Prueba de pulsos volt, 29/oct:** Ricky quita el primer saludo de Dico,
+conservando exactamente la altura negra240–360px entre hero y Rubros. Se
+prueban tres trazos volt con posiciones, direcciones y tiempos aleatorios;
+solo se animan a la vista, se cancelan fuera de pantalla. Movimiento reducido
+mantiene el espacio negro quieto. Sin texto, mascotas ni controles. Si no se
+aprueba, se quitan los pulsos conservando ese mismo espacio. FAQ intacto;
+se retira el cuadroControlado y su prueba, que solo usaba el saludo retirado.
+
+
+**Primer saludo de Dico, 29/oct:** tramo negro entre hero y cabecera dorada
+Rubros, altura responsive240–360px. Personaje vigente del atlas del pet,
+144–180px, saludo y entrada ligados al scroll, sin bucle de reloj: detenerse
+congela el gesto y subir lo retrocede. Sin texto ni CTA nuevos. Movimiento
+reducido muestra Dico quieto. Se agrega cuadroControlado opcional al primitive
+sin cambiar sus consumidores anteriores; FAQ conserva sus interacciones.
+
+
+**Clientes negro dentro del footer, 29/oct:** se conserva la ubicacion dentro
+del footer, encima de la firma. Ricky pide fondo negro a todo el ancho, borde
+inferior volt3px contra el marfil; burbujas con contorno dorado que se ilumina
+al hover/foco y nombres debajo. Sin apertura. Logos y destinos intactos.
+
+
+**Clientes al pie, 29/oct:** por pedido de Ricky se mueve NegociosDico desde
+el hero al INTERIOR del footer marfil, antes de «Un producto de Grupo
+Divianco». Sin fondo negro, franja propia ni bordes azules: comparte el marfil
+del footer (correccion explicita de Ricky). Se elimina la apertura por scroll y su listener; logos siempre
+visibles, mismos cuatro negocios/enlaces/hover y barra compacta. El inicio
+queda Hero → Rubros → Acompanamiento → Planes. Registro: propuesta de dos
+pasos revisada, pendiente implementar tras definir el flujo; hoy recupera
+nombre/rubro/ID del diagnostico, pero los botones de planes no conservan el
+plan elegido. Sin cambios en Signup ni backend en esta entrega.
+
 
 **Landing publicada y SEO habilitado, 29/oct:** PR52 y correccion PR58
 fusionados en main. Produccion verificada en 3973675: divianco.app entrega el

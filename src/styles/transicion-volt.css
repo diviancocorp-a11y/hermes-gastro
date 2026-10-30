@@ -1,0 +1,2 @@
+.hv-root { position: relative; min-height: clamp(240px, 34svh, 360px); padding: var(--ds-space-6) var(--pl-m); overflow: hidden; background: linear-gradient(var(--pl-suelo-hero) 20%, var(--pl-suelo-continuo)); }
+.hv-root > canvas { position: absolute; inset: 0; mask-image: linear-gradient(transparent, black 22%, black 78%, transparent); }

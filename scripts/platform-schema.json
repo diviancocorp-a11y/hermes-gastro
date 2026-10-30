@@ -1,7 +1,7 @@
 {
   "_comment": "Snapshot del schema del EDIFICIO; datos obtenidos de schema_snapshot() via MCP. Regenerar con npm run schema:sync.",
-  "_refreshed_at": "2026-10-24",
-  "_migrations_through": "0116",
+  "_refreshed_at": "2026-10-29",
+  "_migrations_through": "0117",
   "tables": {
     "addresses": [
       "id",
@@ -163,7 +163,15 @@
       "tenant_id",
       "vinculado_at",
       "urgencia",
-      "inversion"
+      "inversion",
+      "version",
+      "respuestas_v2",
+      "lead_motivos",
+      "contacto_nombre",
+      "contacto_whatsapp",
+      "contacto_consentimiento_at",
+      "contacto_consentimiento_version",
+      "contacto_token_hash"
     ],
     "dynamic_qrs": [
       "id",

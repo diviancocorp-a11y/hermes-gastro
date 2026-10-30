@@ -1,3 +1,4 @@
+import DicoPhysical from '../dico/DicoPhysical';
 // src/components/landing/Diagnostico.jsx
 // El embudo de la plataforma: el diagnostico de Dico como componente. Lo usan
 // la home (src/pages/PlatformLanding.jsx, adentro del hero: el boton lo abre en
@@ -32,13 +33,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { marcarEvento } from '../../lib/analiticaPlataforma';
-import { AGENDA_URL } from '../../lib/contactoPlataforma';
 import {
-  CANALES, EQUIPOS, ESTABLECIMIENTOS, GESTIONES, INVERSIONES, LOCALES, ORDEN_PASOS,
-  PLANES, URGENCIAS, VERTICALES, desafiosDe, eventosDePaso, guardarDiagnostico, paramsDelAlta,
+  CANALES, EQUIPOS, ESTABLECIMIENTOS, GESTIONES, LOCALES, ORDEN_PASOS,
+  PREGUNTAS_DOLOR, VENTAS_MENSUALES, DECISORES, extrasV2,
+  PLANES, URGENCIAS, VERTICALES, desafiosDe, eventosDePaso, guardarDiagnostico,
   planRecomendado, recordarDiagnosticoPendiente, solucion,
 } from '../../lib/diagnostico';
-import { PiezaPorNombre } from './Piezas';
+import ResultadoDiagnostico from './ResultadoDiagnostico';
 import { viajarConDico } from './viajeDico';
 import DiagnosticoCard from './DiagnosticoCard';
 
@@ -47,8 +48,8 @@ const ANALISIS_MS = 1000;
 // Lo que se ve la eleccion antes de pasar sola a la siguiente (solo con
 // puntero: con el teclado se avanza con Enter o con "Seguir").
 const PAUSA_ELECCION_MS = 320;
-const CLAVE_SESION = 'dico:diagnostico-en-curso';
-const CLAVE_EVENTOS = 'dico:diagnostico-eventos';
+const CLAVE_SESION = 'dico:diagnostico-v2-en-curso';
+const CLAVE_EVENTOS = 'dico:diagnostico-v2-eventos';
 
 /** Marca un evento de analitica una sola vez por diagnostico, aunque se
  *  recargue la pagina: lo ya marcado queda en sessionStorage. `clave` separa
@@ -63,8 +64,6 @@ function marcarUnaVez(evento, clave = '') {
   try { sessionStorage.setItem(CLAVE_EVENTOS, JSON.stringify([...hechos, id].slice(-60))); } catch { /* sin storage */ }
 }
 
-const DICO = (cara) => `/brand/dico/dico-2d-${cara}.png`;
-const CARAS = ['question', 'curious', 'neutral', 'happy', 'celebrate'];
 
 /* Enunciado de cada paso y lo que dice Dico. `cara` es su estado (RC5 cap. 08). */
 const PASOS = {
@@ -102,14 +101,13 @@ const PASOS = {
   },
   urgencia: {
     pregunta: '¿Para cuándo lo querés resolver?',
-    dico: 'Si es urgente, arrancamos hoy mismo.',
+    dico: 'Así podemos priorizar cómo acompañarte.',
     cara: 'curious',
   },
-  inversion: {
-    pregunta: '¿Cuánto pensás invertir por mes?',
-    ayuda: 'Esto nos ayuda a recomendarte un plan acorde a tu negocio.',
-    dico: 'Sin compromiso: no te pido tarjeta ni email.',
-    cara: 'question',
+  venta_mensual: {
+    pregunta: '¿Cuánto vende tu negocio aproximadamente por mes?',
+    dico: 'Es una referencia de tu operación, no una prueba de capacidad de pago.',
+    ayuda: 'Podés elegir un rango, indicar que no lo sabés o no responder.', cara: 'curious',
   },
   nombre_negocio: {
     pregunta: '¿Cómo se llama tu negocio?',
@@ -128,7 +126,8 @@ const FICHA = [
   ['escala', 'Tamaño'],
   ['gestion_actual', 'Control hoy'],
   ['urgencia', 'Urgencia'],
-  ['inversion', 'Inversión'],
+  ['venta_mensual', 'Venta mensual'],
+  ['decisor', 'Decisión'],
 ];
 
 const VACIO = {
@@ -142,15 +141,19 @@ const VACIO = {
   urgencia: null,
   inversion: null,
   nombre_negocio: '',
+  senal: null, sistema_nombre: '', sistema_costo: '', venta_mensual: null, decisor: null,
 };
 
-const recorridoDe = (vertical) => ORDEN_PASOS
-  .filter((p) => !(p === 'establecimiento' && vertical === 'otro'));
+const recorridoDe = () => ORDEN_PASOS;
 
 const labelDe = (lista, id) => lista.find((o) => o.id === id)?.label;
 
 function completo(paso, r) {
   switch (paso) {
+    case 'vertical': return Boolean(r.vertical && (r.vertical === 'otro' || ESTABLECIMIENTOS[r.vertical]?.some(e => e.id === r.establecimiento)));
+    case 'desafio': return Boolean(PREGUNTAS_DOLOR[r.desafio]?.opciones.some(o => o.id === r.senal));
+    case 'urgencia': return Boolean(r.urgencia && r.decisor);
+    case 'gestion_actual': return Boolean(r.gestion_actual) && (r.sistema_costo === '' || r.sistema_costo === null || (Number.isFinite(Number(r.sistema_costo)) && Number(r.sistema_costo) >= 0 && Number(r.sistema_costo) <= 1e9));
     case 'canales': return r.canales.length > 0;
     case 'escala': return Boolean(r.locales && r.equipo);
     case 'nombre_negocio': return true;
@@ -181,7 +184,8 @@ function valorDeFicha(clave, r) {
       : labelDe(LOCALES, r.locales) || labelDe(EQUIPOS, r.equipo) || null;
     case 'gestion_actual': return labelDe(GESTIONES, r.gestion_actual);
     case 'urgencia': return labelDe(URGENCIAS, r.urgencia);
-    case 'inversion': return labelDe(INVERSIONES, r.inversion);
+    case 'venta_mensual': return labelDe(VENTAS_MENSUALES, r.venta_mensual);
+    case 'decisor': return labelDe(DECISORES, r.decisor);
     default: return null;
   }
 }
@@ -189,6 +193,8 @@ function valorDeFicha(clave, r) {
 /** Lo que se guarda: los ids de la tabla diagnosticos (0100-0102). */
 function datosDe(r) {
   return {
+    version: 2,
+    respuestas_v2: extrasV2(r),
     vertical: r.vertical,
     establecimiento: r.vertical === 'otro' ? null : r.establecimiento,
     canales: r.canales,
@@ -210,12 +216,12 @@ function verticalDeLaUrl() {
 
 function leerSesion() {
   try {
-    const s = JSON.parse(sessionStorage.getItem(CLAVE_SESION) || 'null');
+    const s = JSON.parse(sessionStorage.getItem(CLAVE_SESION) || sessionStorage.getItem('dico:diagnostico-en-curso') || 'null');
     if (!s || typeof s !== 'object' || !s.respuestas) return null;
     const r = { ...VACIO, ...s.respuestas };
     if (!Array.isArray(r.canales)) r.canales = [];
     if (typeof r.nombre_negocio !== 'string') r.nombre_negocio = '';
-    return { respuestas: r, id: typeof s.id === 'string' ? s.id : null, firma: s.firma || null };
+    return { respuestas: r, version: s.version, id: s.version === 2 && typeof s.id === 'string' ? s.id : null, token: s.version === 2 ? s.token || null : null, firma: s.version === 2 ? s.firma || null : null };
   } catch {
     return null;
   }
@@ -229,8 +235,8 @@ function arranque(modo) {
   const respuestas = sesion?.respuestas || { ...VACIO };
   const delaUrl = modo === 'pagina' ? verticalDeLaUrl() : null;
   if (delaUrl && !respuestas.vertical) respuestas.vertical = delaUrl;
-  const h = estadoDeHistoria();
-  const base = { respuestas, id: sesion?.id || null, firma: sesion?.firma || null };
+  const h = sesion?.version === 2 ? estadoDeHistoria() : undefined;
+  const base = { respuestas, token: sesion?.token || null, id: sesion?.id || null, firma: sesion?.firma || null };
 
   if (h === 'resultado') {
     if (todoCompleto(respuestas)) return { ...base, abierto: true, indice: 0, fase: 'resultado' };
@@ -239,7 +245,7 @@ function arranque(modo) {
     return { ...base, abierto: true, indice: primerFaltante(respuestas), fase: 'preguntas', corregir: true };
   }
   if (typeof h === 'number') return { ...base, abierto: true, indice: h, fase: 'preguntas' };
-  if (modo === 'pagina') return { ...base, abierto: true, indice: delaUrl ? 1 : 0, fase: 'preguntas' };
+  if (modo === 'pagina') return { ...base, abierto: true, indice: primerFaltante(respuestas), fase: 'preguntas' };
   return { ...base, abierto: false, indice: 0, fase: 'preguntas' };
 }
 
@@ -257,6 +263,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const [indice, setIndice] = useState(inicio.indice);
   const [fase, setFase] = useState(inicio.fase); // preguntas | analizando | resultado
   const [id, setId] = useState(inicio.id);
+  const [tokenContacto, setTokenContacto] = useState(inicio.token);
   const [guardado, setGuardado] = useState(inicio.id ? 'ok' : 'nada'); // nada | guardando | ok | error
   const [gesto, setGesto] = useState(0);
 
@@ -267,7 +274,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const respuestasRef = useRef(respuestas);
   // Guardado: firma de lo ultimo que se mando, su id y un turno para descartar
   // respuestas viejas que lleguen tarde.
-  const envio = useRef({ firma: inicio.id ? inicio.firma : null, id: inicio.id, turno: 0, enCurso: false });
+  const envio = useRef({ firma: inicio.id ? inicio.firma : null, id: inicio.id, token: inicio.token, turno: 0, enCurso: false });
   const vista = useRef(null); // ultimo `abierto|paso|fase` atendido
   const marcoInicio = useRef(false);
   const marcoResultado = useRef(null);
@@ -297,7 +304,6 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   // Caras de Dico precargadas: cambiar de estado no tiene que parpadear.
   useEffect(() => {
-    CARAS.forEach((c) => { const i = new Image(); i.src = DICO(c); });
     if ((modo === 'pagina' && estadoDeHistoria() === undefined) || inicio.corregir) {
       window.history.replaceState({ ...window.history.state, dg: inicio.indice }, '');
     }
@@ -311,23 +317,23 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   useEffect(() => {
     try {
       sessionStorage.setItem(CLAVE_SESION, JSON.stringify({
-        respuestas, id: envio.current.id, firma: envio.current.id ? envio.current.firma : null,
+        respuestas, id: envio.current.id, token: tokenContacto, version: 2, firma: envio.current.id ? envio.current.firma : null,
       }));
     } catch { /* sin storage: sigue andando, sin recordar */ }
-  }, [respuestas, id]);
+  }, [respuestas, id, tokenContacto]);
 
   // Analitica: el inicio y el resultado, una vez por diagnostico aunque se
   // recargue (marca en sessionStorage). El resultado se marca por juego de
   // respuestas: cambiar respuestas y ver otro resultado es otro diagnostico.
   useEffect(() => {
-    if (abierto && !marcoInicio.current) { marcoInicio.current = true; marcarUnaVez('diagnostico-inicio'); }
+    if (abierto && !marcoInicio.current) { marcoInicio.current = true; marcarUnaVez('diagnostico-v2-inicio'); }
   }, [abierto]);
   useEffect(() => {
     if (fase !== 'resultado') return;
     const firma = JSON.stringify(datosDe(respuestas));
     if (marcoResultado.current === firma) return;
     marcoResultado.current = firma;
-    marcarUnaVez('diagnostico-resultado', firma);
+    marcarUnaVez('diagnostico-v2-resultado', firma);
   }, [fase, respuestas]);
 
   // Analitica por paso: cada pregunta vista, cada atras y el abandono (cerrar
@@ -336,11 +342,11 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   useEffect(() => {
     if (!abierto || fase !== 'preguntas') { ultimoPaso.current = null; return; }
     const ahora = { paso, idx: pasoIdx };
-    eventosDePaso(ultimoPaso.current, ahora).forEach((ev) => marcarUnaVez(ev));
+    eventosDePaso(ultimoPaso.current, ahora, 2).forEach((ev) => marcarUnaVez(ev));
     ultimoPaso.current = ahora;
   }, [abierto, fase, paso, pasoIdx]);
   const marcarAbandono = useCallback(() => {
-    if (ultimoPaso.current) marcarUnaVez(`diagnostico-abandono-${ultimoPaso.current.paso}`);
+    if (ultimoPaso.current) marcarUnaVez(`diagnostico-v2-abandono-${ultimoPaso.current.paso}`);
   }, []);
   useEffect(() => {
     window.addEventListener('pagehide', marcarAbandono);
@@ -509,15 +515,19 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     // Lo mismo que ya se guardo (o se esta guardando) no se manda de nuevo.
     if (e.firma === firma && (e.id || e.enCurso)) { setId(e.id); return; }
     const turno = e.turno + 1;
-    envio.current = { firma, id: null, turno, enCurso: true };
+    envio.current = { firma, id: null, token: null, turno, enCurso: true };
+    setTokenContacto(null);
     setId(null);
     setGuardado('guardando');
-    guardarDiagnostico(datos).then((nuevo) => {
+    guardarDiagnostico(datos, { conToken: true }).then((respuesta) => {
+      const nuevo = typeof respuesta === 'string' ? respuesta : respuesta?.id;
       // Llego tarde: ya se mando otro juego de respuestas.
       if (envio.current.turno !== turno) return;
       envio.current.enCurso = false;
       if (nuevo) {
         envio.current.id = nuevo;
+        envio.current.token = respuesta?.token || null;
+        setTokenContacto(respuesta?.token || null);
         // Recien aca, con el turno confirmado: una respuesta vieja nunca
         // pisa el id que se ata al alta.
         recordarDiagnosticoPendiente(nuevo);
@@ -538,11 +548,11 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     avance.current = setTimeout(() => setFase('resultado'), ANALISIS_MS);
   }, [guardar]);
 
-  const seguir = useCallback(() => {
+  const seguir = () => {
     if (!completo(paso, respuestas)) return;
     if (paso === 'nombre_negocio') { analizar(); return; }
     irA(pasoIdx + 1);
-  }, [paso, respuestas, pasoIdx, irA, analizar]);
+  };
 
   const volver = () => {
     clearTimeout(avance.current);
@@ -564,11 +574,13 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       // Otro rubro, otras listas: lo que ya no corresponde se descarta.
       const tipos = ESTABLECIMIENTOS[valor] || [];
       if (!tipos.some((t) => t.id === nuevo.establecimiento)) nuevo = { ...nuevo, establecimiento: null };
-      if (!desafiosDe(valor).some((d) => d.id === nuevo.desafio)) nuevo = { ...nuevo, desafio: null };
+      if (!desafiosDe(valor).some((d) => d.id === nuevo.desafio)) nuevo = { ...nuevo, desafio: null, senal: null };
     }
+    if (campo === 'desafio' && valor !== respuestas.desafio) nuevo = { ...nuevo, senal: null };
+    if (campo === 'gestion_actual' && valor !== 'otro_sistema') nuevo = { ...nuevo, sistema_nombre: '', sistema_costo: '' };
     setRespuestas(nuevo);
     setGesto((g) => g + 1);
-    if (porPuntero.current && paso !== 'escala') {
+    if (porPuntero.current && paso === 'venta_mensual') {
       const siguiente = pasoIdx + 1;
       clearTimeout(avance.current);
       avance.current = setTimeout(() => irA(siguiente), PAUSA_ELECCION_MS);
@@ -617,17 +629,15 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   const sol = fase === 'resultado' ? solucion(respuestas.desafio, respuestas.vertical) : null;
 
-  let cara = PASOS[paso].cara;
   let dice = PASOS[paso].dico;
-  if (fase === 'analizando') { cara = 'neutral'; dice = 'Un segundo.'; }
+  if (fase === 'analizando') { dice = 'Un segundo.'; }
   if (fase === 'resultado') {
-    cara = sol?.pendiente ? 'happy' : 'celebrate';
     const nombre = respuestas.nombre_negocio.trim();
     dice = nombre ? `${nombre}: esto es lo primero que resolvería.` : 'Esto es lo primero que resolvería.';
   }
 
   const Titulo = nivel;
-  const total = recorrido.length - 1;
+  const total = recorrido.length;
   const hechas = fase !== 'preguntas' ? total : Math.min(pasoIdx, total);
   let cuenta = 'Leyendo tus respuestas';
   if (fase === 'preguntas') cuenta = paso === 'nombre_negocio' ? 'Último paso' : `Pregunta ${pasoIdx + 1} de ${total}`;
@@ -636,8 +646,8 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     <aside className="pl-split-lado dg-lado" aria-label="Tu ficha de diagnóstico">
       <div className="dg-lado-dentro">
         <div className="dg-guia">
-          <span className="dg-guia-cara" key={`${cara}-${gesto}`} data-gesto={gesto > 0 ? '' : undefined}>
-            <img src={DICO(cara)} alt="" width="256" height="256" />
+          <span className="dg-guia-cara" key={gesto} data-gesto={gesto > 0 ? '' : undefined}>
+            <DicoPhysical pose={fase === 'analizando' ? 'thinking' : 'idle'} reducedMotion={fase !== 'analizando'} ritmo={.55} title="Dico" />
           </span>
           <p className="pl-dico-dice dg-guia-dice" key={dice}>{dice}</p>
         </div>
@@ -658,13 +668,15 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     return envolver(
       <div className="pl-split dg-embudo dg-fase-resultado" ref={raizRef}>
         <div className="pl-split-col dg-res-cab">
-          <Titulo className="dg-titulo dg-entra" id="dg-resultado-titulo" ref={tituloRef} tabIndex={-1}>{sol.titulo}</Titulo>
+          <Titulo className="dg-titulo dg-entra" id="dg-resultado-titulo" ref={tituloRef} tabIndex={-1}>Tu diagnóstico{respuestas.nombre_negocio.trim() ? ` para ${respuestas.nombre_negocio.trim()}` : ''}</Titulo>
         </div>
         {instrumento}
-        <Resultado
+        <ResultadoDiagnostico
           sol={sol}
           respuestas={respuestas}
           id={id}
+          token={tokenContacto}
+          onContactoGuardado={() => marcarUnaVez('diagnostico-v2-whatsapp')}
           guardado={guardado}
           onReintentar={() => guardar(datosDe(respuestas))}
         />
@@ -740,7 +752,7 @@ function Pregunta({
     establecimiento: ESTABLECIMIENTOS[respuestas.vertical] || [],
     gestion_actual: GESTIONES,
     urgencia: URGENCIAS,
-    inversion: INVERSIONES,
+    venta_mensual: VENTAS_MENSUALES,
   }[paso];
 
   return (
@@ -753,6 +765,11 @@ function Pregunta({
           <Opciones nombre={paso} lista={simples} valor={respuestas[paso]} onElegir={onElegir} onPuntero={onPuntero} />
         </fieldset>
       )}
+
+      {paso === 'vertical' && respuestas.vertical && respuestas.vertical !== 'otro' && <fieldset className="dg-grupo dg-condicional"><legend className="dg-subtitulo">¿Cómo es tu negocio?</legend><Opciones nombre="establecimiento" lista={ESTABLECIMIENTOS[respuestas.vertical] || []} valor={respuestas.establecimiento} onElegir={onElegir} onPuntero={onPuntero} /></fieldset>}
+      {paso === 'desafio' && PREGUNTAS_DOLOR[respuestas.desafio] && <fieldset className="dg-grupo dg-condicional"><legend className="dg-subtitulo">{PREGUNTAS_DOLOR[respuestas.desafio].pregunta}</legend><Opciones nombre="senal" lista={PREGUNTAS_DOLOR[respuestas.desafio].opciones} valor={respuestas.senal} onElegir={onElegir} onPuntero={onPuntero} /></fieldset>}
+      {paso === 'gestion_actual' && respuestas.gestion_actual === 'otro_sistema' && <div className="dg-condicional dg-datos-sistema"><label htmlFor="dg-sistema-nombre">¿Cuál usás? (opcional)<input className="dg-texto" id="dg-sistema-nombre" value={respuestas.sistema_nombre} maxLength={80} onChange={e => onElegir('sistema_nombre', e.target.value)} /></label><label htmlFor="dg-sistema-costo">¿Cuánto pagás por mes? (opcional, en pesos)<input className="dg-texto" id="dg-sistema-costo" type="number" min="0" max="1000000000" inputMode="decimal" value={respuestas.sistema_costo} onChange={e => onElegir('sistema_costo', e.target.value)} /></label><p className="dg-ayuda">Si no lo recordás, podés dejarlo vacío.</p></div>}
+      {paso === 'urgencia' && <fieldset className="dg-grupo dg-condicional"><legend className="dg-subtitulo">¿Quién participa de la decisión?</legend><Opciones nombre="decisor" lista={DECISORES} valor={respuestas.decisor} onElegir={onElegir} onPuntero={onPuntero} /></fieldset>}
 
       {paso === 'canales' && (
         <fieldset className="dg-grupo" aria-labelledby={idTitulo} aria-describedby={idAyuda}>
@@ -864,7 +881,7 @@ function Ficha({ respuestas, paso, fase }) {
           );
         })}
       </dl>
-      <div className="pl-pieza-cifra">
+      {fase !== 'resultado' && <div className="pl-pieza-cifra">
         <span className="pl-pieza-cifra-nombre">Plan que te conviene</span>
         {plan ? (
           <>
@@ -874,106 +891,7 @@ function Ficha({ respuestas, paso, fase }) {
         ) : (
           <span className="dg-ficha-sin-plan">Lo calculo cuando me digas el tamaño.</span>
         )}
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────── El resultado: el plan con nombre propio ─────────────── */
-
-function Resultado({ sol, respuestas, id, guardado, onReintentar }) {
-  const planId = planRecomendado(respuestas);
-  const plan = PLANES[planId];
-  const dolor = desafiosDe(respuestas.vertical).find((d) => d.id === respuestas.desafio);
-  const gestion = labelDe(GESTIONES, respuestas.gestion_actual);
-  const inversion = labelDe(INVERSIONES, respuestas.inversion);
-  const alta = `/registro?${paramsDelAlta(respuestas, id)}`;
-  const urgente = respuestas.urgencia === 'ya';
-  let sobreInversion = 'El diagnóstico no realiza ningún cobro. Podés crear tu cuenta sin tarjeta.';
-  if (respuestas.inversion === 'gratis') {
-    sobreInversion = `Preferís evaluar antes de pagar. El plan recomendado cuesta ${plan.precio}; el diagnóstico no contrata una suscripción.`;
-  } else if (planId === 'cadena' && respuestas.inversion === 'hasta_60k') {
-    sobreInversion = 'Para varias sucursales el plan es Cadena. Su precio se calcula por local; podés comparar las modalidades antes de contratar.';
-  }
-
-  return (
-    <div className="pl-split-col dg-res-cuerpo dg-entra">
-      {dolor && (
-        <section className="dg-bloque" aria-labelledby="dg-encontramos">
-          <h2 className="dg-bloque-titulo" id="dg-encontramos">Lo que encontramos</h2>
-          <p className="dg-dolor">{dolor.label}.</p>
-          <p className="dg-parrafo">{dolor.sub}</p>
-        </section>
-      )}
-
-      {gestion && (
-        <section className="dg-bloque" aria-labelledby="dg-hoy">
-          <h2 className="dg-bloque-titulo" id="dg-hoy">Hoy</h2>
-          <p className="dg-parrafo">{gestion}.</p>
-        </section>
-      )}
-
-      <section className="dg-bloque" aria-labelledby="dg-con-dico">
-        <h2 className="dg-bloque-titulo" id="dg-con-dico">Con Dico</h2>
-        <p className="dg-parrafo">{sol.hoy}</p>
-        {respuestas.vertical === 'otro' && (
-          <p className="dg-parrafo dg-suave">
-            En tu rubro te sirven el catálogo online, los pedidos, la caja, el stock
-            y el personal. Lo que es propio de un rubro, como las recetas, no aplica.
-          </p>
-        )}
-        <div className="dg-pieza">
-          <PiezaPorNombre nombre={sol.pieza} rubro={respuestas.vertical} />
-        </div>
-      </section>
-
-      {sol.pendiente && (
-        <section className="dg-bloque dg-desarrollo" aria-labelledby="dg-desarrollo">
-          <h2 className="dg-bloque-titulo" id="dg-desarrollo">En desarrollo</h2>
-          <p className="dg-parrafo">{sol.pendiente}</p>
-          <p className="dg-parrafo">
-            {sol.aMedida}{' '}
-            <a className="pl-enlace" href={AGENDA_URL} target="_blank" rel="noreferrer" onClick={() => marcarEvento('agenda')}>
-              Contanos qué necesitás
-            </a>
-          </p>
-        </section>
-      )}
-
-      <section className="dg-bloque dg-plan" aria-labelledby="dg-plan">
-        <h2 className="dg-bloque-titulo" id="dg-plan">Tu plan</h2>
-        <p className="dg-plan-linea">
-          <span>{plan.nombre}</span>
-          <span>{plan.precio}</span>
-        </p>
-        <p className="dg-parrafo dg-suave">{plan.detalle}</p>
-        {inversion && respuestas.inversion !== 'gratis' && (
-          <p className="dg-parrafo">Elegiste: {inversion.charAt(0).toLowerCase() + inversion.slice(1)}.</p>
-        )}
-        {sobreInversion && <p className="dg-parrafo">{sobreInversion}</p>}
-      </section>
-
-      <div className="dg-cierre">
-        <a className="pl-boton" href={alta}>
-          {urgente ? 'Crear mi cuenta y empezar hoy' : 'Crear mi cuenta'}
-        </a>
-        <a
-          className="pl-enlace dg-agenda"
-          href={AGENDA_URL}
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => marcarEvento('agenda')}
-        >
-          Prefiero que me lo muestren
-        </a>
-      </div>
-
-      {guardado === 'error' && (
-        <p className="dg-parrafo dg-suave dg-guardado" role="status">
-          No pude guardar tu diagnóstico. La cuenta se crea igual.{' '}
-          <button type="button" className="dg-texto-boton dg-en-linea" onClick={onReintentar}>Reintentar</button>
-        </p>
-      )}
+      </div>}
     </div>
   );
 }

@@ -13,6 +13,8 @@
 
 import { supabase } from './supabase';
 import { PLANES_DIAGNOSTICO } from './planesPlataforma';
+import { recomendarPlanV2 } from '../../platform/functions/diagnostico/v2.js';
+export { PREGUNTAS_DOLOR, VENTAS_MENSUALES, DECISORES, extrasV2, normalizarWhatsapp, CONSENTIMIENTO_VERSION } from '../../platform/functions/diagnostico/v2.js';
 
 export const VERTICALES = [
   { id: 'gastronomia', label: 'Gastronomía', rubro: 'gastro' },
@@ -125,17 +127,13 @@ export const INVERSIONES = [
  *  y lo que mas engancha); despues lo que cualifica. `establecimiento` se
  *  saltea en "otro". */
 export const ORDEN_PASOS = [
-  'vertical', 'desafio', 'establecimiento', 'canales', 'escala',
-  'gestion_actual', 'urgencia', 'inversion', 'nombre_negocio',
+  'vertical', 'desafio', 'canales', 'escala', 'gestion_actual',
+  'venta_mensual', 'urgencia', 'nombre_negocio',
 ];
 
 /** Plan recomendado. Cadena = varias sucursales; Local = un local con equipo o
  *  que ya usa un sistema; Digital = el resto. Crear la cuenta no contrata el plan. */
-export function planRecomendado({ locales, equipo, gestion_actual: gestion }) {
-  if (locales === 'dos_tres' || locales === 'cuatro_o_mas') return 'cadena';
-  if (equipo === 'de_6_a_15' || equipo === 'mas_de_15' || gestion === 'otro_sistema') return 'local';
-  return 'digital';
-}
+export const planRecomendado = recomendarPlanV2;
 
 export const PLANES = PLANES_DIAGNOSTICO;
 
@@ -204,10 +202,8 @@ export function solucion(desafio, vertical) {
       };
     case 'turnos':
       return {
-        titulo: 'La agenda de turnos todavía no está. Lo demás, sí.',
-        hoy: 'Hoy Dico te ordena servicios, cobros, caja y personal en un solo lugar.',
-        pendiente: 'La agenda de turnos online está en desarrollo.',
-        aMedida,
+        titulo: 'Tus turnos, ordenados en una agenda.',
+        hoy: 'Dico tiene agenda para organizar turnos, profesionales y horarios. Al configurar tu negocio revisamos la disponibilidad y el alcance de las reservas online.',
         pieza: 'cierre',
       };
     default:
@@ -228,9 +224,10 @@ export function paramsDelAlta({ vertical, nombre_negocio: nombre }, id) {
 /** Eventos de analitica al mostrar una pregunta. `antes` y `ahora` son
  *  { paso, idx }; `antes` es null si no venia de otra pregunta. Volver a un
  *  paso anterior marca el atras del paso que se dejo. */
-export function eventosDePaso(antes, ahora) {
-  const eventos = [`diagnostico-paso-${ahora.paso}`];
-  if (antes && ahora.idx < antes.idx) eventos.push(`diagnostico-atras-${antes.paso}`);
+export function eventosDePaso(antes, ahora, version = 1) {
+  const prefijo = version === 2 ? 'diagnostico-v2' : 'diagnostico';
+  const eventos = [`${prefijo}-paso-${ahora.paso}`];
+  if (antes && ahora.idx < antes.idx) eventos.push(`${prefijo}-atras-${antes.paso}`);
   return eventos;
 }
 
@@ -238,7 +235,7 @@ const CLAVE_PENDIENTE = 'dico:diagnostico-pendiente';
 
 /** Guarda el diagnostico (edge function `diagnostico`). Nunca tira: si la red
  *  o la funcion fallan, el resultado se muestra igual y devuelve null. */
-export async function guardarDiagnostico(respuestas) {
+export async function guardarDiagnostico(respuestas, { conToken = false } = {}) {
   try {
     const { data, error } = await supabase.functions.invoke('diagnostico', {
       body: {
@@ -250,7 +247,7 @@ export async function guardarDiagnostico(respuestas) {
       },
     });
     if (error || !data?.id) return null;
-    return data.id;
+    return conToken ? { id: data.id, token: data.contacto_token || null } : data.id;
   } catch {
     return null;
   }
@@ -275,4 +272,12 @@ export async function vincularDiagnosticoPendiente(idDeLaUrl) {
   } catch {
     return false;
   }
+}
+
+/** Solo adjunta contacto con la capacidad recibida al guardar ese diagnostico. */
+export async function guardarContactoDiagnostico({ id, token, nombre, whatsapp, consentimiento }) {
+  try {
+    const { data, error } = await supabase.functions.invoke('diagnostico', { body: { accion: 'contacto', id, token, nombre, whatsapp, consentimiento } });
+    return !error && data?.ok === true;
+  } catch { return false; }
 }

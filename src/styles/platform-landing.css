@@ -42,6 +42,7 @@
   /* Superficie de la pieza oscura: un paso arriba del fondo del producto */
   --pl-pieza-paso: var(--ds-color-neutral-800);
   --pl-suelo-continuo: var(--ds-color-zinc-950);
+  --pl-suelo-hero: var(--ds-color-neutral-950);
 
   min-height: 100dvh;
   background: var(--pc-suelo);
@@ -835,7 +836,7 @@
   inset: 0;
   z-index: 5;
   pointer-events: none;
-  background: linear-gradient(transparent 86%, var(--pc-producto) 100%); /* taste-skill-ignore: scrim neutro de contraste sobre fotografia, excepcion de la skill. */
+  background: linear-gradient(transparent 78%, var(--pl-suelo-hero) 100%); /* taste-skill-ignore: scrim neutro de contraste sobre fotografia, excepcion de la skill. */
 }
 .pl-tiempo-escena { position: absolute; inset: 0; }
 .pl-tiempo-escena::after {
