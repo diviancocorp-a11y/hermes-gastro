@@ -422,6 +422,7 @@
   .dg-fase-resultado .dg-res-cab,
   .dg-fase-resultado .dg-res-cuerpo { grid-row: auto; }
 
+  .dg-fase-resultado .dg-ficha { display: none; }
   .dg-fase-resultado .dg-res-cab { padding-bottom: var(--ds-space-8); }
   .dg-fase-resultado .pl-split-lado { padding-block: var(--ds-space-8); }
   .dg-fase-resultado .dg-res-cuerpo { padding-top: var(--ds-space-8); }
@@ -594,3 +595,15 @@
   .dg-modal-card[data-visible="true"] { animation: dg-card-aparece 180ms var(--pc-curva) both; }
 }
 @keyframes dg-card-aparece { from { opacity: 0; } to { opacity: 1; } }
+
+/* V2: detalles condicionales y contacto despues del resultado completo. */
+.dg-condicional { margin-top: var(--ds-space-6); }
+.dg-datos-sistema, .dg-contacto-form { display: grid; gap: var(--ds-space-3); margin-top: var(--ds-space-4); }
+.dg-datos-sistema label, .dg-contacto-form > label { display: grid; gap: var(--ds-space-2); }
+.dg-consentimiento { grid-template-columns: 22px minmax(0, 1fr); align-items: start; font-size: var(--ds-type-sm); line-height: 1.5; }
+.dg-consentimiento input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--pc-oro); }
+.dg-error-campo { color: var(--pc-tinta); font-weight: 600; font-size: var(--ds-type-sm); }
+.dg-contacto-ok { padding-block: var(--ds-space-4); color: inherit; line-height: 1.6; }
+.dg-hallazgos { display: grid; gap: var(--ds-space-4); padding-left: var(--ds-space-5); list-style: disc; line-height: 1.6; }
+.dg-herramientas { display: flex; flex-wrap: wrap; gap: var(--ds-space-2); margin-block: var(--ds-space-4); }
+.dg-herramientas li { padding: var(--ds-space-2) var(--ds-space-3); border: 1px solid var(--ds-color-zinc-800); border-radius: var(--ds-radius-2); }

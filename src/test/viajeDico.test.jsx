@@ -137,6 +137,7 @@ describe('diagnóstico en card oscura sobre el hero', () => {
     montar();
     await abrir();
     fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
     fireEvent.click(screen.getByRole('button', { name: 'Seguir' }));
     expect(window.history.state.dgProfundidad).toBe(2);
     if (accion === 'Escape') fireEvent.keyDown(document, { key: 'Escape' });
@@ -145,7 +146,7 @@ describe('diagnóstico en card oscura sobre el hero', () => {
     await act(async () => animaciones.at(-1).terminar());
     expect(boton()).toHaveFocus();
     expect(window.history.state.dg).toBeUndefined();
-    expect(JSON.parse(sessionStorage.getItem('dico:diagnostico-en-curso')).respuestas.vertical).toBe('gastronomia');
+    expect(JSON.parse(sessionStorage.getItem('dico:diagnostico-v2-en-curso')).respuestas.vertical).toBe('gastronomia');
     fireEvent.click(boton());
     await act(async () => animaciones.at(-1).terminar());
     expect(screen.getByRole('heading', { name: '¿Qué es lo que más te preocupa hoy?' })).toHaveFocus();
@@ -155,6 +156,7 @@ describe('diagnóstico en card oscura sobre el hero', () => {
     montar();
     await abrir();
     fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
     fireEvent.click(screen.getByRole('button', { name: 'Seguir' }));
     act(() => window.history.back());
     await waitFor(() => expect(pregunta()).toHaveFocus());
@@ -184,6 +186,7 @@ describe('diagnóstico en card oscura sobre el hero', () => {
     const card = pregunta().closest('.dg-modal-card');
     card.scrollTop = 500;
     fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
     fireEvent.click(screen.getByRole('button', { name: 'Seguir' }));
     expect(card.scrollTop).toBe(0);
   });
@@ -315,7 +318,8 @@ describe('diagnóstico en card oscura sobre el hero', () => {
     expect(container.firstChild).not.toHaveAttribute('inert');
   });
 
-  it('una sesión legacy sin profundidad cierra sin añadir ni adivinar historial', async () => {
+  it('una sesión v2 sin profundidad cierra sin añadir ni adivinar historial', async () => {
+    sessionStorage.setItem('dico:diagnostico-v2-en-curso', JSON.stringify({ version: 2, respuestas: {} }));
     window.history.replaceState({ dg: 0, desde: true }, '');
     const go = vi.spyOn(window.history, 'go');
     montar();

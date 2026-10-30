@@ -11,6 +11,22 @@
 
 ### Revision visual de Ricky
 
+**Diagnostico v2 preparado, 29/oct:** medicion de Claude 8f7bbd1 publicada por
+PR #60/main fc40d9ed, CI/E2E/smoke verdes. UI v2 en esta rama para revision: ocho
+pantallas, detalle por dolor, otro sistema con nombre/costo, ventas en rangos,
+decisor y nombre opcional. Resultado: prioridad/hallazgos/herramientas-plan/
+contacto opcional. Sin montos inventados ni descarte por venta. 0117 aplicada
+via MCP y snapshot actualizado; edge compatible con v1. Contacto protegido por
+RLS staff, consentimiento y capacidad hasheada; sin PII en URL ni Analytics.
+Motivos factuales guardados; puntaje/clasificacion queda pendiente de calibrar.
+Ver DIAGNOSTICO-V2.md para evidencia y limites. UI conserva tarjeta/apertura;
+Dico usa el atlas vigente, no las caras 2D anteriores. No se manda WhatsApp
+automaticamente: se guarda una solicitud para atencion de Divianco.
+Pruebas dirigidas 47/47; API v1/v2 y consentimiento probados. En celular el
+resultado no queda detras de la ficha; no hay desborde horizontal. Backend
+compatible ya desplegado; UI v2 pendiente de revision en preview.
+
+
 **Union suelo/mesh panoramico, 29/oct:** el suelo de primer plano mide RGB
 14/14/13; se usa el neutral950 existente15/14/13 como puente calido. El hero
 funde hacia ese tono, el primer tramo lo conserva y baja gradualmente al zinc

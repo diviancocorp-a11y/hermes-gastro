@@ -1,15 +1,16 @@
 // Canal publico del diagnostico de la landing (divianco.app/diagnostico).
 //
-// Guarda las respuestas en public.diagnosticos (0100/0101/0105) con el service role
+// Guarda las respuestas en public.diagnosticos (0100/0101/0105/0117) con el service role
 // y devuelve el id, que viaja al alta para vincular el diagnostico al negocio
-// (vincular_diagnostico). No guarda email, telefono ni nombre de persona.
+// (vincular_diagnostico). V2 adjunta contacto solo con consentimiento y capacidad aleatoria.
 //
 // Publica: verify_jwt=false (ver NO_VERIFY_JWT en deploy-functions.mjs). La
 // proteccion es el rate limit por IP y que cada campo sale de una lista
 // cerrada, igual que los CHECK de la tabla. El plan recomendado lo calcula el
-// front (src/lib/diagnostico.js); aca solo se valida que sea uno de los tres.
+// front en v1; en v2 se recalcula con el contrato compartido.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { validarExtrasV2, recomendarPlanV2, normalizarWhatsapp, CONSENTIMIENTO_VERSION } from "./v2.js";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const CORS = {
@@ -68,14 +69,31 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: permitido } = await supabase.rpc("check_rate_limit", {
+    const { data: permitido, error: errorLimite } = await supabase.rpc("check_rate_limit", {
       p_key: `diagnostico:${clientIp(req)}`,
       p_max_requests: 10,
       p_window_seconds: 3600,
     });
-    if (permitido === false) return json({ error: "Demasiados diagnosticos seguidos" }, 429);
+    if (errorLimite) return json({ error: "Diagnostico temporalmente no disponible" }, 503);
+    if (permitido !== true) return json({ error: "Demasiados diagnosticos seguidos" }, 429);
 
-    const b = await req.json().catch(() => ({}));
+    const b = await req.json().catch(() => null);
+    if (!b || typeof b !== "object" || Array.isArray(b)) return json({ error: "Datos invalidos" }, 400);
+    const hashToken = async (token: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)))).map(n => n.toString(16).padStart(2, "0")).join("");
+    if (b.accion === "contacto") {
+      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const nombre = texto(b.nombre, 80);
+      const whatsapp = normalizarWhatsapp(b.whatsapp);
+      if (!uuid.test(String(b.id)) || !uuid.test(String(b.token)) || !nombre || nombre.length < 2 || !whatsapp || b.consentimiento !== true) return json({ error: "Revisa nombre, WhatsApp con codigo de pais y consentimiento." }, 400);
+      const { data, error } = await supabase.from("diagnosticos").update({
+        contacto_nombre: nombre, contacto_whatsapp: whatsapp,
+        contacto_consentimiento_at: new Date().toISOString(), contacto_consentimiento_version: CONSENTIMIENTO_VERSION,
+      }).eq("id", b.id).eq("contacto_token_hash", await hashToken(b.token)).select("id").maybeSingle();
+      if (error) throw error;
+      if (!data) return json({ error: "No se pudo adjuntar el contacto a este diagnostico." }, 403);
+      return json({ ok: true });
+    }
+    if (b.accion != null) return json({ error: "Accion invalida" }, 400);
 
     const vertical = deLaLista(b.vertical, VERTICALES);
     if (!vertical) return json({ error: "Rubro invalido" }, 400);
@@ -92,12 +110,26 @@ Deno.serve(async (req) => {
     const locales = deLaLista(b.locales, LOCALES);
     const gestion = deLaLista(b.gestion_actual, GESTIONES);
     const desafio = deLaLista(b.desafio, DESAFIOS);
-    const plan = deLaLista(b.plan_recomendado, PLANES);
+    if (b.version != null && b.version !== 1 && b.version !== 2) return json({ error: "Version invalida" }, 400);
+    const version = b.version === 2 ? 2 : 1;
+    const extra = version === 2 ? b.respuestas_v2 : null;
+    if (version === 2) {
+      const invalido = validarExtrasV2(b, extra);
+      if (invalido) return json({ error: invalido }, 400);
+    }
+    const plan = version === 2 ? recomendarPlanV2(b) : deLaLista(b.plan_recomendado, PLANES);
+    const token = version === 2 ? crypto.randomUUID() : null;
+    if (version === 2 && (!canales.length || !deLaLista(b.equipo, EQUIPOS) || !deLaLista(b.urgencia, URGENCIAS) || (vertical !== "otro" && !establecimiento))) return json({ error: "Faltan respuestas del diagnostico" }, 400);
     if (!locales || !gestion || !desafio || !plan) return json({ error: "Faltan respuestas" }, 400);
 
     const { data, error } = await supabase
       .from("diagnosticos")
       .insert({
+        ...(version === 2 ? {
+          version, respuestas_v2: { senal: extra.senal, sistema_nombre: b.gestion_actual === "otro_sistema" ? extra.sistema_nombre : "", sistema_costo: b.gestion_actual === "otro_sistema" ? extra.sistema_costo : null, venta_mensual: extra.venta_mensual, decisor: extra.decisor },
+          contacto_token_hash: await hashToken(token!),
+          lead_motivos: { version: 1, encaje: { vertical, locales, canales }, necesidad: { desafio, senal: extra.senal }, intencion: { urgencia: deLaLista(b.urgencia, URGENCIAS), decisor: extra.decisor }, migracion: b.gestion_actual === "otro_sistema" ? "Revisar importacion y cambio de sistema antes de migrar" : null },
+        } : {}),
         vertical,
         establecimiento,
         canales,
@@ -115,9 +147,9 @@ Deno.serve(async (req) => {
       .single();
     if (error) throw error;
 
-    return json({ ok: true, id: data.id });
+    return json({ ok: true, id: data.id, ...(token ? { contacto_token: token } : {}) });
   } catch (err) {
-    console.error("[diagnostico]", err);
+    console.error("[diagnostico]", err instanceof Error ? err.message : "Error de persistencia");
     return json({ error: "No se pudo guardar el diagnostico" }, 500);
   }
 });

@@ -1,8 +1,36 @@
 # Diagnostico v2: resultado con valor y lead calificado
 
-> 29/oct/2026. Especificacion acordada con Ricky. **Nada de esto esta construido.**
+> 29/oct/2026. Especificacion acordada con Ricky. **Implementacion preparada en landing/rediseno para revision visual.**
 > El diagnostico vigente esta descripto en `LANDING.md`; este documento dice
 > hacia donde va y en que orden.
+
+## Estado de implementacion — 29/oct
+
+- Medicion original 8f7bbd1 publicada por PR #60, main fc40d9ed; CI/E2E/smoke verdes.
+  El script de Vercel excluye webdriver/Headless: el test automatico confirma
+  eventos locales, no una visita humana en el dashboard.
+- V2 en preview: ocho pantallas; tipo integrado al rubro y senal dentro del
+  dolor. Inversion retirada del recorrido; sus ids v1 quedan compatibles.
+  Nombre/costo de otro sistema opcionales. Venta incluye desconocido/no responde.
+- Resultado en el orden acordado, sin extrapolar perdidas. Cuenta aparte y
+  contacto opcional con consentimiento. No se envia WhatsApp automaticamente:
+  se guarda el pedido para que Divianco lo atienda, sin SLA prometido.
+- 0117 aplicada y edge diagnostico v4 desplegada, compatibles con front v1.
+  Respuestas v2 y motivos factuales internos, sin clasificacion ni puntaje aun.
+  Contacto staff-only; capacidad aleatoria hasheada para adjuntarlo, fuera de
+  URL/analitica. Consentimiento con fecha y version.
+- Prueba real de API: v1/v2 aceptados, sin consentimiento 400, token ajeno 403,
+  contacto propio 200, lectura anonima sin filas. Los registros QA se eliminaron tras comprobarlos.
+- Pruebas dirigidas: 47/47 (diagnostico, v2, hero y apertura/cierre). Los tres
+  rubros completaron ocho pasos en navegador, con backend simulado; la API real
+  se probo aparte. Escritorio y celular sin desborde horizontal. En celular
+  se evita anteponer la ficha al resultado. No se realiza una nueva auditoria
+  visual con subagentes, por el flujo economico pedido por Ricky.
+- Agenda: panel y reserva estan en el codigo publicado; no se da por validado
+  el recorrido completo de reservar. El resultado habla de organizar turnos y
+  revisar disponibilidad/alcance al configurar, sin prometer avisos automaticos.
+- Eventos v2 separados de la linea base (diagnostico-v2-*). Se conserva ruido
+  de recarga como abandono documentado. Clasificacion se calibra despues.
 
 ## 1. Por que
 

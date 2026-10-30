@@ -25,7 +25,8 @@ describe('diagnostico de la landing', () => {
   });
 
   it('lo que no existe se dice como pendiente, no como hecho', () => {
-    expect(solucion('turnos', 'servicios').pendiente).toMatch(/en desarrollo/);
+    expect(solucion('turnos', 'servicios').hoy).toMatch(/agenda/);
+    expect(solucion('turnos', 'servicios').pendiente).toBeUndefined();
     expect(solucion('stock', 'comercio').pendiente).toMatch(/en desarrollo/);
   });
 

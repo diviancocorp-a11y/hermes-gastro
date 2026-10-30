@@ -35,23 +35,25 @@ describe('hero y diagnóstico comparten un solo recorrido', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
     expect(screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveFocus();
     fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
     fireEvent.click(screen.getByRole('button', { name: 'Seguir' }));
     const pregunta = screen.getByRole('heading', { name: '¿Qué es lo que más te preocupa hoy?' });
     act(() => abrirRef.current());
     expect(pregunta).toHaveFocus();
     expect(screen.getByText('Pregunta 2 de 8')).toBeInTheDocument();
-    expect(JSON.parse(sessionStorage.getItem('dico:diagnostico-en-curso')).respuestas.vertical).toBe('gastronomia');
+    expect(JSON.parse(sessionStorage.getItem('dico:diagnostico-v2-en-curso')).respuestas.vertical).toBe('gastronomia');
   });
 
   it('volver al inicio devuelve el foco al CTA y las respuestas sobreviven al reabrir', async () => {
     montar();
     fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
     fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
     fireEvent.click(screen.getByRole('button', { name: 'Volver al inicio' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Quiero Dico' })).toHaveFocus());
     fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
     expect(screen.getByRole('heading', { name: '¿Qué es lo que más te preocupa hoy?' })).toHaveFocus();
-    expect(JSON.parse(sessionStorage.getItem('dico:diagnostico-en-curso')).respuestas.vertical).toBe('gastronomia');
+    expect(JSON.parse(sessionStorage.getItem('dico:diagnostico-v2-en-curso')).respuestas.vertical).toBe('gastronomia');
   });
 
 
