@@ -1315,6 +1315,16 @@ Eventos de analitica: `diagnostico-cta`, `agenda`, `whatsapp`,
 `registro-enviado`, `alta-confirmada`. Vercel Hobby no tiene eventos
 propios: se ven como paginas `/evento/...` en el panel de Analytics.
 
+Embudo del diagnostico (29/oct, `DIAGNOSTICO-V2.md` seccion 6), una vez por
+pestana: `diagnostico-inicio`, `diagnostico-paso-<paso>` al ver cada
+pregunta, `diagnostico-atras-<paso>` al volver desde ese paso,
+`diagnostico-abandono-<paso>` al cerrar el diagnostico o irse de la pagina con
+esa pregunta a la vista, y `diagnostico-resultado`. Abandono en un paso =
+`abandono-<paso>`; los que llegan a un paso y no al siguiente salen de restar
+`paso-<siguiente>` a `paso-<paso>`. Recargar la pagina con una pregunta a la
+vista tambien cuenta como abandono (sale de `pagehide`): es ruido chico, pero
+un abandono no es siempre alguien que se fue.
+
 Las listas de opciones del diagnostico estan **en tres lugares** que tienen
 que coincidir: `src/lib/diagnostico.js`, los `CHECK` de la tabla
 (migraciones) y la edge function. Si cambia una, cambian las tres, y la
