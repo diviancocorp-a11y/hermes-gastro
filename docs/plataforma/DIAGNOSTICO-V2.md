@@ -32,6 +32,13 @@
 - Eventos v2 separados de la linea base (diagnostico-v2-*). Se conserva ruido
   de recarga como abandono documentado. Clasificacion se calibra despues.
 
+- Validacion final: suite local completa 155 archivos / 2101 pruebas en verde;
+  CI y E2E del PR #61 verdes en 7a8550d. Preview real recorrido desde el hero
+  hasta el contacto: guardado v2, consentimiento fechado y hash64 verificados
+  en la base. Sin errores de pagina ni datos personales en eventos; registro
+  QA eliminado. Se permite cortar nombres largos en el titulo para evitar
+  recorte en celular.
+
 ## 1. Por que
 
 El diagnostico de hoy (`src/lib/diagnostico.js`, `src/components/landing/Diagnostico.jsx`)

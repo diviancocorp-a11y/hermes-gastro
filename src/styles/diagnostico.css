@@ -597,6 +597,7 @@
 @keyframes dg-card-aparece { from { opacity: 0; } to { opacity: 1; } }
 
 /* V2: detalles condicionales y contacto despues del resultado completo. */
+.dg-titulo { overflow-wrap: anywhere; }
 .dg-condicional { margin-top: var(--ds-space-6); }
 .dg-datos-sistema, .dg-contacto-form { display: grid; gap: var(--ds-space-3); margin-top: var(--ds-space-4); }
 .dg-datos-sistema label, .dg-contacto-form > label { display: grid; gap: var(--ds-space-2); }

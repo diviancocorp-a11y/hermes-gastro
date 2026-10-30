@@ -24,7 +24,9 @@ Dico usa el atlas vigente, no las caras 2D anteriores. No se manda WhatsApp
 automaticamente: se guarda una solicitud para atencion de Divianco.
 Pruebas dirigidas 47/47; API v1/v2 y consentimiento probados. En celular el
 resultado no queda detras de la ficha; no hay desborde horizontal. Backend
-compatible ya desplegado; UI v2 pendiente de revision en preview.
+compatible ya desplegado; UI v2 pendiente de revision en preview (PR #61).
+Suite completa: 155 archivos / 2101 pruebas en verde. Recorrido real del
+preview hasta el contacto verificado en la base; datos QA eliminados.
 
 
 **Union suelo/mesh panoramico, 29/oct:** el suelo de primer plano mide RGB
