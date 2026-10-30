@@ -9,6 +9,23 @@
 
 ## 1. Estado al 30/oct/2026
 
+### Diagnostico: panel unico en revision — 30/oct
+
+Rama `codex/diagnostico-panel-unico`: preguntas sobre negro en una columna,
+logo oficial y Dico del atlas vigente. Resumen nativo en "Ver mis respuestas",
+solo datos completados; se retira el plan anticipado. Resultado sobre marfil.
+Progreso porcentual derivado de las respuestas, pulso volt de izquierda a
+derecha; 96% durante el analisis y 100% dorado quieto al mostrar el resultado.
+Movimiento reducido deja la barra sin pulso. No se publica hasta revision.
+Preguntas/ids, guardado, contacto y apertura/cierre conservan sus contratos.
+Registro/precarga de contacto se trabajaran despues; este cambio es visual.
+Comercio y Servicios usan etiquetas breves, sin excluir mayoristas.
+48 pruebas dirigidas verdes; detector antes/despues con 17 hallazgos conocidos.
+Notebook 1366x768: primera pantalla seleccionada cabe sin scroll (623px antes
+del ultimo ajuste tipografico). Celular 390px sin desborde horizontal; resumen
+sin filas vacias. No se guardaron contactos ni diagnosticos reales en estas
+pruebas. Las capturas locales se eliminaron tras revisarlas.
+
 ### Publicacion aprobada por Ricky
 
 **Diagnostico v2 aprobado para produccion, 30/oct:** medicion de Claude 8f7bbd1 publicada por

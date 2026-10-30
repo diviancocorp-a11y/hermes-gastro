@@ -18,8 +18,8 @@ export { PREGUNTAS_DOLOR, VENTAS_MENSUALES, DECISORES, extrasV2, normalizarWhats
 
 export const VERTICALES = [
   { id: 'gastronomia', label: 'Gastronomía', rubro: 'gastro' },
-  { id: 'comercio', label: 'Comercio minorista', rubro: 'retail' },
-  { id: 'servicios', label: 'Servicios (barbería, peluquería, estética)', rubro: 'barber' },
+  { id: 'comercio', label: 'Comercio', rubro: 'retail' },
+  { id: 'servicios', label: 'Servicios', rubro: 'barber' },
   { id: 'otro', label: 'Otro rubro', rubro: 'retail' },
 ];
 
@@ -30,7 +30,7 @@ export const ESTABLECIMIENTOS = {
     { id: 'cafeteria', label: 'Cafetería' },
     { id: 'panaderia_pasteleria', label: 'Panadería y pastelería' },
     { id: 'bar_cerveceria', label: 'Bar o cervecería' },
-    { id: 'dark_kitchen', label: 'Dark kitchen (producción solo para delivery)' },
+    { id: 'dark_kitchen', label: 'Dark kitchen' },
   ],
   comercio: [
     { id: 'indumentaria', label: 'Indumentaria y accesorios' },

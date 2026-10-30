@@ -36,12 +36,28 @@ describe('hero y diagnóstico comparten un solo recorrido', () => {
     expect(screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveFocus();
     fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
     fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Seguir' }));
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
     const pregunta = screen.getByRole('heading', { name: '¿Qué es lo que más te preocupa hoy?' });
     act(() => abrirRef.current());
     expect(pregunta).toHaveFocus();
     expect(screen.getByText('Pregunta 2 de 8')).toBeInTheDocument();
     expect(JSON.parse(sessionStorage.getItem('dico:diagnostico-v2-en-curso')).respuestas.vertical).toBe('gastronomia');
+  });
+
+  it('el porcentaje sigue las respuestas y el resumen no adelanta un plan ni filas vacias', () => {
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuemax', '100');
+    expect(screen.queryByText('Plan que te conviene')).not.toBeInTheDocument();
+    const resumen = document.querySelector('.dg-resumen');
+    expect(resumen).not.toHaveAttribute('open');
+    expect(resumen.querySelectorAll('dt')).toHaveLength(0);
+    fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
+    fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '13');
+    expect(resumen.querySelectorAll('dt')).toHaveLength(2);
   });
 
   it('volver al inicio devuelve el foco al CTA y las respuestas sobreviven al reabrir', async () => {

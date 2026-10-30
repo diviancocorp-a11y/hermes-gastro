@@ -5,22 +5,9 @@ import DicoPhysical from '../dico/DicoPhysical';
 // la misma pagina) y /diagnostico (src/pages/Diagnostico.jsx, pagina propia que
 // usan la landing vieja y los links de afuera).
 //
-// Composicion (direccion `quiet-instrument` de design-taste-frontend): dos
-// mitades por tono. A la izquierda, la columna: la pregunta es la unica cosa
-// grande. A la derecha, en el tono de al lado, el instrumento: Dico y la ficha
-// que imprime lo que Dico lee de cada respuesta. En el resultado, la ficha
-// queda completa con "Cambiar respuestas" y la columna cuenta el plan.
-// En el telefono el orden del DOM es el visual: columna y despues la ficha
-// (que durante las preguntas se esconde: es larga y repite lo elegido).
-//
-// Colores (RC5 cap. 03): tinta para avanzar; volt para lo que Dico lee (el
-// avance, la ficha, "Ver mi diagnostico"); oro para la accion y el valor: una
-// sola accion oro ("Crear mi cuenta", en el resultado) y, como cifra de valor
-// (texto gold-700 o la cifra de la pieza), el plan que conviene y su precio.
-//
-// Textos: preguntas y respuestas, dolores, urgencias, inversiones, plan y
-// soluciones salen de src/lib/diagnostico.js. Aca viven solo los enunciados
-// de cada paso y lo que dice Dico (la lib no los tiene).
+// Panel unico: pregunta protagonista, Dico como guia y resumen desplegable.
+// El progreso sigue las respuestas; el resultado completo cambia a marfil.
+// Textos y opciones salen de src/lib/diagnostico.js.
 //
 // El boton Atras del navegador recorre los pasos: cada paso es una entrada de
 // history (misma URL, sin cambio de ruta) y las respuestas viven en
@@ -36,8 +23,8 @@ import { marcarEvento } from '../../lib/analiticaPlataforma';
 import {
   CANALES, EQUIPOS, ESTABLECIMIENTOS, GESTIONES, LOCALES, ORDEN_PASOS,
   PREGUNTAS_DOLOR, VENTAS_MENSUALES, DECISORES, extrasV2,
-  PLANES, URGENCIAS, VERTICALES, desafiosDe, eventosDePaso, guardarDiagnostico,
-  planRecomendado, recordarDiagnosticoPendiente, solucion,
+  URGENCIAS, VERTICALES, desafiosDe, eventosDePaso, guardarDiagnostico,
+  recordarDiagnosticoPendiente, solucion,
 } from '../../lib/diagnostico';
 import ResultadoDiagnostico from './ResultadoDiagnostico';
 import { viajarConDico } from './viajeDico';
@@ -302,7 +289,6 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     onAbiertoChange?.(modo === 'home' ? overlayActivo : abierto);
   }, [abierto, overlayActivo, modo, onAbiertoChange]);
 
-  // Caras de Dico precargadas: cambiar de estado no tiene que parpadear.
   useEffect(() => {
     if ((modo === 'pagina' && estadoDeHistoria() === undefined) || inicio.corregir) {
       window.history.replaceState({ ...window.history.state, dg: inicio.indice }, '');
@@ -619,7 +605,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       {portada}
       {overlayActivo && (
         <DiagnosticoCard visible={abierto} fondoRef={portadaRef}
-          oroRef={oroRef} tituloRef={tituloRef} tituloId={fase === 'resultado' ? 'dg-resultado-titulo' : 'dg-pregunta'} onCerrar={cerrar}>
+          oroRef={oroRef} tituloRef={tituloRef} resultado={fase === 'resultado'} tituloId={fase === 'resultado' ? 'dg-resultado-titulo' : 'dg-pregunta'} onCerrar={cerrar}>
           {contenido}
         </DiagnosticoCard>
       )}
@@ -638,107 +624,56 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
   const Titulo = nivel;
   const total = recorrido.length;
-  const hechas = fase !== 'preguntas' ? total : Math.min(pasoIdx, total);
   let cuenta = 'Leyendo tus respuestas';
   if (fase === 'preguntas') cuenta = paso === 'nombre_negocio' ? 'Último paso' : `Pregunta ${pasoIdx + 1} de ${total}`;
 
-  const instrumento = (
-    <aside className="pl-split-lado dg-lado" aria-label="Tu ficha de diagnóstico">
-      <div className="dg-lado-dentro">
-        <div className="dg-guia">
-          <span className="dg-guia-cara" key={gesto} data-gesto={gesto > 0 ? '' : undefined}>
-            <DicoPhysical pose={fase === 'analizando' ? 'thinking' : 'idle'} reducedMotion={fase !== 'analizando'} ritmo={.55} title="Dico" />
-          </span>
-          <p className="pl-dico-dice dg-guia-dice" key={dice}>{dice}</p>
-        </div>
-        <div className="dg-ficha-envoltura">
-          <Ficha respuestas={respuestas} paso={paso} fase={fase} />
-          {fase === 'resultado' && (
-            <button type="button" className="dg-texto-boton" onClick={() => irA(0)}>
-              Cambiar respuestas
-            </button>
-          )}
-        </div>
-      </div>
-    </aside>
-  );
+  const porcentaje = fase === 'resultado' ? 100 : fase === 'analizando' ? 96
+    : Math.round(Math.min(pasoIdx + (listo ? 1 : 0), total - 1) / total * 100);
+  const guia = <div className="dg-guia dg-guia-unica">
+    <span className="dg-guia-cara" key={gesto}><DicoPhysical pose={fase === 'analizando' ? 'thinking' : fase === 'resultado' ? 'success' : 'idle'} reducedMotion={fase !== 'analizando'} ritmo={.55} title="Dico" /></span>
+    <p className="dg-guia-mensaje">{dice}</p>
+  </div>;
+  const progreso = <div className={`dg-avance${fase === 'resultado' ? ' dg-avance-completo' : ''}`}>
+    <span className="dg-porcentaje" aria-hidden="true">{porcentaje}%</span>
+    <div className="dg-progreso-continuo" role="progressbar" aria-label="Avance del diagnóstico"
+      aria-valuemin={0} aria-valuemax={100} aria-valuenow={porcentaje} aria-valuetext={`${porcentaje}% completado`}>
+      <span className="dg-progreso-relleno" style={{ width: `${porcentaje}%` }} />
+    </div>
+  </div>;
+  const resumen = <details className="dg-resumen">
+    <summary tabIndex={0}>Ver mis respuestas</summary>
+    <Ficha respuestas={respuestas} />
+    {fase === 'resultado' && <button type="button" className="dg-texto-boton" onClick={() => irA(0)}>Cambiar respuestas</button>}
+  </details>;
 
-  /* ── El resultado ── */
   if (fase === 'resultado' && sol) {
-    return envolver(
-      <div className="pl-split dg-embudo dg-fase-resultado" ref={raizRef}>
-        <div className="pl-split-col dg-res-cab">
-          <Titulo className="dg-titulo dg-entra" id="dg-resultado-titulo" ref={tituloRef} tabIndex={-1}>Tu diagnóstico{respuestas.nombre_negocio.trim() ? ` para ${respuestas.nombre_negocio.trim()}` : ''}</Titulo>
-        </div>
-        {instrumento}
-        <ResultadoDiagnostico
-          sol={sol}
-          respuestas={respuestas}
-          id={id}
-          token={tokenContacto}
-          onContactoGuardado={() => marcarUnaVez('diagnostico-v2-whatsapp')}
-          guardado={guardado}
-          onReintentar={() => guardar(datosDe(respuestas))}
-        />
-      </div>
-    );
+    return envolver(<div className="dg-embudo dg-unificado dg-fase-resultado" ref={raizRef}>
+      {guia}{progreso}
+      <Titulo className="dg-titulo" id="dg-resultado-titulo" ref={tituloRef} tabIndex={-1}>Tu diagnóstico{respuestas.nombre_negocio.trim() ? ` para ${respuestas.nombre_negocio.trim()}` : ''}</Titulo>
+      <ResultadoDiagnostico sol={sol} respuestas={respuestas} id={id} token={tokenContacto}
+        onContactoGuardado={() => marcarUnaVez('diagnostico-v2-whatsapp')}
+        guardado={guardado} onReintentar={() => guardar(datosDe(respuestas))} />
+      {resumen}
+    </div>);
   }
 
-  /* ── Preguntas (y el segundo en que Dico lee) ── */
-  return envolver(
-    <div className={`pl-split dg-embudo dg-fase-${fase}`} ref={raizRef}>
-      {modo === 'home' && instrumento}
-      <div className="pl-split-col dg-col">
-        {/* El avance arriba es solo la barra; la cuenta en texto va al pie
-            del paso, al lado de las acciones (arriba seria una etiqueta
-            sobre el enunciado). */}
-        <div
-          className={`dg-progreso${fase === 'analizando' ? ' leyendo' : ''}`}
-          role="progressbar"
-          aria-label="Avance del diagnóstico"
-          aria-valuemin={0}
-          aria-valuemax={total}
-          aria-valuenow={hechas}
-          aria-valuetext={cuenta}
-        >
-          {Array.from({ length: total }, (_, i) => (
-            <span key={i} className={`dg-tramo${i < hechas ? ' hecho' : ''}`} />
-          ))}
-        </div>
-
-        {fase === 'analizando' ? (
-          <div className="dg-paso dg-entra" key="analizando">
-            <Titulo className="dg-titulo" id="dg-pregunta" ref={tituloRef} tabIndex={-1}>Estoy leyendo tus respuestas.</Titulo>
-          </div>
-        ) : (
-          <Pregunta
-            paso={paso}
-            nivel={nivel}
-            cuenta={cuenta}
-            respuestas={respuestas}
-            tituloRef={tituloRef}
-            listo={listo}
-            textoVolver={modo === 'home' && pasoIdx === 0 ? 'Volver al inicio' : 'Volver'}
-            puedeVolver={pasoIdx > 0 || modo === 'home'}
-            onElegir={elegir}
-            onCanal={alternarCanal}
-            onNombre={(v) => setRespuestas({ ...respuestas, nombre_negocio: v })}
-            onEnviar={alEnviar}
-            onTeclear={alTeclear}
-            onPuntero={() => { porPuntero.current = true; }}
-            onVolver={volver}
-          />
-        )}
-      </div>
-      {modo !== 'home' && instrumento}
-    </div>
-  );
+  return envolver(<div className={`dg-embudo dg-unificado dg-fase-${fase}`} ref={raizRef}>
+    {guia}{progreso}
+    {fase === 'analizando' ? <div className="dg-paso" key="analizando">
+      <Titulo className="dg-titulo" id="dg-pregunta" ref={tituloRef} tabIndex={-1}>Estoy leyendo tus respuestas.</Titulo>
+    </div> : <Pregunta paso={paso} nivel={nivel} cuenta={cuenta} respuestas={respuestas}
+      tituloRef={tituloRef} listo={listo} resumen={resumen}
+      textoVolver={modo === 'home' && pasoIdx === 0 ? 'Volver al inicio' : 'Volver'}
+      puedeVolver={pasoIdx > 0 || modo === 'home'} onElegir={elegir} onCanal={alternarCanal}
+      onNombre={v => setRespuestas({ ...respuestas, nombre_negocio: v })}
+      onEnviar={alEnviar} onTeclear={alTeclear} onPuntero={() => { porPuntero.current = true; }} onVolver={volver} />}
+  </div>);
 }
 
 /* ─────────────── Una pregunta ─────────────── */
 
 function Pregunta({
-  paso, nivel, cuenta, respuestas, tituloRef, listo, textoVolver, puedeVolver,
+  paso, nivel, cuenta, respuestas, tituloRef, listo, resumen, textoVolver, puedeVolver,
   onElegir, onCanal, onNombre, onEnviar, onTeclear, onPuntero, onVolver,
 }) {
   const Titulo = nivel;
@@ -756,7 +691,7 @@ function Pregunta({
   }[paso];
 
   return (
-    <form className="dg-paso dg-entra" key={paso} onSubmit={onEnviar} onKeyDown={onTeclear} noValidate>
+    <form className={`dg-paso dg-entra dg-paso-${paso}`} key={paso} onSubmit={onEnviar} onKeyDown={onTeclear} noValidate>
       <Titulo className="dg-titulo" id={idTitulo} ref={tituloRef} tabIndex={-1}>{texto.pregunta}</Titulo>
       {texto.ayuda && <p className="dg-ayuda" id={idAyuda}>{texto.ayuda}</p>}
 
@@ -818,15 +753,12 @@ function Pregunta({
       )}
 
       <div className="dg-acciones">
-        {paso === 'nombre_negocio' ? (
-          <button type="submit" className="dg-boton dg-boton-volt">Ver mi diagnóstico</button>
-        ) : (
-          <button type="submit" className="dg-boton" disabled={!listo}>Seguir</button>
-        )}
-        {puedeVolver && (
-          <button type="button" className="dg-texto-boton" onClick={onVolver}>{textoVolver}</button>
-        )}
-        <p className="dg-cuenta" aria-hidden="true">{cuenta}</p>
+        {resumen}
+        {puedeVolver && <button type="button" className="dg-texto-boton" onClick={onVolver}>{textoVolver}</button>}
+        <button type="submit" className="dg-boton" disabled={!listo}>
+          {paso === 'nombre_negocio' ? 'Ver mi diagnóstico' : 'Continuar'} <span aria-hidden="true">→</span>
+        </button>
+        <span className="dg-cuenta-sr">{cuenta}</span>
       </div>
     </form>
   );
@@ -856,42 +788,10 @@ function Opciones({ nombre, lista, valor, onElegir, onPuntero }) {
 
 /* ─────────────── La ficha: lo que Dico lee ─────────────── */
 
-function Ficha({ respuestas, paso, fase }) {
-  const filas = FICHA.filter(([clave]) => clave !== 'establecimiento' || respuestas.vertical !== 'otro');
-  const plan = respuestas.locales && respuestas.equipo ? PLANES[planRecomendado(respuestas)] : null;
-  const leyendo = fase === 'analizando';
-
-  return (
-    <div className={`pl-pieza dg-ficha${leyendo ? ' leyendo' : ''}`} data-ui role="group" aria-label="Tus respuestas">
-      <div className="pl-pieza-cab">
-        <span className="pl-pieza-titulo">Diagnóstico</span>
-        <span className="pl-pieza-meta">{respuestas.nombre_negocio.trim() || 'Tu negocio'}</span>
-      </div>
-      <dl className="pl-filas">
-        {filas.map(([clave, nombre]) => {
-          const valor = valorDeFicha(clave, respuestas);
-          const actual = fase === 'preguntas' && clave === paso;
-          return (
-            <div className={`pl-fila dg-ficha-fila${actual ? ' actual' : ''}`} key={clave}>
-              <dt>{nombre}</dt>
-              <dd key={valor || 'vacio'} className={valor ? 'dg-ficha-valor' : 'dg-ficha-falta'}>
-                {valor || '—'}
-              </dd>
-            </div>
-          );
-        })}
-      </dl>
-      {fase !== 'resultado' && <div className="pl-pieza-cifra">
-        <span className="pl-pieza-cifra-nombre">Plan que te conviene</span>
-        {plan ? (
-          <>
-            <span className="pl-pieza-cifra-valor pl-oro" key={plan.nombre}>{plan.nombre}</span>
-            <span className="pl-pieza-cifra-nota">{plan.precio}</span>
-          </>
-        ) : (
-          <span className="dg-ficha-sin-plan">Lo calculo cuando me digas el tamaño.</span>
-        )}
-      </div>}
-    </div>
-  );
+function Ficha({ respuestas }) {
+  const filas = FICHA.map(([clave, nombre]) => ({ clave, nombre, valor: valorDeFicha(clave, respuestas) })).filter(f => f.valor);
+  return <div className="dg-ficha-lectura">
+    {filas.length ? <dl>{filas.map(({ clave, nombre, valor }) => <div className="dg-resumen-fila" key={clave}><dt>{nombre}</dt><dd>{valor}</dd></div>)}</dl>
+      : <p className="dg-parrafo dg-suave">Tus respuestas aparecerán acá.</p>}
+  </div>;
 }
