@@ -32,3 +32,38 @@ export function herramientasDelDiagnostico(r) {
   if (r.vertical === 'gastronomia' && r.canales.includes('salon')) pedidos.push('mesas');
   return [...new Set(pedidos)].filter(id => disponibles.has(id) && MODULOS[id]?.implementado).map(id => ({ id, nombre: MODULOS[id].label }));
 }
+
+const TITULOS_HALLAZGO = {
+  rentabilidad: 'Resultados más claros', costos: 'Costos y precios', costo_laboral: 'El costo de tu equipo',
+  mermas_caja: 'Diferencias que revisar', stock: 'Disponibilidad de productos', turnos: 'Tus turnos', pedidos: 'Tus pedidos',
+};
+const PRIMEROS_PASOS = {
+  rentabilidad: 'Primero configuramos ventas, compras y gastos para reunir la información de tu negocio.',
+  costos: 'Primero cargamos tus productos más vendidos y sus recetas. Después revisamos los costos de los insumos y tus precios.',
+  costo_laboral: 'Primero cargamos tu equipo y organizamos los fichajes. Después revisamos el costo del personal junto a las ventas del día.',
+  mermas_caja: 'Primero ordenamos los registros de cobro y el arqueo. Revisamos cada diferencia antes de sacar conclusiones.',
+  stock: 'Primero cargamos tus productos o insumos y sus existencias. Después organizamos las compras y los conteos.',
+  turnos: 'Primero organizamos tus servicios, profesionales y horarios. Revisamos con vos el alcance de las reservas online.',
+  pedidos: 'Primero cargamos lo que vendés y organizamos los canales que usás para recibir pedidos.',
+};
+
+export function presentacionDelDiagnostico(r) {
+  const varios = r.locales !== 'uno';
+  const inicio = r.desafio === 'mermas_caja' && !r.canales.some(c => ['salon', 'mostrador'].includes(c))
+    ? 'Primero ordenamos tus existencias y revisamos cómo registrás los cobros.'
+    : PRIMEROS_PASOS[r.desafio] || PRIMEROS_PASOS.rentabilidad;
+  const primerPaso = `${inicio}${varios ? ' Después ordenamos la información por sucursal.' : ''}`;
+  const titulos = [
+    r.senal === 'no_se' ? 'Empezar por registrar' : TITULOS_HALLAZGO[r.desafio],
+    r.gestion_actual === 'otro_sistema' ? 'Ya usás otro sistema' : r.canales.length > 1 ? 'Vendés por varios canales' : 'Tu canal principal',
+    varios ? 'Tenés varias sucursales' : 'Tu equipo de trabajo',
+  ];
+  return { primerPaso, hallazgos: hallazgosDelDiagnostico(r).map((texto, i) => ({ titulo: titulos[i], texto, icono: i === 0 ? r.desafio : i === 1 && r.gestion_actual === 'otro_sistema' ? 'sistema' : i === 2 && varios ? 'locales' : 'equipo' })) };
+}
+
+export function motivoDelPlan(r) {
+  if (r.locales !== 'uno') return 'Porque necesitás separar cada sucursal y comparar su operación con una mirada conjunta.';
+  if (r.gestion_actual === 'otro_sistema') return 'Para acompañar la operación de tu local y revisar con vos el cambio desde tu sistema actual.';
+  if (r.equipo !== 'hasta_5') return 'Por el tamaño de tu equipo: este plan suma soporte para organizar la operación de un local.';
+  return 'Declaraste un local y un equipo de hasta cinco personas. Podemos empezar por la base de Dico y evaluar cómo seguir.';
+}

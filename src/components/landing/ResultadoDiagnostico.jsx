@@ -1,48 +1,64 @@
-import { useState } from 'react';
-import { PLANES, planRecomendado, paramsDelAlta, guardarContactoDiagnostico, normalizarWhatsapp } from '../../lib/diagnostico';
-import { hallazgosDelDiagnostico, herramientasDelDiagnostico } from '../../lib/resultadoDiagnostico';
+import { planRecomendado, paramsDelAlta } from '../../lib/diagnostico';
+import { PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../../lib/planesPlataforma';
+import { presentacionDelDiagnostico, motivoDelPlan, herramientasDelDiagnostico } from '../../lib/resultadoDiagnostico';
 
-export default function ResultadoDiagnostico({ sol, respuestas, id, token, guardado, onReintentar, onContactoGuardado }) {
-  const plan = PLANES[planRecomendado(respuestas)];
-  const herramientas = herramientasDelDiagnostico(respuestas);
-  return <div className="pl-split-col dg-res-cuerpo dg-entra">
-    <section className="dg-bloque" aria-labelledby="dg-prioridad"><h2 className="dg-bloque-titulo" id="dg-prioridad">Tu prioridad</h2><p className="dg-dolor">{sol.titulo}</p></section>
-    <section className="dg-bloque" aria-labelledby="dg-hallazgos"><h2 className="dg-bloque-titulo" id="dg-hallazgos">Lo que encontramos</h2><ul className="dg-hallazgos">{hallazgosDelDiagnostico(respuestas).map(texto => <li key={texto}>{texto}</li>)}</ul><p className="dg-parrafo dg-suave">Esta orientación se basa en tus respuestas. No estima pérdidas ni promete ahorros.</p></section>
-    <section className="dg-bloque" aria-labelledby="dg-primer-paso"><h2 className="dg-bloque-titulo" id="dg-primer-paso">Tu primer paso con Dico</h2><p className="dg-parrafo">{sol.hoy}</p>{sol.pendiente && <p className="dg-parrafo dg-suave">En desarrollo: {sol.pendiente}</p>}<p className="dg-parrafo">Al configurar tu negocio empezamos por:</p><ul className="dg-herramientas">{herramientas.map(h => <li key={h.id}>{h.nombre}</li>)}</ul><p className="dg-plan-linea"><span>{plan.nombre}</span><span>{plan.precio}</span></p><p className="dg-parrafo dg-suave">{plan.detalle}</p><p className="dg-parrafo">Crear tu cuenta no contrata una suscripción ni realiza un cobro.</p><div className="dg-cierre"><a className="pl-boton" href={`/registro?${paramsDelAlta(respuestas, id)}`}>Crear mi cuenta</a></div></section>
-    <section className="dg-bloque" aria-labelledby="dg-contacto"><h2 className="dg-bloque-titulo" id="dg-contacto">¿Querés recibir este diagnóstico por WhatsApp?</h2><p className="dg-parrafo">Te lo mandamos por WhatsApp y te ayudamos a configurar Dico. Es opcional; ya podés leer tu resultado completo.</p><ContactoDiagnostico key={JSON.stringify(respuestas)} id={id} token={token} guardado={guardado} onGuardado={onContactoGuardado} /></section>
-    {guardado === 'error' && <p className="dg-parrafo dg-guardado" role="status">No pudimos guardar el diagnóstico. Tu resultado sigue disponible. <button type="button" className="dg-texto-boton" onClick={onReintentar}>Reintentar guardado</button></p>}
-  </div>;
+const TRAZOS = {
+  rentabilidad: 'M5 20V13m7 7V8m7 12V3', ventas: 'M5 20V13m7 7V8m7 12V3',
+  sistema: 'M20 6c0 2-4 3-8 3S4 8 4 6s4-3 8-3 8 1 8 3Zm0 0v12c0 2-4 3-8 3s-8-1-8-3V6m0 6c0 2 4 3 8 3s8-1 8-3',
+  locales: 'M3 10V6l2-3h14l2 3v4M4 10v11h16V10M9 21v-7h6v7M3 10c1 2 4 2 5 0 1 2 3 2 4 0 1 2 3 2 4 0 1 2 4 2 5 0',
+  turnos: 'M4 5h16v16H4ZM8 2v6m8-6v6M4 10h16m-11 5h2m2 0h2',
+  agenda: 'M4 5h16v16H4ZM8 2v6m8-6v6M4 10h16m-11 5h2m2 0h2',
+  stock: 'm3 7 9-4 9 4-9 5Zm0 0v10l9 4 9-4V7m-9 5v9',
+  equipo: 'M16 21v-3a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v3M12 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm4-2a3 3 0 0 1 0 6m6 11v-3a4 4 0 0 0-3-4',
+};
+function Icono({ tipo }) {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d={TRAZOS[tipo] || 'M5 3h14v18H5Zm4 5h6m-6 4h6m-6 4h4'} /></svg>;
 }
 
-function ContactoDiagnostico({ id, token, guardado, onGuardado }) {
-  const [nombre, setNombre] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
-  const [consentimiento, setConsentimiento] = useState(false);
-  const [errores, setErrores] = useState({});
-  const [estado, setEstado] = useState('nada');
-  const enviar = async evento => {
-    evento.preventDefault();
-    if (estado === 'enviando') return;
-    const numero = normalizarWhatsapp(whatsapp);
-    const erroresNuevos = { ...(nombre.trim().length < 2 ? { nombre: 'Escribí tu nombre (al menos dos letras).' } : {}), ...(!numero ? { whatsapp: 'Incluí el código de país, por ejemplo +54 9 11 1234 5678.' } : {}), ...(!consentimiento ? { consentimiento: 'Necesitamos tu autorización para contactarte por WhatsApp.' } : {}) };
-    setErrores(erroresNuevos);
-    if (Object.keys(erroresNuevos).length) {
-      const selector = erroresNuevos.nombre ? '#dg-contacto-nombre' : erroresNuevos.whatsapp ? '#dg-contacto-whatsapp' : '.dg-consentimiento input';
-      evento.currentTarget.querySelector(selector)?.focus();
-      return;
-    }
-    if (!id || !token) return;
-    setEstado('enviando');
-    const ok = await guardarContactoDiagnostico({ id, token, nombre: nombre.trim(), whatsapp: numero, consentimiento });
-    setEstado(ok ? 'ok' : 'error');
-    if (ok) onGuardado();
-  };
-  if (estado === 'ok') return <p className="dg-contacto-ok" role="status">Recibimos tu pedido. Te contactaremos por WhatsApp para enviarte el diagnóstico y ayudarte con la configuración.</p>;
-  return <form className="dg-contacto-form" onSubmit={enviar} noValidate>
-    <label htmlFor="dg-contacto-nombre">Tu nombre<input id="dg-contacto-nombre" className="dg-texto" value={nombre} onChange={e => setNombre(e.target.value)} maxLength={80} autoComplete="given-name" aria-invalid={Boolean(errores.nombre)} aria-describedby={errores.nombre ? 'dg-error-nombre' : undefined} /></label>{errores.nombre && <p id="dg-error-nombre" className="dg-error-campo">{errores.nombre}</p>}
-    <label htmlFor="dg-contacto-whatsapp">Tu WhatsApp<input id="dg-contacto-whatsapp" className="dg-texto" type="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} maxLength={24} autoComplete="tel" placeholder="+54 9 11 1234 5678" aria-invalid={Boolean(errores.whatsapp)} aria-describedby={errores.whatsapp ? 'dg-error-whatsapp' : undefined} /></label>{errores.whatsapp && <p id="dg-error-whatsapp" className="dg-error-campo">{errores.whatsapp}</p>}
-    <label className="dg-consentimiento"><input type="checkbox" checked={consentimiento} onChange={e => setConsentimiento(e.target.checked)} />Autorizo que Grupo Divianco me contacte por WhatsApp para enviarme este diagnóstico y ayudarme a configurar Dico.</label>{errores.consentimiento && <p className="dg-error-campo">{errores.consentimiento}</p>}
-    <button className="dg-boton" type="submit" disabled={estado === 'enviando' || guardado !== 'ok' || !token}>{estado === 'enviando' ? 'Guardando…' : 'Solicitar envío por WhatsApp'}</button>
-    {guardado === 'guardando' && <p role="status">Guardando tu diagnóstico…</p>}{estado === 'error' && <p className="dg-error-campo" role="alert">No pudimos guardar tu contacto. Tus datos siguen acá para reintentar.</p>}
-  </form>;
+export default function ResultadoDiagnostico({ sol, respuestas, id, guardado, onReintentar, encabezado, resumen }) {
+  const plan = PLANES_COMERCIALES.find(p => p.id === planRecomendado(respuestas));
+  const anual = plan.anualPorMes !== null ? precioDelPeriodo(plan, true) : null;
+  const herramientas = herramientasDelDiagnostico(respuestas);
+  const { primerPaso, hallazgos } = presentacionDelDiagnostico(respuestas);
+  const operaEnLocal = respuestas.canales.some(c => ['salon', 'mostrador'].includes(c));
+  const beneficios = plan.incluye.filter(b => b !== 'Caja y arqueo' || operaEnLocal).slice(0, 3);
+  const alcance = respuestas.desafio === 'mermas_caja' && !operaEnLocal
+    ? 'Podés registrar compras y existencias en Dico. Revisamos con vos qué controles de cobro corresponden a tu forma de operar.'
+    : sol.hoy;
+  const alta = new URLSearchParams(paramsDelAlta(respuestas, id));
+  alta.set('plan', plan.id);
+  const landing = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app') ? '/landing' : '/';
+
+  return <div className="dg-resultado-grilla">
+    <div className="dg-resultado-texto">
+      {encabezado}
+      <p className="dg-resultado-intro">Según tus respuestas, este sería nuestro punto de partida para ayudarte a ordenar tu negocio.</p>
+      <section className="dg-resultado-seccion" aria-labelledby="dg-hallazgos">
+        <h2 className="dg-resultado-subtitulo" id="dg-hallazgos"><span aria-hidden="true">01</span>Lo que entendimos</h2>
+        <ul className="dg-resultado-hallazgos">{hallazgos.map(h => <li key={h.titulo}><Icono tipo={h.icono} /><div><h3>{h.titulo}</h3><p>{h.texto}</p></div></li>)}</ul>
+      </section>
+      <section className="dg-resultado-seccion" aria-labelledby="dg-primer-paso">
+        <h2 className="dg-resultado-subtitulo" id="dg-primer-paso"><span aria-hidden="true">02</span>Por dónde empezar</h2>
+        <p className="dg-resultado-parrafo">{primerPaso}</p>
+        <ul className="dg-resultado-herramientas">{herramientas.map(h => <li key={h.id}><Icono tipo={h.id} />{h.nombre}</li>)}</ul>
+        <div className="dg-resultado-alcance"><h3>Qué está disponible hoy</h3><p>{alcance}</p>{sol.pendiente && <p><strong>En desarrollo:</strong> {sol.pendiente}</p>}{respuestas.vertical === 'otro' && <p>Primero confirmamos con vos el alcance para tu actividad.</p>}</div>
+      </section>
+      <p className="dg-resultado-nota">Orientación basada en tus respuestas. No estima pérdidas ni promete ahorros.</p>
+      {guardado === 'error' && <p className="dg-resultado-nota" role="status">No pudimos guardar el diagnóstico. Tu resultado sigue disponible. <button type="button" className="dg-texto-boton" onClick={onReintentar}>Reintentar guardado</button></p>}
+      <div className="dg-resultado-resumen">{resumen}</div>
+    </div>
+    <aside className="dg-plan-recomendado" aria-labelledby="dg-plan-nombre">
+      <div className="dg-plan-distincion"><span className="dg-plan-orden" aria-hidden="true">03</span><p>Recomendado para tu negocio</p></div>
+      <h2 id="dg-plan-nombre">{plan.nombre}</h2>
+      <p className="dg-plan-descripcion">{plan.descripcion}</p>
+      <p className="dg-plan-importe">{pesosDelPlan(plan.mensual)}<span>/mes por local</span></p>
+      <p className="dg-plan-condiciones">Pago mensual · Sin IVA</p>
+      <ul className="dg-plan-beneficios">{beneficios.map(b => <li key={b}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m7 12 3 3 7-7" /></svg>{b}</li>)}</ul>
+      <div className="dg-plan-motivo"><h3>Por qué este plan</h3><p>{motivoDelPlan(respuestas)}</p></div>
+      <a className="dg-plan-empezar" href={`/registro?${alta}`}>Empezar con Dico <span aria-hidden="true">→</span></a>
+      <p className="dg-plan-aclaracion">Crear tu cuenta no contrata una suscripción ni realiza un cobro.</p>
+      {anual && <details className="dg-plan-anual"><summary>Alternativa con pago anual</summary><p>{pesosDelPlan(anual.importe)} al año por local. Equivale a {pesosDelPlan(anual.equivalente)} por mes. Sin IVA.</p></details>}
+      <a className="dg-plan-comparar" href={`${landing}#precios`} target="_blank" rel="noopener noreferrer">Comparar planes <span aria-hidden="true">↗</span><span className="pl-oculto"> (abre en otra pestaña)</span></a>
+    </aside>
+  </div>;
 }

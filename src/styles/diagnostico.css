@@ -747,3 +747,56 @@
 @keyframes dg-lectura-pulso { 0%, 100% { color: var(--pc-tinta); } 50% { color: var(--pc-volt); } }
 @keyframes dg-lectura-giro { to { transform: rotate(1turn); } }
 @media (prefers-reduced-motion: reduce) { .dg-analisis-texto, .dg-analisis-cargando { animation: none; } }
+
+/* Resultado: lectura en marfil y recomendacion comercial en una sola tarjeta. */
+.dg-resultado-grilla { display: grid; grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr); gap: var(--ds-space-8); align-items: start; }
+.dg-resultado-texto { min-width: 0; }
+.dg-unificado .dg-resultado-titulo { font-family: var(--ds-font-soul); font-size: clamp(30px, 3.1vw, 44px); font-weight: 400; line-height: 1.08; letter-spacing: -.025em; max-width: 25ch; text-wrap: balance; }
+.dg-resultado-intro { margin-top: var(--ds-space-4); font-size: var(--ds-type-lg); line-height: 1.45; }
+.dg-resultado-seccion { margin-top: var(--ds-space-6); }
+.dg-resultado-subtitulo { display: flex; gap: var(--ds-space-3); align-items: baseline; margin-bottom: var(--ds-space-3); font-size: var(--ds-type-lg); font-weight: 600; color: var(--pc-tinta); }
+.dg-resultado-subtitulo > span { color: var(--pc-volt); font-variant-numeric: tabular-nums; }
+.dg-resultado-hallazgos { list-style: none; padding: 0; }
+.dg-resultado-hallazgos > li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--ds-space-4); align-items: start; padding-block: var(--ds-space-3); border-bottom: 1px solid var(--pc-suelo-3); }
+.dg-resultado-hallazgos svg, .dg-resultado-herramientas svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.dg-resultado-hallazgos h3 { font-size: var(--ds-type-md); font-weight: 600; line-height: 1.4; }
+.dg-resultado-hallazgos p { margin-top: var(--ds-space-1); font-size: var(--ds-type-md); line-height: 1.45; }
+.dg-resultado-parrafo { font-size: var(--ds-type-md); line-height: 1.5; }
+.dg-resultado-herramientas { display: flex; flex-wrap: wrap; gap: var(--ds-space-2); margin-block: var(--ds-space-4); list-style: none; padding: 0; }
+.dg-resultado-herramientas li { display: flex; align-items: center; gap: var(--ds-space-2); min-height: 36px; padding: var(--ds-space-2) var(--ds-space-3); border-radius: var(--ds-radius-pill); background: color-mix(in srgb, var(--pc-volt) 10%, var(--pc-suelo)); font-size: var(--ds-type-sm); }
+.dg-resultado-herramientas svg { color: var(--pc-volt); width: 20px; height: 20px; }
+.dg-resultado-alcance { margin-top: var(--ds-space-4); }
+.dg-resultado-alcance h3 { color: var(--pc-tinta); font-size: var(--ds-type-sm); font-weight: 600; }
+.dg-resultado-alcance p, .dg-resultado-nota { font-size: var(--ds-type-sm); line-height: 1.5; color: var(--pc-tinta-suave); }
+.dg-resultado-alcance p { margin-top: var(--ds-space-2); }
+.dg-resultado-alcance strong { font-weight: 600; color: var(--pc-tinta); }
+.dg-resultado-nota { margin-top: var(--ds-space-4); }
+.dg-resultado-resumen { padding-top: var(--ds-space-3); margin-top: var(--ds-space-4); border-top: 1px solid var(--pc-suelo-3); }
+.dg-plan-recomendado { min-width: 0; padding: var(--ds-space-6); background: var(--ds-color-zinc-950); color: var(--ds-color-zinc-50); border: 1px solid var(--ds-color-brand-gold-500); border-radius: var(--ds-radius-3); }
+.dg-plan-distincion { display: flex; gap: var(--ds-space-2); align-items: center; margin-bottom: var(--ds-space-6); }
+.dg-plan-orden { color: var(--ds-color-intelligence-label); font-size: var(--ds-type-sm); font-weight: 600; }
+.dg-plan-distincion p { padding: var(--ds-space-2) var(--ds-space-3); border-radius: var(--ds-radius-2); color: var(--ds-color-neutral-950); background: var(--ds-color-brand-gold-500); font-size: var(--ds-type-xs); font-weight: 700; line-height: 1.3; }
+.dg-plan-recomendado > h2 { font-family: var(--ds-font-soul); font-size: 42px; font-weight: 400; line-height: 1.1; }
+.dg-plan-descripcion { margin-top: var(--ds-space-2); font-size: var(--ds-type-md); line-height: 1.4; }
+.dg-plan-importe { margin-top: var(--ds-space-6); font-size: clamp(38px, 3.8vw, 54px); font-weight: 600; line-height: 1.1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.dg-plan-importe span { display: block; margin-top: var(--ds-space-1); font-size: var(--ds-type-lg); font-weight: 400; letter-spacing: 0; }
+.dg-plan-condiciones { margin-top: var(--ds-space-3); font-size: var(--ds-type-sm); color: var(--ds-color-zinc-400); }
+.dg-plan-beneficios { display: grid; gap: var(--ds-space-3); padding-block: var(--ds-space-4); margin-block: var(--ds-space-4); border-block: 1px solid var(--ds-color-zinc-800); list-style: none; }
+.dg-plan-beneficios li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: var(--ds-space-3); align-items: start; font-size: var(--ds-type-md); line-height: 1.45; }
+.dg-plan-beneficios svg { width: 20px; height: 20px; }
+.dg-plan-beneficios circle { fill: var(--ds-color-brand-gold-500); }
+.dg-plan-beneficios path { fill: none; stroke: var(--ds-color-neutral-950); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dg-plan-motivo h3 { font-size: var(--ds-type-md); font-weight: 600; color: var(--ds-color-brand-gold-500); }
+.dg-plan-motivo p { margin-top: var(--ds-space-2); font-size: var(--ds-type-md); line-height: 1.5; }
+.dg-plan-empezar { display: flex; justify-content: center; align-items: center; gap: var(--ds-space-3); min-height: 52px; margin-top: var(--ds-space-6); padding: var(--ds-space-3); border: 1px solid var(--ds-color-brand-gold-500); border-radius: var(--ds-radius-2); background: var(--ds-color-brand-gold-500); color: var(--ds-color-neutral-950); text-align: center; font-size: var(--ds-type-md); font-weight: 600; text-decoration: none; transition: background-color 220ms var(--pc-curva), color 220ms var(--pc-curva); }
+.dg-plan-empezar:hover { background: transparent; color: var(--ds-color-brand-gold-500); }
+.dg-plan-aclaracion { margin-top: var(--ds-space-3); color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); line-height: 1.45; }
+.dg-plan-anual { margin-top: var(--ds-space-3); font-size: var(--ds-type-sm); line-height: 1.5; }
+.dg-plan-anual summary { cursor: pointer; min-height: 44px; align-content: center; color: var(--ds-color-zinc-50); }
+.dg-plan-anual p { padding-block: var(--ds-space-2); color: var(--ds-color-zinc-400); }
+.dg-plan-comparar { display: block; width: fit-content; min-height: 44px; align-content: center; margin: var(--ds-space-2) auto 0; color: var(--ds-color-zinc-400); text-underline-offset: 3px; font-size: var(--ds-type-sm); }
+@media (max-width: 799px) {
+  .dg-resultado-grilla { grid-template-columns: minmax(0, 1fr); gap: var(--ds-space-6); }
+  .dg-unificado .dg-resultado-titulo { font-size: 32px; }
+  .dg-plan-recomendado { padding: var(--ds-space-6); }
+}

@@ -9,6 +9,21 @@
 
 ## 1. Estado al 30/oct/2026
 
+### Resultado y recomendacion de plan — 30/oct
+
+PR #62: solo cambia el cuerpo marfil del resultado. Hallazgos con etiquetas
+breves e iconos, primer paso y alcance a la izquierda; plan recomendado negro
+con borde dorado a la derecha. En celular, el plan sigue al resultado. Precio,
+beneficios y alternativa anual salen de planesPlataforma; se explica el motivo
+del plan y el total anual. Una sola accion principal: Empezar con Dico. Conserva
+negocio, rubro, diagnostico y plan en el enlace al registro (la pantalla de alta
+se adaptara despues). Comparar planes abre otra pestaña para conservar el
+resultado. Se retira el formulario WhatsApp del resultado; capturarlo antes es
+una fase pendiente. No cambian preguntas, cabecera negra, analisis ni guardado.
+56 pruebas dirigidas verdes, ESLint y build. Navegador sin datos reales:
+escritorio y celular 390px, sin desborde, plan despues del contenido y cero
+formularios en el resultado. Capturas temporales eliminadas. Sigue en preview.
+
 ### Lectura del estado de analisis — 30/oct
 
 PR #62: mensajes de preparacion en tinta clara con pulso blanco/volt y un

@@ -674,11 +674,9 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     return envolver(<div className="dg-embudo dg-unificado dg-fase-resultado" ref={raizRef}>
       <div className="dg-resultado-cabecera">{guia}{progreso}</div>
       <div className="dg-resultado-contenido">
-      <Titulo className="dg-titulo" id="dg-resultado-titulo" ref={tituloRef} tabIndex={-1}>Tu diagnóstico{respuestas.nombre_negocio.trim() ? ` para ${respuestas.nombre_negocio.trim()}` : ''}</Titulo>
-      <ResultadoDiagnostico sol={sol} respuestas={respuestas} id={id} token={tokenContacto}
-        onContactoGuardado={() => marcarUnaVez('diagnostico-v2-whatsapp')}
-        guardado={guardado} onReintentar={() => guardar(datosDe(respuestas))} />
-      {resumen}
+      <ResultadoDiagnostico sol={sol} respuestas={respuestas} id={id}
+        encabezado={<Titulo className="dg-titulo dg-resultado-titulo" id="dg-resultado-titulo" ref={tituloRef} tabIndex={-1}>Un punto de partida para ordenar tu negocio.</Titulo>}
+        resumen={resumen} guardado={guardado} onReintentar={() => guardar(datosDe(respuestas))} />
       </div>
     </div>);
   }

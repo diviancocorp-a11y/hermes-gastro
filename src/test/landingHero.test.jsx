@@ -92,9 +92,9 @@ describe('hero y diagnóstico comparten un solo recorrido', () => {
       expect(document.querySelector('.dg-avance')).not.toHaveClass('dg-avance-completo');
       await act(async () => vi.advanceTimersByTime(2500));
       expect(screen.getByText('Estoy relacionando tu prioridad con las herramientas de Dico.')).toBeInTheDocument();
-      expect(screen.queryByRole('heading', { name: 'Tu prioridad' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Lo que entendimos' })).not.toBeInTheDocument();
       await act(async () => vi.advanceTimersByTime(7100));
-      expect(screen.getByRole('heading', { name: 'Tu prioridad' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Lo que entendimos' })).toBeInTheDocument();
       expect(document.querySelector('.dg-avance')).toHaveClass('dg-avance-completo');
       expect(document.querySelector('#dg-resultado-titulo').closest('.dg-resultado-contenido')).not.toBeNull();
       expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
