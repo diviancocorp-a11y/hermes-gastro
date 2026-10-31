@@ -9,6 +9,12 @@
 
 import { useState } from "react";
 import DicoMark from "../components/DicoMark";
+import { getTenantSlugSync } from "../lib/activeTenant";
+
+// Negocios cuyos terminos son los de la PLATAFORMA (protegen a Dico) y no los
+// del negocio, y que no muestran el link al libro de quejas. Pedido de Ricky,
+// 30/oct/2026, solo para La Nona Pato: el resto de los tenants no cambia.
+const TENANTS_CON_TERMINOS_DE_DICO = new Set(["la-nona-pato"]);
 
 // Datos de contacto de Dico (la plataforma). Mientras sean null, los botones
 // de contacto del modal "para tu negocio" NO se muestran — antes habia un
@@ -33,10 +39,18 @@ function hexToRgba(hex, alpha, fallback = "rgba(245,158,11,0.06)") {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function bizCopy(biz) {
+function bizCopy(biz, termsDeDico = false) {
   const bizName = biz?.biz_name || "el negocio";
   return {
-    terms: `Estos términos rigen el uso del catálogo público de ${bizName}.
+    terms: termsDeDico ? `Estos términos son de la plataforma Dico, provista por Divianco. Existen para proteger a Dico y a Divianco por el uso de la plataforma. No tienen nada que ver con ${bizName}: no regulan sus productos, precios, pedidos ni entregas.
+
+Dico es solo la herramienta tecnológica con la que se muestra el catálogo y se toman los pedidos. Divianco no elabora, vende ni entrega productos, y no es parte de la relación comercial entre vos y ${bizName}.
+
+Al hacer un pedido aceptás que tus datos (nombre, teléfono, dirección, email) se usen para procesarlo y para que ${bizName} pueda contactarte por él. No se ceden a terceros con fines publicitarios.
+
+Cualquier consulta o reclamo sobre un producto, su calidad, su precio o su entrega se resuelve directamente con ${bizName} por WhatsApp o email.
+
+Última actualización: 2026` : `Estos términos rigen el uso del catálogo público de ${bizName}.
 
 Al hacer un pedido aceptás que tus datos (nombre, teléfono, dirección, email) se usen para procesar tu compra y mantener contacto comercial con ${bizName}. No se ceden a terceros con fines publicitarios.
 
@@ -172,7 +186,8 @@ export default function CatalogFooter({ settings = {} }) {
   const year = new Date().getFullYear();
   const open = (k) => setModal(k);
   const close = () => setModal(null);
-  const copy = bizCopy(settings);
+  const termsDeDico = TENANTS_CON_TERMINOS_DE_DICO.has(getTenantSlugSync());
+  const copy = bizCopy(settings, termsDeDico);
 
   const bizName = settings.biz_name || "Negocio";
   const bizWhatsapp = (settings.whatsapp || "").replace(/\D/g, "");
@@ -224,7 +239,7 @@ export default function CatalogFooter({ settings = {} }) {
             { label: "Términos y condiciones", onClick: () => open("terms") },
             { label: "Política de privacidad", onClick: () => open("privacy") },
             { label: "Política de cookies", onClick: () => open("cookies") },
-            { label: "Libro de quejas", href: DEFENSA_CONSUMIDOR_AR, external: true },
+            ...(termsDeDico ? [] : [{ label: "Libro de quejas", href: DEFENSA_CONSUMIDOR_AR, external: true }]),
           ]} />
 
           <FooterCol title="Ayuda" items={[
