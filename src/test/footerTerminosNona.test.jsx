@@ -28,6 +28,7 @@ describe('CatalogFooter: terminos por tenant', () => {
     fireEvent.click(screen.getByText('Política de privacidad'));
     const priv = screen.getByText(/Los datos que cargás en este catálogo los recaba Dico/);
     expect(priv.textContent).not.toMatch(/La Nona Pato/);
+    expect(priv.textContent).toContain('soporte@grupodivianco.com');
     fireEvent.click(screen.getByText('✕'));
     fireEvent.click(screen.getByText('Política de cookies'));
     const cook = screen.getByText(/Dico usa cookies/);

@@ -92,7 +92,7 @@ Nunca vendemos ni cedemos tus datos a terceros con fines publicitarios.
 Los datos se almacenan en servidores seguros (Supabase) con acceso restringido al personal autorizado.
 
 5. Tus derechos (Ley 25.326)
-Podés pedir acceso, rectificación o eliminación de tus datos contactando a Divianco. La Agencia de Acceso a la Información Pública (www.argentina.gob.ar/aaip) es el órgano de control de la Ley 25.326 y atiende denuncias por incumplimiento.
+Podés pedir acceso, rectificación o eliminación de tus datos escribiendo a Divianco a soporte@grupodivianco.com. La Agencia de Acceso a la Información Pública (www.argentina.gob.ar/aaip) es el órgano de control de la Ley 25.326 y atiende denuncias por incumplimiento.
 
 Última actualización: 2026` : `POLÍTICA DE PRIVACIDAD — ${bizName}
 
