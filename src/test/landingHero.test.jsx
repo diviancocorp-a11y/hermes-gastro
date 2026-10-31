@@ -3,8 +3,10 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
+import { supabase } from '../lib/supabase';
 
 vi.mock('../lib/supabase', () => ({ supabase: { functions: { invoke: vi.fn() } } }));
+vi.mock('../components/landing/ShaderBackground', () => ({ default: () => null }));
 vi.mock('../lib/analiticaPlataforma', () => ({ marcarEvento: vi.fn() }));
 
 function Portada({ onAbrir }) {
@@ -18,6 +20,7 @@ function montar() {
 }
 
 beforeEach(() => {
+  supabase.functions.invoke.mockImplementation((_nombre, { body }) => Promise.resolve({ data: body.accion === 'contacto' ? { ok: true } : { id: 'diag-test', contacto_token: 'token-test' }, error: null }));
   sessionStorage.clear();
   window.history.replaceState({}, '');
   window.scrollTo = vi.fn();
@@ -82,11 +85,11 @@ describe('hero y diagnóstico comparten un solo recorrido', () => {
       sessionStorage.setItem('dico:diagnostico-v2-en-curso', JSON.stringify({ version: 2, respuestas: {
         vertical: 'gastronomia', establecimiento: 'restaurante', desafio: 'costos', senal: 'mensual',
         canales: ['salon'], locales: 'uno', equipo: 'hasta_5', gestion_actual: 'planillas',
-        venta_mensual: 'no_se', urgencia: 'este_mes', decisor: 'yo', nombre_negocio: 'Prueba',
+        venta_mensual: 'no_se', urgencia: 'este_mes', decisor: 'yo', nombre_negocio: 'Prueba', contacto_nombre: 'Ricky', contacto_whatsapp: '+5491112345678', contacto_consentimiento: true,
       } }));
       window.history.replaceState({ dg: 7, desde: true }, '');
       montar();
-      fireEvent.click(screen.getByRole('button', { name: /Ver mi diagnóstico/ }));
+      await act(async () => fireEvent.click(screen.getByRole('button', { name: /Ver mi diagnóstico/ })));
       expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
       expect(screen.getByText('Estoy revisando lo que me contaste.')).toBeInTheDocument();
       expect(document.querySelector('.dg-avance')).not.toHaveClass('dg-avance-completo');

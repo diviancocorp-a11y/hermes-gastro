@@ -1,5 +1,17 @@
 # Diagnostico v2: resultado con valor y lead calificado
 
+> Decision de Ricky, 30/oct/2026 (PR #62, preview): el contacto pasa al ultimo
+> paso antes del resultado. Nombre del negocio opcional; nombre y WhatsApp
+> obligatorios con autorizacion expresa para guardar/contactar y ayudar a
+> configurar Dico. No se promete envio automatico del diagnostico. Texto:
+> "Autorizo a Grupo Divianco a guardar estos datos y contactarme por WhatsApp
+> para ayudarme a configurar Dico." Usa el canal protegido existente; no cambia
+> la tabla ni permite lectura publica del contacto. Resultado sin formulario,
+> con una sola accion principal hacia el registro. Esta decision reemplaza
+> las indicaciones anteriores de contacto opcional al final. Adaptar registro
+> y su precarga de contacto sigue pendiente.
+
+
 > 29/oct/2026. Especificacion acordada con Ricky. **Implementacion aprobada por Ricky el 30/oct para publicacion mediante PR #61.**
 > El diagnostico vigente esta descripto en `LANDING.md`; este documento dice
 > hacia donde va y en que orden.

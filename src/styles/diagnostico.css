@@ -750,7 +750,7 @@
 
 /* Resultado: lectura en marfil y recomendacion comercial en una sola tarjeta. */
 .dg-resultado-grilla { display: grid; grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr); gap: var(--ds-space-8); align-items: start; }
-.dg-resultado-texto { min-width: 0; }
+.dg-resultado-texto { min-width: 0; overflow-wrap: anywhere; }
 .dg-unificado .dg-resultado-titulo { font-family: var(--ds-font-soul); font-size: clamp(30px, 3.1vw, 44px); font-weight: 400; line-height: 1.08; letter-spacing: -.025em; max-width: 25ch; text-wrap: balance; }
 .dg-resultado-intro { margin-top: var(--ds-space-4); font-size: var(--ds-type-lg); line-height: 1.45; }
 .dg-resultado-seccion { margin-top: var(--ds-space-6); }
@@ -799,4 +799,28 @@
   .dg-resultado-grilla { grid-template-columns: minmax(0, 1fr); gap: var(--ds-space-6); }
   .dg-unificado .dg-resultado-titulo { font-size: 32px; }
   .dg-plan-recomendado { padding: var(--ds-space-6); }
+}
+
+/* Contacto previo: un solo paso, sin formularios en el resultado. */
+.dg-contacto-previo { display: grid; gap: var(--ds-space-4); margin-top: var(--ds-space-6); }
+.dg-contacto-previo label { display: block; font-size: var(--ds-type-md); font-weight: 500; }
+.dg-contacto-previo label > span { color: var(--pc-tinta-suave); font-weight: 400; }
+.dg-contacto-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-4); }
+.dg-contacto-previo .dg-texto { width: 100%; }
+.dg-contacto-previo .dg-ayuda { margin: 0; max-width: 65ch; }
+.dg-contacto-previo .dg-consentimiento { display: flex; align-items: flex-start; gap: var(--ds-space-3); font-size: var(--ds-type-sm); font-weight: 400; line-height: 1.5; cursor: pointer; }
+.dg-contacto-previo .dg-consentimiento input { flex: 0 0 20px; width: 20px; height: 20px; margin-top: 2px; accent-color: var(--pc-volt); }
+.dg-contacto-previo .dg-error-campo { margin-top: var(--ds-space-2); }
+.dg-contacto-previo input[aria-invalid='true'] { border-color: var(--pc-oro); }
+
+/* Dico baja al centro y piensa con su mensaje; el efecto es el mismo del hero. */
+.dg-fase-analizando { position: relative; isolation: isolate; min-height: 440px; }
+.dg-fase-analizando > .dg-avance { order: 0; z-index: 1; flex-shrink: 0; }
+.dg-fase-analizando > .dg-guia { order: 1; position: relative; z-index: 1; flex: 1; flex-direction: column; justify-content: center; gap: var(--ds-space-6); margin: 0; padding-block: var(--ds-space-8); }
+.dg-fase-analizando .dg-guia-cara { flex: 0 0 auto; width: clamp(110px, 16vw, 170px); transform-origin: top left; }
+.dg-fase-analizando .dg-guia-mensaje { margin: 0; min-height: 6em; width: min(100%, 440px); max-width: 100%; padding: var(--ds-space-4) var(--ds-space-6); border: 1px solid var(--ds-color-zinc-700); border-radius: var(--ds-radius-4); background: var(--pc-suelo); font-size: var(--ds-type-lg); }
+.dg-analisis-fondo { position: absolute; inset: 64px 0 0; z-index: 0; pointer-events: none; opacity: .75; mask-image: linear-gradient(transparent, black 22%, black 80%, transparent); }
+@media (max-width: 599px) {
+  .dg-contacto-campos { grid-template-columns: minmax(0, 1fr); }
+  .dg-fase-analizando .dg-guia-mensaje { font-size: var(--ds-type-md); padding: var(--ds-space-4); }
 }

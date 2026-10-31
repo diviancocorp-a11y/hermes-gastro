@@ -32,7 +32,7 @@ export default function ResultadoDiagnostico({ sol, respuestas, id, guardado, on
   return <div className="dg-resultado-grilla">
     <div className="dg-resultado-texto">
       {encabezado}
-      <p className="dg-resultado-intro">Según tus respuestas, este sería nuestro punto de partida para ayudarte a ordenar tu negocio.</p>
+      <p className="dg-resultado-intro">{respuestas.contacto_nombre?.trim() ? `${respuestas.contacto_nombre.trim()}, según` : 'Según'} tus respuestas, este sería nuestro punto de partida para ayudarte a ordenar {respuestas.nombre_negocio.trim() || 'tu negocio'}.</p>
       <section className="dg-resultado-seccion" aria-labelledby="dg-hallazgos">
         <h2 className="dg-resultado-subtitulo" id="dg-hallazgos"><span aria-hidden="true">01</span>Lo que entendimos</h2>
         <ul className="dg-resultado-hallazgos">{hallazgos.map(h => <li key={h.titulo}><Icono tipo={h.icono} /><div><h3>{h.titulo}</h3><p>{h.texto}</p></div></li>)}</ul>

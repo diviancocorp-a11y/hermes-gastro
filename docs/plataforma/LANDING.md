@@ -9,6 +9,29 @@
 
 ## 1. Estado al 30/oct/2026
 
+### Contacto previo y Dico preparando el resultado — 30/oct
+
+PR #62: el ultimo paso conserva nombre del negocio opcional y pide nombre,
+WhatsApp internacional y autorizacion para guardar/contactar. Reutiliza la
+capacidad privada de la API existente (0117), sin nuevas tablas ni cambios del
+servidor. Confirma respuestas y contacto antes de entregar el resultado;
+error conserva datos y permite reintentar sin duplicar la fila. Datos personales
+y capacidad quedan fuera de URL y analitica. El registro se adaptara despues;
+por ahora la sesion conserva estos datos junto a las respuestas.
+
+El resultado nombra el negocio en el mensaje de Dico, titulo y texto inicial;
+si falta, usa el nombre de la persona. Durante la preparacion, el mismo Dico
+baja al centro y crece, con los mensajes cambiantes en su burbuja. Se reutiliza
+ShaderBackground del tramo bajo el hero, solo durante la lectura; 100% volt
+mientras prepara, dorado al entregar. Se respeta movimiento reducido.
+
+61 pruebas dirigidas, ESLint y build; las 14 UI afectadas se repitieron tras el
+ultimo ajuste. Navegador desktop/celular: un solo Dico centrado, mensaje en su
+chat, shader y 100%; resultado sin formulario ni desborde. Prueba real desde
+la UI: diagnostico y contacto HTTP200, campos y consentimiento comprobados en
+DB; registro QA eliminado y ausencia confirmada. Recarga/reintentos cubiertos
+con API simulada. Sigue en preview, sin publicar el front en produccion.
+
 ### Resultado y recomendacion de plan — 30/oct
 
 PR #62: solo cambia el cuerpo marfil del resultado. Hallazgos con etiquetas

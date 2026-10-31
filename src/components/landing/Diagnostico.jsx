@@ -1,4 +1,5 @@
 import DicoGuiaDiagnostico from './DicoGuiaDiagnostico';
+import ShaderBackground from './ShaderBackground';
 // src/components/landing/Diagnostico.jsx
 // El embudo de la plataforma: el diagnostico de Dico como componente. Lo usan
 // la home (src/pages/PlatformLanding.jsx, adentro del hero: el boton lo abre en
@@ -24,7 +25,7 @@ import {
   CANALES, EQUIPOS, ESTABLECIMIENTOS, GESTIONES, LOCALES, ORDEN_PASOS,
   PREGUNTAS_DOLOR, VENTAS_MENSUALES, DECISORES, extrasV2,
   URGENCIAS, VERTICALES, desafiosDe, eventosDePaso, guardarDiagnostico,
-  recordarDiagnosticoPendiente, solucion,
+  recordarDiagnosticoPendiente, solucion, guardarContactoDiagnostico, normalizarWhatsapp,
 } from '../../lib/diagnostico';
 import ResultadoDiagnostico from './ResultadoDiagnostico';
 import { viajarConDico } from './viajeDico';
@@ -103,9 +104,9 @@ const PASOS = {
     ayuda: 'Podés elegir un rango, indicar que no lo sabés o no responder.', cara: 'curious',
   },
   nombre_negocio: {
-    pregunta: '¿Cómo se llama tu negocio?',
-    ayuda: 'Es opcional.',
-    dico: 'Si me lo decís, te lo dejo cargado en el alta.',
+    pregunta: '¿Cómo te llamás y cómo podemos contactarte?',
+    ayuda: 'Tu nombre y WhatsApp son obligatorios. El nombre del negocio es opcional.',
+    dico: 'Así sé con quién hablar para ayudarte a configurar Dico.',
     cara: 'curious',
   },
 };
@@ -123,6 +124,8 @@ const FICHA = [
   ['venta_mensual', 'Venta mensual'],
   ['decisor', 'Decisión'],
   ['nombre_negocio', 'Nombre del negocio'],
+  ['contacto_nombre', 'Tu nombre'],
+  ['contacto_whatsapp', 'Tu WhatsApp'],
 ];
 
 const VACIO = {
@@ -135,11 +138,13 @@ const VACIO = {
   gestion_actual: null,
   urgencia: null,
   inversion: null,
-  nombre_negocio: '',
+  nombre_negocio: '', contacto_nombre: '', contacto_whatsapp: '', contacto_consentimiento: false,
   senal: null, sistema_nombre: '', sistema_costo: '', venta_mensual: null, decisor: null,
 };
 
 const recorridoDe = () => ORDEN_PASOS;
+const firmaContacto = (r, id) => JSON.stringify([id, r.contacto_nombre.trim(), normalizarWhatsapp(r.contacto_whatsapp), r.contacto_consentimiento]);
+const resultadoRestaurable = (r, sesion) => recorridoDe().filter(p => p !== 'nombre_negocio').every(p => completo(p, r)) && (!r.contacto_nombre.trim() || (completo('nombre_negocio', r) && sesion?.contactoConfirmado === firmaContacto(r, sesion.id)));
 
 const labelDe = (lista, id) => lista.find((o) => o.id === id)?.label;
 
@@ -151,12 +156,10 @@ function completo(paso, r) {
     case 'gestion_actual': return Boolean(r.gestion_actual) && (r.sistema_costo === '' || r.sistema_costo === null || (Number.isFinite(Number(r.sistema_costo)) && Number(r.sistema_costo) >= 0 && Number(r.sistema_costo) <= 1e9));
     case 'canales': return r.canales.length > 0;
     case 'escala': return Boolean(r.locales && r.equipo);
-    case 'nombre_negocio': return true;
+    case 'nombre_negocio': return r.contacto_nombre.trim().length >= 2 && Boolean(normalizarWhatsapp(r.contacto_whatsapp)) && r.contacto_consentimiento === true;
     default: return Boolean(r[paso]);
   }
 }
-
-const todoCompleto = (r) => recorridoDe(r.vertical).every((p) => completo(p, r));
 
 /** El primer paso sin contestar (o el ultimo, si estan todos). */
 const primerFaltante = (r) => {
@@ -172,6 +175,8 @@ function valorDeFicha(clave, r) {
     case 'desafio': return labelDe(desafiosDe(r.vertical), r.desafio);
     case 'senal': return labelDe(PREGUNTAS_DOLOR[r.desafio]?.opciones || [], r.senal);
     case 'nombre_negocio': return r.nombre_negocio.trim() || null;
+    case 'contacto_nombre': return r.contacto_nombre.trim() || null;
+    case 'contacto_whatsapp': return r.contacto_whatsapp.trim() || null;
     case 'establecimiento': return labelDe(ESTABLECIMIENTOS[r.vertical] || [], r.establecimiento);
     case 'canales': return r.canales.length
       ? CANALES.filter((c) => r.canales.includes(c.id)).map((c) => c.label).join(', ')
@@ -217,8 +222,9 @@ function leerSesion() {
     if (!s || typeof s !== 'object' || !s.respuestas) return null;
     const r = { ...VACIO, ...s.respuestas };
     if (!Array.isArray(r.canales)) r.canales = [];
-    if (typeof r.nombre_negocio !== 'string') r.nombre_negocio = '';
-    return { respuestas: r, version: s.version, id: s.version === 2 && typeof s.id === 'string' ? s.id : null, token: s.version === 2 ? s.token || null : null, firma: s.version === 2 ? s.firma || null : null };
+    for (const campo of ['nombre_negocio', 'contacto_nombre', 'contacto_whatsapp']) if (typeof r[campo] !== 'string') r[campo] = '';
+    r.contacto_consentimiento = r.contacto_consentimiento === true;
+    return { respuestas: r, version: s.version, id: s.version === 2 && typeof s.id === 'string' ? s.id : null, token: s.version === 2 ? s.token || null : null, firma: s.version === 2 ? s.firma || null : null, contactoConfirmado: s.contactoConfirmado || null };
   } catch {
     return null;
   }
@@ -233,10 +239,10 @@ function arranque(modo) {
   const delaUrl = modo === 'pagina' ? verticalDeLaUrl() : null;
   if (delaUrl && !respuestas.vertical) respuestas.vertical = delaUrl;
   const h = sesion?.version === 2 ? estadoDeHistoria() : undefined;
-  const base = { respuestas, token: sesion?.token || null, id: sesion?.id || null, firma: sesion?.firma || null };
+  const base = { respuestas, token: sesion?.token || null, id: sesion?.id || null, firma: sesion?.firma || null, contactoConfirmado: sesion?.contactoConfirmado || null };
 
   if (h === 'resultado') {
-    if (todoCompleto(respuestas)) return { ...base, abierto: true, indice: 0, fase: 'resultado' };
+    if (resultadoRestaurable(respuestas, sesion)) return { ...base, abierto: true, indice: 0, fase: 'resultado' };
     // La entrada dice "resultado" pero faltan respuestas (se borro la sesion):
     // se muestra la primera que falta y la historia se corrige al montar.
     return { ...base, abierto: true, indice: primerFaltante(respuestas), fase: 'preguntas', corregir: true };
@@ -263,6 +269,8 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const [tokenContacto, setTokenContacto] = useState(inicio.token);
   const [guardado, setGuardado] = useState(inicio.id ? 'ok' : 'nada'); // nada | guardando | ok | error
   const [analisisEtapa, setAnalisisEtapa] = useState(0);
+  const [errorContacto, setErrorContacto] = useState('');
+  const [erroresContacto, setErroresContacto] = useState({});
 
   const raizRef = useRef(null);
   const tituloRef = useRef(null);
@@ -271,7 +279,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const respuestasRef = useRef(respuestas);
   // Guardado: firma de lo ultimo que se mando, su id y un turno para descartar
   // respuestas viejas que lleguen tarde.
-  const envio = useRef({ firma: inicio.id ? inicio.firma : null, id: inicio.id, token: inicio.token, turno: 0, enCurso: false });
+  const envio = useRef({ firma: inicio.id ? inicio.firma : null, id: inicio.id, token: inicio.token, turno: 0, enCurso: false, contactoConfirmado: inicio.contactoConfirmado });
   const vista = useRef(null); // ultimo `abierto|paso|fase` atendido
   const marcoInicio = useRef(false);
   const marcoResultado = useRef(null);
@@ -320,10 +328,10 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   useEffect(() => {
     try {
       sessionStorage.setItem(CLAVE_SESION, JSON.stringify({
-        respuestas, id: envio.current.id, token: tokenContacto, version: 2, firma: envio.current.id ? envio.current.firma : null,
+        respuestas, id: envio.current.id, token: tokenContacto, version: 2, firma: envio.current.id ? envio.current.firma : null, contactoConfirmado: envio.current.contactoConfirmado || null,
       }));
     } catch { /* sin storage: sigue andando, sin recordar */ }
-  }, [respuestas, id, tokenContacto]);
+  }, [respuestas, id, tokenContacto, fase]);
 
   // Analitica: el inicio y el resultado, una vez por diagnostico aunque se
   // recargue (marca en sessionStorage). El resultado se marca por juego de
@@ -454,7 +462,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       flushSync(() => {
         if (modo === 'home') setOverlayActivo(true);
         setAbierto(true);
-        if (s === 'resultado' && todoCompleto(respuestasRef.current)) { setFase('resultado'); return; }
+        if (s === 'resultado' && resultadoRestaurable(respuestasRef.current, { id: envio.current.id, contactoConfirmado: envio.current.contactoConfirmado })) { setFase('resultado'); return; }
         setFase('preguntas');
         if (s === 'resultado') {
           const falta = primerFaltante(respuestasRef.current);
@@ -513,17 +521,18 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     if (abrirRef) abrirRef.current = abrir;
   }, [abrirRef, abrir]);
 
-  const guardar = useCallback((datos) => {
+  const guardar = useCallback(async (datos) => {
     const firma = JSON.stringify(datos);
     const e = envio.current;
     // Lo mismo que ya se guardo (o se esta guardando) no se manda de nuevo.
-    if (e.firma === firma && (e.id || e.enCurso)) { setId(e.id); return; }
+    if (e.firma === firma && e.id) { setId(e.id); return { id: e.id, token: e.token }; }
+    if (e.firma === firma && e.enCurso) return e.promesa;
     const turno = e.turno + 1;
     envio.current = { firma, id: null, token: null, turno, enCurso: true };
     setTokenContacto(null);
     setId(null);
     setGuardado('guardando');
-    guardarDiagnostico(datos, { conToken: true }).then((respuesta) => {
+    const promesa = guardarDiagnostico(datos, { conToken: true }).then((respuesta) => {
       const nuevo = typeof respuesta === 'string' ? respuesta : respuesta?.id;
       // Llego tarde: ya se mando otro juego de respuestas.
       if (envio.current.turno !== turno) return;
@@ -537,21 +546,58 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
         recordarDiagnosticoPendiente(nuevo);
         setId(nuevo);
         setGuardado('ok');
+        return { id: nuevo, token: respuesta?.token || null };
       } else {
         envio.current.firma = null; // permite reintentar lo mismo
         setGuardado('error');
       }
+      return null;
     });
+    envio.current.promesa = promesa;
+    return promesa;
   }, []);
 
   const analizar = useCallback(() => {
     clearTimeout(avance.current);
     empujar('resultado');
+    setErrorContacto('');
+    if (raizRef.current) raizRef.current.scrollTop = 0;
     setAnalisisEtapa(0);
     setFase('analizando');
-    guardar(datosDe(respuestasRef.current));
-    avance.current = setTimeout(() => setFase('resultado'), ANALISIS_MS);
-  }, [guardar]);
+  }, []);
+
+  useEffect(() => {
+    if (fase !== 'analizando' || !abierto) return undefined;
+    let vigente = true;
+    let timer;
+    const r = respuestasRef.current;
+    const lectura = new Promise(resolve => { timer = setTimeout(resolve, ANALISIS_MS); });
+    const persistir = async () => {
+      const registro = await guardar(datosDe(r));
+      if (!vigente || !registro?.id || !registro.token) return false;
+      const firma = firmaContacto(r, registro.id);
+      if (envio.current.contactoConfirmado === firma) return true;
+      const ok = await guardarContactoDiagnostico({ id: registro.id, token: registro.token,
+        nombre: r.contacto_nombre.trim(), whatsapp: normalizarWhatsapp(r.contacto_whatsapp),
+        consentimiento: r.contacto_consentimiento });
+      if (ok && envio.current.id === registro.id) envio.current.contactoConfirmado = firma;
+      return ok;
+    };
+    persistir().then(async ok => {
+      if (!vigente) return;
+      if (ok) {
+        marcarUnaVez('diagnostico-v2-contacto-guardado', envio.current.id);
+        await lectura;
+        if (vigente) setFase('resultado');
+      } else {
+        setErrorContacto('No pudimos guardar tus datos. Siguen acá: volvé a intentarlo para ver tu diagnóstico.');
+        window.history.replaceState({ ...window.history.state, dg: recorridoDe().length - 1 }, '');
+        setIndice(recorridoDe().length - 1);
+        setFase('preguntas');
+      }
+    });
+    return () => { vigente = false; clearTimeout(timer); };
+  }, [fase, abierto, guardar]);
 
   const seguir = () => {
     if (!completo(paso, respuestas)) return;
@@ -600,7 +646,19 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
     porPuntero.current = false;
   };
 
-  const alEnviar = (e) => { e.preventDefault(); seguir(); };
+  const alEnviar = (e) => {
+    e.preventDefault();
+    if (paso === 'nombre_negocio') {
+      const errores = {
+        ...(respuestas.contacto_nombre.trim().length < 2 ? { contacto_nombre: 'Escribí tu nombre (al menos dos caracteres).' } : {}),
+        ...(!normalizarWhatsapp(respuestas.contacto_whatsapp) ? { contacto_whatsapp: 'Incluí el código de país. Por ejemplo: +54 9 11 1234 5678.' } : {}),
+        ...(!respuestas.contacto_consentimiento ? { contacto_consentimiento: 'Necesitamos tu autorización para guardar el contacto.' } : {}),
+      };
+      setErroresContacto(errores);
+      if (Object.keys(errores).length) { e.currentTarget.elements[Object.keys(errores)[0]]?.focus(); return; }
+    }
+    seguir();
+  };
 
   // Enter sobre un radio o un checkbox tambien avanza (el navegador no lo hace).
   const alTeclear = (e) => {
@@ -633,10 +691,10 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const sol = fase === 'resultado' ? solucion(respuestas.desafio, respuestas.vertical) : null;
 
   let dice = PASOS[paso].dico;
-  if (fase === 'analizando') { dice = 'Estoy pensando por dónde empezar.'; }
+  if (fase === 'analizando') { dice = MENSAJES_ANALISIS[analisisEtapa]; }
   if (fase === 'resultado') {
     const nombre = respuestas.nombre_negocio.trim();
-    dice = nombre ? `${nombre}: esto es lo primero que resolvería.` : 'Esto es lo primero que resolvería.';
+    dice = nombre ? `Esto es lo primero que resolvería para ${nombre}.` : `${respuestas.contacto_nombre.trim() ? respuestas.contacto_nombre.trim() + ', esto' : 'Esto'} es lo primero que resolvería para tu negocio.`;
   }
 
   const Titulo = nivel;
@@ -657,7 +715,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   const resumen = <details className="dg-resumen">
     <summary tabIndex={0}>Ver mis respuestas</summary>
     <Ficha respuestas={respuestas} onEditar={clave => {
-      const destino = { establecimiento: 'vertical', senal: 'desafio', decisor: 'urgencia' }[clave] || clave;
+      const destino = { establecimiento: 'vertical', senal: 'desafio', decisor: 'urgencia', contacto_nombre: 'nombre_negocio', contacto_whatsapp: 'nombre_negocio' }[clave] || clave;
       const posicion = recorrido.indexOf(destino);
       if (posicion >= 0) {
         irA(posicion);
@@ -675,22 +733,20 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       <div className="dg-resultado-cabecera">{guia}{progreso}</div>
       <div className="dg-resultado-contenido">
       <ResultadoDiagnostico sol={sol} respuestas={respuestas} id={id}
-        encabezado={<Titulo className="dg-titulo dg-resultado-titulo" id="dg-resultado-titulo" ref={tituloRef} tabIndex={-1}>Un punto de partida para ordenar tu negocio.</Titulo>}
+        encabezado={<Titulo className="dg-titulo dg-resultado-titulo" id="dg-resultado-titulo" ref={tituloRef} tabIndex={-1}>{respuestas.nombre_negocio.trim() ? `Un punto de partida para ${respuestas.nombre_negocio.trim()}.` : 'Un punto de partida para ordenar tu negocio.'}</Titulo>}
         resumen={resumen} guardado={guardado} onReintentar={() => guardar(datosDe(respuestas))} />
       </div>
     </div>);
   }
 
   return envolver(<div className={`dg-embudo dg-unificado dg-fase-${fase}`} ref={raizRef}>
+    {fase === 'analizando' && <div className="dg-analisis-fondo" aria-hidden="true"><ShaderBackground /></div>}
     {guia}{progreso}
-    {fase === 'analizando' ? <div className="dg-paso" key="analizando">
-      <Titulo className="dg-titulo" id="dg-pregunta" ref={tituloRef} tabIndex={-1}>Estoy leyendo tus respuestas.</Titulo>
-      <p className="dg-analisis-mensaje" role="status" aria-live="polite"><span className="dg-analisis-cargando" aria-hidden="true" /><span className="dg-analisis-texto">{MENSAJES_ANALISIS[analisisEtapa]}</span></p>
-    </div> : <Pregunta paso={paso} nivel={nivel} cuenta={cuenta} respuestas={respuestas}
+    {fase === 'analizando' ? <Titulo className="dg-cuenta-sr" id="dg-pregunta" ref={tituloRef} tabIndex={-1}>Estoy preparando tu diagnóstico.</Titulo> : <Pregunta paso={paso} nivel={nivel} cuenta={cuenta} respuestas={respuestas}
       tituloRef={tituloRef} listo={listo} resumen={resumen}
       textoVolver={modo === 'home' && pasoIdx === 0 ? 'Volver al inicio' : 'Volver'}
       puedeVolver={pasoIdx > 0 || modo === 'home'} onElegir={elegir} onCanal={alternarCanal}
-      onNombre={v => setRespuestas({ ...respuestas, nombre_negocio: v })}
+      onDato={(campo, valor) => { setRespuestas({ ...respuestas, [campo]: valor }); setErroresContacto(anteriores => ({ ...anteriores, [campo]: undefined })); }} erroresContacto={erroresContacto} errorContacto={errorContacto}
       onEnviar={alEnviar} onTeclear={alTeclear} onPuntero={() => { porPuntero.current = true; }} onVolver={volver} />}
   </div>);
 }
@@ -699,7 +755,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
 
 function Pregunta({
   paso, nivel, cuenta, respuestas, tituloRef, listo, resumen, textoVolver, puedeVolver,
-  onElegir, onCanal, onNombre, onEnviar, onTeclear, onPuntero, onVolver,
+  onElegir, onCanal, onDato, erroresContacto, errorContacto, onEnviar, onTeclear, onPuntero, onVolver,
 }) {
   const Titulo = nivel;
   const texto = PASOS[paso];
@@ -763,24 +819,26 @@ function Pregunta({
         </div>
       )}
 
-      {paso === 'nombre_negocio' && (
-        <input
-          className="dg-texto"
-          type="text"
-          name="nombre_negocio"
-          maxLength={80}
-          autoComplete="organization"
-          aria-labelledby={idTitulo}
-          aria-describedby={idAyuda}
-          value={respuestas.nombre_negocio}
-          onChange={(e) => onNombre(e.target.value)}
-        />
-      )}
+      {paso === 'nombre_negocio' && <div className="dg-contacto-previo">
+        <label htmlFor="dg-nombre-negocio">Nombre del negocio <span>(opcional)</span><input id="dg-nombre-negocio" className="dg-texto" name="nombre_negocio" maxLength={80} autoComplete="organization" value={respuestas.nombre_negocio} onChange={e => onDato('nombre_negocio', e.target.value)} /></label>
+        <div className="dg-contacto-campos">{[
+          { campo: 'contacto_nombre', label: 'Tu nombre', autoComplete: 'given-name', type: 'text' },
+          { campo: 'contacto_whatsapp', label: 'Tu WhatsApp', autoComplete: 'tel', type: 'tel' },
+        ].map(({ campo, label, ...props }) => <div key={campo}><label htmlFor={`dg-${campo}`}>{label}<input {...props} id={`dg-${campo}`} className="dg-texto" name={campo} required maxLength={campo === 'contacto_nombre' ? 80 : 24} value={respuestas[campo]}
+          aria-invalid={Boolean(erroresContacto[campo])} aria-describedby={erroresContacto[campo] ? `dg-error-${campo}` : campo === 'contacto_whatsapp' ? 'dg-telefono-ayuda' : undefined}
+          onChange={e => onDato(campo, e.target.value)} /></label>{erroresContacto[campo] && <p id={`dg-error-${campo}`} className="dg-error-campo">{erroresContacto[campo]}</p>}</div>)}</div>
+        <p className="dg-ayuda" id="dg-telefono-ayuda">Con código de país, por ejemplo +54 9 11 1234 5678.</p>
+        <p className="dg-ayuda">Guardamos tus respuestas y estos datos para continuar con vos y ayudarte a configurar Dico. No se envía ningún mensaje automáticamente.</p>
+        <label className="dg-consentimiento"><input type="checkbox" name="contacto_consentimiento" required checked={respuestas.contacto_consentimiento} onChange={e => onDato('contacto_consentimiento', e.target.checked)} aria-invalid={Boolean(erroresContacto.contacto_consentimiento)} aria-describedby={erroresContacto.contacto_consentimiento ? 'dg-error-consentimiento' : undefined} />Autorizo a Grupo Divianco a guardar estos datos y contactarme por WhatsApp para ayudarme a configurar Dico.</label>
+        {erroresContacto.contacto_consentimiento && <p id="dg-error-consentimiento" className="dg-error-campo">{erroresContacto.contacto_consentimiento}</p>}
+        {errorContacto && <p className="dg-error-campo" role="alert">{errorContacto}</p>}
+      </div>}
+
 
       <div className="dg-acciones">
         {resumen}
         {puedeVolver && <button type="button" className="dg-texto-boton" onClick={onVolver}>{textoVolver}</button>}
-        <button type="submit" className="dg-boton" disabled={!listo}>
+        <button type="submit" className="dg-boton" disabled={paso !== 'nombre_negocio' && !listo}>
           {paso === 'nombre_negocio' ? 'Ver mi diagnóstico' : 'Continuar'} <span aria-hidden="true">→</span>
         </button>
         <span className="dg-cuenta-sr">{cuenta}</span>
