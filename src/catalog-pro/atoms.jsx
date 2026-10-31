@@ -166,21 +166,21 @@ export function SectionHeader({ kicker, title, action, onAction, em }) {
 }
 
 // ── Stepper — pill round − valor + ──
-export function Stepper({ value, onChange, size = "md" }) {
+export function Stepper({ value, onChange, size = "md", label, disabled = false }) {
   const h = size === "sm" ? 28 : size === "lg" ? 44 : 36;
   const w = h;
   return (
     <div style={{
       display: "inline-flex", alignItems: "center",
       border: "1px solid var(--line)", borderRadius: 999, overflow: "hidden", background: "var(--bg)",
-    }}>
-      <button onClick={() => onChange(Math.max(0, value - 1))} style={{
-        width: w, height: h, border: 0, background: "transparent", color: "var(--t2)", cursor: "pointer",
+    }} {...(label ? { role: "group", "aria-label": label } : {})}>
+      <button type="button" disabled={disabled} aria-label={label ? `Restar ${label}` : undefined} onClick={() => onChange(Math.max(0, value - 1))} style={{
+        width: w, height: h, border: 0, background: "transparent", color: "var(--t2)", cursor: disabled ? "not-allowed" : "pointer",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}><Icon name="minus" size={size === "sm" ? 12 : 14} /></button>
-      <div style={{ minWidth: 24, textAlign: "center", fontWeight: 600, fontSize: size === "sm" ? 12 : 14 }}>{value}</div>
-      <button onClick={() => onChange(value + 1)} style={{
-        width: w, height: h, border: 0, background: "transparent", color: "var(--tx)", cursor: "pointer",
+      <div {...(label ? { role: "status", "aria-live": "polite", "aria-label": `${label}: ${value}` } : {})} style={{ minWidth: 24, textAlign: "center", fontWeight: 600, fontSize: size === "sm" ? 12 : 14 }}>{value}</div>
+      <button type="button" disabled={disabled} aria-label={label ? `Sumar ${label}` : undefined} onClick={() => onChange(value + 1)} style={{
+        width: w, height: h, border: 0, background: "transparent", color: "var(--tx)", cursor: disabled ? "not-allowed" : "pointer",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}><Icon name="plus" size={size === "sm" ? 12 : 14} /></button>
     </div>

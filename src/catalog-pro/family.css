@@ -1,0 +1,95 @@
+/* Pantalla de familia del catalogo (FamilyScreen). Solo tokens del tema. */
+
+/* cp-root y cp-fam van en el MISMO elemento: selector compuesto, no descendiente. */
+.cp-root.cp-fam {
+  position: fixed; inset: 0; width: 100%; z-index: 240; overflow-y: auto;
+  padding-bottom: 130px; background: var(--bg); color: var(--tx);
+}
+
+.cp-root .cp-fam-hero { position: relative; height: 220px; }
+.cp-root .cp-fam-hero-fade {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 90px;
+  background: linear-gradient(180deg, transparent 0%, var(--bg) 100%);
+}
+
+.cp-root .cp-fam-back {
+  position: fixed; top: max(16px, env(safe-area-inset-top)); left: 14px; z-index: 30;
+  width: 44px; height: 44px; border-radius: 999px; border: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in oklab, var(--bg) 92%, transparent);
+  color: var(--tx); backdrop-filter: blur(8px);
+}
+
+.cp-root .cp-fam-head { padding: 0 22px; margin-top: -28px; position: relative; z-index: 2; }
+.cp-root .cp-fam-title {
+  font-family: var(--font-heading); font-weight: 400; font-size: 32px; line-height: 1.25;
+  letter-spacing: -0.01em; margin: 0 0 6px; padding-bottom: 0.06em; color: var(--tx);
+}
+.cp-root .cp-fam-sub { margin: 0; font-size: 14px; color: var(--t2); }
+
+.cp-root .cp-fam-summary {
+  margin: 18px 22px 0; padding: 12px 16px; border-radius: var(--r);
+  background: var(--b2); display: flex; align-items: baseline;
+  justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.cp-root .cp-fam-count { font-family: var(--font-heading); font-size: 20px; color: var(--tx); }
+.cp-root .cp-fam-pack { font-size: 13px; font-weight: 600; color: var(--tx); }
+
+.cp-root .cp-fam-list { list-style: none; margin: 8px 22px 0; padding: 0; }
+.cp-root .cp-fam-row { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.cp-root .cp-fam-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cp-root .cp-fam-info { min-width: 0; flex: 1; }
+.cp-root .cp-fam-name {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-family: var(--font-heading); font-size: 18px; line-height: 1.25; color: var(--tx);
+}
+.cp-root .cp-fam-desc { margin: 2px 0 0; font-size: 13px; line-height: 1.4; color: var(--t2); }
+.cp-root .cp-fam-price { margin-top: 4px; font-size: 14px; font-weight: 600; color: var(--tx); }
+
+.cp-root .cp-fam-chips { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.cp-root .cp-fam-chip {
+  min-height: 44px; padding: 0 16px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--t2); background: var(--bg); color: var(--tx);
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  transition: background var(--t-fast) var(--ease);
+}
+.cp-root .cp-fam-chip:hover:not(:disabled) { background: var(--b3); }
+.cp-root .cp-fam-chip:disabled { cursor: not-allowed; color: var(--t2); border-color: var(--line); }
+
+.cp-root .cp-fam-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; width: 100%;
+  background: var(--bg); border-top: 1px solid var(--line);
+  padding: 14px 22px max(20px, env(safe-area-inset-bottom));
+}
+.cp-root .cp-fam-cta {
+  width: 100%; min-height: 52px; border-radius: var(--rs); border: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 18px; background: var(--ac); color: var(--tx);
+  font-family: var(--font-body); font-weight: 500; font-size: 15px;
+}
+body[data-cp-theme="noche"] .cp-root .cp-fam-cta,
+body[data-cp-theme="carbon"] .cp-root .cp-fam-cta { color: var(--bg); }
+.cp-root .cp-fam-cta:disabled { background: var(--b3); color: var(--t2); cursor: not-allowed; }
+.cp-root .cp-fam-cta-total { font-family: var(--font-heading); font-size: 15px; }
+
+.cp-root .cp-fam-back:focus-visible,
+.cp-root .cp-fam-chip:focus-visible,
+.cp-root .cp-fam-cta:focus-visible,
+.cp-root .cp-fam-row button:focus-visible,
+.cp-root .cp-fam-card:focus-visible {
+  outline: 2px solid var(--ac2); outline-offset: 2px;
+}
+
+/* Tarjeta de familia en la carta (HomeScreen) */
+.cp-root .cp-fam-card { position: relative; cursor: pointer; display: flex; flex-direction: column; }
+.cp-root .cp-fam-card-tag {
+  position: absolute; bottom: 8px; left: 8px; padding: 3px 8px; border-radius: 999px;
+  background: color-mix(in oklab, var(--tx) 80%, transparent); color: var(--bg);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+}
+
+.cp-root .cp-fam-card-soldout { position: absolute; top: 8px; left: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-root .cp-fam-chip { transition: none; }
+}

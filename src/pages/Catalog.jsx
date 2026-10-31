@@ -21,6 +21,7 @@ import AgeGate from "../catalog-pro/AgeGate";
 import WhatsAppFloat from "../catalog-pro/WhatsAppFloat";
 import { ensureMusic, stopMusic, configureMusic } from "../catalog-pro/catalogMusic";
 import ProductDetailScreenPro from "../catalog-pro/ProductDetailScreen";
+import FamilyScreenPro from "../catalog-pro/FamilyScreen";
 import SearchScreenPro from "../catalog-pro/SearchScreen";
 import CategoryScreenPro from "../catalog-pro/CategoryScreen";
 import CartScreenPro from "../catalog-pro/CartScreen";
@@ -94,6 +95,7 @@ export default function Catalog() {
   const [cart, setCart] = useState([]);
   const [showCart, setShowCart] = useState(false);
   const [cpDetail, setCpDetail] = useState(null); // producto en pantalla Detalle (catalog-pro)
+  const [cpFamily, setCpFamily] = useState(null); // familia abierta (varios sabores en una pantalla)
   const [cpScreen, setCpScreen] = useState(null); // null | "search" | { type:"category", name, displayName }
   const [cpTip, setCpTip] = useState(0); // % propina elegido (presets). Ignorado si cpTipCustom != null
   const [cpTipCustom, setCpTipCustom] = useState(null); // monto fijo de propina en $ (null = usa %)
@@ -492,7 +494,9 @@ export default function Catalog() {
   // `e` es opcional: el viewer catalog-pro NO pasa el event al callback.
   // `size` (opcional): { size_label, size_qty, size_price } — viene del
   // ProductDetailScreen cuando la receta tiene presentaciones.
-  const addC = useCallback((p, e, size = null) => {
+  // `quiet` (4to arg): no muestra el toast individual; lo usa la pantalla de familia
+  // para avisar UNA sola vez al agregar varios sabores.
+  const addC = useCallback((p, e, size = null, quiet = false) => {
     // Permitir signatura (p, size) — si e es un objeto sin stopPropagation, lo tratamos como size.
     if (e && typeof e === "object" && !("stopPropagation" in e) && !size) {
       size = e; e = null;
@@ -519,7 +523,7 @@ export default function Catalog() {
     // Cart key: items con tamaños distintos son entradas distintas.
     const itemKey = size ? `${p.id}__${size.size_label}` : p.id;
     const displayName = size ? `${p.name} · ${size.size_label}` : p.name;
-    toast(`✓ ${displayName} agregado`);
+    if (!quiet) toast(`✓ ${displayName} agregado`);
     setCart(prev => {
       const isNewProduct = !prev.find(i => i.id === itemKey);
       const newCart = isNewProduct
@@ -750,6 +754,7 @@ export default function Catalog() {
   const backLayers = [];
   if (cpScreen) backLayers.push(() => setCpScreen(null));
   if (cpDetail) backLayers.push(() => setCpDetail(null));
+  if (cpFamily) backLayers.push(() => setCpFamily(null));
   if (showCart) backLayers.push(() => setShowCart(false));
   if (showCk) {
     backLayers.push(() => { setShowCk(false); setCkStep(0); });
@@ -964,6 +969,7 @@ export default function Catalog() {
           setShowCart(true);
         }}
         onSelectProduct={(p) => { setCpDetail(p); window.scrollTo({ top: 0 }); }}
+        onSelectFamily={(f) => { setCpFamily(f); window.scrollTo({ top: 0 }); }}
         onOpenAccount={(tab) => navigate(tab ? `/mi-cuenta?tab=${tab}` : "/mi-cuenta")}
       />
       {cpScreen === "orders" && (
@@ -1027,6 +1033,25 @@ export default function Catalog() {
             }
             for (let i = 0; i < qty; i++) addC(p, null, size);
             setCpDetail(null);
+            setShowCart(true);
+          }}
+        />
+      )}
+      {cpFamily && (
+        <FamilyScreenPro
+          family={cpFamily}
+          soldOutIds={soldOutIds}
+          hasDeal={hasDeal}
+          dealPrice={getPrice}
+          prepDefault={sett.prep_time_min}
+          onBack={() => setCpFamily(null)}
+          onAddToCart={(p, qty = 1) => {
+            // Una llamada por sabor; cada uno entra como linea propia, igual que en el detalle.
+            for (let i = 0; i < qty; i++) addC(p, null, null, true);
+          }}
+          onConfirm={(units) => {
+            toast(units === 1 ? "✓ 1 producto agregado" : `✓ ${units} productos agregados`);
+            setCpFamily(null);
             setShowCart(true);
           }}
         />

@@ -465,6 +465,10 @@ export const CatalogAttributesSchema = z.object({
   line: z.string().trim().max(120).optional(),
   varietal: z.string().trim().max(120).optional(),
   presentation: z.string().trim().max(120).optional(),
+  // Familia del catalogo: los productos con la misma `family` se muestran en una
+  // sola tarjeta. `family_pack` = unidades por pack o docena (solo digitos).
+  family: z.string().trim().max(120).optional(),
+  family_pack: z.string().trim().regex(/^[0-9]{1,3}$/).optional(),
   features: z.array(z.enum(['vegetarian', 'vegan', 'gluten_free'])).max(3)
     .refine(values => new Set(values).size === values.length, 'Características repetidas').optional(),
 }).strict();

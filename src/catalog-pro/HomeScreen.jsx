@@ -23,7 +23,7 @@ import {
   ProductPhoto, PriceTag, Rating, StickyCart, SectionHeader, AddRound, SoldOutBadge,
   abrible,
 } from "./atoms";
-import { mapProduct, buildStories, buildRecos } from "./homeHelpers";
+import { mapProduct, buildStories, buildRecos, toneFor } from "./homeHelpers";
 import DicoMark from "../components/DicoMark";
 import CatalogFooter from "./CatalogFooter";
 import BadgeTag from "../components/BadgeTag";
@@ -38,13 +38,15 @@ import {
   matchesCatalogCategory, resolveCatalogProfile, getProductFeatures, FEATURE_LABELS,
   BOX_PRESENTATION, isBoxPresentation,
 } from "../lib/catalogFacets";
+import { groupCatalogItems } from "../lib/catalogFamilies";
+import "./family.css";
 
 export default function HomeScreen({
   store = {}, userName, products = [], categories = [],
   cartCount = 0, cartTotal = 0,
   hasDeal, dealPrice, prepDefault,
   soldOutIds, // Set de recipe_ids agotados (stock de ingredientes)
-  onAddToCart, onOpenCart, onSelectProduct, onOpenAccount,
+  onAddToCart, onOpenCart, onSelectProduct, onSelectFamily, onOpenAccount,
   session, onLogout,
   settings = {},
   searchQuery = "", onSearchChange,
@@ -114,6 +116,17 @@ export default function HomeScreen({
     list = [...list].sort((a, b) => (a.is_combo ? 1 : 0) - (b.is_combo ? 1 : 0));
     return list.map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault, soldOutIds }));
   }, [products, catalogCategories, activeCat, facets, searchQuery, activeFilter, hasDeal, dealPrice, prepDefault, soldOutIds]);
+
+  // Familias: varios sabores de un mismo producto en UNA tarjeta. Con busqueda
+  // activa, o sin handler para abrirlas, la carta queda como siempre.
+  const gridEntries = useMemo(() => {
+    const byId = new Map(gridProducts.map(p => [p.id, p]));
+    return groupCatalogItems(gridProducts.map(p => p._raw), {
+      group: !searching && !!onSelectFamily,
+      priceOf: raw => byId.get(raw.id).price,
+      soldOut: raw => byId.get(raw.id).soldOut,
+    }).map(e => (e.type === "product" ? { type: "product", p: byId.get(e.product.id) } : e));
+  }, [gridProducts, searching, onSelectFamily]);
 
   // Categorias ordenadas por hora del dia (personalizacion).
   // Si una categoria matchea palabras clave del momento, aparece primera.
@@ -497,7 +510,31 @@ export default function HomeScreen({
         </div>
       )}
       <div style={{ padding: "0 22px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 14 }}>
-        {gridProducts.map(p => (
+        {gridEntries.map(entry => {
+          if (entry.type === "family") {
+            const f = entry.family;
+            return (
+              <div key={`fam-${f.key}`} className="cp-fam-card"
+                {...abrible(() => onSelectFamily?.(f), `Elegir sabores de ${f.name}`)}>
+                <div style={{ position: "relative" }}>
+                  <ProductPhoto src={f.image} height={140} radius={12} tone={toneFor(f.name)} dim={f.allSoldOut} />
+                  {f.allSoldOut && <div className="cp-fam-card-soldout"><SoldOutBadge /></div>}
+                  <span className="cp-fam-card-tag">{f.members.length} sabores</span>
+                </div>
+                <div style={{ paddingTop: 14, paddingRight: 4 }}>
+                  <div style={{
+                    fontFamily: "var(--font-heading)", fontSize: 17, color: "var(--tx)", lineHeight: 1.3,
+                    letterSpacing: "-0.005em", minHeight: 44,
+                  }}>{f.name}</div>
+                  <div style={{ marginTop: 6, fontSize: 13, color: "var(--t2)" }}>
+                    desde <span style={{ fontWeight: 600, color: "var(--tx)" }}>{fmtAR(f.minPrice)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          const p = entry.p;
+          return (
           <div key={p.id} onClick={() => onSelectProduct?.(p._raw)} style={{ position: "relative", cursor: "pointer", display: "flex", flexDirection: "column" }}>
             <div style={{ position: "relative" }}>
               <ProductPhoto src={p.img} height={140} radius={12} tone={p.tone} dim={p.soldOut} />
@@ -562,7 +599,8 @@ export default function HomeScreen({
               <div style={{ marginTop: 6 }}><PriceTag price={p.price} oldPrice={p.oldPrice} size="sm" /></div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ===== SUPER COMBOS — debajo de la carta ===== */}
