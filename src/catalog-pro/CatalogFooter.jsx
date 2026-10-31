@@ -46,7 +46,7 @@ function bizCopy(biz, termsDeDico = false) {
 
 Dico es solo la herramienta tecnológica con la que se muestra el catálogo y se toman los pedidos. Divianco no elabora, vende ni entrega productos, y no es parte de la relación comercial entre vos y ${bizName}.
 
-Al hacer un pedido aceptás que tus datos (nombre, teléfono, dirección, email) se usen para procesarlo y para que ${bizName} pueda contactarte por él. No se ceden a terceros con fines publicitarios.
+Al hacer un pedido aceptás que Dico recabe tus datos (nombre, teléfono, dirección, email) para procesarlo, según la Política de privacidad. No se ceden a terceros con fines publicitarios.
 
 Cualquier consulta o reclamo sobre un producto, su calidad, su precio o su entrega se resuelve directamente con ${bizName} por WhatsApp o email.
 
@@ -60,7 +60,7 @@ La plataforma técnica del catálogo está provista por Divianco, que actúa com
 
 Última actualización: 2026`,
 
-    cookies: `${bizName} usa cookies y almacenamiento local del navegador para:
+    cookies: `${termsDeDico ? "Dico" : bizName} usa cookies y almacenamiento local del navegador para:
 · Recordar tu carrito y datos de contacto entre visitas.
 · Mantener tu sesión activa cuando volvés a la página.
 · Estadísticas anónimas de uso para mejorar el servicio.
@@ -81,7 +81,26 @@ Podés borrar las cookies desde la configuración de tu navegador en cualquier m
     worksWithUs: `${bizName} busca sumar gente al equipo. Si te interesa trabajar con nosotros, contactanos por WhatsApp o email y contanos tu experiencia.`,
 
     // Politica de privacidad — Ley 25.326 de Proteccion de Datos Personales (AR)
-    privacy: `POLÍTICA DE PRIVACIDAD — ${bizName}
+    privacy: termsDeDico ? `POLÍTICA DE PRIVACIDAD — Dico
+
+1. Quién recaba tus datos
+Los datos que cargás en este catálogo los recaba Dico, plataforma provista por Divianco, que es responsable de su tratamiento.
+
+2. Qué datos recabamos
+Para procesar tu pedido guardamos: nombre, teléfono, email (opcional), dirección de entrega (solo pedidos con envío) y el historial de tus pedidos.
+
+3. Para qué los usamos
+· Procesar tu pedido y gestionar su preparación y entrega.
+· Contactarte por WhatsApp o email sobre el estado del pedido.
+Nunca vendemos ni cedemos tus datos a terceros con fines publicitarios.
+
+4. Dónde se guardan
+Los datos se almacenan en servidores seguros (Supabase) con acceso restringido al personal autorizado.
+
+5. Tus derechos (Ley 25.326)
+Podés pedir acceso, rectificación o eliminación de tus datos contactando a Divianco. La Agencia de Acceso a la Información Pública (www.argentina.gob.ar/aaip) es el órgano de control de la Ley 25.326 y atiende denuncias por incumplimiento.
+
+Última actualización: 2026` : `POLÍTICA DE PRIVACIDAD — ${bizName}
 
 1. Qué datos recolectamos
 Para procesar tu pedido guardamos: nombre, teléfono, email (opcional), dirección de entrega (solo pedidos con envío) y el historial de tus pedidos.
