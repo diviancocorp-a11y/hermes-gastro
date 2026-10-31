@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  leadHoras, fechaYMinutos, estadoDelLocal, horasDisponibles, entregaReal, LEAD_MAX_HORAS,
+  leadHoras, textoAnticipacion, fechaYMinutos, estadoDelLocal, horasDisponibles, entregaReal, LEAD_MAX_HORAS,
 } from '../modules/pedidosProgramados';
 
 const TZ = 'America/Argentina/Buenos_Aires'; // UTC-3 todo el año
@@ -115,5 +115,20 @@ describe('horasDisponibles al momento (sin encargo)', () => {
   it('sin horarios cargados ofrece el dia entero en vez de dejar al cliente sin opciones', () => {
     const h = horasDisponibles({ settings: {}, fechaISO: '2026-10-12', ahora: art('2026-10-10', '10:00'), timezone: TZ });
     expect(h.length).toBeGreaterThan(10);
+  });
+});
+
+describe('textoAnticipacion', () => {
+  it('dice las horas como se hablan', () => {
+    expect(textoAnticipacion(1)).toBe('1 hora');
+    expect(textoAnticipacion(1.5)).toBe('1 hora y media');
+    expect(textoAnticipacion(2)).toBe('2 horas');
+    expect(textoAnticipacion(2.5)).toBe('2 horas y media');
+    expect(textoAnticipacion(0.5)).toBe('media hora');
+    expect(textoAnticipacion(1.25)).toBe('1,25 horas');
+  });
+  it('sin horas validas devuelve vacio', () => {
+    expect(textoAnticipacion(0)).toBe('');
+    expect(textoAnticipacion('abc')).toBe('');
   });
 });

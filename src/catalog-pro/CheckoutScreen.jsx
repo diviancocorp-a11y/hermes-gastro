@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
 import SchedulePicker from "./SchedulePicker";
-import { leadHoras as leerLeadHoras, entregaReal } from "../modules/pedidosProgramados";
+import { leadHoras as leerLeadHoras, entregaReal, textoAnticipacion } from "../modules/pedidosProgramados";
 
 const STEPS = ["Datos", "Entrega", "Pago"];
 
@@ -208,7 +208,7 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
           // Por encargo: no existe "Ahora". Se pide a cualquier hora y se elige
           // cuando entregar, con la anticipacion que necesita el negocio.
           <p style={{ ...hint("neutral"), marginTop: 0 }}>
-            Trabajamos por encargo: elegí el día y la hora de entrega, con al menos {encargo} {encargo === 1 ? "hora" : "horas"} de anticipación.
+            Trabajamos por encargo: elegí el día y la hora de entrega, con al menos {textoAnticipacion(encargo)} de anticipación.
           </p>
         ) : (
           <>

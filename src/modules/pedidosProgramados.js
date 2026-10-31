@@ -24,6 +24,21 @@ export function leadHoras(settings) {
   return Number.isFinite(n) && n > 0 ? Math.min(n, LEAD_MAX_HORAS) : 0;
 }
 
+/**
+ * Las horas de anticipacion como se dicen: "1 hora", "1 hora y media",
+ * "2 horas", "media hora". Otras fracciones van con coma ("1,25 horas").
+ */
+export function textoAnticipacion(horas) {
+  const n = Number(horas);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  const enteras = Math.floor(n);
+  const resto = n - enteras;
+  const unidad = (k) => (k === 1 ? 'hora' : 'horas');
+  if (resto === 0) return `${enteras} ${unidad(enteras)}`;
+  if (resto === 0.5) return enteras === 0 ? 'media hora' : `${enteras} ${unidad(enteras)} y media`;
+  return `${String(n).replace('.', ',')} horas`;
+}
+
 /** Fecha (YYYY-MM-DD) y minutos del dia de `fecha` en la zona del negocio. */
 export function fechaYMinutos(fecha, timezone) {
   const partes = new Intl.DateTimeFormat('en-CA', {
