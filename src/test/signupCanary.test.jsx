@@ -48,22 +48,24 @@ describe('registro en tres pasos', () => {
     expect(screen.getByLabelText('Email')).toHaveValue('hola@cafeuno.com');
     expect(screen.getByLabelText('Contraseña')).toHaveValue('segura123');
   });
-  it('separa el plan de la cuenta y no crea ni cobra antes de conectar Mercado Pago', async () => {
+  it('separa el plan de la cuenta y permite crear el negocio sin contratar ni cobrar', async () => {
     await montar();
     expect(screen.queryByRole('button', { name: 'Cambiar', exact: true })).not.toBeInTheDocument();
     await cuenta(); await negocio();
     fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
     expect(screen.getByRole('heading', { name: 'Confirmá tu comienzo' })).toBeInTheDocument();
     expect(screen.getByText('Café Uno')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Continuar a Mercado Pago/ })).toBeDisabled();
-    fireEvent.submit(document.querySelector('.signup-form'));
+    expect(screen.getByRole('button', { name: /Crear mi cuenta/ })).toBeEnabled();
     expect(signupService.registrarNegocio).not.toHaveBeenCalled();
-    expect(signupService.registrarNegocioConGoogle).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Volver a tu negocio' }));
     expect(screen.getByLabelText('País y moneda')).toHaveValue('UY');
     expect(screen.getByRole('button', { name: 'A distancia' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Servicios' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText('Nombre de tu negocio')).toHaveValue('Café Uno');
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /Crear mi cuenta/ })));
+    expect(signupService.registrarNegocio).toHaveBeenCalledWith(expect.objectContaining({ bizName: 'Café Uno', country: 'UY', currency: 'UYU', plan: 'digital', periodo: 'mensual' }));
+    expect(screen.getByRole('heading', { name: 'Revisá tu email' })).toBeInTheDocument();
   });
   it('precarga solo el diagnostico correcto y permite cambiar plan y datos', async () => {
     sessionStorage.setItem('dico:diagnostico-v2-en-curso', JSON.stringify({ id: diag, respuestas: { nombre_negocio: 'La Esquina', contacto_nombre: 'Ricardo', vertical: 'gastronomia', canales: ['salon', 'catalogo_online'], locales: 'dos_tres' } }));

@@ -27,14 +27,14 @@
   Precarga editable de nombre, rubro, modalidad y recomendacion del diagnostico.
   WhatsApp comercial y direccion propuestos como datos opcionales siguientes;
   no se agregaron campos sin conectar su persistencia en el alta.
-- Ricky eligio un mes de prueba, cobro posterior y Mercado Pago. El paso 3
-  es una maqueta protegida: boton deshabilitado, sin tarjeta ni autorizacion,
-  sin activar prueba ni crear tenant. NO publicar este nuevo flujo hasta
-  conectar las suscripciones propias de Divianco y probar su confirmacion
-  del lado del servidor. El cobro de pedidos de tenants no sirve para esto.
-- La version funcional de dos pasos sigue en produccion. Los cambios nuevos
-  se revisan en preview; integracion comercial pendiente de credenciales y
-  configuracion del proveedor. No se guardan secretos en el repo.
+- Ricky eligio un mes de prueba, cobro posterior y Mercado Pago. Despues
+  autorizo publicar el nuevo diseno con alta SIN cobro: el paso 3 es ahora
+  Confirmacion, permite Crear mi cuenta con el contrato vigente de Auth y
+  signup_tenant. Guarda preferencia de plan, sin contratar, cobrar ni activar
+  automaticamente una prueba. Se aclara antes de confirmar. Mercado Pago
+  sigue pendiente de configuracion; no se reutilizan cobros de tenants.
+- Barra de registro ajustada a la captura: fondo negro, circulos dorados y
+  pulso volt sobre linea fina. Los pasos completos conservan un relleno tenue.
 
 ### Registro conectado al diagnostico y comparativa directa — 30/oct
 

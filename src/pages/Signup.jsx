@@ -18,7 +18,7 @@ const MODOS_LABEL = { fisico: 'En un local', virtual: 'A distancia', hibrido: 'A
 const MENSAJES_REGISTRO = [
   { titulo: 'Tu negocio empieza acá.', texto: 'Creá tu cuenta. El primer paso para recuperar tu tiempo.', detalle: 'Una cuenta. Todo tu negocio conectado.' },
   { titulo: 'Hagamos espacio para lo que importa.', texto: 'Contanos cómo trabajás. Te acompañamos para configurar Dico.', detalle: 'Tu negocio, tu forma de trabajar.' },
-  { titulo: 'Un mes para encontrar tu ritmo.', texto: 'Probá Dico con acompañamiento. Después empieza el pago del plan que elijas.', detalle: 'Primero lo conocés. Después seguís con tu plan.' },
+  { titulo: 'Tu negocio, listo para empezar.', texto: 'Revisá los datos. Creamos tu cuenta y te acompañamos para configurar Dico.', detalle: 'Tu cuenta se crea sin contratar ni realizar cobros.' },
 ];
 
 function BrandPanel({ paso, negocio }) {
@@ -27,7 +27,6 @@ function BrandPanel({ paso, negocio }) {
     <a href="/" className="signup-logo"><img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" /></a>
     <div className="signup-brand__message" key={paso}><h1>{mensaje.titulo}</h1><p>{mensaje.texto}</p></div>
     {paso === 1 && <div className="signup-brand__business" aria-hidden="true"><span>Tu espacio en Dico</span><strong>{negocio || 'Tu negocio'}</strong><p>Ventas · Stock · Resultados</p></div>}
-    {paso === 2 && <div className="signup-brand__trial" aria-hidden="true"><strong>01</strong><span>mes de prueba</span></div>}
     <p className="signup-brand__caption">{mensaje.detalle}</p>
   </aside>;
 }
@@ -124,9 +123,6 @@ export default function Signup() {
     };
     if (Object.keys(nuevos).length) { enfocarError(nuevos); return; }
     if (paso === 1) { setErrores({}); setPaso(2); return; }
-    // El checkout requiere autorizacion real y confirmacion del servidor.
-    // No crear un tenant ni simular una prueba desde esta maqueta.
-    if (paso === 2) { setError('La conexión de suscripciones con Mercado Pago todavía no está habilitada.'); return; }
     setEnviando(true); setError(null);
     try {
       const r = await (cuentaGoogle ? registrarNegocioConGoogle(datos) : registrarNegocio(datos));
@@ -146,7 +142,7 @@ export default function Signup() {
   return <div className="signup-page"><BrandPanel paso={paso} negocio={bizName} /><section className="signup-workspace" aria-label="Registro">
     <div className="signup-content">
       {listo ? <div className="signup-success" role="status"><h2>Revisá tu email</h2><p>Te mandamos un link a <strong>{email}</strong>. Cuando lo confirmes, activamos <strong>{slug}.divianco.app</strong>.</p><p>Si no llega en unos minutos, mirá en spam. Al confirmar, verificamos que el enlace siga disponible.</p><p>Crear tu cuenta no contrata una suscripción ni realiza un cobro.</p><a className="signup-inline-link" href="/entrar">Iniciá sesión</a></div> : <>
-        <ol className="signup-progress" style={{ '--signup-avance': `${paso * 50}%` }} aria-label="Pasos del registro">{['Tu cuenta', 'Tu negocio', 'Prueba y pago'].map((nombre, indice) => <li key={nombre} aria-current={paso === indice ? 'step' : undefined} data-completo={paso > indice}><span>{`0${indice + 1}`}</span>{indice < paso ? <button type="button" onClick={() => setPaso(indice)}>{nombre}</button> : nombre}</li>)}</ol>
+        <div className="signup-progress-panel"><ol className="signup-progress" style={{ '--signup-avance': `${paso * 50}%` }} aria-label="Pasos del registro">{['Tu cuenta', 'Tu negocio', 'Confirmación'].map((nombre, indice) => <li key={nombre} aria-current={paso === indice ? 'step' : undefined} data-completo={paso > indice}><span>{`0${indice + 1}`}</span>{indice < paso ? <button type="button" onClick={() => setPaso(indice)}>{nombre}</button> : nombre}</li>)}</ol></div>
         <h2 className="signup-title" tabIndex={-1} ref={tituloRef}>{['Creá tu cuenta', 'Prepará tu negocio', 'Confirmá tu comienzo'][paso]}</h2>
         {paso === 1 && inicial.desdeDiagnostico && <p className="signup-preloaded">Completamos estos datos con tu diagnóstico. Podés editarlos.</p>}
         {error && <p className="signup-error" role="alert">{error}</p>}
@@ -179,17 +175,17 @@ export default function Signup() {
               <a className="signup-inline-link" href={`${landing}#comparar-planes`} target="_blank" rel="noopener noreferrer">Comparar planes ↗</a>
             </fieldset>
           </> : <div className="signup-payment">
-            <p className="signup-preloaded">Un mes de prueba. El pago comienza después.</p>
+            <p className="signup-preloaded">Revisá tu negocio y la preferencia de plan antes de crear tu cuenta.</p>
             <dl className="signup-payment__summary">
               <div><dt>Tu negocio</dt><dd>{bizName}</dd></div>
               <div><dt>Plan elegido</dt><dd>{planActual.nombre} · {periodo === 'anual' ? 'Anual' : 'Mensual'}</dd></div>
-              <div><dt>Durante el primer mes</dt><dd className="signup-payment__zero">$0</dd></div>
-              <div><dt>Después de la prueba</dt><dd>{pesosDelPlan(precio.importe)} /{precio.periodo}<small>Por local · Sin IVA · Pesos argentinos</small></dd></div>
+              <div><dt>Cobro al crear tu cuenta</dt><dd className="signup-payment__zero">$0</dd></div>
+              <div><dt>Precio de referencia del plan</dt><dd>{pesosDelPlan(precio.importe)} /{precio.periodo}<small>Por local · Sin IVA · Pesos argentinos</small></dd></div>
             </dl>
-            <div className="signup-payment__provider"><span aria-hidden="true">↗</span><div><strong>Tu medio de pago, en Mercado Pago</strong><p>Vas a revisar el importe y autorizar los cobros desde su pantalla segura.</p></div></div>
-            <p className="signup-payment__pending" role="status">Vista previa: todavía falta conectar las suscripciones de Divianco. No se guarda una tarjeta, se inicia una prueba ni se crea el negocio desde esta pantalla.</p>
+            <div className="signup-payment__provider"><span aria-hidden="true">✓</span><div><strong>Tu cuenta, sin cobro ni suscripción</strong><p>Guardamos tu preferencia de plan. La contratación y el medio de pago se confirman por separado.</p></div></div>
+            <p className="signup-payment__pending" role="status">El mes de prueba todavía no se activa automáticamente. Crear tu cuenta no inicia la prueba ni autoriza débitos.</p>
           </div>}
-          <button className="signup-submit" type="submit" disabled={enviando || conectandoGoogle || paso === 2}>{enviando ? 'Creando…' : conectandoGoogle ? 'Verificando Google…' : paso === 2 ? 'Continuar a Mercado Pago' : 'Continuar'} <span aria-hidden="true">→</span></button>
+          <button className="signup-submit" type="submit" disabled={enviando || conectandoGoogle}>{enviando ? 'Creando…' : conectandoGoogle ? 'Verificando Google…' : paso === 2 ? 'Crear mi cuenta' : 'Continuar'} <span aria-hidden="true">→</span></button>
           {paso > 0 && <button type="button" className="signup-back" onClick={() => setPaso(paso - 1)}>{paso === 1 ? 'Volver a tu cuenta' : 'Volver a tu negocio'}</button>}
           <p className="signup-login">¿Ya tenés cuenta? <a href="/entrar">Iniciá sesión</a></p>
         </form>
