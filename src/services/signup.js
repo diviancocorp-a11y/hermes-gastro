@@ -32,10 +32,8 @@ export async function slugDisponible(slug) {
  * Paso 1: crea la cuenta. El tenant se crea recien tras confirmar el email.
  * @returns {{ ok: boolean, needsConfirmation?: boolean, error?: string }}
  */
-export async function registrarNegocio({
-  email, password, bizName, vertical, slug, fullName,
-  operationMode, country, currency, timezone, channels, diagnostico,
-}) {
+export async function registrarNegocio(datos) {
+  const { email, password, fullName, diagnostico } = datos;
   const nombrePersona = String(fullName || '').trim().replace(/\s+/g, ' ');
   if (nombrePersona.length < 2) {
     return { ok: false, error: 'Tu nombre es obligatorio' };
@@ -44,23 +42,7 @@ export async function registrarNegocio({
     email,
     password,
     options: {
-      data: {
-        biz_name: bizName,
-        vertical,
-        slug: String(slug || '').toLowerCase(),
-        full_name: nombrePersona,
-        // Ejes del alta (6a). signup_tenant() los lee server-side y cae en
-        // defaults usables si faltan — una cuenta creada antes de este deploy
-        // sigue pudiendo crear su negocio.
-        operation_mode: operationMode || null,
-        country: country || null,
-        currency: currency || null,
-        timezone: timezone || null,
-        channels: Array.isArray(channels) ? channels : [],
-        // El diagnostico de la landing viaja en el metadata: si el mail se
-        // confirma en otro dispositivo, el localStorage no esta, esto si.
-        diagnostico: UUID.test(String(diagnostico || '')) ? diagnostico : null,
-      },
+      data: metadataDelAlta({ ...datos, fullName: nombrePersona }),
       // Vuelve SIEMPRE a la raiz: el tenant todavia no existe, asi que su
       // subdominio no resolveria a nada.
       emailRedirectTo: `${window.location.origin}/bienvenido${
@@ -208,4 +190,67 @@ function traducirError(msg = '') {
     return 'Tu cuenta existe pero no tiene un negocio asociado. Escribinos y lo resolvemos.';
   }
   return msg || 'Algo falló. Intentá de nuevo.';
+}
+
+
+// La preferencia no concede modulos ni autoriza un cobro.
+function preferenciaDePlan(plan, periodo) {
+  return ['digital', 'local', 'cadena'].includes(plan)
+    ? { requested_plan: plan, requested_billing_period: plan !== 'digital' && periodo === 'anual' ? 'anual' : 'mensual' }
+    : {};
+}
+
+/** El boton social solo aparece cuando el proveedor esta habilitado realmente. */
+export async function googleDisponible() {
+  try {
+    const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/settings`, {
+      headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY }, credentials: 'omit',
+    });
+    return r.ok && (await r.json()).external?.google === true;
+  } catch { return false; }
+}
+
+export async function iniciarRegistroGoogle() {
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: {
+      redirectTo: `${window.location.origin}/registro?oauth=google`, scopes: 'email profile',
+    } });
+    return error ? { ok: false, error: 'No pudimos abrir Google. Podés continuar con tu email.' } : { ok: true };
+  } catch { return { ok: false, error: 'No pudimos conectar con Google. Volvé a intentarlo.' }; }
+}
+
+export async function cuentaGoogleActual() {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    const user = data?.user;
+    const esGoogle = user?.identities?.some(i => i.provider === 'google');
+    if (error || !user?.email || !user.email_confirmed_at || !esGoogle) return { ok: false, error: 'No se completó el acceso con Google. Podés volver a intentarlo o usar tu email.' };
+    return { ok: true, email: user.email, nombre: user.user_metadata?.full_name || '' };
+  } catch { return { ok: false, error: 'No pudimos verificar tu cuenta de Google. Intentá de nuevo.' }; }
+}
+
+/** Google ya verifico el correo. Los datos del negocio se confirman aparte. */
+export async function registrarNegocioConGoogle(datos) {
+  const { fullName } = datos;
+  const cuenta = await cuentaGoogleActual();
+  if (!cuenta.ok) return cuenta;
+  const nombre = String(fullName || '').trim().replace(/\s+/g, ' ');
+  if (nombre.length < 2) return { ok: false, error: 'Tu nombre es obligatorio' };
+  try {
+    const { error } = await supabase.auth.updateUser({ data: metadataDelAlta({ ...datos, fullName: nombre }) });
+    return error ? { ok: false, error: traducirError(error.message) } : { ok: true, needsConfirmation: false };
+  } catch { return { ok: false, error: 'No pudimos guardar tu negocio. Tus datos siguen acá para reintentar.' }; }
+}
+
+
+// Mismo contrato de negocio para correo y Google; la RPC lo revalida.
+function metadataDelAlta({ bizName, vertical, slug, fullName, operationMode, country, currency, timezone, channels, diagnostico, plan, periodo }) {
+  return {
+    biz_name: bizName, vertical, slug: String(slug || '').toLowerCase(), full_name: fullName,
+    operation_mode: operationMode || null, country: country || null,
+    currency: currency || null, timezone: timezone || null,
+    channels: Array.isArray(channels) ? channels : [],
+    diagnostico: UUID.test(String(diagnostico || '')) ? diagnostico : null,
+    ...preferenciaDePlan(plan, periodo),
+  };
 }

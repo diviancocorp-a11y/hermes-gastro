@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../../lib/planesPlataforma';
 import '../../styles/planes-negocio.css';
 
@@ -72,6 +72,17 @@ function Beneficios({ items }) {
 
 export default function PlanesNegocio({ onDiagnostico }) {
   const [anual, setAnual] = useState(false);
+  const comparativaRef = useRef(null);
+  useEffect(() => {
+    const abrirComparativa = () => {
+      if (window.location.hash !== '#comparar-planes' || !comparativaRef.current) return;
+      comparativaRef.current.open = true;
+      comparativaRef.current.scrollIntoView({ block: 'start' });
+    };
+    abrirComparativa();
+    window.addEventListener('hashchange', abrirComparativa);
+    return () => window.removeEventListener('hashchange', abrirComparativa);
+  }, []);
   return (
     <section className="pp-root" data-anual={anual} id="precios" aria-labelledby="pp-titulo">
       <div className="pp-luz-fondo" aria-hidden="true" />
@@ -113,7 +124,7 @@ export default function PlanesNegocio({ onDiagnostico }) {
             );
           })}
         </div>
-        <details className="pp-comparar">
+        <details className="pp-comparar" id="comparar-planes" ref={comparativaRef}>
           <summary>Comparar todas las funciones <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary>
           <div className="pp-comparacion">
             <div className="pp-tabla-scroll" role="region" aria-label="Comparación de funciones por plan" tabIndex={0}>

@@ -9,6 +9,144 @@
 
 ## 1. Estado al 30/oct/2026
 
+### Registro conectado al diagnostico y comparativa directa — 30/oct
+
+PR #62: Comparar planes abre `#comparar-planes`, con la tabla desplegada y en
+pantalla (raiz publica; `/landing` en previews). Registro en dos pasos:
+Tu cuenta (nombre, email, contraseña) y Tu negocio (nombre, rubro, modalidad,
+pais/moneda y enlace completo). Bienvenida negra con logo/mascota originales,
+formulario directo sobre marfil, seleccion/foco volt y accion dorada. Movil:
+bienvenida breve, sin mascota decorativa; formulario en una columna.
+
+Precarga nombre personal/negocio, rubro, modo y plan desde el diagnostico que
+coincide con `d`; datos editables. Plan/periodo quedan en metadata como
+preferencia (`requested_*`), sin asignar plan ni contratar/cobrar. Se conserva
+confirmacion por email, ejes del alta, comprobacion de enlace (ahora inmune a
+respuestas viejas) y creacion idempotente posterior en `/bienvenido`.
+
+Google preparado en el codigo con SDK existente y retorno al segundo paso:
+proveedor detectado en tiempo real, borrador por pestaña sin contraseña/tokens,
+identidad/correo verificados con getUser y mismo contrato de negocio que email.
+Consulta real de Auth: Google y Apple desactivados. No se activaron proveedores
+ni se crearon usuarios. Google Cloud no quedo accesible desde esta sesion;
+falta crear/conectar el cliente OAuth. El boton no se ofrece hasta habilitarlo.
+Valores y pasos en [REGISTRO-GOOGLE.md](REGISTRO-GOOGLE.md). La confirmacion
+comercial y activacion del mes de prueba quedan como etapa aparte.
+
+22 pruebas dirigidas (registro, Google simulado, privacidad del borrador y
+enlace a comparativa), typecheck, ESLint y build verdes. Detector antes/despues:
+17 hallazgos conocidos, ninguno nuevo. Navegador: cuenta y negocio en escritorio
+1366px/celular 390px sin desborde; precarga y envio de metadata comprobados con
+API simulada, sin cuentas/emails reales. Tabla abierta en destino y alineada
+al inicio del viewport. Capturas temporales eliminadas. Recurso oficial de
+Google en `public/brand/google.svg`, necesario para identificar el proveedor.
+Sigue en preview.
+
+### Correccion de composicion de la preparacion — 30/oct
+
+Ricky aclaro que baja la card completa, no Dico por separado. Durante la
+preparacion, card compacta centrada con logo/cierre, Dico a la izquierda,
+mensajes a la derecha y porcentaje debajo. Shader oro/volt fuera de la card,
+detras de ella; al terminar se abre el resultado existente. Sin escalar textos
+ni separar a Dico del mensaje; movimiento reducido elimina el traslado.
+37 pruebas UI dirigidas y build verdes. Encuadre sin WebGL: card de 247px en
+escritorio y 230px en celular, centrada; texto a la derecha y shader fuera
+de ella, sin desborde. Resultado posterior comprobado con API simulada.
+No cambia captura, API ni resultado.
+
+### Contacto previo y Dico preparando el resultado — 30/oct
+
+PR #62: el ultimo paso conserva nombre del negocio opcional y pide nombre,
+WhatsApp internacional y autorizacion para guardar/contactar. Reutiliza la
+capacidad privada de la API existente (0117), sin nuevas tablas ni cambios del
+servidor. Confirma respuestas y contacto antes de entregar el resultado;
+error conserva datos y permite reintentar sin duplicar la fila. Datos personales
+y capacidad quedan fuera de URL y analitica. El registro se adaptara despues;
+por ahora la sesion conserva estos datos junto a las respuestas.
+
+El resultado nombra el negocio en el mensaje de Dico, titulo y texto inicial;
+si falta, usa el nombre de la persona. Durante la preparacion, el mismo Dico
+baja al centro y crece, con los mensajes cambiantes en su burbuja. Se reutiliza
+ShaderBackground del tramo bajo el hero, solo durante la lectura; 100% volt
+mientras prepara, dorado al entregar. Se respeta movimiento reducido.
+
+61 pruebas dirigidas, ESLint y build; las 14 UI afectadas se repitieron tras el
+ultimo ajuste. Navegador desktop/celular: un solo Dico centrado, mensaje en su
+chat, shader y 100%; resultado sin formulario ni desborde. Prueba real desde
+la UI: diagnostico y contacto HTTP200, campos y consentimiento comprobados en
+DB; registro QA eliminado y ausencia confirmada. Recarga/reintentos cubiertos
+con API simulada. Sigue en preview, sin publicar el front en produccion.
+
+### Resultado y recomendacion de plan — 30/oct
+
+PR #62: solo cambia el cuerpo marfil del resultado. Hallazgos con etiquetas
+breves e iconos, primer paso y alcance a la izquierda; plan recomendado negro
+con borde dorado a la derecha. En celular, el plan sigue al resultado. Precio,
+beneficios y alternativa anual salen de planesPlataforma; se explica el motivo
+del plan y el total anual. Una sola accion principal: Empezar con Dico. Conserva
+negocio, rubro, diagnostico y plan en el enlace al registro (la pantalla de alta
+se adaptara despues). Comparar planes abre otra pestaña para conservar el
+resultado. Se retira el formulario WhatsApp del resultado; capturarlo antes es
+una fase pendiente. No cambian preguntas, cabecera negra, analisis ni guardado.
+56 pruebas dirigidas verdes, ESLint y build. Navegador sin datos reales:
+escritorio y celular 390px, sin desborde, plan despues del contenido y cero
+formularios en el resultado. Capturas temporales eliminadas. Sigue en preview.
+
+### Lectura del estado de analisis — 30/oct
+
+PR #62: mensajes de preparacion en tinta clara con pulso blanco/volt y un
+indicador circular de carga al lado. Se conserva la legibilidad durante todo
+el pulso; no se reduce la opacidad. Movimiento reducido deja texto y aro
+quietos. Verificado en celular y con movimiento reducido; las nueve pruebas
+del recorrido/hero siguen verdes. No cambian tiempos, preguntas ni resultado.
+Sigue en preview.
+
+### Continuidad del resultado y luces — 30/oct
+
+En el mismo PR #62: la lectura muestra 100% de respuestas completadas y conserva
+el pulso volt mientras prepara la orientacion. Al entregar el resultado pasa
+a dorado. El logo, Dico y progreso siguen sobre negro; el marfil empieza justo
+en el titulo "Tu diagnostico" y continua por todo su contenido. El logo mantiene
+su version para fondo oscuro. Luces con recorrido mas amplio, ciclos de 5/7s,
+sin modificar la preferencia de movimiento reducido. Altura estable intacta.
+32 pruebas UI dirigidas verdes y build. Capturas de escritorio/celular verifican
+cabecera RGB9/9/11 y cuerpo RGB250/245/238, sin desborde; no hubo datos reales.
+Capturas temporales eliminadas. Esta version sigue en preview para Ricky.
+
+### Ajustes del diagnostico en preview — 30/oct
+
+PR #62, rama `codex/diagnostico-panel-unico`: card con altura fija por viewport
+(hasta 880px) y scroll interno, sin cambiar de encuadre al seleccionar. Dico ya
+no se remonta por respuesta: expresion fija por pregunta, saludo de un ciclo
+al hover/foco/tap y lectura animada durante el analisis. Se respeta movimiento
+reducido. Resumen volt visible con acciones Cambiar por dato, conservando las
+otras respuestas y cerrando el desplegable al volver a la pregunta elegida.
+Luces oro/volt detras del modal, movimiento continuo solo mientras se muestra.
+Lectura final de 9,6s con cuatro mensajes de revision/preparacion, sin simular
+calculos financieros ni consultas a IA. Resultado sin redisenar por ahora.
+50 pruebas dirigidas verdes. Navegador con API simulada: card 1040x672 constante
+en seis estados a 1366x768; movil 358x812 antes/despues de elegir, sin desborde.
+Edicion conserva datos, sprite sin remonte en selecciones, saludo termina,
+mensajes cambian y reduced-motion elimina la animacion de luces. No se crearon
+registros reales. Capturas temporales eliminadas. Sigue pendiente de aprobacion.
+
+### Diagnostico: panel unico en revision — 30/oct
+
+Rama `codex/diagnostico-panel-unico`: preguntas sobre negro en una columna,
+logo oficial y Dico del atlas vigente. Resumen nativo en "Ver mis respuestas",
+solo datos completados; se retira el plan anticipado. Resultado sobre marfil.
+Progreso porcentual derivado de las respuestas, pulso volt de izquierda a
+derecha; 96% durante el analisis y 100% dorado quieto al mostrar el resultado.
+Movimiento reducido deja la barra sin pulso. No se publica hasta revision.
+Preguntas/ids, guardado, contacto y apertura/cierre conservan sus contratos.
+Registro/precarga de contacto se trabajaran despues; este cambio es visual.
+Comercio y Servicios usan etiquetas breves, sin excluir mayoristas.
+48 pruebas dirigidas verdes; detector antes/despues con 17 hallazgos conocidos.
+Notebook 1366x768: primera pantalla seleccionada cabe sin scroll (623px antes
+del ultimo ajuste tipografico). Celular 390px sin desborde horizontal; resumen
+sin filas vacias. No se guardaron contactos ni diagnosticos reales en estas
+pruebas. Las capturas locales se eliminaron tras revisarlas.
+
 ### Publicacion aprobada por Ricky
 
 **Diagnostico v2 aprobado para produccion, 30/oct:** medicion de Claude 8f7bbd1 publicada por

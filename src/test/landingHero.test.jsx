@@ -3,8 +3,10 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
+import { supabase } from '../lib/supabase';
 
 vi.mock('../lib/supabase', () => ({ supabase: { functions: { invoke: vi.fn() } } }));
+vi.mock('../components/landing/ShaderBackground', () => ({ default: () => null }));
 vi.mock('../lib/analiticaPlataforma', () => ({ marcarEvento: vi.fn() }));
 
 function Portada({ onAbrir }) {
@@ -18,6 +20,7 @@ function montar() {
 }
 
 beforeEach(() => {
+  supabase.functions.invoke.mockImplementation((_nombre, { body }) => Promise.resolve({ data: body.accion === 'contacto' ? { ok: true } : { id: 'diag-test', contacto_token: 'token-test' }, error: null }));
   sessionStorage.clear();
   window.history.replaceState({}, '');
   window.scrollTo = vi.fn();
@@ -36,12 +39,69 @@ describe('hero y diagnóstico comparten un solo recorrido', () => {
     expect(screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveFocus();
     fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
     fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Seguir' }));
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
     const pregunta = screen.getByRole('heading', { name: '¿Qué es lo que más te preocupa hoy?' });
     act(() => abrirRef.current());
     expect(pregunta).toHaveFocus();
     expect(screen.getByText('Pregunta 2 de 8')).toBeInTheDocument();
     expect(JSON.parse(sessionStorage.getItem('dico:diagnostico-v2-en-curso')).respuestas.vertical).toBe('gastronomia');
+  });
+
+  it('el porcentaje sigue las respuestas y el resumen no adelanta un plan ni filas vacias', () => {
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuemax', '100');
+    expect(screen.queryByText('Plan que te conviene')).not.toBeInTheDocument();
+    const resumen = document.querySelector('.dg-resumen');
+    expect(resumen).not.toHaveAttribute('open');
+    expect(resumen.querySelectorAll('dt')).toHaveLength(0);
+    fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
+    fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '13');
+    expect(resumen.querySelectorAll('dt')).toHaveLength(2);
+  });
+
+  it('editar desde el resumen vuelve a la pregunta conservando respuestas y sin remontar Dico por cada seleccion', () => {
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
+    const personaje = document.querySelector('.dico-pose-celda');
+    fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
+    expect(document.querySelector('.dico-pose-celda')).toBe(personaje);
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
+    fireEvent.click(screen.getByText('Ver mis respuestas'));
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar rubro' }));
+    expect(screen.getByRole('heading', { name: '¿Qué tipo de negocio tenés?' })).toHaveFocus();
+    expect(screen.getByRole('radio', { name: 'Gastronomía' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Restaurante' })).toBeChecked();
+    expect(document.querySelector('.dg-resumen')).not.toHaveAttribute('open');
+  });
+
+  it('mantiene una lectura pausada con mensajes reales y termina en 100%', async () => {
+    vi.useFakeTimers();
+    try {
+      sessionStorage.setItem('dico:diagnostico-v2-en-curso', JSON.stringify({ version: 2, respuestas: {
+        vertical: 'gastronomia', establecimiento: 'restaurante', desafio: 'costos', senal: 'mensual',
+        canales: ['salon'], locales: 'uno', equipo: 'hasta_5', gestion_actual: 'planillas',
+        venta_mensual: 'no_se', urgencia: 'este_mes', decisor: 'yo', nombre_negocio: 'Prueba', contacto_nombre: 'Ricky', contacto_whatsapp: '+5491112345678', contacto_consentimiento: true,
+      } }));
+      window.history.replaceState({ dg: 7, desde: true }, '');
+      montar();
+      await act(async () => fireEvent.click(screen.getByRole('button', { name: /Ver mi diagnóstico/ })));
+      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
+      expect(screen.getByText('Estoy revisando lo que me contaste.')).toBeInTheDocument();
+      expect(document.querySelector('.dg-avance')).not.toHaveClass('dg-avance-completo');
+      await act(async () => vi.advanceTimersByTime(2500));
+      expect(screen.getByText('Estoy relacionando tu prioridad con las herramientas de Dico.')).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Lo que entendimos' })).not.toBeInTheDocument();
+      await act(async () => vi.advanceTimersByTime(7100));
+      expect(screen.getByRole('heading', { name: 'Lo que entendimos' })).toBeInTheDocument();
+      expect(document.querySelector('.dg-avance')).toHaveClass('dg-avance-completo');
+      expect(document.querySelector('#dg-resultado-titulo').closest('.dg-resultado-contenido')).not.toBeNull();
+      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
+    } finally { cleanup(); vi.useRealTimers(); }
   });
 
   it('volver al inicio devuelve el foco al CTA y las respuestas sobreviven al reabrir', async () => {

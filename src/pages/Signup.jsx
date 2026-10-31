@@ -1,401 +1,168 @@
-// src/pages/Signup.jsx
-// Alta self-service: el cliente crea su propio negocio en la plataforma.
-
-import { useState, useEffect, useRef, useCallback } from 'react';
+// Registro de la plataforma: cuenta primero, negocio despues.
+import { useState, useEffect, useRef } from 'react';
 import { slugify, validateSlug } from '../lib/slugify';
-import { slugDisponible, registrarNegocio } from '../services/signup';
+import { slugDisponible, registrarNegocio, googleDisponible, iniciarRegistroGoogle, cuentaGoogleActual, registrarNegocioConGoogle } from '../services/signup';
 import { modosDisponibles, canalesSugeridos } from '../modules/registry';
 import { paisesDisponibles, monedaDe, zonaDe, PAIS_POR_DEFECTO } from '../modules/paises';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
+import { contextoDelRegistro, recordarRegistroGoogle, limpiarRegistroGoogle } from '../lib/registroPlataforma';
+import { PLANES_COMERCIALES } from '../lib/planesPlataforma';
+import DicoPhysical from '../components/dico/DicoPhysical';
 import '../styles/signup.css';
 
-const VERTICALES = [
-  { id: 'gastro', nombre: 'Gastronomía', detalle: 'Carta, pedidos, recetas' },
-  { id: 'barber', nombre: 'Servicios', detalle: 'Servicios y cobros' },
-  { id: 'retail', nombre: 'Comercio', detalle: 'Artículos y stock' },
-];
-
-// Lo primero que se carga despues del alta, dicho como en cada rubro.
-const QUE_CARGAR = { gastro: 'tu carta', barber: 'tus servicios', retail: 'tus artículos' };
-
+const VERTICALES = [{ id: 'gastro', nombre: 'Gastronomía' }, { id: 'retail', nombre: 'Comercio' }, { id: 'barber', nombre: 'Servicios' }];
 const MODOS = modosDisponibles();
 const PAISES = paisesDisponibles();
-
-function VerticalIcon({ id }) {
-  if (id === 'gastro') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7 3v8M4.5 3v5.5A2.5 2.5 0 0 0 7 11M9.5 3v5.5A2.5 2.5 0 0 1 7 11v10M16 3v18M16 3c2.3 0 4 2.4 4 5.5S18.3 14 16 14" />
-      </svg>
-    );
-  }
-
-  if (id === 'barber') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="6" cy="7" r="2.5" />
-        <circle cx="6" cy="17" r="2.5" />
-        <path d="m8.2 8.2 11.3 7.3M8.2 15.8 19.5 8.5M10.8 12l-2.6-1.8" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m8.5 4 3.5 2 3.5-2 4 3-2 3v10h-11V10l-2-3 4-3Z" />
-    </svg>
-  );
-}
-
-function MailIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="m4 7 8 6 8-6" />
-    </svg>
-  );
-}
-
-function Campo({ label, hint, htmlFor, children }) {
-  return (
-    <div className="signup-field">
-      <label className="signup-label" htmlFor={htmlFor}>{label}</label>
-      {children}
-      {hint && <p className="signup-hint">{hint}</p>}
-    </div>
-  );
-}
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MODOS_LABEL = { fisico: 'En un local', virtual: 'A distancia', hibrido: 'Ambas' };
 
 function BrandPanel() {
-  return (
-    <aside className="signup-brand" aria-label="Dico">
-      <div className="signup-brand__grid" aria-hidden="true" />
-      <div className="signup-wordmark">
-        <span>DICO</span>
-        <i aria-hidden="true" />
-      </div>
-      <div className="signup-brand__message">
-        <p className="signup-technical">Alta de negocio · Sistema Dico</p>
-        <h1><span>Creá tu</span> <span>negocio.</span></h1>
-        <p>Es gratis y toma un minuto.</p>
-      </div>
-      <ol className="signup-brand__steps" aria-label="Proceso de alta">
-        <li><span>01</span>Configurá</li>
-        <li><span>02</span>Confirmá</li>
-        <li><span>03</span>Empezá</li>
-      </ol>
-    </aside>
-  );
+  const [saludando, setSaludando] = useState(true);
+  useEffect(() => { if (!saludando) return undefined; const timer = setTimeout(() => setSaludando(false), 1400); return () => clearTimeout(timer); }, [saludando]);
+  return <aside className="signup-brand" aria-label="Bienvenida a Dico">
+    <a href="/" className="signup-logo"><img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" /></a>
+    <div className="signup-brand__message"><h1>Tu negocio{' '}<br />empieza acá.</h1><p>Creá tu cuenta. Te acompañamos para configurar Dico.</p></div>
+    <button type="button" className="signup-mascota" aria-label="Saludar a Dico" onPointerEnter={() => setSaludando(true)} onFocus={() => setSaludando(true)} onClick={() => setSaludando(true)}>
+      <DicoPhysical pose="idle" animacion={saludando ? 'saluda' : null} reducedMotion={saludando ? undefined : true} ritmo={.45} title="Dico" />
+    </button>
+  </aside>;
 }
 
-// La landing manda /registro?negocio=<nombre> desde la frase del cierre.
-// Solo precarga el nombre: el resto del alta no cambia.
-function negocioDeLaUrl() {
-  if (typeof window === 'undefined') return '';
-  const nombre = new URLSearchParams(window.location.search).get('negocio') || '';
-  return nombre.trim().slice(0, 80);
-}
-
-// El diagnostico manda /registro?rubro=gastro|retail|barber: se preselecciona
-// ese rubro y nada mas.
-// El id del diagnostico (?d=) viaja al metadata del alta y al link del mail,
-// asi se vincula aunque el mail se confirme en otro dispositivo.
-function diagnosticoDeLaUrl() {
-  if (typeof window === 'undefined') return null;
-  return new URLSearchParams(window.location.search).get('d');
-}
-
-function rubroDeLaUrl() {
-  if (typeof window === 'undefined') return 'gastro';
-  const rubro = new URLSearchParams(window.location.search).get('rubro');
-  return VERTICALES.some((v) => v.id === rubro) ? rubro : 'gastro';
+function Campo({ label, id, error, hint, children }) {
+  return <div className="signup-field"><label className="signup-label" htmlFor={id}>{label}</label>{children}{hint && <p className="signup-hint" id={`${id}-ayuda`}>{hint}</p>}{error && <p className="signup-field-error" id={`${id}-error`}>{error}</p>}</div>;
 }
 
 export default function Signup() {
-  const [bizName, setBizName] = useState(negocioDeLaUrl);
-  const [slug, setSlug] = useState('');
-  const [slugTocado, setSlugTocado] = useState(false);
-  const [vertical, setVertical] = useState(rubroDeLaUrl);
-  const [modo, setModo] = useState('fisico');
-  const [country, setCountry] = useState(PAIS_POR_DEFECTO);
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const [inicial] = useState(contextoDelRegistro);
+  const [paso, setPaso] = useState(0);
+  const [bizName, setBizName] = useState(inicial.bizName);
+  const [slugManual, setSlug] = useState(inicial.slug || slugify(inicial.bizName));
+  const [slugTocado, setSlugTocado] = useState(inicial.slugTocado);
+  const [vertical, setVertical] = useState(inicial.vertical);
+  const [modo, setModo] = useState(inicial.modo);
+  const [country, setCountry] = useState(PAISES.some(p => p.id === inicial.country) ? inicial.country : PAIS_POR_DEFECTO);
+  const [fullName, setFullName] = useState(inicial.fullName);
+  const [email, setEmail] = useState(inicial.email);
   const [password, setPassword] = useState('');
-
-  const [dispo, setDispo] = useState(null);
+  const [verPassword, setVerPassword] = useState(false);
+  const [plan, setPlan] = useState(inicial.plan);
+  const [periodo, setPeriodo] = useState(inicial.periodo);
+  const [cambiarPlan, setCambiarPlan] = useState(false);
+  const [resultadoDispo, setResultadoDispo] = useState(null);
+  const [chequeo, setChequeo] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
+  const [errores, setErrores] = useState({});
   const [listo, setListo] = useState(false);
+  const [google, setGoogle] = useState(false);
+  const [cuentaGoogle, setCuentaGoogle] = useState(false);
+  const [conectandoGoogle, setConectandoGoogle] = useState(() => new URLSearchParams(window.location.search).get('oauth') === 'google');
+  const tituloRef = useRef(null);
+  const pasoAnterior = useRef(0);
+  const formRef = useRef(null);
+  const slug = slugTocado ? slugManual : slugify(bizName);
+  const validacionLocal = validateSlug(slug);
+  const dispo = !validacionLocal.ok ? null : resultadoDispo?.slug === slug && resultadoDispo.chequeo === chequeo ? resultadoDispo.valor : 'checking';
 
-  const debounce = useRef(null);
-
+  useEffect(() => { document.title = 'Creá tu cuenta — Dico'; cargarAnalitica(); }, []);
   useEffect(() => {
-    document.title = 'Crear mi negocio — Dico';
-    cargarAnalitica();
+    let vigente = true;
+    if (!validacionLocal.ok) return undefined;
+    const timer = setTimeout(async () => {
+      try { const disponible = await slugDisponible(slug); if (vigente) setResultadoDispo({ slug, chequeo, valor: disponible }); } catch { if (vigente) setResultadoDispo({ slug, chequeo, valor: null }); }
+    }, 400);
+    return () => { vigente = false; clearTimeout(timer); };
+  }, [slug, validacionLocal.ok, chequeo]);
+  useEffect(() => {
+    if (pasoAnterior.current !== paso) { tituloRef.current?.focus(); pasoAnterior.current = paso; }
+  }, [paso]);
+  useEffect(() => {
+    let vigente = true;
+    googleDisponible().then(ok => { if (vigente) setGoogle(ok); });
+    if (new URLSearchParams(window.location.search).get('oauth') === 'google') {
+      cuentaGoogleActual().then(cuenta => {
+        if (!vigente) return;
+        setConectandoGoogle(false);
+        if (!cuenta.ok) { setError(cuenta.error); return; }
+        setCuentaGoogle(true); setEmail(cuenta.email); setFullName(nombre => nombre || cuenta.nombre); setPaso(1);
+      });
+    }
+    return () => { vigente = false; };
   }, []);
 
-  useEffect(() => {
-    if (!slugTocado) setSlug(slugify(bizName));
-  }, [bizName, slugTocado]);
-
-  const validacionLocal = validateSlug(slug);
-
-  useEffect(() => {
-    if (!validacionLocal.ok) { setDispo(null); return; }
-    setDispo('checking');
-    clearTimeout(debounce.current);
-    debounce.current = setTimeout(async () => {
-      setDispo(await slugDisponible(slug));
-    }, 400);
-    return () => clearTimeout(debounce.current);
-  }, [slug, validacionLocal.ok]);
-
-  const paisElegido = PAISES.find((p) => p.id === country);
-
-  const puedeEnviar =
-    bizName.trim().length >= 2 &&
-    fullName.trim().length >= 2 &&
-    validacionLocal.ok && dispo === true &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
-    password.length >= 8 &&
-    !enviando;
-
-  const enviar = useCallback(async (e) => {
+  const cambiar = (campo, valor, setter) => { setter(valor); setErrores(anteriores => ({ ...anteriores, [campo]: null })); setError(null); };
+  const validarCuenta = () => ({
+    ...(fullName.trim().length < 2 ? { fullName: 'Escribí tu nombre (al menos dos caracteres).' } : {}),
+    ...(!EMAIL.test(email) ? { email: 'Escribí un email válido.' } : {}),
+    ...(!cuentaGoogle && password.length < 8 ? { password: 'Usá al menos 8 caracteres.' } : {}),
+  });
+  const enfocarError = nuevos => {
+    setErrores(nuevos);
+    const primer = Object.keys(nuevos)[0];
+    formRef.current?.querySelector(`[name="${primer}"]`)?.focus();
+  };
+  const datos = { email, password, bizName: bizName.trim(), vertical, slug, fullName: fullName.trim(), operationMode: modo, country, currency: monedaDe(country), timezone: zonaDe(country), channels: canalesSugeridos(vertical, modo), diagnostico: inicial.diagnostico, plan, periodo };
+  const abrirGoogle = async () => {
+    if (conectandoGoogle || enviando) return;
+    if (!recordarRegistroGoogle({ ...datos, modo, slugTocado })) { setError('No pudimos conservar los datos para volver de Google. Podés continuar con tu email.'); return; }
+    setConectandoGoogle(true); setError(null);
+    const r = await iniciarRegistroGoogle();
+    if (!r.ok) { setConectandoGoogle(false); setError(r.error); }
+  };
+  const enviar = async e => {
     e.preventDefault();
-    if (!puedeEnviar) return;
+    if (enviando || conectandoGoogle) return;
+    const cuenta = validarCuenta();
+    if (Object.keys(cuenta).length) { setPaso(0); enfocarError(cuenta); return; }
+    if (paso === 0) { setErrores({}); setPaso(1); return; }
+    const nuevos = {
+      ...(bizName.trim().length < 2 ? { bizName: 'Escribí el nombre de tu negocio (al menos dos caracteres).' } : {}),
+      ...(!validacionLocal.ok ? { slug: validacionLocal.reason } : dispo !== true ? { slug: dispo === 'checking' ? 'Esperá la comprobación del enlace.' : dispo === false ? 'Este enlace ya está ocupado. Elegí otro.' : 'No pudimos comprobar el enlace. Volvé a intentarlo.' } : {}),
+    };
+    if (Object.keys(nuevos).length) { enfocarError(nuevos); return; }
     setEnviando(true); setError(null);
-    const r = await registrarNegocio({
-      email, password, bizName, vertical, slug, fullName,
-      operationMode: modo,
-      country,
-      currency: monedaDe(country),
-      timezone: zonaDe(country),
-      channels: canalesSugeridos(vertical, modo),
-      diagnostico: diagnosticoDeLaUrl(),
-    });
-    setEnviando(false);
-    if (!r.ok) { setError(r.error); return; }
-    marcarEvento('registro-enviado');
-    setListo(true);
-  }, [puedeEnviar, email, password, bizName, vertical, slug, fullName, modo, country]);
+    try {
+      const r = await (cuentaGoogle ? registrarNegocioConGoogle(datos) : registrarNegocio(datos));
+      if (!r.ok) { setError(r.error); return; }
+      limpiarRegistroGoogle(); marcarEvento('registro-enviado');
+      if (r.needsConfirmation === false) { window.location.assign(`/bienvenido${inicial.diagnostico ? `?d=${inicial.diagnostico}` : ''}`); return; }
+      setListo(true);
+    } catch { setError('No pudimos crear tu cuenta. Tus datos siguen acá para reintentar.'); }
+    finally { setEnviando(false); }
+  };
+  const atributos = campo => ({ 'aria-invalid': Boolean(errores[campo]), 'aria-describedby': errores[campo] ? `signup-${campo}-error` : undefined });
+  const planActual = PLANES_COMERCIALES.find(p => p.id === plan);
+  const landing = window.location.hostname.endsWith('.vercel.app') ? '/landing' : '/';
 
-  if (listo) {
-    return (
-      <main className="signup-page signup-page--success">
-        <BrandPanel />
-        <section className="signup-workspace signup-success-wrap">
-          <div className="signup-success" role="status">
-            <div className="signup-success__icon"><MailIcon /></div>
-            <p className="signup-eyebrow">Registro recibido</p>
-            <h2>Revisá tu email</h2>
-            <p>
-              Te mandamos un link a <strong>{email}</strong>. Cuando lo confirmes,
-              creamos <strong>{slug}.divianco.app</strong> y entrás a cargar {QUE_CARGAR[vertical] || 'tu catálogo'}.
-            </p>
-            <p className="signup-success__note">
-              Si no llega en unos minutos, mirá en spam. La dirección queda reservada
-              para vos mientras tanto.
-            </p>
-          </div>
-        </section>
-      </main>
-    );
-  }
-
-  return (
-    <main className="signup-page">
-      <BrandPanel />
-
-      <section className="signup-workspace">
-        <header className="signup-intro">
-          <p className="signup-eyebrow">Configuración inicial</p>
-          <h2>Empecemos por lo esencial</h2>
-          <p>Todo lo demás se puede ajustar después.</p>
-        </header>
-
-        <form className="signup-form" onSubmit={enviar}>
-          <section className="signup-card" aria-labelledby="signup-business-heading">
-            <header className="signup-card__heading">
-              <span>01</span>
-              <h3 id="signup-business-heading">Tu negocio</h3>
-            </header>
-
-            <Campo label="¿Cómo se llama tu negocio?" htmlFor="signup-business-name">
-              <input
-                id="signup-business-name"
-                className="signup-control"
-                value={bizName}
-                autoFocus
-                onChange={(e) => setBizName(e.target.value)}
-                placeholder="Pizzería Doña Rosa"
-                maxLength={80}
-              />
-            </Campo>
-
-            <fieldset className="signup-fieldset">
-              <legend className="signup-label">¿A qué te dedicás?</legend>
-              <div className="signup-options signup-options--verticals">
-                {VERTICALES.map((v) => {
-                  const activo = vertical === v.id;
-                  return (
-                    <button
-                      className={`signup-option${activo ? ' is-active' : ''}`}
-                      type="button"
-                      key={v.id}
-                      onClick={() => setVertical(v.id)}
-                      aria-pressed={activo}
-                    >
-                      <span className="signup-option__icon"><VerticalIcon id={v.id} /></span>
-                      <span className="signup-option__copy">
-                        <strong>{v.nombre}</strong>
-                        <small>{v.detalle}</small>
-                      </span>
-                      <span className="signup-option__state" aria-hidden="true" />
-                    </button>
-                  );
-                })}
-              </div>
-            </fieldset>
-
-            <fieldset className="signup-fieldset">
-              <legend className="signup-label">¿Cómo atendés?</legend>
-              <div className="signup-options signup-options--modes">
-                {MODOS.map((m) => {
-                  const activo = modo === m.id;
-                  return (
-                    <button
-                      className={`signup-option signup-option--mode${activo ? ' is-active' : ''}`}
-                      type="button"
-                      key={m.id}
-                      onClick={() => setModo(m.id)}
-                      aria-pressed={activo}
-                    >
-                      <span className="signup-option__copy">
-                        <strong>{m.label}</strong>
-                        <small>{m.hint}</small>
-                      </span>
-                      <span className="signup-option__state" aria-hidden="true" />
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="signup-hint">Define si vas a manejar mesas, caja y gente en el local.</p>
-            </fieldset>
-
-            <Campo
-              label="¿En qué país?"
-              htmlFor="signup-country"
-              hint={paisElegido && !paisElegido.factura
-                ? `Podés operar y cobrar. La facturación electrónica todavía no está disponible en ${paisElegido.label}.`
-                : 'Define tu moneda, tu huso horario y cómo se factura.'}
-            >
-              <div className="signup-select-wrap">
-                <select
-                  id="signup-country"
-                  className="signup-control signup-select"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                >
-                  {PAISES.map((p) => (
-                    <option key={p.id} value={p.id}>{p.label} — {p.currency}</option>
-                  ))}
-                </select>
-              </div>
-            </Campo>
-
-            <Campo label="La dirección de tu local" htmlFor="signup-slug">
-              <div className="signup-slug">
-                <input
-                  id="signup-slug"
-                  className="signup-control"
-                  value={slug}
-                  onChange={(e) => { setSlugTocado(true); setSlug(slugify(e.target.value)); }}
-                  placeholder="mi-negocio"
-                  maxLength={40}
-                  spellCheck={false}
-                />
-                <span>.divianco.app</span>
-              </div>
-              <div className="signup-validation" aria-live="polite">
-                {slug && !validacionLocal.ok && (
-                  <span className="is-error">{validacionLocal.reason}</span>
-                )}
-                {validacionLocal.ok && dispo === 'checking' && <span>Verificando…</span>}
-                {validacionLocal.ok && dispo === true && (
-                  <span className="is-success">✓ {slug}.divianco.app está libre</span>
-                )}
-                {validacionLocal.ok && dispo === false && (
-                  <span className="is-error">Esa dirección ya está ocupada</span>
-                )}
-                {validacionLocal.ok && dispo === null && (
-                  <span>No pudimos verificar la disponibilidad</span>
-                )}
-              </div>
-            </Campo>
-          </section>
-
-          <section className="signup-card" aria-labelledby="signup-access-heading">
-            <header className="signup-card__heading">
-              <span>02</span>
-              <h3 id="signup-access-heading">Tu acceso</h3>
-            </header>
-            <Campo label="Tu nombre" htmlFor="signup-full-name">
-              <input
-                id="signup-full-name"
-                className="signup-control"
-                type="text"
-                value={fullName}
-                autoComplete="name"
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Cómo te llamás"
-                required
-              />
-            </Campo>
-            <div className="signup-access-grid">
-              <Campo label="Tu email" htmlFor="signup-email">
-                <input
-                  id="signup-email"
-                  className="signup-control"
-                  type="email"
-                  value={email}
-                  autoComplete="email"
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="vos@ejemplo.com"
-                />
-              </Campo>
-
-              <Campo label="Contraseña" htmlFor="signup-password" hint="Mínimo 8 caracteres.">
-                <input
-                  id="signup-password"
-                  className="signup-control"
-                  type="password"
-                  value={password}
-                  autoComplete="new-password"
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                />
-              </Campo>
-            </div>
-          </section>
-
-          {error && <div className="signup-error" role="alert">{error}</div>}
-
-          <button
-            className="signup-submit"
-            type="submit"
-            disabled={!puedeEnviar}
-            aria-busy={enviando}
-          >
-            <span>{enviando ? 'Creando…' : 'Crear mi negocio'}</span>
-            <span aria-hidden="true">→</span>
-          </button>
-
-          <p className="signup-legal">
-            Te vamos a pedir que confirmes el email antes de activar el local.
-          </p>
-          <p className="signup-login">¿Ya tenés cuenta? <a href="/entrar">Entrar</a></p>
+  return <div className="signup-page"><BrandPanel /><section className="signup-workspace" aria-label="Registro">
+    <div className="signup-content">
+      {listo ? <div className="signup-success" role="status"><h2>Revisá tu email</h2><p>Te mandamos un link a <strong>{email}</strong>. Cuando lo confirmes, activamos <strong>{slug}.divianco.app</strong>.</p><p>Si no llega en unos minutos, mirá en spam. Al confirmar, verificamos que el enlace siga disponible.</p><p>Crear tu cuenta no contrata una suscripción ni realiza un cobro.</p><a className="signup-inline-link" href="/entrar">Iniciá sesión</a></div> : <>
+        <ol className="signup-progress" aria-label="Pasos del registro"><li aria-current={paso === 0 ? 'step' : undefined} data-completo={paso > 0}><span>{paso > 0 ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4 10-10" /></svg> : '01'}</span><button type="button" onClick={() => setPaso(0)}>Tu cuenta</button></li><li aria-current={paso === 1 ? 'step' : undefined}><span>02</span>Tu negocio</li></ol>
+        <h2 className="signup-title" tabIndex={-1} ref={tituloRef}>{paso === 0 ? 'Creá tu cuenta' : 'Prepará tu negocio'}</h2>
+        <div className="signup-plan"><span>Plan {planActual.nombre} · {periodo === 'anual' ? 'Anual' : 'Mensual'}</span><button type="button" aria-expanded={cambiarPlan} onClick={() => setCambiarPlan(!cambiarPlan)}>Cambiar</button></div>
+        {cambiarPlan && <div className="signup-plan-opciones"><label className="signup-label" htmlFor="signup-plan">Elegí tu plan</label><select id="signup-plan" className="signup-control" value={plan} onChange={e => { setPlan(e.target.value); if (e.target.value === 'digital') setPeriodo('mensual'); }}>{PLANES_COMERCIALES.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</select><label className="signup-label" htmlFor="signup-periodo">Período de pago</label><select id="signup-periodo" className="signup-control" value={periodo} onChange={e => setPeriodo(e.target.value)}><option value="mensual">Mensual</option>{plan !== 'digital' && <option value="anual">Anual</option>}</select><a href={`${landing}#comparar-planes`} target="_blank" rel="noopener noreferrer">Comparar planes ↗</a></div>}
+        {paso === 1 && inicial.desdeDiagnostico && <p className="signup-preloaded">Completamos estos datos con tu diagnóstico. Podés editarlos.</p>}
+        {error && <p className="signup-error" role="alert">{error}</p>}
+        <form className="signup-form" ref={formRef} onSubmit={enviar} noValidate aria-busy={enviando || conectandoGoogle}>
+          {paso === 0 ? <>
+            {google && !cuentaGoogle && <><button type="button" className="signup-google" onClick={abrirGoogle} disabled={conectandoGoogle}><img src="/brand/google.svg" alt="" width="20" height="20" />{conectandoGoogle ? 'Conectando con Google…' : 'Continuar con Google'}</button><p className="signup-separator">o usá tu email</p></>}
+            {cuentaGoogle && <p className="signup-preloaded">Correo verificado con Google.</p>}
+            <Campo label="Tu nombre" id="signup-fullName" error={errores.fullName}><input id="signup-fullName" name="fullName" className="signup-control" autoComplete="name" maxLength={80} required value={fullName} onChange={e => cambiar('fullName', e.target.value, setFullName)} {...atributos('fullName')} /></Campo>
+            <Campo label="Email" id="signup-email" error={errores.email}><input id="signup-email" name="email" className="signup-control" type="email" autoComplete="email" maxLength={254} required readOnly={cuentaGoogle} value={email} onChange={e => cambiar('email', e.target.value, setEmail)} {...atributos('email')} /></Campo>
+            {!cuentaGoogle && <Campo label="Contraseña" id="signup-password" error={errores.password} hint="Mínimo 8 caracteres."><div className="signup-password"><input id="signup-password" name="password" className="signup-control" type={verPassword ? 'text' : 'password'} autoComplete="new-password" required value={password} onChange={e => cambiar('password', e.target.value, setPassword)} {...atributos('password')} /><button type="button" aria-label={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setVerPassword(!verPassword)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg></button></div></Campo>}
+          </> : <>
+            <Campo label="Nombre de tu negocio" id="signup-bizName" error={errores.bizName}><input id="signup-bizName" name="bizName" className="signup-control" autoComplete="organization" maxLength={80} required value={bizName} onChange={e => cambiar('bizName', e.target.value, setBizName)} {...atributos('bizName')} /></Campo>
+            <fieldset className="signup-fieldset"><legend className="signup-label">Rubro</legend><div className="signup-options">{VERTICALES.map(v => <button key={v.id} className="signup-option" type="button" aria-pressed={vertical === v.id} onClick={() => setVertical(v.id)}>{v.nombre}</button>)}</div></fieldset>
+            <fieldset className="signup-fieldset"><legend className="signup-label">¿Cómo atendés?</legend><div className="signup-options">{MODOS.map(m => <button key={m.id} className="signup-option" type="button" aria-pressed={modo === m.id} onClick={() => setModo(m.id)}>{MODOS_LABEL[m.id] || m.label}</button>)}</div></fieldset>
+            <div className="signup-business-grid"><Campo label="País y moneda" id="signup-country"><select id="signup-country" className="signup-control" value={country} onChange={e => setCountry(e.target.value)}>{PAISES.map(p => <option key={p.id} value={p.id}>{p.label} — {p.currency}</option>)}</select></Campo>
+              <Campo label="El enlace de tu negocio" id="signup-slug" error={errores.slug}><input id="signup-slug" name="slug" className="signup-control" value={slug} maxLength={40} spellCheck={false} autoCapitalize="none" autoComplete="off" onChange={e => { setSlugTocado(true); cambiar('slug', slugify(e.target.value), setSlug); }} {...atributos('slug')} /><p className="signup-url">{slug || 'tu-negocio'}.divianco.app</p></Campo></div>
+            <div className="signup-validation" aria-live="polite">{slug && !validacionLocal.ok ? validacionLocal.reason : validacionLocal.ok && (dispo === 'checking' ? 'Comprobando el enlace…' : dispo === true ? 'El enlace está disponible.' : dispo === false ? 'Ese enlace ya está ocupado.' : <span>No pudimos comprobar el enlace. <button type="button" className="signup-inline-link" onClick={() => setChequeo(c => c + 1)}>Reintentar</button></span>)}</div>
+          </>}
+          <button className="signup-submit" type="submit" disabled={enviando || conectandoGoogle}>{enviando ? 'Creando…' : conectandoGoogle ? 'Verificando Google…' : paso === 0 ? 'Continuar' : 'Crear mi cuenta'} <span aria-hidden="true">→</span></button>
+          {paso === 1 && <><p className="signup-legal">Crear tu cuenta no contrata una suscripción ni realiza un cobro.</p><button type="button" className="signup-back" onClick={() => setPaso(0)}>Volver a tu cuenta</button></>}
+          <p className="signup-login">¿Ya tenés cuenta? <a href="/entrar">Iniciá sesión</a></p>
         </form>
-      </section>
-    </main>
-  );
+      </>}
+    </div>
+  </section></div>;
 }

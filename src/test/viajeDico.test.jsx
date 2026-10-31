@@ -138,7 +138,7 @@ describe('diagnóstico en card oscura sobre el hero', () => {
     await abrir();
     fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
     fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Seguir' }));
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
     expect(window.history.state.dgProfundidad).toBe(2);
     if (accion === 'Escape') fireEvent.keyDown(document, { key: 'Escape' });
     else fireEvent.click(screen.getByRole('button', { name: 'Cerrar diagnóstico' }));
@@ -157,7 +157,7 @@ describe('diagnóstico en card oscura sobre el hero', () => {
     await abrir();
     fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
     fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Seguir' }));
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
     act(() => window.history.back());
     await waitFor(() => expect(pregunta()).toHaveFocus());
     expect(animaciones).toHaveLength(1);
@@ -170,9 +170,11 @@ describe('diagnóstico en card oscura sobre el hero', () => {
   it('Tab y Shift+Tab quedan dentro del diálogo', async () => {
     montar();
     await abrir();
+    fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
     const dialogo = screen.getByRole('dialog');
     const primero = within(dialogo).getByRole('button', { name: 'Cerrar diagnóstico' });
-    const ultimo = within(dialogo).getByRole('button', { name: 'Volver al inicio' });
+    const ultimo = within(dialogo).getByRole('button', { name: /Continuar/ });
     ultimo.focus();
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(primero).toHaveFocus();
@@ -185,10 +187,13 @@ describe('diagnóstico en card oscura sobre el hero', () => {
     await abrir();
     const card = pregunta().closest('.dg-modal-card');
     card.scrollTop = 500;
+    const contenido = card.querySelector('.dg-unificado');
+    contenido.scrollTop = 500;
     fireEvent.click(screen.getByRole('radio', { name: 'Gastronomía' }));
     fireEvent.click(screen.getByRole('radio', { name: 'Restaurante' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Seguir' }));
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
     expect(card.scrollTop).toBe(0);
+    expect(contenido.scrollTop).toBe(0);
   });
 
   it('otras secciones abren directamente y devuelven foco a su disparador al cerrar', async () => {
