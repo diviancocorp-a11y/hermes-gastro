@@ -48,7 +48,7 @@ export default function EntradaLanding() {
     });
     const imagenes = [...document.querySelectorAll('.pl-tiempo-escena img')].map(esperarImagen);
     const transcurrido = Date.now() - Number(entrada.dataset.inicio || Date.now());
-    const minimo = new Promise(resolve => { minimoTimer = setTimeout(resolve, Math.max(0, 1800 - transcurrido)); });
+    const minimo = new Promise(resolve => { minimoTimer = setTimeout(resolve, Math.max(0, 2800 - transcurrido)); });
     Promise.all([...imagenes, document.fonts?.ready, minimo]).then(salir).catch(salir);
     const reducir = () => { if (movimiento.matches) { clearTimeout(limite); clearTimeout(salidaTimer); terminar(); } };
     movimiento.addEventListener('change', reducir);

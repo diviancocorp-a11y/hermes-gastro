@@ -28,6 +28,8 @@ it('espera el hero y las fuentes, abre y libera la pagina', async () => {
   const root = document.getElementById('root');
   expect(root.inert).toBe(true);
   await act(async () => vi.advanceTimersByTimeAsync(1800));
+  expect(document.getElementById('dico-entrada')).not.toHaveClass('de-salida');
+  await act(async () => vi.advanceTimersByTimeAsync(1000));
   expect(document.getElementById('dico-entrada')).toHaveClass('de-salida');
   expect(decode).toHaveBeenCalledOnce();
   await act(async () => vi.advanceTimersByTimeAsync(480));
