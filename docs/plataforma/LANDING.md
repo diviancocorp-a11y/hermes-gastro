@@ -9,6 +9,18 @@
 
 ## 1. Estado al 30/oct/2026
 
+### Correccion de composicion de la preparacion — 30/oct
+
+Ricky aclaro que baja la card completa, no Dico por separado. Durante la
+preparacion, card compacta centrada con logo/cierre, Dico a la izquierda,
+mensajes a la derecha y porcentaje debajo. Shader oro/volt fuera de la card,
+detras de ella; al terminar se abre el resultado existente. Sin escalar textos
+ni separar a Dico del mensaje; movimiento reducido elimina el traslado.
+37 pruebas UI dirigidas y build verdes. Encuadre sin WebGL: card de 247px en
+escritorio y 230px en celular, centrada; texto a la derecha y shader fuera
+de ella, sin desborde. Resultado posterior comprobado con API simulada.
+No cambia captura, API ni resultado.
+
 ### Contacto previo y Dico preparando el resultado — 30/oct
 
 PR #62: el ultimo paso conserva nombre del negocio opcional y pide nombre,

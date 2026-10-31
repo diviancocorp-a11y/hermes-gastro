@@ -680,7 +680,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
       {portada}
       {overlayActivo && (
         <DiagnosticoCard visible={abierto} fondoRef={portadaRef}
-          oroRef={oroRef} tituloRef={tituloRef} resultado={fase === 'resultado'} tituloId={fase === 'resultado' ? 'dg-resultado-titulo' : 'dg-pregunta'} onCerrar={cerrar}>
+          oroRef={oroRef} tituloRef={tituloRef} resultado={fase === 'resultado'} analizando={fase === 'analizando'} tituloId={fase === 'resultado' ? 'dg-resultado-titulo' : 'dg-pregunta'} onCerrar={cerrar}>
           {contenido}
         </DiagnosticoCard>
       )}
@@ -740,7 +740,7 @@ export default function Diagnostico({ modo = 'pagina', Portada, lado, abrirRef, 
   }
 
   return envolver(<div className={`dg-embudo dg-unificado dg-fase-${fase}`} ref={raizRef}>
-    {fase === 'analizando' && <div className="dg-analisis-fondo" aria-hidden="true"><ShaderBackground /></div>}
+    {fase === 'analizando' && modo !== 'home' && <div className="dg-analisis-fondo" aria-hidden="true"><ShaderBackground /></div>}
     {guia}{progreso}
     {fase === 'analizando' ? <Titulo className="dg-cuenta-sr" id="dg-pregunta" ref={tituloRef} tabIndex={-1}>Estoy preparando tu diagnóstico.</Titulo> : <Pregunta paso={paso} nivel={nivel} cuenta={cuenta} respuestas={respuestas}
       tituloRef={tituloRef} listo={listo} resumen={resumen}

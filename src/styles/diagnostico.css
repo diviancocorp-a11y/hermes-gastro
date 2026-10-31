@@ -813,14 +813,18 @@
 .dg-contacto-previo .dg-error-campo { margin-top: var(--ds-space-2); }
 .dg-contacto-previo input[aria-invalid='true'] { border-color: var(--pc-oro); }
 
-/* Dico baja al centro y piensa con su mensaje; el efecto es el mismo del hero. */
-.dg-fase-analizando { position: relative; isolation: isolate; min-height: 440px; }
-.dg-fase-analizando > .dg-avance { order: 0; z-index: 1; flex-shrink: 0; }
-.dg-fase-analizando > .dg-guia { order: 1; position: relative; z-index: 1; flex: 1; flex-direction: column; justify-content: center; gap: var(--ds-space-6); margin: 0; padding-block: var(--ds-space-8); }
-.dg-fase-analizando .dg-guia-cara { flex: 0 0 auto; width: clamp(110px, 16vw, 170px); transform-origin: top left; }
-.dg-fase-analizando .dg-guia-mensaje { margin: 0; min-height: 6em; width: min(100%, 440px); max-width: 100%; padding: var(--ds-space-4) var(--ds-space-6); border: 1px solid var(--ds-color-zinc-700); border-radius: var(--ds-radius-4); background: var(--pc-suelo); font-size: var(--ds-type-lg); }
-.dg-analisis-fondo { position: absolute; inset: 64px 0 0; z-index: 0; pointer-events: none; opacity: .75; mask-image: linear-gradient(transparent, black 22%, black 80%, transparent); }
+/* La cabecera completa flota en el centro, delante del efecto. */
+.dg-modal[data-analizando='true']:has(.dg-unificado) .dg-modal-card { height: auto; max-height: calc(100dvh - var(--dg-modal-margen) * 2); }
+.dg-fase-analizando { position: relative; isolation: isolate; }
+.dg-modal .dg-fase-analizando { flex: 0 1 auto; }
+.dg-fase-analizando > .dg-guia { position: relative; z-index: 1; padding-block: var(--ds-space-4); gap: var(--ds-space-4); }
+.dg-fase-analizando > .dg-avance { position: relative; z-index: 1; flex-shrink: 0; margin-bottom: 0; }
+.dg-fase-analizando .dg-guia-cara { flex: 0 0 64px; width: 64px; }
+.dg-fase-analizando .dg-guia-mensaje { margin: 0; min-height: 3em; min-width: 0; max-width: 65ch; align-items: center; font-size: var(--ds-type-lg); }
+.dg-analisis-fondo { position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: .75; }
+.dg-modal[data-analizando='true'] > .dg-analisis-fondo { z-index: 1; }
 @media (max-width: 599px) {
   .dg-contacto-campos { grid-template-columns: minmax(0, 1fr); }
-  .dg-fase-analizando .dg-guia-mensaje { font-size: var(--ds-type-md); padding: var(--ds-space-4); }
+  .dg-fase-analizando .dg-guia-cara { flex-basis: 48px; width: 48px; }
+  .dg-fase-analizando .dg-guia-mensaje { font-size: var(--ds-type-md); }
 }
