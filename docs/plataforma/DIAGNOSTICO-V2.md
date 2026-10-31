@@ -8,8 +8,9 @@
 > para ayudarme a configurar Dico." Usa el canal protegido existente; no cambia
 > la tabla ni permite lectura publica del contacto. Resultado sin formulario,
 > con una sola accion principal hacia el registro. Esta decision reemplaza
-> las indicaciones anteriores de contacto opcional al final. Adaptar registro
-> y su precarga de contacto sigue pendiente.
+> las indicaciones anteriores de contacto opcional al final. Registro en dos
+> pasos y precarga del diagnostico preparados en el mismo PR; Google y la
+> confirmacion comercial/prueba siguen pendientes (ver LANDING.md).
 
 
 > 29/oct/2026. Especificacion acordada con Ricky. **Implementacion aprobada por Ricky el 30/oct para publicacion mediante PR #61.**

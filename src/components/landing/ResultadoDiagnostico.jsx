@@ -58,7 +58,7 @@ export default function ResultadoDiagnostico({ sol, respuestas, id, guardado, on
       <a className="dg-plan-empezar" href={`/registro?${alta}`}>Empezar con Dico <span aria-hidden="true">→</span></a>
       <p className="dg-plan-aclaracion">Crear tu cuenta no contrata una suscripción ni realiza un cobro.</p>
       {anual && <details className="dg-plan-anual"><summary>Alternativa con pago anual</summary><p>{pesosDelPlan(anual.importe)} al año por local. Equivale a {pesosDelPlan(anual.equivalente)} por mes. Sin IVA.</p></details>}
-      <a className="dg-plan-comparar" href={`${landing}#precios`} target="_blank" rel="noopener noreferrer">Comparar planes <span aria-hidden="true">↗</span><span className="pl-oculto"> (abre en otra pestaña)</span></a>
+      <a className="dg-plan-comparar" href={`${landing}#comparar-planes`} target="_blank" rel="noopener noreferrer">Comparar planes <span aria-hidden="true">↗</span><span className="pl-oculto"> (abre en otra pestaña)</span></a>
     </aside>
   </div>;
 }

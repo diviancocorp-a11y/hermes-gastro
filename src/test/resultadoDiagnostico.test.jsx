@@ -28,7 +28,7 @@ describe('resultado orientado a empezar con Dico', () => {
     expect(url.searchParams.get('negocio')).toBe('Mi negocio');
     expect(document.querySelector('form')).toBeNull();
     expect(screen.queryByRole('textbox', { name: /WhatsApp/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Comparar planes/ })).toHaveAttribute('href', '/#precios');
+    expect(screen.getByRole('link', { name: /Comparar planes/ })).toHaveAttribute('href', '/#comparar-planes');
   });
   it('muestra el total anual de la misma oferta, como alternativa secundaria', () => {
     mostrar({ ...base, locales: 'dos_tres' });

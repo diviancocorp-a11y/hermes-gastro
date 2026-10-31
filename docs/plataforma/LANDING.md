@@ -9,6 +9,39 @@
 
 ## 1. Estado al 30/oct/2026
 
+### Registro conectado al diagnostico y comparativa directa — 30/oct
+
+PR #62: Comparar planes abre `#comparar-planes`, con la tabla desplegada y en
+pantalla (raiz publica; `/landing` en previews). Registro en dos pasos:
+Tu cuenta (nombre, email, contraseña) y Tu negocio (nombre, rubro, modalidad,
+pais/moneda y enlace completo). Bienvenida negra con logo/mascota originales,
+formulario directo sobre marfil, seleccion/foco volt y accion dorada. Movil:
+bienvenida breve, sin mascota decorativa; formulario en una columna.
+
+Precarga nombre personal/negocio, rubro, modo y plan desde el diagnostico que
+coincide con `d`; datos editables. Plan/periodo quedan en metadata como
+preferencia (`requested_*`), sin asignar plan ni contratar/cobrar. Se conserva
+confirmacion por email, ejes del alta, comprobacion de enlace (ahora inmune a
+respuestas viejas) y creacion idempotente posterior en `/bienvenido`.
+
+Google preparado en el codigo con SDK existente y retorno al segundo paso:
+proveedor detectado en tiempo real, borrador por pestaña sin contraseña/tokens,
+identidad/correo verificados con getUser y mismo contrato de negocio que email.
+Consulta real de Auth: Google y Apple desactivados. No se activaron proveedores
+ni se crearon usuarios. Google Cloud no quedo accesible desde esta sesion;
+falta crear/conectar el cliente OAuth. El boton no se ofrece hasta habilitarlo.
+Valores y pasos en [REGISTRO-GOOGLE.md](REGISTRO-GOOGLE.md). La confirmacion
+comercial y activacion del mes de prueba quedan como etapa aparte.
+
+22 pruebas dirigidas (registro, Google simulado, privacidad del borrador y
+enlace a comparativa), typecheck, ESLint y build verdes. Detector antes/despues:
+17 hallazgos conocidos, ninguno nuevo. Navegador: cuenta y negocio en escritorio
+1366px/celular 390px sin desborde; precarga y envio de metadata comprobados con
+API simulada, sin cuentas/emails reales. Tabla abierta en destino y alineada
+al inicio del viewport. Capturas temporales eliminadas. Recurso oficial de
+Google en `public/brand/google.svg`, necesario para identificar el proveedor.
+Sigue en preview.
+
 ### Correccion de composicion de la preparacion — 30/oct
 
 Ricky aclaro que baja la card completa, no Dico por separado. Durante la
