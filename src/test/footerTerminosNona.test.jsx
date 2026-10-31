@@ -34,6 +34,15 @@ describe('CatalogFooter: terminos por tenant', () => {
     expect(cook.textContent).not.toMatch(/La Nona Pato/);
   });
 
+  it('la banda "Dico para tu negocio" lleva a divianco.app', () => {
+    getTenantSlugSync.mockReturnValue('la-nona-pato');
+    render(<CatalogFooter settings={settings} />);
+    const link = screen.getByText(/¿Tenés un negocio\? Dico para tu local/).closest('a');
+    expect(link.getAttribute('href')).toBe('https://divianco.app');
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toContain('noopener');
+  });
+
   it('otro tenant: privacidad y cookies siguen a nombre del negocio', () => {
     getTenantSlugSync.mockReturnValue('crazy-miga');
     render(<CatalogFooter settings={{ biz_name: 'Crazy Miga' }} />);

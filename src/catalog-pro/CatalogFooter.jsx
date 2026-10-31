@@ -16,14 +16,8 @@ import { getTenantSlugSync } from "../lib/activeTenant";
 // 30/oct/2026, solo para La Nona Pato: el resto de los tenants no cambia.
 const TENANTS_CON_TERMINOS_DE_DICO = new Set(["la-nona-pato"]);
 
-// Datos de contacto de Dico (la plataforma). Mientras sean null, los botones
-// de contacto del modal "para tu negocio" NO se muestran — antes habia un
-// WhatsApp falso (5491100000000) en produccion. Ver docs/TAREAS-MANUALES.md.
-const DICO = {
-  whatsapp: null,   // ej: "5491122334455" (solo digitos, con 54 9)
-  email: null,      // ej: "hola@dico.com"
-  instagram: null,  // ej: "dico"
-};
+// La banda "Dico para tu negocio" lleva a la pagina de Divianco.
+const DICO_URL = "https://divianco.app";
 
 const DEFENSA_CONSUMIDOR_AR = "https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario";
 
@@ -123,10 +117,6 @@ La infraestructura técnica está provista por Divianco, que procesa los datos �
 Última actualización: 2026`,
   };
 }
-
-const DICO_BUSINESS_COPY = `Dico es la plataforma todo-en-uno para tu local gastronómico. Catálogo público, gestión de pedidos, stock, gastos, recetas, reportes USAR P&L y mucho más. Sin instalaciones, sin servidores, sin dolor de cabeza.
-
-Escribinos por WhatsApp o email y agendamos una demo gratuita para tu negocio.`;
 
 function Modal({ title, children, onClose }) {
   return (
@@ -292,8 +282,10 @@ export default function CatalogFooter({ settings = {} }) {
         </div>
 
         {/* ─── BANDA DICO (plataforma) ─── */}
-        <div
-          onClick={() => open("forBusiness")}
+        <a
+          href={DICO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
           style={{
             display: "flex", alignItems: "center", gap: 14,
             padding: "14px 16px",
@@ -301,6 +293,7 @@ export default function CatalogFooter({ settings = {} }) {
             border: "1px solid rgba(245,158,11,0.20)",
             borderRadius: 14,
             cursor: "pointer",
+            textDecoration: "none",
           }}
         >
           {/* Logo de Dico a la izquierda, fondo claro */}
@@ -316,7 +309,7 @@ export default function CatalogFooter({ settings = {} }) {
             </div>
           </div>
           <div style={{ color: "#F59E0B", fontWeight: 800, fontSize: 18, flexShrink: 0 }}>→</div>
-        </div>
+        </a>
       </footer>
 
       {/* ─── MODALES ─── */}
@@ -325,39 +318,6 @@ export default function CatalogFooter({ settings = {} }) {
       {modal === "cookies" && <Modal title="Política de cookies" onClose={close}>{copy.cookies}</Modal>}
       {modal === "faq" && <Modal title="Preguntas frecuentes" onClose={close}><FaqList items={copy.faq} /></Modal>}
       {modal === "worksWithUs" && <Modal title="Trabajá con nosotros" onClose={close}>{copy.worksWithUs}</Modal>}
-      {modal === "forBusiness" && (
-        <Modal title="Dico para tu negocio" onClose={close}>
-          <div style={{ whiteSpace: "pre-line", marginBottom: 18 }}>{DICO_BUSINESS_COPY}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {DICO.whatsapp && (
-              <a
-                href={`https://wa.me/${DICO.whatsapp}?text=${encodeURIComponent("Hola! Tengo un local gastronómico y me interesa Dico.")}`}
-                target="_blank" rel="noopener noreferrer"
-                style={{
-                  padding: "12px 16px", background: "#25D366", color: "#fff",
-                  borderRadius: 12, textDecoration: "none", fontWeight: 700, fontSize: 14,
-                  textAlign: "center", display: "block",
-                }}
-              >📱 Hablar por WhatsApp</a>
-            )}
-            {DICO.email && (
-              <a
-                href={`mailto:${DICO.email}?subject=${encodeURIComponent("Dico para mi negocio")}`}
-                style={{
-                  padding: "12px 16px", background: "#F59E0B", color: "#000",
-                  borderRadius: 12, textDecoration: "none", fontWeight: 700, fontSize: 14,
-                  textAlign: "center", display: "block",
-                }}
-              >📧 Enviar email</a>
-            )}
-            {!DICO.whatsapp && !DICO.email && (
-              <div style={{ fontSize: 13, opacity: 0.7, textAlign: "center" }}>
-                Datos de contacto disponibles próximamente.
-              </div>
-            )}
-          </div>
-        </Modal>
-      )}
     </>
   );
 }
