@@ -20,6 +20,13 @@
   plan; prueba y pago. Formulario marfil a la izquierda y contenido negro a
   la derecha que cambia en cada paso, inspirado en el componente adjunto sin
   incorporar TypeScript, shadcn ni dependencias.
+- Ajuste posterior: sin mascota repetida junto al logo. Progreso con tres
+  circulos dorados conectados por una linea volt; se rellenan al completar
+  cada paso. Nombre del negocio primero; seleccion visible «Escoge tu plan»
+  al final del formulario con precios desde la fuente comercial compartida.
+  Precarga editable de nombre, rubro, modalidad y recomendacion del diagnostico.
+  WhatsApp comercial y direccion propuestos como datos opcionales siguientes;
+  no se agregaron campos sin conectar su persistencia en el alta.
 - Ricky eligio un mes de prueba, cobro posterior y Mercado Pago. El paso 3
   es una maqueta protegida: boton deshabilitado, sin tarjeta ni autorizacion,
   sin activar prueba ni crear tenant. NO publicar este nuevo flujo hasta

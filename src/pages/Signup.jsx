@@ -7,7 +7,6 @@ import { paisesDisponibles, monedaDe, zonaDe, PAIS_POR_DEFECTO } from '../module
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import { contextoDelRegistro, recordarRegistroGoogle, limpiarRegistroGoogle } from '../lib/registroPlataforma';
 import { PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../lib/planesPlataforma';
-import DicoPhysical from '../components/dico/DicoPhysical';
 import '../styles/signup.css';
 
 const VERTICALES = [{ id: 'gastro', nombre: 'Gastronomía' }, { id: 'retail', nombre: 'Comercio' }, { id: 'barber', nombre: 'Servicios' }];
@@ -24,16 +23,11 @@ const MENSAJES_REGISTRO = [
 
 function BrandPanel({ paso, negocio }) {
   const mensaje = MENSAJES_REGISTRO[paso];
-  const [saludando, setSaludando] = useState(true);
-  useEffect(() => { if (!saludando) return undefined; const timer = setTimeout(() => setSaludando(false), 1400); return () => clearTimeout(timer); }, [saludando]);
   return <aside className="signup-brand" data-paso={paso} aria-label="Bienvenida a Dico">
     <a href="/" className="signup-logo"><img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" /></a>
     <div className="signup-brand__message" key={paso}><h1>{mensaje.titulo}</h1><p>{mensaje.texto}</p></div>
     {paso === 1 && <div className="signup-brand__business" aria-hidden="true"><span>Tu espacio en Dico</span><strong>{negocio || 'Tu negocio'}</strong><p>Ventas · Stock · Resultados</p></div>}
     {paso === 2 && <div className="signup-brand__trial" aria-hidden="true"><strong>01</strong><span>mes de prueba</span></div>}
-    <button type="button" className="signup-mascota" aria-label="Saludar a Dico" onPointerEnter={() => setSaludando(true)} onFocus={() => setSaludando(true)} onClick={() => setSaludando(true)}>
-      <DicoPhysical pose="idle" animacion={saludando ? 'saluda' : null} reducedMotion={saludando ? undefined : true} ritmo={.45} title="Dico" />
-    </button>
     <p className="signup-brand__caption">{mensaje.detalle}</p>
   </aside>;
 }
@@ -57,7 +51,6 @@ export default function Signup() {
   const [verPassword, setVerPassword] = useState(false);
   const [plan, setPlan] = useState(inicial.plan);
   const [periodo, setPeriodo] = useState(inicial.periodo);
-  const [cambiarPlan, setCambiarPlan] = useState(false);
   const [resultadoDispo, setResultadoDispo] = useState(null);
   const [chequeo, setChequeo] = useState(0);
   const [enviando, setEnviando] = useState(false);
@@ -153,10 +146,8 @@ export default function Signup() {
   return <div className="signup-page"><BrandPanel paso={paso} negocio={bizName} /><section className="signup-workspace" aria-label="Registro">
     <div className="signup-content">
       {listo ? <div className="signup-success" role="status"><h2>Revisá tu email</h2><p>Te mandamos un link a <strong>{email}</strong>. Cuando lo confirmes, activamos <strong>{slug}.divianco.app</strong>.</p><p>Si no llega en unos minutos, mirá en spam. Al confirmar, verificamos que el enlace siga disponible.</p><p>Crear tu cuenta no contrata una suscripción ni realiza un cobro.</p><a className="signup-inline-link" href="/entrar">Iniciá sesión</a></div> : <>
-        <ol className="signup-progress" aria-label="Pasos del registro">{['Tu cuenta', 'Tu negocio', 'Prueba y pago'].map((nombre, indice) => <li key={nombre} aria-current={paso === indice ? 'step' : undefined} data-completo={paso > indice}><span>{paso > indice ? '✓' : `0${indice + 1}`}</span>{indice < paso ? <button type="button" onClick={() => setPaso(indice)}>{nombre}</button> : nombre}</li>)}</ol>
+        <ol className="signup-progress" style={{ '--signup-avance': `${paso * 50}%` }} aria-label="Pasos del registro">{['Tu cuenta', 'Tu negocio', 'Prueba y pago'].map((nombre, indice) => <li key={nombre} aria-current={paso === indice ? 'step' : undefined} data-completo={paso > indice}><span>{`0${indice + 1}`}</span>{indice < paso ? <button type="button" onClick={() => setPaso(indice)}>{nombre}</button> : nombre}</li>)}</ol>
         <h2 className="signup-title" tabIndex={-1} ref={tituloRef}>{['Creá tu cuenta', 'Prepará tu negocio', 'Confirmá tu comienzo'][paso]}</h2>
-        {paso === 1 && <><div className="signup-plan"><span>Plan {planActual.nombre} · {periodo === 'anual' ? 'Anual' : 'Mensual'}</span><button type="button" aria-expanded={cambiarPlan} onClick={() => setCambiarPlan(!cambiarPlan)}>Cambiar</button></div>
-        {cambiarPlan && <div className="signup-plan-opciones"><label className="signup-label" htmlFor="signup-plan">Elegí tu plan</label><select id="signup-plan" className="signup-control" value={plan} onChange={e => { setPlan(e.target.value); if (e.target.value === 'digital') setPeriodo('mensual'); }}>{PLANES_COMERCIALES.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}</select><label className="signup-label" htmlFor="signup-periodo">Período de pago</label><select id="signup-periodo" className="signup-control" value={periodo} onChange={e => setPeriodo(e.target.value)}><option value="mensual">Mensual</option>{plan !== 'digital' && <option value="anual">Anual</option>}</select><a href={`${landing}#comparar-planes`} target="_blank" rel="noopener noreferrer">Comparar planes ↗</a></div>} </>}
         {paso === 1 && inicial.desdeDiagnostico && <p className="signup-preloaded">Completamos estos datos con tu diagnóstico. Podés editarlos.</p>}
         {error && <p className="signup-error" role="alert">{error}</p>}
         <form className="signup-form" ref={formRef} onSubmit={enviar} noValidate aria-busy={enviando || conectandoGoogle}>
@@ -173,6 +164,20 @@ export default function Signup() {
             <div className="signup-business-grid"><Campo label="País y moneda" id="signup-country"><select id="signup-country" className="signup-control" value={country} onChange={e => setCountry(e.target.value)}>{PAISES.map(p => <option key={p.id} value={p.id}>{p.label} — {p.currency}</option>)}</select></Campo>
               <Campo label="El enlace de tu negocio" id="signup-slug" error={errores.slug}><input id="signup-slug" name="slug" className="signup-control" value={slug} maxLength={40} spellCheck={false} autoCapitalize="none" autoComplete="off" onChange={e => { setSlugTocado(true); cambiar('slug', slugify(e.target.value), setSlug); }} {...atributos('slug')} /><p className="signup-url">{slug || 'tu-negocio'}.divianco.app</p></Campo></div>
             <div className="signup-validation" aria-live="polite">{slug && !validacionLocal.ok ? validacionLocal.reason : validacionLocal.ok && (dispo === 'checking' ? 'Comprobando el enlace…' : dispo === true ? 'El enlace está disponible.' : dispo === false ? 'Ese enlace ya está ocupado.' : <span>No pudimos comprobar el enlace. <button type="button" className="signup-inline-link" onClick={() => setChequeo(c => c + 1)}>Reintentar</button></span>)}</div>
+            <fieldset className="signup-plan-choice">
+              <legend>Escogé tu plan</legend>
+              {inicial.desdeDiagnostico && <p className="signup-hint">Dejamos seleccionado el recomendado en tu diagnóstico. Podés cambiarlo.</p>}
+              <div className="signup-plan-cards" role="radiogroup" aria-label="Escogé tu plan">{PLANES_COMERCIALES.map(p => {
+                const valor = precioDelPeriodo(p, periodo === 'anual');
+                return <label className="signup-plan-card" key={p.id} data-selected={plan === p.id}>
+                  <input type="radio" name="plan" value={p.id} checked={plan === p.id} onChange={() => { setPlan(p.id); if (p.id === 'digital') setPeriodo('mensual'); }} />
+                  <strong>{p.nombre}</strong><span>{pesosDelPlan(valor.equivalente || valor.importe)}<small>/mes</small></span>
+                </label>;
+              })}</div>
+              <label className="signup-label" htmlFor="signup-periodo">Período de pago</label><select id="signup-periodo" className="signup-control" value={periodo} onChange={e => setPeriodo(e.target.value)}><option value="mensual">Mensual</option>{plan !== 'digital' && <option value="anual">Anual</option>}</select>
+              <p className="signup-hint">{periodo === 'anual' ? `${pesosDelPlan(precio.importe)} al año, por local. Sin IVA.` : 'Por local · Sin IVA · Pesos argentinos.'}</p>
+              <a className="signup-inline-link" href={`${landing}#comparar-planes`} target="_blank" rel="noopener noreferrer">Comparar planes ↗</a>
+            </fieldset>
           </> : <div className="signup-payment">
             <p className="signup-preloaded">Un mes de prueba. El pago comienza después.</p>
             <dl className="signup-payment__summary">

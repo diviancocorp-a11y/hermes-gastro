@@ -35,6 +35,7 @@ describe('registro en tres pasos', () => {
     expect(signupCss).not.toMatch(/#[0-9a-f]{3,8}\b/i);
     await montar(); expect(document.querySelector('.signup-logo img')).toHaveAttribute('src', '/brand/dico/logo/dico-oscuro.png');
     expect(screen.getByRole('heading', { name: /Tu negocio empieza acá/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Saludar a Dico' })).not.toBeInTheDocument();
   });
   it('valida la cuenta antes de mostrar el negocio y conserva sus valores al volver', async () => {
     await montar(); fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
@@ -73,9 +74,8 @@ describe('registro en tres pasos', () => {
     fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
     expect(screen.getByLabelText('Nombre de tu negocio')).toHaveValue('La Esquina');
     expect(screen.getByRole('button', { name: 'Ambas' })).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(screen.getByRole('button', { name: 'Cambiar', exact: true }));
-    expect(screen.getByLabelText('Elegí tu plan')).toHaveValue('cadena');
-    fireEvent.change(screen.getByLabelText('Elegí tu plan'), { target: { value: 'digital' } });
+    expect(screen.getByRole('radio', { name: /Cadena/ })).toBeChecked();
+    fireEvent.click(screen.getByRole('radio', { name: /Digital/ }));
     expect(screen.getByLabelText('Período de pago')).toHaveValue('mensual');
     expect(screen.queryByRole('option', { name: 'Anual' })).not.toBeInTheDocument();
   });
