@@ -29,12 +29,13 @@ beforeEach(() => {
   signupService.cuentaGoogleActual.mockReset().mockResolvedValue({ ok: false, error: 'No se completó Google.' });
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); window.history.replaceState({}, '', '/'); });
-describe('registro en dos pasos', () => {
+describe('registro en tres pasos', () => {
   it('usa los tokens y el logo oficial', async () => {
     for (const font of ['ui', 'soul', 'technical']) expect(signupCss).toContain(`var(--ds-font-${font})`);
     expect(signupCss).not.toMatch(/#[0-9a-f]{3,8}\b/i);
     await montar(); expect(document.querySelector('.signup-logo img')).toHaveAttribute('src', '/brand/dico/logo/dico-oscuro.png');
     expect(screen.getByRole('heading', { name: /Tu negocio empieza acá/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Saludar a Dico' })).not.toBeInTheDocument();
   });
   it('valida la cuenta antes de mostrar el negocio y conserva sus valores al volver', async () => {
     await montar(); fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
@@ -47,13 +48,24 @@ describe('registro en dos pasos', () => {
     expect(screen.getByLabelText('Email')).toHaveValue('hola@cafeuno.com');
     expect(screen.getByLabelText('Contraseña')).toHaveValue('segura123');
   });
-  it('conserva pais, moneda, modo, canales y preferencia sin contratar el plan', async () => {
-    await montar(); await cuenta(); await negocio();
-    fireEvent.click(screen.getByRole('button', { name: /Crear mi cuenta/ }));
-    await act(async () => vi.advanceTimersByTimeAsync(0));
-    expect(signupService.registrarNegocio).toHaveBeenCalledWith({ email: 'hola@cafeuno.com', password: 'segura123', bizName: 'Café Uno', vertical: 'barber', slug: 'cafe-uno', fullName: 'Ana Pérez', operationMode: 'virtual', country: 'UY', currency: 'UYU', timezone: 'America/Montevideo', channels: ['online_booking'], diagnostico: null, plan: 'digital', periodo: 'mensual' });
+  it('separa el plan de la cuenta y permite crear el negocio sin contratar ni cobrar', async () => {
+    await montar();
+    expect(screen.queryByRole('button', { name: 'Cambiar', exact: true })).not.toBeInTheDocument();
+    await cuenta(); await negocio();
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
+    expect(screen.getByRole('heading', { name: 'Confirmá tu comienzo' })).toBeInTheDocument();
+    expect(screen.getByText('Café Uno')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Crear mi cuenta/ })).toBeEnabled();
+    expect(signupService.registrarNegocio).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a tu negocio' }));
+    expect(screen.getByLabelText('País y moneda')).toHaveValue('UY');
+    expect(screen.getByRole('button', { name: 'A distancia' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Servicios' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Nombre de tu negocio')).toHaveValue('Café Uno');
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /Crear mi cuenta/ })));
+    expect(signupService.registrarNegocio).toHaveBeenCalledWith(expect.objectContaining({ bizName: 'Café Uno', country: 'UY', currency: 'UYU', plan: 'digital', periodo: 'mensual' }));
     expect(screen.getByRole('heading', { name: 'Revisá tu email' })).toBeInTheDocument();
-    expect(screen.getByText('hola@cafeuno.com')).toBeInTheDocument();
   });
   it('precarga solo el diagnostico correcto y permite cambiar plan y datos', async () => {
     sessionStorage.setItem('dico:diagnostico-v2-en-curso', JSON.stringify({ id: diag, respuestas: { nombre_negocio: 'La Esquina', contacto_nombre: 'Ricardo', vertical: 'gastronomia', canales: ['salon', 'catalogo_online'], locales: 'dos_tres' } }));
@@ -64,9 +76,8 @@ describe('registro en dos pasos', () => {
     fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
     expect(screen.getByLabelText('Nombre de tu negocio')).toHaveValue('La Esquina');
     expect(screen.getByRole('button', { name: 'Ambas' })).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(screen.getByRole('button', { name: 'Cambiar', exact: true }));
-    expect(screen.getByLabelText('Elegí tu plan')).toHaveValue('cadena');
-    fireEvent.change(screen.getByLabelText('Elegí tu plan'), { target: { value: 'digital' } });
+    expect(screen.getByRole('radio', { name: /Cadena/ })).toBeChecked();
+    fireEvent.click(screen.getByRole('radio', { name: /Digital/ }));
     expect(screen.getByLabelText('Período de pago')).toHaveValue('mensual');
     expect(screen.queryByRole('option', { name: 'Anual' })).not.toBeInTheDocument();
   });

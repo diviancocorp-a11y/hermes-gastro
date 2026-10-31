@@ -7,7 +7,34 @@
 
 ---
 
-## 1. Estado al 30/oct/2026
+## 1. Estado al 31/oct/2026
+
+### Publicacion y registro siguiente — 31/oct
+
+- PR #62 fusionado con autorizacion de Ricky. Produccion `divianco.app` y
+  wildcard verificados en Vercel READY, commit `9a2fa399`, CI completo verde.
+- Google habilitado por Ricky en Supabase. Ingreso real probado: correo
+  verificado, nombre recuperado y regreso a Tu negocio conservando borrador.
+  No se creo un tenant durante esa prueba. Ver REGISTRO-GOOGLE.md.
+- Nuevo trabajo en `codex/registro-tres-pasos`: cuenta sin plan; negocio con
+  plan; prueba y pago. Formulario marfil a la izquierda y contenido negro a
+  la derecha que cambia en cada paso, inspirado en el componente adjunto sin
+  incorporar TypeScript, shadcn ni dependencias.
+- Ajuste posterior: sin mascota repetida junto al logo. Progreso con tres
+  circulos dorados conectados por una linea volt; se rellenan al completar
+  cada paso. Nombre del negocio primero; seleccion visible «Escoge tu plan»
+  al final del formulario con precios desde la fuente comercial compartida.
+  Precarga editable de nombre, rubro, modalidad y recomendacion del diagnostico.
+  WhatsApp comercial y direccion propuestos como datos opcionales siguientes;
+  no se agregaron campos sin conectar su persistencia en el alta.
+- Ricky eligio un mes de prueba, cobro posterior y Mercado Pago. Despues
+  autorizo publicar el nuevo diseno con alta SIN cobro: el paso 3 es ahora
+  Confirmacion, permite Crear mi cuenta con el contrato vigente de Auth y
+  signup_tenant. Guarda preferencia de plan, sin contratar, cobrar ni activar
+  automaticamente una prueba. Se aclara antes de confirmar. Mercado Pago
+  sigue pendiente de configuracion; no se reutilizan cobros de tenants.
+- Barra de registro ajustada a la captura: fondo negro, circulos dorados y
+  pulso volt sobre linea fina. Los pasos completos conservan un relleno tenue.
 
 ### Registro conectado al diagnostico y comparativa directa — 30/oct
 
