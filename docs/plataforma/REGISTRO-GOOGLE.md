@@ -1,4 +1,28 @@
-# Registro con Google — activación pendiente
+# Registro con Google — proveedor activo, prueba real pendiente
+
+
+## Avance del 31/oct/2026
+
+Google Cloud accesible en el proyecto existente de Divianco,
+`project-00f2aaa8-d51a-437f-a4b` (My First Project). Configuracion de OAuth
+creada tras la aceptacion de Ricky: Dico, contacto `diviancocorp@gmail.com`,
+usuarios externos en modo de prueba. La consola confirmo su creacion.
+
+Cliente web creado por Ricky: `Dico Web`, retorno
+`https://wwwzdgprsooyjgkuyoav.supabase.co/auth/v1/callback`.
+Ricky completo las credenciales en Supabase. Verificado el 31/oct: el panel
+Sign In / Providers muestra Google ENABLED y el preview ofrece Continuar con
+Google. No se guardan secretos en el repo.
+
+Site URL es `https://divianco.app`. Los retornos existentes incluyen
+`https://divianco.app/**`, que ya cubre el registro publico. Se conserva y se
+agrego el retorno concreto del preview:
+`https://hermes-platform-3k1p3zmot-diviancocorp-a11ys-projects.vercel.app/registro?oauth=google`.
+Ingreso real verificado el 31/oct con la cuenta del titular: regreso al preview,
+mensaje Correo verificado con Google, nombre recuperado y avance a Tu negocio.
+El borrador del negocio se conserva y el enlace se comprueba disponible.
+No se pulso Crear mi cuenta: la creacion del tenant sigue sin verificar.
+El nuevo registro sigue en preview (PR #62), sin publicar en produccion.
 
 Estado al 30/oct/2026: el frontend está preparado en PR #62. La consulta pública
 de Auth confirmó `external.google=false`, `external.apple=false`, email activo.

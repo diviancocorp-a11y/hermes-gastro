@@ -29,7 +29,7 @@ beforeEach(() => {
   signupService.cuentaGoogleActual.mockReset().mockResolvedValue({ ok: false, error: 'No se completó Google.' });
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); window.history.replaceState({}, '', '/'); });
-describe('registro en dos pasos', () => {
+describe('registro en tres pasos', () => {
   it('usa los tokens y el logo oficial', async () => {
     for (const font of ['ui', 'soul', 'technical']) expect(signupCss).toContain(`var(--ds-font-${font})`);
     expect(signupCss).not.toMatch(/#[0-9a-f]{3,8}\b/i);
@@ -47,13 +47,22 @@ describe('registro en dos pasos', () => {
     expect(screen.getByLabelText('Email')).toHaveValue('hola@cafeuno.com');
     expect(screen.getByLabelText('Contraseña')).toHaveValue('segura123');
   });
-  it('conserva pais, moneda, modo, canales y preferencia sin contratar el plan', async () => {
-    await montar(); await cuenta(); await negocio();
-    fireEvent.click(screen.getByRole('button', { name: /Crear mi cuenta/ }));
-    await act(async () => vi.advanceTimersByTimeAsync(0));
-    expect(signupService.registrarNegocio).toHaveBeenCalledWith({ email: 'hola@cafeuno.com', password: 'segura123', bizName: 'Café Uno', vertical: 'barber', slug: 'cafe-uno', fullName: 'Ana Pérez', operationMode: 'virtual', country: 'UY', currency: 'UYU', timezone: 'America/Montevideo', channels: ['online_booking'], diagnostico: null, plan: 'digital', periodo: 'mensual' });
-    expect(screen.getByRole('heading', { name: 'Revisá tu email' })).toBeInTheDocument();
-    expect(screen.getByText('hola@cafeuno.com')).toBeInTheDocument();
+  it('separa el plan de la cuenta y no crea ni cobra antes de conectar Mercado Pago', async () => {
+    await montar();
+    expect(screen.queryByRole('button', { name: 'Cambiar', exact: true })).not.toBeInTheDocument();
+    await cuenta(); await negocio();
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
+    expect(screen.getByRole('heading', { name: 'Confirmá tu comienzo' })).toBeInTheDocument();
+    expect(screen.getByText('Café Uno')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Continuar a Mercado Pago/ })).toBeDisabled();
+    fireEvent.submit(document.querySelector('.signup-form'));
+    expect(signupService.registrarNegocio).not.toHaveBeenCalled();
+    expect(signupService.registrarNegocioConGoogle).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a tu negocio' }));
+    expect(screen.getByLabelText('País y moneda')).toHaveValue('UY');
+    expect(screen.getByRole('button', { name: 'A distancia' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Servicios' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Nombre de tu negocio')).toHaveValue('Café Uno');
   });
   it('precarga solo el diagnostico correcto y permite cambiar plan y datos', async () => {
     sessionStorage.setItem('dico:diagnostico-v2-en-curso', JSON.stringify({ id: diag, respuestas: { nombre_negocio: 'La Esquina', contacto_nombre: 'Ricardo', vertical: 'gastronomia', canales: ['salon', 'catalogo_online'], locales: 'dos_tres' } }));

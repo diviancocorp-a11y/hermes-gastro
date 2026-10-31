@@ -7,7 +7,27 @@
 
 ---
 
-## 1. Estado al 30/oct/2026
+## 1. Estado al 31/oct/2026
+
+### Publicacion y registro siguiente — 31/oct
+
+- PR #62 fusionado con autorizacion de Ricky. Produccion `divianco.app` y
+  wildcard verificados en Vercel READY, commit `9a2fa399`, CI completo verde.
+- Google habilitado por Ricky en Supabase. Ingreso real probado: correo
+  verificado, nombre recuperado y regreso a Tu negocio conservando borrador.
+  No se creo un tenant durante esa prueba. Ver REGISTRO-GOOGLE.md.
+- Nuevo trabajo en `codex/registro-tres-pasos`: cuenta sin plan; negocio con
+  plan; prueba y pago. Formulario marfil a la izquierda y contenido negro a
+  la derecha que cambia en cada paso, inspirado en el componente adjunto sin
+  incorporar TypeScript, shadcn ni dependencias.
+- Ricky eligio un mes de prueba, cobro posterior y Mercado Pago. El paso 3
+  es una maqueta protegida: boton deshabilitado, sin tarjeta ni autorizacion,
+  sin activar prueba ni crear tenant. NO publicar este nuevo flujo hasta
+  conectar las suscripciones propias de Divianco y probar su confirmacion
+  del lado del servidor. El cobro de pedidos de tenants no sirve para esto.
+- La version funcional de dos pasos sigue en produccion. Los cambios nuevos
+  se revisan en preview; integracion comercial pendiente de credenciales y
+  configuracion del proveedor. No se guardan secretos en el repo.
 
 ### Registro conectado al diagnostico y comparativa directa — 30/oct
 
