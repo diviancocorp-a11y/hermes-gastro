@@ -51,6 +51,7 @@ import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import { SEO_PLATAFORMA } from '../lib/seoPlataforma';
 import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
+import EntradaLanding from '../components/landing/EntradaLanding';
 import TransicionVolt from '../components/landing/TransicionVolt';
 import RubrosNegocio from '../components/landing/RubrosNegocio';
 import ComoEmpezar from '../components/landing/ComoEmpezar';
@@ -105,6 +106,7 @@ export default function PlatformLanding() {
 
   return (
     <div className="pl-root" ref={raizRef}>
+      <EntradaLanding />
       {/* div y no main: App.jsx ya envuelve todas las rutas en
           <main id="main-content">, y un main adentro de otro rompe el landmark. */}
       <section className={`pl-hero pl-hero-tiempo${diagnosticoAbierto ? ' pl-hero-diagnostico' : ''}`} aria-label="Dico">

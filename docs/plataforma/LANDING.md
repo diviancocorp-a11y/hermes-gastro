@@ -11,6 +11,21 @@
 
 ### Publicacion y registro siguiente — 31/oct
 
+- PR #63 fusionado: registro nuevo con alta sin cobro, commit de produccion
+  `b75ecfc0`, Vercel READY. Confirmacion final permite crear cuenta, conserva
+  confirmacion de email y Google, no activa suscripcion ni prueba automatica.
+- Apertura en rama separada `codex/landing-entrada`: identidad del splash
+  admin (logo original y aro volt) con apertura central de dos hojas oscuras
+  y bordes dorados. HTML/CSS antes de React, salida al decodificar las capas
+  visibles del hero y fuentes, minimo 2,8 s y limite 6,5 s. No espera escenas
+  3D diferidas bajo el pliegue. Solo una vez por pestana; omite rutas de otros
+  tenants/admin/registro, anclas y movimiento reducido. Rescate CSS a los 8 s
+  si no arranca el bundle; contenido prerenderizado conservado y sin cambios
+  al login del admin. Videos adjuntos no pudieron reproducirse en el entorno:
+  Ricky autorizo publicar esta apertura con un segundo adicional de intro.
+  Registro: fondo negro de pasos retirado; sobre marfil, linea volt y circulos
+  dorados con numeros/etiquetas oscuros legibles. Se publica en PR #64.
+
 - PR #62 fusionado con autorizacion de Ricky. Produccion `divianco.app` y
   wildcard verificados en Vercel READY, commit `9a2fa399`, CI completo verde.
 - Google habilitado por Ricky en Supabase. Ingreso real probado: correo

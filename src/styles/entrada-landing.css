@@ -1,0 +1,22 @@
+/* Critico: se carga desde el HTML, antes de React. Solo lo activa la home. */
+#dico-entrada[hidden] { display: none; }
+#dico-entrada { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; overflow: hidden; color: var(--ds-color-zinc-50, white); font-family: var(--ds-font-ui, sans-serif); animation: de-rescate 480ms ease-out 8s forwards; }
+#dico-entrada::before, #dico-entrada::after { content: ''; position: absolute; left: 0; right: 0; height: 50%; background: var(--ds-color-zinc-950, black); transition: transform 480ms cubic-bezier(.22, 1, .36, 1); }
+#dico-entrada::before { top: 0; border-bottom: 1px solid var(--ds-color-zinc-800, gray); }
+#dico-entrada::after { bottom: 0; }
+.de-centro { position: relative; z-index: 1; width: min(76vw, 420px); text-align: center; animation: de-llegada 800ms cubic-bezier(.22, 1, .36, 1) both; transition: opacity 320ms ease, transform 480ms ease; }
+.de-logo { position: relative; width: 100%; filter: drop-shadow(0 12px 32px color-mix(in srgb, var(--ds-color-brand-gold-500, gold) 20%, transparent)); }
+.de-logo > img { display: block; width: 100%; height: auto; }
+.de-aro { position: absolute; left: 69.9868%; top: 7.8119%; width: 27.7778%; height: auto; aspect-ratio: 1; overflow: visible; fill: none; stroke: var(--ds-color-intelligence-trace, royalblue); stroke-width: 6.97; }
+.de-aro circle { transform-origin: 50px 50px; stroke-dasharray: 20 192; stroke-linecap: round; animation: de-vuelta 1600ms linear infinite; filter: drop-shadow(0 0 3px var(--ds-color-intelligence-trace, royalblue)); }
+.de-centro > p { margin: 28px 0 0; font-size: 14px; color: var(--ds-color-zinc-300, lightgray); letter-spacing: .03em; }
+.de-trazo { position: relative; display: block; height: 2px; width: 120px; margin: 18px auto 0; background: var(--ds-color-zinc-800, gray); overflow: hidden; }
+.de-trazo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--ds-color-intelligence-trace, royalblue), var(--ds-color-brand-gold-500, gold), transparent); animation: de-carga 1600ms ease-in-out infinite; }
+#dico-entrada.de-salida::before { transform: translateY(-100%); border-bottom: 2px solid var(--ds-color-brand-gold-500, gold); }
+#dico-entrada.de-salida::after { transform: translateY(100%); border-top: 2px solid var(--ds-color-brand-gold-500, gold); }
+.de-salida .de-centro { animation: none; opacity: 0; transform: scale(1.04); }
+@keyframes de-llegada { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes de-vuelta { to { transform: rotate(360deg); } }
+@keyframes de-carga { 0%, 100% { opacity: .25; transform: scaleX(.55); } 50% { opacity: 1; transform: scaleX(1); } }
+@keyframes de-rescate { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+@media (prefers-reduced-motion: reduce) { #dico-entrada { display: none; } #dico-entrada *, #dico-entrada::before, #dico-entrada::after { animation: none; transition: none; } }

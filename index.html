@@ -97,6 +97,29 @@
     <!-- Loader instantaneo (HTML/CSS puro, CERO JS): se ve mientras el bundle
          de React descarga y parsea — clave en el WebView de Instagram, que es
          lento y sin cache. React lo reemplaza al montar. -->
+    <link rel="stylesheet" href="/src/styles/entrada-landing.css" />
+    <div id="dico-entrada" hidden role="status" aria-label="Cargando Dico">
+      <div class="de-centro">
+        <div class="de-logo">
+          <img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
+          <svg class="de-aro" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="33.73" /></svg>
+        </div>
+        <p>Preparando Dico</p><span class="de-trazo" aria-hidden="true"></span>
+      </div>
+    </div>
+    <script data-dico-entrada-script>
+      (function () {
+        var host = window.location.hostname.toLowerCase();
+        var path = window.location.pathname;
+        var home = ((host === 'divianco.app' || host === 'www.divianco.app') && path === '/')
+          || ((host.endsWith('.vercel.app') || host === 'localhost' || host === '127.0.0.1') && path === '/landing');
+        if (!home || window.location.hash || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        try { if (sessionStorage.getItem('dico:entrada-v1')) return; } catch (e) { /* sin storage */ }
+        var entrada = document.getElementById('dico-entrada');
+        entrada.dataset.inicio = Date.now();
+        entrada.hidden = false;
+      })();
+    </script>
     <div id="root">
       <div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:system-ui,sans-serif;">
         <div style="width:38px;height:38px;border-radius:50%;border:3px solid rgba(128,128,128,0.25);border-top-color:#D97706;animation:hg-boot-spin 800ms linear infinite;"></div>
