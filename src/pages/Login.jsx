@@ -1,48 +1,53 @@
 // src/pages/Login.jsx
-// Entrada a la plataforma (divianco.app/entrar).
+// Entrada unica a la plataforma (divianco.app/entrar).
+//
+// ES LA MISMA PUERTA QUE EL LOGIN DEL ADMIN (`LoginShell`: splash DICO,
+// particulas Volt, placa de Dico, caja translucida, boton oro) pero general
+// para todos los negocios: la marca es Dico y no se consulta ninguna marca de
+// tenant, porque aca todavia no se sabe a cual negocio va la persona.
 //
 // POR QUE EXISTE: sin esto, un dueño que confirmaba el mail y cerraba la
-// pestaña quedaba con una cuenta valida y NINGUNA forma de volver. Paso de
-// verdad en la primera prueba de alta: el redirect fallaba y la cuenta
-// quedaba huerfana.
+// pestaña quedaba con una cuenta valida y NINGUNA forma de volver.
 //
-// Cubre los dos casos con la MISMA llamada, porque signup_tenant() es
-// idempotente (0019):
-//   - ya tiene negocio                  -> lo devuelve -> va a su subdominio
-//   - confirmo pero nunca llego a /bienvenido -> lo crea ahora
-// No hace falta preguntar antes en que caso esta.
+// A donde va despues de entrar lo decide `resolverDestino()` (servicio
+// entradaUnica): un negocio -> directo a su admin; varios -> pregunta a cual;
+// ninguno -> el caso de siempre (signup_tenant es idempotente) o el staff.
 
 import { useState, useEffect, useCallback } from 'react';
-import { iniciarSesion, destinoTrasLogin, pedirResetPassword, cambiarPassword } from '../services/signup';
+import { iniciarSesion, pedirResetPassword, cambiarPassword } from '../services/signup';
+import { resolverDestino, irAlAdmin } from '../services/entradaUnica';
 import { supabase } from '../lib/supabase';
+import LoginShell from '../components/admin/LoginShell';
+import {
+  GOLD, estiloInput, alEnfocar, alSalir, estiloCaja, estiloBotonOro,
+  estiloEnlace, estiloAlerta, estiloAviso,
+} from '../components/admin/loginEstilos';
 
-const C = {
-  bg: '#0f0e0d', line: 'rgba(255,255,255,0.12)',
-  tx: '#f5f1ea', t2: 'rgba(245,241,234,0.6)', ac: '#e8b947',
-  err: '#f87171', ok: '#4ade80',
-};
+// Los tokens del sistema (dico-tokens.css, cargado desde index.css): no se
+// escriben las familias a mano.
+const FUENTE = 'var(--ds-font-ui)';
+const MONO = 'var(--ds-font-technical)';
 
-const inputStyle = {
-  width: '100%', padding: '11px 13px', borderRadius: 10, fontSize: 15,
-  background: 'rgba(0,0,0,0.25)', border: `1px solid ${C.line}`,
-  color: C.tx, outline: 'none', boxSizing: 'border-box',
-};
+const estiloEtiqueta = { display: 'block', textAlign: 'left', fontSize: 12, color: 'rgba(255,255,255,0.7)' };
+const estiloCampo = { ...estiloInput, minHeight: 44, width: '100%', boxSizing: 'border-box', marginTop: 6 };
 
-const wrap = {
-  minHeight: '100dvh', background: C.bg, color: C.tx,
-  fontFamily: 'system-ui, -apple-system, Segoe UI, sans-serif',
-  padding: '40px 20px', display: 'flex', justifyContent: 'center',
-  alignItems: 'center',
-};
+// El aro va por dentro (outline con offset negativo): una sombra hacia afuera se
+// recorta contra el borde de la caja.
+const alEnfocarOpcion = (e) => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.outline = `2px solid ${GOLD}`; e.currentTarget.style.outlineOffset = '-3px'; };
+const alSalirOpcion = (e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.outline = 'none'; };
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [password2, setPassword2] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
   const [aviso, setAviso] = useState(null);
-  const [destino, setDestino] = useState(null);
   const [modoReset, setModoReset] = useState(false);
+  // 'elegir' (varios negocios) | 'entrando' (ya se decidio, esperando el salto)
+  const [vista, setVista] = useState('form');
+  const [negocios, setNegocios] = useState([]);
+  const [entrandoA, setEntrandoA] = useState('');
   // El link del mail de reset vuelve a /entrar con type=recovery en el hash y
   // una sesion ya abierta: lo que falta es fijar la contraseña nueva. Se lee
   // en el inicializador (primer render, sincronico) porque el cliente de
@@ -50,7 +55,6 @@ export default function Login() {
   const [modoNueva, setModoNueva] = useState(() => {
     try { return window.location.hash.includes('type=recovery'); } catch { return false; }
   });
-  const [password2, setPassword2] = useState('');
 
   useEffect(() => { document.title = 'Entrar — Dico'; }, []);
 
@@ -69,6 +73,32 @@ export default function Login() {
     return () => sub?.subscription?.unsubscribe();
   }, []);
 
+  /** Salta al admin del negocio. Si sale bien la pagina se va y no vuelve. */
+  const entrarA = useCallback(async (negocio) => {
+    setError(null); setEntrandoA(negocio.name || negocio.slug); setVista('entrando');
+    const r = await irAlAdmin(negocio.slug);
+    if (r && r.ok === false) {
+      setError(r.error);
+      setVista(negocios.length > 1 ? 'elegir' : 'form');
+    }
+  }, [negocios.length]);
+
+  /** Con la sesion abierta (login o clave nueva), decide a donde va. */
+  const seguir = useCallback(async () => {
+    const d = await resolverDestino();
+    if (!d.ok) { setError(d.error); setVista('form'); return; }
+    if (d.tipo === 'staff') {
+      setEntrandoA('Divianco'); setVista('entrando');
+      window.location.assign(d.url);
+      return;
+    }
+    if (d.tipo === 'elegir') {
+      setNegocios(d.negocios); setVista('elegir');
+      return;
+    }
+    await entrarA(d.negocio);
+  }, [entrarA]);
+
   const guardarNueva = useCallback(async (e) => {
     e.preventDefault();
     if (enviando) return;
@@ -80,12 +110,10 @@ export default function Login() {
     if (!r.ok) { setError(r.error); setEnviando(false); return; }
 
     // Con la clave ya cambiada, mismo destino que un login normal.
-    const d = await destinoTrasLogin();
+    setModoNueva(false);
+    await seguir();
     setEnviando(false);
-    if (!d.ok) { setError(d.error); return; }
-    setDestino(d);
-    window.location.href = d.url;
-  }, [password, password2, enviando]);
+  }, [password, password2, enviando, seguir]);
 
   const entrar = useCallback(async (e) => {
     e.preventDefault();
@@ -95,13 +123,9 @@ export default function Login() {
     const login = await iniciarSesion({ email, password });
     if (!login.ok) { setError(login.error); setEnviando(false); return; }
 
-    const d = await destinoTrasLogin();
+    await seguir();
     setEnviando(false);
-    if (!d.ok) { setError(d.error); return; }
-
-    setDestino(d);
-    window.location.href = d.url;
-  }, [email, password, enviando]);
+  }, [email, password, enviando, seguir]);
 
   const resetear = useCallback(async (e) => {
     e.preventDefault();
@@ -115,155 +139,170 @@ export default function Login() {
     setAviso('Si esa dirección tiene cuenta, te mandamos un mail para cambiar la contraseña.');
   }, [email, enviando]);
 
-  if (destino) {
-    return (
-      <main style={wrap}>
-        <div style={{ textAlign: 'center', maxWidth: 380 }}>
-          <div style={{ fontSize: 40 }}>👋</div>
-          <h1 style={{ fontSize: 22, margin: '14px 0 10px' }}>Entrando a tu local</h1>
-          <p style={{ color: C.t2, fontSize: 15 }}>
-            <strong style={{ color: C.ac }}>{destino.slug}.divianco.app</strong>
-          </p>
-          <a href={destino.url} style={{ color: C.ac, fontSize: 14, display: 'inline-block', marginTop: 14 }}>
-            Si no pasa nada, tocá acá
-          </a>
-        </div>
-      </main>
-    );
-  }
+  const otraCuenta = useCallback(async () => {
+    try { await supabase.auth.signOut(); } catch { /* si falla igual se vuelve al form */ }
+    setNegocios([]); setPassword(''); setError(null); setAviso(null); setVista('form');
+  }, []);
 
-  if (modoNueva) {
-    return (
-      <main style={wrap}>
-        <form onSubmit={guardarNueva} style={{ width: '100%', maxWidth: 380 }}>
-          <div style={{ marginBottom: 26 }}>
-            <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em' }}>Dico</div>
-            <p style={{ color: C.t2, fontSize: 15, marginTop: 6 }}>Elegí tu contraseña nueva.</p>
-          </div>
+  const volverAEntrar = () => {
+    setModoNueva(false); setModoReset(false);
+    setPassword(''); setPassword2(''); setError(null); setAviso(null);
+  };
 
-          <label style={{ display: 'block', marginBottom: 16 }}>
-            <span style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Contraseña nueva</span>
-            <input
-              style={inputStyle} type="password" value={password} autoFocus autoComplete="new-password"
-              onChange={(ev) => setPassword(ev.target.value)} placeholder="Mínimo 6 caracteres"
-            />
-          </label>
+  const subtitulo =
+    vista === 'elegir' ? 'Tus negocios'
+    : vista === 'entrando' ? 'Un momento'
+    : modoNueva ? 'Contraseña nueva'
+    : modoReset ? 'Recuperar contraseña'
+    : 'Entrá a tu negocio';
 
-          <label style={{ display: 'block', marginBottom: 16 }}>
-            <span style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Repetila</span>
-            <input
-              style={inputStyle} type="password" value={password2} autoComplete="new-password"
-              onChange={(ev) => setPassword2(ev.target.value)} placeholder="••••••••"
-            />
-          </label>
+  const mensajes = (
+    <>
+      {error && <div role="alert" style={estiloAlerta}>{error}</div>}
+      {aviso && <div role="status" style={estiloAviso}>{aviso}</div>}
+    </>
+  );
 
-          {error && (
-            <div style={{
-              padding: '11px 13px', borderRadius: 10, marginBottom: 14, fontSize: 14,
-              background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)',
-              color: '#fca5a5',
-            }}>{error}</div>
-          )}
-
-          <button
-            type="submit" disabled={enviando}
-            style={{
-              width: '100%', padding: '13px', borderRadius: 11, border: 'none',
-              fontSize: 15.5, fontWeight: 700, font: 'inherit',
-              background: enviando ? 'rgba(255,255,255,0.1)' : C.ac,
-              color: enviando ? C.t2 : '#1a1408',
-              cursor: enviando ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {enviando ? 'Un momento…' : 'Guardar y entrar'}
-          </button>
-
-          <div style={{ marginTop: 16, textAlign: 'center', fontSize: 13.5 }}>
-            <button
-              type="button"
-              onClick={() => { setModoNueva(false); setPassword(''); setPassword2(''); setError(null); }}
-              style={{ background: 'none', border: 'none', color: C.t2, cursor: 'pointer', font: 'inherit', textDecoration: 'underline' }}
-            >
-              Volver a entrar
-            </button>
-          </div>
-        </form>
-      </main>
-    );
-  }
+  const botonOro = (texto) => (
+    <button type="submit" disabled={enviando} style={estiloBotonOro(enviando, true)}>
+      {enviando ? 'Un momento…' : texto}
+    </button>
+  );
 
   return (
-    <main style={wrap}>
-      <form onSubmit={modoReset ? resetear : entrar} style={{ width: '100%', maxWidth: 380 }}>
-        <div style={{ marginBottom: 26 }}>
-          <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em' }}>Dico</div>
-          <p style={{ color: C.t2, fontSize: 15, marginTop: 6 }}>
-            {modoReset ? 'Te mandamos un link para cambiarla.' : 'Entrá a tu negocio.'}
-          </p>
-        </div>
+    <LoginShell
+      pastilla="Ingresar"
+      titulo="Dico"
+      subtitulo={subtitulo}
+      fontFamily={FUENTE}
+      colorPie="rgba(255,255,255,0.55)"
+    >
+      {(stage) => {
+        if (vista === 'entrando') {
+          return (
+            <div style={{ ...estiloCaja(stage), alignItems: 'center', textAlign: 'center' }}>
+              <p role="status" style={{ margin: 0, fontSize: 14, color: '#fff' }}>
+                Entrando a <strong>{entrandoA}</strong>…
+              </p>
+            </div>
+          );
+        }
 
-        <label style={{ display: 'block', marginBottom: 16 }}>
-          <span style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Email</span>
-          <input
-            style={inputStyle} type="email" value={email} autoFocus autoComplete="email"
-            onChange={(ev) => setEmail(ev.target.value)} placeholder="vos@ejemplo.com"
-          />
-        </label>
+        if (vista === 'elegir') {
+          return (
+            <div style={estiloCaja(stage)}>
+              <p id="elegir-negocio" style={{ margin: '0 4px 2px', fontSize: 14, fontWeight: 600, textAlign: 'left' }}>
+                ¿A cuál querés entrar?
+              </p>
+              {mensajes}
+              {/* Sin scroll propio: scrollea la columna del shell, asi no hay dos
+                  scrolls anidados con el teclado abierto. role="list" porque
+                  list-style:none le saca la lista a Safari/VoiceOver. */}
+              <ul role="list" aria-labelledby="elegir-negocio" style={{
+                listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8,
+              }}>
+                {negocios.map((n) => (
+                  <li key={n.slug}>
+                    <button
+                      type="button" onClick={() => entrarA(n)}
+                      onFocus={alEnfocarOpcion} onBlur={alSalirOpcion}
+                      style={{
+                        width: '100%', minHeight: 56, padding: '10px 16px', borderRadius: 12, textAlign: 'left',
+                        border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
+                        color: '#fff', cursor: 'pointer', fontFamily: 'inherit', outline: 'none',
+                        display: 'flex', flexDirection: 'column', gap: 2,
+                      }}
+                    >
+                      <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}>{n.name || n.slug}</span>
+                      <span style={{ fontFamily: MONO, fontSize: 11.5, color: 'rgba(255,255,255,0.6)' }}>
+                        {n.slug}.divianco.app
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button type="button" onClick={otraCuenta} style={estiloEnlace(true)}>
+                Entrar con otra cuenta
+              </button>
+            </div>
+          );
+        }
 
-        {!modoReset && (
-          <label style={{ display: 'block', marginBottom: 16 }}>
-            <span style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Contraseña</span>
-            <input
-              style={inputStyle} type="password" value={password} autoComplete="current-password"
-              onChange={(ev) => setPassword(ev.target.value)} placeholder="••••••••"
-            />
-          </label>
-        )}
+        if (modoNueva) {
+          return (
+            <form onSubmit={guardarNueva} style={estiloCaja(stage)}>
+              <p style={{ margin: '2px 4px 0', fontSize: 14, textAlign: 'left' }}>Elegí tu contraseña nueva.</p>
+              <label style={estiloEtiqueta}>
+                Contraseña nueva
+                <input
+                  style={estiloCampo} type="password" value={password} autoFocus autoComplete="new-password"
+                  onChange={(ev) => setPassword(ev.target.value)} placeholder="Mínimo 6 caracteres"
+                  onFocus={alEnfocar} onBlur={alSalir}
+                />
+              </label>
+              <label style={estiloEtiqueta}>
+                Repetila
+                <input
+                  style={estiloCampo} type="password" value={password2} autoComplete="new-password"
+                  onChange={(ev) => setPassword2(ev.target.value)} placeholder="••••••••"
+                  onFocus={alEnfocar} onBlur={alSalir}
+                />
+              </label>
+              {mensajes}
+              {botonOro('Guardar y entrar')}
+              <button type="button" onClick={volverAEntrar} style={estiloEnlace(true)}>Volver a entrar</button>
+            </form>
+          );
+        }
 
-        {error && (
-          <div style={{
-            padding: '11px 13px', borderRadius: 10, marginBottom: 14, fontSize: 14,
-            background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)',
-            color: '#fca5a5',
-          }}>{error}</div>
-        )}
+        return (
+          <>
+            <form onSubmit={modoReset ? resetear : entrar} style={estiloCaja(stage)}>
+              <label style={estiloEtiqueta}>
+                Email
+                <input
+                  style={estiloCampo} type="email" value={email} autoFocus autoComplete="email" required
+                  onChange={(ev) => setEmail(ev.target.value)} placeholder="vos@ejemplo.com"
+                  onFocus={alEnfocar} onBlur={alSalir}
+                />
+              </label>
 
-        {aviso && (
-          <div style={{
-            padding: '11px 13px', borderRadius: 10, marginBottom: 14, fontSize: 14,
-            background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.28)',
-            color: C.ok,
-          }}>{aviso}</div>
-        )}
+              {!modoReset && (
+                <label style={estiloEtiqueta}>
+                  Contraseña
+                  <input
+                    style={estiloCampo} type="password" value={password} autoComplete="current-password" required
+                    onChange={(ev) => setPassword(ev.target.value)} placeholder="••••••••"
+                    onFocus={alEnfocar} onBlur={alSalir}
+                  />
+                </label>
+              )}
 
-        <button
-          type="submit" disabled={enviando}
-          style={{
-            width: '100%', padding: '13px', borderRadius: 11, border: 'none',
-            fontSize: 15.5, fontWeight: 700, font: 'inherit',
-            background: enviando ? 'rgba(255,255,255,0.1)' : C.ac,
-            color: enviando ? C.t2 : '#1a1408',
-            cursor: enviando ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {enviando ? 'Un momento…' : (modoReset ? 'Mandarme el link' : 'Entrar')}
-        </button>
+              {modoReset && (
+                <p style={{ margin: '2px 4px 0', fontSize: 12, lineHeight: 1.5, color: 'rgba(255,255,255,0.7)', textAlign: 'left' }}>
+                  Te mandamos un link para elegir una contraseña nueva.
+                </p>
+              )}
 
-        <div style={{ marginTop: 16, textAlign: 'center', fontSize: 13.5 }}>
-          <button
-            type="button"
-            onClick={() => { setModoReset(!modoReset); setError(null); setAviso(null); }}
-            style={{ background: 'none', border: 'none', color: C.t2, cursor: 'pointer', font: 'inherit', textDecoration: 'underline' }}
-          >
-            {modoReset ? 'Volver a entrar' : 'Olvidé mi contraseña'}
-          </button>
-        </div>
+              {mensajes}
+              {botonOro(modoReset ? 'Mandarme el link' : 'Entrar')}
 
-        <div style={{ marginTop: 22, textAlign: 'center', fontSize: 13.5, color: C.t2 }}>
-          ¿Todavía no tenés negocio?{' '}
-          <a href="/registro" style={{ color: C.ac }}>Creá el tuyo</a>
-        </div>
-      </form>
-    </main>
+              <button
+                type="button"
+                onClick={() => { setModoReset(!modoReset); setError(null); setAviso(null); }}
+                style={estiloEnlace(true)}
+              >
+                {modoReset ? 'Volver a entrar' : 'Olvidé mi contraseña'}
+              </button>
+            </form>
+
+            <p style={{ margin: '20px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>
+              ¿Todavía no tenés negocio?{' '}
+              <a href="/registro" style={{ color: GOLD, display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 4px' }}>Creá el tuyo</a>
+            </p>
+          </>
+        );
+      }}
+    </LoginShell>
   );
 }

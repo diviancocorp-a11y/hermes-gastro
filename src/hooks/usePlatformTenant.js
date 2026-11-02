@@ -20,6 +20,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { getSession, logout } from '../services/auth';
 import { fetchMyTenant } from '../services/platformAdmin';
+import { tomarTraspaso } from '../services/entradaUnica';
 import { captureException } from '../lib/observability.js';
 import { resumenDeSuscripcion } from '../modules/suscripcion';
 
@@ -41,7 +42,10 @@ export default function usePlatformTenant() {
 
   // ── Sesion ──
   useEffect(() => {
-    getSession()
+    // Si llegamos desde divianco.app/entrar, la sesion viene en el hash: se toma
+    // ANTES de preguntar si hay una, o el panel mostraria el login un instante.
+    tomarTraspaso()
+      .then(() => getSession())
       .then(s => { if (alive.current) { setSession(s); setCheckingSession(false); } })
       .catch(err => {
         // Si Supabase falla en boot no dejamos la pantalla colgada: cae a login.
