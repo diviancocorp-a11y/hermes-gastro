@@ -594,7 +594,7 @@ export default function HomeScreen({
               <ProductCharacteristics product={p._raw} />
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
                 <Rating value={p.rating} />
-                <span className="body-s" style={{ fontSize: 11, color: "var(--t3)" }}>· {p.prepMin} min</span>
+                {p.tiempo && <span className="body-s" style={{ fontSize: 11, color: "var(--t3)" }}>· {p.tiempo}</span>}
               </div>
               <div style={{ marginTop: 6 }}><PriceTag price={p.price} oldPrice={p.oldPrice} size="sm" /></div>
             </div>

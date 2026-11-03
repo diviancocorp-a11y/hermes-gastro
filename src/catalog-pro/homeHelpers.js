@@ -4,6 +4,7 @@
 
 import { DEAL_PCT } from "../constants/catalogConstants";
 import { fmtAR } from "../lib/format";
+import { formatearDuracion } from "./reservarHelpers.js";
 
 function hashStr(s) {
   let h = 0;
@@ -36,6 +37,18 @@ export function prepFor(id, fallback) {
   return 12 + (hashStr(id) % 24);
 }
 
+// Tiempo que muestra la tarjeta. Un servicio dice cuanto dura el turno
+// (products.duration_min); el tiempo de preparacion del negocio es de
+// gastronomia y en un servicio mentia ("30 min" en un alisado de 3 h). Sin
+// duracion (un agregado) no muestra nada.
+export function tiempoFor(p, prepDefault) {
+  if (p?.type === "service") {
+    const min = Number(p.duration_min);
+    return min > 0 ? formatearDuracion(min) : null;
+  }
+  return `${prepFor(p?.id, prepDefault)} min`;
+}
+
 /**
  * Mapea un producto real (DB) al shape que usan los componentes catalog-pro.
  * @param p producto real {id, name, sale_price, description, image_url, category, related_ids}
@@ -64,6 +77,7 @@ export function mapProduct(p, opts = {}) {
     rating: ratingFor(p.id),
     reviews: reviewsFor(p.id),
     prepMin: prepFor(p.id, prepDefault),
+    tiempo: tiempoFor(p, prepDefault),
     badge: deal ? "Oferta" : null,
     // Sin stock de ingredientes suficiente para 1 unidad
     soldOut: !!(soldOutIds && soldOutIds.has(p.id)),
