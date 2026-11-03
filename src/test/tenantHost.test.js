@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  normalizeHost, classifyHost, tenantSlugFromHost, isPlatformRoot,
+  normalizeHost, classifyHost, tenantSlugFromHost, isPlatformRoot, isConsolaHost,
   RESERVED_SUBDOMAINS,
 } from '../lib/tenantHost';
 
@@ -62,6 +62,17 @@ describe('tenantHost', () => {
       for (const r of RESERVED_SUBDOMAINS) {
         expect(tenantSlugFromHost(`${r}.divianco.app`)).toBeNull();
       }
+    });
+
+    it('consola.divianco.app es la consola, no un negocio ni la raiz', () => {
+      expect(tenantSlugFromHost('consola.divianco.app')).toBeNull();
+      expect(classifyHost('consola.divianco.app').kind).toBe('unknown');
+      expect(isConsolaHost('consola.divianco.app')).toBe(true);
+      expect(isConsolaHost('Consola.Divianco.App:443')).toBe(true);
+      expect(isConsolaHost('divianco.app')).toBe(false);
+      expect(isConsolaHost('mia-estudio.divianco.app')).toBe(false);
+      expect(isConsolaHost('consola.divianco.app.evil.com')).toBe(false);
+      expect(isConsolaHost('xconsola.divianco.app')).toBe(false);
     });
 
     it('admin y api nunca son tenants', () => {

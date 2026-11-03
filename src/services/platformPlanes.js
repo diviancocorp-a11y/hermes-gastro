@@ -155,34 +155,6 @@ export async function actualizarSuscripcion(tenantId, cambios) {
 
 /* ─────────────────── El equipo de Divianco ─────────────────── */
 
-/**
- * Entrar a la consola.
- *
- * Es un login PROPIO y no el de `/entrar` a proposito: aquel, al terminar,
- * manda al negocio de la persona (`destinoTrasLogin`). Para quien viene a
- * administrar la plataforma eso es salir de donde queria entrar. Ademas la
- * sesion de Supabase se guarda POR ORIGEN: la que se abre en el subdominio de
- * un negocio no existe en `divianco.app`, asi que la consola necesita la suya.
- */
-export async function entrarAConsola(email, password) {
-  const { error } = await supabase.auth.signInWithPassword({
-    email: String(email || '').trim().toLowerCase(),
-    password,
-  });
-  if (error) {
-    // Un mensaje unico para credenciales malas: distinguir "no existe" de
-    // "clave incorrecta" le dice a cualquiera que direcciones tienen cuenta.
-    return { __error: 'auth', message: 'Email o contraseña incorrectos.' };
-  }
-  if (!(await soyStaffDivianco())) {
-    // Entro bien pero no es del equipo: se cierra la sesion para no dejarlo
-    // con una sesion abierta en un origen donde no tiene nada que hacer.
-    await supabase.auth.signOut();
-    return { __error: 'permiso', message: 'Esa cuenta no tiene acceso a la consola.' };
-  }
-  return { ok: true };
-}
-
 export async function salirDeConsola() {
   await supabase.auth.signOut();
 }

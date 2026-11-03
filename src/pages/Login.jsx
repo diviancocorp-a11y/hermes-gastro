@@ -15,7 +15,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { iniciarSesion, pedirResetPassword, cambiarPassword } from '../services/signup';
-import { resolverDestino, irAlAdmin } from '../services/entradaUnica';
+import { resolverDestino, irAlAdmin, irALaConsola } from '../services/entradaUnica';
 import { supabase } from '../lib/supabase';
 import LoginShell from '../components/admin/LoginShell';
 import {
@@ -47,8 +47,8 @@ export default function Login() {
   // 'elegir' (varios negocios) | 'entrando' (ya se decidio, esperando el salto)
   const [vista, setVista] = useState('form');
   const [negocios, setNegocios] = useState([]);
-  // URL de la consola cuando la persona es staff de Divianco (si no, null).
-  const [consola, setConsola] = useState(null);
+  // true cuando la persona es staff de Divianco y el selector ofrece la consola.
+  const [conConsola, setConConsola] = useState(false);
   const [entrandoA, setEntrandoA] = useState('');
   // El link del mail de reset vuelve a /entrar con type=recovery en el hash y
   // una sesion ya abierta: lo que falta es fijar la contraseña nueva. Se lee
@@ -85,21 +85,30 @@ export default function Login() {
     }
   }, [negocios.length]);
 
+  /** Salta a la consola de Divianco (otro subdominio: la sesion viaja en el hash). */
+  const entrarAConsola = useCallback(async () => {
+    setError(null); setEntrandoA('la consola de Divianco'); setVista('entrando');
+    const r = await irALaConsola();
+    if (r && r.ok === false) {
+      setError(r.error);
+      setVista(negocios.length > 0 ? 'elegir' : 'form');
+    }
+  }, [negocios.length]);
+
   /** Con la sesion abierta (login o clave nueva), decide a donde va. */
   const seguir = useCallback(async () => {
     const d = await resolverDestino();
     if (!d.ok) { setError(d.error); setVista('form'); return; }
     if (d.tipo === 'staff') {
-      setEntrandoA('Divianco'); setVista('entrando');
-      window.location.assign(d.url);
+      await entrarAConsola();
       return;
     }
     if (d.tipo === 'elegir') {
-      setNegocios(d.negocios); setConsola(d.consola || null); setVista('elegir');
+      setNegocios(d.negocios); setConConsola(d.consola === true); setVista('elegir');
       return;
     }
     await entrarA(d.negocio);
-  }, [entrarA]);
+  }, [entrarA, entrarAConsola]);
 
   const guardarNueva = useCallback(async (e) => {
     e.preventDefault();
@@ -143,14 +152,9 @@ export default function Login() {
 
   const otraCuenta = useCallback(async () => {
     try { await supabase.auth.signOut(); } catch { /* si falla igual se vuelve al form */ }
-    setNegocios([]); setConsola(null); setPassword(''); setError(null); setAviso(null); setVista('form');
+    setNegocios([]); setConConsola(false); setPassword(''); setError(null); setAviso(null); setVista('form');
   }, []);
 
-  /** La consola vive en el mismo origen que /entrar: la sesion ya esta. */
-  const entrarAConsola = useCallback(() => {
-    setEntrandoA('la consola de Divianco'); setVista('entrando');
-    window.location.assign(consola);
-  }, [consola]);
 
   const volverAEntrar = () => {
     setModoNueva(false); setModoReset(false);
@@ -228,7 +232,7 @@ export default function Login() {
                     </button>
                   </li>
                 ))}
-                {consola && (
+                {conConsola && (
                   <li>
                     <button
                       type="button" onClick={entrarAConsola}
