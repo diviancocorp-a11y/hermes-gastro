@@ -1,5 +1,6 @@
-// El selector de cuentas del menu de sesion: saltar entre negocios (y a la
-// consola) sin pasar por /entrar.
+// El menu de sesion son dos botones: la burbuja (logo o iniciales) abre los
+// negocios para saltar de uno a otro (y a la consola) sin pasar por /entrar;
+// el nombre abre la cuenta (tema, ver catalogo, salir).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MenuDeSesion } from '../components/admin/platform/ControlesDeSesion';
@@ -19,13 +20,18 @@ vi.mock('../services/platformPlanes', () => ({ soyStaffDivianco: (...a) => soySt
 vi.mock('../lib/activeTenant', () => ({ getTenantSlugSync: (...a) => getTenantSlugSync(...a) }));
 
 const DOS = [{ slug: 'panaderia', name: 'La Panaderia' }, { slug: 'bar', name: 'El Bar' }];
-const controles = [{ id: 'tema', label: 'Tema oscuro', Icono: () => null, onClick: vi.fn() }];
+const controles = [
+  { id: 'config', label: 'Configuración', Icono: () => null, onClick: vi.fn() },
+  { id: 'tema', label: 'Tema oscuro', Icono: () => null, onClick: vi.fn() },
+  { id: 'salir', label: 'Salir', Icono: () => null, onClick: vi.fn() },
+];
 const session = { user: { email: 'ana@x.com', user_metadata: { full_name: 'Ana Perez' } } };
-const PERFIL = { name: /Cuenta de/ };
+const BURBUJA = { name: 'Cambiar de negocio' };
+const CUENTA = { name: 'Cuenta de Ana Perez' };
 
-function montar() {
-  render(<MenuDeSesion controles={controles} session={session} />);
-  return screen.getByRole('button', PERFIL);
+function montar(props = {}) {
+  render(<MenuDeSesion controles={controles} session={session} {...props} />);
+  return screen.getByRole('button', BURBUJA);
 }
 function abrir() {
   const perfil = montar();
@@ -98,13 +104,42 @@ describe('MenuDeSesion: Tus negocios', () => {
     expect(screen.queryByText('Consola de Divianco')).toBeNull();
   });
 
-  it('un solo negocio y sin staff: no hay seccion', async () => {
+  it('un solo negocio y sin staff: igual abre y muestra el actual tildado', async () => {
     negociosDelUsuario.mockResolvedValue({ ok: true, negocios: [DOS[0]] });
     abrir();
-    await waitFor(() => expect(negociosDelUsuario).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(''));
-    expect(screen.queryByRole('group', { name: 'Tus negocios' })).toBeNull();
-    expect(screen.getByRole('menuitem', { name: /Tema oscuro/ })).toBeInTheDocument();
+    const actual = await screen.findByRole('menuitemradio', { name: /La Panaderia/ });
+    expect(actual).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('menu', { name: 'Tus negocios' })).toBeInTheDocument();
+    await waitFor(() => expect(document.activeElement).toBe(actual));
+  });
+
+  it('mientras carga, el menu va con aria-busy y lo pierde al llegar los negocios', async () => {
+    const [p, resolver] = pendiente();
+    negociosDelUsuario.mockReturnValue(p);
+    abrir();
+    expect(screen.getByRole('menu', { name: 'Tus negocios' })).toHaveAttribute('aria-busy', 'true');
+    resolver({ ok: true, negocios: DOS });
+    await screen.findByText('El Bar');
+    expect(screen.getByRole('menu', { name: 'Tus negocios' })).not.toHaveAttribute('aria-busy');
+  });
+
+  it('sin negocios ni consola no monta el menu y lo dice el status', async () => {
+    negociosDelUsuario.mockResolvedValue({ ok: true, negocios: [] });
+    const burbuja = abrir();
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('No encontramos negocios asociados a tu cuenta.'));
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(burbuja).not.toHaveAttribute('aria-controls');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(document.activeElement).toBe(burbuja);
+  });
+
+  it('la burbuja abre solo negocios, sin los controles de la cuenta', async () => {
+    abrir();
+    await screen.findByText('El Bar');
+    expect(screen.queryByRole('menuitem', { name: /Tema oscuro/ })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: /Salir/ })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: /Ver catálogo/ })).toBeNull();
   });
 
   it('las regiones live estan montadas, fuera del menu, y se llenan de texto', async () => {
@@ -144,13 +179,15 @@ describe('MenuDeSesion: Tus negocios', () => {
     expect(irAlAdmin).toHaveBeenCalledTimes(1);
   });
 
-  it('las flechas recorren negocios y controles', async () => {
+  it('las flechas recorren los negocios y la consola', async () => {
+    soyStaffDivianco.mockResolvedValue(true);
     abrir();
     await screen.findByText('El Bar');
     const menu = screen.getByRole('menu');
     const items = Array.from(menu.querySelectorAll('[role="menuitem"], [role="menuitemradio"]'));
     expect(items.map((i) => i.textContent)).toEqual([
-      expect.stringContaining('La Panaderia'), expect.stringContaining('El Bar'), 'Tema oscuro',
+      expect.stringContaining('La Panaderia'), expect.stringContaining('El Bar'),
+      expect.stringContaining('Consola de Divianco'),
     ]);
     items[0].focus();
     fireEvent.keyDown(menu, { key: 'ArrowDown' });
@@ -163,10 +200,18 @@ describe('MenuDeSesion: Tus negocios', () => {
     expect(document.activeElement).toBe(items[2]);
   });
 
-  it('Escape cierra el desplegable', async () => {
-    abrir();
+  it('Escape cierra el desplegable y devuelve el foco a la burbuja', async () => {
+    const burbuja = abrir();
     await screen.findByText('El Bar');
     fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(document.activeElement).toBe(burbuja);
+  });
+
+  it('el clic afuera cierra', async () => {
+    abrir();
+    await screen.findByText('El Bar');
+    fireEvent.pointerDown(document.body);
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
@@ -174,7 +219,7 @@ describe('MenuDeSesion: Tus negocios', () => {
     const [p, resolver] = pendiente();
     negociosDelUsuario.mockReturnValue(p);
     abrir();
-    expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: /Tema oscuro/ }));
+    expect(screen.queryByRole('menuitemradio')).toBeNull();
     resolver({ ok: true, negocios: DOS });
     const primero = await screen.findByRole('menuitemradio', { name: /La Panaderia/ });
     await waitFor(() => expect(document.activeElement).toBe(primero));
@@ -183,12 +228,12 @@ describe('MenuDeSesion: Tus negocios', () => {
   it('si ya navego, el foco no se le mueve cuando llegan las cuentas', async () => {
     const [p, resolver] = pendiente();
     negociosDelUsuario.mockReturnValue(p);
-    abrir();
-    const tema = screen.getByRole('menuitem', { name: /Tema oscuro/ });
+    const burbuja = abrir();
+    burbuja.focus();
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Home' });
     resolver({ ok: true, negocios: DOS });
     await screen.findByRole('menuitemradio', { name: /La Panaderia/ });
-    expect(document.activeElement).toBe(tema);
+    expect(document.activeElement).toBe(burbuja);
   });
 
   it('si la consulta falla, ofrece Reintentar y vuelve a consultar', async () => {
@@ -200,5 +245,102 @@ describe('MenuDeSesion: Tus negocios', () => {
     await screen.findByRole('menuitemradio', { name: /El Bar/ });
     expect(negociosDelUsuario).toHaveBeenCalledTimes(2);
     expect(screen.queryByText(/No pudimos traer tus negocios/)).toBeNull();
+  });
+});
+
+describe('MenuDeSesion: la burbuja', () => {
+  it('muestra el logo del negocio en lugar de las iniciales', () => {
+    montar({ logoUrl: 'https://cdn.test/logo.png' });
+    const burbuja = screen.getByRole('button', BURBUJA);
+    const img = burbuja.querySelector('img');
+    expect(img.getAttribute('src')).toBe('https://cdn.test/logo.png');
+    expect(img.getAttribute('alt')).toBe('');
+    expect(burbuja).not.toHaveTextContent('AP');
+  });
+
+  it('sin logo, o si no carga, muestra las iniciales', () => {
+    montar({ logoUrl: 'https://cdn.test/roto.png' });
+    const burbuja = screen.getByRole('button', BURBUJA);
+    fireEvent.error(burbuja.querySelector('img'));
+    expect(burbuja.querySelector('img')).toBeNull();
+    expect(burbuja).toHaveTextContent('AP');
+  });
+
+  it('tiene popup de menu y expanded', () => {
+    const burbuja = abrir();
+    expect(burbuja).toHaveAttribute('aria-haspopup', 'menu');
+    expect(burbuja).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
+describe('MenuDeSesion: el nombre abre la cuenta', () => {
+  function abrirCuenta() {
+    montar();
+    const cuenta = screen.getByRole('button', CUENTA);
+    fireEvent.click(cuenta);
+    return cuenta;
+  }
+
+  it('lleva nombre y email arriba y los controles con Ver catálogo debajo del tema', () => {
+    const cuenta = abrirCuenta();
+    expect(cuenta).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('ana@x.com')).toBeInTheDocument();
+    const menu = screen.getByRole('menu', { name: 'Mi cuenta' });
+    const items = Array.from(menu.querySelectorAll('[role="menuitem"]'));
+    expect(items.map((i) => i.textContent)).toEqual(['Configuración', 'Tema oscuro', 'Ver catálogo', 'Salir']);
+    expect(screen.queryByRole('menuitemradio')).toBeNull();
+    expect(negociosDelUsuario).not.toHaveBeenCalled();
+  });
+
+  it('Ver catálogo abre la raiz en otra pestaña y lo avisa', () => {
+    abrirCuenta();
+    const link = screen.getByRole('menuitem', { name: 'Ver catálogo (se abre en otra pestaña)' });
+    expect(link.tagName).toBe('A');
+    expect(link.getAttribute('href')).toBe('/');
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
+  it('un control cierra el menu, devuelve el foco y corre su accion', () => {
+    const cuenta = abrirCuenta();
+    expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Configuración' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Tema oscuro' }));
+    expect(controles[1].onClick).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(document.activeElement).toBe(cuenta);
+  });
+
+  it('las flechas recorren los controles', () => {
+    abrirCuenta();
+    const menu = screen.getByRole('menu');
+    fireEvent.keyDown(menu, { key: 'ArrowDown' });
+    expect(document.activeElement).toHaveTextContent('Tema oscuro');
+    fireEvent.keyDown(menu, { key: 'End' });
+    expect(document.activeElement).toHaveTextContent('Salir');
+    fireEvent.keyDown(menu, { key: 'ArrowDown' });
+    expect(document.activeElement).toHaveTextContent('Configuración');
+  });
+
+  it('abrir uno cierra el otro', async () => {
+    const burbuja = montar();
+    const cuenta = screen.getByRole('button', CUENTA);
+    fireEvent.click(cuenta);
+    expect(screen.getByRole('menu', { name: 'Mi cuenta' })).toBeInTheDocument();
+    fireEvent.pointerDown(burbuja);
+    fireEvent.click(burbuja);
+    expect(screen.queryByRole('menu', { name: 'Mi cuenta' })).toBeNull();
+    expect(screen.getByRole('menu', { name: 'Tus negocios' })).toBeInTheDocument();
+    expect(cuenta).toHaveAttribute('aria-expanded', 'false');
+    await screen.findByText('El Bar');
+    fireEvent.click(cuenta);
+    expect(screen.queryByRole('menu', { name: 'Tus negocios' })).toBeNull();
+    expect(screen.getByRole('menu', { name: 'Mi cuenta' })).toBeInTheDocument();
+  });
+
+  it('Escape cierra y devuelve el foco al nombre', () => {
+    const cuenta = abrirCuenta();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(document.activeElement).toBe(cuenta);
   });
 });

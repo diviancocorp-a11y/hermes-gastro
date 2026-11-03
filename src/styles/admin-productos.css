@@ -167,13 +167,45 @@
   cursor: pointer;
 }
 
+.ag-productos-head-acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-2);
+  flex-shrink: 0;
+}
+
+/* Ver catalogo: secundario al lado del dorado de Agregar. Borde y tinta del
+   tema, sin relleno: la accion primaria sigue siendo una sola. */
+.ag-productos-head-catalogo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ag-sp-2);
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 0 var(--ag-sp-4);
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-md);
+  background: transparent;
+  color: var(--ag-ink);
+  font-family: var(--ag-font);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ag-productos-head-catalogo svg { flex-shrink: 0; color: var(--ag-ink-2); }
+.ag-productos-head-catalogo:hover { background: var(--ag-bg-soft); }
+
 .ag-productos-head-agregar > [aria-hidden] {
   font-size: 20px;
   line-height: 1;
 }
 
 .ag-productos-head-agregar:hover { filter: brightness(1.06); }
+/* Las dos acciones de la cabecera con el anillo de foco del sistema. */
 .ag-productos-head-agregar:focus-visible,
+.ag-productos-head-catalogo:focus-visible { outline: 2px solid var(--ds-color-focus-ring); outline-offset: 2px; }
 .ag-productos-head-alerta:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 
 .ag-productos-head-resumen {
@@ -1245,10 +1277,20 @@
     padding-bottom: var(--ag-sp-3);
   }
 
-  .ag-productos-head-agregar {
+  .ag-productos-head-agregar,
+  .ag-productos-head-catalogo {
     flex: 0 0 44px;
     width: 44px;
     padding: 0;
+  }
+
+  /* Solo icono, pero el texto sigue para el lector de pantalla. */
+  .ag-productos-head-catalogo-texto {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .ag-productos-head-agregar-texto,
