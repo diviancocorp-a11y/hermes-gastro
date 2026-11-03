@@ -103,12 +103,21 @@ export default function usePlatformTenant() {
   useEffect(() => { loadTenant(); }, [loadTenant]);
 
   const doLogin = useCallback(async () => {
+    // Login de verdad: se abre el negocio con el intro. Se enciende ANTES de
+    // esperar la sesion, o se veria un instante el panel (o "Cargando...")
+    // antes del overlay; si no hay sesion, se apaga.
+    setIntro(true);
     const s = await getSession();
     if (!alive.current) return;
     setSession(s);
-    // Login de verdad: se abre el negocio con el intro.
-    if (s) setIntro(true);
+    if (!s) setIntro(false);
   }, []);
+
+  // Si la sesion se pierde con el intro activo (otra pestana cerro sesion), un
+  // login posterior sin pasar por doLogin no tiene que heredar la bandera.
+  useEffect(() => {
+    if (!checkingSession && !session) setIntro(false);
+  }, [checkingSession, session]);
 
   const terminarIntro = useCallback(() => {
     if (alive.current) setIntro(false);

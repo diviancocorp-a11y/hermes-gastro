@@ -47,6 +47,23 @@ const ARO_LOGO = {
   grosor: +((26.5 / 380) * 100).toFixed(2),
 };
 
+/**
+ * Raiz comun de todos los estados del panel. El intro tiene que ser SIEMPRE el
+ * primer hijo de un fragmento del mismo tipo: si cada estado armara su propio
+ * arbol, React desmontaria el overlay al pasar de "Cargando..." al panel y el
+ * intro arrancaria de nuevo (el logo ya asentado volveria a entrar).
+ */
+export function ConIntro({ intro, status, onTerminar, children }) {
+  return (
+    <>
+      {intro && status !== 'anon'
+        ? <IntroDico onTerminar={onTerminar} listo={status !== 'checking'} />
+        : null}
+      {children}
+    </>
+  );
+}
+
 export default function IntroDico({ onTerminar, listo = true }) {
   const sinMovimiento = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [minimoCumplido, setMinimoCumplido] = useState(false);
@@ -77,7 +94,7 @@ export default function IntroDico({ onTerminar, listo = true }) {
   return (
     <div
       data-intro-dico=""
-      role="presentation"
+      aria-hidden="true"
       style={{
         position:"fixed", inset:0, zIndex:9999,
         display:"flex", alignItems:"center", justifyContent:"center",

@@ -8,7 +8,7 @@
 //   - NUNCA con una sesion que ya estaba abierta, y se apaga si el traspaso falla.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, renderHook, act, waitFor } from '@testing-library/react';
+import { render, renderHook, act, waitFor, screen } from '@testing-library/react';
 import IntroDico from '../components/admin/IntroDico';
 import { TIEMPOS } from '../components/admin/tiemposDeEntrada';
 
@@ -180,5 +180,30 @@ describe('usePlatformTenant — cuando se enciende el intro', () => {
 
     await waitFor(() => expect(result.current.status).toBe('anon'));
     expect(result.current.intro).toBe(false);
+  });
+});
+
+// REGRESION (auditor, P1): cada estado del panel armaba su propio arbol y React
+// desmontaba el overlay al pasar de "Cargando..." al panel: el intro arrancaba
+// de nuevo. ConIntro es la raiz comun; el nodo del overlay tiene que ser el MISMO.
+describe('ConIntro — el overlay sobrevive al cambio de estado', () => {
+  it('es el mismo nodo al pasar de checking a ok', async () => {
+    const { ConIntro } = await import('../components/admin/IntroDico');
+    const props = { intro: true, onTerminar: () => {} };
+    const { container, rerender } = render(
+      <ConIntro {...props} status="checking"><p>Cargando...</p></ConIntro>,
+    );
+    const antes = container.querySelector('[data-intro-dico]');
+    expect(antes).not.toBeNull();
+
+    rerender(<ConIntro {...props} status="ok"><section>Panel</section></ConIntro>);
+    expect(container.querySelector('[data-intro-dico]')).toBe(antes);
+    expect(screen.getByText('Panel')).toBeInTheDocument();
+  });
+
+  it('en anon no hay overlay', async () => {
+    const { ConIntro } = await import('../components/admin/IntroDico');
+    const { container } = render(<ConIntro intro status="anon" onTerminar={() => {}}><p>Login</p></ConIntro>);
+    expect(container.querySelector('[data-intro-dico]')).toBeNull();
   });
 });
