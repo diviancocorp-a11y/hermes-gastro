@@ -65,6 +65,14 @@ de las dos cosas, y así se corrompieron archivos antes.
   se anota en el HANDOFF qué job falla y por qué; si ya estaba rojo antes de
   la sesión, se dice igual.
 
+- **Worktrees mergeadas**: `git worktree list` y, por cada una de
+  `.claude/worktrees/`, `git merge-base --is-ancestor <su-rama> origin/main`.
+  Las que dan 0 (ya estan en `main`) y tienen `git status --short` vacio se
+  listan en el resumen y se ofrece borrarlas (`git worktree remove`,
+  `git branch -d`, `git worktree prune`). No se borran sin el si de Ricky, ni
+  las que tienen cambios sin commitear, ni las de `~/.codex` (son de Codex).
+  Si una carpeta queda trabada por un proceso, se dice cual y se sigue.
+
 ## Paso 4 — Actualizar la memoria si cambió algo estructural
 
 Si en la sesión cambió algo que sobrevive al proyecto —un dominio nuevo, una
