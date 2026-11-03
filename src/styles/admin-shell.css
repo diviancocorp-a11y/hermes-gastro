@@ -40,6 +40,23 @@
   gap: 2px;
   min-width: 0;
 }
+.ag-topbar-logo {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--ms-zinc-800);
+  /* contain y fondo claro: un logo apaisado no se recorta y uno transparente
+     con trazo oscuro no desaparece sobre el chasis. */
+  object-fit: contain;
+  background: var(--ms-zinc-100);
+}
+/* En telefono chico el nombre del local compite con el hueco de Dico, el boton
+   de catalogo y la cuenta: el logo se achica para dejarle lugar. */
+@media (max-width: 480px) {
+  .ag-topbar-logo { width: 24px; height: 24px; margin-right: 6px; }
+}
 .ag-topbar-local {
   min-width: 0;
   overflow: hidden;
@@ -352,6 +369,37 @@
 .ag-root .ag-topbar .ag-btn-mini:hover {
   color: var(--ag-chassis-ink);
   border-color: var(--ms-zinc-700);
+}
+
+/* Ver catalogo: enlace fantasma sobre el chasis. Ink-2 sobre zinc-950 da AA
+   de sobra. En movil queda solo el icono, en un objetivo de 44px. */
+.ag-root .ag-topbar .ag-topbar-catalogo {
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--ag-chassis-ink-2);
+  border: 1px solid var(--ms-zinc-800);
+  border-radius: 6px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--ag-t-fast) var(--ag-ease),
+              border-color var(--ag-t-fast) var(--ag-ease);
+}
+.ag-root .ag-topbar .ag-topbar-catalogo:hover {
+  background: transparent;
+  color: var(--ag-chassis-ink);
+  border-color: var(--ms-zinc-700);
+}
+@media (max-width: 768px) {
+  .ag-root .ag-topbar .ag-topbar-catalogo { width: 44px; padding: 0; }
+  .ag-topbar-catalogo-texto {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 /* ── Encabezado de seccion ──────────────────────────────────────────────

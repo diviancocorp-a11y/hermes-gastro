@@ -70,6 +70,7 @@ import {
   fetchTableVisits,
 } from '../services/platformSalon';
 import { fetchSettings, saveSettings, fetchTenantBrand } from '../services/platformSettings';
+import { LogoNegocio, VerCatalogo } from '../components/admin/platform/TopbarNegocio';
 import {
   fetchTicketsDeCocina, marcarPlato, cerrarTicket, etiquetaDePasador,
 } from '../services/platformKds';
@@ -1269,9 +1270,11 @@ export default function PlatformAdmin() {
         <header className="ag-topbar ms-trace">
           <div className="ag-topbar-identidad">
             {!esDesktop && <div className="ag-topbar-dico" ref={setHuecoDico} />}
+            <LogoNegocio url={sett?.logo_url} />
             <strong className="ag-topbar-local" title={nombreLocal}>{nombreLocal}</strong>
           </div>
           <div className="ag-topbar-right">
+            <VerCatalogo />
             <MenuDeSesion
               session={session}
               controles={controles.filter(c => !esDesktop || c.id !== 'config')}
