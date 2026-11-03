@@ -1,6 +1,7 @@
 // src/components/admin/LoginShell.jsx
-// La puerta de entrada, sin saber de quien es: fondo de particulas Volt, splash
-// del logo DICO, placa de Dico (o logo del negocio), titulo y la ranura del form.
+// La puerta de entrada, sin saber de quien es: fondo de particulas Volt, placa
+// de Dico (o logo del negocio), titulo y la ranura del form. El intro del logo
+// DICO NO esta aca: es `IntroDico`, y se ve al abrir el negocio, no al loguearse.
 // La usan el login del admin de cada tenant (`LoginScreen`, con su marca) y la
 // entrada unica `/entrar` (`pages/Login`, con la marca Dico fija).
 //
@@ -12,42 +13,14 @@
 // pocas partículas, el aro de Dico y el botón de entrar. Es la misma regla que
 // gobierna el panel, aplicada a la puerta de entrada.
 //
-// `children` es una funcion que recibe el `stage` ('intro' | 'form'), porque el
-// form tiene que esperar a que termine la entrada para poder tocarse.
+// `children` es una funcion que recibe el `stage`, siempre 'form': el form se
+// puede tocar enseguida.
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import business from "@business";
 import FlowFieldBackground from "./FlowFieldBackground";
 import DicoNative from "../dico/DicoNative";
-import DicoPulso from "../dico/DicoPulso";
-import { TIEMPOS } from "./tiemposDeEntrada";
 import { GOLD, VOLT, ZINC } from "./loginEstilos";
-
-/* ─────────────── EL ARO DEL LOGO NO SE ADIVINA: SE MIDE ───────────────
- *
- * El splash es un PNG de 1368x452 donde la O es Dico. Para que el pulso Volt
- * caiga EXACTAMENTE sobre el aro que ya trae el arte, hay que saber donde esta
- * ese aro. Medido sobre `public/brand/dico/logo/dico-oscuro.png` (los pixeles
- * azules de la O, ajustando centro y radio por iteracion):
- *
- *   centro del aro   1147,4 / 225,3 px
- *   radio            128,2 px      grosor  26,5 px
- *   el personaje     958..1337 en X  ->  380 px de lado
- *
- * El radio sobre el medio-ancho del personaje da 0,675 — el mismo r/R 0,67 que
- * `DicoNative` midio sobre los assets 2D. Son el mismo aro, y eso es lo que
- * confirma que los numeros estan bien y no tanteados.
- *
- * La caja del overlay es CUADRADA y centrada en el aro: el SVG de DicoPulso no
- * declara `preserveAspectRatio`, asi que en una caja no cuadrada el navegador
- * lo encajaria con letterbox y el aro quedaria corrido. */
-const ARO_LOGO = {
-  izquierda: `${(957.42 / 1368) * 100}%`,
-  arriba: `${(35.31 / 452) * 100}%`,
-  lado: 380,
-  radio: +((128.16 / 380) * 100).toFixed(2),
-  grosor: +((26.5 / 380) * 100).toFixed(2),
-};
 
 export default function LoginShell({
   pastilla, titulo, subtitulo, children,
@@ -55,14 +28,9 @@ export default function LoginShell({
   fontFamily = "system-ui,-apple-system,sans-serif",
   colorPie = "rgba(255,255,255,0.3)",
 }) {
-  const [stage, setStage] = useState("intro");
+  const stage = "form";
   const [logoLoaded, setLogoLoaded] = useState(false);
   const [saluda, setSaluda] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setStage("form"), TIEMPOS.intro);
-    return () => clearTimeout(t);
-  }, []);
 
   /* El aro de Dico en la placa. Dos estados, y el hover manda.
    *
@@ -94,53 +62,6 @@ export default function LoginShell({
       />
       <div style={{ position:"absolute", inset:0, background:"radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.45) 100%)", pointerEvents:"none" }} />
 
-      {/* Splash de marca. Es el logo DICO completo —DIC más Dico haciendo de
-          O—: la misma animación de siempre, la marca que corresponde. */}
-      <div style={{
-        position:"absolute", inset:0, zIndex:50,
-        display:"flex", alignItems:"center", justifyContent:"center",
-        background:"#0a0a0a",
-        opacity: stage === "intro" ? 1 : 0,
-        pointerEvents: stage === "intro" ? "auto" : "none",
-        transition:"opacity 0.6s cubic-bezier(0.22,1,0.36,1)",
-        overflow:"hidden",
-      }}>
-        <div style={{
-          maxWidth:"min(86vw, 460px)",
-          animation:`hg-splash-in ${TIEMPOS.entrada}ms cubic-bezier(0.22,1,0.36,1) forwards`,
-          filter:`drop-shadow(0 18px 56px ${GOLD}55)`,
-        }}>
-          {/* El logo y, encima, el pulso Volt sobre el aro que ya trae la O.
-              No se repinta el PNG: la senial es una capa aparte, que es para
-              lo que existe `DicoPulso`. Late mientras dura la entrada — el
-              sistema se enciende antes de abrirte la puerta. */}
-          <div style={{ position:"relative" }}>
-            <img
-              src="/brand/dico/logo/dico-oscuro.png"
-              alt="DICO"
-              width="1368"
-              height="452"
-              style={{ display:"block", width:"100%", height:"auto" }}
-            />
-            <div style={{
-              position:"absolute",
-              left: ARO_LOGO.izquierda,
-              top: ARO_LOGO.arriba,
-              width: `${(ARO_LOGO.lado / 1368) * 100}%`,
-              aspectRatio: "1 / 1",
-              pointerEvents:"none",
-            }}>
-              <DicoPulso
-                className="hg-splash-aro"
-                activity="active"
-                radio={ARO_LOGO.radio}
-                grosor={ARO_LOGO.grosor}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Centro: identidad + ranura del form. Si el contenido es mas alto que
           la pantalla (selector con muchos negocios, teclado abierto en el
           movil) la columna scrollea en vez de desbordar. */}
@@ -153,9 +74,6 @@ export default function LoginShell({
             borderRadius:999, color:"rgba(255,255,255,0.65)",
             fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase",
             marginBottom:24, backdropFilter:"blur(4px)",
-            opacity: stage === "intro" ? 0 : 1,
-            transform: stage === "intro" ? "translateY(-8px)" : "translateY(0)",
-            transition:"opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s",
           }}>
             {pastilla}
           </div>
@@ -261,8 +179,6 @@ export default function LoginShell({
 
           <div style={{
             marginTop:28, fontSize:10, color:colorPie, letterSpacing:"0.05em",
-            opacity: stage === "intro" ? 0 : 1,
-            transition:"opacity 0.6s ease 0.4s",
           }}>
             {business.legal?.copyrightYear ? `© ${business.legal.copyrightYear}` : ""} Divianco
           </div>
@@ -276,24 +192,6 @@ export default function LoginShell({
         @keyframes hg-halo-pulse {
           0%, 100% { opacity:0.5; transform:scale(0.92); }
           50%      { opacity:1;   transform:scale(1.08); }
-        }
-        /* El latido del splash.
-           La espera es EXACTAMENTE lo que tarda el logo en asentarse: el aro
-           arranca apagado —\`brillo\` nace en opacidad 0 y sin \`fill-mode\` la
-           espera lo deja asi— y enciende recien cuando la marca ya esta
-           quieta. Asi los dos latidos se ven enteros en vez de empezar
-           mientras el logo todavia esta entrando.
-           La regla gana por ESPECIFICIDAD y no por orden: \`pulso.css\` se
-           importa desde el componente y el orden entre esa hoja y este bloque
-           no esta garantizado. */
-        .hg-splash-aro.dico-pulso--active .dico-pulso-brillo {
-          animation-duration: ${TIEMPOS.latido}ms;
-          animation-delay: ${TIEMPOS.entrada}ms;
-          animation-iteration-count: ${TIEMPOS.latidos};
-        }
-        @keyframes hg-splash-in {
-          from { opacity:0; transform:scale(0.88); }
-          to   { opacity:1; transform:scale(1); }
         }
         @media (prefers-reduced-motion: reduce) {
           [style*="animation"] { animation: none !important; opacity: 1 !important; }

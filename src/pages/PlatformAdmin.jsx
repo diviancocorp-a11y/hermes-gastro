@@ -13,6 +13,7 @@ import { lazyReload } from '../lib/lazyReload';
 
 import usePlatformTenant from '../hooks/usePlatformTenant';
 import LoginScreen from '../components/admin/LoginScreen';
+import IntroDico from '../components/admin/IntroDico';
 import AdminBackdrop from '../components/admin/shared/AdminBackdrop';
 import ConfirmSlideProvider from '../components/ConfirmSlideProvider';
 import ProductsPanel from '../components/admin/platform/ProductsPanel';
@@ -233,7 +234,7 @@ function ConteoBreve({ value, listo }) {
 
 export default function PlatformAdmin() {
   const productsPanelRef = useRef(null);
-  const { session, tenant, role, roles, status, doLogin, doLogout } = usePlatformTenant();
+  const { session, tenant, role, roles, status, doLogin, doLogout, intro, terminarIntro } = usePlatformTenant();
 
   const [tab, setTab] = useState('products');
   const [toast, setToast] = useState('');
@@ -1156,22 +1157,34 @@ export default function PlatformAdmin() {
   const [huecoDico, setHuecoDico] = useState(null);
   const [, setResumenDicoActivo] = useState(false);
 
-  if (status === 'checking') return <Centered>Cargando...</Centered>;
+  // El intro de Dico tapa al panel mientras se monta debajo (asi, al terminar,
+  // ya esta listo). No termina antes de que se sepa que mostrar: con la sesion
+  // todavia resolviendose (`checking`) espera con el aro latiendo.
+  const introDico = intro && status !== 'anon'
+    ? <IntroDico onTerminar={terminarIntro} listo={status !== 'checking'} />
+    : null;
+
+  if (status === 'checking') return <><Centered>Cargando...</Centered>{introDico}</>;
   if (status === 'anon') return <LoginScreen onLogin={doLogin} />;
 
   if (status === 'no-tenant') {
     return (
+      <>
+      {introDico}
       <Centered>
         <p style={{ color: 'var(--ag-ink)', marginBottom: 8 }}>Esta dirección no es de ningún negocio.</p>
         <p style={{ fontSize: 13 }}>
           Entrá al panel desde el dominio de tu negocio, por ejemplo <code>tunegocio.divianco.app/admin</code>.
         </p>
       </Centered>
+      </>
     );
   }
 
   if (status === 'denied') {
     return (
+      <>
+      {introDico}
       <Centered>
         <p style={{ color: 'var(--ag-ink)', marginBottom: 8 }}>Tu cuenta no tiene acceso a este negocio.</p>
         <p style={{ fontSize: 13, marginBottom: 18 }}>
@@ -1180,6 +1193,7 @@ export default function PlatformAdmin() {
         </p>
         <button type="button" className="ag-btn-ghost" onClick={doLogout}>Cerrar sesión</button>
       </Centered>
+      </>
     );
   }
 
@@ -1246,6 +1260,7 @@ export default function PlatformAdmin() {
 
   return (
     <ConfirmSlideProvider>
+      {introDico}
       {/* `ag-root--con-sidebar` marca a los roots que SI montan la sidebar. El
           admin legacy y el POS comparten `.ag-root` y no la montan: sin esta
           clase, las reglas de la sidebar les corrian el contenido y les

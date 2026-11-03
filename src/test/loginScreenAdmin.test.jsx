@@ -7,14 +7,13 @@
 //     tiene que ser el mismo en los dos casos, si no la pantalla se convierte
 //     en un verificador de correos registrados;
 //   - que donde iba la inicial del negocio esté Dico, y que salude;
-//   - que la marca del splash sea DICO y no la de Hermes;
-//   - que el aro Volt de Dico este vivo, y que conteste al gesto;
-//   - que la entrada dure lo que tarda en verse: el logo y DOS latidos.
+//   - que el login NO tenga intro: el form aparece enseguida (el intro de Dico
+//     se ve al abrir el negocio, ver introDico.test.jsx);
+//   - que el aro Volt de la placa este vivo, y que conteste al gesto.
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LoginScreen from '../components/admin/LoginScreen';
-import { TIEMPOS } from '../components/admin/tiemposDeEntrada';
 
 const login = vi.fn();
 const pedirResetPassword = vi.fn();
@@ -40,14 +39,15 @@ beforeEach(() => {
 });
 
 describe('LoginScreen — la marca', () => {
-  it('el splash es el logo DICO, no el de Hermes', () => {
+  it('el login no muestra el intro: ni el logo-splash ni espera', () => {
     const { container } = render(<LoginScreen onLogin={() => {}} />);
-    const logo = container.querySelector('img[alt="DICO"]');
-    expect(logo).toBeInTheDocument();
-    expect(logo.getAttribute('src')).toBe('/brand/dico/logo/dico-oscuro.png');
-    // Dimensiones declaradas: sin ellas el splash salta cuando carga el PNG.
-    expect(logo.getAttribute('width')).toBe('1368');
-    expect(logo.getAttribute('height')).toBe('452');
+    expect(container.querySelector('img[alt="DICO"]')).not.toBeInTheDocument();
+    expect(container.querySelector('.hg-splash-aro')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-intro-dico]')).not.toBeInTheDocument();
+    // El form se puede tocar en el primer render, sin esperar a nada.
+    const form = screen.getByRole('button', { name: 'Entrar' }).closest('form');
+    expect(form.style.pointerEvents).toBe('auto');
+    expect(form.style.opacity).toBe('1');
   });
 
   it('las venas son volt y el pulso que las recorre es oro', () => {
@@ -148,64 +148,7 @@ describe('LoginScreen — recuperar la contraseña', () => {
 });
 
 describe('LoginScreen — el aro Volt', () => {
-  const aroDelSplash = (c) => c.querySelector('.hg-splash-aro');
   const aroDeLaPlaca = (c) => c.querySelector('[data-dico-native] [data-dico-pulso]');
-
-  afterEach(() => { vi.useRealTimers(); });
-
-  it('el aro de la O se enciende en la entrada', () => {
-    // El pulso es una CAPA sobre el PNG: el arte no se repinta. Que exista el
-    // overlay y este en `active` es lo que hace que el logo entre latiendo.
-    const { container } = render(<LoginScreen onLogin={() => {}} />);
-    const aro = aroDelSplash(container);
-    expect(aro).toBeInTheDocument();
-    expect(aro.getAttribute('data-dico-pulso')).toBe('active');
-  });
-
-  it('el aro del splash cae SOBRE el aro del arte, no en cualquier lado', () => {
-    // Los numeros salen de medir los pixeles azules de la O (ver `ARO_LOGO`).
-    // El radio sobre el medio-ancho del personaje tiene que dar el mismo
-    // r/R 0,67 que `DicoNative` midio sobre los assets 2D: si alguien cambia
-    // el PNG del logo y no vuelve a medir, esto deja de cerrar.
-    const { container } = render(<LoginScreen onLogin={() => {}} />);
-    const aro = aroDelSplash(container);
-    const r = Number(aro.querySelector('circle').getAttribute('r'));
-    expect(r / 50).toBeGreaterThan(0.64);
-    expect(r / 50).toBeLessThan(0.70);
-    // La caja tiene que ser cuadrada: el SVG no declara `preserveAspectRatio`,
-    // asi que en una caja rectangular el navegador lo encaja con letterbox y
-    // el aro queda corrido respecto del arte.
-    expect(aro.parentElement.style.aspectRatio.replace(/\s/g, '')).toBe('1/1');
-  });
-
-  it('la entrada dura el logo MAS dos latidos enteros', () => {
-    // El defecto que esto evita es el de la primera version: 1,4s de entrada
-    // contra un latido de 2,8s — la pantalla se iba antes de que el aro
-    // llegara a encenderse una vez.
-    expect(TIEMPOS.latidos).toBeGreaterThanOrEqual(2);
-    expect(TIEMPOS.intro).toBe(TIEMPOS.entrada + TIEMPOS.latido * TIEMPOS.latidos);
-
-    // Y que el latido ESPERE a que el logo se asiente: si arrancara junto con
-    // la entrada, el primero de los dos pasaria mientras el logo todavia se
-    // esta acomodando y no se veria.
-    const { container } = render(<LoginScreen onLogin={() => {}} />);
-    const css = container.querySelector('style').textContent;
-    expect(css).toContain(`animation-duration: ${TIEMPOS.latido}ms`);
-    expect(css).toContain(`animation-delay: ${TIEMPOS.entrada}ms`);
-    expect(css).toContain(`animation-iteration-count: ${TIEMPOS.latidos}`);
-  });
-
-  it('el formulario recien se puede tocar cuando termino la entrada', async () => {
-    vi.useFakeTimers();
-    render(<LoginScreen onLogin={() => {}} />);
-    const form = screen.getByRole('button', { name: 'Entrar' }).closest('form');
-
-    await act(async () => { vi.advanceTimersByTime(TIEMPOS.intro - 100); });
-    expect(form.style.pointerEvents).toBe('none');
-
-    await act(async () => { vi.advanceTimersByTime(200); });
-    expect(form.style.pointerEvents).toBe('auto');
-  });
 
   it('en la placa el aro gira: del otro lado hay algo encendido', () => {
     const { container } = render(<LoginScreen onLogin={() => {}} />);

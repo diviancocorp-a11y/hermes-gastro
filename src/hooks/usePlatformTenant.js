@@ -15,12 +15,17 @@
 //   'no-tenant' · el host no corresponde a ningun tenant (raiz, preview)
 //   'denied'    · hay sesion pero no es miembro de este tenant
 //   'ok'        · adentro
+//
+// intro / terminarIntro: el intro de Dico (IntroDico) se ve al abrir el negocio
+// SOLO cuando hubo un login de verdad: la persona entro por el login del admin
+// (`doLogin`) o llego por el traspaso desde /entrar. Una sesion que ya estaba
+// abierta (reabrir la ventana, F5, volver a la pestana) NUNCA lo enciende.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { getSession, logout } from '../services/auth';
 import { fetchMyTenant } from '../services/platformAdmin';
-import { tomarTraspaso } from '../services/entradaUnica';
+import { tomarTraspaso, CLAVE_TRASPASO } from '../services/entradaUnica';
 import { captureException } from '../lib/observability.js';
 import { resumenDeSuscripcion } from '../modules/suscripcion';
 
@@ -34,6 +39,15 @@ export default function usePlatformTenant() {
   const [branchIds, setBranchIds] = useState([]);
   const [gate, setGate] = useState('checking'); // 'checking' | 'ok' | 'denied' | 'no-tenant'
   const alive = useRef(true);
+  // Sincronico y desde el primer render: si la URL trae el traspaso el intro ya
+  // esta encendido, y no parpadea un "Cargando..." antes. Si el token resulta
+  // invalido, mas abajo se apaga.
+  const [intro, setIntro] = useState(() => {
+    try { return (window.location.hash || '').includes(`${CLAVE_TRASPASO}=`); } catch { return false; }
+  });
+  // El traspaso se consume UNA vez: el efecto corre dos veces en StrictMode y la
+  // segunda encontraria el hash ya borrado (y apagaria el intro).
+  const traspaso = useRef(null);
 
   useEffect(() => {
     alive.current = true;
@@ -44,13 +58,22 @@ export default function usePlatformTenant() {
   useEffect(() => {
     // Si llegamos desde divianco.app/entrar, la sesion viene en el hash: se toma
     // ANTES de preguntar si hay una, o el panel mostraria el login un instante.
-    tomarTraspaso()
-      .then(() => getSession())
-      .then(s => { if (alive.current) { setSession(s); setCheckingSession(false); } })
+    if (!traspaso.current) traspaso.current = tomarTraspaso();
+    traspaso.current
+      .then(abrio => {
+        if (alive.current) setIntro(abrio === true);
+        return getSession();
+      })
+      .then(s => {
+        if (!alive.current) return;
+        setSession(s);
+        if (!s) setIntro(false);
+        setCheckingSession(false);
+      })
       .catch(err => {
         // Si Supabase falla en boot no dejamos la pantalla colgada: cae a login.
         captureException(err, { tags: { source: 'usePlatformTenant.getSession' } });
-        if (alive.current) { setSession(null); setCheckingSession(false); }
+        if (alive.current) { setSession(null); setIntro(false); setCheckingSession(false); }
       });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => {
@@ -81,13 +104,21 @@ export default function usePlatformTenant() {
 
   const doLogin = useCallback(async () => {
     const s = await getSession();
-    if (alive.current) setSession(s);
+    if (!alive.current) return;
+    setSession(s);
+    // Login de verdad: se abre el negocio con el intro.
+    if (s) setIntro(true);
+  }, []);
+
+  const terminarIntro = useCallback(() => {
+    if (alive.current) setIntro(false);
   }, []);
 
   const doLogout = useCallback(async () => {
     await logout();
     if (!alive.current) return;
     setSession(null);
+    setIntro(false);
     setTenant(null);
     setRole(null);
     setRoles([]);
@@ -108,5 +139,6 @@ export default function usePlatformTenant() {
     // Lista vacia = sin limite de sucursal (el caso del duenio).
     todasLasSucursales: branchIds.length === 0,
     doLogin, doLogout, reloadTenant: loadTenant,
+    intro, terminarIntro,
   };
 }

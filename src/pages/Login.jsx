@@ -1,7 +1,7 @@
 // src/pages/Login.jsx
 // Entrada unica a la plataforma (divianco.app/entrar).
 //
-// ES LA MISMA PUERTA QUE EL LOGIN DEL ADMIN (`LoginShell`: splash DICO,
+// ES LA MISMA PUERTA QUE EL LOGIN DEL ADMIN (`LoginShell`,
 // particulas Volt, placa de Dico, caja translucida, boton oro) pero general
 // para todos los negocios: la marca es Dico y no se consulta ninguna marca de
 // tenant, porque aca todavia no se sabe a cual negocio va la persona.
