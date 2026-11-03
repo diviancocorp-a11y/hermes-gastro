@@ -9,6 +9,123 @@
 
 ---
 
+## 22/oct/2026 — MiaEstudio: acceso y servicios cargados, datos de turnos pendientes (Codex)
+
+### Actualización del 22/oct
+
+- Marca aplicada según la Biblioteca de empresas/CLIENTES/mia-estudio:
+  MANUAL.md, marca.json y fuente HTML del manual v2. Solo datos del tenant,
+  sin JSX/CSS, schema ni otros tenants. Nombre público `MIA ESTUDIO` también
+  en `tenants.name` (get_catalog lo toma de ahí), color de marca `#DF0359`,
+  tema `carbon` como base crema disponible, Instagram `miaestudiok` y texto
+  `Uñas y pelo · Zona Norte · Pilar · A domicilio` en slogan.
+- Original `logos/logo-y2k.png` (1254x1254, 1.390.915 bytes) cargado como logo
+  y favicon: `tenant-images/<tenant_id>/marca-20261022/20412413dc2d-logo-y2k.png`.
+  Original `logos/logo-completo-horizontal-claro.png` (2225x800, 497.235 bytes)
+  cargado como cover_url y og_image_url, mismo prefijo, nombre
+  `d103adcf4219-logo-completo-horizontal-claro.png`. Ambos HTTP 200 y SHA256
+  idéntico al original (prefijos de hash en nombre); sin regenerar ni editar
+  imágenes ni modificar la Biblioteca. api/og.js usa cover_url para compartir.
+- Readback de settings y get_catalog verificado. HTTP de producción como
+  facebookexternalhit: 200, og:title MIA ESTUDIO, descripción y og:image nuevos,
+  theme-color fucsia. Siete productos idénticos antes/después, todos borradores;
+  store_open=false, horarios sin tocar. Constructor separado revisó recursos.
+- Límite de la personalización actual: catalog_font no tiene consumidor y
+  logo_color no reemplaza --ac de catalog-pro. Carbon conserva tipografía
+  Source Serif y acento chocolate; Modak/Poppins y la paleta Y2K completa del
+  manual NO quedaron implementados. Cover no es un hero visible. No se
+  amplió el sistema global como parte de esta carga de datos.
+- /diseno: detector estático antes/después 17 warnings y 6 advisory, sin
+  cambios; check:diseno verde. Auditor independiente: 0 P0/P1 nuevos, sin
+  desborde a 390x844 y 1280x800, consola limpia, slogan 15,19:1 y foco de
+  Instagram visible. Dos P2 de contenedores compartidos: logo header 36 px
+  frente a mínimo 60 del manual y enlace IG 40 px frente a objetivo táctil
+  44. No corregidos en esta carga de datos: requieren cambios de código.
+  Evidencias y settings anteriores solo en el
+  temporal del sistema mia-estudio-marca-20261022. Sin archivos nuevos fuera
+  de src/docs/platform/scripts dentro del repo.
+
+- Cargados y releídos por MCP los siete servicios del tenant `mia-estudio`:
+  Alisado $26.000, Bótox capilar $18.000, Soft gel $12.000, Esmaltado
+  semipermanente $10.000, Flores 3D $700, Retiro de trabajo de Mía $1.000 y
+  Retiro de otra profesional $1.500. Tipo `service`, categorías Pelo/Uñas/
+  Retiros. Quedan como borradores (`active=false`), con `duration_min=NULL`;
+  `store_open=false` y horarios sin completar. No se inventaron duraciones.
+- En descripción del alisado figura resultado aproximado de 4 a 6 meses;
+  en bótox, de 2 a 4 meses, según el mensaje de Mía del 20/oct. Son duración
+  del resultado, no tiempo de atención. Los retiros conservan la aclaración
+  de que se hacen antes del nuevo servicio. Falta confirmar si Flores 3D se
+  cobra por flor, uña o trabajo y si los retiros se reservan por separado.
+- Creada cuenta de Auth para `miajazmingonzalez18@gmail.com`, usuario
+  `3ee37a6b-b090-4236-9437-f6dcff3fe706`, y vinculada como propietaria mediante
+  la RPC vigente `attach_owner` (cuerpo vivo revisado). Verificados login con
+  la clave suministrada, lectura de su membresía `roles=['owner']` y cierre
+  de la sesión de prueba. La clave no se guardó en archivos ni en Drive.
+  Panel: https://mia-estudio.divianco.app/admin . Interfaz del panel no
+  recorrida en esta tarea; el login se verificó por API.
+- Planilla nativa creada en Drive/ChatGPT y verificada por lecturas y navegador:
+  https://docs.google.com/spreadsheets/d/1F8KPcpfH8tXoIU1jyb2XIvINbv50i014EWDl7knSUgg/edit
+  Pestañas Servicios (atención en minutos, margen entre turnos, profesional y
+  aclaraciones), Atención (horarios diarios, lugar, contacto, profesionales,
+  cobros/seña y cancelaciones) e Insumos (producto, marca, contenido/costo del
+  envase, stock y consumo por clienta con unidad). Casilleros amarillos vacíos.
+- Bótox líquido The Real Brazilian Keratin, envase de 250 ml, registrado como
+  dato confirmado en la planilla. No se cargó stock ni costo cero en la base:
+  faltan cantidad disponible, costo exacto y consumo por servicio. Marcas de
+  uñas informadas y rango $2.500–$10.000 conservados como referencia, sin
+  transformarlos en insumos o costos individuales inventados. Producto de
+  alisado pendiente de identificación.
+- Ricky autorizó compartir la planilla con `miajazmingonzalez18@gmail.com`
+  como editora, sin notificación por correo. Aplicado y verificado en el
+  diálogo de Drive: correo exacto, Editor y acceso general Restringido.
+  Evidencia visual en el temporal del sistema. No se envió ningún mensaje.
+  También autorizó el push del HANDOFF a main tras el rechazo inicial de la
+  revisión automática. La carga del tenant no depende de un deploy.
+- Sigue pendiente implementar agenda y consumo por turno (ver alta inicial
+  abajo). Completar la planilla aporta datos, no habilita esas funciones.
+  Sin cambios de UI, schema, código ni otros tenants. Temporales de la
+  planilla solo en el temp del sistema; no se crearon archivos nuevos dentro
+  del repo fuera de src/docs/platform/scripts. Se preservó el HANDOFF previo
+  sin commitear, que documentaba el alta de este mismo tenant.
+- Al archivar la sección del orquestador se conserva su pendiente: comprobar
+  el aviso del candado en una sesión de Claude sobre main. Su otro pendiente
+  era el gate de hooks inexistentes; contrastar su integración con la
+  worktree `cool-fermat` antes de darlo por cerrado.
+
+### Alta inicial del 20/oct (registro histórico de esta carga)
+
+- Pedido de Ricky: salon de unas y pelo, con turnos y consumo de productos
+  configurable por servicio. No se informaron correo de la duena, servicios,
+  precios, duraciones, profesionales, horarios ni insumos/cantidades.
+- Creado por MCP en el edificio el tenant `mia-estudio`, MiaEstudio,
+  `d3f27bf9-db9b-48be-9c7a-0bfe9b0e0bd2`, rubro `barber`, estado `active`,
+  canal `appointment`. Modo `fisico`, moneda ARS y zona Buenos Aires heredados
+  del alta; confirmar si trabaja a domicilio. Sucursal Principal default
+  `d3fcd8e8-55b8-4155-8f79-969f6e623791`, sin ubicacion inventada.
+- Readback SQL: settings creados, `store_open=false`, cero servicios, insumos,
+  turnos y owners. `get_catalog('mia-estudio')` devuelve MiaEstudio,
+  `vertical=barber`, productos vacios y `catalogo_activo=false`.
+- Acceso pendiente del correo de la duena (preguntado a Ricky). No se asigno
+  otra cuenta como propietaria ni se creo un usuario sin su identidad.
+  Dominio previsto: https://mia-estudio.divianco.app/; HTTP/navegador no
+  verificados en esta tarea.
+- La agenda NO esta implementada en el panel (`MODULOS.agenda.implementado`
+  es false). La base tiene staff/appointments y evita superposiciones, pero
+  el unico trigger vivo de appointments completa sucursal: finalizar un turno
+  no registra venta ni consumo. `usaReceta('barber')` es false: tampoco se
+  pueden configurar los insumos del servicio desde su editor actual.
+- Reutilizable, verificado leyendo el cuerpo vivo: 0104 descuenta insumos
+  de `product_ingredients` al completar un pedido y deja asiento en el libro.
+  Falta conectar servicios/turnos con ese circuito. No duplicar tablas de
+  recetas ni confundir `appointment` (canal declarado) con agenda habilitada.
+  Flujo propuesto: reservar/cancelar no consume; finalizar el servicio consume
+  una sola vez las cantidades configuradas. No implementado en esta tarea.
+- Solo datos del tenant nuevo y este HANDOFF: sin cambios de UI, schema,
+  precios, condiciones comerciales ni otros tenants. No se crearon archivos
+  fuera de src/docs/platform/scripts. Trabajo paralelo preservado.
+
+---
+
 ## 19/oct/2026 — La Nona Pato: manual de marca aplicado (Codex)
 
 - Solo configuracion y assets del tenant `la-nona-pato`, sin cambios de
