@@ -1,5 +1,5 @@
 // Catálogo Pro — helpers para mapear datos reales → shape que espera la Home.
-// Los campos que no existen en la DB (rating, prepMin, tone, badge) se generan
+// Los campos que no existen en la DB (rating, tiempo, tone, badge) se generan
 // con heurísticas ESTABLES por id (mismo producto → mismo valor siempre).
 
 import { DEAL_PCT } from "../constants/catalogConstants";
@@ -76,7 +76,6 @@ export function mapProduct(p, opts = {}) {
     tone: toneFor(p.name || p.id),
     rating: ratingFor(p.id),
     reviews: reviewsFor(p.id),
-    prepMin: prepFor(p.id, prepDefault),
     tiempo: tiempoFor(p, prepDefault),
     badge: deal ? "Oferta" : null,
     // Sin stock de ingredientes suficiente para 1 unidad
