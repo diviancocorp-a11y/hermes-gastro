@@ -433,6 +433,33 @@
   outline-offset: -2px;
 }
 .ag-sesion-item .ag-nav-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--ag-ink-2); }
+.ag-sesion-cuentas { padding-bottom: 6px; margin-bottom: 6px; border-bottom: 1px solid var(--ag-line); }
+.ag-sesion-titulo, .ag-sesion-cargando {
+  margin: 0;
+  padding: 4px 10px 6px;
+  color: var(--ag-ink-2);
+  font-family: var(--ag-font);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ag-sesion-cargando { padding: 12px 10px; min-height: 44px; border-bottom: 1px solid var(--ag-line); margin-bottom: 6px; }
+.ag-sesion-cuentas .ag-sesion-cargando { padding: 4px 10px; min-height: 0; border: 0; margin: 0; }
+.ag-sesion-negocios { max-height: min(40dvh, 264px); overflow-y: auto; overscroll-behavior: contain; }
+.ag-sesion-cuenta { justify-content: space-between; padding-top: 6px; padding-bottom: 6px; }
+.ag-sesion-cuenta[aria-disabled="true"] { opacity: .55; cursor: progress; }
+.ag-sesion-cuenta[aria-current="true"] { background: var(--ag-bg-soft); }
+.ag-sesion-cuenta-texto { display: grid; gap: 2px; min-width: 0; }
+.ag-sesion-cuenta-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ag-sesion-cuenta-host {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ag-ink-2);
+  font-family: var(--ds-font-technical);
+  font-size: 11px;
+  font-weight: 400;
+}
+.ag-sesion-error { margin: 0; padding: 6px 10px 2px; color: var(--ag-ink); font-size: 12px; font-weight: 600; }
 .ag-sesion-item--salir { border-top: 1px solid var(--ag-line); border-radius: 0 0 9px 9px; margin-top: 6px; }
 @media (max-width: 768px) {
   .ag-sesion-perfil { gap: 5px; }

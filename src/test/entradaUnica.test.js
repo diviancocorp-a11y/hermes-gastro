@@ -4,6 +4,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const tenantsQuery = vi.fn();
+const miembrosQuery = vi.fn();
+const miembrosEq = vi.fn();
+const tenantsIn = vi.fn();
 const getSession = vi.fn();
 const signOut = vi.fn();
 const stopAutoRefresh = vi.fn();
@@ -12,7 +15,9 @@ const destinoTrasLogin = vi.fn();
 
 vi.mock('../lib/supabase', () => ({
   supabase: {
-    from: () => ({ select: () => ({ order: () => tenantsQuery() }) }),
+    from: (tabla) => (tabla === 'tenant_members'
+      ? { select: () => ({ eq: (...a) => { miembrosEq(...a); return miembrosQuery(); } }) }
+      : { select: () => ({ in: (...a) => { tenantsIn(...a); return { order: () => tenantsQuery() }; } }) }),
     auth: {
       getSession: (...a) => getSession(...a),
       signOut: (...a) => signOut(...a),
@@ -26,7 +31,7 @@ const soyStaffDivianco = vi.fn();
 vi.mock('../services/platformPlanes', () => ({ soyStaffDivianco: (...a) => soyStaffDivianco(...a) }));
 
 const {
-  resolverDestino, armarUrlAdmin, irAlAdmin, tomarTraspaso, slugValido, CLAVE_TRASPASO,
+  resolverDestino, negociosDelUsuario, armarUrlAdmin, irAlAdmin, tomarTraspaso, slugValido, CLAVE_TRASPASO,
   armarUrlConsola, irALaConsola, urlDeEntrar,
 } = await import('../services/entradaUnica');
 
@@ -44,12 +49,42 @@ function ubicar(host, ruta = '/entrar', hash = '') {
 beforeEach(() => {
   vi.clearAllMocks();
   ubicar('divianco.app');
-  getSession.mockResolvedValue({ data: { session: { access_token: 'AT', refresh_token: 'RT' } } });
+  getSession.mockResolvedValue({ data: { session: { access_token: 'AT', refresh_token: 'RT', user: { id: 'u1' } } } });
   signOut.mockResolvedValue({ error: null });
+  miembrosQuery.mockResolvedValue({ data: [{ tenant_id: 't1' }], error: null });
   stopAutoRefresh.mockResolvedValue(undefined);
   window.localStorage.clear();
   setSession.mockResolvedValue({ error: null });
   soyStaffDivianco.mockResolvedValue(false);
+});
+
+describe('negociosDelUsuario — solo los propios', () => {
+  it('filtra por la membresia del usuario y trae solo esos negocios (aunque la policy deje ver todos)', async () => {
+    miembrosQuery.mockResolvedValue({ data: [{ tenant_id: 'tA' }, { tenant_id: 'tB' }, { tenant_id: 'tA' }], error: null });
+    tenantsQuery.mockResolvedValue({ data: [{ slug: 'a', name: 'A' }, { slug: 'b', name: 'B' }], error: null });
+    const r = await negociosDelUsuario();
+    expect(miembrosEq).toHaveBeenCalledWith('user_id', 'u1');
+    expect(tenantsIn).toHaveBeenCalledWith('id', ['tA', 'tB']);
+    expect(r.negocios).toHaveLength(2);
+  });
+
+  it('un staff SIN membresias no es dueño de todo el edificio: lista vacia y ni consulta tenants', async () => {
+    miembrosQuery.mockResolvedValue({ data: [], error: null });
+    const r = await negociosDelUsuario();
+    expect(r).toEqual({ ok: true, negocios: [] });
+    expect(tenantsIn).not.toHaveBeenCalled();
+  });
+
+  it('sin sesion no consulta nada', async () => {
+    getSession.mockResolvedValue({ data: { session: null } });
+    expect((await negociosDelUsuario()).ok).toBe(false);
+    expect(miembrosEq).not.toHaveBeenCalled();
+  });
+
+  it('si falla la lectura de membresias, no adivina', async () => {
+    miembrosQuery.mockResolvedValue({ data: null, error: { message: 'boom' } });
+    expect((await negociosDelUsuario()).ok).toBe(false);
+  });
 });
 
 describe('resolverDestino', () => {
@@ -183,6 +218,45 @@ describe('armarUrlAdmin / irAlAdmin', () => {
     expect(stopAutoRefresh).not.toHaveBeenCalled();
     expect(window.localStorage.getItem('hermes-auth')).not.toBeNull();
     expect(window.location.assign).toHaveBeenCalledWith('https://localhost/admin');
+  });
+});
+
+describe('cambiar de negocio desde otro negocio', () => {
+  it('desde el subdominio de un negocio a otro: cruza de origen con la sesion en el hash', async () => {
+    ubicar('mia-estudio.divianco.app', '/admin');
+    const r = await armarUrlAdmin('monare');
+    expect(r.traspasa).toBe(true);
+    expect(r.url.startsWith('https://monare.divianco.app/admin#')).toBe(true);
+  });
+
+  it('al cambiar olvida la sesion LOCAL de este negocio y NO la revoca', async () => {
+    ubicar('mia-estudio.divianco.app', '/admin');
+    window.localStorage.setItem('hermes-auth', '{"access_token":"AT"}');
+    await irAlAdmin('monare');
+    expect(signOut).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('hermes-auth')).toBeNull();
+    expect(window.location.assign).toHaveBeenCalledTimes(1);
+  });
+
+  it('desde un negocio tambien se llega a la consola', async () => {
+    ubicar('mia-estudio.divianco.app', '/admin');
+    const r = await armarUrlConsola();
+    expect(r.traspasa).toBe(true);
+    expect(r.url.startsWith('https://consola.divianco.app/#')).toBe(true);
+  });
+
+  it('desde la consola se va al admin de un negocio', async () => {
+    ubicar('consola.divianco.app', '/');
+    const r = await armarUrlAdmin('monare');
+    expect(r.traspasa).toBe(true);
+    expect(r.url.startsWith('https://monare.divianco.app/admin#')).toBe(true);
+  });
+
+  it('en un preview *.vercel.app sigue sin cruzar: mismo origen', async () => {
+    ubicar('hermes-platform-xyz.vercel.app', '/admin');
+    expect(await armarUrlAdmin('monare')).toEqual({
+      ok: true, traspasa: false, url: 'https://hermes-platform-xyz.vercel.app/admin',
+    });
   });
 });
 

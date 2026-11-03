@@ -1,8 +1,11 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import {
   duracionCorta, estaOperativo, horaDelLocal, ventanaOperativa,
 } from '../../../modules/estadoOperativo';
 import { fraseDe, nombreDe, saludoDe } from '../../../modules/saludo';
+import { getTenantSlugSync } from '../../../lib/activeTenant';
+import { irAlAdmin, irALaConsola, negociosDelUsuario } from '../../../services/entradaUnica';
+import { soyStaffDivianco } from '../../../services/platformPlanes';
 
 /* Los iconos, en linea y del mismo trazo que los de la navegacion (22px,
    stroke 2, redondeado). Van aca y no en un modulo de iconos porque son tres
@@ -34,6 +37,13 @@ const IconoSalir = () => (
   <svg className="ag-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+  </svg>
+);
+
+const IconoTilde = () => (
+  <svg className="ag-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
   </svg>
 );
 
@@ -210,6 +220,105 @@ export function BarraOperativa({ settings, timezone, turno, onOperativoChange })
   );
 }
 
+/**
+ * Los negocios de la persona (y la consola si es staff), para saltar de uno a
+ * otro sin pasar por /entrar. Se consulta la primera vez que se abre el
+ * desplegable; si falla, la seccion no aparece y se reintenta en la proxima
+ * apertura. Con un solo negocio y sin consola no sirve, asi que no se muestra.
+ */
+function useCuentas() {
+  const [estado, setEstado] = useState({ fase: 'idle', negocios: [], staff: false });
+  const pidiendo = useRef(false);
+  const vivo = useRef(true);
+  useEffect(() => { vivo.current = true; return () => { vivo.current = false; }; }, []);
+  /** Se llama al abrir (evento del usuario); no hace nada si ya esta pedido o resuelto. */
+  const cargar = useCallback(() => {
+    if (pidiendo.current) return;
+    pidiendo.current = true;
+    setEstado((e) => ({ ...e, fase: 'cargando' }));
+    Promise.all([
+      negociosDelUsuario().catch(() => ({ ok: false })),
+      soyStaffDivianco().catch(() => false),
+    ]).then(([r, staff]) => {
+      if (!vivo.current) return;
+      if (r?.ok) {
+        setEstado({ fase: 'listo', negocios: r.negocios || [], staff: !!staff });
+      } else {
+        pidiendo.current = false; // la proxima apertura reintenta
+        setEstado({ fase: 'idle', negocios: [], staff: false });
+      }
+    });
+  }, []);
+  return { ...estado, cargar };
+}
+
+function SeccionNegocios({ fase, negocios, staff, onCerrar }) {
+  const [saltando, setSaltando] = useState(false);
+  const [error, setError] = useState('');
+  const actual = getTenantSlugSync();
+
+  if (fase === 'cargando') {
+    return <p className="ag-sesion-cargando" role="status">Buscando tus negocios…</p>;
+  }
+  if (fase !== 'listo' || (negocios.length < 2 && !staff)) return null;
+
+  async function saltar(fn) {
+    if (saltando) return;
+    setSaltando(true);
+    setError('');
+    let r;
+    try { r = await fn(); } catch { r = { ok: false, error: 'No pudimos abrir ese negocio. Probá de nuevo.' }; }
+    if (r && r.ok === false) {
+      setError(r.error || 'No pudimos abrir ese negocio. Probá de nuevo.');
+      setSaltando(false);
+    }
+  }
+
+  return (
+    <div className="ag-sesion-cuentas" role="group" aria-label="Tus negocios" aria-busy={saltando}>
+      <p className="ag-sesion-titulo" aria-hidden="true">Tus negocios</p>
+      <div className="ag-sesion-negocios">
+        {negocios.map((n) => {
+          const esActual = n.slug === actual;
+          return (
+            <button
+              key={n.slug}
+              type="button"
+              role="menuitem"
+              className="ag-sesion-item ag-sesion-cuenta"
+              aria-current={esActual ? 'true' : undefined}
+              aria-disabled={saltando || undefined}
+              onClick={() => (esActual ? onCerrar() : saltar(() => irAlAdmin(n.slug)))}
+            >
+              <span className="ag-sesion-cuenta-texto">
+                <span className="ag-sesion-cuenta-nombre">{n.name || n.slug}</span>
+                <span className="ag-sesion-cuenta-host">{n.slug}.divianco.app</span>
+              </span>
+              {esActual && <IconoTilde />}
+            </button>
+          );
+        })}
+        {staff && (
+          <button
+            type="button"
+            role="menuitem"
+            className="ag-sesion-item ag-sesion-cuenta"
+            aria-disabled={saltando || undefined}
+            onClick={() => saltar(() => irALaConsola())}
+          >
+            <span className="ag-sesion-cuenta-texto">
+              <span className="ag-sesion-cuenta-nombre">Consola de Divianco</span>
+              <span className="ag-sesion-cuenta-host">Equipo Divianco</span>
+            </span>
+          </button>
+        )}
+      </div>
+      {saltando && !error && <p className="ag-sesion-cargando" role="status">Abriendo…</p>}
+      {error && <p className="ag-sesion-error" role="alert">{error}</p>}
+    </div>
+  );
+}
+
 /** Perfil sin foto. La identidad viene de la sesion, nunca del negocio. */
 export function MenuDeSesion({ controles, session }) {
   const [abierto, setAbierto] = useState(false);
@@ -217,6 +326,7 @@ export function MenuDeSesion({ controles, session }) {
   const boton = useRef(null);
   const menu = useRef(null);
   const menuId = useId();
+  const { cargar: cargarCuentas, ...cuentas } = useCuentas();
   const meta = session?.user?.user_metadata || {};
   const email = session?.user?.email || '';
   const nombre = (meta.full_name || meta.name || '').trim() || email.split('@')[0] || 'Mi cuenta';
@@ -267,10 +377,11 @@ export function MenuDeSesion({ controles, session }) {
         ref={boton}
         type="button"
         className="ag-sesion-perfil"
-        onClick={() => setAbierto(v => !v)}
+        onClick={() => { if (!abierto) cargarCuentas(); setAbierto(v => !v); }}
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             e.preventDefault();
+            if (!abierto) cargarCuentas();
             setAbierto(true);
           }
         }}
@@ -290,6 +401,7 @@ export function MenuDeSesion({ controles, session }) {
             {email && <span>{email}</span>}
           </div>
           <div id={menuId} ref={menu} role="menu" aria-label="Mi cuenta" onKeyDown={navegar}>
+            <SeccionNegocios {...cuentas} onCerrar={() => { setAbierto(false); boton.current?.focus(); }} />
             {controles.map(({ id, label, titulo, Icono, onClick }) => (
               <button
                 key={id}
