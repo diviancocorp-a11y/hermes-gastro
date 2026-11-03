@@ -77,6 +77,37 @@ describe('/entrar — a donde va', () => {
     await waitFor(() => expect(irAlAdmin).toHaveBeenCalledWith('monare'));
   });
 
+  it('si es staff, el selector suma la consola y la abre sin tocar el negocio', async () => {
+    const assign = vi.fn();
+    const original = window.location;
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...original, assign, hash: '' } });
+    try {
+      resolverDestino.mockResolvedValue({
+        ok: true, tipo: 'elegir', consola: 'https://divianco.app/consola',
+        negocios: [{ slug: 'mia-estudio', name: 'MiaEstudio' }],
+      });
+      render(<Login />);
+      completar();
+      expect(await screen.findByRole('button', { name: /MiaEstudio/ })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /Consola de Divianco/ }));
+      await waitFor(() => expect(assign).toHaveBeenCalledWith('https://divianco.app/consola'));
+      expect(irAlAdmin).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, 'location', { configurable: true, value: original });
+    }
+  });
+
+  it('sin permiso de staff el selector no ofrece la consola', async () => {
+    resolverDestino.mockResolvedValue({
+      ok: true, tipo: 'elegir',
+      negocios: [{ slug: 'a', name: 'A' }, { slug: 'b', name: 'B' }],
+    });
+    render(<Login />);
+    completar();
+    await screen.findByText('¿A cuál querés entrar?');
+    expect(screen.queryByRole('button', { name: /Consola de Divianco/ })).toBeNull();
+  });
+
   it('"Entrar con otra cuenta" cierra la sesion y vuelve al form', async () => {
     resolverDestino.mockResolvedValue({
       ok: true, tipo: 'elegir',

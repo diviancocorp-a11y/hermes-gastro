@@ -47,6 +47,8 @@ export default function Login() {
   // 'elegir' (varios negocios) | 'entrando' (ya se decidio, esperando el salto)
   const [vista, setVista] = useState('form');
   const [negocios, setNegocios] = useState([]);
+  // URL de la consola cuando la persona es staff de Divianco (si no, null).
+  const [consola, setConsola] = useState(null);
   const [entrandoA, setEntrandoA] = useState('');
   // El link del mail de reset vuelve a /entrar con type=recovery en el hash y
   // una sesion ya abierta: lo que falta es fijar la contraseña nueva. Se lee
@@ -93,7 +95,7 @@ export default function Login() {
       return;
     }
     if (d.tipo === 'elegir') {
-      setNegocios(d.negocios); setVista('elegir');
+      setNegocios(d.negocios); setConsola(d.consola || null); setVista('elegir');
       return;
     }
     await entrarA(d.negocio);
@@ -141,8 +143,14 @@ export default function Login() {
 
   const otraCuenta = useCallback(async () => {
     try { await supabase.auth.signOut(); } catch { /* si falla igual se vuelve al form */ }
-    setNegocios([]); setPassword(''); setError(null); setAviso(null); setVista('form');
+    setNegocios([]); setConsola(null); setPassword(''); setError(null); setAviso(null); setVista('form');
   }, []);
+
+  /** La consola vive en el mismo origen que /entrar: la sesion ya esta. */
+  const entrarAConsola = useCallback(() => {
+    setEntrandoA('la consola de Divianco'); setVista('entrando');
+    window.location.assign(consola);
+  }, [consola]);
 
   const volverAEntrar = () => {
     setModoNueva(false); setModoReset(false);
@@ -220,6 +228,25 @@ export default function Login() {
                     </button>
                   </li>
                 ))}
+                {consola && (
+                  <li>
+                    <button
+                      type="button" onClick={entrarAConsola}
+                      onFocus={alEnfocarOpcion} onBlur={alSalirOpcion}
+                      style={{
+                        width: '100%', minHeight: 56, padding: '10px 16px', borderRadius: 12, textAlign: 'left',
+                        border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
+                        color: '#fff', cursor: 'pointer', fontFamily: 'inherit', outline: 'none',
+                        display: 'flex', flexDirection: 'column', gap: 2,
+                      }}
+                    >
+                      <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}>Consola de Divianco</span>
+                      <span style={{ fontFamily: MONO, fontSize: 11.5, color: 'rgba(255,255,255,0.6)' }}>
+                        Equipo Divianco
+                      </span>
+                    </button>
+                  </li>
+                )}
               </ul>
               <button type="button" onClick={otraCuenta} style={estiloEnlace(true)}>
                 Entrar con otra cuenta
