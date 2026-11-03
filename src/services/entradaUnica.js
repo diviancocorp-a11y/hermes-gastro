@@ -26,7 +26,7 @@
 // origen, sin avisarle al servidor.
 
 import { supabase } from '../lib/supabase';
-import { isPlatformRoot, isConsolaHost, CONSOLA_HOST, PLATFORM_ROOTS } from '../lib/tenantHost';
+import { classifyHost, isConsolaHost, CONSOLA_HOST, PLATFORM_ROOTS } from '../lib/tenantHost';
 import { destinoTrasLogin } from './signup';
 import { soyStaffDivianco } from './platformPlanes';
 
@@ -40,13 +40,34 @@ const SLUG = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 export const slugValido = (s) => SLUG.test(String(s || ''));
 
-/** Los negocios de la persona logueada, ordenados por nombre. */
+/**
+ * Los negocios de la persona logueada, ordenados por nombre.
+ *
+ * Se filtra por MEMBRESIA propia y no se confia en la policy de `tenants`: esa
+ * deja ver TODOS los negocios al staff de Divianco (`es_staff_divianco()`), y
+ * sin este filtro la lista de un staff seria el edificio entero, o peor, lo
+ * trataria como dueño de todos. `tenant_members_select` solo muestra
+ * membresias de negocios donde ya sos miembro (incluidas las de otros
+ * integrantes), por eso se filtra tambien por `user_id`.
+ */
 export async function negociosDelUsuario() {
-  const { data, error } = await supabase
+  const error = { ok: false, error: 'No pudimos traer tus negocios. Probá de nuevo.' };
+  const { data: sesion } = await supabase.auth.getSession();
+  const uid = sesion?.session?.user?.id;
+  if (!uid) return error;
+
+  const { data: miembros, error: errMiembros } = await supabase
+    .from('tenant_members').select('tenant_id').eq('user_id', uid);
+  if (errMiembros) return error;
+  const ids = [...new Set((miembros || []).map((m) => m.tenant_id).filter(Boolean))];
+  if (ids.length === 0) return { ok: true, negocios: [] };
+
+  const { data, error: errTenants } = await supabase
     .from('tenants')
     .select('slug, name')
+    .in('id', ids)
     .order('name', { ascending: true });
-  if (error) return { ok: false, error: 'No pudimos traer tus negocios. Probá de nuevo.' };
+  if (errTenants) return error;
   const negocios = (data || []).filter((n) => slugValido(n.slug));
   return { ok: true, negocios };
 }
@@ -81,6 +102,18 @@ export async function resolverDestino() {
   return { ok: true, tipo: 'negocio', negocio: { slug: d.slug, name: d.slug } };
 }
 
+/**
+ * true si estamos en un host de la plataforma (la raiz, el subdominio de un
+ * negocio o la consola): ahi cambiar de destino es cruzar de ORIGEN, y la
+ * sesion tiene que viajar. En local y en *.vercel.app todo es un solo origen.
+ * Desde un negocio se puede ir a otro (selector de negocios del admin) igual
+ * que desde la raiz.
+ */
+export function cruzaDeOrigen(host = window.location.hostname) {
+  const { kind } = classifyHost(host);
+  return kind === 'root' || kind === 'tenant' || isConsolaHost(host);
+}
+
 /** La sesion abierta, empaquetada para viajar en el hash de `base`. */
 async function urlConTraspaso(base) {
   const { data } = await supabase.auth.getSession();
@@ -101,7 +134,7 @@ async function urlConTraspaso(base) {
 export async function armarUrlAdmin(slug) {
   if (!slugValido(slug)) return { ok: false, error: 'Ese negocio no es válido.' };
 
-  if (!isPlatformRoot(window.location.hostname)) {
+  if (!cruzaDeOrigen()) {
     return { ok: true, traspasa: false, url: `${window.location.origin}/admin` };
   }
   return urlConTraspaso(`https://${slug}.divianco.app/admin`);
@@ -109,7 +142,7 @@ export async function armarUrlAdmin(slug) {
 
 /** Igual, para la consola de Divianco (consola.divianco.app). */
 export async function armarUrlConsola() {
-  if (!isPlatformRoot(window.location.hostname)) {
+  if (!cruzaDeOrigen()) {
     return { ok: true, traspasa: false, url: `${window.location.origin}/consola` };
   }
   return urlConTraspaso(`https://${CONSOLA_HOST}/`);
@@ -136,7 +169,10 @@ async function olvidarSesionLocal() {
 async function irA(r) {
   if (!r.ok) return r;
   if (r.traspasa) await olvidarSesionLocal();
-  window.location.assign(r.url);
+  // replace y no assign: la pagina de la que salimos ya no tiene sesion, asi que
+  // el boton "atras" no tiene que poder volver a ella (bfcache la restauraria
+  // con el menu trabado y sin sesion).
+  window.location.replace(r.url);
   return { ok: true };
 }
 
