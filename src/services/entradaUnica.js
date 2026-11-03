@@ -16,10 +16,14 @@
 //
 // TRASPASO: la sesion viaja en el hash de la URL (el hash no se manda al
 // servidor ni sale en el Referer). El receptor lo saca de la barra ANTES de
-// hacer cualquier otra cosa. Del lado de salida se cierra la sesion LOCAL de
-// divianco.app (`scope: 'local'`: no revoca nada en el servidor) para que el
-// mismo refresh token no quede vivo en dos origenes: con la rotacion de
-// Supabase, uno de los dos terminaria invalidando al otro.
+// hacer cualquier otra cosa.
+//
+// NUNCA se llama a `supabase.auth.signOut()` del lado de salida, ni siquiera
+// con `scope: 'local'`: eso hace POST /logout y REVOCA la sesion en el
+// servidor, y la que viaja en el hash llegaria muerta (paso en produccion el
+// 3/nov/2026: todos volvian a /entrar). Para que el mismo refresh token no
+// quede vivo en dos origenes se borra la sesion del localStorage de este
+// origen, sin avisarle al servidor.
 
 import { supabase } from '../lib/supabase';
 import { isPlatformRoot, isConsolaHost, CONSOLA_HOST, PLATFORM_ROOTS } from '../lib/tenantHost';
@@ -111,10 +115,27 @@ export async function armarUrlConsola() {
   return urlConTraspaso(`https://${CONSOLA_HOST}/`);
 }
 
-/** Cruza de origen: cierra la sesion LOCAL de este y navega. Si sale bien, no vuelve. */
+/** Prefijo de las claves de sesion de Supabase en localStorage (src/lib/supabase.js). */
+const CLAVE_SESION = 'hermes-auth';
+
+/**
+ * Olvida la sesion de ESTE origen sin revocarla: la copia que viaja en el hash
+ * sigue siendo valida. Se frena el auto-refresh antes, o este origen podria
+ * rotar el refresh token y dejar muerto el que se mando.
+ */
+async function olvidarSesionLocal() {
+  try { await supabase.auth.stopAutoRefresh(); } catch { /* se sigue igual */ }
+  try {
+    Object.keys(window.localStorage)
+      .filter((k) => k.startsWith(CLAVE_SESION))
+      .forEach((k) => window.localStorage.removeItem(k));
+  } catch { /* sin localStorage: nada que borrar */ }
+}
+
+/** Cruza de origen: olvida la sesion de este y navega. Si sale bien, no vuelve. */
 async function irA(r) {
   if (!r.ok) return r;
-  if (r.traspasa) await supabase.auth.signOut({ scope: 'local' });
+  if (r.traspasa) await olvidarSesionLocal();
   window.location.assign(r.url);
   return { ok: true };
 }

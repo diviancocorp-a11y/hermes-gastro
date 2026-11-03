@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const tenantsQuery = vi.fn();
 const getSession = vi.fn();
 const signOut = vi.fn();
+const stopAutoRefresh = vi.fn();
 const setSession = vi.fn();
 const destinoTrasLogin = vi.fn();
 
@@ -15,6 +16,7 @@ vi.mock('../lib/supabase', () => ({
     auth: {
       getSession: (...a) => getSession(...a),
       signOut: (...a) => signOut(...a),
+      stopAutoRefresh: (...a) => stopAutoRefresh(...a),
       setSession: (...a) => setSession(...a),
     },
   },
@@ -44,6 +46,8 @@ beforeEach(() => {
   ubicar('divianco.app');
   getSession.mockResolvedValue({ data: { session: { access_token: 'AT', refresh_token: 'RT' } } });
   signOut.mockResolvedValue({ error: null });
+  stopAutoRefresh.mockResolvedValue(undefined);
+  window.localStorage.clear();
   setSession.mockResolvedValue({ error: null });
   soyStaffDivianco.mockResolvedValue(false);
 });
@@ -147,17 +151,37 @@ describe('armarUrlAdmin / irAlAdmin', () => {
     expect((await armarUrlAdmin('mia-estudio')).ok).toBe(false);
   });
 
-  it('al salir cierra la sesion SOLO local y despues navega', async () => {
-    await irAlAdmin('mia-estudio');
-    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
-    expect(window.location.assign).toHaveBeenCalledTimes(1);
-    expect(signOut.mock.invocationCallOrder[0]).toBeLessThan(window.location.assign.mock.invocationCallOrder[0]);
-  });
-
-  it('en local no cierra la sesion: es la misma', async () => {
-    ubicar('localhost');
+  // REGRESION (3/nov/2026): signOut() —incluso con scope 'local'— hace POST
+  // /logout y revoca la sesion en el servidor. La que viaja en el hash llegaba
+  // muerta y todos volvian a /entrar. Lo que cuenta es que NUNCA se llame.
+  it('al salir NUNCA revoca la sesion que viaja: no llama a signOut', async () => {
+    window.localStorage.setItem('hermes-auth', '{"access_token":"AT"}');
+    window.localStorage.setItem('hermes-auth-code-verifier', 'x');
+    window.localStorage.setItem('otra-cosa', 'queda');
     await irAlAdmin('mia-estudio');
     expect(signOut).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('hermes-auth')).toBeNull();
+    expect(window.localStorage.getItem('hermes-auth-code-verifier')).toBeNull();
+    expect(window.localStorage.getItem('otra-cosa')).toBe('queda');
+  });
+
+  it('frena el auto-refresh y borra la sesion local ANTES de navegar', async () => {
+    window.localStorage.setItem('hermes-auth', '{"access_token":"AT"}');
+    let enNavegar = 'no se llamo';
+    window.location.assign = vi.fn(() => { enNavegar = window.localStorage.getItem('hermes-auth'); });
+    await irAlAdmin('mia-estudio');
+    expect(stopAutoRefresh).toHaveBeenCalledTimes(1);
+    expect(stopAutoRefresh.mock.invocationCallOrder[0]).toBeLessThan(window.location.assign.mock.invocationCallOrder[0]);
+    expect(enNavegar).toBeNull();
+  });
+
+  it('en local no toca la sesion: es la misma', async () => {
+    ubicar('localhost');
+    window.localStorage.setItem('hermes-auth', '{"access_token":"AT"}');
+    await irAlAdmin('mia-estudio');
+    expect(signOut).not.toHaveBeenCalled();
+    expect(stopAutoRefresh).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('hermes-auth')).not.toBeNull();
     expect(window.location.assign).toHaveBeenCalledWith('https://localhost/admin');
   });
 });
@@ -176,11 +200,12 @@ describe('la consola (consola.divianco.app)', () => {
     expect(await armarUrlConsola()).toEqual({ ok: true, traspasa: false, url: 'https://localhost/consola' });
   });
 
-  it('irALaConsola cierra la sesion SOLO local y despues navega', async () => {
+  it('irALaConsola tampoco revoca la sesion: olvida la local y navega', async () => {
+    window.localStorage.setItem('hermes-auth', '{"access_token":"AT"}');
     await irALaConsola();
-    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(signOut).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('hermes-auth')).toBeNull();
     expect(window.location.assign).toHaveBeenCalledTimes(1);
-    expect(signOut.mock.invocationCallOrder[0]).toBeLessThan(window.location.assign.mock.invocationCallOrder[0]);
   });
 
   it('sin sesion no navega', async () => {
