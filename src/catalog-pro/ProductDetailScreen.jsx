@@ -144,9 +144,11 @@ export default function ProductDetailScreen({
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
           <Rating value={p.rating} count={p.reviews} />
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--t2)" }}>
-            <Icon name="clock" size={12} /> {p.prepMin} min
-          </span>
+          {p.tiempo && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--t2)" }}>
+              <Icon name="clock" size={12} /> {p.tiempo}
+            </span>
+          )}
         </div>
       </div>
 
