@@ -13,11 +13,19 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 const pedirResetPassword = vi.fn();
 const cambiarPassword = vi.fn();
-const destinoTrasLogin = vi.fn();
+const resolverDestino = vi.fn();
+const irAlAdmin = vi.fn();
+
+vi.mock('../services/entradaUnica', () => ({
+  resolverDestino: (...a) => resolverDestino(...a),
+  irAlAdmin: (...a) => irAlAdmin(...a),
+}));
+
+// El canvas de particulas no corre en jsdom.
+vi.mock('../components/admin/FlowFieldBackground', () => ({ default: () => null }));
 
 vi.mock('../services/signup', () => ({
   iniciarSesion: vi.fn(),
-  destinoTrasLogin: (...a) => destinoTrasLogin(...a),
   pedirResetPassword: (...a) => pedirResetPassword(...a),
   cambiarPassword: (...a) => cambiarPassword(...a),
 }));
@@ -44,7 +52,8 @@ function irA(hash) {
 beforeEach(() => {
   vi.clearAllMocks();
   handlerDeAuth = null;
-  destinoTrasLogin.mockResolvedValue({ ok: true, url: 'https://x.divianco.app', slug: 'x' });
+  resolverDestino.mockResolvedValue({ ok: true, tipo: 'negocio', negocio: { slug: 'x', name: 'X' } });
+  irAlAdmin.mockResolvedValue({ ok: true });
 });
 
 afterEach(() => { irA(''); });
@@ -118,6 +127,8 @@ describe('fijar la contraseña nueva', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /Guardar y entrar/i }));
     await waitFor(() => expect(cambiarPassword).toHaveBeenCalledWith('claveNueva123'));
+    // Y despues sigue el mismo camino que un login normal.
+    await waitFor(() => expect(irAlAdmin).toHaveBeenCalledWith('x'));
   });
 });
 
