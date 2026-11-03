@@ -31,32 +31,24 @@ export function reviewsFor(id) {
   return 12 + (hashStr(id) % 200);
 }
 
-// Prep time fake estable: 12 – 35 min (o usa settings.prep_time_min si viene)
-export function prepFor(id, fallback) {
-  if (fallback) return fallback;
-  return 12 + (hashStr(id) % 24);
-}
-
-// Tiempo que muestra la tarjeta. Un servicio dice cuanto dura el turno
-// (products.duration_min); el tiempo de preparacion del negocio es de
-// gastronomia y en un servicio mentia ("30 min" en un alisado de 3 h). Sin
-// duracion (un agregado) no muestra nada.
-export function tiempoFor(p, prepDefault) {
-  if (p?.type === "service") {
-    const min = Number(p.duration_min);
-    return min > 0 ? formatearDuracion(min) : null;
-  }
-  return `${prepFor(p?.id, prepDefault)} min`;
+// Tiempo que muestra la tarjeta: solo un servicio, que dice cuanto dura el
+// turno (products.duration_min). Gastronomia y comercio no muestran tiempo:
+// el "30 min" de preparacion era el mismo en todos los productos y no le
+// decia nada al cliente. Un servicio sin duracion (un agregado) tampoco.
+export function tiempoFor(p) {
+  if (p?.type !== "service") return null;
+  const min = Number(p.duration_min);
+  return min > 0 ? formatearDuracion(min) : null;
 }
 
 /**
  * Mapea un producto real (DB) al shape que usan los componentes catalog-pro.
  * @param p producto real {id, name, sale_price, description, image_url, category, related_ids}
- * @param opts { hasDeal, dealPrice, prepDefault, soldOutIds }
+ * @param opts { hasDeal, dealPrice, soldOutIds }
  *   soldOutIds: Set de recipe_ids agotados (ver lib/stockAvailability.js)
  */
 export function mapProduct(p, opts = {}) {
-  const { hasDeal, dealPrice, prepDefault, soldOutIds } = opts;
+  const { hasDeal, dealPrice, soldOutIds } = opts;
   const deal = hasDeal ? hasDeal(p) : false;
   const price = deal && dealPrice ? dealPrice(p) : p.sale_price;
   const oldPrice = deal ? p.sale_price : null;
@@ -76,7 +68,7 @@ export function mapProduct(p, opts = {}) {
     tone: toneFor(p.name || p.id),
     rating: ratingFor(p.id),
     reviews: reviewsFor(p.id),
-    tiempo: tiempoFor(p, prepDefault),
+    tiempo: tiempoFor(p),
     badge: deal ? "Oferta" : null,
     // Sin stock de ingredientes suficiente para 1 unidad
     soldOut: !!(soldOutIds && soldOutIds.has(p.id)),

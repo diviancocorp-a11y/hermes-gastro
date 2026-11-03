@@ -2,7 +2,7 @@
 // Listado de una categoría: header + sort + toggle grid/list + productos.
 //
 // Props: categoryName, displayName, products (ya filtrados de esa categoría),
-//   hasDeal, dealPrice, prepDefault,
+//   hasDeal, dealPrice,
 //   onBack(), onSelectProduct(p), onAddToCart(p), onOpenSearch()
 
 import { useState, useMemo } from "react";
@@ -20,7 +20,7 @@ const SORT_LABELS = {
 
 export default function CategoryScreen({
   categoryName, displayName, products = [],
-  hasDeal, dealPrice, prepDefault,
+  hasDeal, dealPrice,
   soldOutIds, // Set de recipe_ids agotados
   onBack, onSelectProduct, onAddToCart, onOpenSearch,
 }) {
@@ -29,8 +29,8 @@ export default function CategoryScreen({
   const [sortOpen, setSortOpen] = useState(false);
 
   const mapped = useMemo(
-    () => products.map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault, soldOutIds })),
-    [products, hasDeal, dealPrice, prepDefault, soldOutIds]
+    () => products.map(p => mapProduct(p, { hasDeal, dealPrice, soldOutIds })),
+    [products, hasDeal, dealPrice, soldOutIds]
   );
 
   const sorted = useMemo(() => {

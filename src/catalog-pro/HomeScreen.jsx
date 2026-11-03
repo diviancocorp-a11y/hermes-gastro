@@ -9,7 +9,6 @@
 //   categories: [{ name, displayName, subs, deal }]
 //   cartCount, cartTotal
 //   hasDeal(p), dealPrice(p)  — helpers del Catalog
-//   prepDefault?: number
 //   onAddToCart(p), onOpenCart(), onSearch(), onSelectCategory(name),
 //   onSelectProduct(p), onOpenAccount()
 
@@ -44,7 +43,7 @@ import "./family.css";
 export default function HomeScreen({
   store = {}, userName, products = [], categories = [],
   cartCount = 0, cartTotal = 0,
-  hasDeal, dealPrice, prepDefault,
+  hasDeal, dealPrice,
   soldOutIds, // Set de recipe_ids agotados (stock de ingredientes)
   onAddToCart, onOpenCart, onSelectProduct, onSelectFamily, onOpenAccount,
   session, onLogout,
@@ -99,8 +98,8 @@ export default function HomeScreen({
     () => products
       .filter(p => p.is_combo || /combo|pack|promo|caja|docena|mesa/i.test(p.category || ""))
       .slice(0, 8)
-      .map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault, soldOutIds })),
-    [products, hasDeal, dealPrice, prepDefault, soldOutIds]
+      .map(p => mapProduct(p, { hasDeal, dealPrice, soldOutIds })),
+    [products, hasDeal, dealPrice, soldOutIds]
   );
   // Grid completo de TODOS los productos filtrados por categoria activa +
   // busqueda + quick filter (en oferta / vegetariano / nuevos / mas pedidos).
@@ -114,8 +113,8 @@ export default function HomeScreen({
     });
     // Combos al final de la carta (sort estable: el resto conserva su orden)
     list = [...list].sort((a, b) => (a.is_combo ? 1 : 0) - (b.is_combo ? 1 : 0));
-    return list.map(p => mapProduct(p, { hasDeal, dealPrice, prepDefault, soldOutIds }));
-  }, [products, catalogCategories, activeCat, facets, searchQuery, activeFilter, hasDeal, dealPrice, prepDefault, soldOutIds]);
+    return list.map(p => mapProduct(p, { hasDeal, dealPrice, soldOutIds }));
+  }, [products, catalogCategories, activeCat, facets, searchQuery, activeFilter, hasDeal, dealPrice, soldOutIds]);
 
   // Familias: varios sabores de un mismo producto en UNA tarjeta. Con busqueda
   // activa, o sin handler para abrirlas, la carta queda como siempre.

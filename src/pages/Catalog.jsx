@@ -949,7 +949,6 @@ export default function Catalog() {
         cartTotal={ct}
         hasDeal={hasDeal}
         dealPrice={getPrice}
-        prepDefault={sett.prep_time_min}
         soldOutIds={soldOutIds}
         onAddToCart={(p) => addC(p)}
         onDecCart={(productId) => {
@@ -985,7 +984,6 @@ export default function Catalog() {
           categories={categories}
           hasDeal={hasDeal}
           dealPrice={getPrice}
-          prepDefault={sett.prep_time_min}
           soldOutIds={soldOutIds}
           onBack={() => setCpScreen(null)}
           onSelectProduct={(p) => { setCpScreen(null); setCpDetail(p); }}
@@ -1000,7 +998,6 @@ export default function Catalog() {
           products={products.filter(p => matchesCatalogCategory(p, cpScreen))}
           hasDeal={hasDeal}
           dealPrice={getPrice}
-          prepDefault={sett.prep_time_min}
           soldOutIds={soldOutIds}
           onBack={() => setCpScreen(null)}
           onOpenSearch={() => setCpScreen("search")}
@@ -1014,7 +1011,6 @@ export default function Catalog() {
           soldOutIds={soldOutIds}
           hasDeal={hasDeal}
           dealPrice={getPrice}
-          prepDefault={sett.prep_time_min}
           related={(cpDetail.related_ids || [])
             .map(id => products.find(x => x.id === id))
             .filter(Boolean)
@@ -1043,7 +1039,6 @@ export default function Catalog() {
           soldOutIds={soldOutIds}
           hasDeal={hasDeal}
           dealPrice={getPrice}
-          prepDefault={sett.prep_time_min}
           onBack={() => setCpFamily(null)}
           onAddToCart={(p, qty = 1) => {
             // Una llamada por sabor; cada uno entra como linea propia, igual que en el detalle.

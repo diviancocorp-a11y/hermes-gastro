@@ -38,7 +38,7 @@ function highlight(text, q) {
 }
 
 export default function SearchScreen({
-  products = [], categories = [], hasDeal, dealPrice, prepDefault,
+  products = [], categories = [], hasDeal, dealPrice,
   soldOutIds, // Set de recipe_ids agotados
   onBack, onSelectProduct, onSelectCategory, onAddToCart,
 }) {
@@ -94,7 +94,7 @@ export default function SearchScreen({
               <p className="body-s" style={{ margin: 0 }}>Probá con otra palabra o mirá las categorías.</p>
             </div>
           ) : matches.map(p => {
-            const m = mapProduct(p, { hasDeal, dealPrice, prepDefault, soldOutIds });
+            const m = mapProduct(p, { hasDeal, dealPrice, soldOutIds });
             return (
               <div key={p.id} onClick={() => { commitSearch(q); onSelectProduct?.(p); }} style={{
                 display: "grid", gridTemplateColumns: "52px 1fr auto", gap: 12, alignItems: "center",

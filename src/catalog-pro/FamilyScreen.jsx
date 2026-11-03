@@ -6,7 +6,7 @@
 // pedidos, carrito ni stock.
 //
 // Props:
-//   family { name, members, pack, image }, hasDeal(p), dealPrice(p), prepDefault,
+//   family { name, members, pack, image }, hasDeal(p), dealPrice(p),
 //   soldOutIds (Set), onBack(), onAddToCart(product, qty), onConfirm(units)
 
 import { useEffect, useRef, useState } from "react";
@@ -18,7 +18,7 @@ import { familyTotal, packSummary, packTexts, shortNames } from "../lib/catalogF
 import "./family.css";
 
 export default function FamilyScreen({
-  family, hasDeal, dealPrice, prepDefault, soldOutIds, onBack, onAddToCart, onConfirm,
+  family, hasDeal, dealPrice, soldOutIds, onBack, onAddToCart, onConfirm,
 }) {
   const { name, members = [], pack = null, image = null } = family || {};
   const [qtys, setQtys] = useState({});
@@ -40,7 +40,7 @@ export default function FamilyScreen({
 
   const cortos = shortNames(members);
   const rows = members.map((m, i) => ({
-    ...mapProduct(m, { hasDeal, dealPrice, prepDefault, soldOutIds }),
+    ...mapProduct(m, { hasDeal, dealPrice, soldOutIds }),
     short: cortos[i],
   }));
   const precioPorId = {};

@@ -8,7 +8,7 @@
 //
 // Props:
 //   product (real DB shape), related (productos reales),
-//   hasDeal(p), dealPrice(p), prepDefault,
+//   hasDeal(p), dealPrice(p),
 //   onBack(), onAddToCart(product, qty), onSelectRelated(p), onToggleFav(id), isFav
 
 import { useState, useRef, useEffect } from "react";
@@ -21,11 +21,11 @@ import ProductCharacteristics from "./ProductCharacteristics";
 import { getProductFeatures } from "../lib/catalogFacets";
 
 export default function ProductDetailScreen({
-  product, related = [], hasDeal, dealPrice, prepDefault,
+  product, related = [], hasDeal, dealPrice,
   soldOutIds, // Set de recipe_ids agotados
   onBack, onAddToCart, onSelectRelated, onToggleFav, isFav = false,
 }) {
-  const p = mapProduct(product, { hasDeal, dealPrice, prepDefault, soldOutIds });
+  const p = mapProduct(product, { hasDeal, dealPrice, soldOutIds });
   const soldOut = p.soldOut;
   const attributes = product.catalog_attributes || {};
   const classification = [
@@ -55,7 +55,7 @@ export default function ProductDetailScreen({
   const selectedSize = sizes ? sizes[selectedSizeIdx] : null;
   const unitPrice = selectedSize ? Number(selectedSize.price) || 0 : p.price;
   const total = unitPrice * qty;
-  const relatedMapped = related.slice(0, 4).map(x => mapProduct(x, { hasDeal, dealPrice, prepDefault, soldOutIds }));
+  const relatedMapped = related.slice(0, 4).map(x => mapProduct(x, { hasDeal, dealPrice, soldOutIds }));
 
   return (
     <div className="cp-root cp-surface cp-no-scrollbar" ref={scrollRef} style={{
