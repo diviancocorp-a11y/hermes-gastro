@@ -24,6 +24,7 @@
 import { supabase } from '../lib/supabase';
 import { isPlatformRoot } from '../lib/tenantHost';
 import { destinoTrasLogin } from './signup';
+import { soyStaffDivianco } from './platformPlanes';
 
 /** Nombre del parametro del hash. No se llama como los de Supabase a
  *  proposito: el cliente procesa solo `access_token=`, y no tiene que tocarlo. */
@@ -51,13 +52,25 @@ export async function negociosDelUsuario() {
  * @returns {Promise<
  *   { ok: false, error: string } |
  *   { ok: true, tipo: 'negocio', negocio: { slug: string, name: string } } |
- *   { ok: true, tipo: 'elegir', negocios: Array<{ slug: string, name: string }> } |
+ *   { ok: true, tipo: 'elegir', negocios: Array<{ slug: string, name: string }>, consola?: string } |
  *   { ok: true, tipo: 'staff', url: string }
  * >}
  */
 export async function resolverDestino() {
   const r = await negociosDelUsuario();
   if (!r.ok) return r;
+
+  // Staff de Divianco que ademas es dueño de negocios: la consola es una
+  // puerta mas. Se pregunta siempre, tenga uno o varios, porque con uno solo
+  // se lo mandaria directo al negocio y la consola quedaria inalcanzable.
+  // (Sin negocios no hace falta: lo resuelve destinoTrasLogin mas abajo.)
+  if (r.negocios.length > 0 && (await soyStaffDivianco())) {
+    return {
+      ok: true, tipo: 'elegir', negocios: r.negocios,
+      consola: `${window.location.origin}/consola`,
+    };
+  }
+
   if (r.negocios.length === 1) return { ok: true, tipo: 'negocio', negocio: r.negocios[0] };
   if (r.negocios.length > 1) return { ok: true, tipo: 'elegir', negocios: r.negocios };
 

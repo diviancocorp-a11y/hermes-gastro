@@ -20,6 +20,8 @@ vi.mock('../lib/supabase', () => ({
   },
 }));
 vi.mock('../services/signup', () => ({ destinoTrasLogin: (...a) => destinoTrasLogin(...a) }));
+const soyStaffDivianco = vi.fn();
+vi.mock('../services/platformPlanes', () => ({ soyStaffDivianco: (...a) => soyStaffDivianco(...a) }));
 
 const {
   resolverDestino, armarUrlAdmin, irAlAdmin, tomarTraspaso, slugValido, CLAVE_TRASPASO,
@@ -42,9 +44,35 @@ beforeEach(() => {
   getSession.mockResolvedValue({ data: { session: { access_token: 'AT', refresh_token: 'RT' } } });
   signOut.mockResolvedValue({ error: null });
   setSession.mockResolvedValue({ error: null });
+  soyStaffDivianco.mockResolvedValue(false);
 });
 
 describe('resolverDestino', () => {
+  it('staff con UN negocio: elige entre el negocio y la consola (no lo manda directo)', async () => {
+    soyStaffDivianco.mockResolvedValue(true);
+    tenantsQuery.mockResolvedValue({ data: [{ slug: 'mia-estudio', name: 'MiaEstudio' }], error: null });
+    const r = await resolverDestino();
+    expect(r.tipo).toBe('elegir');
+    expect(r.negocios).toEqual([{ slug: 'mia-estudio', name: 'MiaEstudio' }]);
+    expect(r.consola).toBe('https://divianco.app/consola');
+  });
+
+  it('staff con varios negocios: los negocios y ademas la consola', async () => {
+    soyStaffDivianco.mockResolvedValue(true);
+    tenantsQuery.mockResolvedValue({ data: [{ slug: 'a', name: 'A' }, { slug: 'b', name: 'B' }], error: null });
+    const r = await resolverDestino();
+    expect(r.tipo).toBe('elegir');
+    expect(r.negocios).toHaveLength(2);
+    expect(r.consola).toBeTruthy();
+  });
+
+  it('quien NO es staff nunca ve la consola', async () => {
+    tenantsQuery.mockResolvedValue({ data: [{ slug: 'a', name: 'A' }, { slug: 'b', name: 'B' }], error: null });
+    const r = await resolverDestino();
+    expect(r.tipo).toBe('elegir');
+    expect(r.consola).toBeUndefined();
+  });
+
   it('un solo negocio: directo', async () => {
     tenantsQuery.mockResolvedValue({ data: [{ slug: 'mia-estudio', name: 'MiaEstudio' }], error: null });
     const r = await resolverDestino();
