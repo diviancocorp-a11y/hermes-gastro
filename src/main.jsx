@@ -7,6 +7,12 @@ import { initObservability, setTenantContext, tenantDelHost } from './lib/observ
 import { initWebVitals } from './lib/webVitals.js'
 import business from '@business'
 import './lib/i18n.js' // Initialize i18next (must be before App render)
+// Antes del render: el aviso de instalacion de Chrome llega una sola vez y temprano,
+// y en el panel tiene que llegar ya con el manifest del panel (start_url /admin)
+import { apuntarManifestDelPanel } from './lib/instalarApp.js'
+import { getTenantSlugSync } from './lib/activeTenant.js'
+
+if (/^\/admin(\/|$)/.test(window.location.pathname)) apuntarManifestDelPanel(getTenantSlugSync())
 
 // Initialize error tracking & analytics (no-op if env vars not set)
 initObservability()

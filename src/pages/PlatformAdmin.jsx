@@ -84,6 +84,7 @@ import {
 } from '../services/platformComandera';
 import { imprimirEtiqueta } from '../lib/impresionDePasador';
 import { getTenantSlugSync } from '../lib/activeTenant';
+import { aplicarCabezaDelPanel } from '../lib/instalarApp';
 import {
   fetchIngredients, upsertIngredient as upsertIngrediente, archiveIngredient as archivarIngrediente,
 } from '../services/platformInventory';
@@ -325,8 +326,12 @@ export default function PlatformAdmin() {
     const previo = document.title;
     const linkIcono = document.head.querySelector('link[rel="icon"]');
     const iconoPrevio = linkIcono?.getAttribute('href');
-    fetchTenantBrand(getTenantSlugSync()).then((brand) => {
+    const slug = getTenantSlugSync();
+    let deshacerCabeza = () => {};
+    fetchTenantBrand(slug).then((brand) => {
       if (!vivo) return;
+      // La app instalable del panel (start_url /admin), no la del catalogo.
+      deshacerCabeza = aplicarCabezaDelPanel(slug, brand);
       if (brand?.name) document.title = `${brand.name} · Panel`;
       // Sin esto la pestania del panel llevaba el icono del build en todos los negocios.
       const icono = brand?.favicon_url || brand?.logo_url;
@@ -334,6 +339,7 @@ export default function PlatformAdmin() {
     });
     return () => {
       vivo = false;
+      deshacerCabeza();
       document.title = previo;
       if (linkIcono && iconoPrevio) linkIcono.setAttribute('href', iconoPrevio);
     };
@@ -1276,6 +1282,7 @@ export default function PlatformAdmin() {
             <MenuDeSesion
               session={session}
               logoUrl={sett?.logo_url}
+              nombreNegocio={sett?.biz_name?.trim() || tenant?.name}
               controles={controles.filter(c => !esDesktop || c.id !== 'config')}
             />
           </div>

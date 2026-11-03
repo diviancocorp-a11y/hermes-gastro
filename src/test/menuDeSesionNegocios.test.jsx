@@ -287,7 +287,7 @@ describe('MenuDeSesion: el nombre abre la cuenta', () => {
     expect(screen.getByText('ana@x.com')).toBeInTheDocument();
     const menu = screen.getByRole('menu', { name: 'Mi cuenta' });
     const items = Array.from(menu.querySelectorAll('[role="menuitem"]'));
-    expect(items.map((i) => i.textContent)).toEqual(['Configuración', 'Tema oscuro', 'Ver catálogo', 'Salir']);
+    expect(items.map((i) => i.textContent)).toEqual(['Configuración', 'Tema oscuro', 'Ver catálogo', 'Instalar app', 'Salir']);
     expect(screen.queryByRole('menuitemradio')).toBeNull();
     expect(negociosDelUsuario).not.toHaveBeenCalled();
   });
