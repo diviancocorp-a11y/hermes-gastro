@@ -169,7 +169,10 @@ async function olvidarSesionLocal() {
 async function irA(r) {
   if (!r.ok) return r;
   if (r.traspasa) await olvidarSesionLocal();
-  window.location.assign(r.url);
+  // replace y no assign: la pagina de la que salimos ya no tiene sesion, asi que
+  // el boton "atras" no tiene que poder volver a ella (bfcache la restauraria
+  // con el menu trabado y sin sesion).
+  window.location.replace(r.url);
   return { ok: true };
 }
 

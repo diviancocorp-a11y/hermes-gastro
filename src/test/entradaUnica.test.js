@@ -40,7 +40,7 @@ function ubicar(host, ruta = '/entrar', hash = '') {
     configurable: true,
     value: {
       hostname: host, origin: `https://${host}`, pathname: ruta, search: '', hash,
-      assign: vi.fn(),
+      replace: vi.fn(),
     },
   });
   window.history.replaceState = vi.fn();
@@ -203,10 +203,10 @@ describe('armarUrlAdmin / irAlAdmin', () => {
   it('frena el auto-refresh y borra la sesion local ANTES de navegar', async () => {
     window.localStorage.setItem('hermes-auth', '{"access_token":"AT"}');
     let enNavegar = 'no se llamo';
-    window.location.assign = vi.fn(() => { enNavegar = window.localStorage.getItem('hermes-auth'); });
+    window.location.replace = vi.fn(() => { enNavegar = window.localStorage.getItem('hermes-auth'); });
     await irAlAdmin('mia-estudio');
     expect(stopAutoRefresh).toHaveBeenCalledTimes(1);
-    expect(stopAutoRefresh.mock.invocationCallOrder[0]).toBeLessThan(window.location.assign.mock.invocationCallOrder[0]);
+    expect(stopAutoRefresh.mock.invocationCallOrder[0]).toBeLessThan(window.location.replace.mock.invocationCallOrder[0]);
     expect(enNavegar).toBeNull();
   });
 
@@ -217,7 +217,7 @@ describe('armarUrlAdmin / irAlAdmin', () => {
     expect(signOut).not.toHaveBeenCalled();
     expect(stopAutoRefresh).not.toHaveBeenCalled();
     expect(window.localStorage.getItem('hermes-auth')).not.toBeNull();
-    expect(window.location.assign).toHaveBeenCalledWith('https://localhost/admin');
+    expect(window.location.replace).toHaveBeenCalledWith('https://localhost/admin');
   });
 });
 
@@ -235,7 +235,7 @@ describe('cambiar de negocio desde otro negocio', () => {
     await irAlAdmin('monare');
     expect(signOut).not.toHaveBeenCalled();
     expect(window.localStorage.getItem('hermes-auth')).toBeNull();
-    expect(window.location.assign).toHaveBeenCalledTimes(1);
+    expect(window.location.replace).toHaveBeenCalledTimes(1);
   });
 
   it('desde un negocio tambien se llega a la consola', async () => {
@@ -279,13 +279,13 @@ describe('la consola (consola.divianco.app)', () => {
     await irALaConsola();
     expect(signOut).not.toHaveBeenCalled();
     expect(window.localStorage.getItem('hermes-auth')).toBeNull();
-    expect(window.location.assign).toHaveBeenCalledTimes(1);
+    expect(window.location.replace).toHaveBeenCalledTimes(1);
   });
 
   it('sin sesion no navega', async () => {
     getSession.mockResolvedValue({ data: { session: null } });
     expect((await irALaConsola()).ok).toBe(false);
-    expect(window.location.assign).not.toHaveBeenCalled();
+    expect(window.location.replace).not.toHaveBeenCalled();
   });
 
   it('desde la consola, "entrar" es el login unico de la raiz', () => {
