@@ -70,7 +70,7 @@ import {
   fetchTableVisits,
 } from '../services/platformSalon';
 import { fetchSettings, saveSettings, fetchTenantBrand } from '../services/platformSettings';
-import { LogoNegocio, VerCatalogo } from '../components/admin/platform/TopbarNegocio';
+import { VerCatalogo } from '../components/admin/platform/TopbarNegocio';
 import {
   fetchTicketsDeCocina, marcarPlato, cerrarTicket, etiquetaDePasador,
 } from '../services/platformKds';
@@ -1270,13 +1270,12 @@ export default function PlatformAdmin() {
         <header className="ag-topbar ms-trace">
           <div className="ag-topbar-identidad">
             {!esDesktop && <div className="ag-topbar-dico" ref={setHuecoDico} />}
-            <LogoNegocio url={sett?.logo_url} />
             <strong className="ag-topbar-local" title={nombreLocal}>{nombreLocal}</strong>
           </div>
           <div className="ag-topbar-right">
-            <VerCatalogo />
             <MenuDeSesion
               session={session}
+              logoUrl={sett?.logo_url}
               controles={controles.filter(c => !esDesktop || c.id !== 'config')}
             />
           </div>
@@ -1316,15 +1315,20 @@ export default function PlatformAdmin() {
                   <span className="ag-productos-kicker">CATÁLOGO</span>
                   <h1 id="ag-productos-titulo" className="ag-section-title">{terminoCatalogo.plural}</h1>
                 </div>
-                {puedeEditarProductos(roles, 'products') && <button
-                  type="button"
-                  className="ag-productos-head-agregar"
-                  aria-label={`Agregar ${terminoCatalogo.singular}`}
-                  onClick={() => productsPanelRef.current?.nuevoProducto()}
-                >
-                  <span aria-hidden="true">+</span>
-                  <span className="ag-productos-head-agregar-texto">Agregar {terminoCatalogo.singular}</span>
-                </button>}
+                {/* Ver catalogo vive aca y no en la topbar: es la pantalla desde
+                    la que mas se mira el catalogo. Lo ve todo rol. */}
+                <div className="ag-productos-head-acciones">
+                  <VerCatalogo />
+                  {puedeEditarProductos(roles, 'products') && <button
+                    type="button"
+                    className="ag-productos-head-agregar"
+                    aria-label={`Agregar ${terminoCatalogo.singular}`}
+                    onClick={() => productsPanelRef.current?.nuevoProducto()}
+                  >
+                    <span aria-hidden="true">+</span>
+                    <span className="ag-productos-head-agregar-texto">Agregar {terminoCatalogo.singular}</span>
+                  </button>}
+                </div>
               </div>
               <div className="ag-productos-head-resumen">
                 <div className="ag-productos-head-metricas" aria-label="Resumen del catálogo">
