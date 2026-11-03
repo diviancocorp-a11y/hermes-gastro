@@ -11,6 +11,59 @@
 
 ---
 
+## 3/nov/2026 — Login único, consola en su subdominio y agenda de servicios (Claude)
+
+### Hecho
+
+**Agenda de turnos para rubros de servicio** (primer caso MiaEstudio; PRs #47–#55, migraciones 0109–0113). El plan y las decisiones están en `docs/plataforma/PLAN-AGENDA.md`.
+- Disponibilidad en la base (`get_available_slots`: horario − turnos − bloqueos − buffer − traslado), zonas con minutos de traslado, adicionales (`is_addon`), panel de agenda y reserva online pública (`/reservar`, edge function `booking`, seña por MercadoPago con `mp-webhook` y vencimiento a los 5 min).
+- 0113: `get_available_slots` rompía para `service_role` (`permission denied for schema private`); ahora se mira el rol del JWT antes de tocar `private`. Con tests SQL (`agenda_huecos.sql`, `agenda_reserva_online.sql`).
+- Probado en producción con un tenant descartable (`zz-prueba-reserva`, ya borrado): 29/30, y el corte de seña sin MercadoPago responde 503. **La seña real con MercadoPago NO se probó.**
+
+**Login único** (PRs #65–#71; Ricky mergeó todo; deploy de producción `91f6ab4` en `READY`, mismo SHA que `main`).
+- `divianco.app/entrar` es la misma puerta que el login del admin (`LoginShell` compartido), con marca Dico fija. Con email y clave lee los negocios de la persona (`src/services/entradaUnica.js`): uno entra directo a `<slug>.divianco.app/admin`, varios eligen, y el staff ve además "Consola de Divianco". Se entra una sola vez: la sesión viaja en el hash `#dico-sesion=` y el destino la toma antes de preguntar si hay sesión (`tomarTraspaso`, llamado desde `usePlatformTenant` y `Consola`).
+- **Consola en `consola.divianco.app`** (#67, migración **0120**, `consola` reservado en `tenantHost.js` y en `is_reserved_slug`). `divianco.app/consola` redirige. Se borró el login propio de la consola: sin sesión manda a `/entrar`, con sesión sin permiso muestra "Esa cuenta no tiene acceso" (`SinAcceso`). No se indexa (`meta noindex`: el `robots.txt` es el mismo para todos los hosts). La recuperación de clave del staff es la de `/entrar`; el acceso lo da la fila de `platform_admins`, no la clave.
+- **Intro de Dico** (#70): ya no está en los logins. Se ve al abrir el negocio, solo tras un login real (login del admin o traspaso desde `/entrar`); no si la app se abre con la sesión ya abierta. `ConIntro` es la raíz común de todos los estados de `PlatformAdmin` (si cada estado armaba su propio árbol, el overlay se remontaba y el intro arrancaba de nuevo).
+- **Topbar** (#69): logo del negocio (`settings.logo_url`) y botón "Ver catálogo" (`/`, pestaña nueva).
+- **Selector de negocios en la burbuja de perfil** (#71, estilo Instagram): "Tus negocios" con el actual tildado y la consola si es staff; consultas perezosas al abrir.
+
+### Por qué (lo caro de reconstruir)
+- **`supabase.auth.signOut()` revoca la sesión en el servidor, incluso con `{ scope: 'local' }`** (`POST /logout?scope=local`, verificado en `node_modules/@supabase/auth-js`). El primer traspaso lo usaba para "olvidar" la sesión de `divianco.app` y la que viajaba llegaba muerta: todos volvían a `/entrar` (producción rota entre #65 y #68). Ahora se frena el auto-refresh y se borran las claves `hermes-auth*` del localStorage del origen, sin tocar el servidor (`olvidarSesionLocal`). Los tests mockeaban `signOut` y no lo podían ver: hay un test que afirma que **nunca** se llama en el traspaso.
+- **La sesión se mueve, no se copia.** El mismo refresh token en dos orígenes se rompería con la rotación de Supabase. Consecuencia: cambiar de negocio deslogea las otras pestañas del mismo origen. Se usa `location.replace` para que "atrás" no vuelva a una página sin sesión (bfcache).
+- **`tenants_select` deja ver TODOS los negocios al staff** (`OR es_staff_divianco()`, 0052). `negociosDelUsuario()` filtra por membresía propia (`tenant_members.user_id`); sin eso un staff veía el edificio entero en `/entrar` y habría sido tratado como dueño de todo.
+- Cerrar sesión desde el admin lleva al login **del propio negocio**, no a `/entrar` (decisión de Ricky): es lo que va a abrir la app instalada del local.
+
+### Verificado
+- En producción (integración de Vercel): deploy `91f6ab4` `READY` = `main`. Migración `reservar_consola` aplicada y releída (`is_reserved_slug('consola') = true`, 0 tenants reservados).
+- Suite completa 2235/2235, build, ESLint sin errores y `check:diseno` (17 conocidos, ninguno nuevo) en cada PR. Auditor independiente en cada cambio de UI (0 P0; los P1/P2 se corrigieron antes de mergear).
+- Ricky confirmó "ya se arregló" tras el #68 (ingreso a negocios y consola) y que cerrar sesión lleva al login del negocio.
+- **NO verificado:** el intro tras un login real, la topbar en móvil, el selector de negocios (con varios negocios y con la cuenta staff) y el anuncio con lector de pantalla. Todo eso está cubierto solo por tests de jsdom; ningún subagente tuvo sesión de Supabase.
+
+### Pendiente inmediato (en orden)
+1. **Ricky mira en producción** el selector (burbuja de perfil, con su cuenta staff), el intro y la topbar en el celular.
+2. **Verificar en Supabase → Authentication → URL Configuration** que `https://consola.divianco.app/**` (o `https://*.divianco.app/**`) esté en Redirect URLs: de eso dependen los links de invitación y recuperación de la consola. No pude verlo desde el MCP.
+3. **Abrir la reserva online de MiaEstudio.** Hoy: canal `appointment` (sin `online_booking`), 7 servicios (varios en borrador), **0 zonas**, horarios cargados, 0 turnos. Falta: servicios activos, zonas con minutos de traslado, MercadoPago conectado (no se sabe si lo está) y medios de pago (efectivo + alias `miuchis.mp`, sin cargar: no se adivinó el formato). Después, con OK de Ricky, sumar `online_booking` a `tenants.channels` y probar una reserva real con seña de $6.000 hasta ver el turno en `confirmed` por `mp-webhook`.
+4. **App instalable por negocio.** Hoy `public/manifest.json` es genérico ("Hermes", `start_url: "/"` = catálogo público) y no hay aviso de instalación. Falta: manifest dinámico por host (nombre e ícono del negocio, `start_url: /admin`), tutorial de instalación (compu, Android, iPhone) y botón de instalar en el admin. Resuelve también el pendiente de La Nona Pato (el manifest genera la inicial "L").
+5. Recordatorios automáticos de turnos (fase 3C: push/mail primero; WhatsApp requiere decidir quién paga y el proveedor), luego cierre del turno → venta/insumos (4), política de cancelación y reembolsos (5), lista de espera (6).
+6. Deuda de UI anotada por el auditor, sin resolver: ramas muertas `stage === "intro"` en `loginEstilos.js` (`estiloCaja`) y comentario de `tiemposDeEntrada.js`; `FlowFieldBackground` ignora `prefers-reduced-motion`; pie del login del admin con contraste 2,59:1; inputs del login del admin sin label; JetBrains Mono sin `@font-face`.
+7. Menores de agenda: ancla `zonas` en el pendiente, "Mover" no ignora el propio turno, horas del panel en la zona horaria del dispositivo, selección y cantidad de adicionales.
+
+### Bloqueado por Ricky
+- Paso 2 (Redirect URLs de Supabase), conexión de MercadoPago de MiaEstudio, decidir cuándo se abre la reserva online, y quién paga WhatsApp si se hace.
+
+### Heredados de las secciones que se archivan (siguen vigentes)
+- **k6** (`docs/operacion/CARGA-K6.md`): Ricky debe hacer "Run now" de la tarea quincenal; `mp-status` diferido espera su OK; faltan escenario de panel y CI para ramas; no retirar la worktree `cool-fermat` sin revisar su `.codex`; accesibilidad de `SkipToContent` y side-tabs, demora de crons y contenido/contacto de la landing sin resolver.
+- **La Nona Pato:** tarifas y condiciones de envío; reemplazar el WhatsApp provisional cuando Ricky confirme el definitivo; completar el titular de transferencia; fotos individuales restantes.
+- **Monare:** 32 precios, precio de la caja Ópalo, fotos definitivas y datos bancarios reales (no se inventaron); sin recetas.
+- **GerenteDico:** cerrar el issue #29 de prueba; próxima etapa `gerentedico` → PR/preview.
+- **General:** primer error real desminificado de Sentry sin verificar. La existencia y el alta de MiaEstudio se verificaron en esta sesión (existe, activo).
+
+### Archivos y limpieza
+- No se creó ningún archivo fuera de `src/`, `docs/`, `platform/` y `scripts/`. Los scripts de prueba viven en el temp del sistema (fuera del repo).
+- Se eliminaron las worktrees propias ya mergeadas (agenda ×5, fix-audit ×2, login-unico, intro-al-abrir, topbar-admin, cambiar-de-negocio) y sus ramas locales. Las 19 que quedan son de otros agentes; no se tocaron.
+
+---
+
 ## 24/oct/2026 — Catálogo por rubro preparado para revisión (Codex)
 
 - Rama `codex/catalogo-filtros-rubro`, PR borrador #56. No fusionada ni publicada
@@ -334,200 +387,3 @@
 - Solo datos del tenant nuevo y este HANDOFF: sin cambios de UI, schema,
   precios, condiciones comerciales ni otros tenants. No se crearon archivos
   fuera de src/docs/platform/scripts. Trabajo paralelo preservado.
-
-## 19/oct/2026 — La Nona Pato: manual de marca aplicado (Codex)
-
-- Solo configuracion y assets del tenant `la-nona-pato`, sin cambios de
-  JSX/CSS, schema, precios, stock u otros tenants. El manual v3 y sus archivos
-  originales viven en Biblioteca de empresas/CLIENTES/LA NONA PATO.
-- Subidos a `tenant-images/<tenant_id>/marca-20261019/` el retrato preparado
-  para DICO, favicon 64 px e imagen social 1200x630. Eslogan:
-  **Porque el amor tambien se come** (con tilde en el dato). Tema `carbon`,
-  el existente mas cercano al fondo crema; terracota `#A83715` conservado.
-- Imagen social guardada en `og_image_url` y `cover_url`: `api/og.js` consume
-  este ultimo; la home actual no lo usa como portada visible. HTTP 200 como
-  facebookexternalhit confirma titulo, eslogan e imagen nueva para compartir.
-- Seis fotos propias asociadas a productos coincidentes: alfajores de maicena,
-  picada, tortilla y las tres brusquetas. Las fotos de surtidos de canastitas
-  y empanadas no identifican sabor; quedan fuera. Siguen 43 productos activos,
-  ahora 6 con foto y 37 sin ella. Nueve originales publicos verificados por
-  lectura HTTP y SHA256; fuentes y URLs en
-  `docs/operacion/la-nona-pato-marca-20261019.json`.
-- Horarios vigentes 09-21 todos los dias, WhatsApp provisional, direccion/pin
-  y alias `pato.jhs` preservados por readback del catalogo. Se ignoro el horario
-  7-18 anterior del manual en favor de la confirmacion reciente de Ricky.
-- /diseno: constructor `disenador` reviso assets y asociaciones; auditor
-  independiente `auditor-diseno` inspecciono catalogo y detalle en produccion
-  1280x720: 0 regresiones P0-P3. Antes/despues: marca/fotos 0 -> 3/6;
-  detector estatico 17 warnings y 6 advisory sin cambio, gate verde.
-  Movil 390, contraste calculado y foco: no verificados, IAB no ofrece viewport.
-- Instagram `lanonapato.ar` confirmado por Ricky y guardado en el tenant;
-  readback del catalogo publico verificado. La ficha de marca de la biblioteca
-  conserva la indicacion anterior de no confirmado; no se modifico ese archivo.
-- Pendiente: el manifest de
-  instalacion PWA sigue generando la inicial L: es una limitacion del sistema,
-  mientras favicon, icono de Apple y marca del catalogo ya usan el retrato.
-  Tarifas/condiciones de envio y fotos individuales restantes siguen pendientes.
-- Temporales fuera de src/docs/platform/scripts: solo `.preview/nona-marca/`,
-  ignorado, para subida e inspeccion; se elimina al terminar. Sin archivos en
-  carpetas hermanas ni modificaciones a la biblioteca de origen.
-- Pendientes heredados de k6 que siguen vigentes al archivar su seccion:
-  Ricky debe hacer Run now de la tarea quincenal; `mp-status` diferido espera
-  su ok; faltan escenario de panel y CI para ramas. No retirar la worktree
-  cool-fermat sin revisar su .codex. Accesibilidad de SkipToContent, side-tabs,
-  demora de crons y contenido/contacto de la landing siguen sin resolver aqui.
-  Detalle: `docs/operacion/CARGA-K6.md` y la seccion archivada de 17-19/oct.
-
-## 19/oct/2026 — Monare: imágenes, filtros y dirección de Boedo (Codex)
-
-### Actualización 24/oct — precios por línea y audios
-
-- Ricky confirmó que los nuevos precios aplican a todas las cepas: Ancestral
-  caja x3 $93.571; por botella Fantasía $9.125, Gran Ópalo $25.090, Grandes
-  Varietales $35.490, Poético $14.950 y Zapam Zucum $9.590. Actualizados 22
-  productos; 20 pasaron de borrador a activo. No se recalcularon cajas x6.
-- Readback de los 53 productos y catálogo público: 40 activos, 13 inactivos,
-  precios correctos y campos ajenos preservados. Tres Ancestral ahora indican
-  caja de madera x3, confirmada por audio. No se modificaron cantidades de stock.
-- Dos audios transcritos con Descript tras autorización explícita de subida:
-  proyecto privado https://web.descript.com/08e2d238-eda8-412b-a297-fbe13635c608 .
-  La clienta confirma igual precio por cepa y falta de stock de los productos
-  que no cotizó. Los audios y transcripciones no se copiaron al repo.
-- Planilla actualizada: 20 filas con precio confirmado; contador 13 pendientes.
-  Doce sin precio y sin stock (anotado en observaciones); Ópalo Syrah caja x6
-  sigue pendiente. El $68.600 de C39 es informado, no confirmado; D39 vacío,
-  sin trasladarlo a la base. Dos Fantasía ya activos cambiaron $9.490 -> $9.125.
-
-### Planilla para completar precios y revisar descripciones
-
-- **20/oct, actualización:** Ricky pidió cargar las propuestas. Aplicadas las
-  53 descripciones de la columna C de Descripciones a Monare, conservando las
-  aclaraciones de imágenes/envases y los precios por bolsa y medios de pago
-  del hielo. Readback: 53/53 textos coinciden; precios, imágenes y estados sin
-  cambios (20 activos, 33 inactivos). `get_catalog('monare')` devuelve los 20
-  activos con las descripciones nuevas. La planilla no se modificó.
-- Google Sheets nativa: https://docs.google.com/spreadsheets/d/1fKf-okJoccHwbBhZopKl9OG6fQ_G9VObclGWq_0Z9uo/edit
-- Pestaña Precios: 32 presentaciones sin precio y caja Ópalo Syrah x6 para
-  confirmar/corregir los $48.600 informados. Los 33 precios confirmados están
-  vacíos; celdas amarillas para completar, validación positiva en ARS y contador.
-- Pestaña Descripciones: 53 propuestas con sabor y maridaje cuando hay ficha
-  oficial; fuentes por fila y datos inciertos señalados. Son borradores en
-  Drive: esta tarea no cambió descripciones ni precios de la base.
-- Verificados los 33 registros de precios y las 53 descripciones contra lo
-  redactado; contador probado al completar y luego vaciar una celda.
-- `importacionmarcano@gmail.com` tiene permiso Editor, comprobado en Compartir;
-  acceso general restringido. Se desactivó la notificación por correo al compartir.
-
-### Aplicado y verificado en el edificio
-
-- Solo datos de `monare` (`1367edee-7754-4169-a616-45310d98c045`): los 53
-  productos tienen imagen asociada. Son 40 WebP públicos en `tenant-images`,
-  prefijo `<tenant_id>/catalogo-20261019/`; 31 composiciones con fotos de
-  bodega/PDF y 9 imágenes provisorias que cubren 14 productos. Registro técnico
-  de fuentes, URLs y asociaciones: `docs/operacion/monare-imagenes-20261019.json`.
-  El PNG del fondo maestro también está en Storage, URL en ese registro, para
-  seguir incorporando productos con el mismo fondo.
-- Fondo común basado en el manual de Monare de la Biblioteca de empresas:
-  carbón, berenjena/bordó, luz cálida y logo original copa + MONARE dorado.
-  Se descartó el logo M viejo. Generadas con ImageGen y convertidas a WebP
-  sin recortar ni recomponer. Las referencias inciertas llevan texto
-  `IMAGEN PROVISORIA` y aclaración en descripción; las cajas muestran la
-  botella individual y los envases de 3 litros quedan por confirmar.
-- Ricky autorizó usar referencias provisorias y reemplazarlas después.
-  Pedir fotos de frente, etiqueta y capacidad de: Mumm; Freixenet Dulce;
-  Cosecha Especial Rosé; Cosecha Tardía Rosé; Pulka Rosé (confirmar nombre);
-  bolsas de hielo de 2 y 15 kg; Fantasía Criolla Tinta; Ancestral White Blend;
-  Inspirado Chardonnay; Ópalo Semillón-Sauvignon Blanc; Skin Contact Viognier;
-  Inspirado Cabernet Franc/Cabernet Cabernet/Blend de 3 litros.
-- Se corrigió Louis -> **Lois Rosé** según la etiqueta oficial de Lorca, sin
-  modificar precios. Siguen 20 activos, 32 inactivos sin precio actualizado
-  y la caja de Ópalo Syrah pendiente. Stock sigue NULL en los 53.
-- Nueva dirección indicada por Ricky: **Quintino Bocayuva 1130, Boedo, CABA**.
-  Sucursal default `bb84f552-75e4-442e-a6e0-f3f8453e1498`, ahora Despacho Monare,
-  coordenadas USIG CABA `-34.626682, -58.421350`. Reemplazada la dirección
-  provisoria de Av. de los Incas en settings, sucursal, aviso de envío y
-  `/info/compras-y-envios`. Sigue sin local de atención al público.
-- Horario corregido por Ricky: **lunes a sábado 08:30–20:30**, domingo cerrado.
-  WhatsApp e Instagram permanecen como confirmó antes.
-- Readback SQL: 53/53 imágenes, 20 activos, stock NULL; `get_catalog('monare')`
-  emite 20 imágenes, `catalogo_activo=true`, coordenadas nuevas y domingo cerrado.
-  Los 40 objetos se comprobaron por HTTP HEAD al cargarlos.
-  Playwright contra producción: 26 elementos de imagen del nuevo prefijo
-  cargados, cero errores JS; la página pública de compras muestra Boedo,
-  lunes a sábado y domingo cerrado (exit 0).
-
-### Filtros publicados y verificados
-
-- 15 grupos en `settings.cat_groups`: Cajas, Espumantes, Vinos tintos,
-  Vinos blancos, Hielo, Mauricio Lorca, Chandon, Salentein, Mumm, Freixenet,
-  Malbec, Cabernet Sauvignon, Chardonnay, Syrah, Rosé. Categorías hoja por
-  producto/presentación permiten pertenecer a varios grupos sin duplicarlo.
-- El catálogo ignoraba `settings.cat_groups`; corregido en PR #38, integrado
-  en main `905be1370a92757c152f57707aff320e8dd35977` con OK explícito de Ricky.
-  Solo UI/helpers/tests: Catalog.jsx, HomeScreen.jsx, catalogCategories.js y
-  catalogCategories.test.js. El fallback del edificio no cambió en ese PR.
-- Preview Vercel READY `dpl_4tYS8NJMF1M15oMWzL6AaJmxiLei`, rama temporal
-  `codex/monare-catalogo-preview`, SHA `0349939225657a2dada04395eb85d46206244f75`:
-  https://hermes-platform-rkb3vflej-diviancocorp-a11ys-projects.vercel.app/
-  Misma UI revisada, más un cambio temporal de fallback Cochi -> Monare para
-  ver ese tenant en `*.vercel.app`. **No mergear la rama de preview.**
-  Usar MCP `get_access_to_vercel_url` para un enlace de revisión sin login;
-  no guardar el secreto del enlace en este repo público.
-- Verificación: 94 pruebas (categorías/utils/schemas), typecheck, build y
-  `check:diseno` pasan. CI del PR sobre `7276762` pasó lint/typecheck/tests,
-  build, audit y Playwright. Luego rebase a main `8073f2d` para preservar
-  cambios paralelos (recetario/RLS y La Nona Pato); sin cambio en la UI.
-- Auditoría independiente final en preview, móvil 390x844 y escritorio
-  1280x800: cero hallazgos nuevos P0–P3, cero desborde, 16 chips de 48 px,
-  aria-pressed y foco de teclado. Todos 20, Cajas 4, Hielo 4, Espumantes 9.
-  Sin imágenes rotas en la vista de Hielo. Detector de archivos tocados [];
-  global 17 -> 17 (deuda previa). Sin pedido ni pago de prueba.
-- CI final del PR `0840512`: lint, typecheck,  unit tests, audit, build y
-  Playwright aprobados. Vercel producción READY
-  `dpl_FRtUES9XsmF99QTTGRh9YwAyznaH`, SHA `905be137`.
-  Verificado ahora en `monare.divianco.app`: version.json buildId `905be137`,
-  Cajas 4 / Hielo 4 / Espumantes 9 / Todos 20, chips 48 px y selección correcta;
-  26 imágenes cargadas, cero desborde y cero errores JS. Dirección y horario
-  correctos en la página pública de compras (Playwright exit 0).
-- Eliminadas worktree y ramas propias de revisión/preview después del merge,
-  sin tocar las de los demás chats. Temporales de imágenes limpios; los 40
-  WebP finales y el fondo maestro permanecen en Storage. La URL de preview
-  anterior queda solo como registro de la revisión; la tienda ya es pública.
-- Falta de negocio: 32 precios, precio de caja Ópalo, fotos definitivas y
-  datos bancarios reales. No se inventaron. Sin recetas.
-- Archivos temporales en `.preview/monare-assets/` (ignorado) y temp del sistema
-  durante el armado; los originales de ImageGen quedan en su caché por regla
-  de la herramienta. Ninguna dependencia nueva ni schema ni migración.
-- Pendientes heredados de GerenteDico que se archivan: cerrar issue #29 de
-  prueba; próxima etapa issue `gerentedico` -> PR/preview. No tratados acá.
-
-## 19/oct/2026 — La Nona Pato: acceso y ubicacion de despacho (Codex)
-
-- El acceso fallaba por el enlace con doble n (`la-nonna-pato`). El tenant
-  existente es `la-nona-pato`; catalogo y `/admin` muestran La Nona Pato.
-  No se creo ni renombro ningun tenant. Estado `active`, 43 productos activos,
-  sin imagenes y sin pedidos al consultar; Ricardo figura como owner.
-- Solo datos de `c8e3de7e-2fc9-44ad-b7e4-03bb73a94cdb`: direccion de despacho
-  confirmada por Ricky en `settings.store_address` y en la sucursal Principal
-  (`10a833ea-0f8e-4b9f-9505-1259f30a15ba`). Coordenadas del pin que compartio
-  Ricky: `-34.4097901, -58.857199`. La sucursal sigue activa y default.
-- Verificado por readback SQL: direccion guardada, tenant activo y
-  `get_catalog('la-nona-pato')` devuelve `catalogo_activo=true`, esas coordenadas
-  y 43 productos. Browser de produccion muestra La Nona Pato y "Abierto".
-  No se envio pedido de prueba ni se verifico una venta completa.
-- Continuacion confirmada por Ricky: todos los dias (lunes a domingo),
-  09:00-21:00, en los siete indices de `store_hours`. WhatsApp provisional
-  `+5491172381841`, tambien guardado como telefono de la sucursal Principal.
-  Efectivo disponible de forma implicita; cuenta de transferencia activa para
-  checkout con alias `pato.jhs`. Sin titular ni CBU informados. El QR es fisico
-  y Ricky pidio dejarlo fuera del catalogo. Readback del RPC publico confirma
-  telefono, siete horarios, alias, catalogo activo y 43 productos.
-- Pendiente: condiciones/tarifas de envio. No se cambiaron precios ni se
-  enviaron pedidos de prueba. Reemplazar WhatsApp provisional cuando Ricky
-  confirme el definitivo; completar titular de transferencia cuando lo informe.
-- Sin cambios de codigo ni schema ni otros tenants. Solo documentacion en
-  `docs/`; no se crearon archivos fuera de `src/`, `docs/`, `platform/` o
-  `scripts/`. Preservados los archivos sin seguimiento y el trabajo paralelo.
-- Pendientes que siguen vigentes de las secciones a archivar: primer error
-  real desminificado de Sentry y existencia/alta de MiaEstudio no verificados
-  en esta tarea. GerenteDico etapas 2/3 se describen en las secciones siguientes.
