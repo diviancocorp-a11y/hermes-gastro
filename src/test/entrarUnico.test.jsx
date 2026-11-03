@@ -4,7 +4,7 @@
 //   - con un negocio, entra directo a SU admin;
 //   - con varios, pregunta a cual y entra al elegido;
 //   - un error de credenciales se ve y no navega;
-//   - el staff va a su url;
+//   - el staff va a la consola (otro subdominio, con la sesion);
 //   - la pantalla es de Dico: no pide ni muestra la marca de ningun tenant.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -13,6 +13,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 const iniciarSesion = vi.fn();
 const resolverDestino = vi.fn();
 const irAlAdmin = vi.fn();
+const irALaConsola = vi.fn();
 const fetchTenantBrand = vi.fn();
 const signOut = vi.fn();
 
@@ -24,6 +25,7 @@ vi.mock('../services/signup', () => ({
 vi.mock('../services/entradaUnica', () => ({
   resolverDestino: (...a) => resolverDestino(...a),
   irAlAdmin: (...a) => irAlAdmin(...a),
+  irALaConsola: (...a) => irALaConsola(...a),
 }));
 vi.mock('../services/platformSettings', () => ({ fetchTenantBrand: (...a) => fetchTenantBrand(...a) }));
 vi.mock('../lib/supabase', () => ({
@@ -49,6 +51,7 @@ beforeEach(() => {
   window.history.replaceState(null, '', '/entrar');
   iniciarSesion.mockResolvedValue({ ok: true });
   irAlAdmin.mockResolvedValue({ ok: true });
+  irALaConsola.mockResolvedValue({ ok: true });
   signOut.mockResolvedValue({});
 });
 
@@ -78,23 +81,28 @@ describe('/entrar — a donde va', () => {
   });
 
   it('si es staff, el selector suma la consola y la abre sin tocar el negocio', async () => {
-    const assign = vi.fn();
-    const original = window.location;
-    Object.defineProperty(window, 'location', { configurable: true, value: { ...original, assign, hash: '' } });
-    try {
-      resolverDestino.mockResolvedValue({
-        ok: true, tipo: 'elegir', consola: 'https://divianco.app/consola',
-        negocios: [{ slug: 'mia-estudio', name: 'MiaEstudio' }],
-      });
-      render(<Login />);
-      completar();
-      expect(await screen.findByRole('button', { name: /MiaEstudio/ })).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: /Consola de Divianco/ }));
-      await waitFor(() => expect(assign).toHaveBeenCalledWith('https://divianco.app/consola'));
-      expect(irAlAdmin).not.toHaveBeenCalled();
-    } finally {
-      Object.defineProperty(window, 'location', { configurable: true, value: original });
-    }
+    resolverDestino.mockResolvedValue({
+      ok: true, tipo: 'elegir', consola: true,
+      negocios: [{ slug: 'mia-estudio', name: 'MiaEstudio' }],
+    });
+    render(<Login />);
+    completar();
+    expect(await screen.findByRole('button', { name: /MiaEstudio/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Consola de Divianco/ }));
+    await waitFor(() => expect(irALaConsola).toHaveBeenCalledTimes(1));
+    expect(irAlAdmin).not.toHaveBeenCalled();
+  });
+
+  it('si el salto a la consola falla, el error se ve y vuelve al selector', async () => {
+    resolverDestino.mockResolvedValue({
+      ok: true, tipo: 'elegir', consola: true, negocios: [{ slug: 'a', name: 'A' }],
+    });
+    irALaConsola.mockResolvedValue({ ok: false, error: 'Se cerró tu sesión. Volvé a entrar.' });
+    render(<Login />);
+    completar();
+    fireEvent.click(await screen.findByRole('button', { name: /Consola de Divianco/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Se cerró tu sesión');
+    expect(screen.getByRole('button', { name: /Consola de Divianco/ })).toBeInTheDocument();
   });
 
   it('sin permiso de staff el selector no ofrece la consola', async () => {
@@ -128,19 +136,12 @@ describe('/entrar — a donde va', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Se cerró tu sesión');
   });
 
-  it('el staff va a su url', async () => {
-    const assign = vi.fn();
-    const original = window.location;
-    Object.defineProperty(window, 'location', { configurable: true, value: { ...original, assign, hash: '' } });
-    try {
-      resolverDestino.mockResolvedValue({ ok: true, tipo: 'staff', url: 'https://divianco.app/consola' });
-      render(<Login />);
-      completar();
-      await waitFor(() => expect(assign).toHaveBeenCalledWith('https://divianco.app/consola'));
-      expect(irAlAdmin).not.toHaveBeenCalled();
-    } finally {
-      Object.defineProperty(window, 'location', { configurable: true, value: original });
-    }
+  it('el staff sin negocios va directo a la consola', async () => {
+    resolverDestino.mockResolvedValue({ ok: true, tipo: 'staff' });
+    render(<Login />);
+    completar();
+    await waitFor(() => expect(irALaConsola).toHaveBeenCalledTimes(1));
+    expect(irAlAdmin).not.toHaveBeenCalled();
   });
 });
 

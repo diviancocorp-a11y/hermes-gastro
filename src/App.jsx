@@ -18,7 +18,7 @@ import Signup from './pages/Signup'
 import Bienvenido from './pages/Bienvenido'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
-import { isPlatformRoot } from './lib/tenantHost'
+import { isPlatformRoot, isConsolaHost, CONSOLA_HOST } from './lib/tenantHost'
 import { lazyReload } from './lib/lazyReload'
 import { useEffect } from 'react'
 import { applyTheme, clearAppliedTheme } from './services/theme'
@@ -43,6 +43,14 @@ const Loading = () => (
     <p style={{ color: '#9C8B7A', fontSize: 15 }}>Cargando...</p>
   </div>
 )
+
+// divianco.app/consola ya no existe: la consola vive en su subdominio. Se
+// redirige con recarga completa (es otro origen). Sin sesion alla, la consola
+// lo manda a /entrar.
+function IrALaConsola() {
+  useEffect(() => { window.location.replace(`https://${CONSOLA_HOST}/`); }, []);
+  return <Loading />;
+}
 
 export default function App() {
   const location = useLocation();
@@ -76,7 +84,11 @@ export default function App() {
               {/* La raiz de la plataforma (divianco.app) no es el catalogo de
                   nadie: ahi va la landing. Cualquier otro host —subdominio de
                   tenant, dominio propio, local— sigue entrando al catalogo. */}
-              <Route path="/" element={isPlatformRoot(window.location.hostname) ? <PlatformLanding /> : <Catalog />} />
+              <Route
+                path="/"
+                element={isPlatformRoot(window.location.hostname) ? <PlatformLanding />
+                  : isConsolaHost(window.location.hostname) ? <Consola /> : <Catalog />}
+              />
               {/* La landing SOLO se ve en la raiz, y en local ningun host lo
                   es: `127.0.0.1` clasifica como desconocido y cae al catalogo
                   del tenant. Esta ruta existe para poder mirarla en QA Lite
@@ -105,7 +117,10 @@ export default function App() {
                   No es el panel de un negocio — ese es /admin. El guard de
                   staff esta adentro, y lo que de verdad protege son las
                   policies de `plans` y `tenants` (migracion 0052). */}
-              <Route path="/consola" element={<Consola />} />
+              <Route
+                path="/consola"
+                element={isPlatformRoot(window.location.hostname) ? <IrALaConsola /> : <Consola />}
+              />
               <Route path="/bienvenido" element={<Bienvenido />} />
               <Route path="/entrar" element={<Login />} />
               <Route path="/q/:slug" element={<QrRedirect />} />

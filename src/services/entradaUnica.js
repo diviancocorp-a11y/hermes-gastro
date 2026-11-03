@@ -22,7 +22,7 @@
 // Supabase, uno de los dos terminaria invalidando al otro.
 
 import { supabase } from '../lib/supabase';
-import { isPlatformRoot } from '../lib/tenantHost';
+import { isPlatformRoot, isConsolaHost, CONSOLA_HOST, PLATFORM_ROOTS } from '../lib/tenantHost';
 import { destinoTrasLogin } from './signup';
 import { soyStaffDivianco } from './platformPlanes';
 
@@ -52,8 +52,8 @@ export async function negociosDelUsuario() {
  * @returns {Promise<
  *   { ok: false, error: string } |
  *   { ok: true, tipo: 'negocio', negocio: { slug: string, name: string } } |
- *   { ok: true, tipo: 'elegir', negocios: Array<{ slug: string, name: string }>, consola?: string } |
- *   { ok: true, tipo: 'staff', url: string }
+ *   { ok: true, tipo: 'elegir', negocios: Array<{ slug: string, name: string }>, consola?: true } |
+ *   { ok: true, tipo: 'staff' }
  * >}
  */
 export async function resolverDestino() {
@@ -65,10 +65,7 @@ export async function resolverDestino() {
   // se lo mandaria directo al negocio y la consola quedaria inalcanzable.
   // (Sin negocios no hace falta: lo resuelve destinoTrasLogin mas abajo.)
   if (r.negocios.length > 0 && (await soyStaffDivianco())) {
-    return {
-      ok: true, tipo: 'elegir', negocios: r.negocios,
-      consola: `${window.location.origin}/consola`,
-    };
+    return { ok: true, tipo: 'elegir', negocios: r.negocios, consola: true };
   }
 
   if (r.negocios.length === 1) return { ok: true, tipo: 'negocio', negocio: r.negocios[0] };
@@ -76,8 +73,19 @@ export async function resolverDestino() {
 
   const d = await destinoTrasLogin();
   if (!d.ok) return d;
-  if (!d.slug) return { ok: true, tipo: 'staff', url: d.url };
+  if (!d.slug) return { ok: true, tipo: 'staff' };
   return { ok: true, tipo: 'negocio', negocio: { slug: d.slug, name: d.slug } };
+}
+
+/** La sesion abierta, empaquetada para viajar en el hash de `base`. */
+async function urlConTraspaso(base) {
+  const { data } = await supabase.auth.getSession();
+  const s = data?.session;
+  if (!s?.access_token || !s?.refresh_token) {
+    return { ok: false, error: 'Se cerró tu sesión. Volvé a entrar.' };
+  }
+  const carga = encodeURIComponent(JSON.stringify({ a: s.access_token, r: s.refresh_token }));
+  return { ok: true, traspasa: true, url: `${base}#${CLAVE_TRASPASO}=${carga}` };
 }
 
 /**
@@ -92,23 +100,38 @@ export async function armarUrlAdmin(slug) {
   if (!isPlatformRoot(window.location.hostname)) {
     return { ok: true, traspasa: false, url: `${window.location.origin}/admin` };
   }
-
-  const { data } = await supabase.auth.getSession();
-  const s = data?.session;
-  if (!s?.access_token || !s?.refresh_token) {
-    return { ok: false, error: 'Se cerró tu sesión. Volvé a entrar.' };
-  }
-  const carga = encodeURIComponent(JSON.stringify({ a: s.access_token, r: s.refresh_token }));
-  return { ok: true, traspasa: true, url: `https://${slug}.divianco.app/admin#${CLAVE_TRASPASO}=${carga}` };
+  return urlConTraspaso(`https://${slug}.divianco.app/admin`);
 }
 
-/** Lleva a la persona al admin de su negocio. Si sale bien, no vuelve. */
-export async function irAlAdmin(slug) {
-  const r = await armarUrlAdmin(slug);
+/** Igual, para la consola de Divianco (consola.divianco.app). */
+export async function armarUrlConsola() {
+  if (!isPlatformRoot(window.location.hostname)) {
+    return { ok: true, traspasa: false, url: `${window.location.origin}/consola` };
+  }
+  return urlConTraspaso(`https://${CONSOLA_HOST}/`);
+}
+
+/** Cruza de origen: cierra la sesion LOCAL de este y navega. Si sale bien, no vuelve. */
+async function irA(r) {
   if (!r.ok) return r;
   if (r.traspasa) await supabase.auth.signOut({ scope: 'local' });
   window.location.assign(r.url);
   return { ok: true };
+}
+
+/** Lleva a la persona al admin de su negocio. */
+export const irAlAdmin = async (slug) => irA(await armarUrlAdmin(slug));
+
+/** Lleva al staff a la consola. */
+export const irALaConsola = async () => irA(await armarUrlConsola());
+
+/**
+ * A donde manda la consola a quien llega sin sesion o sin permiso: al login
+ * unico, que vive en la raiz de la plataforma.
+ */
+export function urlDeEntrar() {
+  if (isConsolaHost(window.location.hostname)) return `https://${PLATFORM_ROOTS[0]}/entrar`;
+  return `${window.location.origin}/entrar`;
 }
 
 /**

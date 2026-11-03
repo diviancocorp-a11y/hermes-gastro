@@ -15,7 +15,7 @@ import { RESERVED } from '../lib/slugify';
 
 // Apunta SIEMPRE a la ultima migracion que redefine is_reserved_slug: es la
 // que esta aplicada en la DB. Al agregar un reservado hay que mover esto.
-const MIGRACION = resolve(__dirname, '../../platform/migrations/0021_reservar_dico.sql');
+const MIGRACION = resolve(__dirname, '../../platform/migrations/0120_reservar_consola.sql');
 
 function reservadosDelSql() {
   // Los comentarios se despojan PRIMERO: el archivo menciona la funcion en su

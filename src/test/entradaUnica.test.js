@@ -25,6 +25,7 @@ vi.mock('../services/platformPlanes', () => ({ soyStaffDivianco: (...a) => soySt
 
 const {
   resolverDestino, armarUrlAdmin, irAlAdmin, tomarTraspaso, slugValido, CLAVE_TRASPASO,
+  armarUrlConsola, irALaConsola, urlDeEntrar,
 } = await import('../services/entradaUnica');
 
 function ubicar(host, ruta = '/entrar', hash = '') {
@@ -54,7 +55,7 @@ describe('resolverDestino', () => {
     const r = await resolverDestino();
     expect(r.tipo).toBe('elegir');
     expect(r.negocios).toEqual([{ slug: 'mia-estudio', name: 'MiaEstudio' }]);
-    expect(r.consola).toBe('https://divianco.app/consola');
+    expect(r.consola).toBe(true);
   });
 
   it('staff con varios negocios: los negocios y ademas la consola', async () => {
@@ -108,7 +109,7 @@ describe('resolverDestino', () => {
   it('sin negocios y siendo staff de Divianco: a la consola', async () => {
     tenantsQuery.mockResolvedValue({ data: [], error: null });
     destinoTrasLogin.mockResolvedValue({ ok: true, slug: null, url: 'https://divianco.app/consola' });
-    expect(await resolverDestino()).toEqual({ ok: true, tipo: 'staff', url: 'https://divianco.app/consola' });
+    expect(await resolverDestino()).toEqual({ ok: true, tipo: 'staff' });
   });
 
   it('si no se puede leer la lista, no adivina', async () => {
@@ -158,6 +159,44 @@ describe('armarUrlAdmin / irAlAdmin', () => {
     await irAlAdmin('mia-estudio');
     expect(signOut).not.toHaveBeenCalled();
     expect(window.location.assign).toHaveBeenCalledWith('https://localhost/admin');
+  });
+});
+
+describe('la consola (consola.divianco.app)', () => {
+  it('desde la raiz cruza a consola.divianco.app, en la raiz, con la sesion en el hash', async () => {
+    const r = await armarUrlConsola();
+    expect(r.traspasa).toBe(true);
+    expect(r.url.startsWith('https://consola.divianco.app/#')).toBe(true);
+    const carga = JSON.parse(decodeURIComponent(r.url.split(`#${CLAVE_TRASPASO}=`)[1]));
+    expect(carga).toEqual({ a: 'AT', r: 'RT' });
+  });
+
+  it('en local o preview la consola es /consola en el mismo origen, sin tokens en la URL', async () => {
+    ubicar('localhost');
+    expect(await armarUrlConsola()).toEqual({ ok: true, traspasa: false, url: 'https://localhost/consola' });
+  });
+
+  it('irALaConsola cierra la sesion SOLO local y despues navega', async () => {
+    await irALaConsola();
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(window.location.assign).toHaveBeenCalledTimes(1);
+    expect(signOut.mock.invocationCallOrder[0]).toBeLessThan(window.location.assign.mock.invocationCallOrder[0]);
+  });
+
+  it('sin sesion no navega', async () => {
+    getSession.mockResolvedValue({ data: { session: null } });
+    expect((await irALaConsola()).ok).toBe(false);
+    expect(window.location.assign).not.toHaveBeenCalled();
+  });
+
+  it('desde la consola, "entrar" es el login unico de la raiz', () => {
+    ubicar('consola.divianco.app', '/');
+    expect(urlDeEntrar()).toBe('https://divianco.app/entrar');
+  });
+
+  it('en local, "entrar" es /entrar del mismo origen', () => {
+    ubicar('localhost', '/consola');
+    expect(urlDeEntrar()).toBe('https://localhost/entrar');
   });
 });
 

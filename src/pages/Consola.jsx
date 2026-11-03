@@ -9,8 +9,11 @@
  * habría hecho que un dueño vea, aunque sea escondida, la pantalla que le pone
  * precio a su propia suscripción.
  *
- * SOLO EN LA RAIZ Y SOLO PARA EL STAFF
- * Vive en `divianco.app/consola`. Se pide `soyStaffDivianco()` antes de
+ * SU PROPIO SUBDOMINIO Y SOLO PARA EL STAFF
+ * Vive en `consola.divianco.app` (`divianco.app/consola` redirige ahi). No
+ * tiene login propio: se entra por el login unico de `/entrar`, que traspasa
+ * la sesion en el hash (ver services/entradaUnica). Sin sesion se manda a
+ * `/entrar`; con sesion pero sin permiso se avisa. Se pide `soyStaffDivianco()` antes de
  * dibujar nada, pero eso es la puerta, no la cerradura: lo que de verdad
  * protege es la policy `plans_write` (0052). Si alguien llega igual, ve la
  * pantalla y no puede guardar.
@@ -22,10 +25,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   fetchPlanes, guardarPlan, soyStaffDivianco, fetchNegocios, actualizarSuscripcion,
-  entrarAConsola, salirDeConsola, fetchStaff, sumarStaff, quitarStaff,
+  salirDeConsola, fetchStaff, sumarStaff, quitarStaff,
   soyDuenioDivianco, fijarPasswordConsola, resetearClaveDeStaff,
 } from '../services/platformPlanes';
 import { supabase } from '../lib/supabase';
+import { tomarTraspaso, urlDeEntrar } from '../services/entradaUnica';
 import { PLANES, cronogramaDeAlta, totalPrimerAnio } from '../modules/planes';
 import {
   PUESTOS, PUESTO_POR_DEFECTO, seccionesDe, pantallaInicial, puedeEditar,
@@ -359,7 +363,7 @@ function ElegirClave({ onListo }) {
     setEnviando(false);
     if (r.__error) { setError(r.message); return; }
     // El hash del link no sirve mas: se limpia para que un F5 no reabra esto.
-    window.history.replaceState(null, '', '/consola');
+    window.history.replaceState(null, '', window.location.pathname);
     onListo();
   };
 
@@ -398,31 +402,19 @@ function ElegirClave({ onListo }) {
   );
 }
 
-/* ─────────────────────────── Entrar ─────────────────────────── */
+/* ───────────────────────── Sin acceso ───────────────────────── */
 
 /**
- * El login de la consola.
+ * Quien llega sin permiso de staff.
  *
- * Es propio y no reusa `/entrar` porque aquel, al terminar, manda al negocio de
- * la persona: para quien viene a administrar la plataforma eso es salir de
- * donde queria entrar. Y la sesion de Supabase se guarda POR ORIGEN, asi que la
- * que se abre en el subdominio de un negocio no sirve acá.
+ * La consola no tiene login propio: el unico es `/entrar`. Sin sesion se manda
+ * alla (no hay nada que decirle). Con sesion pero sin permiso se le avisa, y
+ * se le da la salida de cambiar de cuenta, que cierra esta sesion.
  */
-function Entrar({ onEntro }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const [error, setError] = useState(null);
-
-  const enviar = async (ev) => {
-    ev.preventDefault();
-    if (enviando) return;
-    setEnviando(true); setError(null);
-    const r = await entrarAConsola(email, password);
-    setEnviando(false);
-    if (r.__error) { setError(r.message); return; }
-    onEntro();
-  };
+function SinAcceso({ conSesion, onOtraCuenta }) {
+  useEffect(() => {
+    if (!conSesion) window.location.replace(urlDeEntrar());
+  }, [conSesion]);
 
   return (
     <main style={{
@@ -430,56 +422,31 @@ function Entrar({ onEntro }) {
       display: 'grid', placeItems: 'center', padding: 24,
       fontFamily: "'DM Sans', system-ui, sans-serif",
     }}>
-      <form onSubmit={enviar} style={{ width: '100%', maxWidth: 340, display: 'grid', gap: 14 }}>
-        <div style={{ textAlign: 'center', marginBottom: 4 }}>
-          <div style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-0.01em' }}>
-            Consola <span style={{ color: C.t3, fontWeight: 400 }}>· Divianco</span>
-          </div>
-          <div style={{ fontSize: 13, color: C.t3, marginTop: 5 }}>
-            Para el equipo. Si tenés un negocio, entrá por tu panel.
-          </div>
+      <div style={{ width: '100%', maxWidth: 340, display: 'grid', gap: 14, textAlign: 'center' }}>
+        <div style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-0.01em' }}>
+          Consola <span style={{ color: C.t3, fontWeight: 400 }}>· Divianco</span>
         </div>
-
-        <Campo etiqueta="Email">
-          <input
-            style={input} type="email" value={email} autoFocus autoComplete="username"
-            onChange={(e) => setEmail(e.target.value)} placeholder="vos@divianco.com"
-          />
-        </Campo>
-
-        <Campo etiqueta="Contraseña">
-          <input
-            style={input} type="password" value={password} autoComplete="current-password"
-            onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
-          />
-        </Campo>
-
-        {error && (
-          <div style={{ fontSize: 13, color: C.bad }}>{error}</div>
+        {conSesion ? (
+          <>
+            <p role="alert" style={{ margin: 0, fontSize: 14, color: C.t2, lineHeight: 1.5 }}>
+              Esa cuenta no tiene acceso a la consola. Es solo para el equipo de Divianco.
+            </p>
+            <button
+              type="button" onClick={onOtraCuenta}
+              style={{
+                padding: '11px', borderRadius: 9, border: 'none', font: 'inherit',
+                fontSize: 15, fontWeight: 700, cursor: 'pointer', background: C.ac, color: '#111',
+              }}
+            >
+              Entrar con otra cuenta
+            </button>
+          </>
+        ) : (
+          <p role="status" style={{ margin: 0, fontSize: 14, color: C.t3 }}>
+            Te llevamos a iniciar sesión…
+          </p>
         )}
-
-        <button
-          type="submit" disabled={enviando || !email || !password}
-          style={{
-            padding: '11px', borderRadius: 9, border: 'none', font: 'inherit',
-            fontSize: 15, fontWeight: 700,
-            cursor: enviando ? 'wait' : 'pointer',
-            opacity: (!email || !password) ? 0.5 : 1,
-            background: C.ac, color: '#111',
-          }}
-        >
-          {enviando ? 'Entrando…' : 'Entrar'}
-        </button>
-
-        {/* NO hay "olvidé mi contraseña" acá, y es a proposito: ese link
-            llevaba a `/entrar`, que es el login de los CLIENTES y termina
-            resolviendo a que negocio mandarte. Un empleado no tiene negocio.
-            Si se olvida la clave, se la pide al dueño, que se la resetea
-            desde Equipo. */}
-        <p style={{ color: C.t3, fontSize: 12, textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
-          ¿Olvidaste la contraseña? Pedile al dueño que te mande un link nuevo.
-        </p>
-      </form>
+      </div>
     </main>
   );
 }
@@ -672,6 +639,9 @@ function Equipo({
 
 export default function Consola() {
   const [staff, setStaff] = useState(null);
+  // Hay una sesion abierta (sea o no de staff): decide entre "ir a /entrar" y
+  // "esa cuenta no tiene acceso".
+  const [haySesion, setHaySesion] = useState(false);
   const [duenio, setDuenio] = useState(false);
   const [equipo, setEquipo] = useState([]);
   // Quien llega por el link de invitacion o de recuperacion ya tiene sesion;
@@ -700,10 +670,22 @@ export default function Consola() {
   // El duenio puede abrir su legajo a mano; no se lo pide la pantalla.
   const [legajoAMano, setLegajoAMano] = useState(false);
 
-  useEffect(() => { document.title = 'Consola — Divianco'; }, []);
+  useEffect(() => {
+    document.title = 'Consola — Divianco';
+    // El robots.txt es el mismo para todos los hosts y no puede cerrar la raiz
+    // de este: la consola no se indexa nunca, se dice en la propia pagina.
+    const m = document.createElement('meta');
+    m.name = 'robots'; m.content = 'noindex,nofollow';
+    document.head.appendChild(m);
+    return () => m.remove();
+  }, []);
 
   const cargar = useCallback(async () => {
     const esStaff = await soyStaffDivianco();
+    if (!esStaff) {
+      const { data: s } = await supabase.auth.getSession();
+      setHaySesion(!!s?.session);
+    }
     setStaff(esStaff);
     if (!esStaff) return;
     const esDuenio = await soyDuenioDivianco();
@@ -734,7 +716,18 @@ export default function Consola() {
     setTab((t) => t || pantallaInicial(miPuesto, { esDuenio }));
   }, []);
 
-  useEffect(() => { cargar(); }, [cargar]);
+  // Si se llega desde /entrar, la sesion viene en el hash: se toma ANTES de
+  // preguntar si hay staff, o se vería un instante "sin sesion".
+  useEffect(() => { tomarTraspaso().then(cargar); }, [cargar]);
+
+  /** Cierra la sesion y baja el estado SIEMPRE, falle o no el signOut: si
+   *  dependiera de que la llamada salga bien, un error de red te deja sin poder
+   *  salir de la consola. Despues no hay sesion y SinAcceso lleva a /entrar. */
+  const cerrarSesion = useCallback(async () => {
+    try { await salirDeConsola(); } catch { /* empty */ }
+    setHaySesion(false);
+    setStaff(false);
+  }, []);
 
   // Leer el hash es ganarle una carrera al cliente de Supabase, que lo limpia
   // apenas puede. Estos eventos son los que emite para cada caso y no dependen
@@ -785,7 +778,7 @@ export default function Consola() {
     return <ElegirClave onListo={() => { setEligiendoClave(false); cargar(); }} />;
   }
 
-  if (!staff) return <Entrar onEntro={cargar} />;
+  if (!staff) return <SinAcceso conSesion={haySesion} onOtraCuenta={cerrarSesion} />;
 
   // El legajo va DESPUES del permiso y ANTES de la consola. Ese orden es el
   // que pidio el flujo: primero se sabe que la persona entra, despues se le
@@ -801,8 +794,7 @@ export default function Consola() {
         onSalir={legajoAMano
           ? () => setLegajoAMano(false)
           : async () => {
-            try { await salirDeConsola(); } catch { /* empty */ }
-            setStaff(false);
+            await cerrarSesion();
             setLegajoListo(null);
           }}
       />
@@ -861,13 +853,7 @@ export default function Consola() {
           </button>
           <button
             type="button"
-            onClick={async () => {
-              // El estado se baja SIEMPRE, falle o no el signOut: si dependiera
-              // de que la llamada salga bien, un error de red te deja sin poder
-              // salir de la consola.
-              try { await salirDeConsola(); } catch { /* empty */ }
-              setStaff(false);
-            }}
+            onClick={cerrarSesion}
             style={{
               padding: '7px 12px', borderRadius: 999,
               border: `1px solid ${C.line}`, background: 'transparent',

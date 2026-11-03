@@ -43,6 +43,8 @@ export const RESERVED_SUBDOMAINS = new Set([
   // Rutas de la plataforma
   'panel', 'dashboard', 'login', 'signup', 'register', 'registro',
   'bienvenido', 'account', 'billing', 'pay', 'checkout',
+  // La consola de Divianco vive en consola.divianco.app (no es un negocio).
+  'consola',
 ]);
 
 /** Saca el puerto y normaliza a minusculas. */
@@ -90,6 +92,15 @@ export function classifyHost(host) {
 export function tenantSlugFromHost(host) {
   const { kind, slug } = classifyHost(host);
   return kind === 'tenant' ? slug : null;
+}
+
+/** Host de la consola de Divianco. El slug `consola` esta reservado, asi que
+ *  ningun negocio puede registrarlo. */
+export const CONSOLA_HOST = 'consola.divianco.app';
+
+/** true si el host es la consola de Divianco (no un negocio ni la raiz). */
+export function isConsolaHost(host) {
+  return normalizeHost(host) === CONSOLA_HOST;
 }
 
 /** true si el host es la raiz de la plataforma (landing + signup). */
