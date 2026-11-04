@@ -15,7 +15,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   PLANES, planTieneModulo, planMinimoPara, limiteDe, alcanzoElLimite,
-  planTieneFuncion, planMinimoParaFuncion, planSugerido, cronogramaDeAlta, totalPrimerAnio,
+  planTieneFuncion, planMinimoParaFuncion, planEfectivo, diasDePrueba, planSugerido, cronogramaDeAlta, totalPrimerAnio,
 } from '../modules/planes';
 
 // Como vienen en la tabla `plans` tras la migracion 0052.
@@ -74,6 +74,24 @@ describe('que separa Paris, Dante y Magnus', () => {
     expect(planTieneFuncion('local', 'consolidado')).toBe(false);
   });
 
+  it('los avisos de pedidos no se bloquean en Paris', () => {
+    // Sin el aviso se pierden pedidos: eso no vende Dante, rompe Paris.
+    for (const f of ['telegram', 'push']) expect(planMinimoParaFuncion(f)).toBe(null);
+  });
+
+  it('la prueba da Dante hasta la fecha y despues vuelve a Paris', () => {
+    const ahora = new Date('2026-11-04T12:00:00Z');
+    const enPrueba = { plan_id: 'digital', prueba_hasta: '2026-11-10T12:00:00Z' };
+    expect(planEfectivo(enPrueba, ahora)).toBe('local');
+    expect(diasDePrueba(enPrueba, ahora)).toBe(6);
+    const vencida = { plan_id: 'digital', prueba_hasta: '2026-11-01T12:00:00Z' };
+    expect(planEfectivo(vencida, ahora)).toBe('digital');
+    expect(diasDePrueba(vencida, ahora)).toBe(null);
+    // La prueba nunca baja a un Magnus que ya paga.
+    expect(planEfectivo({ plan_id: 'cadena', prueba_hasta: '2026-11-10T12:00:00Z' }, ahora)).toBe('cadena');
+    expect(planEfectivo({ plan_id: null, prueba_hasta: '2026-11-10T12:00:00Z' }, ahora)).toBe(null);
+  });
+
   it('dice en que plan esta cada funcion', () => {
     expect(planMinimoParaFuncion('dico_ia')).toBe('local');
     expect(planMinimoParaFuncion('consolidado')).toBe('cadena');
@@ -87,7 +105,9 @@ describe('que separa Paris, Dante y Magnus', () => {
   });
 
   it('la cuota de IA es la decidida', () => {
-    expect(limiteDe('digital', 'consultas_ia')).toBe(0);
+    expect(limiteDe('digital', 'consultas_ia')).toBe(10);
+    expect(limiteDe('digital', 'historial_meses')).toBe(3);
+    expect(limiteDe('local', 'historial_meses')).toBe(Infinity);
     expect(limiteDe('local', 'consultas_ia')).toBe(300);
     expect(limiteDe('cadena', 'consultas_ia')).toBe(1500);
   });

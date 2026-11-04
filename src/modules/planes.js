@@ -19,11 +19,21 @@
  * QUE SEPARA UN PLAN DEL OTRO (Ricky, 4/nov/2026)
  * Los nombres de venta son Paris (digital), Dante (local) y Magnus (cadena);
  * los ids no cambian porque los guardan la base y los diagnosticos.
- * Los MODULOS de operacion los traen los tres: ordenarse no tiene paywall.
+ * Los MODULOS de operacion los traen los tres: ordenarse no tiene paywall, y
+ * los avisos de pedidos (Telegram, push) tampoco, porque sin ellos se pierden
+ * pedidos y eso no empuja a pagar: hace pensar que Dico anda mal.
  * Lo que separa son las FUNCIONES: Dante suma lo que dice cuanto gana y ayuda
- * a vender mas (Dico con IA, CRM, promos, resultado del dia, factura, cobros
- * online, avisos); Magnus suma la mirada de varios locales. Un negocio sin
- * plan asignado (los clientes con acuerdo por porcentaje) tiene todo.
+ * a vender mas (Dico con IA, CRM, promos, ganancia del dia, factura, cobros
+ * online); Magnus suma la mirada de varios locales. Paris VE lo que no tiene
+ * (cuantos clientes perdio, cuanto vendio) y lo bloqueado se muestra con el
+ * dato real, nunca como "no tenés permiso".
+ *
+ * PRUEBA DE DANTE (Ricky, 4/nov/2026)
+ * El alta self-service arranca en Paris con `prueba_hasta` a 14 dias: hasta
+ * esa fecha tiene Dante completo. Asi el limite se siente como algo que tuvo.
+ *
+ * Un negocio sin plan asignado (los clientes con acuerdo por porcentaje y los
+ * que se dan de alta a mano) tiene todo.
  *
  * DICOTIP NO ES UN EXTRA
  * Se evaluó cobrarlo aparte y se decidió que no: es el diferencial que hace que
@@ -33,8 +43,8 @@
 
 /** Lo que suma Dante sobre Paris. */
 const FUNCIONES_DANTE = [
-  'dico_ia', 'crm', 'promos', 'resultado_del_dia', 'facturacion_arca',
-  'cobros_online', 'telegram', 'push', 'soporte_chat',
+  'dico_ia', 'crm', 'promos', 'ganancia', 'facturacion_arca',
+  'cobros_online', 'historial_completo', 'soporte_chat',
 ];
 
 /** Lo que suma Magnus sobre Dante. */
@@ -72,7 +82,10 @@ export const PLANES = {
     funciones: [],
     limites: {
       sucursales: 1,
-      consultas_ia: 0,
+      // Para probarla: el que nunca la usa no sabe que se pierde.
+      consultas_ia: 10,
+      // Los reportes miran hasta 3 meses para atras.
+      historial_meses: 3,
       // Sin tope de usuarios, de productos ni de pedidos: cobrar por volumen
       // castiga al que crece, que es justo el que no se quiere perder.
       // `limiteDe` devuelve Infinity cuando la clave no está.
@@ -162,6 +175,28 @@ export function planMinimoPara(moduloId) {
 export function planTieneFuncion(planId, funcion) {
   if (!planId) return true;
   return (PLANES[planId]?.funciones || []).includes(funcion);
+}
+
+/** Cuantos dias de prueba de Dante trae el alta self-service. */
+export const DIAS_DE_PRUEBA = 14;
+
+/**
+ * El plan con el que se decide que ve el negocio HOY. null = sin plan
+ * asignado, que tiene todo. Con la prueba vigente es Dante aunque el plan
+ * guardado sea Paris. `ahora` se inyecta para los tests.
+ */
+export function planEfectivo(tenant, ahora = new Date()) {
+  if (!tenant?.plan_id) return null;
+  const fin = tenant.prueba_hasta ? new Date(tenant.prueba_hasta).getTime() : NaN;
+  if (fin > ahora.getTime() && ESCALA.indexOf(tenant.plan_id) < ESCALA.indexOf('local')) return 'local';
+  return tenant.plan_id;
+}
+
+/** Dias que le quedan de prueba, o null si no esta en prueba. */
+export function diasDePrueba(tenant, ahora = new Date()) {
+  if (!tenant?.plan_id || !tenant.prueba_hasta) return null;
+  const ms = new Date(tenant.prueba_hasta).getTime() - ahora.getTime();
+  return ms > 0 ? Math.ceil(ms / 86400000) : null;
 }
 
 /** El plan mínimo que incluye una función: "esto está en Dante". */
