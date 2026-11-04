@@ -7,6 +7,8 @@ import { getTenantSlugSync } from '../../../lib/activeTenant';
 import { irAlAdmin, irALaConsola, negociosDelUsuario } from '../../../services/entradaUnica';
 import { soyStaffDivianco } from '../../../services/platformPlanes';
 import { CATALOGO_ARIA, CATALOGO_HREF, IconoCatalogo, LogoNegocio } from './TopbarNegocio';
+import { estadoDeInstalacion, pedirInstalacion, suscribirInstalacion } from '../../../lib/instalarApp';
+import GuiaDeInstalacion from './GuiaDeInstalacion';
 
 /* Los iconos, en linea y del mismo trazo que los de la navegacion (22px,
    stroke 2, redondeado). Van aca y no en un modulo de iconos porque son tres
@@ -45,6 +47,13 @@ const IconoTilde = () => (
   <svg className="ag-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </svg>
+);
+
+const IconoInstalar = () => (
+  <svg className="ag-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
   </svg>
 );
 
@@ -452,7 +461,7 @@ function ItemsNegocios({ cuentas }) {
   );
 }
 
-function ItemsCuenta({ controles }) {
+function ItemsCuenta({ controles, onInstalar }) {
   const cerrar = useContext(CerrarMenu);
   return controles.flatMap(({ id, label, titulo, Icono, onClick }) => {
     const item = (
@@ -485,8 +494,30 @@ function ItemsCuenta({ controles }) {
         <IconoCatalogo className="ag-nav-icon" />
         <span>Ver catálogo</span>
       </a>
-    )];
+    ), onInstalar && (
+      <button
+        key="instalar"
+        type="button"
+        role="menuitem"
+        className="ag-sesion-item ag-sesion-item--instalar"
+        title="Instalar el panel como app en este dispositivo"
+        onClick={() => { cerrar(true); onInstalar(); }}
+      >
+        <IconoInstalar />
+        <span>Instalar app</span>
+      </button>
+    )].filter(Boolean);
   });
+}
+
+/** El estado de instalacion, al dia: Chrome puede avisar despues de montar. */
+function useInstalacion() {
+  const [estado, setEstado] = useState(estadoDeInstalacion);
+  useEffect(() => {
+    const soltar = suscribirInstalacion(() => setEstado(estadoDeInstalacion()));
+    return () => { soltar(); };
+  }, []);
+  return estado;
 }
 
 const IconoDesplegar = () => (
@@ -499,12 +530,20 @@ const IconoDesplegar = () => (
 /**
  * Dos botones en la topbar. La burbuja (logo del negocio, o las iniciales si
  * no hay) abre los negocios de la persona; el nombre abre la cuenta:
- * configuracion, tema, ver catalogo y salir. El nombre viene de la sesion; el
+ * configuracion, tema, ver catalogo, instalar app y salir. El nombre viene de la sesion; el
  * logo, del negocio en el que esta parada.
  */
-export function MenuDeSesion({ controles, session, logoUrl }) {
+export function MenuDeSesion({ controles, session, logoUrl, nombreNegocio }) {
   const [abierto, setAbierto] = useState(null); // null | 'negocios' | 'cuenta'
   const cuentas = useCuentas();
+  const instalacion = useInstalacion();
+  const [guia, setGuia] = useState(false);
+  // Con el aviso de Chrome/Edge guardado va directo al dialogo del sistema;
+  // sin el (iPhone, Firefox), los pasos a mano. Se lee al tocar, no al pintar.
+  const instalar = useCallback(() => {
+    if (estadoDeInstalacion().puedePedir) pedirInstalacion();
+    else setGuia(true);
+  }, []);
   const meta = session?.user?.user_metadata || {};
   const email = session?.user?.email || '';
   const nombre = (meta.full_name || meta.name || '').trim() || email.split('@')[0] || 'Mi cuenta';
@@ -562,8 +601,17 @@ export function MenuDeSesion({ controles, session, logoUrl }) {
           <IconoDesplegar />
         </>}
       >
-        <ItemsCuenta controles={controles} />
+        <ItemsCuenta controles={controles} onInstalar={instalacion.instalada ? null : instalar} />
       </MenuDesplegable>
+
+      {guia && (
+        <GuiaDeInstalacion
+          abierta
+          onCerrar={() => setGuia(false)}
+          plataforma={instalacion.plataforma}
+          nombreNegocio={nombreNegocio}
+        />
+      )}
     </div>
   );
 }

@@ -508,3 +508,102 @@ a.ag-sesion-item { text-decoration: none; }
   .ag-root .ag-sistema-operativo { font-size: 11px; }
   .ag-workspace-head .ag-sesion-hora { font-size: 10px; }
 }
+
+/* ── Instalar app: los pasos a mano (GuiaDeInstalacion) ─────────────────
+   Vive en el Dialog del admin (portal + hoja). Primero el telefono: hoja
+   inferior; desde 768px, centrada como el resto de las hojas del panel. */
+.ag-instalar { display: grid; gap: var(--ag-sp-4); font-family: var(--ag-font); }
+.ag-instalar-cab { display: flex; align-items: center; justify-content: space-between; gap: var(--ag-sp-3); }
+.ag-instalar-cab h2 { margin: 0; overflow-wrap: anywhere; }
+.ag-instalar-cerrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin-right: calc(-1 * var(--ag-sp-2));
+  padding: 0;
+  border: 0;
+  border-radius: var(--ds-radius-3);
+  background: transparent;
+  color: var(--ag-ink-2);
+  cursor: pointer;
+}
+.ag-instalar-cerrar:hover { background: var(--ag-bg-soft); color: var(--ag-ink); }
+.ag-instalar-dispositivos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ag-sp-1);
+  padding: var(--ag-sp-1);
+  border-radius: var(--ds-radius-4);
+  background: var(--ag-surface-2);
+}
+.ag-instalar-dispositivos button {
+  min-height: 44px;
+  padding: 0 var(--ag-sp-2);
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-3);
+  background: transparent;
+  color: var(--ag-ink-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ag-instalar-dispositivos button:hover { color: var(--ag-ink); }
+.ag-instalar-dispositivos button[aria-pressed="true"] {
+  background: var(--ag-surface);
+  border-color: var(--ag-line-strong);
+  color: var(--ag-ink);
+  box-shadow: var(--ag-sh-sm);
+}
+.ag-instalar-cerrar:focus-visible,
+.ag-instalar-dispositivos button:focus-visible {
+  outline: 2px solid var(--ds-color-focus-ring);
+  outline-offset: 2px;
+}
+.ag-instalar-pasos h3 { margin: 0 0 var(--ag-sp-3); }
+.ag-instalar-pasos ol {
+  display: grid;
+  gap: var(--ag-sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: ag-paso;
+}
+.ag-instalar-pasos li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: var(--ag-sp-3);
+  align-items: start;
+  color: var(--ag-ink);
+  font-size: 15px;
+  line-height: 1.45;
+  counter-increment: ag-paso;
+}
+.ag-instalar-pasos li::before {
+  content: counter(ag-paso);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ag-accent-soft);
+  color: var(--ag-ink);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ag-instalar-nota {
+  margin: 0;
+  padding-top: var(--ag-sp-3);
+  border-top: 1px solid var(--ag-line);
+  color: var(--ag-ink-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+@media (min-width: 768px) {
+  .ag-dialog-backdrop:has(> .ag-instalar) { align-items: center; }
+  .ag-dialog-panel--sheet.ag-instalar { border-radius: var(--ag-r-lg); }
+}
