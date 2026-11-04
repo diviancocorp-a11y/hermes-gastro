@@ -11,6 +11,66 @@
 
 ---
 
+## 4/nov/2026 — Topbar con dos menús y el panel instalable como app (Claude)
+
+### Hecho
+
+**Topbar en dos menús** (PR #72, `8b4ed33`, mergeado):
+- La burbuja de perfil lleva el logo del negocio (iniciales si no hay) y abre **solo** los negocios de la persona, más la consola si es staff.
+- El nombre abre Configuración, Tema, **Ver catálogo** (salió de la topbar) y Salir. "Ver catálogo" además queda fijo en el encabezado de Productos, para todos los roles.
+- `MenuDesplegable` en `ControlesDeSesion.jsx` es el componente común de los dos menús: teclado, Escape, clic afuera y devolución de foco. Abrir uno cierra el otro.
+
+**App instalable por negocio** (PR #73, `45369bb`, mergeado):
+- `api/manifest.js?app=panel`: "<negocio> · Panel", `id`/`start_url`/`scope` `/admin`. **Por qué un `id` propio:** con el mismo id que el catálogo (`/`), el navegador tomaría las dos como una app y la segunda pisaría a la primera.
+- Ícono = logo o favicon del negocio solo si es **cuadrado y de 192 px o más**. El endpoint lo mide leyendo la cabecera (Range de 64 KB); si no cumple, queda la inicial sobre `logo_color`. Crazy Miga tiene logo vertical (704×1524), así que va con la inicial. Ahora usa `get_tenant_brand` en vez de `get_catalog`, que traía el catálogo entero.
+- `src/lib/instalarApp.js` hace tres cosas:
+  - Guarda el `beforeinstallprompt` **solo en `/admin`**. En el catálogo no se toca, así los clientes conservan la barra de instalación de Chrome.
+  - `main.jsx` apunta el manifest del panel antes del render. Si el manifest cambia después del aviso, el aviso viejo se descarta, porque instalaría la app de `/`.
+  - El `apple-touch-icon` del iPhone se elige midiendo en el navegador: el primero cuadrado de 180 px o más.
+- Menú del nombre → **Instalar app** (debajo de Ver catálogo):
+  - Con el aviso de Chrome/Edge, abre el diálogo del sistema.
+  - Sin el aviso, `GuiaDeInstalacion.jsx` muestra los pasos para compu, Android e iPhone, arrancando por el dispositivo detectado.
+  - Se oculta si ya corre como app.
+
+**Proceso:** `/cerrardico` suma el paso de listar las worktrees ya mergeadas y ofrecer borrarlas (`354d99b`, en `.claude/skills` y `.agents/skills`).
+
+**MercadoPago:** no hay una vía más simple que pegar el Access Token en Configuración → Finanzas → Cobros online. MP no permite OAuth para apps de "Integración propia". Queda pendiente que Mía lo pegue (MiaEstudio no tiene fila en `payment_integrations`).
+
+### Verificado
+- **Producción:**
+  - Deploy `8d9d140` `READY` = `origin/main`.
+  - `curl` a `/api/manifest?app=panel` de los 5 negocios: nombre "· Panel" y `/admin` en todos. Ícono: logo en LNP (1024), Monare (logo y favicon) y MIA (1254); inicial en Crazy Miga y Cochi.
+  - En el navegador, `la-nona-pato.divianco.app/admin` sin login: el manifest del panel y el `apple-touch-icon` = logo. En `/` queda el manifest del catálogo.
+- **Local:** suite 173/2284, build, ESLint sin errores, `check:diseno` 17 conocidos y ninguno nuevo. CI de `354d99b` verde.
+- **Auditor independiente:** 0 P0. Se corrigieron los 2 P1 (aviso con el manifest viejo; `preventDefault` en el catálogo), los P2 (ícono iOS no cuadrado, contraste del segmento elegido) y los P3 de textos.
+- **NO verificado:**
+  - La instalación real en Chrome, Android e iPhone.
+  - La guía a 390 px y en tema oscuro.
+  - Si Chrome vuelve a disparar `beforeinstallprompt` después del cambio de manifest; si no lo hace, el botón cae en la guía.
+  - El selector de negocios de #72 con la cuenta staff.
+
+### Pendiente inmediato
+1. **Ricky instala el panel** en el celular (`/admin` → nombre → Instalar app) y confirma nombre, ícono y que abre en el panel.
+2. **Commit local sin pushear en `main` del checkout principal:** `8d50ecb` "feat(planes): Paris, Dante y Magnus…", de Ricky. No se tocó. El `main` local diverge de `origin/main` (le faltan #73 y este cierre): hace falta `git pull --rebase` antes de pushearlo.
+3. **Skills de diseño sin bajar:** `.claude/skills/impeccable/` está vacía en el checkout principal y el `disenador` no la pudo cargar. Correr `npm run skills:diseno`.
+4. Deuda del auditor sin resolver:
+   - `.ag-dialog-panel` sin `overscroll-behavior: contain` (afecta a todas las hojas).
+   - El ítem "Instalar app" sigue visible si el panel ya está instalado pero se abre en una pestaña.
+5. Sigue vigente el pendiente de la sección del 3/nov (reserva online de Mía, datos de Mía, contraer `prep_time_min`, recordatorios de turnos).
+
+### Bloqueado por Ricky
+- Mía pega el Access Token de MercadoPago en Cobros online. Sin eso no hay seña online.
+- Pushear (o descartar) `8d50ecb`.
+
+### Heredados de la sección del 23/oct que se archiva
+- Landing, fases 3 y 4 (circuito, rubros, logos con Instagram, pasos, planes, FAQ y footer), y el precio Digital de **$14.999/mes** que aprobó Ricky (anual sin definir), sincronizado en landing, diagnóstico y tabla `plans`. Revisar si `8d50ecb` (planes Paris, Dante y Magnus) lo reemplaza.
+
+### Archivos y limpieza
+- No se creó nada fuera de `src/`, `docs/`, `platform/` y `scripts/`, salvo `api/manifest.js` (ya existía; es el endpoint de Vercel) y las dos copias de la skill `cerrardico`.
+- Se borraron las worktrees ya mergeadas: 15 al empezar (respaldo de `.codex`/`.agents` en la rama `respaldo/codex-config-2026-11-03`), más `topbar-dos-menus` y `app-instalable`. La carpeta `modest-hopper-c05e8d` quedó vacía y trabada por un proceso; git ya no la registra. Quedan `prueba-21st` (sin mergear) y la de Codex en `~/.codex`.
+
+---
+
 ## 3/nov/2026 (tarde) — MiaEstudio con datos y tienda abierta; el tiempo solo en servicios (Claude)
 
 ### Hecho
@@ -257,53 +317,3 @@
   Detalle y evidencia viva en LANDING secciones1/11. Agenda intacta.
 
 ### Historial de la entrega anterior (reemplazada)
-
-## 23/oct/2026 — La landing se sigue desde un solo lugar (Claude)
-
-- `docs/plataforma/LANDING.md` es la guia unica de la landing: estado, mapa de
-  archivos, reglas de honestidad y de marca (resumen del RC5), lo aprendido de
-  IMAN y el plan. Ricky la sigue desde Codex.
-- Continuacion Codex: Ricky eligio la estructura completa y autorizo avanzar.
-  Plan de 5 fases con pasos y criterios en seccion 10; seccion 1 registra el
-  estado y debe actualizarse al cerrar cada fase. Se reutilizo la worktree
-  limpia `landing-rediseno` y se incorporo la rama de resultado del dia.
-- Fase 2: hero de concreto, laptop/tablet/celular con HTML de ejemplo, KPI y
-  desglose nativo; Quiero Dico abre el diagnostico existente mediante morph
-  nativo o alternativa accesible, sin duplicar respuestas ni guardados.
-  Una sola presencia Dico por estado; fuentes locales y tokens Zinc existentes.
-- Codigo `b4084ad`, integrado con main `645181e` en `c9cf4dc`.
-  PR #52 **en borrador**: https://github.com/diviancocorp-a11y/hermes-gastro/pull/52
-  Preview READY del SHA c9cf4dc:
-  https://hermes-platform-q0jlduys8-diviancocorp-a11ys-projects.vercel.app/landing
-  Entrada separada en el mismo host: /diagnostico. No se publico a main.
-- Verificacion: 57 tests/5 archivos con Vitest4.1.12 y pool threads; ESLint,
-  tipos, build y gates del repo pasaron. CI del PR en c9cf4dc: Lint, Typecheck,
-  Unit Tests, Build, Security Audit y Playwright SUCCESS. El arreglo vite/vitest
-  ya estaba mergeado en main, no se repitio. Smoke produccion SKIPPED.
-- Auditor independiente: 2 P1 corregidos (KPI700 y foco inicialmente oculto),
-  0 P0/P1 pendientes. Detector estatico 17warnings/6advisory antes/despues;
-  sin desborde en390/768/1280/1440, tambien con desglose/diagnostico abiertos.
-  Inspector reporta un falso positivo comprobado de rectangulos de contenido
-  en details cerrado; no se altero UI ni detector para esquivarlo.
-- Navegador local con conexion ficticia: cuatro rubros hasta registro con
-  parametros correctos; recarga, error/reintento y no duplicacion de guardado.
-  Preview remoto: version.json200/buildIdc9cf4dca y READY verificados. Runtime
-  remoto no verificado: navegador llego al login de Vercel. Revision automatica
-  rechazo enlace temporal/fetch protegido por bypass de acceso. Proteccion intacta.
-- Pendiente inmediato: fases3/4 (circuito, rubros, logos con Instagram, pasos,
-  planes, FAQ y footer con logo del admin). Siguen con UI anterior en el preview.
-  Ricky aprobo Digital **$14.999/mes**; anual sin definir. Aun no se cambiaron
-  precios en landing, diagnostico ni tabla plans; sincronizar en fase4.
-  No confundir cuenta sin tarjeta con plan gratis. No publicar este borrador
-  como landing completa. No hay migraciones, funciones ni billing nuevos.
-- Instalacion: se detecto node_modules compartido al sincronizar dependencias.
-  Se restauro el principal desde su propio lockfile y se dejo landing aislada;
-  check:install-state paso en ambas (466 paquetes). Codigo/agenda principal
-  intactos. En adelante verificar realpath e install-state antes de npm ci.
-- Recursos finales dentro del repo: maqueta en docs/marca/referencias y textura
-  optimizada en public/brand/landing/concreto-hero.webp (1536x1024,171KB).
-  Public es el unico archivo final nuevo fuera de src/docs/platform/scripts,
-  necesario para servir el fondo; ImageGen conserva original en su cache.
-  Prompt y procedencia en LANDING. Temporales de prueba se limpian al entregar.
-
----

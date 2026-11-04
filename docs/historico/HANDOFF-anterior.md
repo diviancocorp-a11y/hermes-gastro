@@ -9,6 +9,56 @@
 
 ---
 
+## 23/oct/2026 — La landing se sigue desde un solo lugar (Claude)
+
+- `docs/plataforma/LANDING.md` es la guia unica de la landing: estado, mapa de
+  archivos, reglas de honestidad y de marca (resumen del RC5), lo aprendido de
+  IMAN y el plan. Ricky la sigue desde Codex.
+- Continuacion Codex: Ricky eligio la estructura completa y autorizo avanzar.
+  Plan de 5 fases con pasos y criterios en seccion 10; seccion 1 registra el
+  estado y debe actualizarse al cerrar cada fase. Se reutilizo la worktree
+  limpia `landing-rediseno` y se incorporo la rama de resultado del dia.
+- Fase 2: hero de concreto, laptop/tablet/celular con HTML de ejemplo, KPI y
+  desglose nativo; Quiero Dico abre el diagnostico existente mediante morph
+  nativo o alternativa accesible, sin duplicar respuestas ni guardados.
+  Una sola presencia Dico por estado; fuentes locales y tokens Zinc existentes.
+- Codigo `b4084ad`, integrado con main `645181e` en `c9cf4dc`.
+  PR #52 **en borrador**: https://github.com/diviancocorp-a11y/hermes-gastro/pull/52
+  Preview READY del SHA c9cf4dc:
+  https://hermes-platform-q0jlduys8-diviancocorp-a11ys-projects.vercel.app/landing
+  Entrada separada en el mismo host: /diagnostico. No se publico a main.
+- Verificacion: 57 tests/5 archivos con Vitest4.1.12 y pool threads; ESLint,
+  tipos, build y gates del repo pasaron. CI del PR en c9cf4dc: Lint, Typecheck,
+  Unit Tests, Build, Security Audit y Playwright SUCCESS. El arreglo vite/vitest
+  ya estaba mergeado en main, no se repitio. Smoke produccion SKIPPED.
+- Auditor independiente: 2 P1 corregidos (KPI700 y foco inicialmente oculto),
+  0 P0/P1 pendientes. Detector estatico 17warnings/6advisory antes/despues;
+  sin desborde en390/768/1280/1440, tambien con desglose/diagnostico abiertos.
+  Inspector reporta un falso positivo comprobado de rectangulos de contenido
+  en details cerrado; no se altero UI ni detector para esquivarlo.
+- Navegador local con conexion ficticia: cuatro rubros hasta registro con
+  parametros correctos; recarga, error/reintento y no duplicacion de guardado.
+  Preview remoto: version.json200/buildIdc9cf4dca y READY verificados. Runtime
+  remoto no verificado: navegador llego al login de Vercel. Revision automatica
+  rechazo enlace temporal/fetch protegido por bypass de acceso. Proteccion intacta.
+- Pendiente inmediato: fases3/4 (circuito, rubros, logos con Instagram, pasos,
+  planes, FAQ y footer con logo del admin). Siguen con UI anterior en el preview.
+  Ricky aprobo Digital **$14.999/mes**; anual sin definir. Aun no se cambiaron
+  precios en landing, diagnostico ni tabla plans; sincronizar en fase4.
+  No confundir cuenta sin tarjeta con plan gratis. No publicar este borrador
+  como landing completa. No hay migraciones, funciones ni billing nuevos.
+- Instalacion: se detecto node_modules compartido al sincronizar dependencias.
+  Se restauro el principal desde su propio lockfile y se dejo landing aislada;
+  check:install-state paso en ambas (466 paquetes). Codigo/agenda principal
+  intactos. En adelante verificar realpath e install-state antes de npm ci.
+- Recursos finales dentro del repo: maqueta en docs/marca/referencias y textura
+  optimizada en public/brand/landing/concreto-hero.webp (1536x1024,171KB).
+  Public es el unico archivo final nuevo fuera de src/docs/platform/scripts,
+  necesario para servir el fondo; ImageGen conserva original en su cache.
+  Prompt y procedencia en LANDING. Temporales de prueba se limpian al entregar.
+
+---
+
 ## 22/oct/2026 — MiaEstudio: acceso y servicios cargados, datos de turnos pendientes (Codex)
 
 ### Actualización del 22/oct
