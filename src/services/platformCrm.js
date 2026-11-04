@@ -84,13 +84,26 @@ export function agregarClientes(pedidos) {
  */
 export async function fetchCustomerStats(tenantId) {
   exigirTenant(tenantId, 'fetchCustomerStats');
+  const r = await fetchClientesConEstado(tenantId);
+  return r.ok ? r.clientes : [];
+}
+
+/**
+ * Lo mismo, pero diciendo si la consulta fallo. fetchCustomerStats devuelve
+ * [] tanto si no hay clientes como si la base no respondio, y para el CRM da
+ * igual (muestra la lista vacia). Para un numero que se AFIRMA —"no tenés
+ * clientes perdidos"— no da igual: con error no hay dato.
+ * @returns {Promise<{ ok: true, clientes: object[] } | { ok: false }>}
+ */
+export async function fetchClientesConEstado(tenantId) {
+  exigirTenant(tenantId, 'fetchClientesConEstado');
   const { data, error } = await supabase
     .from('orders')
     .select(COLS)
     .eq('tenant_id', tenantId)
     .neq('status', 'cancelled');
-  if (error) { console.error('fetchCustomerStats:', error.message); return []; }
-  return agregarClientes(data || []);
+  if (error) { console.error('fetchCustomerStats:', error.message); return { ok: false }; }
+  return { ok: true, clientes: agregarClientes(data || []) };
 }
 
 /**

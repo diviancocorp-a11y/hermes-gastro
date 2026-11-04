@@ -8,6 +8,11 @@
  *   - Resumen:  MonthSummary del legacy (el P&L del mes)
  *   - Clientes: promos del catalogo + CRM
  *
+ * Plan (`plan`, el planEfectivo del negocio): sin 'ganancia' la solapa Hoy
+ * muestra la venta y bloquea la cuenta; sin 'promos' o sin 'crm' cada uno
+ * deja su BloqueoDePlan. El del CRM lleva el dato real: cuantos clientes no
+ * compran hace 3 meses. Sin plan (null) no cambia nada.
+ *
  * Las pantallas hablan el idioma del legacy; los adaptadores
  * (productosComoRecetas / pedidosParaVentas, en platformSales.js) traducen el
  * modelo del edificio UNA vez, aca en el borde.
@@ -17,12 +22,15 @@
  * al P&L ademas de restar los gastos reales es el doble conteo que ya se
  * arreglo en el legacy el 12/jun — la ganancia quedaba subestimada.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SalesView } from '../Finance';
 import MonthSummary from '../MonthSummary';
 import CRM from '../CRM';
 import PromosDelCatalogo from './PromosDelCatalogo';
 import ResultadoDelDia from './ResultadoDelDia';
+import BloqueoDePlan from './BloqueoDePlan';
+import { planTieneFuncion } from '../../../modules/planes';
+import { contarClientesInactivos } from '../../../modules/clientesInactivos';
 import { productosComoRecetas, pedidosParaVentas } from '../../../services/platformSales';
 import { pedidosParaCrm } from '../../../services/platformCrm';
 import { costoBruto, indexarInsumos } from '../../../services/platformRecipes';
@@ -36,6 +44,14 @@ const SOLAPAS = [
   { id: 'resumen', label: 'Resumen' },
   { id: 'clientes', label: 'Clientes' },
 ];
+
+/** El dato del bloqueo del CRM. null mientras se cuenta: no se inventa. */
+function textoInactivos(n) {
+  if (n === null || n === undefined) return null;
+  if (n === 0) return 'Hoy no tenés clientes que hayan dejado de comprar hace más de 3 meses.';
+  if (n === 1) return 'Tenés 1 cliente que no compra hace 3 meses.';
+  return `Tenés ${n} clientes que no compran hace 3 meses.`;
+}
 
 function Solapas({ valor, onChange }) {
   return (
@@ -75,6 +91,9 @@ export default function VentasPanel({
   onCrearVenta,
   // Clientes agregados desde los pedidos del tenant (Etapa 5a).
   onFetchClientes,
+  // () => {ok, clientes}|{ok:false}: el dato del bloqueo del CRM. Sin esto, o
+  // si la consulta falla, el bloqueo va sin numero.
+  onFetchClientesConEstado,
   // Guarda settings (las promos del catalogo se prenden y apagan en Clientes).
   onGuardarSettings,
   // La sucursal por defecto ({id, name, timezone}): el resultado del dia es
@@ -82,9 +101,29 @@ export default function VentasPanel({
   // ninguna. Sin default a proposito: un `= null` convertiria el "todavia se
   // esta buscando" en "no hay sucursal".
   sucursal,
+  // planEfectivo del negocio. null = sin plan = tiene todo.
+  plan = null,
 }) {
   const [solapa, setSolapa] = useState('hoy');
   const [ov, setOv] = useState(null);
+
+  const tieneCrm = planTieneFuncion(plan, 'crm');
+  const tienePromos = planTieneFuncion(plan, 'promos');
+  const tieneGanancia = planTieneFuncion(plan, 'ganancia');
+
+  // Sin CRM igual se cuenta a quien se perdio: es el dato del bloqueo. Sale
+  // de la misma consulta que usa el CRM (toda la historia), no de los
+  // ultimos pedidos que tiene cargados el panel.
+  // Con la base caida no se afirma "0 clientes perdidos": sin dato, sin numero.
+  const [inactivos, setInactivos] = useState(null);
+  useEffect(() => {
+    if (tieneCrm || solapa !== 'clientes' || !onFetchClientesConEstado) return undefined;
+    let vigente = true;
+    Promise.resolve(onFetchClientesConEstado())
+      .then(r => { if (vigente) setInactivos(r?.ok ? contarClientesInactivos(r.clientes) : null); })
+      .catch(() => { if (vigente) setInactivos(null); });
+    return () => { vigente = false; };
+  }, [tieneCrm, solapa, onFetchClientesConEstado]);
 
   const recs = useMemo(
     () => productosComoRecetas(products, recetas),
@@ -129,7 +168,7 @@ export default function VentasPanel({
     <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
       <Solapas valor={solapa} onChange={setSolapa} />
 
-      {solapa === 'hoy' && <ResultadoDelDia sucursal={sucursal} />}
+      {solapa === 'hoy' && <ResultadoDelDia sucursal={sucursal} verGanancia={tieneGanancia} />}
 
       {solapa === 'ventas' && (
         <SalesView
@@ -144,11 +183,33 @@ export default function VentasPanel({
         />
       )}
 
-      {solapa === 'clientes' && (
+      {/* Los bloqueos son h3: con alguno en la solapa, va su h2 para que el
+          arbol de encabezados no salte. Solo para lectores: el rotulo visible
+          ya es la solapa activa. Sin bloqueos (sin plan) no se agrega nada. */}
+      {solapa === 'clientes' && (!tieneCrm || !tienePromos) && (
+        <h2 className="ag-sr-only">Clientes</h2>
+      )}
+      {solapa === 'clientes' && tienePromos && (
         <PromosDelCatalogo settings={settings} onGuardar={onGuardarSettings} showToast={showToast} />
       )}
+      {solapa === 'clientes' && !tienePromos && (
+        <BloqueoDePlan
+          funcion="promos"
+          titulo="Promos del catálogo"
+          detalle="Elegir qué promos ven tus clientes en el inicio del catálogo"
+        />
+      )}
 
-      {solapa === 'clientes' && (
+      {solapa === 'clientes' && !tieneCrm && (
+        <BloqueoDePlan
+          funcion="crm"
+          titulo="Clientes que dejaron de venir"
+          dato={textoInactivos(inactivos)}
+          detalle={inactivos === 0 ? 'Que Dico te avise cuando alguno deje de venir' : 'Verlos y escribirles'}
+        />
+      )}
+
+      {solapa === 'clientes' && tieneCrm && (
         <CRM
           orders={pedidosCrm}
           showToast={showToast}
@@ -171,6 +232,14 @@ export default function VentasPanel({
           settings={settings || {}}
           calculateRecipeCost={costoRecetaMes}
           permiteUsar={permiteUsar}
+          bloqueoDeGanancia={tieneGanancia ? null : (
+            <BloqueoDePlan
+              funcion="ganancia"
+              titulo="La ganancia del mes"
+              detalle="Saber cuánto te quedó después del costo de lo vendido, los gastos y la merma, y el análisis del mes"
+              encajado
+            />
+          )}
           onBack={() => setSolapa('ventas')}
         />
       )}

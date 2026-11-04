@@ -15,9 +15,16 @@
  * EL MODO PRUEBA SE DICE FUERTE
  * Los tokens `TEST-` funcionan y no cobran. Si el negocio no se entera, cree
  * que está vendiendo y no le entra un peso.
+ *
+ * PLAN
+ * Cobrar online es de Dante (`cobros_online`, src/modules/planes.js). Sin la
+ * funcion, en lugar del formulario va un BloqueoDePlan; sin plan (null) no
+ * cambia nada.
  */
 import { useState, useEffect, useCallback } from 'react';
 import { estadoMercadoPago, conectarMercadoPago } from '../../../services/platformPagos';
+import { planTieneFuncion } from '../../../modules/planes';
+import BloqueoDePlan from './BloqueoDePlan';
 
 const campo = {
   width: '100%', padding: '11px 13px', borderRadius: 9, fontSize: 14,
@@ -30,7 +37,8 @@ const campo = {
 const etiqueta = { display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 };
 const ayuda = { display: 'block', marginTop: 5, fontSize: 12.5, color: 'var(--ag-ink-3)' };
 
-export default function CobrosOnline({ showToast, onBack }) {
+export default function CobrosOnline({ showToast, onBack, plan = null }) {
+  const bloqueado = !planTieneFuncion(plan, 'cobros_online');
   const [estado, setEstado] = useState(null);
   const [token, setToken] = useState('');
   const [publicKey, setPublicKey] = useState('');
@@ -40,8 +48,9 @@ export default function CobrosOnline({ showToast, onBack }) {
   const [cambiando, setCambiando] = useState(false);
 
   const cargar = useCallback(async () => {
+    if (bloqueado) return;
     setEstado(await estadoMercadoPago());
-  }, []);
+  }, [bloqueado]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -64,7 +73,7 @@ export default function CobrosOnline({ showToast, onBack }) {
   };
 
   const conectado = estado?.conectado;
-  const mostrarForm = !conectado || cambiando;
+  const mostrarForm = !bloqueado && (!conectado || cambiando);
 
   return (
     <div style={{ padding: '12px 16px 24px', position: 'relative', zIndex: 2 }}>
@@ -84,7 +93,16 @@ export default function CobrosOnline({ showToast, onBack }) {
         }}>Cobros online</h2>
       </div>
 
-      {estado === null && (
+      {bloqueado && (
+        <BloqueoDePlan
+          funcion="cobros_online"
+          encajado
+          titulo="Cobrar online con Mercado Pago"
+          detalle="Que tus clientes paguen desde el catálogo y la plata entre directo a tu cuenta"
+        />
+      )}
+
+      {!bloqueado && estado === null && (
         <p style={{ fontSize: 13, color: 'var(--ag-ink-3)' }}>Cargando...</p>
       )}
 

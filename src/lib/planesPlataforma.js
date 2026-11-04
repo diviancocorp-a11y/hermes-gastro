@@ -23,6 +23,9 @@ export const PLANES_COMERCIALES = [
   },
 ];
 
+/** El nombre de venta de un plan por su id ('local' -> 'Dante'), o null. */
+export const nombreDelPlan = planId => PLANES_COMERCIALES.find(p => p.id === planId)?.nombre || null;
+
 export const pesosDelPlan = importe => `$${importe.toLocaleString('es-AR')}`;
 
 export function precioDelPeriodo(plan, anual) {

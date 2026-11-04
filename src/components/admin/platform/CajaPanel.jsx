@@ -22,6 +22,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { parseMontoAR, montoAMedioTipear } from '../../../lib/format';
 import AyudaDeMonto from './AyudaDeMonto';
 import { horaCortaDelLocal } from '../../../modules/estadoOperativo';
+import { planTieneFuncion } from '../../../modules/planes';
+import BloqueoDePlan from './BloqueoDePlan';
 
 // opened_at es timestamptz: cortarle el texto da la hora UTC, tres de mas.
 // Una zona mal cargada hace tirar a Intl: cae al reloj del dispositivo en vez
@@ -148,8 +150,13 @@ function Incidencia({ item, onResolver }) {
 
 function Supervision({
   turno, rendiciones, incidencias, bloqueos, perfilFiscal, documentosFiscales,
-  onRevisarRendicion, onResolverIncidencia,
+  onRevisarRendicion, onResolverIncidencia, plan = null,
 }) {
+  // Factura electronica es de Dante. Sin la funcion va su BloqueoDePlan en
+  // vez de "Sin configurar", que invitaria a configurar algo que no va a
+  // facturar. Los comprobantes que quedaron trabados de cuando la tenia (la
+  // prueba) se siguen contando: alguien los tiene que resolver.
+  const factura = planTieneFuncion(plan, 'facturacion_arca');
   const fiscalesPendientes = documentosFiscales.filter((item) =>
     ['queued', 'processing', 'retry_required', 'rejected'].includes(item.status));
   return (
@@ -182,14 +189,31 @@ function Supervision({
 
       <div className="ag-caja-subhead">
         <h3>Facturación ARCA</h3>
-        <span>{perfilFiscal?.enabled ? 'Activa' : 'Sin configurar'}</span>
+        <span>{!factura ? 'No incluida' : perfilFiscal?.enabled ? 'Activa' : 'Sin configurar'}</span>
       </div>
-      <div className="ag-caja-fiscal">
-        <span>{fiscalesPendientes.length} comprobantes requieren seguimiento</span>
-        {perfilFiscal?.enabled && (
-          <small>PV {String(perfilFiscal.point_of_sale).padStart(5, '0')} · {perfilFiscal.environment === 'production' ? 'Producción' : 'Homologación'}</small>
-        )}
-      </div>
+      {factura ? (
+        <div className="ag-caja-fiscal">
+          <span>{fiscalesPendientes.length} comprobantes requieren seguimiento</span>
+          {perfilFiscal?.enabled && (
+            <small>PV {String(perfilFiscal.point_of_sale).padStart(5, '0')} · {perfilFiscal.environment === 'production' ? 'Producción' : 'Homologación'}</small>
+          )}
+        </div>
+      ) : (
+        <>
+          {fiscalesPendientes.length > 0 && (
+            <div className="ag-caja-fiscal">
+              <span>{fiscalesPendientes.length} comprobantes requieren seguimiento</span>
+            </div>
+          )}
+          <BloqueoDePlan
+            funcion="facturacion_arca"
+            titulo="Factura electrónica"
+            detalle="Facturar con ARCA cada cuenta que se cierra"
+            nivel={4}
+            encajado
+          />
+        </>
+      )}
 
       {turno && bloqueos && (
         <div className="ag-caja-bloqueos" aria-label="Bloqueos del cierre">
@@ -218,6 +242,7 @@ export default function CajaPanel({
   onRefrescarEsperado,
   cargando = false,
   timezone,            // el del local: las horas se muestran en su reloj
+  plan = null,         // planEfectivo del negocio: decide si factura con ARCA
 }) {
   const [montoInicial, setMontoInicial] = useState('');
   const [contado, setContado] = useState('');
@@ -349,6 +374,7 @@ export default function CajaPanel({
           documentosFiscales={documentosFiscales}
           onRevisarRendicion={onRevisarRendicion}
           onResolverIncidencia={onResolverIncidencia}
+          plan={plan}
         />
       </section>
     );
@@ -457,6 +483,7 @@ export default function CajaPanel({
         documentosFiscales={documentosFiscales}
         onRevisarRendicion={onRevisarRendicion}
         onResolverIncidencia={onResolverIncidencia}
+        plan={plan}
       />
     </section>
   );

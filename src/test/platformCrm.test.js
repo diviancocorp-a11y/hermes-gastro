@@ -6,7 +6,7 @@ const { mockFrom } = vi.hoisted(() => ({ mockFrom: vi.fn() }));
 vi.mock('../lib/supabase', () => ({ supabase: { from: mockFrom } }));
 
 import {
-  fetchCustomerStats, agregarClientes, pedidosParaCrm, SELECT_COLS,
+  fetchCustomerStats, fetchClientesConEstado, agregarClientes, pedidosParaCrm, SELECT_COLS,
 } from '../services/platformCrm';
 import { chain } from './_chain.js';
 
@@ -37,6 +37,17 @@ describe('alcance por tenant', () => {
     expect(c.eq).toHaveBeenCalledWith('tenant_id', TENANT);
     // OJO _chain: todos los metodos son el mismo vi.fn, filtrar por argumento.
     expect(c.neq).toHaveBeenCalledWith('status', 'cancelled');
+  });
+
+  it('fetchClientesConEstado distingue la base caida de no tener clientes', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockFrom.mockReturnValue(chain({ data: null, error: { message: 'caida' } }));
+    expect(await fetchClientesConEstado(TENANT)).toEqual({ ok: false });
+    // El CRM sigue recibiendo la lista vacia de siempre.
+    expect(await fetchCustomerStats(TENANT)).toEqual([]);
+
+    mockFrom.mockReturnValue(chain({ data: [], error: null }));
+    expect(await fetchClientesConEstado(TENANT)).toEqual({ ok: true, clientes: [] });
   });
 
   it('sin tenantId falla en vez de traer de mas', async () => {

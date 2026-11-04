@@ -195,6 +195,8 @@ export function planEfectivo(tenant, ahora = new Date()) {
 /** Dias que le quedan de prueba, o null si no esta en prueba. */
 export function diasDePrueba(tenant, ahora = new Date()) {
   if (!tenant?.plan_id || !tenant.prueba_hasta) return null;
+  // El que ya paga Dante o Magnus no esta probando nada.
+  if (ESCALA.indexOf(tenant.plan_id) >= ESCALA.indexOf('local')) return null;
   const ms = new Date(tenant.prueba_hasta).getTime() - ahora.getTime();
   return ms > 0 ? Math.ceil(ms / 86400000) : null;
 }

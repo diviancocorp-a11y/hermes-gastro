@@ -1,0 +1,138 @@
+/* Bloqueos por plan y aviso de prueba (BloqueoDePlan.jsx).
+ *
+ * Un bloqueo no es un error ni una alarma: es una tarjeta de contenido mas,
+ * con el dato real del negocio arriba y una sola accion. Por eso va sobre la
+ * superficie de tarjeta, con la tinta normal, sin rojo y sin borde lateral
+ * de color. El oro es accion (Machine Soul): solo lo lleva el CTA, relleno
+ * con tinta oscura encima (10.86:1 en los dos temas), y el nombre del plan
+ * en su version -ink como texto (5.54:1 en claro; el oro pleno en oscuro).
+ *
+ * Todo sale de --ag-*: el panel tiene tema claro y oscuro. */
+
+.ag-bloqueo {
+  display: grid;
+  gap: var(--ag-sp-2);
+  margin: var(--ag-sp-3) var(--ag-sp-4) 0;
+  padding: var(--ag-sp-4);
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-lg);
+  background: var(--ag-bg-card);
+  box-shadow: var(--ag-sh-sm);
+  color: var(--ag-ink);
+  font-family: var(--ag-font);
+}
+
+.ag-bloqueo-titulo {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--ag-ink);
+  text-wrap: balance;
+}
+
+/* El dato es lo que se lee primero despues del titulo: el numero del negocio,
+   con cifras tabulares como el resto de los KPIs del panel. */
+.ag-bloqueo-dato {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ag-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-bloqueo-detalle {
+  margin: 0;
+  max-width: 60ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ag-ink-2);
+}
+
+.ag-bloqueo-plan {
+  font-weight: 700;
+  color: var(--ag-accent-border);
+}
+
+/* 44px: el minimo tactil. Ancho completo en el telefono, a su medida desde
+   que hay lugar. */
+.ag-bloqueo-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: var(--ag-sp-2);
+  padding: 0 var(--ag-sp-5);
+  border-radius: var(--ag-r-pill);
+  background: var(--ag-accent);
+  color: var(--ms-zinc-950);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: var(--ms-w-nav);
+  text-decoration: none;
+  transition: filter var(--ag-t-fast) var(--ag-ease),
+              transform var(--ag-t-fast) var(--ag-ease);
+}
+
+.ag-bloqueo-cta:hover { filter: brightness(1.05); }
+.ag-bloqueo-cta:active { transform: scale(0.98); }
+
+.ag-bloqueo-cta:focus-visible {
+  outline: 2px solid var(--ag-accent-border);
+  outline-offset: 2px;
+}
+
+@media (min-width: 600px) {
+  .ag-bloqueo-cta { justify-self: start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ag-bloqueo-cta { transition: none; }
+  .ag-bloqueo-cta:active { transform: none; }
+}
+
+/* Encajado: el contenedor ya pone el margen (la cuenta de Hoy, Cobros). */
+.ag-bloqueo[data-encajado="true"] { margin: 0; }
+
+/* Dentro de la supervision de Caja, que ya es una tarjeta: sin segunda
+   tarjeta adentro. Queda como un grupo mas del aside. */
+.ag-caja-supervision .ag-bloqueo {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ── Aviso de prueba ─────────────────────────────────────────────────────
+ * Una linea de contexto debajo del saludo, fuera de la superficie de trabajo:
+ * informa sin interrumpir. Mismo punto Volt con el que el panel marca lo que
+ * observa (admin-resultado.css), sin fondo de alerta. */
+
+.ag-prueba-aviso {
+  position: relative;
+  z-index: var(--ag-z-content);
+  display: flex;
+  align-items: baseline;
+  gap: var(--ag-sp-2);
+  margin: 0;
+  padding: 0 var(--ag-sp-6) var(--ag-sp-1);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ag-ink-2);
+}
+
+.ag-prueba-aviso::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ag-volt);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .ag-prueba-aviso { padding: 0 var(--ag-sp-3) var(--ag-sp-1); font-size: 12px; }
+}

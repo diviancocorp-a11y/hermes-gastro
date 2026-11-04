@@ -89,6 +89,7 @@ describe('que separa Paris, Dante y Magnus', () => {
     expect(diasDePrueba(vencida, ahora)).toBe(null);
     // La prueba nunca baja a un Magnus que ya paga.
     expect(planEfectivo({ plan_id: 'cadena', prueba_hasta: '2026-11-10T12:00:00Z' }, ahora)).toBe('cadena');
+    expect(diasDePrueba({ plan_id: 'local', prueba_hasta: '2026-11-10T12:00:00Z' }, ahora)).toBe(null);
     expect(planEfectivo({ plan_id: null, prueba_hasta: '2026-11-10T12:00:00Z' }, ahora)).toBe(null);
   });
 
