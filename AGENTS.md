@@ -28,6 +28,13 @@ Todo documento que describa ese mundo vive en `docs/historico/` y no cuenta.
   nombre viejo a proposito: no se ven al publico y renombrarlos rompe cosas.
   **No renombrar nada de `hermes` a `dico`** salvo que Ricky lo pida.
 - Divianco arma los nombres de producto con divianco, magnus, dante y paris.
+- **Planes de DICO (4/nov/2026): Paris, Dante y Magnus**, de menor a mayor.
+  Los ids siguen siendo `digital`, `local` y `cadena` (los guardan `plans`,
+  `tenants.plan_id` y los diagnosticos): se cambia el nombre, nunca el id.
+  Los tres traen toda la operacion; Dante suma lo que dice cuanto gana y
+  ayuda a vender (Dico con IA, CRM, promos, factura); Magnus, varios locales.
+  La verdad de que incluye cada uno es `src/modules/planes.js` (`funciones`);
+  precios en la tabla `plans`, oferta publica en `src/lib/planesPlataforma.js`.
   DICO = "di" + "co" de Divianco. Diconomy = DICO + economia (repo `FOCUS`).
 - **Clientes que corren sobre DICO** (cada uno es un tenant del edificio, no
   un proyecto aparte). Todos pagan un porcentaje de la ganancia neta despues
