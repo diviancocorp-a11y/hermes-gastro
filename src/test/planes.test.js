@@ -15,7 +15,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   PLANES, planTieneModulo, planMinimoPara, limiteDe, alcanzoElLimite,
-  planSugerido, cronogramaDeAlta, totalPrimerAnio,
+  planTieneFuncion, planMinimoParaFuncion, planSugerido, cronogramaDeAlta, totalPrimerAnio,
 } from '../modules/planes';
 
 // Como vienen en la tabla `plans` tras la migracion 0052.
@@ -57,6 +57,39 @@ describe('que incluye cada plan', () => {
   it('un plan que no existe no habilita nada', () => {
     expect(planTieneModulo('no_existe', 'products')).toBe(false);
     expect(planTieneModulo(null, 'products')).toBe(false);
+  });
+});
+
+describe('que separa Paris, Dante y Magnus', () => {
+  it('Paris opera sin paywall y Dante suma IA, CRM y factura', () => {
+    for (const f of ['dico_ia', 'crm', 'facturacion_arca']) {
+      expect(planTieneFuncion('digital', f), `paris no deberia traer ${f}`).toBe(false);
+      expect(planTieneFuncion('local', f), `dante deberia traer ${f}`).toBe(true);
+    }
+  });
+
+  it('Magnus trae todo Dante mas la mirada de varios locales', () => {
+    for (const f of PLANES.local.funciones) expect(planTieneFuncion('cadena', f)).toBe(true);
+    expect(planTieneFuncion('cadena', 'consolidado')).toBe(true);
+    expect(planTieneFuncion('local', 'consolidado')).toBe(false);
+  });
+
+  it('dice en que plan esta cada funcion', () => {
+    expect(planMinimoParaFuncion('dico_ia')).toBe('local');
+    expect(planMinimoParaFuncion('consolidado')).toBe('cadena');
+    expect(planMinimoParaFuncion('inventada')).toBe(null);
+  });
+
+  it('sin plan asignado no se le saca nada; un plan inventado no habilita', () => {
+    // Hoy ningun tenant tiene plan_id: todos tienen acuerdos propios.
+    expect(planTieneFuncion(null, 'dico_ia')).toBe(true);
+    expect(planTieneFuncion('no_existe', 'dico_ia')).toBe(false);
+  });
+
+  it('la cuota de IA es la decidida', () => {
+    expect(limiteDe('digital', 'consultas_ia')).toBe(0);
+    expect(limiteDe('local', 'consultas_ia')).toBe(300);
+    expect(limiteDe('cadena', 'consultas_ia')).toBe(1500);
   });
 });
 

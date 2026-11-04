@@ -76,8 +76,8 @@ describe('registro en tres pasos', () => {
     fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
     expect(screen.getByLabelText('Nombre de tu negocio')).toHaveValue('La Esquina');
     expect(screen.getByRole('button', { name: 'Ambas' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('radio', { name: /Cadena/ })).toBeChecked();
-    fireEvent.click(screen.getByRole('radio', { name: /Digital/ }));
+    expect(screen.getByRole('radio', { name: /Magnus/ })).toBeChecked();
+    fireEvent.click(screen.getByRole('radio', { name: /Paris/ }));
     expect(screen.getByLabelText('Período de pago')).toHaveValue('mensual');
     expect(screen.queryByRole('option', { name: 'Anual' })).not.toBeInTheDocument();
   });

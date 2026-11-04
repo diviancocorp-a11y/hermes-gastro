@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { PREGUNTAS_DOLOR, VENTAS_MENSUALES, DECISORES, extrasV2, validarExtrasV2, normalizarWhatsapp } from '../../platform/functions/diagnostico/v2.js';
+import { PREGUNTAS_DOLOR, VENTAS_MENSUALES, DECISORES, motivosDelPlanV2, extrasV2, validarExtrasV2, normalizarWhatsapp } from '../../platform/functions/diagnostico/v2.js';
 import { ORDEN_PASOS, desafiosDe, planRecomendado } from '../lib/diagnostico';
 import { hallazgosDelDiagnostico, herramientasDelDiagnostico } from '../lib/resultadoDiagnostico';
 
@@ -9,7 +9,20 @@ const base = { vertical: 'servicios', desafio: 'turnos', senal: 'tres_cinco', ca
 describe('diagnostico v2', () => {
   it('tiene ocho pantallas y no pregunta inversion', () => { expect(ORDEN_PASOS).toHaveLength(8); expect(ORDEN_PASOS).not.toContain('inversion'); expect(ORDEN_PASOS).not.toContain('establecimiento'); });
   it('cada dolor de cada rubro tiene su detalle, incluidos los desconocidos', () => { for (const v of ['gastronomia', 'comercio', 'servicios', 'otro']) for (const d of desafiosDe(v)) expect(PREGUNTAS_DOLOR[d.id].opciones.some(o => o.id === 'no_se')).toBe(true); });
-  it('no convierte turnos ni ventas en dinero perdido ni descarta una venta desconocida', () => { const hallazgos = hallazgosDelDiagnostico(base).join(' '); expect(hallazgos).toContain('3 a 5'); expect(hallazgos).not.toContain('$'); expect(hallazgos).toContain('no le asignamos un valor monetario'); expect(planRecomendado(base)).toBe(planRecomendado({ ...base, venta_mensual: 'mas_15m' })); });
+  it('no convierte turnos ni ventas en dinero perdido ni descarta una venta desconocida', () => { const hallazgos = hallazgosDelDiagnostico(base).join(' '); expect(hallazgos).toContain('3 a 5'); expect(hallazgos).not.toContain('$'); expect(hallazgos).toContain('no le asignamos un valor monetario'); expect(planRecomendado(base)).toBe(planRecomendado({ ...base, venta_mensual: 'no_se' })); });
+  it('recomienda Dante cuando no sabe cuanto gana, vende mucho o tiene salon', () => {
+    expect(planRecomendado(base)).toBe('digital');
+    expect(planRecomendado({ ...base, desafio: 'rentabilidad', senal: 'fin_mes' })).toBe('local');
+    expect(planRecomendado({ ...base, desafio: 'rentabilidad', senal: 'diario' })).toBe('digital');
+    expect(planRecomendado({ ...base, desafio: 'costo_laboral', senal: 'ninguno' })).toBe('digital');
+    expect(planRecomendado({ ...base, venta_mensual: 'mas_15m' })).toBe('local');
+    expect(planRecomendado({ ...base, canales: ['salon'] })).toBe('local');
+    expect(planRecomendado({ ...base, canales: ['salon'], locales: 'dos_tres' })).toBe('cadena');
+  });
+  it('dice por que recomienda cada plan', () => {
+    expect(motivosDelPlanV2({ ...base, venta_mensual: '5m_15m', canales: ['salon'] }).motivos).toEqual(['venta_alta', 'salon']);
+    expect(motivosDelPlanV2(base).motivos).toEqual(['operacion_base']);
+  });
   it('describe una diferencia de caja sin presentarla como perdida recuperable', () => { const texto = hallazgosDelDiagnostico({ ...base, desafio: 'mermas_caja', senal: '10000_50000' }).join(' '); expect(texto).toContain('$10.000 y $50.000'); expect(texto).toContain('no una pérdida'); });
   it('no ofrece salon ni cocina a un servicio remoto; si agenda implementada', () => { const modulos = herramientasDelDiagnostico(base).map(h => h.id); expect(modulos).toContain('agenda'); expect(modulos).not.toContain('mesas'); expect(modulos).not.toContain('kds'); });
   it('valida extras y permite no conocer ingresos o costo del sistema', () => { expect(validarExtrasV2(base, extrasV2(base))).toBeNull(); expect(validarExtrasV2(base, { ...extrasV2(base), senal: 'inventado' })).toBeTruthy(); expect(validarExtrasV2(base, { ...extrasV2(base), sistema_costo: -2 })).toBeTruthy(); });

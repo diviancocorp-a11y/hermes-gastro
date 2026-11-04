@@ -131,8 +131,10 @@ export const ORDEN_PASOS = [
   'venta_mensual', 'urgencia', 'nombre_negocio',
 ];
 
-/** Plan recomendado. Cadena = varias sucursales; Local = un local con equipo o
- *  que ya usa un sistema; Digital = el resto. Crear la cuenta no contrata el plan. */
+/** Plan recomendado. Magnus (cadena) = varias sucursales; Dante (local) = no
+ *  sabe cuanto gana, vende mas de $5M, tiene salon, equipo o ya usa un sistema;
+ *  Paris (digital) = el resto. Los motivos, en `motivosDelPlanV2`. Crear la
+ *  cuenta no contrata el plan. */
 export const planRecomendado = recomendarPlanV2;
 
 export const PLANES = PLANES_DIAGNOSTICO;

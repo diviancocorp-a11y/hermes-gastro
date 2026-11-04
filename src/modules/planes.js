@@ -16,18 +16,29 @@
  * puede facturar más que un bar— y ningún competidor del mercado segmenta así.
  * El modo pasa a SUGERIR el plan en el alta, no a definirlo.
  *
- * QUE SEPARA UN PLAN DEL OTRO (desde el 12/sep/2026)
- * Ya no son los módulos: el plan gratis los trae todos. Lo que se paga es lo
- * que un local en blanco necesita para operar —facturación electrónica, cocina
- * en pantalla, soporte con una persona del otro lado— y la escala: varias
- * sucursales con su consolidado. Si algún día vuelve a haber un módulo que
- * solo esté en un plan pago, va acá y se nota en el diff.
+ * QUE SEPARA UN PLAN DEL OTRO (Ricky, 4/nov/2026)
+ * Los nombres de venta son Paris (digital), Dante (local) y Magnus (cadena);
+ * los ids no cambian porque los guardan la base y los diagnosticos.
+ * Los MODULOS de operacion los traen los tres: ordenarse no tiene paywall.
+ * Lo que separa son las FUNCIONES: Dante suma lo que dice cuanto gana y ayuda
+ * a vender mas (Dico con IA, CRM, promos, resultado del dia, factura, cobros
+ * online, avisos); Magnus suma la mirada de varios locales. Un negocio sin
+ * plan asignado (los clientes con acuerdo por porcentaje) tiene todo.
  *
  * DICOTIP NO ES UN EXTRA
  * Se evaluó cobrarlo aparte y se decidió que no: es el diferencial que hace que
  * los mozos QUIERAN que el local use Dico. Ponerle precio frena justo lo que
  * tiene que propagarse.
  */
+
+/** Lo que suma Dante sobre Paris. */
+const FUNCIONES_DANTE = [
+  'dico_ia', 'crm', 'promos', 'resultado_del_dia', 'facturacion_arca',
+  'cobros_online', 'telegram', 'push', 'soporte_chat',
+];
+
+/** Lo que suma Magnus sobre Dante. */
+const FUNCIONES_MAGNUS = ['consolidado', 'roles_por_local', 'soporte_telefono'];
 
 /** Todo lo que el edificio sabe hacer hoy, por si hay que sumar un plan. */
 const TODO = [
@@ -37,7 +48,8 @@ const TODO = [
 
 export const PLANES = {
   /**
-   * DIGITAL — gratis desde el 12/sep/2026.
+   * DIGITAL (Paris). Fue gratis del 12/sep al 23/oct/2026; desde entonces la
+   * oferta publica es $14.999 por mes (`planesPlataforma.js`).
    *
    * Antes valía $29.000 e incluía seis módulos. El cambio no es una promo: es
    * la apuesta de que el producto se vende usándolo. Un local que carga sus
@@ -57,8 +69,10 @@ export const PLANES = {
     // `virtual`.
     modosSugeridos: ['virtual'],
     modulos: [...TODO],
+    funciones: [],
     limites: {
       sucursales: 1,
+      consultas_ia: 0,
       // Sin tope de usuarios, de productos ni de pedidos: cobrar por volumen
       // castiga al que crece, que es justo el que no se quiere perder.
       // `limiteDe` devuelve Infinity cuando la clave no está.
@@ -69,8 +83,11 @@ export const PLANES = {
     id: 'local',
     modosSugeridos: ['fisico', 'hibrido'],
     modulos: [...TODO],
+    funciones: [...FUNCIONES_DANTE],
     limites: {
       sucursales: 1,
+      // Por mes. El costo en tokens es chico; el tope frena el abuso.
+      consultas_ia: 300,
     },
   },
 
@@ -78,8 +95,11 @@ export const PLANES = {
     id: 'cadena',
     modosSugeridos: [],
     modulos: [...TODO],
+    funciones: [...FUNCIONES_DANTE, ...FUNCIONES_MAGNUS],
     limites: {
       // El límite real del plan: varias sucursales, y sin tope.
+      // Por mes y por local.
+      consultas_ia: 1500,
     },
   },
 
@@ -103,6 +123,7 @@ export const PLANES = {
     id: 'total',
     modosSugeridos: [],
     modulos: [...TODO],
+    funciones: [...FUNCIONES_DANTE, ...FUNCIONES_MAGNUS],
     limites: {
       sucursales: 100,
       usuarios: 500,
@@ -131,6 +152,21 @@ export function planTieneModulo(planId, moduloId) {
  */
 export function planMinimoPara(moduloId) {
   return ESCALA.find(id => planTieneModulo(id, moduloId)) || null;
+}
+
+/**
+ * Si este plan incluye esa función. Sin plan asignado es true: hoy ningún
+ * tenant tiene `plan_id` y todos tienen acuerdos propios, asi que gatear por
+ * defecto les sacaria lo que ya usan. Un plan que no existe es false.
+ */
+export function planTieneFuncion(planId, funcion) {
+  if (!planId) return true;
+  return (PLANES[planId]?.funciones || []).includes(funcion);
+}
+
+/** El plan mínimo que incluye una función: "esto está en Dante". */
+export function planMinimoParaFuncion(funcion) {
+  return ESCALA.find(id => PLANES[id].funciones.includes(funcion)) || null;
 }
 
 /** Un límite del plan, o Infinity si ese plan no lo declara. */

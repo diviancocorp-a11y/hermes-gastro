@@ -97,7 +97,7 @@ export default function PlanesNegocio({ onDiagnostico }) {
           <label><input type="radio" name="periodo-plan" checked={!anual} onChange={() => setAnual(false)} /><span>Mensual</span></label>
           <label><input type="radio" name="periodo-plan" checked={anual} onChange={() => setAnual(true)} /><span>Anual</span></label>
         </fieldset>
-        <p className="pp-ahorro" data-reveal="1">20% menos en Local y Cadena con pago anual.</p>
+        <p className="pp-ahorro" data-reveal="1">20% menos en Dante y Magnus con pago anual.</p>
         <div className="pp-planes">
           {PLANES_COMERCIALES.map((plan, indice) => {
             const precio = precioDelPeriodo(plan, anual);
@@ -129,7 +129,7 @@ export default function PlanesNegocio({ onDiagnostico }) {
           <div className="pp-comparacion">
             <div className="pp-tabla-scroll" role="region" aria-label="Comparación de funciones por plan" tabIndex={0}>
               <table className="pp-tabla">
-                <caption className="pl-oculto">Las mismas funciones comparadas entre Digital, Local y Cadena</caption>
+                <caption className="pl-oculto">Las mismas funciones comparadas entre Paris, Dante y Magnus</caption>
                 <thead><tr><th scope="col">Funciones</th>{COMPARACION_PLANES.map(plan => <th scope="col" data-plan={plan.id} key={plan.id}>{plan.nombre}</th>)}</tr></thead>
                 <tbody>{FUNCIONES_COMPARADAS.map(funcion => <tr key={funcion}>
                   <th scope="row">{funcion}</th>

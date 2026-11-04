@@ -14,10 +14,21 @@ export const PREGUNTAS_DOLOR = {
 };
 export const VENTAS_MENSUALES = opciones([['hasta_1m', 'Hasta $1.000.000'], ['1m_5m', 'Entre $1.000.000 y $5.000.000'], ['5m_15m', 'Entre $5.000.000 y $15.000.000'], ['mas_15m', 'Más de $15.000.000'], ['no_se', 'No lo sé'], ['prefiero_no_responder', 'Prefiero no responder']]);
 export const DECISORES = opciones([['yo', 'Yo decido'], ['socios', 'Lo decido con un socio'], ['encargado', 'Soy encargado y lo propongo'], ['otra_persona', 'Decide otra persona']]);
-export function recomendarPlanV2({ locales, equipo, gestion_actual }) {
-  if (locales === 'dos_tres' || locales === 'cuatro_o_mas') return 'cadena';
-  if (equipo === 'de_6_a_15' || equipo === 'mas_de_15' || gestion_actual === 'otro_sistema') return 'local';
-  return 'digital';
+// Senales de que el dolor es no saber cuanto se gana: lo que resuelve Dante (local).
+const SIN_SABER_GANANCIA = { rentabilidad: ['fin_mes', 'nunca', 'no_se'], costos: ['varios_meses', 'no_actualizo', 'no_se'], costo_laboral: ['uno_dos', 'tres_cinco', 'seis_mas', 'no_se'] };
+// Por que se recomienda el plan, para que el resultado lo explique. Reglas de Ricky, 4/nov/2026.
+export function motivosDelPlanV2({ locales, equipo, gestion_actual, canales, desafio, senal, venta_mensual }) {
+  if (locales === 'dos_tres' || locales === 'cuatro_o_mas') return { plan: 'cadena', motivos: ['varios_locales'] };
+  const motivos = [];
+  if (SIN_SABER_GANANCIA[desafio]?.includes(senal)) motivos.push('no_sabe_cuanto_gana');
+  if (venta_mensual === '5m_15m' || venta_mensual === 'mas_15m') motivos.push('venta_alta');
+  if (equipo === 'de_6_a_15' || equipo === 'mas_de_15') motivos.push('equipo_grande');
+  if (gestion_actual === 'otro_sistema') motivos.push('ya_usa_sistema');
+  if (Array.isArray(canales) && canales.includes('salon')) motivos.push('salon');
+  return motivos.length ? { plan: 'local', motivos } : { plan: 'digital', motivos: ['operacion_base'] };
+}
+export function recomendarPlanV2(r) {
+  return motivosDelPlanV2(r).plan;
 }
 export function extrasV2(r) {
   return { senal: r.senal || null, sistema_nombre: String(r.sistema_nombre || '').trim().slice(0, 80), sistema_costo: r.sistema_costo === '' || r.sistema_costo == null ? null : Number(r.sistema_costo), venta_mensual: r.venta_mensual || null, decisor: r.decisor || null };

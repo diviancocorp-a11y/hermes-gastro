@@ -6,7 +6,7 @@ import { PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../lib/plane
 
 vi.mock('../lib/supabase', () => ({ supabase: {} }));
 afterEach(cleanup);
-const base = { vertical: 'gastronomia', establecimiento: 'restaurante', desafio: 'costos', senal: 'mensual', canales: ['salon'], locales: 'uno', equipo: 'hasta_5', gestion_actual: 'planillas', sistema_nombre: '', sistema_costo: '', nombre_negocio: 'Mi negocio' };
+const base = { vertical: 'gastronomia', establecimiento: 'restaurante', desafio: 'costos', senal: 'mensual', canales: ['mostrador'], locales: 'uno', equipo: 'hasta_5', gestion_actual: 'planillas', sistema_nombre: '', sistema_costo: '', nombre_negocio: 'Mi negocio' };
 function mostrar(respuestas) {
   render(<ResultadoDiagnostico sol={solucion(respuestas.desafio, respuestas.vertical)} respuestas={respuestas} id="diag-ejemplo" guardado="ok" encabezado={<h1>Orientación</h1>} resumen={<details><summary>Ver mis respuestas</summary></details>} />);
 }
