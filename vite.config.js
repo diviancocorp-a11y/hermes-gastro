@@ -222,6 +222,9 @@ export default defineConfig(async () => ({
     sourcemap: SENTRY_ENABLED ? 'hidden' : false,
     rollupOptions: {
       output: {
+        // Conserva los comentarios /*! ... @license */ de terceros (Glyph
+        // Portal, MIT): la licencia exige el aviso en las copias.
+        comments: { legal: true },
         manualChunks(id) {
           if (id.includes('node_modules/@supabase')) return 'supabase'
           if (id.includes('node_modules/@tanstack')) return 'query'
