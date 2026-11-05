@@ -9,6 +9,20 @@
 
 ## 1. Estado al 5/nov/2026
 
+### Navegacion durante el recorrido — 5/nov
+
+- Rama `codex/landing-navegacion`, desde main `09902be`: barra negra fija
+  que aparece solo al salir completamente del hero. Logo original,
+  enlaces a Rubros, Acompanamiento, Planes y Preguntas, con seccion activa
+  subrayada en dorado, y CTA al mismo diagnostico. Se oculta durante el embudo.
+- Linea volt de 3 px ligada al avance real de la pagina, reversible al subir.
+  Sin porcentajes, pulsos decorativos ni bloqueo del scroll. En movil los
+  enlaces se desplazan horizontalmente debajo del logo y CTA; los destinos
+  reservan espacio para que la barra no tape sus titulos. Foco visible,
+  barra inactiva fuera del teclado mientras esta oculta y movimiento reducido.
+- ESLint y build correctos; detector antes/despues: 17 hallazgos conocidos,
+  ninguno nuevo. Pendiente comprobar en preview escritorio y celular.
+
 ### Machine Soul y contactos del footer — 5/nov
 
 - Registro movil: `position:static` en la bienvenida dejaba su imagen absoluta
