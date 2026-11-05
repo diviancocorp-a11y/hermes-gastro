@@ -9,6 +9,128 @@
 
 ---
 
+## 24/oct/2026 — Landing: boton elegido y circuito con Dico central (Codex)
+
+### Ultima continuacion — 24/oct (leer primero)
+
+- 25/oct: hero centrado segun nuevas capturas. CTA «Empezar mi diagnostico»
+  oro con circulo negro/flecha oro; relleno negro desde derecha al hover.
+  Apertura negra hasta card, hero difuminado alrededor, volt interno intacto.
+  Cierre negro al boton y retorno al oro. Sustituye el fondo oro persistente
+  descripto debajo. 29 pruebas, build y Chrome 390/1280 verificados.
+  Esperar aprobacion visual del hero antes de avanzar segmento 2.
+- Pedido posterior de Ricky: construir sin subagentes ni auditorias
+  intermedias para ahorrar uso; auditoria integral despues de aprobar diseno.
+  Diagnostico ahora en card zinc sobre oro persistente: una expansion640ms,
+  card180ms, contraccion480ms al boton al cerrar. Dico arriba en movil,
+  X/Escape desde cualquier paso, respuestas conservadas y hero montado debajo.
+  CTA oro con contorno y circulo azul volt detras de Dico. Comprobacion basica
+  390/1280 y cierre/reapertura en pregunta2; revision integral pendiente.
+  Misma rama landing/rediseno y PR52. Proximo: cambios del segmento2.
+- Ricky rechazo el ritmo de 5e1f8a5 por rapido. Referencia Hero Button Expendable
+  de 21st: superficie continua desde CTA; ahora800+120+800ms con curva simetrica,
+  excepcion focal posterior a la regla general, sin cambiar otros controles.
+  Confirma vuelta tanto Volveralinicio como Atrasnativo: cara48 -> oro -> Dico
+  en burbuja40delCTA. Atras entre preguntas normal, respuestas conservadas.
+  Chrome5viewports320-1440 ambasvueltas sin overflow/JSerrors; foco correcto,
+  oro329.160pixelesuniformes y fotogramasintermedios inspeccionados.
+  P2scrollRestoration corregido: ninguna escritura al modo del navegador,
+  RAFcancelable antes de medir vuelta. Auto/manual preservados en390/1440
+  con Forward/Back/interrupciones. 56tests/4files, poolthreads; detector17/6
+  sin cambios, render390/1280y scopednativo sin hallazgos, auditor2sin pendientes.
+  LANDINGseccion1 tiene detalle y preview estable. Pendiente Ricky revise ritmo;
+  luego cambiosdel segmento2. No avanzaron rubros ni otros bloques.
+- Cambio mas reciente: reemplazar flecha por Dico2D dorado sobre circulo negro,
+  guino al hover/foco y boton que cubre viewport de oro y se comprime hacia
+  la cara real del diagnostico. Ricky confirma guia antes de pregunta movil.
+  DicoBoton/viajeDico nuevos, sin modificar assets/masters ni dependencias.
+  Expansion300ms -> fotograma completo -> compresion480ms. Un montaje/history;
+  reduced/sinAPI/error/cancelacion mantienen acceso y restauran inert/scroll.
+  Chrome320/390/768/1280/1440: sin overflow/erroresJS; cara48x48visible.
+  Oro390x844:329.160pixeles,0fueraoro; guinoinspeccionado3x. P2 de foco con
+  Atras durante llegada corregido y confirmado en390/1440; /diagnostico propia
+  conserva disposicion. Detector17/6sin cambios, render390/1280sin hallazgos.
+  42tests/4archivos(poolthreads) y ESLint pasan, auditoria2sin pendientes.
+  Actualiza LANDINGseccion1; segmento2/parallax/zinc sin cambio. Todavia
+  pendiente recibir mas cambios del segmento2, no avanzar rubros.
+- Ajuste posterior de Ricky: CTA dorado, burbuja negra y flecha volt; conserva
+  forma, hover y expansion. Suelo compartido zinc950 en hero/circuito/home del
+  diagnostico; grano aparece gradualmente en 128 px, sin costura de tono.
+  Chrome390/1440: union9,9,11 a ambos lados, CTA202,61x56,0overflow/erroresJS,
+  apertura/foco y reduced verificados. Contrastes9,31/6,89/4,50:1; detector
+  estatico17/6 y render390/1280 sin hallazgos, sin aumento de deuda. Solo3CSS
+  y estas notas. Siguiente: cambios de Ricky al segmento2, no avanzar rubros.
+  LANDING seccion1 contiene el preview estable de rama y el PR#52 para CI.
+- Ricky aprobo el parallax y eligio la capsula **Marfil en movimiento** con
+  burbuja dorada y el titulo **Tu tiempo vuelve a ser tuyo.** Bajada de gestion
+  aplicada. La burbuja origina la expansion al diagnostico existente: ancho
+  completo, minimo100svh en home, con alternativa inmediata sin API/reduced.
+- Apartado 2 implementado: `CircuitoNegocio.jsx` + CSS scoped, pet vigente
+  `DicoPhysical` central y cinco piezas (catalogo/pedidos/stock/caja/resultado).
+  Tres momentos por scroll nativo en escritorio y seleccion manual/teclado;
+  en movil, selector -> diagrama -> explicacion. Negro zinc continuo desde
+  el hero, grano SVG propio estatico de baja opacidad en public/brand/landing.
+- Gastronomia de ejemplo: recibir no descuenta ni cobra; completar descuenta
+  receta; registrar cobro es accion distinta. Neto$669.000 del dia completo,
+  mismas cifras de Piezas, sin datos privados ni nueva promesa IA.
+- Verificado:78tests/7archivos, poolthreads/maxWorkers2; JSXlint, tipos y build.
+  Chrome320/390/768/1280x600/1440:0overflow, titular2lineas,CTAvisible,
+  seleccion3estados, foco y apertura. Estatico17warnings/6advisory sin cambio;
+  inspector0FAIL/3WARN conocidos. Auditor independiente sin pendientes al
+  cierre: P2 sticky bajo corregido; teclado ya no manda foco fuera de vista.
+- Sin paquetes/backend nuevos. El unico recurso final nuevo fuera de
+  src/docs/platform/scripts es zinc-grain.svg, necesario para servir el grano;
+  no se modificaron los masters ni los assets del pet. Agenda intacta.
+- Codigo `3eef553` y parche `3a53c9d` subidos al PR#52 en borrador; preview READY:
+  https://hermes-platform-byaa0i2ua-diviancocorp-a11ys-projects.vercel.app/landing#que-hace
+  El CI encontro alertas nuevas de undici via jsdom: parche solo del lockfile
+  7.30.0 -> 7.30.1, sin dependencias nuevas. Audit local 0 vulnerabilidades e
+  instalacion coherente con 466 paquetes. CI de `3a53c9d` SUCCESS: Lint,
+  Typecheck, Unit Tests, Security Audit, Build (run40105727258), tambien
+  Playwright (run40105727150); smoke produccion SKIPPED. 78 pruebas pertinentes
+  tambien pasan con el parche. Chrome local con backend ficticio; preview
+  requiere sesion Vercel. No se mergeo ni se publico en main.
+  Ricky revisa apartado2 antes de seguir. Misma rama landing/rediseno. Fases3/4 aun
+  pendientes: rubros, logos/Instagram, pasos, planes, FAQ/footer. Digital14999
+  sigue documentado, sin aplicar aqui. LANDINGseccion1 es el estado vivo.
+
+### Historial — 23/oct: reemplazo del hero rechazado
+
+### Ultima decision de Ricky y reemplazo (leer primero)
+
+- Ricky rechazo el hero de concreto/dispositivos de `b4084ad`: textura rara,
+  profundidad insuficiente y laptop deformada al abrir el ejemplo. Los checks
+  anteriores no equivalian a aprobacion visual. No extender esa direccion.
+- Se reemplazo por la composicion original de Parallax Scrolling de Osmo:
+  paisaje, montana, titulo y caminante en cuatro planos. Mensaje **Mas tiempo
+  para vivir.**, bajada de pedidos/stock/caja/resultados y tiempo para los tuyos.
+  Quiero Dico mantiene el diagnostico. Recursos originales CC0, 192.604 bytes,
+  procedencia y licencia en `docs/marca/referencias/parallax-osmo.md`.
+- Misma worktree y PR #52. Se retiro la textura huerfana de public; las tres
+  capas WebP son los nuevos archivos finales fuera de src/docs/platform/scripts,
+  necesarios para servir la escena localmente. Sin paquetes ni backend nuevos.
+- Verificado localmente: 61 tests/5 archivos, tipos, build y check:diseno.
+  Chrome en 1440/768/390/320/1280 sin overflow; CTA visible y abre con foco.
+  Scroll288 mueve cielo236,16/montana187,20/titulo95,04/frente34,56 px.
+  Movimiento reducido cancela las cuatro animaciones, sin errores de JS.
+- Auditor independiente: 0 hallazgos nuevos. P2 heredado Entrar38,86x44px;
+  contraste AA fotografico completo no certificado. Detector17/6 sin cambio;
+  inspector real pasa de1FAIL/3WARN a0FAIL/3WARN (se retira details que daba
+  falso positivo). Los tres warnings preexistentes se explican en LANDING.
+  CTA de una linea revalidado en320px, sin desborde.
+- Codigo `58afd2b`, PR #52 en borrador. Vercel READY del mismo SHA:
+  https://hermes-platform-gnwx2hljm-diviancocorp-a11ys-projects.vercel.app/landing
+  CI: Lint, Typecheck, Unit Tests, Security Audit, Build y Playwright SUCCESS;
+  smoke produccion SKIPPED. Runtime remoto no verificado por proteccion de
+  Vercel; no se intento bypass en esta entrega. Temporales propios retirados.
+- La aceptacion visual sigue pendiente de Ricky; cuerpo y planes siguen
+  pendientes de fases3/4. Este preview requiere su sesion de Vercel.
+  Detalle y evidencia viva en LANDING secciones1/11. Agenda intacta.
+
+### Historial de la entrega anterior (reemplazada)
+
+---
+
 ## 23/oct/2026 — La landing se sigue desde un solo lugar (Claude)
 
 - `docs/plataforma/LANDING.md` es la guia unica de la landing: estado, mapa de

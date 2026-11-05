@@ -11,6 +11,106 @@
 
 ---
 
+## 5/nov/2026 — Planes Paris, Dante y Magnus con bloqueos y prueba de Dante (Claude)
+
+### Hecho
+
+**Nombres y oferta** (`f52c6ba`, `0ae6e29`, migraciones 0121 y 0123):
+- Los planes se llaman Paris, Dante y Magnus. Los ids siguen siendo `digital`, `local` y `cadena`.
+- Paris sale **$14.999/mes**, sin precio anual.
+- Landing, preguntas, consola y diagnóstico usan los nombres nuevos.
+- El bloque "Planes de DICO" está en `CLAUDE.md` y `AGENTS.md`.
+- **Lo que no se promete todavía:**
+  - La factura de ARCA, hasta probarla de punta a punta.
+  - Dico con IA, porque todavía no existe.
+
+**Qué separa a cada plan** (`src/modules/planes.js`, PR #74, merge `620460f`):
+- Paris tiene toda la operación, incluidos los avisos de pedidos.
+- Dante suma:
+  - ganancia;
+  - CRM y promos;
+  - cobros online;
+  - ARCA;
+  - historial completo;
+  - soporte por chat;
+  - 300 consultas de IA por mes.
+- Magnus suma consolidado, roles por local y soporte telefónico.
+- **Por qué este corte:** Ricky quiere que el sistema se sienta limitado y que vaya desbloqueando a medida que se paga más. Bloquear la operación haría que Paris no sirva para trabajar. Lo que empuja a pasar a Dante es saber cuánto se gana y volver a venderles a los clientes que no vuelven.
+- **Sin `plan_id` = todo:** los 5 tenants actuales no tienen plan y no cambian.
+- Funciones nuevas en `planes.js`:
+  - `planTieneFuncion`;
+  - `planMinimoParaFuncion`;
+  - `planEfectivo`: con `prueba_hasta` futuro y un plan menor, devuelve `local`;
+  - `diasDePrueba`.
+
+**Prueba de 14 días de Dante en el alta** (migración 0122):
+- Columna nueva `tenants.prueba_hasta`.
+- `signup_tenant()` crea el negocio con `plan_id='digital'` y `prueba_hasta = now()+14 días`. Se copió el cuerpo desplegado y se le sumaron esas dos columnas.
+- **Por qué no se suspende al terminar:** la suspensión de la 0052 exige `paga_hasta not null`, y un negocio en Paris sin `paga_hasta` queda en `sin_fecha`.
+- Las altas con `create-owner` siguen sin plan.
+
+**Bloqueos en el panel** (`BloqueoDePlan.jsx`, `admin-plan.css`, `clientesInactivos.js`):
+- **Clientes:** muestra el número real de clientes que no compran hace más de 90 días. Si la consulta falla, no muestra ningún número.
+- **Ganancia:** se bloquea en Ventas > Hoy (`ResultadoDelDia`) y en Resumen (Resultado, Exportar y los análisis).
+- **Cobros online:** se bloquea.
+- **ARCA en Caja:** dice "No incluida". La factura automática exige `facturacion_arca`.
+- `AvisoDePrueba` va debajo del saludo y muestra los días que le quedan de prueba.
+- Eventos de Vercel Analytics: `plan-bloqueo-visto` (una vez por función y por sesión) y `plan-bloqueo-click`.
+
+**Diagnóstico** (`platform/functions/diagnostico/v2.js`, `motivosDelPlanV2`):
+- Recomienda Magnus con 2 locales o más.
+- Recomienda Dante si se da alguno de estos casos:
+  - no sabe cuánto gana;
+  - vende mucho;
+  - tiene equipo grande;
+  - ya usa un sistema;
+  - tiene salón.
+- En cualquier otro caso recomienda Paris.
+
+### Verificado
+- **Producción:**
+  - El deploy `620460f` está `READY` y es el `HEAD` de `origin/main`.
+  - El CI de `620460f` pasó entero (`npm run ci:esperar`, exit 0).
+- **Base**, comprobado con `select`:
+  - `plans`: Paris en 14999, con anual null.
+  - Existe la columna `prueba_hasta`.
+  - `signup_tenant` contiene `prueba_hasta`.
+  - anon no puede ejecutar `signup_tenant`.
+- **Diseño:**
+  - `impeccable detect`: 22 hallazgos antes y 22 después.
+  - `check:diseno`: ningún hallazgo nuevo.
+  - Auditor, dos rondas: en la primera encontró un P1 (la ganancia del mes se veía en Paris), que se corrigió. En la segunda no quedaron P0 ni P1.
+- **Tests:** en la suite local fallaron 4 tests que no tienen que ver con este cambio (diagnosticoContactoPrevio, HomeScreenFacets, landingHero y reservaOnline). Corridos aislados pasan 41/41. Fallaron por la carga de la máquina.
+- **NO verificado:**
+  - Un negocio real en Paris dentro de la app. Solo se probaron los tests y la vista de "Hoy" en Paris sin datos.
+  - Un alta self-service nueva de punta a punta con la prueba de 14 días.
+
+### Pendiente inmediato
+1. **`npm run deploy:functions`** (lo corre Ricky). Hasta entonces, el diagnóstico en producción usa la regla vieja.
+2. **Corte del lado del servidor:** hoy los bloqueos son solo de pantalla. Un negocio que conectó Mercado Pago durante la prueba sigue cobrando online en el catálogo después de volver a Paris. Para cortarlo, `create-payment-preference` tiene que mirar `planEfectivo`. Falta que Ricky decida si se hace.
+3. **Decisiones abiertas de Ricky sobre lo que se ve en Paris:**
+   - el margen por producto en Productos;
+   - los ingresos y egresos de Resumen, que dejan sacar la ganancia restando (se dejaron a propósito);
+   - el diseñador ocultó también el análisis USAR y Exportar, quizás de más.
+4. **CRM:** el conteo de clientes inactivos usa una lista con el tope de 1000 filas de PostgREST. Con más clientes, el número queda corto.
+5. **Antes de tocar precios**, mirar los eventos de bloqueo de 2 a 3 semanas.
+
+### Bloqueado por Ricky
+- `npm run deploy:functions`.
+- Decidir los puntos 2 y 3.
+- Siguen vigentes los de la sección del 4/nov: Mía pega el Access Token de MP e instalar el panel en el celular.
+
+### Archivos y limpieza
+- **`8d50ecb`** (el commit local de planes que quedaba sin pushear) ya no está en ninguna rama: lo reemplazó esta sesión. Se resuelve así el punto 2 del 4/nov.
+- No se creó nada fuera de `src/`, `docs/`, `platform/` y `scripts/`.
+- **Worktrees:**
+  - La rama `feat/planes-bloqueos` ya está en `main`. Se puede borrar local y en origin.
+  - `landing-soul-footer` (`codex/landing-soul-footer`) está en el `HEAD` de main y limpia. Parece recién creada por Codex: no se toca.
+  - `prueba-21st` no está mergeada.
+- **Se archiva la sección de Codex del 24/oct** (landing: botón y circuito con Dico central). Lo que dejaba pendiente era la aprobación visual del hero y el segmento 2 de la landing. Está en `historico/HANDOFF-anterior.md`.
+
+---
+
 ## 4/nov/2026 — Topbar con dos menús y el panel instalable como app (Claude)
 
 ### Hecho
@@ -197,123 +297,3 @@
 ---
 
 ---
-
-## 24/oct/2026 — Landing: boton elegido y circuito con Dico central (Codex)
-
-### Ultima continuacion — 24/oct (leer primero)
-
-- 25/oct: hero centrado segun nuevas capturas. CTA «Empezar mi diagnostico»
-  oro con circulo negro/flecha oro; relleno negro desde derecha al hover.
-  Apertura negra hasta card, hero difuminado alrededor, volt interno intacto.
-  Cierre negro al boton y retorno al oro. Sustituye el fondo oro persistente
-  descripto debajo. 29 pruebas, build y Chrome 390/1280 verificados.
-  Esperar aprobacion visual del hero antes de avanzar segmento 2.
-- Pedido posterior de Ricky: construir sin subagentes ni auditorias
-  intermedias para ahorrar uso; auditoria integral despues de aprobar diseno.
-  Diagnostico ahora en card zinc sobre oro persistente: una expansion640ms,
-  card180ms, contraccion480ms al boton al cerrar. Dico arriba en movil,
-  X/Escape desde cualquier paso, respuestas conservadas y hero montado debajo.
-  CTA oro con contorno y circulo azul volt detras de Dico. Comprobacion basica
-  390/1280 y cierre/reapertura en pregunta2; revision integral pendiente.
-  Misma rama landing/rediseno y PR52. Proximo: cambios del segmento2.
-- Ricky rechazo el ritmo de 5e1f8a5 por rapido. Referencia Hero Button Expendable
-  de 21st: superficie continua desde CTA; ahora800+120+800ms con curva simetrica,
-  excepcion focal posterior a la regla general, sin cambiar otros controles.
-  Confirma vuelta tanto Volveralinicio como Atrasnativo: cara48 -> oro -> Dico
-  en burbuja40delCTA. Atras entre preguntas normal, respuestas conservadas.
-  Chrome5viewports320-1440 ambasvueltas sin overflow/JSerrors; foco correcto,
-  oro329.160pixelesuniformes y fotogramasintermedios inspeccionados.
-  P2scrollRestoration corregido: ninguna escritura al modo del navegador,
-  RAFcancelable antes de medir vuelta. Auto/manual preservados en390/1440
-  con Forward/Back/interrupciones. 56tests/4files, poolthreads; detector17/6
-  sin cambios, render390/1280y scopednativo sin hallazgos, auditor2sin pendientes.
-  LANDINGseccion1 tiene detalle y preview estable. Pendiente Ricky revise ritmo;
-  luego cambiosdel segmento2. No avanzaron rubros ni otros bloques.
-- Cambio mas reciente: reemplazar flecha por Dico2D dorado sobre circulo negro,
-  guino al hover/foco y boton que cubre viewport de oro y se comprime hacia
-  la cara real del diagnostico. Ricky confirma guia antes de pregunta movil.
-  DicoBoton/viajeDico nuevos, sin modificar assets/masters ni dependencias.
-  Expansion300ms -> fotograma completo -> compresion480ms. Un montaje/history;
-  reduced/sinAPI/error/cancelacion mantienen acceso y restauran inert/scroll.
-  Chrome320/390/768/1280/1440: sin overflow/erroresJS; cara48x48visible.
-  Oro390x844:329.160pixeles,0fueraoro; guinoinspeccionado3x. P2 de foco con
-  Atras durante llegada corregido y confirmado en390/1440; /diagnostico propia
-  conserva disposicion. Detector17/6sin cambios, render390/1280sin hallazgos.
-  42tests/4archivos(poolthreads) y ESLint pasan, auditoria2sin pendientes.
-  Actualiza LANDINGseccion1; segmento2/parallax/zinc sin cambio. Todavia
-  pendiente recibir mas cambios del segmento2, no avanzar rubros.
-- Ajuste posterior de Ricky: CTA dorado, burbuja negra y flecha volt; conserva
-  forma, hover y expansion. Suelo compartido zinc950 en hero/circuito/home del
-  diagnostico; grano aparece gradualmente en 128 px, sin costura de tono.
-  Chrome390/1440: union9,9,11 a ambos lados, CTA202,61x56,0overflow/erroresJS,
-  apertura/foco y reduced verificados. Contrastes9,31/6,89/4,50:1; detector
-  estatico17/6 y render390/1280 sin hallazgos, sin aumento de deuda. Solo3CSS
-  y estas notas. Siguiente: cambios de Ricky al segmento2, no avanzar rubros.
-  LANDING seccion1 contiene el preview estable de rama y el PR#52 para CI.
-- Ricky aprobo el parallax y eligio la capsula **Marfil en movimiento** con
-  burbuja dorada y el titulo **Tu tiempo vuelve a ser tuyo.** Bajada de gestion
-  aplicada. La burbuja origina la expansion al diagnostico existente: ancho
-  completo, minimo100svh en home, con alternativa inmediata sin API/reduced.
-- Apartado 2 implementado: `CircuitoNegocio.jsx` + CSS scoped, pet vigente
-  `DicoPhysical` central y cinco piezas (catalogo/pedidos/stock/caja/resultado).
-  Tres momentos por scroll nativo en escritorio y seleccion manual/teclado;
-  en movil, selector -> diagrama -> explicacion. Negro zinc continuo desde
-  el hero, grano SVG propio estatico de baja opacidad en public/brand/landing.
-- Gastronomia de ejemplo: recibir no descuenta ni cobra; completar descuenta
-  receta; registrar cobro es accion distinta. Neto$669.000 del dia completo,
-  mismas cifras de Piezas, sin datos privados ni nueva promesa IA.
-- Verificado:78tests/7archivos, poolthreads/maxWorkers2; JSXlint, tipos y build.
-  Chrome320/390/768/1280x600/1440:0overflow, titular2lineas,CTAvisible,
-  seleccion3estados, foco y apertura. Estatico17warnings/6advisory sin cambio;
-  inspector0FAIL/3WARN conocidos. Auditor independiente sin pendientes al
-  cierre: P2 sticky bajo corregido; teclado ya no manda foco fuera de vista.
-- Sin paquetes/backend nuevos. El unico recurso final nuevo fuera de
-  src/docs/platform/scripts es zinc-grain.svg, necesario para servir el grano;
-  no se modificaron los masters ni los assets del pet. Agenda intacta.
-- Codigo `3eef553` y parche `3a53c9d` subidos al PR#52 en borrador; preview READY:
-  https://hermes-platform-byaa0i2ua-diviancocorp-a11ys-projects.vercel.app/landing#que-hace
-  El CI encontro alertas nuevas de undici via jsdom: parche solo del lockfile
-  7.30.0 -> 7.30.1, sin dependencias nuevas. Audit local 0 vulnerabilidades e
-  instalacion coherente con 466 paquetes. CI de `3a53c9d` SUCCESS: Lint,
-  Typecheck, Unit Tests, Security Audit, Build (run40105727258), tambien
-  Playwright (run40105727150); smoke produccion SKIPPED. 78 pruebas pertinentes
-  tambien pasan con el parche. Chrome local con backend ficticio; preview
-  requiere sesion Vercel. No se mergeo ni se publico en main.
-  Ricky revisa apartado2 antes de seguir. Misma rama landing/rediseno. Fases3/4 aun
-  pendientes: rubros, logos/Instagram, pasos, planes, FAQ/footer. Digital14999
-  sigue documentado, sin aplicar aqui. LANDINGseccion1 es el estado vivo.
-
-### Historial — 23/oct: reemplazo del hero rechazado
-
-### Ultima decision de Ricky y reemplazo (leer primero)
-
-- Ricky rechazo el hero de concreto/dispositivos de `b4084ad`: textura rara,
-  profundidad insuficiente y laptop deformada al abrir el ejemplo. Los checks
-  anteriores no equivalian a aprobacion visual. No extender esa direccion.
-- Se reemplazo por la composicion original de Parallax Scrolling de Osmo:
-  paisaje, montana, titulo y caminante en cuatro planos. Mensaje **Mas tiempo
-  para vivir.**, bajada de pedidos/stock/caja/resultados y tiempo para los tuyos.
-  Quiero Dico mantiene el diagnostico. Recursos originales CC0, 192.604 bytes,
-  procedencia y licencia en `docs/marca/referencias/parallax-osmo.md`.
-- Misma worktree y PR #52. Se retiro la textura huerfana de public; las tres
-  capas WebP son los nuevos archivos finales fuera de src/docs/platform/scripts,
-  necesarios para servir la escena localmente. Sin paquetes ni backend nuevos.
-- Verificado localmente: 61 tests/5 archivos, tipos, build y check:diseno.
-  Chrome en 1440/768/390/320/1280 sin overflow; CTA visible y abre con foco.
-  Scroll288 mueve cielo236,16/montana187,20/titulo95,04/frente34,56 px.
-  Movimiento reducido cancela las cuatro animaciones, sin errores de JS.
-- Auditor independiente: 0 hallazgos nuevos. P2 heredado Entrar38,86x44px;
-  contraste AA fotografico completo no certificado. Detector17/6 sin cambio;
-  inspector real pasa de1FAIL/3WARN a0FAIL/3WARN (se retira details que daba
-  falso positivo). Los tres warnings preexistentes se explican en LANDING.
-  CTA de una linea revalidado en320px, sin desborde.
-- Codigo `58afd2b`, PR #52 en borrador. Vercel READY del mismo SHA:
-  https://hermes-platform-gnwx2hljm-diviancocorp-a11ys-projects.vercel.app/landing
-  CI: Lint, Typecheck, Unit Tests, Security Audit, Build y Playwright SUCCESS;
-  smoke produccion SKIPPED. Runtime remoto no verificado por proteccion de
-  Vercel; no se intento bypass en esta entrega. Temporales propios retirados.
-- La aceptacion visual sigue pendiente de Ricky; cuerpo y planes siguen
-  pendientes de fases3/4. Este preview requiere su sesion de Vercel.
-  Detalle y evidencia viva en LANDING secciones1/11. Agenda intacta.
-
-### Historial de la entrega anterior (reemplazada)
