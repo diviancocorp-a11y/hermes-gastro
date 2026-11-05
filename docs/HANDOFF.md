@@ -11,7 +11,7 @@
 
 ---
 
-## 5/nov/2026 — Planes Paris, Dante y Magnus con bloqueos y prueba de Dante (Claude)
+## 5/nov/2026 — Planes Paris, Dante y Magnus, eventos para GerenteDico y deploy de functions (Claude)
 
 ### Hecho
 
@@ -55,7 +55,7 @@
 - **Cobros online:** se bloquea.
 - **ARCA en Caja:** dice "No incluida". La factura automática exige `facturacion_arca`.
 - `AvisoDePrueba` va debajo del saludo y muestra los días que le quedan de prueba.
-- Eventos `plan-bloqueo-visto` (una vez por función y por sesión) y `plan-bloqueo-click` con `trackEvent`. **Hoy no llegan a ningún lado:** `trackEvent` (`src/lib/observability.js`) manda a Plausible solo si existe `VITE_ANALYTICS_ID`, y el bundle de producción no lo tiene. Lo comprobé el 5/nov: `plausible` no aparece en ningún JS publicado. Vercel Web Analytics no está activo en `hermes-platform` (la API devuelve 404).
+- Eventos `plan-bloqueo-visto` (una vez por función y por sesión) y `plan-bloqueo-click`. Primero salieron con `trackEvent` y **no llegaban a ningún lado** (se arregló en #76, ver más abajo): `trackEvent` (`src/lib/observability.js`) manda a Plausible solo si existe `VITE_ANALYTICS_ID`, y el bundle de producción no lo tiene. Lo comprobé el 5/nov: `plausible` no aparece en ningún JS publicado. Vercel Web Analytics no está activo en `hermes-platform` (la API devuelve 404).
 
 **Diagnóstico** (`platform/functions/diagnostico/v2.js`, `motivosDelPlanV2`):
 - Recomienda Magnus con 2 locales o más.
@@ -66,6 +66,22 @@
   - ya usa un sistema;
   - tiene salón.
 - En cualquier otro caso recomienda Paris.
+
+**Eventos en el edificio** (PR #76, merge `fa7ef38`, migración 0124):
+- Los eventos de bloqueo pasaron a la tabla `eventos_app`, por `registrarEvento` (`src/services/eventosApp.js`). `BloqueoDePlan` ya no usa `trackEvent`.
+- **RLS:** el miembro escribe solo en su negocio y con su propio `user_id`; lee solo el staff.
+- **Por qué una tabla y no Vercel:** Web Analytics pedía activarlo, una dependencia nueva y probablemente el plan Pro. GerenteDico y morning-health ya leen la base.
+- **Quién los lee:**
+  - GerenteDico, con la herramienta nueva `eventos`.
+  - morning-health, con un bloque "📊 Bloqueos de plan" en la ventana de cada turno. Solo aparece si hubo eventos.
+- La lógica del resumen (`platform/functions/gerente-webhook/eventos.js`) es la misma para las dos puntas.
+
+**Deploy de functions y aviso de prueba** (PR #78, merge `9f886ea`):
+- **Qué falló:** `npm run deploy:functions` falló en las 18 sin cambiar nada.
+  - `npx` no vio el CLI local, por `NODE_ENV=production`.
+  - Bajó `supabase@3.0.0`, que pide confirmar cada deploy y sin terminal no puede.
+- **Arreglo:** el script usa el CLI fijado (`node_modules/supabase`, 2.116.0) por ruta, o `npx` con esa versión exacta, y siempre pasa `--yes`.
+- morning-health avisa a la mañana las pruebas de Dante a 3 días o menos de terminar (`scripts/pruebas-por-vencer.mjs`).
 
 ### Verificado
 - **Producción:**
@@ -81,32 +97,50 @@
   - `check:diseno`: ningún hallazgo nuevo.
   - Auditor, dos rondas: en la primera encontró un P1 (la ganancia del mes se veía en Paris), que se corrigió. En la segunda no quedaron P0 ni P1.
 - **Tests:** en la suite local fallaron 4 tests que no tienen que ver con este cambio (diagnosticoContactoPrevio, HomeScreenFacets, landingHero y reservaOnline). Corridos aislados pasan 41/41. Fallaron por la carga de la máquina.
+- **Functions desplegadas** (Ricky, 5/nov): las 18 en OK.
+  - `list_edge_functions` muestra todas actualizadas.
+  - El `gerente-webhook` desplegado tiene la herramienta `eventos`.
+  - **`arca-invoice` y `table-assistance` se publicaron por primera vez (versión 1)**: antes no estaban en producción.
+- **Eventos:**
+  - RLS probado en la base, con transacciones revertidas: un miembro escribe en su negocio, no en uno ajeno, y no lee si no es staff; anon queda rechazado.
+  - Hoy `eventos_app` tiene 0 filas, porque ningún negocio tiene plan.
+- **CI** verde en `620460f`, `f03a8cd` y `52e4047`.
 - **NO verificado:**
   - Un negocio real en Paris dentro de la app. Solo se probaron los tests y la vista de "Hoy" en Paris sin datos.
   - Un alta self-service nueva de punta a punta con la prueba de 14 días.
+  - Que GerenteDico conteste bien una pregunta de eventos por Telegram.
+  - El bloque de morning-health con datos reales: no hay eventos ni pruebas vigentes.
+  - Que `arca-invoice` y `table-assistance` respondan bien en producción, con sus secrets cargados.
 
 ### Pendiente inmediato
-1. **`npm run deploy:functions`** (lo corre Ricky). Hasta entonces, el diagnóstico en producción usa la regla vieja.
-2. **Corte del lado del servidor:** hoy los bloqueos son solo de pantalla. Un negocio que conectó Mercado Pago durante la prueba sigue cobrando online en el catálogo después de volver a Paris. Para cortarlo, `create-payment-preference` tiene que mirar `planEfectivo`. Falta que Ricky decida si se hace.
-3. **Decisiones abiertas de Ricky sobre lo que se ve en Paris:**
+1. **Probar con un negocio de prueba en Paris** (`plan_id='digital'`, `prueba_hasta` null):
+   - que se vean los bloqueos;
+   - que aparezcan filas en `eventos_app`;
+   - que GerenteDico las cuente.
+2. **Revisar `arca-invoice` y `table-assistance`:** ahora están vivas por primera vez.
+   - Mirar en el panel de Supabase que tengan los secrets que piden.
+   - `arca-invoice` quedó con `verify_jwt=true`, porque no está en `NO_VERIFY_JWT`.
+3. **Corte del lado del servidor:** hoy los bloqueos son solo de pantalla. Un negocio que conectó Mercado Pago durante la prueba sigue cobrando online en el catálogo después de volver a Paris. Para cortarlo, `create-payment-preference` tiene que mirar `planEfectivo`. Falta que Ricky decida si se hace.
+4. **Decisiones abiertas de Ricky sobre lo que se ve en Paris:**
    - el margen por producto en Productos;
    - los ingresos y egresos de Resumen, que dejan sacar la ganancia restando (se dejaron a propósito);
    - el diseñador ocultó también el análisis USAR y Exportar, quizás de más.
-4. **CRM:** el conteo de clientes inactivos usa una lista con el tope de 1000 filas de PostgREST. Con más clientes, el número queda corto.
-5. **Que los eventos se registren en algún lado.** Hoy no se registran (ver Hecho). Recién después, mirar 2 a 3 semanas de bloqueos antes de tocar precios. Hay dos opciones:
-   - Vercel Web Analytics más `@vercel/analytics`, que es una dependencia nueva. Los eventos custom probablemente piden plan Pro.
-   - Una tabla de eventos en el edificio, que GerenteDico ya puede leer.
+5. **CRM:** el conteo de clientes inactivos usa una lista con el tope de 1000 filas de PostgREST. Con más clientes, el número queda corto.
+6. **Antes de tocar precios**, mirar 2 a 3 semanas de eventos de bloqueo.
+7. **Chicos:**
+   - El `/start` de GerenteDico (`BIENVENIDA` en `index.ts`) no menciona la herramienta `eventos`.
+   - `eventos_app` no tiene retención: crece sin límite.
 
 ### Bloqueado por Ricky
-- `npm run deploy:functions`.
-- Decidir los puntos 2 y 3.
+- Decidir los puntos 3 y 4.
+- Sacar `NODE_ENV=production` de las variables de entorno de Windows. Es la causa de la falla del deploy y de la de `npm install`.
 - Siguen vigentes los de la sección del 4/nov: Mía pega el Access Token de MP e instalar el panel en el celular.
 
 ### Archivos y limpieza
 - **`8d50ecb`** (el commit local de planes que quedaba sin pushear) ya no está en ninguna rama: lo reemplazó esta sesión. Se resuelve así el punto 2 del 4/nov.
 - No se creó nada fuera de `src/`, `docs/`, `platform/` y `scripts/`.
 - **Worktrees:**
-  - La rama `feat/planes-bloqueos` ya está en `main`. Se puede borrar local y en origin.
+  - Las ramas `feat/planes-bloqueos`, `feat/eventos-edificio` y `fix/deploy-functions-cli` ya están en `main`. Se pueden borrar, local y en origin.
   - `landing-soul-footer` (`codex/landing-soul-footer`) está en el `HEAD` de main y limpia. Parece recién creada por Codex: no se toca.
   - `prueba-21st` no está mergeada.
 - **Se archiva la sección de Codex del 24/oct** (landing: botón y circuito con Dico central). Lo que dejaba pendiente era la aprobación visual del hero y el segmento 2 de la landing. Está en `historico/HANDOFF-anterior.md`.
