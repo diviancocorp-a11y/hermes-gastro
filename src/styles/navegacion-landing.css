@@ -20,7 +20,7 @@
 .nl-enlaces a { color: inherit; text-decoration: none; white-space: nowrap; padding-block: 10px; border-bottom: 2px solid transparent; font-size: var(--ds-type-md); }
 .nl-enlaces a[aria-current] { border-color: var(--pc-oro); }
 .nl-enlaces a:hover { color: var(--pc-oro); }
-.nl-accion { flex-shrink: 0; cursor: pointer; font: inherit; font-size: var(--ds-type-sm); font-weight: 600; padding: 12px 20px; border: 1px solid var(--pc-oro); border-radius: var(--ds-radius-pill); background: var(--pc-oro); color: var(--pc-sobre-oro); transition: color 160ms, background 160ms; }
+.nl-accion { display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0; cursor: pointer; font: inherit; font-size: var(--ds-type-sm); font-weight: 600; padding: 12px 20px; border: 1px solid var(--pc-oro); border-radius: var(--ds-radius-pill); background: var(--pc-oro); color: var(--pc-sobre-oro); transition: color 160ms, background 160ms; }
 .nl-accion:hover { color: var(--pc-oro); background: var(--pc-producto); }
 .nl-accion svg { width: 18px; height: 18px; margin-left: 8px; vertical-align: middle; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .nl-root :is(a, button):focus-visible { outline: 2px solid var(--pc-producto-volt); outline-offset: 4px; }

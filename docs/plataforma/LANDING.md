@@ -20,8 +20,10 @@
   enlaces se desplazan horizontalmente debajo del logo y CTA; los destinos
   reservan espacio para que la barra no tape sus titulos. Foco visible,
   barra inactiva fuera del teclado mientras esta oculta y movimiento reducido.
-- ESLint y build correctos; detector antes/despues: 17 hallazgos conocidos,
-  ninguno nuevo. Pendiente comprobar en preview escritorio y celular.
+- ESLint, typecheck, build y 87 pruebas habituales correctos; detector
+  antes/despues: 17 hallazgos conocidos, ninguno nuevo. Preview a 1280 y
+  390 px sin desborde. Enlace Planes deja el titulo debajo de la barra y
+  marca la seccion activa; corregido el salto de linea de la flecha del CTA.
 
 ### Machine Soul y contactos del footer — 5/nov
 
