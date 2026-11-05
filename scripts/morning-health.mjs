@@ -30,6 +30,8 @@
 //   6. Bloqueos de plan vistos y clicks en Ver planes en la ventana del turno
 //      (tabla eventos_app, 0124) — misma service role; sin ella o sin
 //      eventos no dice nada. No es un problema: es una novedad.
+//   7. A la manana, negocios con la prueba de Dante a 3 dias o menos de
+//      terminar (pruebas-por-vencer.mjs): el momento de escribirles.
 //
 // Criterio del mensaje: lo roto va PRIMERO y el verde es corto. Secrets que
 // espera el workflow: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, y opcionales
@@ -44,6 +46,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { tenantsAMirar } from './tenants-vivos.mjs';
 import { resumirEventos, lineasDeBloqueos } from '../platform/functions/gerente-webhook/eventos.js';
+import { traerPruebasPorVencer, lineasDePruebas } from './pruebas-por-vencer.mjs';
 import { armarPrueba, dsnDelCodigo } from './sentry-prueba.mjs';
 import {
   nombresDelDrift, nombresSinArchivo, buscarEnPrs, traerPrsAbiertos, listarConPr,
@@ -201,6 +204,15 @@ async function main() {
   if (eventos) {
     const extra = lineasDeBloqueos(eventos, TURNO.ventana);
     if (extra.length) lines.push('', ...extra);
+  }
+
+  /* ── Pruebas de Dante por terminar (solo a la manana) ── */
+  if (TURNO === TURNOS.manana) {
+    const pruebas = await traerPruebasPorVencer();
+    if (pruebas) {
+      const extra = lineasDePruebas(pruebas);
+      if (extra.length) lines.push('', ...extra);
+    }
   }
 
   /* ── Cerebro (opcional): que significa lo roto y que hacer ── */
