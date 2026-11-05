@@ -7,7 +7,22 @@
 
 ---
 
-## 1. Estado al 31/oct/2026
+## 1. Estado al 5/nov/2026
+
+### Machine Soul y contactos del footer — 5/nov
+
+- Rama `codex/landing-soul-footer`, desde main `620460f`: frase en la
+  transicion de color existente entre hero y Rubros, sin agregar otra seccion:
+  «Que la maquina se ocupe del trabajo. Y vos, de lo que te mueve el alma».
+  Primera linea en Overused Grotesk, remate en Butler con alma dorada.
+  Texto accesible; solo el shader queda oculto a lectores de pantalla.
+- Footer: las reglas por ancho menor a 1000 px forzaban las capsulas abiertas
+  aun usando mouse. Ahora el ancho de pantalla solo ordena las columnas;
+  mouse/teclado expanden y contraen las capsulas. Texto aparece gradualmente,
+  sin desplazar los contactos vecinos. Solo dispositivos sin hover conservan
+  los mensajes visibles; movimiento reducido elimina las transiciones.
+- Detector antes/despues: 17 hallazgos conocidos, ninguno nuevo. Cambio en
+  preview para revision, sin publicar estos ajustes en produccion todavia.
 
 ### Publicacion y registro siguiente — 31/oct
 

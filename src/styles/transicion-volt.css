@@ -1,2 +1,7 @@
-.hv-root { position: relative; min-height: clamp(240px, 34svh, 360px); padding: var(--ds-space-6) var(--pl-m); overflow: hidden; background: linear-gradient(var(--pl-suelo-hero) 20%, var(--pl-suelo-continuo)); }
-.hv-root > canvas { position: absolute; inset: 0; mask-image: linear-gradient(transparent, black 22%, black 78%, transparent); }
+.hv-root { position: relative; display: grid; place-items: center; min-height: clamp(240px, 34svh, 360px); padding: var(--ds-space-6) var(--pl-m); overflow: hidden; background: linear-gradient(var(--pl-suelo-hero) 20%, var(--pl-suelo-continuo)); }
+.hv-efecto { position: absolute; inset: 0; mask-image: linear-gradient(transparent, black 22%, black 78%, transparent); pointer-events: none; }
+.hv-promesa { position: relative; z-index: 1; max-width: 32ch; margin: 0; text-align: center; color: var(--ds-color-zinc-50); }
+.hv-promesa > span { display: block; }
+.hv-promesa > span:first-child { margin-bottom: var(--ds-space-3); font-family: var(--ds-font-ui); font-size: clamp(18px, 1.8vw, 26px); font-weight: 400; line-height: 1.4; }
+.hv-promesa > span:last-child { font-family: var(--ds-font-soul); font-size: clamp(30px, 3.5vw, 52px); font-weight: 400; line-height: 1.15; }
+.hv-promesa em { color: var(--pc-oro); font-style: normal; }
