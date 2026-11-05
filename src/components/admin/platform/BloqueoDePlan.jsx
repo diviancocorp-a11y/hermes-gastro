@@ -10,7 +10,7 @@
  *
  * Props:
  *   funcion  id de src/modules/planes.js ('crm', 'ganancia', ...). De ahi sale
- *            el plan minimo, y viaja en la analitica.
+ *            el plan minimo, y viaja en el evento (services/eventosApp).
  *   titulo   encabezado de la region.
  *   dato     frase con el numero real del negocio. Opcional: mientras carga,
  *            o si no hay numero honesto, no se inventa uno.
@@ -28,7 +28,7 @@
 import { useEffect, useId } from 'react';
 import { planMinimoParaFuncion } from '../../../modules/planes';
 import { nombreDelPlan } from '../../../lib/planesPlataforma';
-import { trackEvent } from '../../../lib/observability';
+import { registrarEvento } from '../../../services/eventosApp';
 import '../../../styles/admin-plan.css';
 
 const URL_PLANES = 'https://divianco.app/#comparar-planes';
@@ -47,7 +47,7 @@ export default function BloqueoDePlan({ funcion, titulo, dato = null, detalle = 
   useEffect(() => {
     if (vistosEnLaSesion.has(funcion)) return;
     vistosEnLaSesion.add(funcion);
-    trackEvent('plan-bloqueo-visto', { funcion });
+    registrarEvento('plan-bloqueo-visto', { funcion });
   }, [funcion]);
 
   return (
@@ -68,7 +68,7 @@ export default function BloqueoDePlan({ funcion, titulo, dato = null, detalle = 
         href={URL_PLANES}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => trackEvent('plan-bloqueo-click', { funcion })}
+        onClick={() => registrarEvento('plan-bloqueo-click', { funcion })}
       >
         Ver planes
         <span className="ag-sr-only"> (se abre en otra pestaña)</span>

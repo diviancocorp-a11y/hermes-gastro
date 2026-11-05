@@ -73,8 +73,8 @@ describe('resumirPedidos', () => {
 });
 
 describe('herramientas', () => {
-  it('tres de consulta y anotar, que solo propone', () => {
-    expect(HERRAMIENTAS.map((h) => h.function.name).sort()).toEqual(['anotar', 'negocios', 'pedidos', 'productos']);
+  it('cuatro de consulta y anotar, que solo propone', () => {
+    expect(HERRAMIENTAS.map((h) => h.function.name).sort()).toEqual(['anotar', 'eventos', 'negocios', 'pedidos', 'productos']);
     const anotar = HERRAMIENTAS.find((h) => h.function.name === 'anotar');
     expect(anotar.function.description).toMatch(/NO lo crea/);
     expect(anotar.function.parameters.required).toEqual(['titulo', 'detalle']);
