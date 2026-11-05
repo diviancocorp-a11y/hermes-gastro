@@ -38,7 +38,7 @@
 //   dejaba ese montaje estatico para siempre);
 // - sin JS o si la tinta no se pudo medir, se ve el poster (data-gp-fallback);
 // - el root marca data-gp-listo cuando la camara ya revelo el contenido
-//   (progreso >= .85) o cuando el foco entra antes: platform-landing.css frena
+//   (progreso >= .62) o cuando el foco entra antes: platform-landing.css frena
 //   las entradas ([data-reveal], titulos palabra por palabra) del contenido
 //   hasta ese momento, porque entran al viewport debajo del pin todavia invisibles.
 import { useId, useLayoutEffect, useRef, useState } from 'react';
@@ -220,9 +220,11 @@ export default function GlyphPortal({
       // Drop the clip only after the camera has already filled the viewport with ink.
       field.style.clipPath = t >= 1 ? 'none' : `url(#${clipId})`;
       section.style.setProperty('--gp-caption', String(1 - smooth(0.01, 0.16, p)));
-      section.style.setProperty('--gp-reveal', String(isStatic ? 1 : smooth(0.78, 0.9, p)));
+      // El contenido aparece cuando el zoom va por el 70-90% (no al final) y sube
+      // con el scroll: se ve entrar en vez de esperar sobre el azul vacio.
+      section.style.setProperty('--gp-reveal', String(isStatic ? 1 : smooth(0.55, 0.7, p)));
       section.style.setProperty('--gp-caption-hit', p < 0.08 ? 'auto' : 'none');
-      if (p >= .85 && !listoRef.current) { listoRef.current = true; setListo(true); }
+      if (p >= .62 && !listoRef.current) { listoRef.current = true; setListo(true); }
       if (p !== lastProgress) { lastProgress = p; progressRef.current?.(p); }
     };
 

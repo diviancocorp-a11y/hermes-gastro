@@ -1,6 +1,6 @@
 /* El Cierre: el ultimo panel antes del pie, sobre el azul de Como empezar
-   (trace y no volt: zinc-50 da 5.58:1 sobre trace y 4.24:1 sobre volt). */
-.cf-root { position: relative; padding: 96px var(--pl-m); background: var(--ds-color-intelligence-trace); color: var(--ds-color-zinc-50); }
+   (azul noche: zinc-50 14.4:1, oro 7.25:1). */
+.cf-root { position: relative; padding: 96px var(--pl-m); background: var(--ds-color-intelligence-noche); color: var(--ds-color-zinc-50); }
 .cf-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 40px; max-width: 1480px; margin-inline: auto; }
 .cf-panel h2 span { display: block; }
 .cf-panel h2 { font-family: var(--ds-font-soul); font-size: clamp(38px, 5vw, 80px); font-weight: 400; line-height: 1.08; letter-spacing: -.035em; }

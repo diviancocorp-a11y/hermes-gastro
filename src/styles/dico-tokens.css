@@ -37,6 +37,9 @@
   --ds-color-intelligence-loader: #5e8cff;
   --ds-color-intelligence-label: #93b4ff;
   --ds-color-intelligence-halo: rgba(61, 107, 255, 0.2);
+  /* Azul noche (5/nov/2026): fondo azul que conserva el contraste del negro.
+     Oro 500 da 7.25:1 y zinc-50 14.4:1 (sobre zinc-950: 9.6 y 19). */
+  --ds-color-intelligence-noche: #132258;
 
   --ds-color-status-success: #4fa87f;
   --ds-color-status-warning: #f0803c;

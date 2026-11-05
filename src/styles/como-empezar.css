@@ -1,10 +1,10 @@
 /* Tres pasos, una sola entrada al diagnóstico. Sin una segunda secuencia de scroll. */
 /* Como empezar vive del otro lado del Glyph Portal (GlyphPortal.jsx): la palabra
    DICO sobre el negro de la landing y, al entrar por la O, la seccion entera
-   sobre el azul. El azul es trace y no volt: sobre volt ni el blanco llega a
-   4.5:1 (4.43), zinc-50 sobre trace da 5.58:1. Con movimiento reducido o
+   sobre el azul noche (--ds-color-intelligence-noche), que conserva casi el
+   contraste del negro: oro 7.25:1, zinc-50 14.4:1. Con movimiento reducido o
    portal estatico, glyph-portal.css pinta el contenido sobre el azul solido. */
-.ce-root { --gp-paper: var(--pl-suelo-continuo); --gp-field: var(--ds-color-intelligence-trace); --gp-foreground: var(--ds-color-zinc-50); --gp-font-family: var(--ds-font-ui); --gp-font-weight: 900; --gp-content-padding: 96px var(--pl-m); box-shadow: 0 -1px 0 color-mix(in srgb, var(--pc-oro) 12%, transparent); }
+.ce-root { --gp-paper: var(--pl-suelo-continuo); --gp-field: var(--ds-color-intelligence-noche); --gp-foreground: var(--ds-color-zinc-50); --gp-font-family: var(--ds-font-ui); --gp-font-weight: 900; --gp-content-padding: 96px var(--pl-m); box-shadow: 0 -1px 0 color-mix(in srgb, var(--pc-oro) 12%, transparent); }
 .ce-root::before { content: ''; position: absolute; z-index: -1; inset: 0; background-image: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
 /* Luces doradas dentro de la tinta de DICO: se ven a traves de las letras y
    no paran. Al entrar bajan, para no competir con el titulo y el boton
@@ -29,9 +29,9 @@
   50% { transform: translate(-45%, 40%) scale(.8); opacity: .45; }
   100% { transform: translate(-15%, 75%) scale(1.2); opacity: 1; }
 }
-/* Texto secundario sobre el azul: zinc-50 con 8% de trace (4.98:1). */
+/* Texto secundario sobre el azul noche: zinc-50 con 18% de noche. */
 /* Fondo del circulo: el negro con 25% del azul, un pozo oscuro donde el oro da 7.95:1. */
-.ce-dentro { --ce-circulo-fondo: color-mix(in srgb, var(--pl-suelo-continuo) 75%, var(--ds-color-intelligence-trace)); --ce-texto-2: color-mix(in srgb, var(--ds-color-zinc-50) 92%, var(--ds-color-intelligence-trace)); --ce-circulo: clamp(56px, 4.5vw, 76px); max-width: 1600px; margin-inline: auto; text-align: center; }
+.ce-dentro { --ce-circulo-fondo: color-mix(in srgb, var(--pl-suelo-continuo) 55%, var(--ds-color-intelligence-noche)); --ce-texto-2: color-mix(in srgb, var(--ds-color-zinc-50) 82%, var(--ds-color-intelligence-noche)); --ce-circulo: clamp(56px, 4.5vw, 76px); max-width: 1600px; margin-inline: auto; text-align: center; }
 .ce-root h2 { margin: 0; font-size: clamp(36px, 4.2vw, 64px); font-weight: 500; line-height: 1.08; letter-spacing: -.035em; }
 .ce-root h2 span { display: block; }
 .ce-root h2 .ce-intro { margin-bottom: 12px; color: var(--ce-texto-2); font-size: clamp(18px, 1.6vw, 24px); font-weight: 400; line-height: 1.4; letter-spacing: -.015em; }
@@ -45,8 +45,8 @@
 .ce-numero { position: relative; z-index: 1; display: grid; place-items: center; flex: none; width: var(--ce-circulo); height: var(--ce-circulo); border: 2px solid color-mix(in srgb, var(--pc-oro), var(--ds-color-zinc-50) calc(var(--ce-encendido, 0) * 35%)); border-radius: var(--ds-radius-pill); background: color-mix(in srgb, var(--ce-circulo-fondo), var(--pc-oro) calc(var(--ce-encendido, 0) * 26%)); color: color-mix(in srgb, var(--pc-oro), var(--ds-color-zinc-50) calc(var(--ce-encendido, 0) * 35%)); box-shadow: 0 0 16px color-mix(in srgb, var(--pc-oro) calc(var(--ce-encendido, 0) * 55%), transparent), inset 0 0 12px color-mix(in srgb, var(--pc-oro) calc(var(--ce-encendido, 0) * 35%), transparent); font-size: clamp(22px, 1.7vw, 28px); font-weight: 500; font-variant-numeric: tabular-nums; }
 .ce-pasos h3 { margin: 0; font-size: clamp(22px, 1.85vw, 30px); font-weight: 500; line-height: 1.25; letter-spacing: -.025em; }
 .ce-pasos h3 { transition: color 480ms ease, text-shadow 480ms ease; }
-/* La promesa cumplida: el oro sobre el azul da 2.81:1, asi que el texto queda zinc-50 y el oro va en el halo. */
-.ce-recorrido[data-promesa="true"] .ce-pasos li:last-child h3 { text-shadow: 0 0 18px color-mix(in srgb, var(--pc-oro) 70%, transparent); }
+/* La promesa cumplida: el paso 3 se pone dorado (oro sobre noche: 7.25:1). */
+.ce-recorrido[data-promesa="true"] .ce-pasos li:last-child h3 { color: var(--pc-oro); text-shadow: 0 0 16px color-mix(in srgb, var(--pc-oro) 25%, transparent); }
 .ce-pasos p { max-width: 31ch; margin: var(--ds-space-4) auto 0; color: var(--ce-texto-2); font-size: clamp(16px, 1.35vw, 22px); line-height: 1.65; }
 .ce-accion { margin-top: clamp(64px, 6.5vw, 104px); }
 .ce-accion > p { margin-top: 12px; color: var(--ce-texto-2); font-size: var(--ds-type-md); line-height: 1.5; }
