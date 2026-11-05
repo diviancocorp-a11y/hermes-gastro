@@ -1,15 +1,7 @@
-.cf-root { position: relative; border-block: 3px solid var(--pl-suelo-continuo); padding: 96px var(--pl-m); background: var(--ds-color-intelligence-volt); color: var(--ds-color-zinc-50); }
-.cf-panel { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 40px; max-width: 1480px; margin-inline: auto; }
-.cf-root[data-compuerta="abierta"] { border-block-color: var(--pc-oro); }
-.cf-compuerta { position: absolute; z-index: 2; inset: 0; overflow: hidden; pointer-events: none; }
-.cf-hoja { position: absolute; left: 0; right: 0; height: 50%; pointer-events: auto; background: var(--pl-suelo-continuo); border-color: var(--ds-color-zinc-800); transition: border-color 160ms ease; }
-.cf-hoja-superior { top: 0; border-bottom: 3px solid var(--ds-color-zinc-800); }
-.cf-hoja-inferior { bottom: 0; border-top: 3px solid var(--ds-color-zinc-800); }
-.cf-root[data-compuerta="abriendo"] .cf-hoja, .cf-root[data-compuerta="dorada"] .cf-hoja, .cf-root[data-compuerta="abierta"] .cf-hoja { border-color: var(--pc-oro); }
-.cf-hoja-superior { transform: translateY(calc(-1 * var(--cf-apertura, 0%))); }
-.cf-hoja-inferior { transform: translateY(var(--cf-apertura, 0%)); }
-.cf-root:is([data-compuerta="cerrada"], [data-compuerta="dorada"]) .cf-panel { pointer-events: none; }
-.cf-root:focus-within .cf-hoja { transition: none; }
+/* El Cierre es un Glyph Portal (GlyphPortal.jsx): la palabra DICO sobre el negro
+   de la landing y, del otro lado de la O, el panel sobre el azul. */
+.cf-root { --gp-paper: var(--pl-suelo-continuo); --gp-field: var(--ds-color-intelligence-volt); --gp-foreground: var(--ds-color-zinc-50); --gp-font-family: var(--ds-font-ui); --gp-font-weight: 900; --gp-content-padding: 96px var(--pl-m); }
+.cf-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 40px; max-width: 1480px; margin-inline: auto; }
 .cf-panel h2 span { display: block; }
 .cf-panel h2 { font-family: var(--ds-font-soul); font-size: clamp(38px, 5vw, 80px); font-weight: 400; line-height: 1.08; letter-spacing: -.035em; }
 .cf-accion { justify-self: end; text-align: center; }
@@ -62,14 +54,14 @@
 .pl-root .pf-root .pf-capsula:focus-visible { border-radius: var(--ds-radius-pill); }
 .pl-root .cf-root .cf-boton:focus-visible { outline-color: var(--ds-color-zinc-50); border-radius: var(--ds-radius-pill); }
 @media (max-width: 599px) {
-  .cf-root { padding-block: 64px; }
+  .cf-root { --gp-content-padding: 64px var(--pl-m); }
   .cf-root .cf-boton { min-height: 64px; max-width: 100%; padding-left: var(--ds-space-4); gap: var(--ds-space-3); font-size: 16px; }
   .pf-root { padding-top: var(--ds-space-8); }
   .pf-nav { gap: var(--ds-space-2) var(--ds-space-4); }
   .pf-redes { grid-template-columns: minmax(0, 1fr); max-width: 340px; gap: var(--ds-space-6); }
   .pf-horarios { flex-direction: column; }
 }
-@media (prefers-reduced-motion: reduce) { .cf-compuerta { display: none; } .cf-root { border-block-color: var(--pc-oro); } .cf-root .cf-boton, .cf-boton::before, .cf-boton .pl-hero-burbuja { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .cf-root .cf-boton, .cf-boton::before, .cf-boton .pl-hero-burbuja { transition: none; } }
 
 @media (min-width: 600px) and (max-width: 999px) { .pf-redes { grid-template-columns: minmax(0, 340px); justify-content: center; } }
 @media (prefers-reduced-motion: reduce) { .pf-root .pf-capsula, .pf-mensaje { transition: none; } }

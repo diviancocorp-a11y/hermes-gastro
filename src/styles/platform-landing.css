@@ -810,7 +810,7 @@
   }
 
   .pl-anim [data-reveal]:not(.is-in) .pl-palabra > span,
-  .pl-anim .cf-root:not([data-titulo='listo']) .pl-palabra > span {
+  .pl-anim .cf-root[data-gp-motion='on']:not([data-titulo='listo']) .pl-palabra > span {
     transform: translateY(calc(100% + .2em));
     transition: none;
   }

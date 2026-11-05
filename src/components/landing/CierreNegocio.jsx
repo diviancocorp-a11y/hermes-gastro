@@ -1,48 +1,32 @@
-import { useEffect, useRef, useState } from 'react';
-import useMediaQuery from '../../lib/useMediaQuery';
+import { useRef, useState } from 'react';
 import { AGENDA_URL, AGENDA_HORARIO, WHATSAPP_URL, WHATSAPP_HORARIO, WHATSAPP_VISIBLE, INSTAGRAM_DICO_URL, INSTAGRAM_DIVIANCO_URL } from '../../lib/contactoPlataforma';
 import { marcarEvento } from '../../lib/analiticaPlataforma';
+import GlyphPortal from './GlyphPortal';
 import NegociosDico from './NegociosDico';
 import Palabras from './Palabras';
 import '../../styles/cierre-negocio.css';
 
 export default function CierreNegocio({ onDiagnostico }) {
   const [copiaEmail, setCopiaEmail] = useState('');
-  const cierre = useRef(null);
-  const yaAbierta = useRef(false);
-  const reducido = useMediaQuery('(prefers-reduced-motion: reduce)');
-  const [compuerta, setCompuerta] = useState('cerrada');
-  useEffect(() => {
-    if (reducido) {
-      const cuadro = requestAnimationFrame(() => { yaAbierta.current = true; setCompuerta('abierta'); });
-      return () => cancelAnimationFrame(cuadro);
-    }
-    let cuadro = 0;
-    const medir = () => {
-      cuadro = 0;
-      const rect = cierre.current.getBoundingClientRect();
-      const alto = window.innerHeight;
-      if (rect.top > alto + 80) yaAbierta.current = false;
-      const junta = rect.top + rect.height / 2;
-      const progreso = yaAbierta.current ? 1 : Math.max(0, Math.min(1, (alto * .86 - junta) / (alto * .44)));
-      cierre.current.style.setProperty('--cf-apertura', `${progreso * 101}%`);
-      // El titulo entra una vez, con la compuerta ya mas que a medio abrir,
-      // y no vuelve a esconderse si la compuerta se cierra un poco.
-      if (progreso >= .6) cierre.current.dataset.titulo = 'listo';
-      const estado = progreso >= 1 ? 'abierta' : progreso > 0 ? 'abriendo' : junta <= alto * .92 ? 'dorada' : 'cerrada';
-      setCompuerta(actual => actual === estado ? actual : estado);
-    };
-    const actualizar = () => { if (!cuadro) cuadro = requestAnimationFrame(medir); };
-    window.addEventListener('scroll', actualizar, { passive: true });
-    window.addEventListener('resize', actualizar);
-    actualizar();
-    return () => { cancelAnimationFrame(cuadro); window.removeEventListener('scroll', actualizar); window.removeEventListener('resize', actualizar); };
-  }, [reducido]);
+  // El titulo entra una sola vez: cuando la camara ya revelo el panel o cuando
+  // el foco llega al panel antes de entrar. Con el portal estatico (movimiento
+  // reducido, fuente colgada) el titulo no se esconde: ver platform-landing.css.
+  // La fuente y el peso de la palabra salen de --gp-font-family y
+  // --gp-font-weight (cierre-negocio.css), no de props.
+  const [tituloListo, setTituloListo] = useState(false);
+  const yaListo = useRef(false);
+  const marcarListo = () => { if (yaListo.current) return; yaListo.current = true; setTituloListo(true); };
+  const alAvanzar = (progreso) => { if (progreso >= .85) marcarListo(); };
   return (
     <>
-      <section className="cf-root" id="contacto" aria-labelledby="cf-titulo" ref={cierre} data-compuerta={reducido ? 'abierta' : compuerta} onFocusCapture={evento => { if (!evento.target.matches(':focus-visible')) return; yaAbierta.current = true; cierre.current.style.setProperty('--cf-apertura', '101%'); cierre.current.dataset.titulo = 'listo'; setCompuerta('abierta'); }}>
-        <div className="cf-compuerta" aria-hidden="true"><span className="cf-hoja cf-hoja-superior" /><span className="cf-hoja cf-hoja-inferior" /></div>
+      <GlyphPortal
+        className="cf-root" aria-labelledby="cf-titulo" data-titulo={tituloListo ? 'listo' : undefined}
+        word="DICO" focusChar="O" scrollLength={1.6}
+        onProgress={alAvanzar} onFocusCapture={marcarListo}
+      >
         <div className="cf-panel">
+          {/* El ancla cae al panel, no a la palabra: un link a #contacto llega con todo revelado. */}
+          <span className="pl-ancla" id="contacto" aria-hidden="true" />
           <h2 id="cf-titulo" data-reveal="palabras"><span><Palabras texto="Tu negocio más ordenado." /></span><span><Palabras texto="Tu tiempo más tuyo." inicio={4} /></span></h2>
           <div className="cf-accion">
           <button type="button" className="pl-boton cf-boton" onClick={onDiagnostico}>
@@ -52,7 +36,7 @@ export default function CierreNegocio({ onDiagnostico }) {
           <p className="cf-ayuda">Diagnóstico breve, sin dejar tu email.</p>
           </div>
         </div>
-      </section>
+      </GlyphPortal>
       <footer className="pf-root" aria-label="Contacto y navegación de Dico">
         <NegociosDico />
         <div className="pf-contenido">
