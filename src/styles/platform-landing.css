@@ -806,7 +806,7 @@
   .pl-anim h2 .pl-palabra > span {
     display: inline-block;
     transition: transform var(--pc-t-personaje) var(--pc-curva);
-    transition-delay: min(calc(var(--i, 0) * 55ms), 660ms);
+    transition-delay: calc(var(--pc-t-rapido) + min(calc(var(--i, 0) * 55ms), 660ms));
   }
 
   .pl-anim [data-reveal]:not(.is-in) .pl-palabra > span,

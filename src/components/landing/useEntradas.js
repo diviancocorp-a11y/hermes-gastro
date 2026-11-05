@@ -21,7 +21,16 @@ export default function useEntradas(raizRef) {
         if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
       }
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
-    raiz.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    // Los titulos que suben palabra por palabra esperan a estar bien adentro
+    // de la pantalla: con el borde de abajo arrancaban antes de que se leyeran.
+    const tarde = new IntersectionObserver((entradas) => {
+      for (const e of entradas) {
+        if (e.isIntersecting) { e.target.classList.add('is-in'); tarde.unobserve(e.target); }
+      }
+    }, { rootMargin: '0px 0px -30% 0px', threshold: 0 });
+    raiz.querySelectorAll('[data-reveal]').forEach((el) => {
+      (el.matches('[data-reveal="palabras"]') || el.querySelector('.pl-palabra') ? tarde : io).observe(el);
+    });
+    return () => { io.disconnect(); tarde.disconnect(); };
   }, [raizRef]);
 }
