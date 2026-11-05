@@ -9,6 +9,59 @@
 
 ---
 
+## 3/nov/2026 — Login único, consola en su subdominio y agenda de servicios (Claude)
+
+### Hecho
+
+**Agenda de turnos para rubros de servicio** (primer caso MiaEstudio; PRs #47–#55, migraciones 0109–0113). El plan y las decisiones están en `docs/plataforma/PLAN-AGENDA.md`.
+- Disponibilidad en la base (`get_available_slots`: horario − turnos − bloqueos − buffer − traslado), zonas con minutos de traslado, adicionales (`is_addon`), panel de agenda y reserva online pública (`/reservar`, edge function `booking`, seña por MercadoPago con `mp-webhook` y vencimiento a los 5 min).
+- 0113: `get_available_slots` rompía para `service_role` (`permission denied for schema private`); ahora se mira el rol del JWT antes de tocar `private`. Con tests SQL (`agenda_huecos.sql`, `agenda_reserva_online.sql`).
+- Probado en producción con un tenant descartable (`zz-prueba-reserva`, ya borrado): 29/30, y el corte de seña sin MercadoPago responde 503. **La seña real con MercadoPago NO se probó.**
+
+**Login único** (PRs #65–#71; Ricky mergeó todo; deploy de producción `91f6ab4` en `READY`, mismo SHA que `main`).
+- `divianco.app/entrar` es la misma puerta que el login del admin (`LoginShell` compartido), con marca Dico fija. Con email y clave lee los negocios de la persona (`src/services/entradaUnica.js`): uno entra directo a `<slug>.divianco.app/admin`, varios eligen, y el staff ve además "Consola de Divianco". Se entra una sola vez: la sesión viaja en el hash `#dico-sesion=` y el destino la toma antes de preguntar si hay sesión (`tomarTraspaso`, llamado desde `usePlatformTenant` y `Consola`).
+- **Consola en `consola.divianco.app`** (#67, migración **0120**, `consola` reservado en `tenantHost.js` y en `is_reserved_slug`). `divianco.app/consola` redirige. Se borró el login propio de la consola: sin sesión manda a `/entrar`, con sesión sin permiso muestra "Esa cuenta no tiene acceso" (`SinAcceso`). No se indexa (`meta noindex`: el `robots.txt` es el mismo para todos los hosts). La recuperación de clave del staff es la de `/entrar`; el acceso lo da la fila de `platform_admins`, no la clave.
+- **Intro de Dico** (#70): ya no está en los logins. Se ve al abrir el negocio, solo tras un login real (login del admin o traspaso desde `/entrar`); no si la app se abre con la sesión ya abierta. `ConIntro` es la raíz común de todos los estados de `PlatformAdmin` (si cada estado armaba su propio árbol, el overlay se remontaba y el intro arrancaba de nuevo).
+- **Topbar** (#69): logo del negocio (`settings.logo_url`) y botón "Ver catálogo" (`/`, pestaña nueva).
+- **Selector de negocios en la burbuja de perfil** (#71, estilo Instagram): "Tus negocios" con el actual tildado y la consola si es staff; consultas perezosas al abrir.
+
+### Por qué (lo caro de reconstruir)
+- **`supabase.auth.signOut()` revoca la sesión en el servidor, incluso con `{ scope: 'local' }`** (`POST /logout?scope=local`, verificado en `node_modules/@supabase/auth-js`). El primer traspaso lo usaba para "olvidar" la sesión de `divianco.app` y la que viajaba llegaba muerta: todos volvían a `/entrar` (producción rota entre #65 y #68). Ahora se frena el auto-refresh y se borran las claves `hermes-auth*` del localStorage del origen, sin tocar el servidor (`olvidarSesionLocal`). Los tests mockeaban `signOut` y no lo podían ver: hay un test que afirma que **nunca** se llama en el traspaso.
+- **La sesión se mueve, no se copia.** El mismo refresh token en dos orígenes se rompería con la rotación de Supabase. Consecuencia: cambiar de negocio deslogea las otras pestañas del mismo origen. Se usa `location.replace` para que "atrás" no vuelva a una página sin sesión (bfcache).
+- **`tenants_select` deja ver TODOS los negocios al staff** (`OR es_staff_divianco()`, 0052). `negociosDelUsuario()` filtra por membresía propia (`tenant_members.user_id`); sin eso un staff veía el edificio entero en `/entrar` y habría sido tratado como dueño de todo.
+- Cerrar sesión desde el admin lleva al login **del propio negocio**, no a `/entrar` (decisión de Ricky): es lo que va a abrir la app instalada del local.
+
+### Verificado
+- En producción (integración de Vercel): deploy `91f6ab4` `READY` = `main`. Migración `reservar_consola` aplicada y releída (`is_reserved_slug('consola') = true`, 0 tenants reservados).
+- Suite completa 2235/2235, build, ESLint sin errores y `check:diseno` (17 conocidos, ninguno nuevo) en cada PR. Auditor independiente en cada cambio de UI (0 P0; los P1/P2 se corrigieron antes de mergear).
+- Ricky confirmó "ya se arregló" tras el #68 (ingreso a negocios y consola) y que cerrar sesión lleva al login del negocio.
+- **NO verificado:** el intro tras un login real, la topbar en móvil, el selector de negocios (con varios negocios y con la cuenta staff) y el anuncio con lector de pantalla. Todo eso está cubierto solo por tests de jsdom; ningún subagente tuvo sesión de Supabase.
+
+### Pendiente inmediato (en orden)
+1. **Ricky mira en producción** el selector (burbuja de perfil, con su cuenta staff), el intro y la topbar en el celular.
+2. **Verificar en Supabase → Authentication → URL Configuration** que `https://consola.divianco.app/**` (o `https://*.divianco.app/**`) esté en Redirect URLs: de eso dependen los links de invitación y recuperación de la consola. No pude verlo desde el MCP.
+3. **Abrir la reserva online de MiaEstudio.** Hoy: canal `appointment` (sin `online_booking`), 7 servicios (varios en borrador), **0 zonas**, horarios cargados, 0 turnos. Falta: servicios activos, zonas con minutos de traslado, MercadoPago conectado (no se sabe si lo está) y medios de pago (efectivo + alias `miuchis.mp`, sin cargar: no se adivinó el formato). Después, con OK de Ricky, sumar `online_booking` a `tenants.channels` y probar una reserva real con seña de $6.000 hasta ver el turno en `confirmed` por `mp-webhook`.
+4. **App instalable por negocio.** Hoy `public/manifest.json` es genérico ("Hermes", `start_url: "/"` = catálogo público) y no hay aviso de instalación. Falta: manifest dinámico por host (nombre e ícono del negocio, `start_url: /admin`), tutorial de instalación (compu, Android, iPhone) y botón de instalar en el admin. Resuelve también el pendiente de La Nona Pato (el manifest genera la inicial "L").
+5. Recordatorios automáticos de turnos (fase 3C: push/mail primero; WhatsApp requiere decidir quién paga y el proveedor), luego cierre del turno → venta/insumos (4), política de cancelación y reembolsos (5), lista de espera (6).
+6. Deuda de UI anotada por el auditor, sin resolver: ramas muertas `stage === "intro"` en `loginEstilos.js` (`estiloCaja`) y comentario de `tiemposDeEntrada.js`; `FlowFieldBackground` ignora `prefers-reduced-motion`; pie del login del admin con contraste 2,59:1; inputs del login del admin sin label; JetBrains Mono sin `@font-face`.
+7. Menores de agenda: ancla `zonas` en el pendiente, "Mover" no ignora el propio turno, horas del panel en la zona horaria del dispositivo, selección y cantidad de adicionales.
+
+### Bloqueado por Ricky
+- Paso 2 (Redirect URLs de Supabase), conexión de MercadoPago de MiaEstudio, decidir cuándo se abre la reserva online, y quién paga WhatsApp si se hace.
+
+### Heredados de las secciones que se archivan (siguen vigentes)
+- **k6** (`docs/operacion/CARGA-K6.md`): Ricky debe hacer "Run now" de la tarea quincenal; `mp-status` diferido espera su OK; faltan escenario de panel y CI para ramas; no retirar la worktree `cool-fermat` sin revisar su `.codex`; accesibilidad de `SkipToContent` y side-tabs, demora de crons y contenido/contacto de la landing sin resolver.
+- **La Nona Pato:** tarifas y condiciones de envío; reemplazar el WhatsApp provisional cuando Ricky confirme el definitivo; completar el titular de transferencia; fotos individuales restantes.
+- **Monare:** 32 precios, precio de la caja Ópalo, fotos definitivas y datos bancarios reales (no se inventaron); sin recetas.
+- **GerenteDico:** cerrar el issue #29 de prueba; próxima etapa `gerentedico` → PR/preview.
+- **General:** primer error real desminificado de Sentry sin verificar. La existencia y el alta de MiaEstudio se verificaron en esta sesión (existe, activo).
+
+### Archivos y limpieza
+- No se creó ningún archivo fuera de `src/`, `docs/`, `platform/` y `scripts/`. Los scripts de prueba viven en el temp del sistema (fuera del repo).
+- Se eliminaron las worktrees propias ya mergeadas (agenda ×5, fix-audit ×2, login-unico, intro-al-abrir, topbar-admin, cambiar-de-negocio) y sus ramas locales. Las 19 que quedan son de otros agentes; no se tocaron.
+
+---
+
 ## 24/oct/2026 — Catálogo por rubro preparado para revisión (Codex)
 
 - Rama `codex/catalogo-filtros-rubro`, PR borrador #56. No fusionada ni publicada

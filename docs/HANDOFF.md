@@ -11,6 +11,66 @@
 
 ---
 
+## 5/nov/2026 — Instagram DICO: portadas aprobadas y próximo paso ManyChat (Codex)
+
+### Hecho
+- Cuenta: @appdico. Ricky prepara Instagram para vender DICO. Orden pedido: destacadas primero, después bio/referencias de reels, al final esquema de producción con preguntas.
+- Cinco portadas elegidas: Qué es DICO (personaje oficial guiñando un ojo), Así funciona (botón negro con cursor), Tu ganancia (barras negras, moneda), Planes (tres tarjetas negras), Empezá acá (botón de encendido negro). Elementos negros satinados con bordes dorados finos; fondo degradado marfil arriba y azul profundo abajo; SIN aro exterior.
+- Corrección de Ricky que debe conservarse: somos una empresa de software; evitar ilustración dibujada, maquetas genéricas, exceso de dorado y deformar la mascota. Usar el personaje oficial como referencia de identidad; no recrearlo en escenas. Descartó barras azul volt y puerta por geometría incorrecta.
+- Biblioteca solicitada explícitamente por Ricky: `C:/Users/ricar/OneDrive/Desktop/Biblioteca de empresas/MIS PROYECTOS/dico/instagram`. Todo material futuro de Instagram va allí, no al repo. Portadas finales en `portadas/v2-final/01-que-es-dico.png` hasta `05-empeza-aca.png`. Las imágenes directamente en `portadas/` son versiones dibujadas descartadas. `ESTADO-2026-11-05.txt` indica qué usar.
+- `historias/01-que-es-dico-borrador.txt`: borrador de cuatro historias, todavía sin aprobación ni diseño. Su párrafo de dirección visual dibujada está obsoleto; prevalece el estado v2-final.
+- Referencia oficial: `C:/Users/ricar/OneDrive/Desktop/Biblioteca de empresas/MIS PROYECTOS/dico/mascota/perfil-instagram/dico-perfil-oficial.png`.
+- ManyChat propuesto para reel → comentario con palabra clave → DM con respuesta rápida → ejemplo por rubro → consulta/demo. Producción/publicación sería otro flujo, inicialmente con aprobación de piezas. No se construyó sistema de agentes ni se eligió publicador.
+
+### Verificado
+- Generadas con imagegen y revisadas visualmente las portadas; aprobación explícita de Ricky de la primera, negro para Así funciona/Tu ganancia y botón de encendido. Para Planes pidió avanzar a la siguiente.
+- Copias finales de las cinco portadas enumeradas en biblioteca, junto con estado y borrador. No se publicó contenido ni se conectó ManyChat o redes.
+- Se consultó documentación oficial de ManyChat: https://help.manychat.com/en/articles/17741897-instagram-post-and-reel-comments-trigger . El DM inicial por comentario no abre por sí solo la ventana de 24 h; hace falta interacción válida, por ejemplo respuesta rápida.
+- Instagram no permitió visualizar iman.ar ni https://www.instagram.com/p/DfVpjIkuSqd/; no se analizó su montaje. Pedir videos/grabaciones para hacerlo, no afirmar que se vieron.
+- Sin cambios de código, DB, migraciones o despliegues. `.env.local` sigue ignorado. Cierre documental preparado desde origin/main en worktree aislada para no subir la rama ajena `prueba/glyph-portal`.
+
+### Pendiente inmediato
+1. Retomar ManyChat y sistema de producción/publicación: responder las tres preguntas de abajo y definir una campaña piloto completa antes de automatizar volumen.
+2. Diseñar historias de destacadas con pantallas REALES de la app; los textos actuales son borrador. Revisar bio completa (última línea cortada en captura), y referencias de reels con archivos visibles.
+3. Después, definir calendario y esquema funcional de contenido con preguntas, como pidió Ricky.
+
+### Bloqueado por Ricky
+- ¿Solo Instagram DICO o también Facebook/otras redes y marcas?
+- ¿Ya hay cuenta ManyChat conectada a Instagram? No verificado.
+- ¿Consultas hacia WhatsApp, reunión o registro DICO?
+- Videos de referencia accesibles para analizar ritmo, esquemas 3D y mezcla con app real.
+
+### Archivos y limpieza
+- Fuera de src/docs/platform/scripts: biblioteca externa autorizada explícitamente por Ricky (portadas, borrador y estado); renders automáticos en `.codex/generated_images`; worktree documental `.claude/worktrees/cierre-instagram-20261105`.
+- El checkout principal ya tenía trabajo ajeno no trackeado (.agents, .codex, platform/divianco-workadventure) y rama de pruebas con commits fuera de main: no se toca ni se publica.
+- Se crearon copias de portadas en docs/marca/referencias/instagram-destacadas durante la sesión; se trasladan a biblioteca y se retiran esas copias del repo tras comprobar igualdad. No son parte del commit documental.
+- Worktrees inspeccionadas: landing-soul-footer limpia y su rama codex/cierre-landing-20261105 contenida en origin/main; prueba-21st limpia pero no mergeada. No se borraron. Checkout de ~/.codex protegido.
+
+### Pendientes preservados de la sección de login que se archiva
+Se conserva lo pendiente reportado por esa sesión; no fue revalidado aquí y puede haber sido resuelto por secciones posteriores (manifest/topbar y datos de Mía ya tienen actualizaciones arriba).
+
+### Pendiente inmediato (en orden)
+1. **Ricky mira en producción** el selector (burbuja de perfil, con su cuenta staff), el intro y la topbar en el celular.
+2. **Verificar en Supabase → Authentication → URL Configuration** que `https://consola.divianco.app/**` (o `https://*.divianco.app/**`) esté en Redirect URLs: de eso dependen los links de invitación y recuperación de la consola. No pude verlo desde el MCP.
+3. **Abrir la reserva online de MiaEstudio.** Hoy: canal `appointment` (sin `online_booking`), 7 servicios (varios en borrador), **0 zonas**, horarios cargados, 0 turnos. Falta: servicios activos, zonas con minutos de traslado, MercadoPago conectado (no se sabe si lo está) y medios de pago (efectivo + alias `miuchis.mp`, sin cargar: no se adivinó el formato). Después, con OK de Ricky, sumar `online_booking` a `tenants.channels` y probar una reserva real con seña de $6.000 hasta ver el turno en `confirmed` por `mp-webhook`.
+4. **App instalable por negocio.** Hoy `public/manifest.json` es genérico ("Hermes", `start_url: "/"` = catálogo público) y no hay aviso de instalación. Falta: manifest dinámico por host (nombre e ícono del negocio, `start_url: /admin`), tutorial de instalación (compu, Android, iPhone) y botón de instalar en el admin. Resuelve también el pendiente de La Nona Pato (el manifest genera la inicial "L").
+5. Recordatorios automáticos de turnos (fase 3C: push/mail primero; WhatsApp requiere decidir quién paga y el proveedor), luego cierre del turno → venta/insumos (4), política de cancelación y reembolsos (5), lista de espera (6).
+6. Deuda de UI anotada por el auditor, sin resolver: ramas muertas `stage === "intro"` en `loginEstilos.js` (`estiloCaja`) y comentario de `tiemposDeEntrada.js`; `FlowFieldBackground` ignora `prefers-reduced-motion`; pie del login del admin con contraste 2,59:1; inputs del login del admin sin label; JetBrains Mono sin `@font-face`.
+7. Menores de agenda: ancla `zonas` en el pendiente, "Mover" no ignora el propio turno, horas del panel en la zona horaria del dispositivo, selección y cantidad de adicionales.
+
+### Bloqueado por Ricky
+- Paso 2 (Redirect URLs de Supabase), conexión de MercadoPago de MiaEstudio, decidir cuándo se abre la reserva online, y quién paga WhatsApp si se hace.
+
+### Heredados de las secciones que se archivan (siguen vigentes)
+- **k6** (`docs/operacion/CARGA-K6.md`): Ricky debe hacer "Run now" de la tarea quincenal; `mp-status` diferido espera su OK; faltan escenario de panel y CI para ramas; no retirar la worktree `cool-fermat` sin revisar su `.codex`; accesibilidad de `SkipToContent` y side-tabs, demora de crons y contenido/contacto de la landing sin resolver.
+- **La Nona Pato:** tarifas y condiciones de envío; reemplazar el WhatsApp provisional cuando Ricky confirme el definitivo; completar el titular de transferencia; fotos individuales restantes.
+- **Monare:** 32 precios, precio de la caja Ópalo, fotos definitivas y datos bancarios reales (no se inventaron); sin recetas.
+- **GerenteDico:** cerrar el issue #29 de prueba; próxima etapa `gerentedico` → PR/preview.
+- **General:** primer error real desminificado de Sentry sin verificar. La existencia y el alta de MiaEstudio se verificaron en esta sesión (existe, activo).
+
+
+---
+
 ## 5/nov/2026 — Landing publicada: Machine Soul, contactos y navegación (Codex)
 
 ### Hecho
@@ -329,58 +389,5 @@
 - Marca de Mía: Modak/Poppins y la paleta Y2K del manual no están implementados (`catalog_font` no tiene consumidor; `logo_color` no reemplaza `--ac`). Logo del header a 36 px (el manual pide 60) y link de Instagram a 40 px (objetivo táctil 44): son cambios de código compartido, pasan por `/diseno`.
 - Confirmar si Flores 3D se cobra por flor, uña o trabajo, y si los retiros se reservan por separado.
 - Comprobar el aviso del candado del orquestador en una sesión de Claude sobre `main`, y contrastar el gate de hooks con la worktree `cool-fermat`.
-
----
-
-## 3/nov/2026 — Login único, consola en su subdominio y agenda de servicios (Claude)
-
-### Hecho
-
-**Agenda de turnos para rubros de servicio** (primer caso MiaEstudio; PRs #47–#55, migraciones 0109–0113). El plan y las decisiones están en `docs/plataforma/PLAN-AGENDA.md`.
-- Disponibilidad en la base (`get_available_slots`: horario − turnos − bloqueos − buffer − traslado), zonas con minutos de traslado, adicionales (`is_addon`), panel de agenda y reserva online pública (`/reservar`, edge function `booking`, seña por MercadoPago con `mp-webhook` y vencimiento a los 5 min).
-- 0113: `get_available_slots` rompía para `service_role` (`permission denied for schema private`); ahora se mira el rol del JWT antes de tocar `private`. Con tests SQL (`agenda_huecos.sql`, `agenda_reserva_online.sql`).
-- Probado en producción con un tenant descartable (`zz-prueba-reserva`, ya borrado): 29/30, y el corte de seña sin MercadoPago responde 503. **La seña real con MercadoPago NO se probó.**
-
-**Login único** (PRs #65–#71; Ricky mergeó todo; deploy de producción `91f6ab4` en `READY`, mismo SHA que `main`).
-- `divianco.app/entrar` es la misma puerta que el login del admin (`LoginShell` compartido), con marca Dico fija. Con email y clave lee los negocios de la persona (`src/services/entradaUnica.js`): uno entra directo a `<slug>.divianco.app/admin`, varios eligen, y el staff ve además "Consola de Divianco". Se entra una sola vez: la sesión viaja en el hash `#dico-sesion=` y el destino la toma antes de preguntar si hay sesión (`tomarTraspaso`, llamado desde `usePlatformTenant` y `Consola`).
-- **Consola en `consola.divianco.app`** (#67, migración **0120**, `consola` reservado en `tenantHost.js` y en `is_reserved_slug`). `divianco.app/consola` redirige. Se borró el login propio de la consola: sin sesión manda a `/entrar`, con sesión sin permiso muestra "Esa cuenta no tiene acceso" (`SinAcceso`). No se indexa (`meta noindex`: el `robots.txt` es el mismo para todos los hosts). La recuperación de clave del staff es la de `/entrar`; el acceso lo da la fila de `platform_admins`, no la clave.
-- **Intro de Dico** (#70): ya no está en los logins. Se ve al abrir el negocio, solo tras un login real (login del admin o traspaso desde `/entrar`); no si la app se abre con la sesión ya abierta. `ConIntro` es la raíz común de todos los estados de `PlatformAdmin` (si cada estado armaba su propio árbol, el overlay se remontaba y el intro arrancaba de nuevo).
-- **Topbar** (#69): logo del negocio (`settings.logo_url`) y botón "Ver catálogo" (`/`, pestaña nueva).
-- **Selector de negocios en la burbuja de perfil** (#71, estilo Instagram): "Tus negocios" con el actual tildado y la consola si es staff; consultas perezosas al abrir.
-
-### Por qué (lo caro de reconstruir)
-- **`supabase.auth.signOut()` revoca la sesión en el servidor, incluso con `{ scope: 'local' }`** (`POST /logout?scope=local`, verificado en `node_modules/@supabase/auth-js`). El primer traspaso lo usaba para "olvidar" la sesión de `divianco.app` y la que viajaba llegaba muerta: todos volvían a `/entrar` (producción rota entre #65 y #68). Ahora se frena el auto-refresh y se borran las claves `hermes-auth*` del localStorage del origen, sin tocar el servidor (`olvidarSesionLocal`). Los tests mockeaban `signOut` y no lo podían ver: hay un test que afirma que **nunca** se llama en el traspaso.
-- **La sesión se mueve, no se copia.** El mismo refresh token en dos orígenes se rompería con la rotación de Supabase. Consecuencia: cambiar de negocio deslogea las otras pestañas del mismo origen. Se usa `location.replace` para que "atrás" no vuelva a una página sin sesión (bfcache).
-- **`tenants_select` deja ver TODOS los negocios al staff** (`OR es_staff_divianco()`, 0052). `negociosDelUsuario()` filtra por membresía propia (`tenant_members.user_id`); sin eso un staff veía el edificio entero en `/entrar` y habría sido tratado como dueño de todo.
-- Cerrar sesión desde el admin lleva al login **del propio negocio**, no a `/entrar` (decisión de Ricky): es lo que va a abrir la app instalada del local.
-
-### Verificado
-- En producción (integración de Vercel): deploy `91f6ab4` `READY` = `main`. Migración `reservar_consola` aplicada y releída (`is_reserved_slug('consola') = true`, 0 tenants reservados).
-- Suite completa 2235/2235, build, ESLint sin errores y `check:diseno` (17 conocidos, ninguno nuevo) en cada PR. Auditor independiente en cada cambio de UI (0 P0; los P1/P2 se corrigieron antes de mergear).
-- Ricky confirmó "ya se arregló" tras el #68 (ingreso a negocios y consola) y que cerrar sesión lleva al login del negocio.
-- **NO verificado:** el intro tras un login real, la topbar en móvil, el selector de negocios (con varios negocios y con la cuenta staff) y el anuncio con lector de pantalla. Todo eso está cubierto solo por tests de jsdom; ningún subagente tuvo sesión de Supabase.
-
-### Pendiente inmediato (en orden)
-1. **Ricky mira en producción** el selector (burbuja de perfil, con su cuenta staff), el intro y la topbar en el celular.
-2. **Verificar en Supabase → Authentication → URL Configuration** que `https://consola.divianco.app/**` (o `https://*.divianco.app/**`) esté en Redirect URLs: de eso dependen los links de invitación y recuperación de la consola. No pude verlo desde el MCP.
-3. **Abrir la reserva online de MiaEstudio.** Hoy: canal `appointment` (sin `online_booking`), 7 servicios (varios en borrador), **0 zonas**, horarios cargados, 0 turnos. Falta: servicios activos, zonas con minutos de traslado, MercadoPago conectado (no se sabe si lo está) y medios de pago (efectivo + alias `miuchis.mp`, sin cargar: no se adivinó el formato). Después, con OK de Ricky, sumar `online_booking` a `tenants.channels` y probar una reserva real con seña de $6.000 hasta ver el turno en `confirmed` por `mp-webhook`.
-4. **App instalable por negocio.** Hoy `public/manifest.json` es genérico ("Hermes", `start_url: "/"` = catálogo público) y no hay aviso de instalación. Falta: manifest dinámico por host (nombre e ícono del negocio, `start_url: /admin`), tutorial de instalación (compu, Android, iPhone) y botón de instalar en el admin. Resuelve también el pendiente de La Nona Pato (el manifest genera la inicial "L").
-5. Recordatorios automáticos de turnos (fase 3C: push/mail primero; WhatsApp requiere decidir quién paga y el proveedor), luego cierre del turno → venta/insumos (4), política de cancelación y reembolsos (5), lista de espera (6).
-6. Deuda de UI anotada por el auditor, sin resolver: ramas muertas `stage === "intro"` en `loginEstilos.js` (`estiloCaja`) y comentario de `tiemposDeEntrada.js`; `FlowFieldBackground` ignora `prefers-reduced-motion`; pie del login del admin con contraste 2,59:1; inputs del login del admin sin label; JetBrains Mono sin `@font-face`.
-7. Menores de agenda: ancla `zonas` en el pendiente, "Mover" no ignora el propio turno, horas del panel en la zona horaria del dispositivo, selección y cantidad de adicionales.
-
-### Bloqueado por Ricky
-- Paso 2 (Redirect URLs de Supabase), conexión de MercadoPago de MiaEstudio, decidir cuándo se abre la reserva online, y quién paga WhatsApp si se hace.
-
-### Heredados de las secciones que se archivan (siguen vigentes)
-- **k6** (`docs/operacion/CARGA-K6.md`): Ricky debe hacer "Run now" de la tarea quincenal; `mp-status` diferido espera su OK; faltan escenario de panel y CI para ramas; no retirar la worktree `cool-fermat` sin revisar su `.codex`; accesibilidad de `SkipToContent` y side-tabs, demora de crons y contenido/contacto de la landing sin resolver.
-- **La Nona Pato:** tarifas y condiciones de envío; reemplazar el WhatsApp provisional cuando Ricky confirme el definitivo; completar el titular de transferencia; fotos individuales restantes.
-- **Monare:** 32 precios, precio de la caja Ópalo, fotos definitivas y datos bancarios reales (no se inventaron); sin recetas.
-- **GerenteDico:** cerrar el issue #29 de prueba; próxima etapa `gerentedico` → PR/preview.
-- **General:** primer error real desminificado de Sentry sin verificar. La existencia y el alta de MiaEstudio se verificaron en esta sesión (existe, activo).
-
-### Archivos y limpieza
-- No se creó ningún archivo fuera de `src/`, `docs/`, `platform/` y `scripts/`. Los scripts de prueba viven en el temp del sistema (fuera del repo).
-- Se eliminaron las worktrees propias ya mergeadas (agenda ×5, fix-audit ×2, login-unico, intro-al-abrir, topbar-admin, cambiar-de-negocio) y sus ramas locales. Las 19 que quedan son de otros agentes; no se tocaron.
 
 ---
