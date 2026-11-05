@@ -55,7 +55,7 @@
 - **Cobros online:** se bloquea.
 - **ARCA en Caja:** dice "No incluida". La factura automática exige `facturacion_arca`.
 - `AvisoDePrueba` va debajo del saludo y muestra los días que le quedan de prueba.
-- Eventos de Vercel Analytics: `plan-bloqueo-visto` (una vez por función y por sesión) y `plan-bloqueo-click`.
+- Eventos `plan-bloqueo-visto` (una vez por función y por sesión) y `plan-bloqueo-click` con `trackEvent`. **Hoy no llegan a ningún lado:** `trackEvent` (`src/lib/observability.js`) manda a Plausible solo si existe `VITE_ANALYTICS_ID`, y el bundle de producción no lo tiene. Lo comprobé el 5/nov: `plausible` no aparece en ningún JS publicado. Vercel Web Analytics no está activo en `hermes-platform` (la API devuelve 404).
 
 **Diagnóstico** (`platform/functions/diagnostico/v2.js`, `motivosDelPlanV2`):
 - Recomienda Magnus con 2 locales o más.
@@ -93,7 +93,9 @@
    - los ingresos y egresos de Resumen, que dejan sacar la ganancia restando (se dejaron a propósito);
    - el diseñador ocultó también el análisis USAR y Exportar, quizás de más.
 4. **CRM:** el conteo de clientes inactivos usa una lista con el tope de 1000 filas de PostgREST. Con más clientes, el número queda corto.
-5. **Antes de tocar precios**, mirar los eventos de bloqueo de 2 a 3 semanas.
+5. **Que los eventos se registren en algún lado.** Hoy no se registran (ver Hecho). Recién después, mirar 2 a 3 semanas de bloqueos antes de tocar precios. Hay dos opciones:
+   - Vercel Web Analytics más `@vercel/analytics`, que es una dependencia nueva. Los eventos custom probablemente piden plan Pro.
+   - Una tabla de eventos en el edificio, que GerenteDico ya puede leer.
 
 ### Bloqueado por Ricky
 - `npm run deploy:functions`.
