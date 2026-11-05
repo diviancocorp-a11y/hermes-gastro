@@ -59,6 +59,7 @@
 .pf-logo ellipse { stroke: var(--ds-color-brand-gold-500); opacity: .65; }
 .pl-root .cf-root :focus-visible, .pl-root .pf-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: var(--ds-space-1); border-radius: var(--ds-radius-1); }
 .pl-root .pf-root :focus-visible { outline-color: var(--ds-color-intelligence-trace); }
+.pl-root .pf-root .pf-capsula:focus-visible { border-radius: var(--ds-radius-pill); }
 .pl-root .cf-root .cf-boton:focus-visible { outline-color: var(--ds-color-zinc-50); border-radius: var(--ds-radius-pill); }
 @media (max-width: 599px) {
   .cf-root { padding-block: 64px; }

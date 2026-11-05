@@ -25,6 +25,9 @@
   contacto. Movimiento reducido elimina las transiciones.
 - Detector antes/despues: 17 hallazgos conocidos, ninguno nuevo. Cambio en
   preview para revision, sin publicar estos ajustes en produccion todavia.
+- Navegador 900/390 px: sin desborde, frase legible sobre el efecto. Capsulas
+  cerradas 64 px; solo WhatsApp se expande a 340 px con cursor y vuelve a
+  cerrarse al retirarlo. El foco de teclado conserva la forma de capsula.
 
 ### Publicacion y registro siguiente — 31/oct
 
