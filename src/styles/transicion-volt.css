@@ -1,13 +1,21 @@
 /* La frase vive dentro de un ovalo en punta (una lente: dos arcos que se
-   juntan en los costados), alto, casi de borde a borde de la seccion.
+   juntan en los costados), alto, con aire arriba y abajo para que el halo no se corte.
    Alrededor, color liso (el mismo negro de Planes) para que se luzca el
    reflejo de la linea dorada; el shader existe solo adentro. La forma es
    una sola: el mismo path en la mascara del shader y en la linea
    (TransicionVolt.jsx), estirado al tamano de la seccion. */
-.hv-root { position: relative; display: grid; place-items: center; min-height: clamp(380px, 60svh, 640px); padding: clamp(72px, 11vw, 140px) var(--pl-m); overflow: hidden; background: var(--pl-suelo-continuo); }
-.hv-efecto { position: absolute; inset: 3% 0; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 50Q50 -50 100 50Q50 150 0 50Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 50Q50 -50 100 50Q50 150 0 50Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; pointer-events: none; }
-.hv-ovalo { position: absolute; inset: 3% 0; width: 100%; height: 94%; overflow: visible; pointer-events: none; filter: drop-shadow(0 0 3px var(--ds-color-brand-gold-300)) drop-shadow(0 0 14px color-mix(in srgb, var(--pc-oro) 55%, transparent)) drop-shadow(0 0 36px color-mix(in srgb, var(--pc-oro) 25%, transparent)); }
-.hv-ovalo path { fill: none; stroke: var(--ds-color-brand-gold-300); stroke-width: 1.5; }
+.hv-root { position: relative; display: grid; place-items: center; min-height: clamp(420px, 66svh, 720px); padding: clamp(72px, 11vw, 140px) var(--pl-m); overflow: hidden; background: var(--pl-suelo-continuo); }
+.hv-efecto { position: absolute; inset: 9% 0; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 50Q50 -50 100 50Q50 150 0 50Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 50Q50 -50 100 50Q50 150 0 50Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; pointer-events: none; }
+/* La linea: nucleo casi blanco, halo dorado que se abre en tres capas. */
+.hv-ovalo { position: absolute; inset: 9% 0; width: 100%; height: 82%; overflow: visible; pointer-events: none; filter: drop-shadow(0 0 2px color-mix(in srgb, var(--ds-color-brand-gold-300) 60%, var(--ds-color-zinc-50))) drop-shadow(0 0 12px var(--pc-oro)) drop-shadow(0 0 36px color-mix(in srgb, var(--pc-oro) 65%, transparent)) drop-shadow(0 0 80px color-mix(in srgb, var(--pc-oro) 35%, transparent)); }
+.hv-ovalo stop { stop-color: color-mix(in srgb, var(--ds-color-brand-gold-300) 70%, var(--ds-color-zinc-50)); }
+.hv-ovalo path { fill: none; stroke: url(#hv-ovalo-trazo); stroke-width: 2.5; }
+/* En pantallas angostas la seccion alta volvia la lente un rombo vertical:
+   mas baja y mas ancha que la pantalla, las puntas quedan afuera. */
+@media (max-width: 700px) {
+  .hv-root { min-height: clamp(360px, 105vw, 520px); }
+  .hv-efecto, .hv-ovalo { left: -22%; right: -22%; width: 144%; }
+}
 .hv-promesa { position: relative; z-index: 1; max-width: 32ch; margin: 0; font-size: clamp(30px, 3.5vw, 52px); text-align: center; color: var(--ds-color-zinc-50); }
 .hv-promesa > span { display: block; }
 .hv-promesa > span:first-child { margin-bottom: var(--ds-space-3); font-family: var(--ds-font-ui); font-size: clamp(18px, 1.8vw, 26px); font-weight: 400; line-height: 1.4; }
