@@ -6,6 +6,7 @@ vi.mock('../components/ConfirmSlideProvider', () => ({
   useConfirm: () => async () => false,
 }));
 vi.mock('../lib/observability', () => ({ trackEvent: vi.fn() }));
+vi.mock('../services/eventosApp', () => ({ registrarEvento: vi.fn() }));
 // El CRM real consulta cupones y settings: aca solo importa SI se monta.
 vi.mock('../components/admin/CRM', () => ({ default: () => <div>CRM del negocio</div> }));
 vi.mock('../services/platformPagos', () => ({
@@ -13,7 +14,7 @@ vi.mock('../services/platformPagos', () => ({
   conectarMercadoPago: vi.fn(),
 }));
 
-import { trackEvent } from '../lib/observability';
+import { registrarEvento as trackEvent } from '../services/eventosApp';
 import { estadoMercadoPago } from '../services/platformPagos';
 import BloqueoDePlan, { AvisoDePrueba } from '../components/admin/platform/BloqueoDePlan';
 import VentasPanel from '../components/admin/platform/VentasPanel';

@@ -52,6 +52,24 @@ export const HERRAMIENTAS = [
   {
     type: "function",
     function: {
+      name: "eventos",
+      description: "Uso del panel en los ultimos N dias: cuantas veces los negocios vieron un bloqueo "
+        + "de plan (algo que su plan no incluye, por ejemplo la ganancia o el CRM) y cuantas tocaron "
+        + "Ver planes, por funcion y con los negocios. Sirve para saber que empuja a pasar de plan. "
+        + "Sin slug, todos los negocios.",
+      parameters: {
+        type: "object",
+        properties: {
+          dias: { type: "integer", description: "cuantos dias hacia atras, de 1 a 31 (default 7)" },
+          slug: { type: "string", description: "opcional: solo este negocio" },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "anotar",
       description: "Propone anotar algo para arreglar o hacer como issue de GitHub. NO lo crea: "
         + "el sistema le muestra a Ricky el texto y lo crea solo si el contesta SI. Usala cuando "

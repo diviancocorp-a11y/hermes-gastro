@@ -33,6 +33,7 @@ import { firmaDelGerente, iguales } from "./firma.ts";
 import {
   cortar, diasValidos, HERRAMIENTAS, PROMPT_SISTEMA, resumirPedidos, slugValido,
 } from "./herramientas.ts";
+import { resumirEventos } from "./eventos.js";
 import {
   crearIssue, cuerpoDelIssue, esNo, esSi, fechaArgentina, HISTORIA_HORAS, HISTORIA_MAX,
   historiaComoMensajes, notaVencida, paraGuardar, RETENCION_DIAS, textoDePropuesta, tituloValido,
@@ -111,6 +112,24 @@ async function ejecutar(db: SupabaseClient, nombre: string, args: Record<string,
           .reduce((s, p) => s + (Number(p.total) || 0), 0)),
       };
     });
+  }
+
+  if (nombre === "eventos") {
+    const dias = diasValidos(args.dias);
+    const desde = new Date(Date.now() - dias * 86400_000).toISOString();
+    // PostgREST corta en 1000 filas: si llega al tope, el modelo lo dice.
+    let q = db.from("eventos_app").select("tenant_id, nombre, props").gte("created_at", desde)
+      .order("created_at", { ascending: false }).limit(1000);
+    if (args.slug) {
+      const s = slugValido(args.slug);
+      const t = s ? await tenantPorSlug(db, s) : null;
+      if (!t) return { error: `no existe el negocio ${args.slug}` };
+      q = q.eq("tenant_id", t.id);
+    }
+    const [{ data, error }, { data: tenants }] = await Promise.all([q, db.from("tenants").select("id, slug")]);
+    if (error) return { error: error.message };
+    const slugs = Object.fromEntries((tenants ?? []).map((t) => [t.id, t.slug]));
+    return { dias, incompleto: (data ?? []).length >= 1000, ...resumirEventos(data ?? [], slugs) };
   }
 
   const slug = slugValido(args.slug);

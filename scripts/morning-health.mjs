@@ -27,6 +27,9 @@
 //   5. Sentry: issues nuevos en 24h — con SENTRY_AUTH_TOKEN; sin token se
 //      saltea. Con PROBAR_ALERTA=true (input probar_alerta, a mano) manda un
 //      error de prueba que tiene que llegar por GerenteDico (sentry-prueba.mjs).
+//   6. Bloqueos de plan vistos y clicks en Ver planes en la ventana del turno
+//      (tabla eventos_app, 0124) — misma service role; sin ella o sin
+//      eventos no dice nada. No es un problema: es una novedad.
 //
 // Criterio del mensaje: lo roto va PRIMERO y el verde es corto. Secrets que
 // espera el workflow: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, y opcionales
@@ -40,6 +43,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { tenantsAMirar } from './tenants-vivos.mjs';
+import { resumirEventos, lineasDeBloqueos } from '../platform/functions/gerente-webhook/eventos.js';
 import { armarPrueba, dsnDelCodigo } from './sentry-prueba.mjs';
 import {
   nombresDelDrift, nombresSinArchivo, buscarEnPrs, traerPrsAbiertos, listarConPr,
@@ -192,6 +196,13 @@ async function main() {
     lines.push(...detalles.map(d => `  ${d}`));
   }
 
+  /* ── Bloqueos de plan (opcional, exige service role) ── */
+  const eventos = await traerEventos();
+  if (eventos) {
+    const extra = lineasDeBloqueos(eventos, TURNO.ventana);
+    if (extra.length) lines.push('', ...extra);
+  }
+
   /* ── Cerebro (opcional): que significa lo roto y que hacer ── */
   if (problemas.length) {
     const cerebro = await explicarConCerebro(problemas);
@@ -213,6 +224,32 @@ async function main() {
 }
 
 /* ─────────────────────── Checks ─────────────────────── */
+
+/**
+ * Eventos del panel en la ventana del turno (24h a la manana, 8h despues),
+ * resumidos. null sin credenciales o si la base no contesta: es una novedad,
+ * no un chequeo, y no puede tirar el reporte.
+ */
+async function traerEventos(env = process.env) {
+  const url = (env.PLATFORM_SUPABASE_URL || '').trim().replace(/\/+$/, '');
+  const key = (env.PLATFORM_SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  if (!url || !key) return null;
+  const horas = parseInt(TURNO.ventana, 10) || 24;
+  const desde = new Date(Date.now() - horas * 3600_000).toISOString();
+  const headers = { apikey: key, Authorization: `Bearer ${key}` };
+  try {
+    const [ev, tn] = await Promise.all([
+      fetch(`${url}/rest/v1/eventos_app?select=tenant_id,nombre,props&created_at=gte.${encodeURIComponent(desde)}&limit=1000`,
+        { headers, signal: AbortSignal.timeout(15000) }),
+      fetch(`${url}/rest/v1/tenants?select=id,slug`, { headers, signal: AbortSignal.timeout(15000) }),
+    ]);
+    if (!ev.ok || !tn.ok) return null;
+    const slugs = Object.fromEntries((await tn.json()).map((t) => [t.id, t.slug]));
+    return resumirEventos(await ev.json(), slugs);
+  } catch {
+    return null;
+  }
+}
 
 async function httpCheck(url) {
   try {
