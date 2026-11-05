@@ -9,6 +9,12 @@
 
 ## 1. Estado al 5/nov/2026
 
+- **Publicado y cerrado:** PR #75 (`09902be`, frase/footer/registro móvil)
+  y PR #77 (`3750163`, navegación). CI completo, E2E y smoke de producción
+  correctos para ese merge. Al cerrar, `divianco.app` está READY en `9f886ea`
+  de otra sesión (#78), que conserva la landing. El estado
+  detallado y las limitaciones de verificación están en HANDOFF.md.
+
 ### Navegacion durante el recorrido — 5/nov
 
 - Ricky aprobo publicar mediante PR #77. Se oculta la scrollbar de enlaces

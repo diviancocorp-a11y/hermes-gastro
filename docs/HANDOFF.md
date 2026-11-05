@@ -11,6 +11,96 @@
 
 ---
 
+## 5/nov/2026 — Landing publicada: Machine Soul, contactos y navegación (Codex)
+
+### Hecho
+
+- **PR #75**, merge `09902be`: frase elegida «Pusiste el alma en tu negocio.
+  Que también te deje tiempo para vivir» en `TransicionVolt.jsx` y
+  `transicion-volt.css`. Entrada sticker una sola vez y bob suave después;
+  se pausa fuera de pantalla y respeta movimiento reducido. Se reutiliza
+  el efecto entre hero y Rubros, sin agregar otro segmento.
+- **Footer** (`cierre-negocio.css`): las cápsulas vuelven a expandirse con
+  mouse/foco y cerrarse al salir. El ancho de pantalla y `hover:none` las
+  dejaban siempre abiertas. El navegador integrado puede declarar ese modo
+  aunque haya cursor: no usarlo para forzar la apertura de los contactos.
+- **Registro móvil** (`signup.css`): bienvenida `position:relative` para
+  contener su imagen absoluta. Antes se posicionaba contra el viewport y
+  tapaba el formulario. El formulario queda marfil opaco; el paisaje sigue
+  limitado a la bienvenida. Sin cambios de alta, planes, prueba ni cobros.
+- **PR #77**, merge `3750163`: `NavegacionLanding.jsx`,
+  `navegacion-landing.css` e integración en `PlatformLanding.jsx`. Barra fija
+  negra solo después del hero, logo original, enlaces a Rubros,
+  Acompañamiento, Planes y Preguntas, sección activa dorada y CTA al mismo
+  diagnóstico. Se oculta durante el embudo para no interferir con el modal.
+- Logo, enlaces y CTA permanecen en **una sola fila** en todos los anchos.
+  En celular el botón dice Diagnóstico y los enlaces se deslizan sin
+  scrollbar visible. La línea volt de avance va en el **borde inferior**,
+  ligada al scroll y reversible; no es un pulso decorativo.
+- No se tocó la arquitectura, la base, migraciones ni edge functions.
+  Se conservan los planes Paris/Dante/Magnus que ya venían de main.
+
+### Verificado
+
+- **Producción:** landing publicada en `3750163`, Vercel READY.
+  Al cerrar otra sesión publicó #78; `divianco.app` releído READY en
+  `9f886ea`, que conserva esta landing. CI completo y E2E de `3750163` con éxito; hay un
+  smoke de producción exitoso y ejecuciones redundantes canceladas/omitidas.
+- **Preview:** 320, 390, 768 y 1280 px sin desborde; logo, enlaces y CTA
+  comparten eje vertical. Planes queda accesible al deslizar y el título
+  no queda detrás de la barra. CTA abre el diagnóstico y permite cerrarlo.
+  Línea de progreso comprobada debajo de la barra. El último ajuste que
+  oculta la scrollbar pasó build/CI; no se repitió la inspección visual
+  de ese cambio de CSS en producción.
+- Footer: a 900 px cápsulas cerradas de 64 px, solo WhatsApp se expande a
+  340 px al pasar el cursor y vuelve a cerrarse; sin abrir destinos externos.
+  Registro a 390 px: imagen contenida y fondo de formulario marfil opaco.
+- ESLint, typecheck, build y 87 pruebas habituales locales correctos.
+  `check:diseno` antes/después: 17 hallazgos conocidos, ninguno nuevo.
+  La animación final sticker/bob pasó build y CI; no se capturó su ciclo
+  completo en navegador. No se probaron altas ni pagos reales en esta sesión.
+
+### Pendiente inmediato
+
+1. Landing y navegación quedan aprobadas y publicadas. No hay cambios de
+   producto de esta sesión sin subir; el próximo cambio lo define Ricky.
+2. Legales siguen pendientes de textos aprobados: los controles existentes
+   no equivalen a documentos publicados. No se modificaron en esta sesión.
+3. Los pendientes de planes, funciones, analítica y agenda de las secciones
+   siguientes siguen a cargo de sus sesiones; no se dan por resueltos aquí.
+
+### Bloqueado por Ricky
+
+- Ninguna acción necesaria para conservar esta publicación.
+- Textos legales cuando quiera habilitarlos. Próxima prioridad de producto
+  por definir; no iniciar cambios nuevos al retomar sin su indicación.
+
+### Pendientes preservados del 24/oct que se archiva
+
+- Catálogo por rubro: PR borrador #56, no publicado; preview separado
+  `codex/catalogo-filtros-rubro-preview` usa fallback Monare y **no se fusiona**.
+  Requiere aprobación visual de Ricky y listado Vegano/Sin TACC de la clienta;
+  Skin Contact sigue en Vinos y envases de 3 L pendientes. Migraciones
+  0114/0115 ya aplicadas. Detalle de verificaciones en el histórico.
+- Checkout de Codex bajo `~/.codex/worktrees/` protegido por tarea fijada:
+  no se borra. No confundirlo con esta worktree de la landing.
+
+### Archivos y limpieza
+
+- Código solo en `src/`, documentación en `docs/`. Fuera del repo quedaron
+  capturas/archivos temporales de revisión en Temp y una maqueta ilustrativa
+  en la carpeta automática de imágenes generadas de Codex; no son código ni
+  dependencias del producto y ninguna imagen ilustrativa reemplazó sus assets.
+- `.env.local` sigue ignorado; no se guardaron secretos en commits.
+- Worktree propia `.claude/worktrees/landing-soul-footer`: limpia y rama
+  `codex/landing-navegacion` ya en main. Tras subir este cierre también se
+  puede retirar la rama documental. **Se ofrece limpiar; no se borra sin sí.**
+  `prueba-21st` no está mergeada y no se toca; tampoco el checkout de `~/.codex`.
+- Checkout principal tiene trabajo ajeno no trackeado y usa otra rama:
+  no se tocó, no se añadió ni se eliminó nada de esa sesión.
+
+---
+
 ## 5/nov/2026 — Planes Paris, Dante y Magnus, eventos para GerenteDico y deploy de functions (Claude)
 
 ### Hecho
@@ -292,44 +382,5 @@
 ### Archivos y limpieza
 - No se creó ningún archivo fuera de `src/`, `docs/`, `platform/` y `scripts/`. Los scripts de prueba viven en el temp del sistema (fuera del repo).
 - Se eliminaron las worktrees propias ya mergeadas (agenda ×5, fix-audit ×2, login-unico, intro-al-abrir, topbar-admin, cambiar-de-negocio) y sus ramas locales. Las 19 que quedan son de otros agentes; no se tocaron.
-
----
-
-## 24/oct/2026 — Catálogo por rubro preparado para revisión (Codex)
-
-- Rama `codex/catalogo-filtros-rubro`, PR borrador #56. No fusionada ni publicada
-  en producción. Preview separado `codex/catalogo-filtros-rubro-preview`: sólo
-  ese branch cambia el fallback a Monare; NO fusionar su commit a main.
-- Preview verificado: https://hermes-platform-li3ohpykf-diviancocorp-a11ys-projects.vercel.app/
-  (protección Vercel: obtener share link vigente por MCP si hace falta).
-- Perfiles gastro/bebidas/retail/barber configurables desde Productos por owner.
-  Categoría, bodega/marca, línea, cepa y presentación combinables; Cajas es
-  presentación. Gastronomía conserva filtros rápidos. Características explícitas
-  en editor, tarjeta y detalle; nunca inferidas de nombres o descripciones.
-- Migraciones 0114/0115 aplicadas vía MCP y releídas. 53 productos Monare con
-  clasificación, 40 activos/13 inactivos; precios, imágenes, descripción,
-  disponibilidad y categorías legacy sin cambios. Perfil beverages. Cero
-  características asignadas: Ricky espera listado de Vegano/Sin TACC de la clienta.
-  Skin Contact queda en Vinos hasta confirmar estilo; envases de 3L pendientes.
-- Datos nuevos validados en DB/Zod/servicios; omitir catalog_attributes conserva
-  datos desde formularios anteriores. get_catalog conserva contrato previo.
-- Verificación: 84 tests específicos, 87 smoke pre-commit, build, typecheck,
-  columnas, schema, compatibilidad, definer y check:diseno. CI inicial pasó
-  unit tests, lint, build y Playwright; audit detectó undici 7.30.0 (dev/jsdom).
-  Parche compatible actualizado a 7.30.1, npm audit: cero vulnerabilidades.
-- Diseño: antes/después 17 warnings + 6 advisory conocidos; ninguno nuevo.
-  Auditor independiente: cero pendientes tras corregir tokens y copy del editor.
-  390x844 y 1280x800 sin desborde; categorías 16 -> 5; controles nuevos 48px,
-  contraste 15,34:1, foco visible. Probado Espumantes+Chandon=1, Cajas=7,
-  Hielo=4 (descarta combinación incompatible), detalle con clasificación.
-- El navegador no abrió localhost; revisión visual hecha en Vercel. Editor
-  y selector de perfil cubiertos por pruebas de interacción; no guardados sobre
-  productos reales durante QA. La publicación espera OK explícito de Ricky.
-- Worktree real dentro de `.claude/worktrees/catalogo-filtros-rubro`.
-  La herramienta creó además un checkout vacío externo bajo `.codex/worktrees/`;
-  archive_worktree rechazó archivarlo por estar protegido por tarea/workspace fijado.
-  No se editó ni se usó ese checkout. El HANDOFF de precios previo se conserva aquí.
-
----
 
 ---
