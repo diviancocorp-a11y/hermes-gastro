@@ -11,6 +11,51 @@
 
 ---
 
+## 5/nov/2026 (noche) — Landing: títulos con movimiento, portal DICO, nuevo orden y óvalo dorado (Claude)
+
+Publicado en producción: `main` = `df62f77`, deploy de `hermes-platform` READY con ese SHA y CI verde (los 5 jobs, run 42131926867). Todo pasó por `/diseno` con `impeccable`, constructor y auditor separados.
+
+### Hecho
+
+- **Títulos palabra por palabra** (`04a135a`, `ad00ccb`): `src/components/landing/Palabras.jsx` parte cada h2 de sección en máscaras; suben con `--pc-t-personaje` y `--pc-curva`. `useEntradas.js` los observa aparte con el borde de abajo corrido 30%, porque arrancaban antes de que se leyeran. Ricky eligió **el mismo efecto en todos los títulos** (consistencia); la variedad va en un momento fuerte por sección.
+- **Cinta de clientes** en `NegociosDico.jsx`: 3 vueltas y frena (WCAG 2.2.2), pausa con hover/foco/fuera de pantalla; con movimiento reducido queda la fila deslizable. **Brillo una vez** en la tarjeta de Dante.
+- **Glyph Portal** (`src/components/landing/GlyphPortal.jsx` + `glyph-portal.css`): port a JS del componente MIT de Christian Katzmann (criterio de entrada de terceros: rama `prueba/glyph-portal`, ya mergeada). Sin modo interactivo ni anotaciones. La cámara entra por la **O de DICO** con luces doradas adentro de las letras (prop `campo`). El portal marca `data-gp-listo` (progreso >= .62 o foco) y `platform-landing.css` retiene títulos y `[data-reveal]` de adentro hasta ahí. Revela el contenido entre p .55 y .70 para que suba con el scroll y no quede azul vacío.
+- **Cómo empezar va dentro del portal**, sobre el token nuevo **`--ds-color-intelligence-noche` (#132258)** en `dico-tokens.css`: oro 7.25:1, zinc-50 14.4:1. Volt y trace no daban AA con texto claro chico (4.43 y 5.58). El paso 3 se pone dorado cuando el pulso llega; el pulso arranca con el primer círculo al 85% de la pantalla y termina con el último al 35% (antes terminaba con el segmento saliendo).
+- **Nuevo orden** (lo fija `src/test/ordenLanding.test.jsx`, que además exige que cada `href="#..."` tenga su id una sola vez y que el título y el botón del Cierre estén en el HTML de SEO): portada → Negocios → Rubros → Cómo empezar (portal) → frase "Pusiste el alma" → Planes → Preguntale a Dico → Cierre → pie. El pie salió de `CierreNegocio.jsx` a `PieNegocio.jsx`. El Cierre es una section azul noche común (la compuerta se borró). Barra fija y pie siguen el orden nuevo.
+- **La frase dentro de un óvalo en punta** (`TransicionVolt.jsx`, `transicion-volt.css`): lente de dos arcos, shader solo adentro (máscara SVG), línea dorada con núcleo casi blanco y halo en cuatro capas; alrededor el negro liso de Planes. En pantallas de 700 px o menos la lente es más ancha que la pantalla (si no, quedaba un rombo).
+- **Licencia MIT en el bundle** (`2c2fe4d`): `vite.config.js` conserva `/*! @license */` con `output.comments.legal`. Sin eso rolldown descartaba el aviso.
+
+### Verificado
+
+- En producción: SHA del deploy = `df62f77`, CI verde.
+- En el preview real (navegador integrado con link de acceso de Vercel): óvalo y halo en 1024 y 375 px.
+- El movimiento del portal con rAF real **no** se vio en el navegador integrado (el panel no dibujaba o tardaba más de 2.5 s en el primer cuadro y el portal quedaba estático, que es su fallback). Ricky lo vio en el preview y aprobó.
+- Tests de la landing (`ordenLanding`, `landingHero`, `entradaLanding`, `seoPlataforma`, `circuitoNegocio`, `viajeDico`) y `check:diseno` sin hallazgos nuevos (17, deuda conocida).
+
+### Pendiente inmediato
+
+1. **Precargar Overused Grotesk** en `index.html` (`<link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/dico/overused-grotesk/OverusedGrotesk-VF.woff2">`): si la fuente llega con el visitante parado en el portal, el alto salta de estático a movimiento. Toca `index.html`: pasa por `/diseno`.
+2. **El portal queda estático si el primer cuadro tarda más de 2.5 s** (lógica heredada del original, `stalled`). En un celular lento puede que nunca se vea el efecto. Medirlo en un teléfono real antes de tocarlo.
+3. Celular horizontal con alto útil menor a ~367 px: el salto a `#como-empezar` cae con el contenido a medio revelar (P2 del auditor).
+4. El paso del azul de Cómo empezar al negro de la frase es un corte recto: Ricky pidió sacar el difuminado; si lo pide de vuelta, suavizarlo sin tocar el óvalo.
+5. Las luces doradas del portal son una excepción a "oro solo acción y valor": anotarla en `docs/marca/` si queda.
+6. `ci:esperar` espera 15 min a un CI que no va a arrancar cuando la rama no está en los disparadores de `ci.yml` (solo `main` y PR): que avise enseguida.
+
+### Bloqueado por Ricky
+
+- Nada de esta sección.
+
+### Heredados de la sección del 3/nov que se archiva (siguen vigentes)
+
+- Datos de Mía que faltan: insumos de soft gel y esmaltado, producto del alisado, consumo por clienta del gel sólido y del removedor, y el recargo de $4.000 por reprogramar (no hay columna). Tienen que venir de Mía.
+- Contraer `prep_time_min` (sigue en `settings`, Zod y manifest sin lectores), en migración aparte con `-- contraer:`.
+- P3 sin resolver: `formatearDuracion` sin espacio duro y "1 h 30" vs "1 hora y media".
+- Marca de Mía: Modak/Poppins y paleta Y2K sin implementar (`catalog_font` sin consumidor; `logo_color` no reemplaza `--ac`); logo del header a 36 px (el manual pide 60) e Instagram a 40 px. Pasa por `/diseno`.
+- Confirmar si Flores 3D se cobra por flor, uña o trabajo, y si los retiros se reservan aparte.
+- Comprobar el aviso del candado del orquestador en una sesión sobre `main` y contrastar el gate de hooks con la worktree `cool-fermat`.
+
+---
+
 ## 5/nov/2026 — Instagram DICO: portadas aprobadas y próximo paso ManyChat (Codex)
 
 ### Hecho
@@ -354,40 +399,5 @@ Se conserva lo pendiente reportado por esa sesión; no fue revalidado aquí y pu
 ### Archivos y limpieza
 - No se creó nada fuera de `src/`, `docs/`, `platform/` y `scripts/`, salvo `api/manifest.js` (ya existía; es el endpoint de Vercel) y las dos copias de la skill `cerrardico`.
 - Se borraron las worktrees ya mergeadas: 15 al empezar (respaldo de `.codex`/`.agents` en la rama `respaldo/codex-config-2026-11-03`), más `topbar-dos-menus` y `app-instalable`. La carpeta `modest-hopper-c05e8d` quedó vacía y trabada por un proceso; git ya no la registra. Quedan `prueba-21st` (sin mergear) y la de Codex en `~/.codex`.
-
----
-
-## 3/nov/2026 (tarde) — MiaEstudio con datos y tienda abierta; el tiempo solo en servicios (Claude)
-
-### Hecho
-
-**Datos de MiaEstudio** (de la planilla "Mia Estudio — Datos para activar el sistema.xlsx"; solo datos del tenant `d3f27bf9-…`, por MCP):
-- Descripciones de los 7 servicios. Horarios en `staff_schedules`: sábado 09–17 y domingo 10–19.
-- Medios de pago: Tarjeta y MercadoPago `active=false`; nuevo "Transferencia" (kind `transfer`). `settings.payment_accounts` con alias `miuchis.mp` (Mercado Pago, titular Mia Jazmín González).
-- Insumos: Bótox líquido The Real Brazilian Keratin (ml, costo 28, stock 200), Gel sólido Charlt limit (costo 800, stock 5), Removedor Las Verano (costo 36, stock 500). Receta: 50 ml de bótox en "Bótox capilar".
-- **Tienda abierta**: `store_open=true` y la sucursal Principal con lat -34.409833 / lng -58.857472 (pin que mandó Ricky). Sin coordenadas `catalogo_activo` da false aunque `store_open` sea true (0083, `private.tiene_ubicacion`).
-
-**El tiempo del catálogo** (`4517491`, y antes la migración **0119**):
-- 0119 `get_catalog` emite `type` y `duration_min` por producto (solo expandir, aplicada por MCP).
-- `tiempoFor(p)` en `src/catalog-pro/homeHelpers.js`: muestra la duración real solo si `type === "service"` ("3 h", "2 h 30", "50 min"); todo lo demás, nada. Se sacaron `prepFor`/`prepMin` y la prop `prepDefault` de Home, Category, Family, ProductDetail, Search y `Catalog.jsx`.
-- **Por qué:** Ricky decidió que en gastronomía y comercio el tiempo sobra ("somos un software de gestión, no de pedidos"). Antes todo producto mostraba `settings.prep_time_min` (30 por defecto, sin pantalla para editarlo) y los servicios de Mía decían "30 min".
-
-### Verificado
-- Producción: deploy de `4517491` `READY`, CI verde (Lint, Security Audit, Typecheck, Unit Tests, Build). `crazy-miga.divianco.app`: 8 productos, ningún "min". `mia-estudio.divianco.app`: 3 h, 2 h 30, 50 min ×2, 2 h, 2 h 30; Flores 3D sin tiempo (no tiene duración).
-- Suite local 171 archivos / 2249 tests (la primera corrida tras el rebase falló 2 por la intermitencia de Windows; la segunda pasó entera). Test nuevo `src/test/tiempoDelCatalogo.test.js`.
-
-### Pendiente inmediato
-1. **Datos de Mía que faltan** (no se inventaron): insumos de soft gel y esmaltado (la planilla era vaga), producto del alisado, consumo por clienta del gel sólido y del removedor, y el recargo de $4.000 por reprogramar (no hay columna donde guardarlo).
-2. **Contraer `prep_time_min`**: sigue en `settings`, Zod y manifest pero ya no lo lee nadie. Migración aparte con `-- contraer:` cuando `4517491` lleve unos días.
-3. P3 del auditor, sin resolver: `formatearDuracion` sin espacio duro ("2 h 30" puede partirse) y "1 h 30" vs "1 hora y media" (el aviso de encargo usa la segunda).
-4. Sigue vigente todo el pendiente de la sección de abajo (reserva online de Mía, app instalable, etc.).
-
-### Bloqueado por Ricky
-- Los datos del punto 1 tienen que venir de Mía.
-
-### Heredados de la sección del 22/oct que se archiva (siguen vigentes)
-- Marca de Mía: Modak/Poppins y la paleta Y2K del manual no están implementados (`catalog_font` no tiene consumidor; `logo_color` no reemplaza `--ac`). Logo del header a 36 px (el manual pide 60) y link de Instagram a 40 px (objetivo táctil 44): son cambios de código compartido, pasan por `/diseno`.
-- Confirmar si Flores 3D se cobra por flor, uña o trabajo, y si los retiros se reservan por separado.
-- Comprobar el aviso del candado del orquestador en una sesión de Claude sobre `main`, y contrastar el gate de hooks con la worktree `cool-fermat`.
 
 ---

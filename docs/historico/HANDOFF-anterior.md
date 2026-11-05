@@ -9,6 +9,41 @@
 
 ---
 
+## 3/nov/2026 (tarde) — MiaEstudio con datos y tienda abierta; el tiempo solo en servicios (Claude)
+
+### Hecho
+
+**Datos de MiaEstudio** (de la planilla "Mia Estudio — Datos para activar el sistema.xlsx"; solo datos del tenant `d3f27bf9-…`, por MCP):
+- Descripciones de los 7 servicios. Horarios en `staff_schedules`: sábado 09–17 y domingo 10–19.
+- Medios de pago: Tarjeta y MercadoPago `active=false`; nuevo "Transferencia" (kind `transfer`). `settings.payment_accounts` con alias `miuchis.mp` (Mercado Pago, titular Mia Jazmín González).
+- Insumos: Bótox líquido The Real Brazilian Keratin (ml, costo 28, stock 200), Gel sólido Charlt limit (costo 800, stock 5), Removedor Las Verano (costo 36, stock 500). Receta: 50 ml de bótox en "Bótox capilar".
+- **Tienda abierta**: `store_open=true` y la sucursal Principal con lat -34.409833 / lng -58.857472 (pin que mandó Ricky). Sin coordenadas `catalogo_activo` da false aunque `store_open` sea true (0083, `private.tiene_ubicacion`).
+
+**El tiempo del catálogo** (`4517491`, y antes la migración **0119**):
+- 0119 `get_catalog` emite `type` y `duration_min` por producto (solo expandir, aplicada por MCP).
+- `tiempoFor(p)` en `src/catalog-pro/homeHelpers.js`: muestra la duración real solo si `type === "service"` ("3 h", "2 h 30", "50 min"); todo lo demás, nada. Se sacaron `prepFor`/`prepMin` y la prop `prepDefault` de Home, Category, Family, ProductDetail, Search y `Catalog.jsx`.
+- **Por qué:** Ricky decidió que en gastronomía y comercio el tiempo sobra ("somos un software de gestión, no de pedidos"). Antes todo producto mostraba `settings.prep_time_min` (30 por defecto, sin pantalla para editarlo) y los servicios de Mía decían "30 min".
+
+### Verificado
+- Producción: deploy de `4517491` `READY`, CI verde (Lint, Security Audit, Typecheck, Unit Tests, Build). `crazy-miga.divianco.app`: 8 productos, ningún "min". `mia-estudio.divianco.app`: 3 h, 2 h 30, 50 min ×2, 2 h, 2 h 30; Flores 3D sin tiempo (no tiene duración).
+- Suite local 171 archivos / 2249 tests (la primera corrida tras el rebase falló 2 por la intermitencia de Windows; la segunda pasó entera). Test nuevo `src/test/tiempoDelCatalogo.test.js`.
+
+### Pendiente inmediato
+1. **Datos de Mía que faltan** (no se inventaron): insumos de soft gel y esmaltado (la planilla era vaga), producto del alisado, consumo por clienta del gel sólido y del removedor, y el recargo de $4.000 por reprogramar (no hay columna donde guardarlo).
+2. **Contraer `prep_time_min`**: sigue en `settings`, Zod y manifest pero ya no lo lee nadie. Migración aparte con `-- contraer:` cuando `4517491` lleve unos días.
+3. P3 del auditor, sin resolver: `formatearDuracion` sin espacio duro ("2 h 30" puede partirse) y "1 h 30" vs "1 hora y media" (el aviso de encargo usa la segunda).
+4. Sigue vigente todo el pendiente de la sección de abajo (reserva online de Mía, app instalable, etc.).
+
+### Bloqueado por Ricky
+- Los datos del punto 1 tienen que venir de Mía.
+
+### Heredados de la sección del 22/oct que se archiva (siguen vigentes)
+- Marca de Mía: Modak/Poppins y la paleta Y2K del manual no están implementados (`catalog_font` no tiene consumidor; `logo_color` no reemplaza `--ac`). Logo del header a 36 px (el manual pide 60) y link de Instagram a 40 px (objetivo táctil 44): son cambios de código compartido, pasan por `/diseno`.
+- Confirmar si Flores 3D se cobra por flor, uña o trabajo, y si los retiros se reservan por separado.
+- Comprobar el aviso del candado del orquestador en una sesión de Claude sobre `main`, y contrastar el gate de hooks con la worktree `cool-fermat`.
+
+---
+
 ## 3/nov/2026 — Login único, consola en su subdominio y agenda de servicios (Claude)
 
 ### Hecho
