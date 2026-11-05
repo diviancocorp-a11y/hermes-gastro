@@ -26,6 +26,10 @@
   antes/despues: 17 hallazgos conocidos, ninguno nuevo. Preview a 1280 y
   390 px sin desborde. Enlace Planes deja el titulo debajo de la barra y
   marca la seccion activa; corregido el salto de linea de la flecha del CTA.
+- Ajuste responsive comprobado a 320, 390 y 768 px: logo, enlaces y boton
+  comparten el mismo eje vertical, sin desborde de pagina. Los enlaces se
+  deslizan; Planes sigue accesible y marca su estado activo. Linea de avance
+  verificada en el borde inferior de la barra.
 
 ### Machine Soul y contactos del footer — 5/nov
 
