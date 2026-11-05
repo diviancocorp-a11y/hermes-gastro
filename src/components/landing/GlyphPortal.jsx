@@ -88,7 +88,7 @@ function scrollParent(element) {
 }
 
 export default function GlyphPortal({
-  word = 'SUBLIME', focusChar, front, children, scrollLength = 2.4,
+  word = 'SUBLIME', focusChar, front, campo, children, scrollLength = 2.4,
   fontFamily, fontWeight, onProgress, ...resto
 }) {
   const uid = `gp-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
@@ -282,7 +282,8 @@ export default function GlyphPortal({
       {/* JS reveals only measured geometry. Until then (no JS, prerender, unmeasured ink) the poster shows. */}
       <div data-gp-viewport="" aria-hidden="true" />
       <div data-gp-pin="">
-        <div data-gp-field="" aria-hidden="true" inert />
+        {/* `campo`: decoracion dentro de la tinta (se ve a traves de las letras). */}
+        <div data-gp-field="" aria-hidden="true" inert>{campo}</div>
         <svg data-gp-art="" aria-hidden="true" focusable="false">
           <defs>
             <clipPath id={clipId} clipPathUnits="userSpaceOnUse">

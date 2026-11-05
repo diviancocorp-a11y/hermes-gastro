@@ -65,3 +65,27 @@
 
 @media (min-width: 600px) and (max-width: 999px) { .pf-redes { grid-template-columns: minmax(0, 340px); justify-content: center; } }
 @media (prefers-reduced-motion: reduce) { .pf-root .pf-capsula, .pf-mensaje { transition: none; } }
+/* Luces doradas dentro de la tinta de DICO: se ven a traves de las letras y
+   no paran. Al entrar al panel bajan, para no competir con el titulo y el
+   boton (--gp-reveal lo escribe el portal). Con movimiento reducido quedan
+   quietas. */
+.cf-luces { position: absolute; inset: 0; overflow: hidden; opacity: calc(1 - var(--gp-reveal, 0) * .75); }
+.cf-luces span { position: absolute; width: 60%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--pc-oro) 70%, transparent), transparent 68%); mix-blend-mode: screen; }
+.cf-luces span:nth-child(1) { left: -10%; top: 10%; }
+.cf-luces span:nth-child(2) { left: 35%; top: -20%; width: 45%; }
+.cf-luces span:nth-child(3) { right: -12%; bottom: -15%; width: 55%; }
+@media (prefers-reduced-motion: no-preference) {
+  .cf-luces span:nth-child(1) { animation: cf-luz-a 11.3s ease-in-out -3s infinite alternate; }
+  .cf-luces span:nth-child(2) { animation: cf-luz-b 14.9s ease-in-out -7s infinite alternate; }
+  .cf-luces span:nth-child(3) { animation: cf-luz-a 17.7s ease-in-out -11s infinite alternate-reverse; }
+}
+@keyframes cf-luz-a {
+  0% { transform: translate(0, 0) scale(.85); opacity: .55; }
+  50% { transform: translate(38%, 22%) scale(1.15); opacity: 1; }
+  100% { transform: translate(70%, -12%) scale(.9); opacity: .65; }
+}
+@keyframes cf-luz-b {
+  0% { transform: translate(0, 0) scale(1); opacity: .8; }
+  50% { transform: translate(-45%, 40%) scale(.8); opacity: .45; }
+  100% { transform: translate(-15%, 75%) scale(1.2); opacity: 1; }
+}

@@ -22,6 +22,7 @@ export default function CierreNegocio({ onDiagnostico }) {
       <GlyphPortal
         className="cf-root" aria-labelledby="cf-titulo" data-titulo={tituloListo ? 'listo' : undefined}
         word="DICO" focusChar="O" scrollLength={1.6}
+        campo={<span className="cf-luces"><span /><span /><span /></span>}
         onProgress={alAvanzar} onFocusCapture={marcarListo}
       >
         <div className="cf-panel">
