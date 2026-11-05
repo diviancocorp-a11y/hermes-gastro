@@ -100,7 +100,7 @@ export async function fetchMyTenant() {
     // que el panel pueda MOSTRARLA. Todavia no bloquea nada: ver
     // src/modules/suscripcion.js, que explica por que la lectura va primero.
     .select('id, slug, name, vertical, timezone, status, settings, '
-      + 'plan_id, ciclo, paga_hasta, suspendido_at, '
+      + 'plan_id, ciclo, paga_hasta, suspendido_at, prueba_hasta, '
       + 'tenant_members(user_id, role, roles, branch_id)')
     .eq('slug', slug)
     .maybeSingle();

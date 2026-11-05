@@ -250,6 +250,14 @@ export const MUESTRAS = {
     },
     anchos: [1100, 700],
   },
+  // Paris (plan 'digital'): la venta del dia se ve, la ganancia queda en el
+  // bloqueo con el CTA a los planes.
+  'resultado-dia-paris': {
+    modulo: 'src/components/admin/platform/ResultadoDelDia.jsx',
+    titulo: 'Ventas · Hoy · Paris sin ganancia',
+    props: { sucursal: SUCURSAL, cargar: cargarMuestra(RESULTADO_CRAZY_MIGA), resultadoInicial: RESULTADO_CRAZY_MIGA, verGanancia: false },
+    anchos: [390, 900],
+  },
   'resultado-dia': {
     modulo: 'src/components/admin/platform/ResultadoDelDia.jsx',
     titulo: 'Ventas · Hoy · día completo con pérdida',

@@ -23,12 +23,17 @@
  *   resultadoInicial  un resultado ya traido: arranca con el, sin pedirlo.
  *                     Lo usa el preview (renderToStaticMarkup no corre
  *                     efectos y sin esto solo se veria el esqueleto).
+ *   verGanancia       false en un plan sin 'ganancia' (Paris): se ve lo que
+ *                     se vendio en el dia, y la ganancia neta y la cuenta
+ *                     quedan en un BloqueoDePlan. Default true: sin plan no
+ *                     cambia nada.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   fetchResultadoDelDia, lineasDelResultado, cierraLaCuenta,
   margenDelDia, avisosDelResultado, sumarDias,
 } from '../../../services/platformResultado';
+import BloqueoDePlan from './BloqueoDePlan';
 import '../../../styles/admin-resultado.css';
 
 const conCentavos = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -38,6 +43,9 @@ const diaDeSemana = new Intl.DateTimeFormat('es-AR', { weekday: 'long', timeZone
 
 // El signo menos tipografico (U+2212), no el guion: alinea con los numeros.
 const MENOS = '−';
+
+/** Un monto trae centavos. */
+const conCentavosSi = m => Math.round(Math.abs(Number(m) || 0) * 100) % 100 !== 0;
 
 /** Algun monto de la cuenta (o la ganancia) trae centavos. */
 function tieneCentavos(r) {
@@ -128,6 +136,38 @@ function Cuenta({ r, centavos }) {
   );
 }
 
+/**
+ * Lo que ve un plan sin ganancia: la venta del dia (r.ventas, la primera
+ * linea de la cuenta) como cifra, y en el lugar de la cuenta el bloqueo.
+ * Los avisos de la cuenta (ventas sin receta, nadie fichó) hablan de la
+ * ganancia, asi que no van.
+ */
+function SoloVentas({ r }) {
+  // Solo se ve la venta: los centavos de la cuenta escondida no cuentan.
+  const centavos = conCentavosSi(r.ventas);
+  const sinMovimientos = lineasDelResultado(r).every(l => l.monto === 0) && r.tickets === 0;
+  return (
+    <div className="ag-resultado-cuerpo">
+      <div className="ag-resultado-cifra">
+        <p className="ag-resultado-neta">{plata(r.ventas, centavos)}</p>
+        <p className="ag-resultado-etiqueta">Ventas del día</p>
+        <p className="ag-resultado-meta">{r.tickets === 1 ? '1 ticket' : `${r.tickets} tickets`}</p>
+        {sinMovimientos && (
+          <p className="ag-resultado-quieto">
+            Este día no tuvo ventas. Cuando entre la primera, se suma sola.
+          </p>
+        )}
+      </div>
+      <BloqueoDePlan
+        funcion="ganancia"
+        encajado
+        titulo="La ganancia del día"
+        detalle="Saber cuánto te quedó después del costo de lo vendido, la nómina, la merma y los gastos"
+      />
+    </div>
+  );
+}
+
 function Resultado({ r }) {
   const margen = margenDelDia(r);
   const avisos = avisosDelResultado(r);
@@ -169,6 +209,7 @@ export default function ResultadoDelDia({
   sucursal,
   cargar = fetchResultadoDelDia,
   resultadoInicial = null,
+  verGanancia = true,
 }) {
   const branchId = sucursal?.id || null;
   const [estado, setEstado] = useState(resultadoInicial ? 'listo' : 'cargando');
@@ -246,6 +287,7 @@ export default function ResultadoDelDia({
   let anuncio = '';
   if (cargando) anuncio = 'Cargando el resultado del día';
   else if (estado === 'error') anuncio = error;
+  else if (resultado && !verGanancia) anuncio = `${nombre}: ventas ${plata(resultado.ventas, conCentavosSi(resultado.ventas))}`;
   else if (resultado) anuncio = `${nombre}: ganancia neta ${plata(resultado.ganancia_neta, tieneCentavos(resultado))}`;
 
   return (
@@ -289,7 +331,7 @@ export default function ResultadoDelDia({
           </div>
         )}
 
-        {estado === 'listo' && resultado && <Resultado r={resultado} />}
+        {estado === 'listo' && resultado && (verGanancia ? <Resultado r={resultado} /> : <SoloVentas r={resultado} />)}
       </div>
     </section>
   );

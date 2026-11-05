@@ -6,13 +6,13 @@ export const PLANES_COMERCIALES = [
   {
     id: 'digital', nombre: 'Paris', para: 'Para empezar', mensual: 14999, anualPorMes: null,
     descripcion: 'Tu negocio online y la operación en un solo lugar.',
-    incluye: ['Catálogo online y pedidos', 'Caja y arqueo', 'Stock, compras y gastos', 'Equipo y resultados de día y mes', 'Recetas y costos en gastronomía'],
+    incluye: ['Catálogo online y pedidos', 'Avisos de pedidos nuevos', 'Caja y arqueo', 'Stock, compras y gastos', 'Equipo y ventas del día y del mes', 'Recetas y costos en gastronomía'],
     detalle: 'Pago mensual. Herramientas disponibles según tu rubro. Sin IVA.',
   },
   {
     id: 'local', nombre: 'Dante', para: 'Un local', mensual: 59000, anualPorMes: 47200,
-    descripcion: 'La base de Paris, con soporte para tu operación.',
-    incluye: ['Todo lo de Paris', 'Un local', 'Soporte por email y chat'],
+    descripcion: 'Sabé cuánto ganás y volvé a vender a los que no vuelven.',
+    incluye: ['Todo lo de Paris', 'Ganancia del día', 'Clientes y promos del catálogo', 'Cobros online con Mercado Pago', 'Soporte por email y chat', '14 días de prueba al crear tu cuenta'],
     detalle: 'Un local con soporte; o $47.200 por mes pagando el año. Sin IVA.',
   },
   {
@@ -22,6 +22,9 @@ export const PLANES_COMERCIALES = [
     detalle: 'Varias sucursales con consolidado; o $79.200 por mes por local pagando el año. Sin IVA.',
   },
 ];
+
+/** El nombre de venta de un plan por su id ('local' -> 'Dante'), o null. */
+export const nombreDelPlan = planId => PLANES_COMERCIALES.find(p => p.id === planId)?.nombre || null;
 
 export const pesosDelPlan = importe => `$${importe.toLocaleString('es-AR')}`;
 

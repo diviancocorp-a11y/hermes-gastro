@@ -57,7 +57,14 @@ export default function MonthSummary({
   // son gastronomicos. El edificio los apaga fuera de gastro — a una barberia
   // no se le muestra "food cost". Default true: el admin legacy no cambia.
   permiteUsar = true,
+  // Un plan sin 'ganancia' (Paris) pasa aca su BloqueoDePlan. Con el, se ve
+  // lo vendido y lo gastado del mes, pero todo lo que dice cuanto se gano
+  // —el resultado, el analisis automatico, la tendencia de margen, los
+  // analisis USAR y el informe exportable, que la imprime— queda afuera y
+  // el bloqueo ocupa el lugar del resultado. null = como siempre.
+  bloqueoDeGanancia = null,
 }) {
+  const verGanancia = !bloqueoDeGanancia;
   const today = new Date();
   const [selectedMonth, setSelectedMonth] = useState(monthKey(today));
   const [detail, setDetail] = useState(null); // null | 'income' | 'expenses' | 'products' | 'gastos'
@@ -257,7 +264,7 @@ export default function MonthSummary({
           </svg>
           <span>Atrás</span>
         </button>
-        <button
+        {verGanancia && <button
           type="button"
           className="ag-cta"
           onClick={handleExport}
@@ -270,7 +277,7 @@ export default function MonthSummary({
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
           <span>Exportar</span>
-        </button>
+        </button>}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0 16px' }}>
@@ -347,7 +354,7 @@ export default function MonthSummary({
       </div>
 
       {/* ANÁLISIS AUTOMÁTICO (heurísticas locales — futuro: IA real) */}
-      <div style={{ marginBottom: 14 }}>
+      {verGanancia && <div style={{ marginBottom: 14 }}>
         <AnaCard title="Análisis automático" state="crm" meta={`${recommendations.length} observaciones`}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
             {recommendations.map((r, i) => {
@@ -376,16 +383,16 @@ export default function MonthSummary({
             Generado localmente con reglas determinísticas. Cuando integremos un proveedor de IA, este análisis se hace más profundo.
           </p>
         </AnaCard>
-      </div>
+      </div>}
 
       {/* Tendencia USAR: ventas vs gastos por dia + margen acumulado.
           Movimiento de reveal al hover/touch (distinto al de resaltado). */}
-      <div style={{ marginBottom: 14 }}>
+      {verGanancia && <div style={{ marginBottom: 14 }}>
         <UsarTrendCard sales={ms} expenses={me} year={year} month={month} />
-      </div>
+      </div>}
 
       {/* P&L USAR (Dark Kitchen) ─────────────────────────────── */}
-      {permiteUsar && (
+      {permiteUsar && verGanancia && (
         <div style={{ marginBottom: 14 }}>
           <UsarPnL
             orders={mo}
@@ -400,7 +407,7 @@ export default function MonthSummary({
       )}
 
       {/* Menu Engineering (matriz Kasavana) */}
-      {permiteUsar && (
+      {permiteUsar && verGanancia && (
         <div style={{ marginBottom: 14 }}>
           <MenuEngineering
             sales={ms}
@@ -411,7 +418,7 @@ export default function MonthSummary({
       )}
 
       {/* Theoretical vs Actual Food Cost (detector de fugas) */}
-      {permiteUsar && (
+      {permiteUsar && verGanancia && (
         <div style={{ marginBottom: 14 }}>
           <TheoreticalFoodCost
             sales={ms}
@@ -484,7 +491,8 @@ export default function MonthSummary({
       </div>
 
       {/* RESULTADO (no clickeable: es un cálculo, no una lista) */}
-      <div style={{ marginBottom: 14 }}>
+      {!verGanancia && <div style={{ marginBottom: 14 }}>{bloqueoDeGanancia}</div>}
+      {verGanancia && <div style={{ marginBottom: 14 }}>
         <AnaCard title="Resultado" state={ganancia >= 0 ? 'crm' : 'orders'} meta={`${margenPct.toFixed(1)}% margen`}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '8px 0 10px' }}>
             <span style={{ fontSize: 12.5, color: 'var(--ag-ink-2)', fontWeight: 600 }}>Margen bruto</span>
@@ -505,7 +513,7 @@ export default function MonthSummary({
             </span>
           </div>
         </AnaCard>
-      </div>
+      </div>}
 
       {/* TOP PRODUCTOS */}
       {topProducts.length > 0 && (

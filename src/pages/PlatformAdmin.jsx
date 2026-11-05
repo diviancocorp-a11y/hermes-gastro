@@ -44,7 +44,7 @@ import {
   fetchOrderItemsByOrder,
 } from '../services/platformAdmin';
 import { fetchSales, createSale, completeOrder } from '../services/platformSales';
-import { fetchCustomerStats } from '../services/platformCrm';
+import { fetchCustomerStats, fetchClientesConEstado } from '../services/platformCrm';
 import { fetchWaste, registerWaste } from '../services/platformWaste';
 import { uploadTenantImage, uploadTenantAudio } from '../services/platformStorage';
 import {
@@ -71,6 +71,8 @@ import {
 } from '../services/platformSalon';
 import { fetchSettings, saveSettings, fetchTenantBrand } from '../services/platformSettings';
 import { VerCatalogo } from '../components/admin/platform/TopbarNegocio';
+import { AvisoDePrueba } from '../components/admin/platform/BloqueoDePlan';
+import { planEfectivo, planTieneFuncion, diasDePrueba } from '../modules/planes';
 import {
   fetchTicketsDeCocina, marcarPlato, cerrarTicket, etiquetaDePasador,
 } from '../services/platformKds';
@@ -237,6 +239,11 @@ function ConteoBreve({ value, listo }) {
 export default function PlatformAdmin() {
   const productsPanelRef = useRef(null);
   const { session, tenant, role, roles, status, doLogin, doLogout, intro, terminarIntro } = usePlatformTenant();
+  // Lo que el plan incluye HOY (con la prueba de Dante vigente, Dante). null
+  // = sin plan asignado = tiene todo, que es el caso de los clientes con
+  // acuerdo propio: para ellos nada de esto cambia la pantalla.
+  const plan = planEfectivo(tenant);
+  const diasPrueba = diasDePrueba(tenant);
 
   const [tab, setTab] = useState('products');
   const [toast, setToast] = useState('');
@@ -960,7 +967,9 @@ export default function PlatformAdmin() {
       // complete_order descuenta del stock lo que uso la receta (0104): sin
       // recargar, la alerta de stock bajo seguiria mirando el numero viejo.
       loadIngs();
-      if (perfilFiscal?.enabled && perfilFiscal.auto_issue) {
+      // La factura automatica es de Dante: sin la funcion no se encola, aunque
+      // haya quedado un perfil fiscal cargado de antes.
+      if (perfilFiscal?.enabled && perfilFiscal.auto_issue && planTieneFuncion(plan, 'facturacion_arca')) {
         const queued = await encolarFactura(tenantId, id);
         if (queued.__error) {
           msg('Cuenta cerrada. No se pudo crear la solicitud fiscal.');
@@ -974,7 +983,7 @@ export default function PlatformAdmin() {
     const res = await setOrderStatus(id, next);
     if (res === true) setOrders(list => list.map(o => (o.id === id ? { ...o, status: next } : o)));
     return res;
-  }, [loadCaja, loadIngs, msg, perfilFiscal, tenantId]);
+  }, [loadCaja, loadIngs, msg, perfilFiscal, plan, tenantId]);
 
   useEffect(() => {
     if (!turno?.id || !yoEnElEquipo?.id) { setMiEsperado(null); return; }
@@ -1037,6 +1046,8 @@ export default function PlatformAdmin() {
   // una funcion nueva por render dispararia la carga en loop (mismo caso que
   // los fetchers de proveedores en la Etapa 3).
   const traerClientes = useCallback(() => fetchCustomerStats(tenantId), [tenantId]);
+  // Para el bloqueo del CRM: distingue "sin clientes" de "la base no respondio".
+  const traerClientesConEstado = useCallback(() => fetchClientesConEstado(tenantId), [tenantId]);
 
   /* ── Gates ── */
   // Memo y no un calculo suelto: el efecto de abajo depende de esta lista, y
@@ -1289,6 +1300,7 @@ export default function PlatformAdmin() {
         </header>
 
         <ContextoDeTrabajo session={session} timezone={timezone} />
+        <AvisoDePrueba dias={diasPrueba} />
         {!esDesktop && huecoDico && presenciaDico}
 
         <div className="ag-workspace-stage">
@@ -1669,6 +1681,7 @@ export default function PlatformAdmin() {
                 bloqueos={bloqueosCaja}
                 perfilFiscal={perfilFiscal}
                 documentosFiscales={documentosFiscales}
+                plan={plan}
                 onAbrir={onAbrirCaja}
                 onCerrar={onCerrarCaja}
                 onRevisarRendicion={onRevisarRendicion}
@@ -1724,14 +1737,16 @@ export default function PlatformAdmin() {
                 permiteUsar={usaContabilidadUsar(tenant?.vertical)}
                 onCrearVenta={crearVenta}
                 onFetchClientes={traerClientes}
+                onFetchClientesConEstado={traerClientesConEstado}
                 onGuardarSettings={guardarSettings}
                 sucursal={branch}
+                plan={plan}
               />
             </Suspense>
           )}
           {tab === 'cobros' && (
             <Suspense fallback={<div style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando...</div>}>
-              <CobrosOnline showToast={msg} onBack={() => setTab('config')} />
+              <CobrosOnline showToast={msg} onBack={() => setTab('config')} plan={plan} />
             </Suspense>
           )}
           {tab === 'usuarios' && (
