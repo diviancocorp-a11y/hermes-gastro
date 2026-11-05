@@ -38,8 +38,8 @@
 // y valor, volt solo lo que lee Dico, oscuro solo en piezas de producto).
 //
 // Orden (5/nov/2026): portada (embudo) -> negocios que usan Dico -> rubros ->
-// como empezar -> cierre (el portal DICO y el boton) -> preguntas -> planes ->
-// la frase "Pusiste el alma" -> pie. Lo fija src/test/ordenLanding.test.jsx.
+// como empezar -> cierre (el portal DICO y el boton) -> la frase "Pusiste el
+// alma" -> planes -> preguntas -> pie. Lo fija src/test/ordenLanding.test.jsx.
 //
 // PRUEBA SOCIAL: logos originales de La Nona Pato, Crazy Miga, Monare y
 // MiaEstudio, con enlaces a sus Instagram configurados. Sin cifras ni
@@ -133,7 +133,7 @@ export default function PlatformLanding() {
         />
       </section>
       {/* Orden del 5/nov: los negocios bajo la portada, el Cierre en el medio,
-          Planes despues de Preguntas y la frase al final. Lo fija
+          despues la frase, Planes y Preguntas. Lo fija
           src/test/ordenLanding.test.jsx. */}
       <NegociosDico />
       <span className="pl-ancla-rubros" id="que-hace" aria-hidden="true" />
@@ -142,9 +142,9 @@ export default function PlatformLanding() {
       <RubrosNegocio onDiagnostico={abrirDiagnostico} />
       <ComoEmpezar onDiagnostico={abrirDiagnostico} />
       <CierreNegocio onDiagnostico={abrirDiagnostico} />
-      <PreguntasNegocio onDiagnostico={abrirDiagnostico} />
-      <PlanesNegocio onDiagnostico={abrirDiagnostico} />
       <TransicionVolt />
+      <PlanesNegocio onDiagnostico={abrirDiagnostico} />
+      <PreguntasNegocio onDiagnostico={abrirDiagnostico} />
       <PieNegocio />
     </div>
   );
