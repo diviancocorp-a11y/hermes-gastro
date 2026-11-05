@@ -19,8 +19,10 @@
 - Footer: las reglas por ancho menor a 1000 px forzaban las capsulas abiertas
   aun usando mouse. Ahora el ancho de pantalla solo ordena las columnas;
   mouse/teclado expanden y contraen las capsulas. Texto aparece gradualmente,
-  sin desplazar los contactos vecinos. Solo dispositivos sin hover conservan
-  los mensajes visibles; movimiento reducido elimina las transiciones.
+  sin desplazar los contactos vecinos. Se retira tambien la apertura forzada
+  por hover:none: el navegador integrado declara ese modo aun usando cursor.
+  En tactil los nombres/destinos siguen visibles debajo y el toque abre el
+  contacto. Movimiento reducido elimina las transiciones.
 - Detector antes/despues: 17 hallazgos conocidos, ninguno nuevo. Cambio en
   preview para revision, sin publicar estos ajustes en produccion todavia.
 

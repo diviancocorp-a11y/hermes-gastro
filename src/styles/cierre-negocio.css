@@ -71,5 +71,4 @@
 @media (prefers-reduced-motion: reduce) { .cf-compuerta { display: none; } .cf-root { border-block-color: var(--pc-oro); } .cf-root .cf-boton, .cf-boton::before, .cf-boton .pl-hero-burbuja { transition: none; } }
 
 @media (min-width: 600px) and (max-width: 999px) { .pf-redes { grid-template-columns: minmax(0, 340px); justify-content: center; } }
-@media (hover: none) { .pf-redes { grid-template-columns: minmax(0, 340px); justify-content: center; } .pf-root .pf-capsula, .pf-root .pf-capsula:is(:hover, :focus-visible) { width: 100%; gap: 12px; } .pf-mensaje, .pf-capsula:is(:hover, :focus-visible) .pf-mensaje { max-width: 260px; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .pf-root .pf-capsula, .pf-mensaje { transition: none; } }
