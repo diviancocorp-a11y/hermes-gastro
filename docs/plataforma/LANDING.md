@@ -18,8 +18,11 @@
 
 - Rama `codex/landing-soul-footer`, desde main `620460f`: frase en la
   transicion de color existente entre hero y Rubros, sin agregar otra seccion:
-  «Que la maquina se ocupe del trabajo. Y vos, de lo que te mueve el alma».
-  Primera linea en Overused Grotesk, remate en Butler con alma dorada.
+  «Pusiste el alma en tu negocio. Que tambien te deje tiempo para vivir»
+  elegida por Ricky. Primera linea en Overused Grotesk con alma dorada;
+  remate en Butler. Entrada sticker de 480 ms, una vez al entrar en vista;
+  luego bob suave de 3 px, pausado fuera de pantalla y sin movimiento cuando
+  se solicita movimiento reducido. Sin librerias nuevas.
   Texto accesible; solo el shader queda oculto a lectores de pantalla.
 - Footer: las reglas por ancho menor a 1000 px forzaban las capsulas abiertas
   aun usando mouse. Ahora el ancho de pantalla solo ordena las columnas;
@@ -29,7 +32,8 @@
   En tactil los nombres/destinos siguen visibles debajo y el toque abre el
   contacto. Movimiento reducido elimina las transiciones.
 - Detector antes/despues: 17 hallazgos conocidos, ninguno nuevo. Cambio en
-  preview para revision, sin publicar estos ajustes en produccion todavia.
+  cambios aprobados para publicar mediante PR #75. Incluye frase, contactos
+  y correccion del fondo movil del registro.
 - Navegador 900/390 px: sin desborde, frase legible sobre el efecto. Capsulas
   cerradas 64 px; solo WhatsApp se expande a 340 px con cursor y vuelve a
   cerrarse al retirarlo. El foco de teclado conserva la forma de capsula.
