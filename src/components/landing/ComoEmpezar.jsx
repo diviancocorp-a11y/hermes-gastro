@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import Palabras from './Palabras';
 import '../../styles/como-empezar.css';
 
 const PASOS = [
@@ -68,12 +69,12 @@ export default function ComoEmpezar({ onDiagnostico }) {
     <section className="ce-root" id="como-empezar" aria-labelledby="ce-titulo">
       <div className="ce-luces-borde" aria-hidden="true"><span /><span /><span /></div>
       <div className="ce-dentro">
-        <h2 id="ce-titulo"><span className="ce-intro">No tenés que resolver todo de golpe.</span><span>Te acompañamos desde el primer paso.</span></h2>
+        <h2 id="ce-titulo" data-reveal="palabras"><span className="ce-intro"><Palabras texto="No tenés que resolver todo de golpe." /></span><span><Palabras texto="Te acompañamos desde el primer paso." inicio={7} /></span></h2>
         <div className="ce-recorrido" ref={recorridoRef}>
           <div className="ce-via" aria-hidden="true"><span className="ce-pulso" /></div>
           <ol className="ce-pasos">
           {PASOS.map(([titulo, texto], indice) => (
-            <li key={titulo}>
+            <li key={titulo} data-reveal="paso" style={{ '--i': indice % 6 }}>
               <span className="ce-numero" aria-hidden="true">0{indice + 1}</span>
               <div><h3>{titulo}</h3><p>{texto}</p></div>
             </li>

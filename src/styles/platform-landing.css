@@ -727,6 +727,14 @@
   .pl-pie-legal { justify-self: start; text-align: left; }
 }
 
+/* Palabras de titulo (Palabras.jsx): texto corrido por defecto, aunque el
+   titulo de la seccion ponga display:block a sus spans. */
+.pl-root h2 .pl-palabra,
+.pl-root h2 .pl-palabra > span { display: inline; }
+
+/* Palabra y signo que no se separan de linea (Dico + punto). */
+.pl-sin-corte { white-space: nowrap; }
+
 /* ─────────────── Movimiento ───────────────
  * RC5 cap. 10: duraciones y viaje de los tokens --pc-t-* y --pc-viaje,
  * settle sin rebote (--pc-curva). La accion principal no espera: el boton
@@ -777,6 +785,39 @@
   .pl-anim [data-reveal].is-in {
     opacity: 1;
     transform: none;
+  }
+
+  /* Titulos de seccion: suben palabra por palabra desde su mascara, el
+     mismo gesto que el h1 del hero. El bloque no hace ademas fade+viaje. */
+  .pl-anim [data-reveal='palabras'] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .pl-anim h2 .pl-palabra {
+    display: inline-block;
+    overflow: hidden;
+    padding: .12em .04em;
+    margin: -.12em -.04em;
+    vertical-align: bottom;
+  }
+
+  .pl-anim h2 .pl-palabra > span {
+    display: inline-block;
+    transition: transform var(--pc-t-personaje) var(--pc-curva);
+    transition-delay: min(calc(var(--i, 0) * 55ms), 660ms);
+  }
+
+  .pl-anim [data-reveal]:not(.is-in) .pl-palabra > span,
+  .pl-anim .cf-root:not([data-titulo='listo']) .pl-palabra > span {
+    transform: translateY(calc(100% + .2em));
+    transition: none;
+  }
+
+  /* Pasos de "Como empezar": una lista real, escalonada por orden. */
+  .pl-anim .ce-pasos > li[data-reveal] {
+    transition-delay: calc(var(--i, 0) * var(--pc-t-rapido) / 2);
   }
 
   /* Al cambiar de rubro, la cuenta entra de nuevo. */

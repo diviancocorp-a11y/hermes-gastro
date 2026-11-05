@@ -84,6 +84,19 @@
   .pl-anim .pp-root [data-reveal="1"] { transition-delay: 80ms; }
   .pl-anim .pp-root [data-reveal].is-in { opacity: 1; transform: none; filter: none; }
   .pl-anim .pp-root [data-reveal]:focus-within { opacity: 1; transform: none; filter: none; transition-delay: 0ms; }
+  /* La cabecera solo aparece: su titulo ya sube palabra por palabra. */
+  .pl-anim .pp-root .pp-cabecera[data-reveal] { transform: none; filter: none; }
+  /* El plan destacado recibe un brillo diagonal, una sola vez, al entrar.
+     La capa viaja con transform y el clip-path compensa el viaje: solo se
+     ve lo que cae dentro de la tarjeta (su ::before necesita desbordar).
+     Lineal: con dos tramos, una curva frenaria el brillo en el medio. */
+  .pp-root .pp-plan[data-destacado="true"]::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 30%, color-mix(in srgb, var(--ds-color-zinc-50) 14%, transparent) 50%, transparent 70%); mix-blend-mode: screen; pointer-events: none; transform: translateX(-100%); clip-path: inset(0 0 0 100% round var(--ds-radius-4)); }
+  .pl-anim .pp-root .pp-plan[data-destacado="true"].is-in::after { animation: pp-brillo 800ms linear 700ms both; }
+}
+@keyframes pp-brillo {
+  from { transform: translateX(-100%); clip-path: inset(0 0 0 100% round var(--ds-radius-4)); }
+  50% { transform: translateX(0); clip-path: inset(0 0 0 0 round var(--ds-radius-4)); }
+  to { transform: translateX(100%); clip-path: inset(0 100% 0 0 round var(--ds-radius-4)); }
 }
 
 /* El desplazamiento, no el reloj, revela las tarjetas. */

@@ -4,6 +4,7 @@ import { PREGUNTAS_DICO, TEMAS_DICO } from '../../lib/preguntasPlataforma';
 import { WHATSAPP_URL } from '../../lib/contactoPlataforma';
 import { marcarEvento } from '../../lib/analiticaPlataforma';
 import useMediaQuery from '../../lib/useMediaQuery';
+import Palabras from './Palabras';
 import '../../styles/preguntas-negocio.css';
 
 const GESTOS_DICO = [{ pose: 'explain' }, { pose: 'idle', animacion: 'revisa' }, { pose: 'pointUp' }, { pose: 'pointDown' }];
@@ -118,7 +119,7 @@ export default function PreguntasNegocio({ onDiagnostico }) {
     <section className="pn-root" id="preguntas" aria-labelledby="pn-titulo">
       <span className="pl-ancla" id="seguridad" aria-hidden="true" />
       <div className="pn-dentro">
-        <h2 id="pn-titulo">Sacate la duda. Preguntale a <span className="pn-titulo-dico">Dico</span>.</h2>
+        <h2 id="pn-titulo" data-reveal="palabras"><Palabras texto="Sacate la duda. Preguntale a" />{' '}<span className="pl-sin-corte"><span className="pn-titulo-dico" translate="no"><Palabras texto="Dico" inicio={5} /></span><span className="pl-palabra"><span style={{ '--i': 6 }}>.</span></span></span></h2>
         <p className="pn-intro">Respuestas claras para empezar.</p>
         <div className="pn-guia" data-pregunta={Boolean(seleccion)} data-fase={pensando ? 'pensando' : respondiendo ? 'respondiendo' : 'quieto'} ref={guia}>
           <button type="button" className="pn-mascota" ref={personaje} aria-label="Saludar a Dico" onPointerEnter={reaccionar} onFocus={reaccionar} onClick={reaccionar}><span aria-hidden="true"><DicoPhysical pose={movimiento.pose} animacion={movimiento.animacion ?? null} ritmo={.55} reducedMotion={reducido || !(saludando || pensando || respondiendo || reaccion)} /></span></button>

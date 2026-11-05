@@ -3,6 +3,7 @@ import useMediaQuery from '../../lib/useMediaQuery';
 import { AGENDA_URL, AGENDA_HORARIO, WHATSAPP_URL, WHATSAPP_HORARIO, WHATSAPP_VISIBLE, INSTAGRAM_DICO_URL, INSTAGRAM_DIVIANCO_URL } from '../../lib/contactoPlataforma';
 import { marcarEvento } from '../../lib/analiticaPlataforma';
 import NegociosDico from './NegociosDico';
+import Palabras from './Palabras';
 import '../../styles/cierre-negocio.css';
 
 export default function CierreNegocio({ onDiagnostico }) {
@@ -25,6 +26,9 @@ export default function CierreNegocio({ onDiagnostico }) {
       const junta = rect.top + rect.height / 2;
       const progreso = yaAbierta.current ? 1 : Math.max(0, Math.min(1, (alto * .86 - junta) / (alto * .44)));
       cierre.current.style.setProperty('--cf-apertura', `${progreso * 101}%`);
+      // El titulo entra una vez, con la compuerta ya mas que a medio abrir,
+      // y no vuelve a esconderse si la compuerta se cierra un poco.
+      if (progreso >= .6) cierre.current.dataset.titulo = 'listo';
       const estado = progreso >= 1 ? 'abierta' : progreso > 0 ? 'abriendo' : junta <= alto * .92 ? 'dorada' : 'cerrada';
       setCompuerta(actual => actual === estado ? actual : estado);
     };
@@ -36,10 +40,10 @@ export default function CierreNegocio({ onDiagnostico }) {
   }, [reducido]);
   return (
     <>
-      <section className="cf-root" id="contacto" aria-labelledby="cf-titulo" ref={cierre} data-compuerta={reducido ? 'abierta' : compuerta} onFocusCapture={evento => { if (!evento.target.matches(':focus-visible')) return; yaAbierta.current = true; cierre.current.style.setProperty('--cf-apertura', '101%'); setCompuerta('abierta'); }}>
+      <section className="cf-root" id="contacto" aria-labelledby="cf-titulo" ref={cierre} data-compuerta={reducido ? 'abierta' : compuerta} onFocusCapture={evento => { if (!evento.target.matches(':focus-visible')) return; yaAbierta.current = true; cierre.current.style.setProperty('--cf-apertura', '101%'); cierre.current.dataset.titulo = 'listo'; setCompuerta('abierta'); }}>
         <div className="cf-compuerta" aria-hidden="true"><span className="cf-hoja cf-hoja-superior" /><span className="cf-hoja cf-hoja-inferior" /></div>
         <div className="cf-panel">
-          <h2 id="cf-titulo"><span>Tu negocio más ordenado.</span><span>Tu tiempo más tuyo.</span></h2>
+          <h2 id="cf-titulo" data-reveal="palabras"><span><Palabras texto="Tu negocio más ordenado." /></span><span><Palabras texto="Tu tiempo más tuyo." inicio={4} /></span></h2>
           <div className="cf-accion">
           <button type="button" className="pl-boton cf-boton" onClick={onDiagnostico}>
             <span className="cf-etiqueta">Empezar mi diagnóstico</span>

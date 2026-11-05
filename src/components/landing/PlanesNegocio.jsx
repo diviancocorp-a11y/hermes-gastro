@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../../lib/planesPlataforma';
+import Palabras from './Palabras';
 import '../../styles/planes-negocio.css';
 
 function Importe({ valor }) {
@@ -89,7 +90,7 @@ export default function PlanesNegocio({ onDiagnostico }) {
       <div className="pp-dentro">
         <header className="pp-cabecera" data-reveal="0">
           <span className="pp-antetitulo">Planes <span>Dico</span></span>
-          <h2 id="pp-titulo">Un plan para cada etapa.</h2>
+          <h2 id="pp-titulo"><Palabras texto="Un plan para cada etapa." /></h2>
           <p>Elegí según cómo funciona tu negocio.</p>
         </header>
         <fieldset className="pp-periodo" data-reveal="1" onFocusCapture={evento => evento.currentTarget.classList.add('is-in')}>

@@ -3,6 +3,7 @@ import imagenGastronomia from './EscenaRubro/assets/gastronomia-estatica.webp';
 import imagenComercio from './EscenaComercio/assets/comercio-estatica.webp';
 import imagenServicios from './EscenaServicios/assets/servicios-estatica.webp';
 import LecturaRubro from './LecturaRubro';
+import Palabras from './Palabras';
 import IconoHerramienta from './IconoHerramienta';
 import { HERRAMIENTAS_RUBROS } from './herramientasRubros';
 import '../../styles/rubros-negocio.css';
@@ -187,7 +188,7 @@ export default function RubrosNegocio({ onDiagnostico }) {
       <span className="pl-ancla" id="modulos" aria-hidden="true" />
       <span className="pl-ancla" id="integraciones" aria-hidden="true" />
       <div className="rn-firma">
-      <header className="rn-cabecera"><h2 id="rn-titulo">Tu rubro, tu forma de trabajar.</h2></header>
+      <header className="rn-cabecera"><h2 id="rn-titulo" data-reveal="palabras"><Palabras texto="Tu rubro, tu forma de trabajar." /></h2></header>
       <div className="rn-experiencia">
         <div className="rn-visual" ref={visual}>
           <div className="rn-maqueta">
