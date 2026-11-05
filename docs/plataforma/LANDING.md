@@ -11,6 +11,9 @@
 
 ### Navegacion durante el recorrido — 5/nov
 
+- Ricky aprobo publicar mediante PR #77. Se oculta la scrollbar de enlaces
+  conservando el deslizamiento tactil y de teclado; el progreso volt inferior
+  permanece visible.
 - Rama `codex/landing-navegacion`, desde main `09902be`: barra negra fija
   que aparece solo al salir completamente del hero. Logo original,
   enlaces a Rubros, Acompanamiento, Planes y Preguntas, con seccion activa
