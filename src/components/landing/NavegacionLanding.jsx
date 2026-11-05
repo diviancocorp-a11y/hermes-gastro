@@ -4,8 +4,8 @@ import '../../styles/navegacion-landing.css';
 const SECCIONES = [
   ['rubros', 'Tu rubro'],
   ['como-empezar', 'Acompañamiento'],
-  ['precios', 'Planes'],
   ['preguntas', 'Preguntale a Dico'],
+  ['precios', 'Planes'],
 ];
 
 export default function NavegacionLanding({ raizRef, oculta, onDiagnostico }) {

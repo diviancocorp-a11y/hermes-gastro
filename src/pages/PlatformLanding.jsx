@@ -37,9 +37,9 @@
 // dolor al final. Paleta en src/styles/plataforma-claro.css (oro solo accion
 // y valor, volt solo lo que lee Dico, oscuro solo en piezas de producto).
 //
-// Orden: portada (embudo) -> que hace Dico (tu dolor y la parte del panel que
-// lo resuelve) -> que hace hoy cada rubro y que esta en desarrollo -> clientes
-// -> planes -> preguntas -> una frase y el boton -> una linea de pie.
+// Orden (5/nov/2026): portada (embudo) -> negocios que usan Dico -> rubros ->
+// como empezar -> cierre (el portal DICO y el boton) -> preguntas -> planes ->
+// la frase "Pusiste el alma" -> pie. Lo fija src/test/ordenLanding.test.jsx.
 //
 // PRUEBA SOCIAL: logos originales de La Nona Pato, Crazy Miga, Monare y
 // MiaEstudio, con enlaces a sus Instagram configurados. Sin cifras ni
@@ -59,6 +59,8 @@ import ComoEmpezar from '../components/landing/ComoEmpezar';
 import PlanesNegocio from '../components/landing/PlanesNegocio';
 import PreguntasNegocio from '../components/landing/PreguntasNegocio';
 import CierreNegocio from '../components/landing/CierreNegocio';
+import NegociosDico from '../components/landing/NegociosDico';
+import PieNegocio from '../components/landing/PieNegocio';
 import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
 import '../styles/platform-landing.css';
@@ -130,15 +132,20 @@ export default function PlatformLanding() {
           lado={<EscenaHero />}
         />
       </section>
-      <TransicionVolt />
+      {/* Orden del 5/nov: los negocios bajo la portada, el Cierre en el medio,
+          Planes despues de Preguntas y la frase al final. Lo fija
+          src/test/ordenLanding.test.jsx. */}
+      <NegociosDico />
       <span className="pl-ancla-rubros" id="que-hace" aria-hidden="true" />
       <span className="pl-ancla-rubros" id="pilares" aria-hidden="true" />
       <span className="pl-ancla-rubros" id="flujo" aria-hidden="true" />
       <RubrosNegocio onDiagnostico={abrirDiagnostico} />
       <ComoEmpezar onDiagnostico={abrirDiagnostico} />
-      <PlanesNegocio onDiagnostico={abrirDiagnostico} />
-      <PreguntasNegocio onDiagnostico={abrirDiagnostico} />
       <CierreNegocio onDiagnostico={abrirDiagnostico} />
+      <PreguntasNegocio onDiagnostico={abrirDiagnostico} />
+      <PlanesNegocio onDiagnostico={abrirDiagnostico} />
+      <TransicionVolt />
+      <PieNegocio />
     </div>
   );
 }
