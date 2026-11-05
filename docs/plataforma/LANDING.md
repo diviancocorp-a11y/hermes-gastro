@@ -9,6 +9,31 @@
 
 ## 1. Estado al 5/nov/2026
 
+### Navegacion durante el recorrido — 5/nov
+
+- Ricky aprobo publicar mediante PR #77. Se oculta la scrollbar de enlaces
+  conservando el deslizamiento tactil y de teclado; el progreso volt inferior
+  permanece visible.
+- Rama `codex/landing-navegacion`, desde main `09902be`: barra negra fija
+  que aparece solo al salir completamente del hero. Logo original,
+  enlaces a Rubros, Acompanamiento, Planes y Preguntas, con seccion activa
+  subrayada en dorado, y CTA al mismo diagnostico. Se oculta durante el embudo.
+- Linea volt de 3 px ligada al avance real de la pagina, reversible al subir.
+  Ubicada en el borde inferior de la barra. Sin porcentajes, pulsos decorativos
+  ni bloqueo del scroll. En movil logo, enlaces y CTA siguen en una unica
+  fila; los enlaces se deslizan horizontalmente y el CTA dice Diagnostico
+  para dejar espacio (nombre accesible completo). Los destinos
+  reservan espacio para que la barra no tape sus titulos. Foco visible,
+  barra inactiva fuera del teclado mientras esta oculta y movimiento reducido.
+- ESLint, typecheck, build y 87 pruebas habituales correctos; detector
+  antes/despues: 17 hallazgos conocidos, ninguno nuevo. Preview a 1280 y
+  390 px sin desborde. Enlace Planes deja el titulo debajo de la barra y
+  marca la seccion activa; corregido el salto de linea de la flecha del CTA.
+- Ajuste responsive comprobado a 320, 390 y 768 px: logo, enlaces y boton
+  comparten el mismo eje vertical, sin desborde de pagina. Los enlaces se
+  deslizan; Planes sigue accesible y marca su estado activo. Linea de avance
+  verificada en el borde inferior de la barra.
+
 ### Machine Soul y contactos del footer — 5/nov
 
 - Registro movil: `position:static` en la bienvenida dejaba su imagen absoluta
