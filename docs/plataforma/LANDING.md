@@ -16,8 +16,10 @@
   enlaces a Rubros, Acompanamiento, Planes y Preguntas, con seccion activa
   subrayada en dorado, y CTA al mismo diagnostico. Se oculta durante el embudo.
 - Linea volt de 3 px ligada al avance real de la pagina, reversible al subir.
-  Sin porcentajes, pulsos decorativos ni bloqueo del scroll. En movil los
-  enlaces se desplazan horizontalmente debajo del logo y CTA; los destinos
+  Ubicada en el borde inferior de la barra. Sin porcentajes, pulsos decorativos
+  ni bloqueo del scroll. En movil logo, enlaces y CTA siguen en una unica
+  fila; los enlaces se deslizan horizontalmente y el CTA dice Diagnostico
+  para dejar espacio (nombre accesible completo). Los destinos
   reservan espacio para que la barra no tape sus titulos. Foco visible,
   barra inactiva fuera del teclado mientras esta oculta y movimiento reducido.
 - ESLint, typecheck, build y 87 pruebas habituales correctos; detector

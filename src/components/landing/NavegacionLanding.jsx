@@ -49,7 +49,6 @@ export default function NavegacionLanding({ raizRef, oculta, onDiagnostico }) {
 
   const mostrar = visible && !oculta;
   return <header className="nl-root" data-visible={mostrar} inert={!mostrar} aria-hidden={!mostrar}>
-    <div className="nl-progreso" aria-hidden="true"><span ref={progresoRef} /></div>
     <div className="nl-contenido">
       <a className="nl-marca" href="#main-content" aria-label="Dico, volver al inicio">
         <img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
@@ -57,7 +56,8 @@ export default function NavegacionLanding({ raizRef, oculta, onDiagnostico }) {
       <nav className="nl-enlaces" aria-label="Secciones de la landing">
         {SECCIONES.map(([id, nombre]) => <a key={id} href={`#${id}`} aria-current={activa === id ? 'location' : undefined}>{nombre}</a>)}
       </nav>
-      <button type="button" className="nl-accion" onClick={onDiagnostico}>Empezar mi diagnóstico <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button>
+      <button type="button" className="nl-accion" onClick={onDiagnostico} aria-label="Empezar mi diagnóstico"><span className="nl-accion-larga">Empezar mi diagnóstico</span><span className="nl-accion-corta" aria-hidden="true">Diagnóstico</span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button>
     </div>
+    <div className="nl-progreso" aria-hidden="true"><span ref={progresoRef} /></div>
   </header>;
 }
