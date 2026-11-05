@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import GlyphPortal from './GlyphPortal';
 import Palabras from './Palabras';
 import '../../styles/como-empezar.css';
 
@@ -37,7 +38,11 @@ export default function ComoEmpezar({ onDiagnostico }) {
         const ultimo = circulos[2].getBoundingClientRect();
         const inicio = primero.top + primero.height / 2;
         const distancia = ultimo.top + ultimo.height / 2 - inicio + innerHeight * .44;
-        const progreso = limitar((innerHeight * .76 - inicio) / distancia);
+        // Con el portal en movimiento los circulos se ven recien cuando ya
+        // subieron a ~55% de la pantalla: la via arranca en la mitad, asi el
+        // pulso no corre mientras el contenido todavia se esta revelando.
+        const linea = elemento.closest('[data-gp-root]')?.dataset.gpMotion === 'on' ? .5 : .76;
+        const progreso = limitar((innerHeight * linea - inicio) / distancia);
         destino = progreso < .005 ? 0 : progreso > .995 ? 1 : progreso;
         medir = false;
       }
@@ -66,9 +71,18 @@ export default function ComoEmpezar({ onDiagnostico }) {
     };
   }, []);
   return (
-    <section className="ce-root" id="como-empezar" aria-labelledby="ce-titulo">
-      <div className="ce-luces-borde" aria-hidden="true"><span /><span /><span /></div>
+    // Glyph Portal: la palabra DICO sobre el negro y, del otro lado de la O,
+    // Como empezar entero sobre el azul. Las entradas del contenido esperan a
+    // que el portal lo revele (data-gp-listo, ver GlyphPortal.jsx). La fuente,
+    // el peso y los colores salen de las --gp-* de como-empezar.css.
+    <GlyphPortal
+      className="ce-root" aria-labelledby="ce-titulo"
+      word="DICO" focusChar="O" scrollLength={1.6}
+      campo={<span className="ce-luces-portal"><span /><span /><span /></span>}
+    >
       <div className="ce-dentro">
+        {/* El ancla cae al contenido, no a la palabra: un link a #como-empezar llega con todo revelado. */}
+        <span className="pl-ancla" id="como-empezar" aria-hidden="true" />
         <h2 id="ce-titulo" data-reveal="palabras"><span className="ce-intro"><Palabras texto="No tenés que resolver todo de golpe." /></span><span><Palabras texto="Te acompañamos desde el primer paso." inicio={7} /></span></h2>
         <div className="ce-recorrido" ref={recorridoRef}>
           <div className="ce-via" aria-hidden="true"><span className="ce-pulso" /></div>
@@ -89,6 +103,6 @@ export default function ComoEmpezar({ onDiagnostico }) {
           <p>Diagnóstico breve, sin dejar tu email.</p>
         </div>
       </div>
-    </section>
+    </GlyphPortal>
   );
 }

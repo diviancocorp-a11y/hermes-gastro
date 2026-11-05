@@ -38,8 +38,9 @@
 // y valor, volt solo lo que lee Dico, oscuro solo en piezas de producto).
 //
 // Orden (5/nov/2026): portada (embudo) -> negocios que usan Dico -> rubros ->
-// como empezar -> cierre (el portal DICO y el boton) -> la frase "Pusiste el
-// alma" -> planes -> preguntas -> pie. Lo fija src/test/ordenLanding.test.jsx.
+// como empezar (del otro lado del portal DICO) -> la frase "Pusiste el alma"
+// -> planes -> preguntas -> cierre (el boton, sobre el azul) -> pie. Lo fija
+// src/test/ordenLanding.test.jsx.
 //
 // PRUEBA SOCIAL: logos originales de La Nona Pato, Crazy Miga, Monare y
 // MiaEstudio, con enlaces a sus Instagram configurados. Sin cifras ni
@@ -132,19 +133,19 @@ export default function PlatformLanding() {
           lado={<EscenaHero />}
         />
       </section>
-      {/* Orden del 5/nov: los negocios bajo la portada, el Cierre en el medio,
-          despues la frase, Planes y Preguntas. Lo fija
-          src/test/ordenLanding.test.jsx. */}
+      {/* Orden del 5/nov: los negocios bajo la portada, Como empezar dentro
+          del portal DICO, despues la frase, Planes, Preguntas y el Cierre al
+          fondo. Lo fija src/test/ordenLanding.test.jsx. */}
       <NegociosDico />
       <span className="pl-ancla-rubros" id="que-hace" aria-hidden="true" />
       <span className="pl-ancla-rubros" id="pilares" aria-hidden="true" />
       <span className="pl-ancla-rubros" id="flujo" aria-hidden="true" />
       <RubrosNegocio onDiagnostico={abrirDiagnostico} />
       <ComoEmpezar onDiagnostico={abrirDiagnostico} />
-      <CierreNegocio onDiagnostico={abrirDiagnostico} />
       <TransicionVolt />
       <PlanesNegocio onDiagnostico={abrirDiagnostico} />
       <PreguntasNegocio onDiagnostico={abrirDiagnostico} />
+      <CierreNegocio onDiagnostico={abrirDiagnostico} />
       <PieNegocio />
     </div>
   );

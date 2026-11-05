@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderLanding } from '../seo/renderLanding';
 
-const ORDEN = ['negocios', 'rubros', 'como-empezar', 'contacto', 'machine-soul', 'precios', 'preguntas'];
+const ORDEN = ['negocios', 'rubros', 'como-empezar', 'machine-soul', 'precios', 'preguntas', 'contacto'];
 // Alias de la landing vieja (ver PlatformLanding.jsx): siguen existiendo.
 const ALIAS = ['que-hace', 'pilares', 'flujo', 'modulos', 'integraciones', 'seguridad', 'contacto'];
 

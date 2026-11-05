@@ -36,7 +36,11 @@
 // - alcanza con que la PRIMERA familia de la pila este cargada; si no lo esta,
 //   se pide y el efecto se rehace al llegar (el original exigia toda la pila y
 //   dejaba ese montaje estatico para siempre);
-// - sin JS o si la tinta no se pudo medir, se ve el poster (data-gp-fallback).
+// - sin JS o si la tinta no se pudo medir, se ve el poster (data-gp-fallback);
+// - el root marca data-gp-listo cuando la camara ya revelo el contenido
+//   (progreso >= .85) o cuando el foco entra antes: platform-landing.css frena
+//   las entradas ([data-reveal], titulos palabra por palabra) del contenido
+//   hasta ese momento, porque entran al viewport debajo del pin todavia invisibles.
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import '../../styles/glyph-portal.css';
 
@@ -89,13 +93,18 @@ function scrollParent(element) {
 
 export default function GlyphPortal({
   word = 'SUBLIME', focusChar, front, campo, children, scrollLength = 2.4,
-  fontFamily, fontWeight, onProgress, ...resto
+  fontFamily, fontWeight, onProgress, onFocusCapture, ...resto
 }) {
   const uid = `gp-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const clipId = `${uid}-clip`;
   const sectionRef = useRef(null);
   const progressRef = useRef(onProgress);
   useLayoutEffect(() => { progressRef.current = onProgress; }, [onProgress]);
+  // Una sola vez: el contenido ya se vio, no se vuelve a esconder al subir.
+  const [listo, setListo] = useState(false);
+  const listoRef = useRef(false);
+  const marcarListo = () => { if (!listoRef.current) { listoRef.current = true; setListo(true); } };
+  const alEnfocar = (evento) => { marcarListo(); onFocusCapture?.(evento); };
   // Sube cuando termina de cargar la fuente pedida: rehace el efecto de camara.
   const [fuente, setFuente] = useState(0);
   const text = word.trim().normalize('NFC') || 'SUBLIME';
@@ -213,6 +222,7 @@ export default function GlyphPortal({
       section.style.setProperty('--gp-caption', String(1 - smooth(0.01, 0.16, p)));
       section.style.setProperty('--gp-reveal', String(isStatic ? 1 : smooth(0.78, 0.9, p)));
       section.style.setProperty('--gp-caption-hit', p < 0.08 ? 'auto' : 'none');
+      if (p >= .85 && !listoRef.current) { listoRef.current = true; setListo(true); }
       if (p !== lastProgress) { lastProgress = p; progressRef.current?.(p); }
     };
 
@@ -278,7 +288,7 @@ export default function GlyphPortal({
   }, [text, focusChar, fontFamily, fontWeight, length, clipId, hasFront, fuente]);
 
   return (
-    <section ref={sectionRef} data-gp-root="" {...resto}>
+    <section ref={sectionRef} data-gp-root="" data-gp-listo={listo ? '' : undefined} onFocusCapture={alEnfocar} {...resto}>
       {/* JS reveals only measured geometry. Until then (no JS, prerender, unmeasured ink) the poster shows. */}
       <div data-gp-viewport="" aria-hidden="true" />
       <div data-gp-pin="">

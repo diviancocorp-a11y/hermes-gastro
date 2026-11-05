@@ -810,8 +810,17 @@
   }
 
   .pl-anim [data-reveal]:not(.is-in) .pl-palabra > span,
-  .pl-anim .cf-root[data-gp-motion='on']:not([data-titulo='listo']) .pl-palabra > span {
+  .pl-anim [data-gp-root][data-gp-motion='on']:not([data-gp-listo]) .pl-palabra > span {
     transform: translateY(calc(100% + .2em));
+    transition: none;
+  }
+
+  /* Dentro de un Glyph Portal el contenido entra al viewport debajo del pin
+     todavia invisible: las entradas esperan a que el portal marque
+     data-gp-listo (GlyphPortal.jsx) y recien ahi corren. */
+  .pl-anim [data-gp-root][data-gp-motion='on']:not([data-gp-listo]) [data-reveal]:not([data-reveal='palabras']) {
+    opacity: 0;
+    transform: translateY(var(--pc-viaje));
     transition: none;
   }
 
