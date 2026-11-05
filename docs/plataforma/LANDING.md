@@ -11,6 +11,11 @@
 
 ### Machine Soul y contactos del footer — 5/nov
 
+- Registro movil: `position:static` en la bienvenida dejaba su imagen absoluta
+  referida al viewport, por encima del formulario. Se cambia a `relative`
+  para contener y recortar el paisaje en la bienvenida; el formulario conserva
+  fondo marfil opaco. Sin cambios en campos, alta ni pago.
+
 - Rama `codex/landing-soul-footer`, desde main `620460f`: frase en la
   transicion de color existente entre hero y Rubros, sin agregar otra seccion:
   «Que la maquina se ocupe del trabajo. Y vos, de lo que te mueve el alma».

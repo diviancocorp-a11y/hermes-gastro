@@ -110,7 +110,7 @@
 @keyframes signup-message-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 799px) {
   .signup-page { grid-template-columns: minmax(0, 1fr); }
-  .signup-brand { grid-column: 1; grid-row: 1; position: static; min-height: 0; gap: var(--ds-space-4); padding: var(--ds-space-6); }
+  .signup-brand { grid-column: 1; grid-row: 1; position: relative; min-height: 0; gap: var(--ds-space-4); padding: var(--ds-space-6); }
   .signup-logo { width: 104px; margin: 0; }
   .signup-brand__message h1 { font-size: 38px; }
   .signup-brand__message h1 br { display: none; }
