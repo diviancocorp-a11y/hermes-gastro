@@ -28,7 +28,7 @@
 //   node platform/scripts/deploy-functions.mjs --all --dry-run
 
 import { execSync } from "node:child_process";
-import { readdirSync, existsSync, mkdirSync, cpSync, rmSync } from "node:fs";
+import { readdirSync, existsSync, mkdirSync, cpSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -39,6 +39,19 @@ const FUNCTIONS_DIR = path.join(ROOT, "platform", "functions");
 // El edificio. Un solo proyecto para todos los tenants: el tenant se resuelve
 // en runtime por hostname, no por proyecto.
 const PROJECT_REF = "wwwzdgprsooyjgkuyoav";
+
+// EL CLI: el fijado en package.json, nunca el ultimo de npm. El 5/nov `npx
+// supabase` no vio el local (con NODE_ENV=production npm da por omitidas las
+// devDependencies), bajo la v3.0.0, y la v3 pide confirmar cada deploy: sin
+// terminal no puede preguntar y las 18 fallaron sin cambiar nada. Por eso:
+// primero el CLI local por ruta; si no esta, npx con la version exacta. Y
+// --yes siempre: la confirmacion es correr este script.
+const CLI_VERSION = JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8"))
+  .devDependencies?.supabase;
+const CLI_LOCAL = path.join(ROOT, "node_modules", "supabase", "dist", "supabase.js");
+const CLI = existsSync(CLI_LOCAL)
+  ? `node "${CLI_LOCAL}"`
+  : `npx --yes supabase@${CLI_VERSION || "2"}`;
 
 // Functions publicas -> --no-verify-jwt.
 // Las keys nuevas de Supabase (sb_publishable_) NO son JWT y el gateway con
@@ -109,7 +122,7 @@ function main() {
   try {
     for (const fn of fns) {
       const noJwt = NO_VERIFY_JWT.has(fn) ? " --no-verify-jwt" : "";
-      const cmd = `npx supabase functions deploy ${fn} --project-ref ${PROJECT_REF}${noJwt}`;
+      const cmd = `${CLI} functions deploy ${fn} --project-ref ${PROJECT_REF}${noJwt} --yes`;
       process.stdout.write(`-> ${fn}${noJwt ? " (no-verify-jwt)" : ""} ... `);
       if (dryRun) { console.log(`DRY RUN: ${cmd}`); continue; }
       try {
