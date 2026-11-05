@@ -1,8 +1,13 @@
-.hv-root { position: relative; display: grid; place-items: center; min-height: clamp(320px, 48svh, 500px); margin-bottom: clamp(32px, 6vw, 88px); padding: clamp(56px, 9vw, 112px) var(--pl-m); overflow: hidden; background: var(--pl-suelo-continuo); }
-/* El ovalo: una elipse mas ancha que la pantalla, asi solo se ven sus arcos
-   de arriba y de abajo, iguales, como un corte iluminado que abraza la frase. */
-.hv-root::before { content: ''; position: absolute; z-index: 0; top: 6%; bottom: 6%; left: -22%; right: -22%; border: 1.5px solid color-mix(in srgb, var(--pc-oro) 75%, transparent); border-radius: 50%; box-shadow: 0 0 24px 2px color-mix(in srgb, var(--pc-oro) 30%, transparent), inset 0 0 56px color-mix(in srgb, var(--pc-oro) 14%, transparent); pointer-events: none; }
-.hv-efecto { position: absolute; inset: 0; mask-image: linear-gradient(transparent, black 22%, black 78%, transparent); pointer-events: none; }
+/* La frase vive dentro de un ovalo en punta (una lente: dos arcos que se
+   juntan en los costados), alto, casi de borde a borde de la seccion.
+   Alrededor, color liso (el mismo negro de Planes) para que se luzca el
+   reflejo de la linea dorada; el shader existe solo adentro. La forma es
+   una sola: el mismo path en la mascara del shader y en la linea
+   (TransicionVolt.jsx), estirado al tamano de la seccion. */
+.hv-root { position: relative; display: grid; place-items: center; min-height: clamp(380px, 60svh, 640px); padding: clamp(72px, 11vw, 140px) var(--pl-m); overflow: hidden; background: var(--pl-suelo-continuo); }
+.hv-efecto { position: absolute; inset: 3% 0; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 50Q50 -50 100 50Q50 150 0 50Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 50Q50 -50 100 50Q50 150 0 50Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; pointer-events: none; }
+.hv-ovalo { position: absolute; inset: 3% 0; width: 100%; height: 94%; overflow: visible; pointer-events: none; filter: drop-shadow(0 0 3px var(--ds-color-brand-gold-300)) drop-shadow(0 0 14px color-mix(in srgb, var(--pc-oro) 55%, transparent)) drop-shadow(0 0 36px color-mix(in srgb, var(--pc-oro) 25%, transparent)); }
+.hv-ovalo path { fill: none; stroke: var(--ds-color-brand-gold-300); stroke-width: 1.5; }
 .hv-promesa { position: relative; z-index: 1; max-width: 32ch; margin: 0; font-size: clamp(30px, 3.5vw, 52px); text-align: center; color: var(--ds-color-zinc-50); }
 .hv-promesa > span { display: block; }
 .hv-promesa > span:first-child { margin-bottom: var(--ds-space-3); font-family: var(--ds-font-ui); font-size: clamp(18px, 1.8vw, 26px); font-weight: 400; line-height: 1.4; }

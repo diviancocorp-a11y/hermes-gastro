@@ -17,6 +17,8 @@ export default function TransicionVolt() {
   }, []);
   return <section className="hv-root" id="machine-soul" aria-label="Machine Soul" ref={raiz}>
     <div className="hv-efecto" aria-hidden="true"><ShaderBackground /></div>
+    {/* Linea del ovalo: mismo path que la mascara de .hv-efecto. */}
+    <svg className="hv-ovalo" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 50Q50 -50 100 50Q50 150 0 50Z" vectorEffect="non-scaling-stroke" /></svg>
     <p className="hv-promesa"><span className="hv-linea"><span className="hv-flota">Pusiste el <em>alma</em> en tu negocio.</span></span><span className="hv-linea"><span className="hv-flota">Que también te deje tiempo para vivir.</span></span></p>
   </section>;
 }

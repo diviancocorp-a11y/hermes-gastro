@@ -1,4 +1,4 @@
-.pp-root { position: relative; isolation: isolate; padding: 32px var(--pl-m) 48px; background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-50); }
+.pp-root { position: relative; isolation: isolate; padding: clamp(56px, 7vw, 104px) var(--pl-m) 48px; background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-50); }
 .pp-root::before { content: ''; position: absolute; z-index: -1; inset: 0; background-image: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
 /* La luz azul entra fundida desde arriba: sin corte contra la frase. */
 .pp-luz-fondo { position: absolute; z-index: -1; inset: 0; background: radial-gradient(ellipse 65% 50% at 50% 36%, color-mix(in srgb, var(--ds-color-intelligence-volt) 26%, transparent), transparent 75%); mask-image: linear-gradient(transparent, black 22%); pointer-events: none; }
