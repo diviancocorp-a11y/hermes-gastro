@@ -30,12 +30,12 @@
 .pf-root a:hover { color: var(--ds-color-intelligence-trace); }
 .pf-redes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; max-width: 1020px; margin: var(--ds-space-6) auto var(--ds-space-4); }
 .pf-contacto { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
-.pf-root .pf-capsula { display: flex; justify-content: center; gap: 12px; width: 64px; height: 64px; min-height: 64px; padding-inline: 16px; border: 1px solid var(--ds-color-zinc-800); border-radius: var(--ds-radius-pill); overflow: hidden; color: var(--ds-color-zinc-950); transition: width 320ms cubic-bezier(.2,.7,.2,1), border-color 160ms ease; }
+.pf-root .pf-capsula { display: flex; justify-content: center; gap: 0; width: 64px; height: 64px; min-height: 64px; padding-inline: 16px; border: 1px solid var(--ds-color-zinc-800); border-radius: var(--ds-radius-pill); overflow: hidden; color: var(--ds-color-zinc-950); transition: width 320ms cubic-bezier(.2,.7,.2,1), gap 320ms ease, border-color 160ms ease; }
 .pf-capsula svg { flex: 0 0 28px; width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .pf-capsula .pf-whatsapp-glifo { fill: currentColor; stroke: none; }
-.pf-mensaje { display: none; align-items: center; gap: 10px; white-space: nowrap; font-size: 16px; font-weight: 500; }
-.pf-root .pf-capsula:is(:hover, :focus-visible) { width: 100%; border-color: var(--ds-color-intelligence-trace); color: var(--ds-color-zinc-950); }
-.pf-capsula:is(:hover, :focus-visible) .pf-mensaje { display: inline-flex; }
+.pf-mensaje { display: inline-flex; align-items: center; gap: 10px; max-width: 0; overflow: hidden; opacity: 0; white-space: nowrap; font-size: 16px; font-weight: 500; transition: max-width 320ms ease, opacity 160ms ease; }
+.pf-root .pf-capsula:is(:hover, :focus-visible) { width: 100%; gap: 12px; border-color: var(--ds-color-intelligence-trace); color: var(--ds-color-zinc-950); }
+.pf-capsula:is(:hover, :focus-visible) .pf-mensaje { max-width: 260px; opacity: 1; }
 .pf-capsula:is(:hover, :focus-visible) svg, .pf-mensaje > span { color: var(--ds-color-intelligence-trace); }
 .pf-root .pf-whatsapp { border-color: var(--ds-color-intelligence-trace); }
 .pf-whatsapp svg { color: var(--ds-color-intelligence-trace); }
@@ -59,6 +59,7 @@
 .pf-logo ellipse { stroke: var(--ds-color-brand-gold-500); opacity: .65; }
 .pl-root .cf-root :focus-visible, .pl-root .pf-root :focus-visible { outline: 2px solid var(--ds-color-intelligence-label); outline-offset: var(--ds-space-1); border-radius: var(--ds-radius-1); }
 .pl-root .pf-root :focus-visible { outline-color: var(--ds-color-intelligence-trace); }
+.pl-root .pf-root .pf-capsula:focus-visible { border-radius: var(--ds-radius-pill); }
 .pl-root .cf-root .cf-boton:focus-visible { outline-color: var(--ds-color-zinc-50); border-radius: var(--ds-radius-pill); }
 @media (max-width: 599px) {
   .cf-root { padding-block: 64px; }
@@ -66,12 +67,9 @@
   .pf-root { padding-top: var(--ds-space-8); }
   .pf-nav { gap: var(--ds-space-2) var(--ds-space-4); }
   .pf-redes { grid-template-columns: minmax(0, 1fr); max-width: 340px; gap: var(--ds-space-6); }
-  .pf-root .pf-capsula { width: 100%; }
-  .pf-mensaje { display: inline-flex; }
   .pf-horarios { flex-direction: column; }
 }
 @media (prefers-reduced-motion: reduce) { .cf-compuerta { display: none; } .cf-root { border-block-color: var(--pc-oro); } .cf-root .cf-boton, .cf-boton::before, .cf-boton .pl-hero-burbuja { transition: none; } }
 
-@media (min-width: 600px) and (max-width: 999px) { .pf-redes { grid-template-columns: minmax(0, 340px); justify-content: center; } .pf-root .pf-capsula { width: 100%; } .pf-mensaje { display: inline-flex; } }
-@media (hover: none) and (min-width: 600px) { .pf-redes { grid-template-columns: minmax(0, 340px); justify-content: center; } .pf-root .pf-capsula, .pf-root .pf-capsula:is(:hover, :focus-visible) { width: 100%; } .pf-mensaje, .pf-capsula:is(:hover, :focus-visible) .pf-mensaje { display: inline-flex; } }
-@media (prefers-reduced-motion: reduce) { .pf-root .pf-capsula { transition: none; } }
+@media (min-width: 600px) and (max-width: 999px) { .pf-redes { grid-template-columns: minmax(0, 340px); justify-content: center; } }
+@media (prefers-reduced-motion: reduce) { .pf-root .pf-capsula, .pf-mensaje { transition: none; } }

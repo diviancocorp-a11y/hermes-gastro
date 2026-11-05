@@ -1,2 +1,22 @@
-.hv-root { position: relative; min-height: clamp(240px, 34svh, 360px); padding: var(--ds-space-6) var(--pl-m); overflow: hidden; background: linear-gradient(var(--pl-suelo-hero) 20%, var(--pl-suelo-continuo)); }
-.hv-root > canvas { position: absolute; inset: 0; mask-image: linear-gradient(transparent, black 22%, black 78%, transparent); }
+.hv-root { position: relative; display: grid; place-items: center; min-height: clamp(240px, 34svh, 360px); padding: var(--ds-space-6) var(--pl-m); overflow: hidden; background: linear-gradient(var(--pl-suelo-hero) 20%, var(--pl-suelo-continuo)); }
+.hv-efecto { position: absolute; inset: 0; mask-image: linear-gradient(transparent, black 22%, black 78%, transparent); pointer-events: none; }
+.hv-promesa { position: relative; z-index: 1; max-width: 32ch; margin: 0; font-size: clamp(30px, 3.5vw, 52px); text-align: center; color: var(--ds-color-zinc-50); }
+.hv-promesa > span { display: block; }
+.hv-promesa > span:first-child { margin-bottom: var(--ds-space-3); font-family: var(--ds-font-ui); font-size: clamp(18px, 1.8vw, 26px); font-weight: 400; line-height: 1.4; }
+.hv-promesa > span:last-child { font-family: var(--ds-font-soul); font-size: clamp(30px, 3.5vw, 52px); font-weight: 400; line-height: 1.15; }
+.hv-promesa em { color: var(--pc-oro); font-style: normal; }
+.hv-flota { display: inline-block; }
+@media (prefers-reduced-motion: no-preference) {
+  .hv-anim .hv-linea { opacity: 0; }
+  .hv-anim.hv-in .hv-linea { transform-origin: center; animation: hv-sticker 480ms cubic-bezier(.22, 1, .36, 1) both; }
+  .hv-anim.hv-in .hv-linea:last-child { animation-delay: 120ms; }
+  .hv-anim.hv-in .hv-flota { animation: hv-bob 6s ease-in-out 600ms infinite; animation-play-state: paused; }
+  .hv-anim.hv-in .hv-linea:last-child .hv-flota { animation-delay: 720ms; }
+  .hv-anim.hv-visible .hv-flota { animation-play-state: running; }
+}
+@keyframes hv-sticker {
+  from { opacity: 0; transform: translateY(14px) rotate(-.8deg) scale(.94); }
+  75% { opacity: 1; transform: translateY(-1px) rotate(.2deg) scale(1.015); }
+  to { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+}
+@keyframes hv-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
