@@ -6,6 +6,9 @@
    portal estatico, glyph-portal.css pinta el contenido sobre el azul solido. */
 .ce-root { --gp-paper: var(--pl-suelo-continuo); --gp-field: var(--ds-color-intelligence-noche); --gp-foreground: var(--ds-color-zinc-50); --gp-font-family: var(--ds-font-ui); --gp-font-weight: 900; --gp-content-padding: 96px var(--pl-m); box-shadow: 0 -1px 0 color-mix(in srgb, var(--pc-oro) 12%, transparent); }
 .ce-root::before { content: ''; position: absolute; z-index: -1; inset: 0; background-image: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
+/* Salida al negro de la frase: el azul se funde en vez de cortar, con un
+   brillo dorado difuso en la junta. Cae en el aire de abajo del contenido. */
+.ce-root::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: clamp(96px, 16svh, 200px); background: radial-gradient(55% 70% at 50% 100%, color-mix(in srgb, var(--pc-oro) 16%, transparent), transparent 75%), linear-gradient(transparent, var(--pl-suelo-continuo) 92%); pointer-events: none; }
 /* Luces doradas dentro de la tinta de DICO: se ven a traves de las letras y
    no paran. Al entrar bajan, para no competir con el titulo y el boton
    (--gp-reveal lo escribe el portal). Con movimiento reducido quedan quietas. */

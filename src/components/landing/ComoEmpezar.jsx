@@ -37,12 +37,13 @@ export default function ComoEmpezar({ onDiagnostico }) {
         const primero = circulos[0].getBoundingClientRect();
         const ultimo = circulos[2].getBoundingClientRect();
         const inicio = primero.top + primero.height / 2;
-        const distancia = ultimo.top + ultimo.height / 2 - inicio + innerHeight * .44;
-        // Con el portal en movimiento los circulos se ven recien cuando ya
-        // subieron a ~55% de la pantalla: la via arranca en la mitad, asi el
-        // pulso no corre mientras el contenido todavia se esta revelando.
-        const linea = elemento.closest('[data-gp-root]')?.dataset.gpMotion === 'on' ? .5 : .76;
-        const progreso = limitar((innerHeight * linea - inicio) / distancia);
+        const tramo = ultimo.top + ultimo.height / 2 - inicio;
+        // El pulso arranca apenas los circulos asoman (el primero al 85% de la
+        // pantalla) y termina con el segmento a la vista: el ultimo circulo al
+        // 35%, no cuando ya se esta yendo por arriba. Asi el paso 3 se pone
+        // dorado mientras se lo mira.
+        const desde = innerHeight * .85, hasta = innerHeight * .35;
+        const progreso = limitar((desde - inicio) / (desde - hasta + tramo));
         destino = progreso < .005 ? 0 : progreso > .995 ? 1 : progreso;
         medir = false;
       }
