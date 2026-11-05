@@ -1,4 +1,7 @@
-.hv-root { position: relative; display: grid; place-items: center; min-height: clamp(240px, 34svh, 360px); padding: var(--ds-space-6) var(--pl-m); overflow: hidden; background: var(--pl-suelo-continuo); }
+.hv-root { position: relative; display: grid; place-items: center; min-height: clamp(320px, 48svh, 500px); margin-bottom: clamp(32px, 6vw, 88px); padding: clamp(56px, 9vw, 112px) var(--pl-m); overflow: hidden; background: var(--pl-suelo-continuo); }
+/* El ovalo: una elipse mas ancha que la pantalla, asi solo se ven sus arcos
+   de arriba y de abajo, iguales, como un corte iluminado que abraza la frase. */
+.hv-root::before { content: ''; position: absolute; z-index: 0; top: 6%; bottom: 6%; left: -22%; right: -22%; border: 1.5px solid color-mix(in srgb, var(--pc-oro) 75%, transparent); border-radius: 50%; box-shadow: 0 0 24px 2px color-mix(in srgb, var(--pc-oro) 30%, transparent), inset 0 0 56px color-mix(in srgb, var(--pc-oro) 14%, transparent); pointer-events: none; }
 .hv-efecto { position: absolute; inset: 0; mask-image: linear-gradient(transparent, black 22%, black 78%, transparent); pointer-events: none; }
 .hv-promesa { position: relative; z-index: 1; max-width: 32ch; margin: 0; font-size: clamp(30px, 3.5vw, 52px); text-align: center; color: var(--ds-color-zinc-50); }
 .hv-promesa > span { display: block; }
