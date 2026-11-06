@@ -38,43 +38,36 @@ Los clientes con acuerdo propio (porcentaje de la ganancia: La Nona Pato,
 MiaEstudio, Monare, Crazy Miga) quedan afuera del cobro automatico: entran por
 `provision_owner` y no tienen `plan_id`.
 
-## El paso 3, en orden
+## El registro, en orden (Ricky, 6/nov)
 
-El negocio todavia no existe en el paso 3 (se crea al confirmar el mail, con
-`signup_tenant`), pero el usuario si: `auth.signUp()` devuelve su id aunque no
-haya sesion. La suscripcion se ata al usuario y despues al negocio.
+**El mail se confirma antes del paso 2.** Quien no confirma no pasa al paso 2
+y nunca llega a la tarjeta. Con Google la cuenta ya viene confirmada. Asi, en
+el paso 3 siempre hay sesion: no hace falta un endpoint abierto ni un barrido
+de cuentas sin confirmar.
 
-1. El Brick tokeniza la tarjeta (`card_token_id`, de un solo uso).
-2. `registrarNegocio()` hace el `signUp` como hoy y se queda con el `user.id`.
-3. El front llama a `suscripcion-alta` con `user_id` + `card_token_id`.
-   La function (publica, `verify_jwt=false`, con rate limit):
-   - verifica con service role que el usuario existe, se creo hace minutos y
-     no tiene suscripcion (el endpoint no sirve para suscribir a terceros);
+1. Paso 1: `signUp` y confirmacion del mail (con Google, directo).
+2. Paso 2: datos del negocio, con sesion.
+3. Paso 3: el Brick tokeniza la tarjeta (`card_token_id`, de un solo uso) y el
+   front llama a `suscripcion-alta` con la sesion. La function:
    - lee plan y periodo del `user_metadata`, **no del body**, y el precio de `plans`;
    - crea el preapproval `authorized` con `start_date` = hoy + 14 dias y
-     `external_reference = user_id`;
-   - guarda la fila en `suscripciones` con `tenant_id` todavia null.
-4. Si MP rechaza la tarjeta, el usuario ya existe: el front conserva el
-   `user_id` y reintenta solo la tarjeta, sin volver a hacer `signUp`.
-5. Al confirmar el mail, `signup_tenant` busca la suscripcion de ese usuario,
-   le pone el `tenant_id` y copia `prueba_hasta` = `start_date`.
-6. **Si nunca confirma el mail**, un barrido diario cancela en MP las
-   suscripciones sin `tenant_id` con mas de 7 dias. Sin esto, al dia 14 se le
-   cobraria a alguien que no tiene negocio.
-
-Con Google el usuario ya tiene sesion en el paso 3: misma function, que
-acepta la sesion en vez del `user_id`.
+     `external_reference = user_id` (MP valida la tarjeta con un cobro minimo
+     que devuelve);
+   - guarda la fila en `suscripciones`.
+4. Si MP rechaza la tarjeta, se reintenta solo la tarjeta, con un token nuevo.
+5. Con la suscripcion creada, `signup_tenant` crea el negocio, le pone el
+   `tenant_id` a la suscripcion y copia `prueba_hasta` = `start_date` (0125).
 
 ## Piezas
 
-1. **Migracion aditiva:**
+1. **Migracion aditiva (0125, aplicada el 6/nov):**
    - tabla `suscripciones` (`user_id`, `tenant_id` nullable, `preapproval_id`
      `unique`, plan, ciclo, monto, estado, marca y ultimos 4 de la tarjeta,
      `start_date`; RLS con el patron de `tenant_id`);
    - tabla `cobros_suscripcion` (`tenant_id`, id de pago de MP `unique` para
      que un webhook repetido no extienda dos veces, monto, estado, fecha);
    - `signup_tenant` vincula la suscripcion (misma firma, `create or replace`);
-   - el update de promos de `plans` (dato, con el ok de Ricky).
+   - las promos de `plans` en 0 (dato, hecho el 6/nov con el ok de Ricky).
 2. **`suscripcion-alta`**: lo del paso 3. La usa tambien Mi suscripcion para
    cambiar la tarjeta (nuevo token, `PUT` del preapproval).
 3. **`suscripcion-webhook`** (`verify_jwt=false`, valida `x-signature`):
@@ -83,7 +76,8 @@ acepta la sesion en vez del `user_id`.
      `status='active'`, limpia `suspendido_at`.
    - rechazado o cancelada: Dante/Magnus bajan a Paris; Paris queda para la
      suspension por fecha.
-4. **Front** (pasa por `/diseno`): el Brick en el paso 3, que deja de
+4. **Front** (pasa por `/diseno`): la confirmacion del mail entre el paso 1
+   y el 2 (hoy se confirma al final); el Brick en el paso 3, que deja de
    prometer "sin cobro ni suscripcion" y dice "$0 hoy, primer debito el
    <fecha>"; el reintento de tarjeta; Mi suscripcion. La public key de MP va
    como `VITE_MP_PUBLIC_KEY` (es publica, no es un secret).

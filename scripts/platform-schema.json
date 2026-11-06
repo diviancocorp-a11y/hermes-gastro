@@ -1,7 +1,7 @@
 {
   "_comment": "Snapshot del schema del EDIFICIO; datos obtenidos de schema_snapshot() via MCP. Regenerar con npm run schema:sync.",
-  "_refreshed_at": "2026-10-29",
-  "_migrations_through": "0124",
+  "_refreshed_at": "2026-11-06",
+  "_migrations_through": "0125",
   "tables": {
     "addresses": [
       "id",
@@ -124,6 +124,17 @@
       "branch_id",
       "closed_by",
       "business_day"
+    ],
+    "cobros_suscripcion": [
+      "id",
+      "suscripcion_id",
+      "tenant_id",
+      "mp_pago_id",
+      "monto",
+      "estado",
+      "cubre_hasta",
+      "created_at",
+      "updated_at"
     ],
     "consola_log": [
       "id",
@@ -951,6 +962,22 @@
       "created_at",
       "updated_at",
       "scope"
+    ],
+    "suscripciones": [
+      "id",
+      "user_id",
+      "tenant_id",
+      "preapproval_id",
+      "plan_id",
+      "ciclo",
+      "monto",
+      "moneda",
+      "estado",
+      "tarjeta_marca",
+      "tarjeta_ultimos4",
+      "primer_debito",
+      "created_at",
+      "updated_at"
     ],
     "table_coverages": [
       "id",

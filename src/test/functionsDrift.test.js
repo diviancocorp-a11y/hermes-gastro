@@ -127,13 +127,15 @@ describe('el caso real: el drift de signup_tenant', () => {
     expect(d.desplegado).toContain('business_name');
   });
 
-  it('la 0122 es la ultima que define signup_tenant en el repo real', () => {
+  it('la 0125 es la ultima que define signup_tenant en el repo real', () => {
     const r = cuerpoSegunElRepo('signup_tenant');
     expect(r).not.toBeNull();
-    expect(r.archivo).toBe('0122_prueba_de_dante_en_el_alta.sql');
-    // Sigue leyendo el campo correcto (0060) y arranca con la prueba de Dante.
+    expect(r.archivo).toBe('0125_suscripciones_mercadopago.sql');
+    // Sigue leyendo el campo correcto (0060), arranca con la prueba de Dante
+    // y ata la suscripcion del paso 3 al negocio.
     expect(r.cuerpo).toContain("v_meta->>'biz_name'");
     expect(r.cuerpo).toContain('prueba_hasta');
+    expect(r.cuerpo).toContain('public.suscripciones');
   });
 
   it('encuentra en el repo real el cuerpo de todas las criticas que deberia', () => {
