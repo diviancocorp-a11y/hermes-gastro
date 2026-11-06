@@ -1,0 +1,36 @@
+/* Conoce Dico: escena a todo el ancho y el texto encima, en el negro del
+   planeta, a la derecha. Por debajo de 1280 (y en el telefono acostado) el
+   arco del sol caeria detras del texto: la escena va arriba y el texto abajo.
+   Las tres escenas se apilan en la misma celda y se cruzan con un fundido. */
+.qd-root { position: relative; display: grid; min-height: clamp(560px, 86svh, 860px); background: var(--pl-suelo-continuo); color: var(--ds-color-zinc-400); overflow: hidden; }
+.qd-root > .qd-escena { position: absolute; inset: 0; height: 100%; aspect-ratio: auto; }
+.qd-texto { position: relative; z-index: 1; align-self: center; justify-self: end; width: min(100%, 540px); margin-right: clamp(var(--ds-space-6), 8vw, 140px); padding: var(--ds-space-8) var(--pl-m); }
+.qd-antetitulo { margin: 0 0 var(--ds-space-4); color: var(--pc-oro); font-size: var(--ds-type-sm); font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+.qd-paneles { display: grid; }
+.qd-panel { grid-area: 1 / 1; opacity: 0; transform: translateY(10px); visibility: hidden; transition: opacity 520ms ease, transform 640ms cubic-bezier(.22, 1, .36, 1), visibility 0s linear 640ms; }
+.qd-panel.qd-activo { opacity: 1; transform: none; visibility: visible; transition-delay: 120ms, 120ms, 0s; }
+.qd-panel h3 { margin: 0 0 var(--ds-space-4); color: var(--ds-color-zinc-50); font-size: clamp(30px, 3.6vw, 52px); line-height: 1.08; font-weight: 500; letter-spacing: -.035em; text-wrap: balance; }
+.qd-panel p { margin: 0; max-width: 42ch; color: var(--ds-color-zinc-400); font-size: var(--ds-type-lg); line-height: 1.55; }
+/* Pestanas: la barra dorada marca cuanto falta para la siguiente escena. */
+.qd-controles { display: flex; align-items: center; gap: var(--ds-space-4); margin-top: var(--ds-space-8); }
+.qd-pestanas { display: flex; flex: 1; gap: var(--ds-space-3); }
+.qd-pestana { flex: 1; min-height: 44px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; padding: var(--ds-space-3) 0 0; border: 0; background: none; color: var(--ds-color-zinc-400); font: inherit; font-size: var(--ds-type-sm); font-weight: 500; text-align: left; cursor: pointer; transition: color 240ms ease; }
+.qd-pestana:hover, .qd-pestana.qd-activo { color: var(--ds-color-zinc-50); }
+/* Pisa el foco general de .pl-root (tinta oscura, invisible sobre el negro). */
+.qd-root .qd-pestana:focus-visible { outline: 2px solid var(--pc-oro); outline-offset: 4px; border-radius: 2px; }
+.qd-root .qd-panel:focus-visible { outline: 2px solid var(--pc-oro); outline-offset: 8px; border-radius: 2px; }
+.qd-barra { position: relative; display: block; height: 2px; margin-bottom: var(--ds-space-3); overflow: hidden; background: var(--ds-color-zinc-800); }
+.qd-barra > span { position: absolute; inset: 0; background: var(--pc-oro); transform-origin: left; transform: scaleX(0); animation: qd-avance linear forwards; animation-play-state: paused; }
+.qd-corre .qd-barra > span { animation-play-state: running; }
+@keyframes qd-avance { to { transform: scaleX(1); } }
+/* El planeta es negro puro y el suelo zinc-950: el borde de abajo se funde. */
+.qd-root > .qd-escena::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; height: 48px; background: linear-gradient(to bottom, transparent, var(--pl-suelo-continuo)); pointer-events: none; }
+@media (max-width: 1279px), (orientation: landscape) and (max-height: 500px) {
+  .qd-root { display: block; min-height: 0; }
+  .qd-root > .qd-escena { position: relative; inset: auto; height: min(clamp(300px, 92vw, 620px), 70svh); }
+  .qd-texto { justify-self: stretch; width: auto; max-width: 640px; margin: 0; padding: var(--ds-space-6) var(--pl-m) var(--ds-space-8); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qd-panel, .qd-panel.qd-activo { transition: none; transform: none; }
+  .qd-barra > span { animation: none; transform: scaleX(1); }
+}

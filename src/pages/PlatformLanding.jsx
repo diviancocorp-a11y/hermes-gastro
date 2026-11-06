@@ -61,6 +61,7 @@ import PlanesNegocio from '../components/landing/PlanesNegocio';
 import PreguntasNegocio from '../components/landing/PreguntasNegocio';
 import CierreNegocio from '../components/landing/CierreNegocio';
 import NegociosDico from '../components/landing/NegociosDico';
+import QueEsDico from '../components/landing/QueEsDico';
 import PieNegocio from '../components/landing/PieNegocio';
 import useEntradas from '../components/landing/useEntradas';
 import '../styles/plataforma-claro.css';
@@ -137,6 +138,7 @@ export default function PlatformLanding() {
           del portal DICO, despues la frase, Planes, Preguntas y el Cierre al
           fondo. Lo fija src/test/ordenLanding.test.jsx. */}
       <NegociosDico />
+      <QueEsDico />
       <span className="pl-ancla-rubros" id="que-hace" aria-hidden="true" />
       <span className="pl-ancla-rubros" id="pilares" aria-hidden="true" />
       <span className="pl-ancla-rubros" id="flujo" aria-hidden="true" />
