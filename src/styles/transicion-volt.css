@@ -10,12 +10,6 @@
 .hv-ovalo { position: absolute; inset: 9% 0; width: 100%; height: 82%; overflow: visible; pointer-events: none; filter: drop-shadow(0 0 2px color-mix(in srgb, var(--ds-color-brand-gold-300) 60%, var(--ds-color-zinc-50))) drop-shadow(0 0 12px var(--pc-oro)) drop-shadow(0 0 36px color-mix(in srgb, var(--pc-oro) 65%, transparent)) drop-shadow(0 0 80px color-mix(in srgb, var(--pc-oro) 35%, transparent)); }
 .hv-ovalo stop { stop-color: color-mix(in srgb, var(--ds-color-brand-gold-300) 70%, var(--ds-color-zinc-50)); }
 .hv-ovalo path { fill: none; stroke: url(#hv-ovalo-trazo); stroke-width: 2.5; }
-/* En pantallas angostas la seccion alta volvia la lente un rombo vertical:
-   mas baja y mas ancha que la pantalla, las puntas quedan afuera. */
-@media (max-width: 700px) {
-  .hv-root { min-height: clamp(360px, 105vw, 520px); }
-  .hv-efecto, .hv-ovalo { left: -22%; right: -22%; width: 144%; }
-}
 .hv-promesa { position: relative; z-index: 1; max-width: 32ch; margin: 0; font-size: clamp(30px, 3.5vw, 52px); text-align: center; color: var(--ds-color-zinc-50); }
 .hv-promesa > span { display: block; }
 .hv-promesa > span:first-child { margin-bottom: var(--ds-space-3); font-family: var(--ds-font-ui); font-size: clamp(18px, 1.8vw, 26px); font-weight: 400; line-height: 1.4; }
@@ -36,3 +30,13 @@
   to { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
 }
 @keyframes hv-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+/* En pantallas angostas la lente entra entera, con las puntas adentro como en
+   el monitor: la lente mide 2:1 (50vw de alto) con aire arriba y abajo para el halo y la
+   frase se achica para caber en el centro. */
+@media (max-width: 700px) {
+  .hv-root { --hv-aire: clamp(28px, 9vw, 60px); min-height: calc(50vw + 2 * var(--hv-aire)); padding: 0 var(--pl-m); }
+  .hv-efecto, .hv-ovalo { inset: var(--hv-aire) 0; height: auto; }
+  .hv-promesa { max-width: 72vw; text-wrap: balance; }
+  .hv-promesa > span:first-child { margin-bottom: var(--ds-space-2); font-size: clamp(14px, 3.9vw, 18px); }
+  .hv-promesa > span:last-child { font-size: clamp(21px, 6.2vw, 30px); }
+}
