@@ -15,7 +15,8 @@
 
 Sin codigo todavia. Via y decisiones de Ricky en `docs/plataforma/COBRO-SUSCRIPCION.md`:
 suscripcion de MP por negocio sin plan asociado, con la cuenta de Divianco;
-tarjeta obligatoria en la primera entrada; primer debito al vencer los 14 dias;
+tarjeta obligatoria en el paso 3 del registro, guardada por MP (Dico solo el
+`preapproval_id`), con el primer debito pendiente al vencer los 14 dias;
 solo la promo de la prueba; anual por adelantado; Paris es pago y sin pago se
 suspende; Dante/Magnus sin pago bajan a Paris; el corte de
 `create-payment-preference` va junto.
