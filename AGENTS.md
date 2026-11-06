@@ -525,6 +525,7 @@ Ya evaluadas (no reabrir sin un motivo nuevo):
 | Image to Code (`Leonxlnx/imagegen-skills`) | No | No lee una imagen tuya: genera imagenes y maqueta sitios de marketing para Codex. Claude Code no genera imagenes; la landing ya la cubre `design-taste-frontend` |
 | Clonadores de sitios (`drshailesh88/ui-cloner-skill`, `JCodesMore/ai-website-cloner-template`) | No | El primero no tiene licencia (5 estrellas, sin push desde marzo); el segundo es Next.js y ya estaba evaluado. Hacen lo mismo que leer el codigo del sitio con el navegador integrado, y copiar 1:1 el sitio de otro es copiar su codigo y su diseno: se estudia la tecnica y se rehace con `/diseno` |
 | Glyph Portal (Christian Katzmann, MIT, via 21st.dev) | Adoptada (portada a JS en la landing) | Camara por scroll que entra por la O de DICO. Se porto sin shadcn ni TypeScript, sin el modo interactivo; probada en `prueba/glyph-portal` y publicada el 5/nov. El aviso de licencia llega al bundle (`output.comments.legal` en `vite.config.js`) |
+| Earth Blaze (21st.dev, autor y licencia sin confirmar) | Adoptada (portada a JS en la landing) | Horizonte WebGL de "Conocé Dico". Dorado DICO en halo, borde y aurora; sin la textura del CDN de 21st; decorativo y con arranque perezoso. Probada en `prueba/earth-blaze` y publicada el 5/nov por decision de Ricky **sin confirmar la licencia**: falta el link de 21st para verificar autor y licencia |
 
 ## Antes de razonar sobre una RPC, traela
 

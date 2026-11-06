@@ -11,6 +11,54 @@
 
 ---
 
+## 5/nov/2026 (cierre) — Landing: intro DIVIANCO → DICO, óvalo en el teléfono y "Conocé Dico" con Earth Blaze (Claude)
+
+Publicado en producción: `92f6dd9` (intro), `9a2aeac` (óvalo) y `f51415d` (Conocé Dico). Todo pasó por `/diseno` con `impeccable`, constructor y auditor separados (cuatro auditorías).
+
+### Hecho
+
+- **Intro de carga** (`index.html`, `src/styles/entrada-landing.css`): arranca con DIVIANCO a lo ancho y se cierra en DICO (80vw, tope 170vh); recién ahí se abren las compuertas. DI y CO son recortes del PNG real (`dico-oscuro.png`, corte en x=574 de 1368, entre la I y la C) y VIAN es un SVG con la tinta medida del logo (relleno blanco, trazo volt 4 px, alto 38–402): el final ES el logo. Se anima solo con transform y opacity (DI y CO se juntan, VIAN se achica hacia el centro): animar `width` se desincronizaba con el hilo ocupado. Sin la línea de la unión ni los bordes dorados al abrir; las mitades se pisan 1 px porque con DPR fraccional (Android) la costura aparecía igual. El brillo dorado va en `.de-di`/`.de-co` y no en la `img` (ahí lo recortaba el `overflow`). Mismo tiempo mínimo de 2800 ms: no cambió `entradaLanding.test.jsx`.
+- **Óvalo de la frase en el teléfono** (`src/styles/transicion-volt.css`): en ≤700 px la lente medía 144% del ancho y las puntas quedaban afuera (se veía como una franja). Ahora entra entera, 2:1 (50vw de alto) con `--hv-aire` arriba y abajo para el halo, y la frase se achica (piso 14 px, `text-wrap: balance`).
+- **"Conocé Dico"** (`src/components/landing/QueEsDico.jsx`, `que-es-dico.css`), entre Negocios y Rubros, `id="que-es"` (sumado a `ordenLanding.test.jsx`):
+  - **Earth Blaze** (`src/components/landing/EarthBlaze.jsx`, `earth-blaze.css`): componente WebGL de 21st.dev portado a JS. Halo, borde y aurora en el dorado DICO; nebulosa teñida con `--ds-color-intelligence-trace`; los tintes aceptan `var(--token)`. Sin la textura de la Tierra del CDN de 21st (el planeta queda como silueta). Decorativo (`interactive={false}`: sin foco ni gestos) y el WebGL arranca recién cuando la sección está a 200 px de la pantalla. Prop nueva `luz` (-1 a 1) que corre el sol por el horizonte; sin interacción viaja lento (τ 1.1 s).
+  - **Tres escenas** que rotan cada 5 s con fundido: Qué es, Visión ("Que cada negocio sepa cuánto gana.") y Misión ("Devolverte el tiempo para lo que importa."). Los textos de visión y misión los redacté yo y Ricky los aprobó viendo el preview. Pestañas `role=tablist` con barra dorada de progreso, flechas/Home/End; paneles inactivos con `inert` + `aria-hidden`; los tres en el HTML de SEO.
+  - **Pausa:** con el mouse encima, mientras se mantiene apretado en el teléfono (sigue al soltar), con foco de teclado (solo `:focus-visible`), con el texto fuera de pantalla y con movimiento reducido. **Ricky pidió sacar el botón de pausa**: WCAG 2.2.2 pide un control para lo que se mueve solo más de 5 s, y sin el botón queda solo la pausa por hover/toque.
+  - Texto a la derecha en el negro del planeta; **apilado (escena arriba, texto abajo) debajo de 1280 px** y en el teléfono acostado, porque entre 701 y 1280 el sol caía detrás del texto.
+- **Tabla de herramientas evaluadas** (`CLAUDE.md` + `AGENTS.md`): fila de Earth Blaze.
+
+### Verificado
+
+- **Producción:** deploy READY de `92f6dd9` y `curl` a divianco.app con el markup nuevo de la intro; CI de `92f6dd9` verde (5 jobs). El de `f51415d` se esperó con `ci:esperar` en este cierre (ver resumen).
+- **Navegador integrado (local):** intro en tres momentos (DIVIANCO, cierre, DICO) en 1280 y 375, y la apertura de compuertas; óvalo en 375 y 320; "Conocé Dico" en 1280, 820 y 375, rotación sola a los 5–8 s, clic en pestañas, sol corriéndose, paneles ocultos para lectores. El WebGL arranca recién al acercarse (antes queda sin iniciar).
+- **Tests de la landing** (`ordenLanding`, `landingHero`, `seoPlataforma`, `entradaLanding`), ESLint, `check:diseno` (17 conocidos, ninguno nuevo), integridad y build del pre-commit: verdes.
+- **NO verificado:** la última versión de la pausa (5 s, sin botón, apretar en el teléfono): el panel del navegador estaba oculto y no corre los IntersectionObserver; la lógica se revisó en el código. Tampoco se vio en un teléfono real ni el rendimiento del WebGL en gama baja.
+
+### Pendiente inmediato
+
+1. **Licencia de Earth Blaze:** se publicó sin confirmar autor ni licencia (decisión de Ricky). Con el link de 21st, poner autor y licencia en la cabecera de `EarthBlaze.jsx` y en la tabla. Si no permite uso comercial, sacarlo.
+2. **Probar en el teléfono de Ricky** la pausa al apretar y el rendimiento: hay 4+ contextos WebGL en la landing (Safari iOS descarta contextos cuando son muchos; el respaldo CSS existe).
+3. **Óvalo, P2 del auditor sin tocar:** entre 701 y ~1100 px (tablet) la lente vuelve a ser casi un rombo (regla base de `min-height`), y en el teléfono acostado no entra en la pantalla. Con la letra del sistema al 130% o más, el texto toca el trazo en 320 px.
+4. **Intro:** las esquinas de V, A y N son en punta (el logo las tiene apenas redondeadas) y "Preparando Dico" queda chico en escritorio.
+5. **`--ds-color-zinc-300` no existe** (solo zinc 50/400/800/900/950) y lo usan `negocios-dico.css:2` y el `<p>` de la intro (este con fallback). Revisar qué color se ve en Negocios.
+6. Siguen los pendientes 1, 2, 3, 5 y 6 de la sección de abajo (precargar Overused Grotesk, portal estático en celulares lentos, etc.).
+7. Borrar la worktree `.claude/worktrees/earth-blaze` y la rama `prueba/earth-blaze`: su contenido ya está en `main` (copiado, no mergeado), con el sí de Ricky.
+
+### Bloqueado por Ricky
+
+- Pasar el link de 21st.dev de Earth Blaze (autor y licencia).
+
+### Heredados de la sección del 4/nov que se archiva (siguen vigentes)
+
+- Ricky instala el panel en el celular (`/admin` → nombre → Instalar app) y confirma nombre, ícono y que abre en el panel. No verificado en Chrome, Android ni iPhone.
+- Mía pega el Access Token de MercadoPago en Configuración → Finanzas → Cobros online (MiaEstudio no tiene fila en `payment_integrations`).
+- Deuda del auditor: `.ag-dialog-panel` sin `overscroll-behavior: contain`, y "Instalar app" visible con el panel ya instalado pero abierto en una pestaña.
+
+### Archivos y limpieza
+
+- No se creó nada fuera de `src/`, `docs/`, `platform/` y `scripts/` salvo `index.html` (ya existía) y la worktree `.claude/worktrees/earth-blaze`. Temporales de los auditores en el scratchpad del sistema.
+
+---
+
 ## 5/nov/2026 (noche) — Landing: títulos con movimiento, portal DICO, nuevo orden y óvalo dorado (Claude)
 
 Publicado en producción: `main` = `df62f77`, deploy de `hermes-platform` READY con ese SHA y CI verde (los 5 jobs, run 42131926867). Todo pasó por `/diseno` con `impeccable`, constructor y auditor separados.
@@ -339,65 +387,5 @@ Se conserva lo pendiente reportado por esa sesión; no fue revalidado aquí y pu
   - `landing-soul-footer` (`codex/landing-soul-footer`) está en el `HEAD` de main y limpia. Parece recién creada por Codex: no se toca.
   - `prueba-21st` no está mergeada.
 - **Se archiva la sección de Codex del 24/oct** (landing: botón y circuito con Dico central). Lo que dejaba pendiente era la aprobación visual del hero y el segmento 2 de la landing. Está en `historico/HANDOFF-anterior.md`.
-
----
-
-## 4/nov/2026 — Topbar con dos menús y el panel instalable como app (Claude)
-
-### Hecho
-
-**Topbar en dos menús** (PR #72, `8b4ed33`, mergeado):
-- La burbuja de perfil lleva el logo del negocio (iniciales si no hay) y abre **solo** los negocios de la persona, más la consola si es staff.
-- El nombre abre Configuración, Tema, **Ver catálogo** (salió de la topbar) y Salir. "Ver catálogo" además queda fijo en el encabezado de Productos, para todos los roles.
-- `MenuDesplegable` en `ControlesDeSesion.jsx` es el componente común de los dos menús: teclado, Escape, clic afuera y devolución de foco. Abrir uno cierra el otro.
-
-**App instalable por negocio** (PR #73, `45369bb`, mergeado):
-- `api/manifest.js?app=panel`: "<negocio> · Panel", `id`/`start_url`/`scope` `/admin`. **Por qué un `id` propio:** con el mismo id que el catálogo (`/`), el navegador tomaría las dos como una app y la segunda pisaría a la primera.
-- Ícono = logo o favicon del negocio solo si es **cuadrado y de 192 px o más**. El endpoint lo mide leyendo la cabecera (Range de 64 KB); si no cumple, queda la inicial sobre `logo_color`. Crazy Miga tiene logo vertical (704×1524), así que va con la inicial. Ahora usa `get_tenant_brand` en vez de `get_catalog`, que traía el catálogo entero.
-- `src/lib/instalarApp.js` hace tres cosas:
-  - Guarda el `beforeinstallprompt` **solo en `/admin`**. En el catálogo no se toca, así los clientes conservan la barra de instalación de Chrome.
-  - `main.jsx` apunta el manifest del panel antes del render. Si el manifest cambia después del aviso, el aviso viejo se descarta, porque instalaría la app de `/`.
-  - El `apple-touch-icon` del iPhone se elige midiendo en el navegador: el primero cuadrado de 180 px o más.
-- Menú del nombre → **Instalar app** (debajo de Ver catálogo):
-  - Con el aviso de Chrome/Edge, abre el diálogo del sistema.
-  - Sin el aviso, `GuiaDeInstalacion.jsx` muestra los pasos para compu, Android e iPhone, arrancando por el dispositivo detectado.
-  - Se oculta si ya corre como app.
-
-**Proceso:** `/cerrardico` suma el paso de listar las worktrees ya mergeadas y ofrecer borrarlas (`354d99b`, en `.claude/skills` y `.agents/skills`).
-
-**MercadoPago:** no hay una vía más simple que pegar el Access Token en Configuración → Finanzas → Cobros online. MP no permite OAuth para apps de "Integración propia". Queda pendiente que Mía lo pegue (MiaEstudio no tiene fila en `payment_integrations`).
-
-### Verificado
-- **Producción:**
-  - Deploy `8d9d140` `READY` = `origin/main`.
-  - `curl` a `/api/manifest?app=panel` de los 5 negocios: nombre "· Panel" y `/admin` en todos. Ícono: logo en LNP (1024), Monare (logo y favicon) y MIA (1254); inicial en Crazy Miga y Cochi.
-  - En el navegador, `la-nona-pato.divianco.app/admin` sin login: el manifest del panel y el `apple-touch-icon` = logo. En `/` queda el manifest del catálogo.
-- **Local:** suite 173/2284, build, ESLint sin errores, `check:diseno` 17 conocidos y ninguno nuevo. CI de `354d99b` verde.
-- **Auditor independiente:** 0 P0. Se corrigieron los 2 P1 (aviso con el manifest viejo; `preventDefault` en el catálogo), los P2 (ícono iOS no cuadrado, contraste del segmento elegido) y los P3 de textos.
-- **NO verificado:**
-  - La instalación real en Chrome, Android e iPhone.
-  - La guía a 390 px y en tema oscuro.
-  - Si Chrome vuelve a disparar `beforeinstallprompt` después del cambio de manifest; si no lo hace, el botón cae en la guía.
-  - El selector de negocios de #72 con la cuenta staff.
-
-### Pendiente inmediato
-1. **Ricky instala el panel** en el celular (`/admin` → nombre → Instalar app) y confirma nombre, ícono y que abre en el panel.
-2. **Commit local sin pushear en `main` del checkout principal:** `8d50ecb` "feat(planes): Paris, Dante y Magnus…", de Ricky. No se tocó. El `main` local diverge de `origin/main` (le faltan #73 y este cierre): hace falta `git pull --rebase` antes de pushearlo.
-3. **Skills de diseño sin bajar:** `.claude/skills/impeccable/` está vacía en el checkout principal y el `disenador` no la pudo cargar. Correr `npm run skills:diseno`.
-4. Deuda del auditor sin resolver:
-   - `.ag-dialog-panel` sin `overscroll-behavior: contain` (afecta a todas las hojas).
-   - El ítem "Instalar app" sigue visible si el panel ya está instalado pero se abre en una pestaña.
-5. Sigue vigente el pendiente de la sección del 3/nov (reserva online de Mía, datos de Mía, contraer `prep_time_min`, recordatorios de turnos).
-
-### Bloqueado por Ricky
-- Mía pega el Access Token de MercadoPago en Cobros online. Sin eso no hay seña online.
-- Pushear (o descartar) `8d50ecb`.
-
-### Heredados de la sección del 23/oct que se archiva
-- Landing, fases 3 y 4 (circuito, rubros, logos con Instagram, pasos, planes, FAQ y footer), y el precio Digital de **$14.999/mes** que aprobó Ricky (anual sin definir), sincronizado en landing, diagnóstico y tabla `plans`. Revisar si `8d50ecb` (planes Paris, Dante y Magnus) lo reemplaza.
-
-### Archivos y limpieza
-- No se creó nada fuera de `src/`, `docs/`, `platform/` y `scripts/`, salvo `api/manifest.js` (ya existía; es el endpoint de Vercel) y las dos copias de la skill `cerrardico`.
-- Se borraron las worktrees ya mergeadas: 15 al empezar (respaldo de `.codex`/`.agents` en la rama `respaldo/codex-config-2026-11-03`), más `topbar-dos-menus` y `app-instalable`. La carpeta `modest-hopper-c05e8d` quedó vacía y trabada por un proceso; git ya no la registra. Quedan `prueba-21st` (sin mergear) y la de Codex en `~/.codex`.
 
 ---

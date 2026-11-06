@@ -9,6 +9,66 @@
 
 ---
 
+## 4/nov/2026 — Topbar con dos menús y el panel instalable como app (Claude)
+
+### Hecho
+
+**Topbar en dos menús** (PR #72, `8b4ed33`, mergeado):
+- La burbuja de perfil lleva el logo del negocio (iniciales si no hay) y abre **solo** los negocios de la persona, más la consola si es staff.
+- El nombre abre Configuración, Tema, **Ver catálogo** (salió de la topbar) y Salir. "Ver catálogo" además queda fijo en el encabezado de Productos, para todos los roles.
+- `MenuDesplegable` en `ControlesDeSesion.jsx` es el componente común de los dos menús: teclado, Escape, clic afuera y devolución de foco. Abrir uno cierra el otro.
+
+**App instalable por negocio** (PR #73, `45369bb`, mergeado):
+- `api/manifest.js?app=panel`: "<negocio> · Panel", `id`/`start_url`/`scope` `/admin`. **Por qué un `id` propio:** con el mismo id que el catálogo (`/`), el navegador tomaría las dos como una app y la segunda pisaría a la primera.
+- Ícono = logo o favicon del negocio solo si es **cuadrado y de 192 px o más**. El endpoint lo mide leyendo la cabecera (Range de 64 KB); si no cumple, queda la inicial sobre `logo_color`. Crazy Miga tiene logo vertical (704×1524), así que va con la inicial. Ahora usa `get_tenant_brand` en vez de `get_catalog`, que traía el catálogo entero.
+- `src/lib/instalarApp.js` hace tres cosas:
+  - Guarda el `beforeinstallprompt` **solo en `/admin`**. En el catálogo no se toca, así los clientes conservan la barra de instalación de Chrome.
+  - `main.jsx` apunta el manifest del panel antes del render. Si el manifest cambia después del aviso, el aviso viejo se descarta, porque instalaría la app de `/`.
+  - El `apple-touch-icon` del iPhone se elige midiendo en el navegador: el primero cuadrado de 180 px o más.
+- Menú del nombre → **Instalar app** (debajo de Ver catálogo):
+  - Con el aviso de Chrome/Edge, abre el diálogo del sistema.
+  - Sin el aviso, `GuiaDeInstalacion.jsx` muestra los pasos para compu, Android e iPhone, arrancando por el dispositivo detectado.
+  - Se oculta si ya corre como app.
+
+**Proceso:** `/cerrardico` suma el paso de listar las worktrees ya mergeadas y ofrecer borrarlas (`354d99b`, en `.claude/skills` y `.agents/skills`).
+
+**MercadoPago:** no hay una vía más simple que pegar el Access Token en Configuración → Finanzas → Cobros online. MP no permite OAuth para apps de "Integración propia". Queda pendiente que Mía lo pegue (MiaEstudio no tiene fila en `payment_integrations`).
+
+### Verificado
+- **Producción:**
+  - Deploy `8d9d140` `READY` = `origin/main`.
+  - `curl` a `/api/manifest?app=panel` de los 5 negocios: nombre "· Panel" y `/admin` en todos. Ícono: logo en LNP (1024), Monare (logo y favicon) y MIA (1254); inicial en Crazy Miga y Cochi.
+  - En el navegador, `la-nona-pato.divianco.app/admin` sin login: el manifest del panel y el `apple-touch-icon` = logo. En `/` queda el manifest del catálogo.
+- **Local:** suite 173/2284, build, ESLint sin errores, `check:diseno` 17 conocidos y ninguno nuevo. CI de `354d99b` verde.
+- **Auditor independiente:** 0 P0. Se corrigieron los 2 P1 (aviso con el manifest viejo; `preventDefault` en el catálogo), los P2 (ícono iOS no cuadrado, contraste del segmento elegido) y los P3 de textos.
+- **NO verificado:**
+  - La instalación real en Chrome, Android e iPhone.
+  - La guía a 390 px y en tema oscuro.
+  - Si Chrome vuelve a disparar `beforeinstallprompt` después del cambio de manifest; si no lo hace, el botón cae en la guía.
+  - El selector de negocios de #72 con la cuenta staff.
+
+### Pendiente inmediato
+1. **Ricky instala el panel** en el celular (`/admin` → nombre → Instalar app) y confirma nombre, ícono y que abre en el panel.
+2. **Commit local sin pushear en `main` del checkout principal:** `8d50ecb` "feat(planes): Paris, Dante y Magnus…", de Ricky. No se tocó. El `main` local diverge de `origin/main` (le faltan #73 y este cierre): hace falta `git pull --rebase` antes de pushearlo.
+3. **Skills de diseño sin bajar:** `.claude/skills/impeccable/` está vacía en el checkout principal y el `disenador` no la pudo cargar. Correr `npm run skills:diseno`.
+4. Deuda del auditor sin resolver:
+   - `.ag-dialog-panel` sin `overscroll-behavior: contain` (afecta a todas las hojas).
+   - El ítem "Instalar app" sigue visible si el panel ya está instalado pero se abre en una pestaña.
+5. Sigue vigente el pendiente de la sección del 3/nov (reserva online de Mía, datos de Mía, contraer `prep_time_min`, recordatorios de turnos).
+
+### Bloqueado por Ricky
+- Mía pega el Access Token de MercadoPago en Cobros online. Sin eso no hay seña online.
+- Pushear (o descartar) `8d50ecb`.
+
+### Heredados de la sección del 23/oct que se archiva
+- Landing, fases 3 y 4 (circuito, rubros, logos con Instagram, pasos, planes, FAQ y footer), y el precio Digital de **$14.999/mes** que aprobó Ricky (anual sin definir), sincronizado en landing, diagnóstico y tabla `plans`. Revisar si `8d50ecb` (planes Paris, Dante y Magnus) lo reemplaza.
+
+### Archivos y limpieza
+- No se creó nada fuera de `src/`, `docs/`, `platform/` y `scripts/`, salvo `api/manifest.js` (ya existía; es el endpoint de Vercel) y las dos copias de la skill `cerrardico`.
+- Se borraron las worktrees ya mergeadas: 15 al empezar (respaldo de `.codex`/`.agents` en la rama `respaldo/codex-config-2026-11-03`), más `topbar-dos-menus` y `app-instalable`. La carpeta `modest-hopper-c05e8d` quedó vacía y trabada por un proceso; git ya no la registra. Quedan `prueba-21st` (sin mergear) y la de Codex en `~/.codex`.
+
+---
+
 ## 3/nov/2026 (tarde) — MiaEstudio con datos y tienda abierta; el tiempo solo en servicios (Claude)
 
 ### Hecho
