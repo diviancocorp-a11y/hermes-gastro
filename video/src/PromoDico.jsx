@@ -1,4 +1,4 @@
-import { loadFont } from '@remotion/fonts';
+import './fuentes.js';
 import {
   AbsoluteFill,
   Img,
@@ -10,8 +10,7 @@ import {
   useVideoConfig,
 } from 'remotion';
 
-// Tokens de src/styles/dico-tokens.css y tipografia de docs/marca:
-// Butler habla el alma (titulos), Overused Grotesk la maquina (todo lo demas).
+// Tokens de src/styles/dico-tokens.css.
 const C = {
   fondo: '#0f0e0d',
   texto: '#faf5ee',
@@ -19,9 +18,6 @@ const C = {
   oro: '#e0ac3c',
   volt: '#3d6bff',
 };
-
-loadFont({ family: 'Butler', url: staticFile('fonts/dico/butler/Butler-Free-Rmn.woff2'), weight: '400' });
-loadFont({ family: 'Overused Grotesk', url: staticFile('fonts/dico/overused-grotesk/OverusedGrotesk-VF.woff2'), weight: '300 900' });
 
 const entrada = (frame, desde, dur = 18) => ({
   opacity: interpolate(frame, [desde, desde + dur], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),

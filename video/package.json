@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "estudio": "remotion studio src/index.jsx",
-    "render": "remotion render src/index.jsx PromoDico out/promo-dico.mp4"
+    "render": "remotion render src/index.jsx PromoDico out/promo-dico.mp4",
+    "render:historia": "remotion render src/index.jsx DosRestaurantes out/dos-restaurantes.mp4"
   },
   "dependencies": {
     "@remotion/cli": "4.0.541",

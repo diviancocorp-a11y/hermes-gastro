@@ -36,6 +36,23 @@ npx remotion render src/index.jsx PromoDico out/magnus.mp4 --props='{"titulo":"V
 - Verificado sacando cuadros con ffmpeg y mirandolos: las dos fuentes de marca
   cargan y el logo se ve sobre el fondo `--ds-color-neutral-950`.
 
+## Segunda pieza: "Dos restaurantes" (6/nov)
+
+- `DosRestaurantes` (`video/src/historia/`): reel de 36 s, 8 escenas, guion
+  aprobado por Ricky. Estructura tomada del reel de ImpulsePages (competidor
+  directo: web, IA de atencion, puntos y resenas para restaurantes); el
+  conflicto es propio: los dos locales llenos, solo uno gana plata.
+- Todo lo que muestra existe en DICO: catalogo en `<slug>.divianco.app`, aviso
+  de pedido, stock que se descuenta con la venta y avisa bajo minimo, cierre
+  de caja, y el chat de Dico (placeholder real de `DicoPanel.jsx`).
+- **Dice "cuanto vendio", no "cuanto gano"**: `unit_cost` va en 0 y el P&L no
+  da. Cuando haya modelo de costos, se cambia el texto.
+- Las pantallas son maquetas con los tokens de DICO, no componentes reales:
+  los del panel piden sesion y Supabase. Datos inventados ("Resto A").
+- Sin voz ni musica: solo subtitulos. Render: 1080 cuadros, MP4 de 3,5 MB.
+- Para ver la referencia se sacaron cuadros con ffmpeg (1 por segundo) y el
+  audio lo transcribio Gemini desde la app.
+
 ## Pendiente para decidir
 
 - **Licencia:** Remotion es gratis para personas y empresas de hasta 3
