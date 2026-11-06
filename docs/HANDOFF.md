@@ -11,6 +11,24 @@
 
 ---
 
+## 6/nov/2026 — Cobro recurrente con Mercado Pago: decisiones (Claude)
+
+Sin codigo todavia. Via y decisiones de Ricky en `docs/plataforma/COBRO-SUSCRIPCION.md`:
+suscripcion de MP por negocio sin plan asociado, con la cuenta de Divianco;
+tarjeta obligatoria en la primera entrada; primer debito al vencer los 14 dias;
+solo la promo de la prueba; anual por adelantado; Paris es pago y sin pago se
+suspende; Dante/Magnus sin pago bajan a Paris; el corte de
+`create-payment-preference` va junto.
+
+### Pendiente inmediato
+1. Verificar contra la doc vigente de MP los puntos que lista el doc.
+2. Migracion aditiva + `suscripcion-crear` + `suscripcion-webhook`, probados con usuarios de prueba de MP sobre un tenant de QA.
+
+### Bloqueado por Ricky
+- Credenciales de MP de Divianco y secrets cargados en Supabase.
+
+---
+
 ## 5/nov/2026 (cierre) — Landing: intro DIVIANCO → DICO, óvalo en el teléfono y "Conocé Dico" con Earth Blaze (Claude)
 
 Publicado en producción: `92f6dd9` (intro), `9a2aeac` (óvalo) y `f51415d` (Conocé Dico). Todo pasó por `/diseno` con `impeccable`, constructor y auditor separados (cuatro auditorías).
