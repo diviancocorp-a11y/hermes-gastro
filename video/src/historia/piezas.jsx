@@ -128,6 +128,27 @@ export const Telefono = ({ children, top = 470 }) => {
   );
 };
 
+// Cortes de camara sobre la misma imagen ("punch-in"): cada plano rige desde
+// su cuadro, con su escala, y lleva el punto `foco` (y) a la altura `destino`.
+// El corte es seco, con un asentado de 5 cuadros para que no parezca un salto.
+export const Camara = ({ planos, children }) => {
+  const f = useCurrentFrame();
+  const p = planos.findLast(plano => f >= plano.desde) ?? planos[0];
+  const asentado = interpolate(f, [p.desde, p.desde + 5], [0, 1], { ...clamp, easing: t => 1 - (1 - t) ** 3 });
+  const escala = p.desde === 0 ? p.escala : p.escala * (0.95 + 0.05 * asentado);
+  return (
+    <AbsoluteFill style={{ transformOrigin: `540px ${p.foco}px`, transform: `translateY(${p.destino - p.foco}px) scale(${escala})` }}>
+      {children}
+    </AbsoluteFill>
+  );
+};
+
+// Degrade del fondo arriba: el subtitulo se lee aunque la camara meta el
+// telefono debajo (el reel de referencia hace lo mismo en claro).
+export const Velo = () => (
+  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 720, background: `linear-gradient(${C.fondo} 62%, rgba(15, 14, 13, 0))` }} />
+);
+
 export const Pulsar = ({ en, children }) => {
   const frame = useCurrentFrame();
   const s = interpolate(frame, [en, en + 4, en + 10], [1, 0.9, 1], clamp);

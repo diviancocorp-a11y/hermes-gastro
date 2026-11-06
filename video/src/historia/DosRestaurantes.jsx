@@ -1,5 +1,5 @@
 import { AbsoluteFill, Audio, Img, Sequence, Series, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
-import { C, Escena, Local, Pulsar, Subtitulo, Telefono, clamp, entra, pesos } from './piezas.jsx';
+import { C, Camara, Escena, Local, Pulsar, Subtitulo, Telefono, Velo, clamp, entra, pesos } from './piezas.jsx';
 // Audio sintetizado por scripts/sonidos.mjs (npm run sonidos).
 import musica from '../audio/musica.wav';
 import pop from '../audio/pop.wav';
@@ -131,9 +131,18 @@ const Catalogo = () => {
   );
 };
 
+// Leccion de ritmo: tres planos de ~2 s en vez de uno de 6 s. Cada corte cae
+// justo antes de lo que hay que mirar (el carrito, despues el aviso).
+const PLANOS_PEDIDOS = [
+  { desde: 0, escala: 1, foco: 960, destino: 960 },
+  { desde: 64, escala: 1.6, foco: 1650, destino: 1250 },
+  { desde: 108, escala: 1.6, foco: 640, destino: 1000 },
+];
+
 const Pedidos = () => (
   <Escena dur={DURACION.pedidos}>
-    <Telefono><Catalogo /></Telefono>
+    <Camara planos={PLANOS_PEDIDOS}><Telefono><Catalogo /></Telefono></Camara>
+    <Velo />
     <Sfx en={56} src={pop} />
     <Sfx en={92} src={toque} vol={0.7} />
     <Sfx en={112} src={avisoWav} vol={0.55} />
