@@ -4,9 +4,11 @@
   "description": "Prueba de Remotion: videos de marca de DICO hechos en React. Proyecto aparte, no toca el package.json del edificio.",
   "type": "module",
   "scripts": {
-    "estudio": "remotion studio src/index.jsx",
+    "estudio": "node scripts/sonidos.mjs && remotion studio src/index.jsx",
     "render": "remotion render src/index.jsx PromoDico out/promo-dico.mp4",
-    "render:historia": "remotion render src/index.jsx DosRestaurantes out/dos-restaurantes.mp4"
+    "sonidos": "node scripts/sonidos.mjs",
+    "render:historia": "node scripts/sonidos.mjs && remotion render src/index.jsx DosRestaurantes out/dos-restaurantes-crudo.mp4 && npm run masterizar",
+    "masterizar": "ffmpeg -v error -y -i out/dos-restaurantes-crudo.mp4 -c:v copy -af loudnorm=I=-14:TP=-1.5:LRA=7 -c:a aac -b:a 192k out/dos-restaurantes.mp4"
   },
   "dependencies": {
     "@remotion/cli": "4.0.541",

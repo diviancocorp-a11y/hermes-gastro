@@ -1,5 +1,20 @@
-import { AbsoluteFill, Img, Sequence, Series, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Audio, Img, Sequence, Series, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import { C, Escena, Local, Pulsar, Subtitulo, Telefono, clamp, entra, pesos } from './piezas.jsx';
+// Audio sintetizado por scripts/sonidos.mjs (npm run sonidos).
+import musica from '../audio/musica.wav';
+import pop from '../audio/pop.wav';
+import mensaje from '../audio/mensaje.wav';
+import toque from '../audio/toque.wav';
+import tic from '../audio/tic.wav';
+import avisoWav from '../audio/aviso.wav';
+import alertaWav from '../audio/alerta.wav';
+import caja from '../audio/caja.wav';
+import brillo from '../audio/brillo.wav';
+import soplido from '../audio/soplido.wav';
+
+const Sfx = ({ en, src, vol = 0.6 }) => (
+  <Sequence from={en} layout="none"><Audio src={src} volume={vol} /></Sequence>
+);
 
 // Guion aprobado por Ricky el 6/nov/2026. Estructura de referencia: el reel
 // "dos restaurantes" de ImpulsePages; el conflicto es propio (los dos llenos,
@@ -20,6 +35,7 @@ const Hook = () => {
       <Sequence durationInFrames={38}><Subtitulo texto="Dos restaurantes." /></Sequence>
       <Sequence from={38} durationInFrames={38}><Subtitulo texto="Los dos llenos." resaltar={['llenos']} /></Sequence>
       <Sequence from={76}><Subtitulo texto="Solo uno gana plata." resaltar={['plata']} /></Sequence>
+      <Sfx en={82} src={brillo} vol={0.35} />
     </Escena>
   );
 };
@@ -49,6 +65,7 @@ const ElOtro = () => (
     <Vereda />
     <Local nombre="Resto B" left={40} top={990} escala={1.15} apagado={0.4} />
     <Cuaderno />
+    <Sfx en={6} src={soplido} vol={0.4} />
     <Subtitulo texto="¿El otro? Trabaja el doble y no sabe cuánto le queda." resaltar={['sabe']} cada={3} />
   </Escena>
 );
@@ -59,6 +76,7 @@ const Marca = () => {
   return (
     <Escena dur={DURACION.marca}>
       <Subtitulo texto="El primero tiene" top={640} />
+      <Sfx en={12} src={brillo} vol={0.5} />
       <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', paddingTop: 260 }}>
         <Img src={staticFile('brand/dico/logo/dico-oscuro.png')} style={{ width: 760, transform: `scale(${spring({ frame: f - 10, fps, config: { damping: 12 } })})` }} />
       </AbsoluteFill>
@@ -116,6 +134,9 @@ const Catalogo = () => {
 const Pedidos = () => (
   <Escena dur={DURACION.pedidos}>
     <Telefono><Catalogo /></Telefono>
+    <Sfx en={56} src={pop} />
+    <Sfx en={92} src={toque} vol={0.7} />
+    <Sfx en={112} src={avisoWav} vol={0.55} />
     <Subtitulo texto="Los pedidos entran solos, desde su propia página." resaltar={['solos']} cada={3} />
   </Escena>
 );
@@ -154,6 +175,7 @@ const Stock = () => {
         </div>
       </Telefono>
       <Subtitulo texto="Sabe qué le falta antes de que se acabe." resaltar={['antes']} cada={3} />
+      <Sfx en={96} src={alertaWav} vol={0.45} />
     </Escena>
   );
 };
@@ -186,6 +208,8 @@ const Cierre = () => {
         </div>
       </Telefono>
       <Subtitulo texto="Y cada noche, al cerrar, sabe cuánto vendió." resaltar={['vendió']} cada={3} />
+      {Array.from({ length: 14 }, (_, i) => <Sfx key={i} en={20 + i * 5} src={tic} vol={0.25} />)}
+      <Sfx en={90} src={caja} vol={0.55} />
     </Escena>
   );
 };
@@ -220,6 +244,8 @@ const PreguntaDico = () => {
         </div>
       </Telefono>
       <Subtitulo texto="Y si tiene una duda, le pregunta a Dico." resaltar={['dico']} cada={3} />
+      <Sfx en={14} src={mensaje} />
+      <Sfx en={62} src={pop} />
     </Escena>
   );
 };
@@ -242,12 +268,19 @@ const Final = () => {
           fontFamily: 'Overused Grotesk', fontWeight: 700, fontSize: 56,
         }}>divianco.app</div>
       </div>
+      <Sfx en={40} src={pop} vol={0.7} />
+      <Sfx en={42} src={brillo} vol={0.45} />
     </Escena>
   );
 };
 
+// Donde arranca cada escena despues de la primera: ahi va el soplido.
+const CORTES = Object.values(DURACION).slice(0, -1).reduce((acc, d) => [...acc, (acc.at(-1) ?? 0) + d], []);
+
 export const DosRestaurantes = () => (
   <AbsoluteFill style={{ background: C.fondo }}>
+    <Audio src={musica} volume={f => interpolate(f, [0, 20, DURACION_TOTAL - 50, DURACION_TOTAL], [0, 0.4, 0.4, 0], clamp)} />
+    {CORTES.map(en => <Sfx key={en} en={en - 4} src={soplido} vol={0.3} />)}
     <Series>
       <Series.Sequence durationInFrames={DURACION.hook}><Hook /></Series.Sequence>
       <Series.Sequence durationInFrames={DURACION.otro}><ElOtro /></Series.Sequence>

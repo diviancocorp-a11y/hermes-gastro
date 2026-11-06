@@ -49,7 +49,16 @@ npx remotion render src/index.jsx PromoDico out/magnus.mp4 --props='{"titulo":"V
   da. Cuando haya modelo de costos, se cambia el texto.
 - Las pantallas son maquetas con los tokens de DICO, no componentes reales:
   los del panel piden sesion y Supabase. Datos inventados ("Resto A").
-- Sin voz ni musica: solo subtitulos. Render: 1080 cuadros, MP4 de 3,5 MB.
+- Sin voz. Musica y efectos sintetizados por `video/scripts/sonidos.mjs`
+  (Node puro, con semilla): base lo-fi a 90 BPM con piano electrico, bajo,
+  bateria y vinilo, y efectos de interfaz (pop, toque, aviso, alerta, tics de
+  caja, brillo, soplido en cada corte). Nada bajado de internet: sin licencia.
+  Los WAV se regeneran en cada render y no van al repo.
+- `npm run render:historia` renderiza y masteriza con ffmpeg (`loudnorm` a
+  -14 LUFS, el nivel de Instagram y TikTok): medido -14,3 LUFS y pico -1,4 dB.
+  Sin masterizar daba -22,5 LUFS. Necesita ffmpeg en el PATH.
+- No escucho audio: se verifico midiendo el volumen y mirando la forma de onda
+  (los picos caen en cada evento). Si suena bien lo decide Ricky.
 - Para ver la referencia se sacaron cuadros con ffmpeg (1 por segundo) y el
   audio lo transcribio Gemini desde la app.
 
