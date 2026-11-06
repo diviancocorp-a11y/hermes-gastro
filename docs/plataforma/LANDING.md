@@ -15,6 +15,31 @@
   de otra sesión (#78), que conserva la landing. El estado
   detallado y las limitaciones de verificación están en HANDOFF.md.
 
+### Confianza y mensaje — 6/nov
+
+Sale de la auditoria del 6/nov (5 personas, nota 5,8/10). Publicado:
+
+- Terminos (`/terminos`) y Privacidad (`/privacidad`, con cookies), textos
+  en `src/lib/textosLegales.js`. **Pendiente de Ricky con un abogado:** razon
+  social, CUIT y domicilio; los plazos prometidos (copia de datos en 15 dias,
+  borrado 90 dias despues de la baja, diagnostico a los 12 meses).
+- La prueba de 14 dias de Dante dice lo mismo en planes y registro. Magnus se
+  habla por WhatsApp (no se registra solo). Paris tiene soporte por email.
+- Planes en lenguaje llano (`quien` en `planesPlataforma.js`); la landing no
+  dice "arqueo" ni "consolidado" (lo fija `landingRubroYPlanes.test.jsx`).
+- `?rubro=gastronomia|comercio|servicios` cambia la bajada del hero, abre ese
+  rubro, deja elegido el rubro en el diagnostico y lo lleva al registro.
+
+**Pendiente, sin decidir (Ricky, 6/nov):**
+
+- "0% de comision por pedido" como titulo y una calculadora de ahorro contra
+  las apps de delivery. Falta que porcentaje usar: no se publican cifras de
+  PedidosYa o Rappi sin fuente.
+- Una foto del oficio en el hero en vez de la montana. Faltan fotos reales de
+  negocios; el titulo esta compuesto entre la montana y el caminante.
+- Testimonio con cara y rubro, cuando haya uno.
+- "Agenda y turnos" en la tabla de planes, cuando algun negocio la tenga activa.
+
 ### Navegacion durante el recorrido — 5/nov
 
 - Ricky aprobo publicar mediante PR #77. Se oculta la scrollbar de enlaces

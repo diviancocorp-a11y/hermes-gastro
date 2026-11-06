@@ -178,8 +178,8 @@ export function solucion(desafio, vertical) {
       return {
         titulo: 'Lo que se pierde, primero hay que verlo.',
         hoy: gastro
-          ? 'Cada merma queda asentada y el arqueo compara lo declarado con lo registrado: la diferencia aparece sola.'
-          : 'El arqueo compara lo declarado con lo registrado al cerrar la caja: la diferencia aparece sola.',
+          ? 'Cada merma queda asentada y, al cerrar la caja, Dico compara el efectivo que contaste con lo registrado: la diferencia aparece sola.'
+          : 'Al cerrar la caja, Dico compara el efectivo que contaste con lo registrado: la diferencia aparece sola.',
         pieza: 'arqueo',
       };
     case 'pedidos':

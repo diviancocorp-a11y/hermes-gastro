@@ -4,7 +4,7 @@
 // local y cadena porque los guardan `plans`, `tenants.plan_id` y los diagnosticos.
 // La caja se nombra en un solo lugar: el diagnostico la saca de los beneficios
 // cuando el negocio no atiende en un local.
-export const INCLUYE_CAJA = 'Caja: cuánto cobraste y si cierra';
+export const INCLUYE_CAJA = 'Caja: cobros por medio de pago y si el efectivo cierra';
 
 export const PLANES_COMERCIALES = [
   {

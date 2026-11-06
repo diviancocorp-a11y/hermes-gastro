@@ -65,6 +65,11 @@ describe('la landing le habla a cada rubro con ?rubro=', () => {
     expect(landing.querySelector('.pl-cabecera-registro').getAttribute('href')).toBe('/registro?rubro=barber');
   });
 
+  it('la seccion de rubros tampoco habla de arqueo', () => {
+    const landing = landingCon('');
+    expect(landing.querySelector('#rubros').textContent).not.toMatch(/arqueo/i);
+  });
+
   it('con un rubro inválido queda la landing de siempre', () => {
     const landing = landingCon('?rubro=ferreteria');
     expect(landing.querySelector('.pl-bajada span').textContent).toBe('Para gastronomía, comercios y servicios.');

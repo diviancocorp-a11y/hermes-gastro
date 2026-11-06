@@ -21,6 +21,7 @@ import ShaderBackground from './ShaderBackground';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { marcarEvento } from '../../lib/analiticaPlataforma';
+import { rubroDeLaUrl } from '../../lib/rubroLanding';
 import {
   CANALES, EQUIPOS, ESTABLECIMIENTOS, GESTIONES, LOCALES, ORDEN_PASOS,
   PREGUNTAS_DOLOR, VENTAS_MENSUALES, DECISORES, extrasV2,
@@ -236,7 +237,8 @@ const estadoDeHistoria = () => (typeof window === 'undefined' ? undefined : wind
 function arranque(modo) {
   const sesion = leerSesion();
   const respuestas = sesion?.respuestas || { ...VACIO };
-  const delaUrl = modo === 'pagina' ? verticalDeLaUrl() : null;
+  // En la home, el ?rubro= de la landing deja elegido el rubro (los ids coinciden).
+  const delaUrl = modo === 'pagina' ? verticalDeLaUrl() : rubroDeLaUrl();
   if (delaUrl && !respuestas.vertical) respuestas.vertical = delaUrl;
   const h = sesion?.version === 2 ? estadoDeHistoria() : undefined;
   const base = { respuestas, token: sesion?.token || null, id: sesion?.id || null, firma: sesion?.firma || null, contactoConfirmado: sesion?.contactoConfirmado || null };

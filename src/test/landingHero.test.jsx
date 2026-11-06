@@ -28,11 +28,31 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  window.history.replaceState({}, '', '/');
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
 describe('hero y diagnóstico comparten un solo recorrido', () => {
+  it('con ?rubro= de la landing deja elegido ese rubro, sin pisar una sesion', () => {
+    window.history.replaceState({}, '', '/?rubro=comercio');
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
+    expect(screen.getByRole('radio', { name: 'Comercio' })).toBeChecked();
+    cleanup();
+    window.history.replaceState({}, '', '/?rubro=ferreteria');
+    sessionStorage.clear();
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
+    expect(screen.getByRole('radio', { name: 'Comercio' })).not.toBeChecked();
+    cleanup();
+    sessionStorage.setItem('dico:diagnostico-v2-en-curso', JSON.stringify({ version: 2, respuestas: { vertical: 'servicios' } }));
+    window.history.replaceState({}, '', '/?rubro=comercio');
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));
+    expect(screen.getByRole('radio', { name: 'Servicios' })).toBeChecked();
+  });
+
   it('abre con foco y un CTA de otra sección conserva la pregunta y la respuesta', () => {
     const abrirRef = montar();
     fireEvent.click(screen.getByRole('button', { name: 'Quiero Dico' }));

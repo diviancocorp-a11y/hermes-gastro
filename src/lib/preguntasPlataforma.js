@@ -10,7 +10,7 @@ const RESPUESTAS = [
   ['¿Dico funciona sin internet?', 'Hoy necesita conexión y no tiene modo offline. Si se corta internet o el servicio, no vas a poder registrar operaciones hasta que se restablezca.'],
   ['¿Cómo sé qué está disponible para mi rubro?', 'En el apartado de rubros distinguimos las funciones disponibles de las que están en desarrollo. La agenda interna y la reserva online son funciones distintas: la reserva online, los talles y colores y la facturación ARCA siguen en desarrollo.', 'rubros'],
   ['¿Qué pasa si sumo otra sucursal?', 'El plan Magnus contempla varias sucursales, consolidado, comparativas y roles por local. Su precio se calcula por local.'],
-  ['¿Se conecta con mi caja registradora vieja?', 'Dico tiene su propia caja y arqueo. Una caja registradora mecánica no se conecta al sistema.'],
+  ['¿Se conecta con mi caja registradora vieja?', 'Dico tiene su propia caja, con su cierre. Una caja registradora mecánica no se conecta al sistema.'],
   ['¿Quién puede ver los datos de mi negocio?', 'El acceso se organiza por roles. Cada negocio tiene su propio espacio; un vendedor o un mozo no ve finanzas o sueldos si su rol no lo permite.'],
   ['¿Cómo consulto las condiciones del servicio y la privacidad?', 'Escribinos a hola@divianco.app para conocer las condiciones aplicables y resolver dudas sobre privacidad antes de contratar.', 'legales'],
 ];

@@ -12,7 +12,7 @@ export const HERRAMIENTAS_RUBROS = {
       { fila: 5, nombre: 'Consumo de insumos por receta', texto: 'Al completar un pedido, Dico descuenta los insumos de su receta. Recibir el pedido o cobrarlo son acciones distintas.' },
     ] },
     { titulo: 'Entender los números', items: [
-      { fila: 6, nombre: 'Caja y arqueo', texto: 'Registrás cobros por medio de pago y revisás el cierre de caja con su arqueo.' },
+      { fila: 6, nombre: 'Caja', texto: 'Registrás cobros por medio de pago y al cerrar ves si el efectivo del cajón cierra.' },
       { fila: 7, nombre: 'Fichaje y personal', texto: 'Registrás el fichaje del equipo y consultás su costo laboral por día.' },
       { fila: 8, nombre: 'Gastos y resultado del mes', texto: 'Registrás los gastos y consultás el resultado del mes con la información cargada en Dico.' },
       { fila: 9, nombre: 'Resultado diario por sucursal', texto: 'Reunís ventas, costo de las recetas vendidas, personal y gastos para consultar cómo cerró cada día en cada sucursal.' },
@@ -28,7 +28,7 @@ export const HERRAMIENTAS_RUBROS = {
       { fila: 8, nombre: 'Talles y colores', texto: 'Las variantes de talle y color por artículo están en desarrollo.' },
     ] },
     { titulo: 'Ordenar cobros y números', items: [
-      { fila: 2, nombre: 'Caja y arqueo', texto: 'Registrás el cobro por su medio de pago y revisás caja. Completar la venta y registrar su pago son acciones distintas.' },
+      { fila: 2, nombre: 'Caja', texto: 'Registrás el cobro por su medio de pago y al cerrar ves si el efectivo cierra. Completar la venta y registrar su pago son acciones distintas.' },
       { fila: 3, nombre: 'Fichaje y personal', texto: 'Registrás el fichaje y consultás el costo del equipo por día.' },
       { fila: 4, nombre: 'Compras, gastos y resultado', texto: 'Reunís compras y gastos y consultás el resultado del mes con los datos cargados.' },
       { fila: 5, nombre: 'Resultado del día', texto: 'Consultás ventas, personal y gastos del día. El costo de lo vendido por artículo todavía está en desarrollo.' },
@@ -43,7 +43,7 @@ export const HERRAMIENTAS_RUBROS = {
     ] },
     { titulo: 'Registrar cada atención', items: [
       { fila: 1, nombre: 'Ventas de servicios', texto: 'Registrás la venta del servicio realizado y su precio; el cobro se registra aparte.' },
-      { fila: 3, nombre: 'Caja y arqueo', texto: 'Registrás cada pago por su medio y revisás el cierre de caja.' },
+      { fila: 3, nombre: 'Caja', texto: 'Registrás cada pago por su medio y al cerrar ves si el efectivo cierra.' },
       { fila: 4, nombre: 'Stock de insumos', texto: 'Consultás los insumos disponibles y sus mínimos. El consumo automático por atención es otra función y sigue en desarrollo.' },
       { fila: 5, nombre: 'Productos que vendés', texto: 'Si también vendés productos, completar el pedido descuenta las unidades de esos artículos.' },
       { fila: 10, nombre: 'Consumo por atención', texto: 'El descuento automático de los insumos usados en cada servicio está en desarrollo.' },
