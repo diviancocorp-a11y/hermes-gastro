@@ -15,15 +15,25 @@ export default function Legales({ ruta }) {
   const otro = LEGALES.find(d => d !== documento);
 
   useEffect(() => {
+    const tituloPrevio = document.title;
     document.title = `${documento.titulo} — Dico`;
     const meta = document.head.querySelector('meta[name="description"]');
+    const descripcionPrevia = meta?.getAttribute('content');
     if (meta) meta.setAttribute('content', documento.descripcion);
     cargarAnalitica();
+
+    // El chunk llega despues de que el navegador busco el #ancla (/privacidad#cookies).
+    const ancla = window.location.hash && document.getElementById(window.location.hash.slice(1));
+    if (ancla) ancla.scrollIntoView();
 
     const raiz = document.documentElement;
     const esquemaPrevio = raiz.style.colorScheme;
     raiz.style.colorScheme = 'light';
-    return () => { raiz.style.colorScheme = esquemaPrevio; };
+    return () => {
+      raiz.style.colorScheme = esquemaPrevio;
+      document.title = tituloPrevio;
+      if (meta && descripcionPrevia != null) meta.setAttribute('content', descripcionPrevia);
+    };
   }, [documento]);
 
   return (
@@ -50,7 +60,7 @@ export default function Legales({ ruta }) {
         ))}
         <footer className="lg-pie">
           <p>¿Dudas sobre este texto? Escribinos a <a href={`mailto:${EMAIL_LEGAL}`}>{EMAIL_LEGAL}</a>.</p>
-          <p><a href={otro.ruta}>{otro.titulo}</a> · <a href="/">Volver a Dico</a></p>
+          <nav className="lg-pie-nav" aria-label="Más textos"><a href={otro.ruta}>{otro.titulo}</a><a href="/">Volver a Dico</a></nav>
         </footer>
       </article>
     </div>

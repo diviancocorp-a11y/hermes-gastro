@@ -41,7 +41,7 @@
 .signup-progress li[aria-current='step'], .signup-progress li[data-completo='true'] { color: var(--signup-ink); }
 .signup-progress li[aria-current='step'] { font-weight: 600; }
 .signup-progress button { min-height: 44px; margin-block: -10px; padding: 0; border: 0; background: none; color: inherit; font-weight: inherit; cursor: pointer; }
-.signup-inline-link { min-height: 44px; padding: 0; border: 0; background: none; color: var(--signup-blue); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.signup-inline-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0; border: 0; background: none; color: var(--signup-blue); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .signup-plan-choice { min-width: 0; margin: var(--ds-space-3) 0 0; padding: var(--ds-space-6) 0 0; border: 0; border-top: 1px solid var(--signup-line); }
 .signup-plan-choice legend { float: left; width: 100%; margin-bottom: var(--ds-space-3); font-size: var(--ds-type-xl); font-weight: 600; }
 .signup-plan-choice > .signup-hint { clear: both; }

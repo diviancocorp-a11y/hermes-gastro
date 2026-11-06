@@ -50,7 +50,7 @@ export const TERMINOS = {
       titulo: 'Planes, precios y prueba',
       parrafos: [
         'Los planes son Paris, Dante y Magnus. Los precios están en pesos argentinos, son por local y no incluyen IVA. No hay cargo por usuario ni por pedido.',
-        'Toda cuenta nueva arranca con 14 días de Dante completo, sin cobro. Crear la cuenta no contrata una suscripción ni autoriza débitos. Al terminar la prueba, el negocio sigue en Paris hasta que elijas un plan y un medio de pago.',
+        'Toda cuenta nueva arranca con 14 días de Dante completo, sin cobro. Crear la cuenta no contrata una suscripción ni autoriza débitos. Al terminar la prueba, el negocio pasa a Paris: para seguir usándolo tenés que elegir un plan y un medio de pago. Si no lo hacés, la cuenta se suspende hasta que lo hagas, sin perder tus datos.',
         'El plan Magnus se contrata hablando con nosotros, porque se configura según la cantidad de locales.',
         'Podemos cambiar los precios. Te avisamos por email con al menos 30 días de anticipación, y el cambio corre desde el período siguiente.',
       ],
@@ -67,7 +67,7 @@ export const TERMINOS = {
       id: 'baja',
       titulo: 'Baja y arrepentimiento',
       parrafos: [
-        'Podés dar de baja tu plan cuando quieras escribiendo a hola@divianco.app. La baja corre desde el período siguiente y no se cobran cargos por cancelar.',
+        `Podés dar de baja tu plan cuando quieras escribiendo a ${EMAIL_LEGAL}. La baja corre desde el período siguiente y no se cobran cargos por cancelar.`,
         'Si sos consumidor, tenés 10 días corridos desde la contratación para arrepentirte sin dar motivos, según la Ley 24.240 de Defensa del Consumidor. Lo pedís por el mismo email y te devolvemos lo cobrado.',
       ],
     },
@@ -76,7 +76,7 @@ export const TERMINOS = {
       titulo: 'Los datos de tu negocio',
       parrafos: [
         'Los datos que cargás en Dico (productos, precios, ventas, stock, clientes, personal) son tuyos. Divianco los usa solo para prestarte el servicio, nunca los vende ni los comparte con otros negocios.',
-        'Mientras tu cuenta esté activa, y hasta 90 días después de la baja, podés pedirnos una copia completa en planillas (CSV o Excel) escribiendo a hola@divianco.app. Te la enviamos dentro de los 15 días.',
+        `Mientras tu cuenta esté activa, y hasta 90 días después de la baja, podés pedirnos una copia completa en planillas (CSV o Excel) escribiendo a ${EMAIL_LEGAL}. Te la enviamos dentro de los 15 días.`,
         'Pasados 90 días de la baja, borramos los datos del negocio, salvo lo que la ley nos obligue a conservar.',
         'Sobre los datos de tus clientes, vos sos el responsable y Divianco los trata por tu cuenta. El detalle está en la política de privacidad.',
       ],
@@ -117,7 +117,7 @@ export const TERMINOS = {
       titulo: 'Ley aplicable',
       parrafos: [
         'Estos términos se rigen por las leyes de la República Argentina. Para cualquier conflicto son competentes los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires, salvo que seas consumidor y elijas los de tu domicilio.',
-        'Para consultas o reclamos, escribinos a hola@divianco.app.',
+        `Para consultas o reclamos, escribinos a ${EMAIL_LEGAL}.`,
       ],
     },
   ],
@@ -132,7 +132,7 @@ export const PRIVACIDAD = {
       id: 'responsable',
       titulo: 'Quién es el responsable',
       parrafos: [
-        'Grupo Divianco (“Divianco”) es responsable de los datos de las personas que crean una cuenta en Dico, completan el diagnóstico o nos contactan. Para cualquier consulta sobre tus datos, escribinos a hola@divianco.app.',
+        `Grupo Divianco (“Divianco”) es responsable de los datos de las personas que crean una cuenta en Dico, completan el diagnóstico o nos contactan. Para cualquier consulta sobre tus datos, escribinos a ${EMAIL_LEGAL}.`,
         'Cuando un negocio usa Dico para vender, el negocio es el responsable de los datos de sus clientes y Divianco los trata por su cuenta, solo para prestarle el servicio.',
       ],
     },
@@ -140,7 +140,7 @@ export const PRIVACIDAD = {
       id: 'que-datos',
       titulo: 'Qué datos guardamos',
       lista: [
-        'De tu cuenta: nombre, email, contraseña cifrada o el acceso con Google, y el negocio que registrás (nombre, rubro, país, enlace y plan).',
+        'De tu cuenta: nombre, email, contraseña (guardada con hash: nadie la puede leer, ni Divianco) o el acceso con Google, y el negocio que registrás (nombre, rubro, país, enlace y plan).',
         'Del diagnóstico: tus respuestas, el nombre del negocio, tu nombre y tu WhatsApp, solo si nos autorizás a contactarte.',
         'Del uso del panel: lo que cargás para operar tu negocio (productos, ventas, stock, personal, clientes).',
         'De los clientes de cada negocio, al hacer un pedido o reservar un turno: nombre, teléfono, dirección de entrega si hace falta y el detalle del pedido. No hace falta crear una cuenta.',
@@ -187,7 +187,7 @@ export const PRIVACIDAD = {
       id: 'derechos',
       titulo: 'Tus derechos',
       parrafos: [
-        'Podés pedir ver, corregir, actualizar o borrar tus datos, y retirar la autorización para que te contactemos, escribiendo a hola@divianco.app. Respondemos dentro de los plazos de la Ley 25.326 de Protección de Datos Personales: 10 días corridos para el acceso y 5 días hábiles para la corrección o el borrado. El acceso es gratuito cada 6 meses, salvo que acredites un interés legítimo para pedirlo antes.',
+        `Podés pedir ver, corregir, actualizar o borrar tus datos, y retirar la autorización para que te contactemos, escribiendo a ${EMAIL_LEGAL}. Respondemos dentro de los plazos de la Ley 25.326 de Protección de Datos Personales: 10 días corridos para el acceso y 5 días hábiles para la corrección o el borrado. El acceso es gratuito cada 6 meses, salvo que acredites un interés legítimo para pedirlo antes.`,
         'Si sos cliente de un negocio que usa Dico, podés pedirle al negocio directamente, o escribirnos y se lo trasladamos.',
         'La Agencia de Acceso a la Información Pública, en su carácter de órgano de control de la Ley 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales.',
       ],
@@ -196,7 +196,7 @@ export const PRIVACIDAD = {
       id: 'seguridad',
       titulo: 'Seguridad',
       parrafos: [
-        'Cada negocio ve solo sus propios datos: el aislamiento entre negocios se controla en la base de datos y se verifica todos los días. Las conexiones van cifradas y las contraseñas se guardan cifradas. Si hubiera un incidente que afecte tus datos, te avisamos.',
+        'Cada negocio ve solo sus propios datos: el aislamiento entre negocios se controla en la base de datos y se verifica todos los días. Las conexiones van cifradas y las contraseñas se guardan con hash, así que nadie las puede leer. Si hubiera un incidente que afecte tus datos, te avisamos.',
       ],
     },
     {

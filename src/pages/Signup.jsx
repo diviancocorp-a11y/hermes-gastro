@@ -165,7 +165,7 @@ export default function Signup() {
             <div className="signup-validation" aria-live="polite">{slug && !validacionLocal.ok ? validacionLocal.reason : validacionLocal.ok && (dispo === 'checking' ? 'Comprobando el enlace…' : dispo === true ? 'El enlace está disponible.' : dispo === false ? 'Ese enlace ya está ocupado.' : <span>No pudimos comprobar el enlace. <button type="button" className="signup-inline-link" onClick={() => setChequeo(c => c + 1)}>Reintentar</button></span>)}</div>
             <fieldset className="signup-plan-choice">
               <legend>Escogé tu plan</legend>
-              {inicial.desdeDiagnostico && <p className="signup-hint">Dejamos seleccionado el recomendado en tu diagnóstico. Podés cambiarlo.</p>}
+              {inicial.desdeDiagnostico && <p className="signup-hint">{inicial.plan === 'cadena' ? 'Tu diagnóstico recomendó Magnus, que armamos hablando. Mientras tanto podés empezar con Dante.' : 'Dejamos seleccionado el recomendado en tu diagnóstico. Podés cambiarlo.'}</p>}
               <div className="signup-plan-cards" role="radiogroup" aria-label="Escogé tu plan">{PLANES_COMERCIALES.filter(p => p.id !== 'cadena').map(p => {
                 const valor = precioDelPeriodo(p, periodo === 'anual');
                 return <label className="signup-plan-card" key={p.id} data-selected={plan === p.id}>
