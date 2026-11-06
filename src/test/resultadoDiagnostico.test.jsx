@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ResultadoDiagnostico from '../components/landing/ResultadoDiagnostico';
 import { solucion } from '../lib/diagnostico';
-import { PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../lib/planesPlataforma';
+import { INCLUYE_CAJA, PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../lib/planesPlataforma';
 
 vi.mock('../lib/supabase', () => ({ supabase: {} }));
 afterEach(cleanup);
@@ -55,7 +55,7 @@ describe('resultado orientado a empezar con Dico', () => {
   });
   it('no ofrece arqueo como parte del inicio a un servicio sin local fisico', () => {
     mostrar({ ...base, vertical: 'servicios', desafio: 'mermas_caja', senal: 'hasta_10000', canales: ['catalogo_online'] });
-    expect(screen.queryByText('Caja y arqueo')).not.toBeInTheDocument();
+    expect(screen.queryByText(INCLUYE_CAJA)).not.toBeInTheDocument();
     expect(screen.getByText(/qué controles de cobro corresponden/)).toBeInTheDocument();
   });
 });

@@ -107,8 +107,9 @@ const ENFOQUES = [
   },
 ];
 
-export default function RubrosNegocio({ onDiagnostico }) {
-  const [activo, setActivo] = useState(0);
+// `enfoqueInicial` llega de ?rubro= (src/lib/rubroLanding.js); sin el, gastronomia.
+export default function RubrosNegocio({ onDiagnostico, enfoqueInicial = null }) {
+  const [activo, setActivo] = useState(() => Math.max(0, ENFOQUES.findIndex(item => item.id === enfoqueInicial)));
   const [momento, setMomento] = useState(null);
   const [guia, setGuia] = useState(null);
   const [pausado, setPausado] = useState(false);
@@ -118,7 +119,7 @@ export default function RubrosNegocio({ onDiagnostico }) {
   const puntero = useRef(null);
   const [cargarEscena, setCargarEscena] = useState(() => typeof IntersectionObserver === 'undefined');
   const [escenaDisponible, setEscenaDisponible] = useState(true);
-  const [momentoAuto, setMomentoAuto] = useState('pedido');
+  const [momentoAuto, setMomentoAuto] = useState(() => ENFOQUES[activo].momentos[0].id);
   const [reducido, setReducido] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');

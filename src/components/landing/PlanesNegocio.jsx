@@ -56,12 +56,6 @@ const COMPARACION_PLANES = PLANES_COMERCIALES.reduce((planes, plan) => {
 }, []);
 const FUNCIONES_COMPARADAS = [...new Set(COMPARACION_PLANES.flatMap(plan => [...plan.funciones]))];
 
-const DESCRIPCIONES = {
-  digital: 'Tu negocio online y su gestión diaria.',
-  local: 'La operación de un local, con soporte.',
-  cadena: 'Varias sucursales, una mirada conjunta.',
-};
-
 function IconoPlan({ tipo }) {
   const tienda = 'M6 12v15h20V12M11 27V18h10v9M4 12l3-7h18l3 7M4 12c0 5 8 5 8 0 0 5 8 5 8 0 0 5 8 5 8 0';
   return <span className="pp-icono" aria-hidden="true"><svg viewBox={tipo === 'cadena' ? '0 0 40 40' : '0 0 32 32'}>
@@ -112,7 +106,7 @@ export default function PlanesNegocio({ onDiagnostico }) {
                   <IconoPlan tipo={plan.id} />
                   <div className="pp-presentacion">
                     <div className="pp-nombre"><h3 id={`pp-${plan.id}`}>{plan.nombre}</h3>{precio.equivalente !== null && <span className="pp-descuento" aria-label="20% menos respecto al pago mensual">−20%</span>}</div>
-                    <p className="pp-descripcion">{DESCRIPCIONES[plan.id]}</p>
+                    <p className="pp-descripcion">{plan.quien}</p>
                   </div>
                 </div>
                 <div className="pp-precio">

@@ -1,5 +1,5 @@
 import { planRecomendado, paramsDelAlta } from '../../lib/diagnostico';
-import { PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../../lib/planesPlataforma';
+import { INCLUYE_CAJA, PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../../lib/planesPlataforma';
 import { presentacionDelDiagnostico, motivoDelPlan, herramientasDelDiagnostico } from '../../lib/resultadoDiagnostico';
 import { WHATSAPP_MAGNUS_URL } from '../../lib/contactoPlataforma';
 import { marcarEvento } from '../../lib/analiticaPlataforma';
@@ -23,7 +23,7 @@ export default function ResultadoDiagnostico({ sol, respuestas, id, guardado, on
   const herramientas = herramientasDelDiagnostico(respuestas);
   const { primerPaso, hallazgos } = presentacionDelDiagnostico(respuestas);
   const operaEnLocal = respuestas.canales.some(c => ['salon', 'mostrador'].includes(c));
-  const beneficios = plan.incluye.filter(b => b !== 'Caja y arqueo' || operaEnLocal).slice(0, 3);
+  const beneficios = plan.incluye.filter(b => b !== INCLUYE_CAJA || operaEnLocal).slice(0, 3);
   const alcance = respuestas.desafio === 'mermas_caja' && !operaEnLocal
     ? 'Podés registrar compras y existencias en Dico. Revisamos con vos qué controles de cobro corresponden a tu forma de operar.'
     : sol.hoy;

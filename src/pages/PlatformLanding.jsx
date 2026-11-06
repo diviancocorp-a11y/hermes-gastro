@@ -47,9 +47,10 @@
 // testimonios inventados. Franja compacta entre hero y demostracion.
 
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import { SEO_PLATAFORMA } from '../lib/seoPlataforma';
+import { BAJADA_POR_RUBRO, RUBRO_DEL_REGISTRO, rubroDeLaUrl } from '../lib/rubroLanding';
 import Diagnostico from '../components/landing/Diagnostico';
 import EscenaHero from '../components/landing/EscenaHero';
 import EntradaLanding from '../components/landing/EntradaLanding';
@@ -101,6 +102,9 @@ export default function PlatformLanding() {
   const raizRef = useRef(null);
   const [diagnosticoAbierto, setDiagnosticoAbierto] = useState(false);
   const abrirRef = useRef(null);
+  // ?rubro= se lee una vez al montar (src/lib/rubroLanding.js).
+  const [rubro] = useState(rubroDeLaUrl);
+  const PortadaDelRubro = useMemo(() => function PortadaDelRubro(props) { return <Portada {...props} rubro={rubro} />; }, [rubro]);
   useEntradas(raizRef);
 
   // Los botones de mas abajo abren el mismo diagnostico, arriba.
@@ -122,14 +126,14 @@ export default function PlatformLanding() {
           </a>
           <nav className="pl-cabecera-accesos" aria-label="Acceso a Dico">
             <a className="pl-enlace pl-cabecera-link" href="/entrar">Iniciá sesión</a>
-            <a className="pl-enlace pl-cabecera-link pl-cabecera-registro" href="/registro">Registrá tu negocio</a>
+            <a className="pl-enlace pl-cabecera-link pl-cabecera-registro" href={rubro ? `/registro?rubro=${RUBRO_DEL_REGISTRO[rubro]}` : '/registro'}>Registrá tu negocio</a>
           </nav>
         </header>
         <Diagnostico
           modo="home"
           nivel="h1"
           abrirRef={abrirRef}
-          Portada={Portada}
+          Portada={PortadaDelRubro}
           onAbiertoChange={setDiagnosticoAbierto}
           lado={<EscenaHero />}
         />
@@ -142,7 +146,7 @@ export default function PlatformLanding() {
       <span className="pl-ancla-rubros" id="que-hace" aria-hidden="true" />
       <span className="pl-ancla-rubros" id="pilares" aria-hidden="true" />
       <span className="pl-ancla-rubros" id="flujo" aria-hidden="true" />
-      <RubrosNegocio onDiagnostico={abrirDiagnostico} />
+      <RubrosNegocio onDiagnostico={abrirDiagnostico} enfoqueInicial={rubro} />
       <ComoEmpezar onDiagnostico={abrirDiagnostico} />
       <TransicionVolt />
       <PlanesNegocio onDiagnostico={abrirDiagnostico} />
@@ -155,7 +159,7 @@ export default function PlatformLanding() {
 
 /* ─────────────── La portada: la frase y el boton ─────────────── */
 
-function Portada({ onAbrir }) {
+function Portada({ onAbrir, rubro }) {
   const alAbrir = (evento) => {
     marcarEvento('diagnostico-cta');
     onAbrir(evento);
@@ -169,7 +173,7 @@ function Portada({ onAbrir }) {
       <div className="pl-tiempo-propuesta" data-tiempo-capa="0.33">
         <p className="pl-bajada">
           <strong>Toda la gestión de tu negocio, conectada.</strong>
-          <span>Para gastronomía, comercios y servicios.</span>
+          <span>{BAJADA_POR_RUBRO[rubro] ?? 'Para gastronomía, comercios y servicios.'}</span>
         </p>
         <div className="pl-acciones">
           <button type="button" className="pl-boton pl-hero-origen" data-abrir onClick={alAbrir}>
