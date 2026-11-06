@@ -24,6 +24,7 @@ se contradicen, gana el que esta fuera de `historico/`.
 | `plataforma/` | Como esta construido el edificio | Al tocar arquitectura, schema o alta de clientes |
 | `plataforma/PORTAR-UNA-PANTALLA.md` | El orden para rehacer una pantalla desde un render | **Antes de tocar la primera linea** |
 | `plataforma/LANDING.md` | La landing de divianco.app: estado, reglas, plan y como seguir desde Codex | **Antes de tocar la landing o el diagnostico** |
+| `plataforma/CATALOGO-MEJORAS.md` | Pendientes del catalogo publico (auditoria del 6/nov) | **Antes de tocar `src/catalog-pro/`** |
 | `plataforma/PLAN-RECETARIO.md` | Recetario digital por rol para gastro: fases y decisiones tomadas | Antes de tocar recetas, insumos o sus permisos |
 | `marca/` | Dico como identidad: design system, tipografia, el personaje | Al tocar cualquier cosa visual |
 | `operacion/` | Runbooks, seguridad, cobros, performance | Cuando algo falla en produccion |
