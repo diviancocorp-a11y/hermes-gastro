@@ -502,6 +502,7 @@ Ya evaluadas (no reabrir sin un motivo nuevo):
 | Thermos (ports de Cursor) | No | Se pisa con `/code-review`; ports no oficiales |
 | ECC (everything-claude-code) | No | Cientos de skills y hooks: ruido de contexto y superficie de hooks ajenos |
 | k6 (Grafana, carga) | En prueba (rama `prueba/k6`) | Mide la carga sobre Supabase; no se pisa con ningun check. Binario aparte, no toca `package.json`. Ver `docs/operacion/CARGA-K6.md` |
+| Remotion (videos en React) | En prueba (rama `prueba/remotion`) | Videos de marca como plantilla con props (un reel por plan o por tenant). Proyecto aparte en `video/`, no toca `package.json`. Licencia propia: gratis para empresas de hasta 3 personas. Ver `docs/operacion/PRUEBA-REMOTION.md` |
 | Superpowers (`obra/superpowers`) | Adaptada (solo `verification-before-completion`) | Ataca "comprobar antes de afirmar"; lo demas se pisa con la escalera, `/code-review`, `/simplify` y worktrees |
 | Karpathy skills (`multica-ai/andrej-karpathy-skills`) | Adaptada (cambios quirurgicos) | Cuatro reglas, reescritas porque el repo no tiene licencia |
 | Claude Octopus | No | 54 comandos y 63 skills (el motivo de ECC); el segundo modelo ya es Codex |

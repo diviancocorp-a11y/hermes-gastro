@@ -1,0 +1,17 @@
+{
+  "name": "dico-video",
+  "private": true,
+  "description": "Prueba de Remotion: videos de marca de DICO hechos en React. Proyecto aparte, no toca el package.json del edificio.",
+  "type": "module",
+  "scripts": {
+    "estudio": "remotion studio src/index.jsx",
+    "render": "remotion render src/index.jsx PromoDico out/promo-dico.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.541",
+    "@remotion/fonts": "4.0.541",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.541"
+  }
+}
