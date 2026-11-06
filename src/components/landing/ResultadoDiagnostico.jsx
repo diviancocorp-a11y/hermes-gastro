@@ -1,6 +1,8 @@
 import { planRecomendado, paramsDelAlta } from '../../lib/diagnostico';
 import { PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../../lib/planesPlataforma';
 import { presentacionDelDiagnostico, motivoDelPlan, herramientasDelDiagnostico } from '../../lib/resultadoDiagnostico';
+import { WHATSAPP_MAGNUS_URL } from '../../lib/contactoPlataforma';
+import { marcarEvento } from '../../lib/analiticaPlataforma';
 
 const TRAZOS = {
   rentabilidad: 'M5 20V13m7 7V8m7 12V3', ventas: 'M5 20V13m7 7V8m7 12V3',
@@ -55,8 +57,13 @@ export default function ResultadoDiagnostico({ sol, respuestas, id, guardado, on
       <p className="dg-plan-condiciones">Pago mensual · Sin IVA</p>
       <ul className="dg-plan-beneficios">{beneficios.map(b => <li key={b}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m7 12 3 3 7-7" /></svg>{b}</li>)}</ul>
       <div className="dg-plan-motivo"><h3>Por qué este plan</h3><p>{motivoDelPlan(respuestas)}</p></div>
-      <a className="dg-plan-empezar" href={`/registro?${alta}`}>Empezar con Dico <span aria-hidden="true">→</span></a>
-      <p className="dg-plan-aclaracion">Crear tu cuenta no contrata una suscripción ni realiza un cobro.</p>
+      {plan.id === 'cadena' ? <>
+        <a className="dg-plan-empezar" href={WHATSAPP_MAGNUS_URL} target="_blank" rel="noopener noreferrer" onClick={() => marcarEvento('whatsapp')}>Hablemos de Magnus <span aria-hidden="true">↗</span><span className="pl-oculto"> (WhatsApp, abre otra pestaña)</span></a>
+        <p className="dg-plan-aclaracion">Magnus se arma según tus locales: lo vemos juntos por WhatsApp.</p>
+      </> : <>
+        <a className="dg-plan-empezar" href={`/registro?${alta}`}>Empezar con Dico <span aria-hidden="true">→</span></a>
+        <p className="dg-plan-aclaracion">Crear tu cuenta no contrata una suscripción ni realiza un cobro.</p>
+      </>}
       {anual && <details className="dg-plan-anual"><summary>Alternativa con pago anual</summary><p>{pesosDelPlan(anual.importe)} al año por local. Equivale a {pesosDelPlan(anual.equivalente)} por mes. Sin IVA.</p></details>}
       <a className="dg-plan-comparar" href={`${landing}#comparar-planes`} target="_blank" rel="noopener noreferrer">Comparar planes <span aria-hidden="true">↗</span><span className="pl-oculto"> (abre en otra pestaña)</span></a>
     </aside>

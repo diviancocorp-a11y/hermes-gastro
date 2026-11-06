@@ -6,7 +6,7 @@ export const PLANES_COMERCIALES = [
   {
     id: 'digital', nombre: 'Paris', para: 'Para empezar', mensual: 14999, anualPorMes: null,
     descripcion: 'Tu negocio online y la operación en un solo lugar.',
-    incluye: ['Catálogo online y pedidos', 'Avisos de pedidos nuevos', 'Caja y arqueo', 'Stock, compras y gastos', 'Equipo y ventas del día y del mes', 'Recetas y costos en gastronomía'],
+    incluye: ['Catálogo online y pedidos', 'Avisos de pedidos nuevos', 'Caja y arqueo', 'Stock, compras y gastos', 'Equipo y ventas del día y del mes', 'Recetas y costos en gastronomía', 'Soporte por email'],
     detalle: 'Pago mensual. Herramientas disponibles según tu rubro. Sin IVA.',
   },
   {

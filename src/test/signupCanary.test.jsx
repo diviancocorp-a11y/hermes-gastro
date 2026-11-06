@@ -76,7 +76,10 @@ describe('registro en tres pasos', () => {
     fireEvent.click(screen.getByRole('button', { name: /Continuar/ }));
     expect(screen.getByLabelText('Nombre de tu negocio')).toHaveValue('La Esquina');
     expect(screen.getByRole('button', { name: 'Ambas' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('radio', { name: /Magnus/ })).toBeChecked();
+    // Magnus no tiene alta self-service: arranca en Dante y ofrece el WhatsApp.
+    expect(screen.queryByRole('radio', { name: /Magnus/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Dante/ })).toBeChecked();
+    expect(screen.getByRole('link', { name: /Hablemos por WhatsApp/ })).toHaveAttribute('href', expect.stringContaining('wa.me'));
     fireEvent.click(screen.getByRole('radio', { name: /Paris/ }));
     expect(screen.getByLabelText('Período de pago')).toHaveValue('mensual');
     expect(screen.queryByRole('option', { name: 'Anual' })).not.toBeInTheDocument();

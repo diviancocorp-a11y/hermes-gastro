@@ -39,7 +39,7 @@ export default function PieNegocio() {
         </div>
         <a className="pf-agenda" href={AGENDA_URL} target="_blank" rel="noopener noreferrer" onClick={() => marcarEvento('agenda')}>Agendar una reunión <span aria-hidden="true">↗</span></a>
         <p className="pf-horarios"><span>WhatsApp: {WHATSAPP_HORARIO}.</span><span>Reuniones: {AGENDA_HORARIO}.</span></p>
-        <div className="pf-legales">{['Términos y condiciones', 'Política de privacidad', 'Preferencias de cookies'].map(texto => <button key={texto} type="button" disabled title="Pendiente de publicación">{texto}</button>)}<span className="pf-legal-pendiente">Textos legales pendientes de publicación.</span></div>
+        <nav className="pf-legales" aria-label="Textos legales"><a href="/terminos">Términos y condiciones</a><a href="/privacidad">Política de privacidad</a><a href="/privacidad#cookies">Cookies</a></nav>
         <p className="pf-copyright">© {new Date().getFullYear()} Grupo Divianco. Todos los derechos reservados.</p>
       </div>
       <div className="pf-logo" aria-hidden="true">

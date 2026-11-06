@@ -13,7 +13,7 @@ function mostrar(respuestas) {
 
 describe('resultado orientado a empezar con Dico', () => {
   it.each([
-    ['digital', {}], ['local', { gestion_actual: 'otro_sistema', sistema_nombre: 'Mi sistema' }], ['cadena', { locales: 'dos_tres' }],
+    ['digital', {}], ['local', { gestion_actual: 'otro_sistema', sistema_nombre: 'Mi sistema' }],
   ])('recomienda %s con el precio compartido y un unico CTA que conserva los datos', (idPlan, cambios) => {
     mostrar({ ...base, ...cambios });
     const plan = PLANES_COMERCIALES.find(p => p.id === idPlan);
@@ -29,6 +29,15 @@ describe('resultado orientado a empezar con Dico', () => {
     expect(document.querySelector('form')).toBeNull();
     expect(screen.queryByRole('textbox', { name: /WhatsApp/ })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Comparar planes/ })).toHaveAttribute('href', '/#comparar-planes');
+  });
+  it('recomienda cadena con su precio y lleva a hablar por WhatsApp, no al registro', () => {
+    mostrar({ ...base, locales: 'dos_tres' });
+    const plan = PLANES_COMERCIALES.find(p => p.id === 'cadena');
+    expect(screen.getByRole('heading', { name: plan.nombre, exact: true })).toBeInTheDocument();
+    expect(document.querySelector('.dg-plan-importe')).toHaveTextContent(pesosDelPlan(plan.mensual));
+    expect(screen.queryByRole('link', { name: /Empezar con Dico/ })).not.toBeInTheDocument();
+    const accion = screen.getByRole('link', { name: /Hablemos de Magnus/ });
+    expect(new URL(accion.getAttribute('href')).hostname).toBe('wa.me');
   });
   it('muestra el total anual de la misma oferta, como alternativa secundaria', () => {
     mostrar({ ...base, locales: 'dos_tres' });

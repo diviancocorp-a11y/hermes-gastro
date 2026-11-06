@@ -6,7 +6,7 @@ export const THEME_OWNERS = Object.freeze({
   CATALOG: 'catalog',
 });
 
-const PLATFORM_PATHS = /^\/(registro|consola|bienvenido|entrar)(?:\/|$)/;
+const PLATFORM_PATHS = /^\/(registro|consola|bienvenido|entrar|terminos|privacidad)(?:\/|$)/;
 const ADMIN_PATHS = /^\/admin(?:\/|$)/;
 
 /**

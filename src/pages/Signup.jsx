@@ -7,6 +7,7 @@ import { paisesDisponibles, monedaDe, zonaDe, PAIS_POR_DEFECTO } from '../module
 import { cargarAnalitica, marcarEvento } from '../lib/analiticaPlataforma';
 import { contextoDelRegistro, recordarRegistroGoogle, limpiarRegistroGoogle } from '../lib/registroPlataforma';
 import { PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../lib/planesPlataforma';
+import { WHATSAPP_MAGNUS_URL } from '../lib/contactoPlataforma';
 import '../styles/signup.css';
 
 const VERTICALES = [{ id: 'gastro', nombre: 'Gastronomía' }, { id: 'retail', nombre: 'Comercio' }, { id: 'barber', nombre: 'Servicios' }];
@@ -48,7 +49,9 @@ export default function Signup() {
   const [email, setEmail] = useState(inicial.email);
   const [password, setPassword] = useState('');
   const [verPassword, setVerPassword] = useState(false);
-  const [plan, setPlan] = useState(inicial.plan);
+  // Magnus no se da de alta solo: se arma hablando. Si el diagnostico lo
+  // recomendo, el registro arranca en Dante y ofrece el WhatsApp.
+  const [plan, setPlan] = useState(inicial.plan === 'cadena' ? 'local' : inicial.plan);
   const [periodo, setPeriodo] = useState(inicial.periodo);
   const [resultadoDispo, setResultadoDispo] = useState(null);
   const [chequeo, setChequeo] = useState(0);
@@ -163,7 +166,7 @@ export default function Signup() {
             <fieldset className="signup-plan-choice">
               <legend>Escogé tu plan</legend>
               {inicial.desdeDiagnostico && <p className="signup-hint">Dejamos seleccionado el recomendado en tu diagnóstico. Podés cambiarlo.</p>}
-              <div className="signup-plan-cards" role="radiogroup" aria-label="Escogé tu plan">{PLANES_COMERCIALES.map(p => {
+              <div className="signup-plan-cards" role="radiogroup" aria-label="Escogé tu plan">{PLANES_COMERCIALES.filter(p => p.id !== 'cadena').map(p => {
                 const valor = precioDelPeriodo(p, periodo === 'anual');
                 return <label className="signup-plan-card" key={p.id} data-selected={plan === p.id}>
                   <input type="radio" name="plan" value={p.id} checked={plan === p.id} onChange={() => { setPlan(p.id); if (p.id === 'digital') setPeriodo('mensual'); }} />
@@ -173,6 +176,7 @@ export default function Signup() {
               <label className="signup-label" htmlFor="signup-periodo">Período de pago</label><select id="signup-periodo" className="signup-control" value={periodo} onChange={e => setPeriodo(e.target.value)}><option value="mensual">Mensual</option>{plan !== 'digital' && <option value="anual">Anual</option>}</select>
               <p className="signup-hint">{periodo === 'anual' ? `${pesosDelPlan(precio.importe)} al año, por local. Sin IVA.` : 'Por local · Sin IVA · Pesos argentinos.'}</p>
               <a className="signup-inline-link" href={`${landing}#comparar-planes`} target="_blank" rel="noopener noreferrer">Comparar planes ↗</a>
+              <p className="signup-hint">¿Varias sucursales? Magnus lo armamos hablando: <a className="signup-inline-link" href={WHATSAPP_MAGNUS_URL} target="_blank" rel="noopener noreferrer" onClick={() => marcarEvento('whatsapp')}>Hablemos por WhatsApp ↗</a></p>
             </fieldset>
           </> : <div className="signup-payment">
             <p className="signup-preloaded">Revisá tu negocio y la preferencia de plan antes de crear tu cuenta.</p>

@@ -45,7 +45,7 @@
 .signup-plan-choice { min-width: 0; margin: var(--ds-space-3) 0 0; padding: var(--ds-space-6) 0 0; border: 0; border-top: 1px solid var(--signup-line); }
 .signup-plan-choice legend { float: left; width: 100%; margin-bottom: var(--ds-space-3); font-size: var(--ds-type-xl); font-weight: 600; }
 .signup-plan-choice > .signup-hint { clear: both; }
-.signup-plan-cards { clear: both; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ds-space-2); padding-block: var(--ds-space-3) var(--ds-space-4); }
+.signup-plan-cards { clear: both; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-2); padding-block: var(--ds-space-3) var(--ds-space-4); }
 .signup-plan-card { position: relative; min-width: 0; display: grid; gap: var(--ds-space-2); padding: var(--ds-space-3); border: 1px solid var(--signup-line); border-radius: var(--ds-radius-2); cursor: pointer; }
 .signup-plan-card input { position: absolute; top: 14px; right: 10px; width: 16px; height: 16px; margin: 0; accent-color: var(--signup-blue); }
 .signup-plan-card strong { padding-right: 20px; font-weight: 600; }

@@ -14,6 +14,9 @@ export const WHATSAPP_VISIBLE_PARTES = ['+54 9 11', '2182-9893'];
 export const WHATSAPP_HORARIO = 'de lunes a viernes, de 11 a 23 h';
 const WHATSAPP_TEXTO = 'Hola Ricardo, quiero conocer Dico para mi negocio.';
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(WHATSAPP_TEXTO)}`;
+// Magnus no tiene alta self-service: se arma hablando (Ricky, 6/nov/2026).
+const WHATSAPP_TEXTO_MAGNUS = 'Hola Ricardo, quiero hablar de Dico Magnus para mis locales.';
+export const WHATSAPP_MAGNUS_URL = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(WHATSAPP_TEXTO_MAGNUS)}`;
 
 // Perfiles oficiales confirmados por Ricky, 26/oct/2026.
 export const INSTAGRAM_DICO_URL = 'https://www.instagram.com/dico.arg/';

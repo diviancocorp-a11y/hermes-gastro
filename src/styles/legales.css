@@ -1,0 +1,63 @@
+/* src/styles/legales.css
+ * /terminos y /privacidad (src/pages/Legales.jsx). Una columna de lectura
+ * sobre el suelo claro de la plataforma: Butler solo en el titulo, el resto
+ * en la tipografia de interfaz. Sin oro: aca no hay ninguna accion de valor.
+ */
+
+.lg-cabecera { position: static; }
+
+.lg-documento {
+  max-width: 68ch;
+  margin-inline: auto;
+  padding: var(--ds-space-6) var(--pl-m) var(--pl-hueco);
+  font-size: var(--pl-t4);
+  line-height: 1.65;
+}
+
+.lg-titulo {
+  font-family: var(--ds-font-soul);
+  font-size: var(--pl-t2);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.lg-vigencia {
+  margin-top: var(--ds-space-2);
+  color: var(--pc-tinta-suave);
+  font-size: var(--pl-t5);
+}
+
+.lg-indice {
+  margin-top: var(--ds-space-8);
+  padding: var(--ds-space-4) var(--ds-space-6);
+  border-radius: var(--pc-radio-control);
+  background: var(--pc-suelo-2);
+}
+
+.lg-indice ol { margin: 0; padding-left: var(--ds-space-6); columns: 2 16ch; column-gap: var(--ds-space-8); }
+.lg-indice li { break-inside: avoid; }
+.lg-indice a { display: inline-block; min-height: var(--ds-control-height-touch); padding-block: var(--ds-space-2); color: var(--pc-tinta); text-underline-offset: .2em; }
+
+.lg-seccion { margin-top: var(--ds-space-layout-12); scroll-margin-top: var(--ds-space-6); }
+.lg-seccion h2 { font-size: var(--pl-t3); font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; }
+.lg-seccion p,
+.lg-seccion ul { margin-top: var(--ds-space-3); }
+.lg-seccion ul { padding-left: var(--ds-space-6); }
+.lg-seccion li + li { margin-top: var(--ds-space-2); }
+
+.lg-pie {
+  margin-top: var(--ds-space-layout-16);
+  padding-top: var(--ds-space-6);
+  border-top: 1px solid var(--pc-suelo-3);
+  color: var(--pc-tinta-suave);
+  font-size: var(--pl-t5);
+}
+
+.lg-pie p + p { margin-top: var(--ds-space-2); }
+.lg-pie a { color: var(--pc-tinta); text-underline-offset: .2em; }
+
+@media (max-width: 599px) {
+  .lg-indice ol { columns: 1; }
+}

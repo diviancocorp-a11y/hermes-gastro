@@ -37,6 +37,11 @@ const ReservarTurno = lazyReload(() => import('./catalog-pro/ReservarTurno'))
 // El diagnostico como pagina propia: la home lo abre en el lugar, asi que
 // /diagnostico es un chunk aparte para links viejos y de afuera.
 const Diagnostico = lazyReload(() => import('./pages/Diagnostico'))
+// Terminos y privacidad de la plataforma: chunk aparte, solo los pide el pie.
+const Legales = lazyReload(() => import('./pages/Legales'))
+// Las rutas sueltas, para que el texto no viaje en el bundle principal; tienen
+// que coincidir con `ruta` en src/lib/textosLegales.js.
+const RUTAS_LEGALES = ['/terminos', '/privacidad']
 
 const Loading = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
@@ -110,6 +115,19 @@ export default function App() {
                   ? <Diagnostico />
                   : <NotFound />}
               />
+              {/* Terminos y privacidad de Dico: mismo criterio que
+                  /diagnostico. En un tenant son del negocio, no de Dico. */}
+              {RUTAS_LEGALES.map(ruta => (
+                <Route
+                  key={ruta}
+                  path={ruta}
+                  element={(isPlatformRoot(window.location.hostname)
+                    || import.meta.env.DEV
+                    || window.location.hostname.endsWith('.vercel.app'))
+                    ? <Legales ruta={ruta} />
+                    : <NotFound />}
+                />
+              ))}
               {/* Alta self-service: solo tiene sentido en la raiz. En el
                   subdominio de un tenant el local ya es de alguien. */}
               <Route path="/registro" element={<Signup />} />

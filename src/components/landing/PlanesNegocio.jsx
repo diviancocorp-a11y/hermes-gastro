@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../../lib/planesPlataforma';
+import { WHATSAPP_MAGNUS_URL } from '../../lib/contactoPlataforma';
+import { marcarEvento } from '../../lib/analiticaPlataforma';
 import Palabras from './Palabras';
 import '../../styles/planes-negocio.css';
 
@@ -120,7 +122,9 @@ export default function PlanesNegocio({ onDiagnostico }) {
                 </div>
                 <p className="pp-incluye-titulo">Lo más destacado</p>
                 <Beneficios items={plan.incluye.slice(0, 3)} />
-                <button type="button" className="pp-elegir" onClick={onDiagnostico}>Elegir {plan.nombre} <span aria-hidden="true">→</span></button>
+                {plan.id === 'cadena'
+                  ? <a className="pp-elegir" href={WHATSAPP_MAGNUS_URL} target="_blank" rel="noopener noreferrer" onClick={() => marcarEvento('whatsapp')}>Hablemos de {plan.nombre} <span aria-hidden="true">↗</span><span className="pl-oculto"> (WhatsApp, abre otra pestaña)</span></a>
+                  : <button type="button" className="pp-elegir" onClick={onDiagnostico}>Elegir {plan.nombre} <span aria-hidden="true">→</span></button>}
               </article>
             );
           })}
