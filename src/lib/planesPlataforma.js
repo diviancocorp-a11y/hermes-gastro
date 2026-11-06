@@ -12,7 +12,7 @@ export const PLANES_COMERCIALES = [
   {
     id: 'local', nombre: 'Dante', para: 'Un local', mensual: 59000, anualPorMes: 47200,
     descripcion: 'Sabé cuánto ganás y volvé a vender a los que no vuelven.',
-    incluye: ['Todo lo de Paris', 'Ganancia del día', 'Clientes y promos del catálogo', 'Cobros online con Mercado Pago', 'Soporte por email y chat', '14 días de prueba al crear tu cuenta'],
+    incluye: ['Todo lo de Paris', 'Ganancia del día', 'Clientes y promos del catálogo', 'Cobros online con Mercado Pago', 'Soporte por email y chat'],
     detalle: 'Un local con soporte; o $47.200 por mes pagando el año. Sin IVA.',
   },
   {

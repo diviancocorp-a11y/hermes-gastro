@@ -183,7 +183,7 @@ export default function Signup() {
               <div><dt>Precio de referencia del plan</dt><dd>{pesosDelPlan(precio.importe)} /{precio.periodo}<small>Por local · Sin IVA · Pesos argentinos</small></dd></div>
             </dl>
             <div className="signup-payment__provider"><span aria-hidden="true">✓</span><div><strong>Tu cuenta, sin cobro ni suscripción</strong><p>Guardamos tu preferencia de plan. La contratación y el medio de pago se confirman por separado.</p></div></div>
-            <p className="signup-payment__pending" role="status">El mes de prueba todavía no se activa automáticamente. Crear tu cuenta no inicia la prueba ni autoriza débitos.</p>
+            <p className="signup-payment__pending" role="status">Tu cuenta arranca con 14 días de Dante completo. Crear tu cuenta no contrata una suscripción ni autoriza débitos.</p>
           </div>}
           <button className="signup-submit" type="submit" disabled={enviando || conectandoGoogle}>{enviando ? 'Creando…' : conectandoGoogle ? 'Verificando Google…' : paso === 2 ? 'Crear mi cuenta' : 'Continuar'} <span aria-hidden="true">→</span></button>
           {paso > 0 && <button type="button" className="signup-back" onClick={() => setPaso(paso - 1)}>{paso === 1 ? 'Volver a tu cuenta' : 'Volver a tu negocio'}</button>}

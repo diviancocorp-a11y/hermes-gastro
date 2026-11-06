@@ -68,7 +68,6 @@
 .pp-tabla [data-plan="cadena"] { color: var(--pc-oro); }
 .pp-tabla-check { display: inline-block; width: 24px; height: 24px; vertical-align: middle; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .pp-no-incluido { color: var(--ds-color-zinc-400); }
-.pp-comparacion-nota { margin-top: 12px; text-align: center; font-size: 13px; color: var(--ds-color-zinc-400); }
 .pp-condiciones { margin-top: 0; color: var(--ds-color-zinc-400); font-size: var(--ds-type-sm); line-height: 1.7; text-align: center; }
 .pp-accion { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 0; color: var(--ds-color-zinc-50); font-size: 15px; text-align: center; }
 .pp-ayuda { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 0; border: 0; background: transparent; color: var(--pc-oro); font: inherit; text-decoration: underline; text-underline-offset: .22em; cursor: pointer; }

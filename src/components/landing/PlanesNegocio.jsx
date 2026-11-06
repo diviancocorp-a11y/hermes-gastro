@@ -140,11 +140,10 @@ export default function PlanesNegocio({ onDiagnostico }) {
                 </tr>)}</tbody>
               </table>
             </div>
-            <p className="pp-comparacion-nota">Contenido de los planes en definición.</p>
           </div>
         </details>
         <p className="pp-accion">¿No sabés cuál elegir? <button type="button" className="pp-ayuda" onClick={onDiagnostico}>Hacé el diagnóstico <span aria-hidden="true">→</span></button></p>
-        <div className="pp-condiciones"><p>Precios en pesos argentinos, por local y sin IVA. Sin cargo por usuario ni por pedido.</p></div>
+        <div className="pp-condiciones"><p>Toda cuenta nueva arranca con 14 días de Dante completo, sin cobro.</p><p>Precios en pesos argentinos, por local y sin IVA. Sin cargo por usuario ni por pedido.</p></div>
       </div>
     </section>
   );
