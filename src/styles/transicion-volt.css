@@ -35,7 +35,9 @@
    frase se achica para caber en el centro. */
 @media (max-width: 700px) {
   .hv-root { --hv-aire: clamp(28px, 9vw, 60px); min-height: calc(50vw + 2 * var(--hv-aire)); padding: 0 var(--pl-m); }
-  .hv-efecto, .hv-ovalo { inset: var(--hv-aire) 0; height: auto; }
+  /* El svg con height auto toma el 1:1 de su viewBox y se estira mas alto
+     que la mascara: el alto va explicito. */
+  .hv-efecto, .hv-ovalo { inset: var(--hv-aire) 0; height: calc(100% - 2 * var(--hv-aire)); }
   .hv-promesa { max-width: 72vw; text-wrap: balance; }
   .hv-promesa > span:first-child { margin-bottom: var(--ds-space-2); font-size: clamp(14px, 3.9vw, 18px); }
   .hv-promesa > span:last-child { font-size: clamp(21px, 6.2vw, 30px); }
