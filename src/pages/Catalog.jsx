@@ -44,7 +44,12 @@ import { computeAvailability } from "../lib/stockAvailability";
 import { applyTenantHead } from "../lib/tenantHead";
 import { leadHoras, fechaYMinutos, estadoDelLocal, horasDisponibles, entregaReal } from "../modules/pedidosProgramados";
 import { resolveTenantSlug } from "../lib/activeTenant";
+import { leerCarritoGuardado, guardarCarrito, borrarCarrito, validarCarrito, avisoDelCarrito, decidirPedidoMp } from "../lib/carritoGuardado";
+import { fetchOrderTracker } from "../services/orderTracker";
 import useFeature from "../hooks/useFeature";
+
+// Cuanto se espera a get_catalog antes de mostrar el error con reintentar.
+const CATALOGO_TOPE_MS = 10_000;
 
 export default function Catalog() {
   const navigate = useNavigate();
@@ -65,6 +70,22 @@ export default function Catalog() {
       const cached = JSON.parse(localStorage.getItem('cp_sett_cache') || 'null');
       return cached ? { ...fallbackSettings, ...cached } : fallbackSettings;
     } catch { return fallbackSettings; }
+  });
+  // Lo que el esqueleto del arranque puede mostrar sin inventar: la identidad
+  // de la visita anterior (cp_sett_cache) o nada. Sin cache no va el nombre de
+  // respaldo del build.
+  const [arranqueCache] = useState(() => {
+    try {
+      const c = JSON.parse(localStorage.getItem('cp_sett_cache') || 'null');
+      if (!c?.biz_name) return { identidad: null, barras: null };
+      return {
+        identidad: {
+          nombre: c.biz_name, slogan: c.slogan || null, logoUrl: c.logo_url || null,
+          logoLetter: c.logo_letter || null, logoColor: c.logo_color || null,
+        },
+        barras: Number.isFinite(c.barras) ? c.barras : null,
+      };
+    } catch { return { identidad: null, barras: null }; }
   });
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,6 +114,11 @@ export default function Catalog() {
   // --- Estado de UI ---
   const [selCat, setSelCat] = useState("Todos");
   const [cart, setCart] = useState([]);
+  // Carrito guardado por tenant (src/lib/carritoGuardado.js). No se lee ni se
+  // escribe hasta que la carta llego: sin productos no se puede validar, y
+  // escribir antes pisaria lo guardado con un carrito vacio.
+  const slugCarrito = useRef(null);
+  const [carritoListo, setCarritoListo] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [cpDetail, setCpDetail] = useState(null); // producto en pantalla Detalle (catalog-pro)
   const [cpFamily, setCpFamily] = useState(null); // familia abierta (varios sabores en una pantalla)
@@ -110,7 +136,13 @@ export default function Catalog() {
   // con el mismo orderId para no duplicar pedidos.
   const [mpPendingOrderId, setMpPendingOrderId] = useState(null);
   // Si el carrito cambia, la orden pendiente queda obsoleta (totales distintos)
-  useEffect(() => { setMpPendingOrderId(null); }, [cart]);
+  // Excepcion: el carrito restaurado junto con SU pedido MP pendiente (ver
+  // "Carrito guardado" mas abajo) no invalida ese pedido.
+  const mpRestaurado = useRef(false);
+  useEffect(() => {
+    if (mpRestaurado.current) { mpRestaurado.current = false; return; }
+    setMpPendingOrderId(null);
+  }, [cart]);
   const [orderErr, setOrderErr] = useState("");
   const [form, setForm] = useState({ ...DEFAULT_FORM });
   const [sentForm, setSentForm] = useState(null); // snapshot del form al confirmar (el form vivo se resetea)
@@ -318,11 +350,22 @@ export default function Catalog() {
     return () => { cancelled = true; };
   }, []);
 
-  // --- Cargar datos de Supabase al montar ---
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      const data = await fetchCatalog();
+  // --- Cargar datos de Supabase al montar (y al reintentar) ---
+  // loading arranca en true; reintentar lo vuelve a prender antes de pedir.
+  // Tope de 10 s: si get_catalog (o resolver el tenant) no contesta, se corta
+  // y se muestra el error en vez de dejar el esqueleto para siempre.
+  const intentoCatalogo = useRef(0);
+  const cargarCatalogo = useCallback(async () => {
+      const intento = ++intentoCatalogo.current;
+      const corte = new AbortController();
+      const tope = setTimeout(() => corte.abort(), CATALOGO_TOPE_MS);
+      const data = await Promise.race([
+        fetchCatalog({ signal: corte.signal }),
+        new Promise(r => corte.signal.addEventListener("abort", () => r(null))),
+      ]);
+      clearTimeout(tope);
+      // Un intento viejo que contesta tarde no pisa al reintento.
+      if (intento !== intentoCatalogo.current) return;
 
       if (data) {
         setSett(data.settings);
@@ -337,6 +380,9 @@ export default function Catalog() {
             biz_name: s.biz_name, slogan: s.slogan, logo_url: s.logo_url,
             logo_color: s.logo_color, logo_letter: s.logo_letter,
             catalog_theme: s.catalog_theme,
+            // Cuantas barras de aviso pinta el Home arriba del header: el
+            // esqueleto de la proxima visita reserva ese alto.
+            barras: [s.banner_text, leadHoras(s) > 0, Number(s.free_delivery_over) > 0].filter(Boolean).length,
           }));
         } catch { /* empty */ }
         setProducts(data.products);
@@ -353,12 +399,24 @@ export default function Catalog() {
         // Si Supabase falla, usamos datos de respaldo
         console.warn("No se pudo conectar a Supabase. Usando datos de respaldo.");
         setProducts(fallbackProducts);
-        setError("offline");
+        // Sin red el texto habla de la conexion y se reintenta solo al volver;
+        // con red, el problema es del servidor y el texto no culpa a nadie.
+        setError(typeof navigator !== "undefined" && navigator.onLine === false ? "offline" : "servidor");
       }
       setLoading(false);
-    }
-    loadData();
   }, []);
+  useEffect(() => { cargarCatalogo(); }, [cargarCatalogo]);
+  const reintentarCatalogo = useCallback(() => {
+    setError(null);
+    setLoading(true);
+    cargarCatalogo();
+  }, [cargarCatalogo]);
+  // Sin conexion: cuando el navegador avisa que volvio, se reintenta solo.
+  useEffect(() => {
+    if (error !== "offline") return undefined;
+    window.addEventListener("online", reintentarCatalogo);
+    return () => window.removeEventListener("online", reintentarCatalogo);
+  }, [error, reintentarCatalogo]);
 
   // Agotados: solo el override manual (sold_out_override) de cada producto.
   // La regla por stock de ingredientes necesitaba recipe_ingredients y
@@ -425,6 +483,63 @@ export default function Catalog() {
     if (parent && dealCats.has(parent)) return Math.round(p.sale_price * (1 - DEAL_PCT / 100));
     return p.sale_price;
   }, [dealCats, subToParent]);
+
+  // Carrito guardado: se restaura cuando la carta llego (con precios y
+  // agotados de hoy) y desde ahi se guarda en cada cambio. Con la carta caida
+  // no se toca: lo guardado espera al reintento.
+  useEffect(() => {
+    if (loading || error || carritoListo) return undefined;
+    let cancelado = false;
+    (async () => {
+      const slug = await resolveTenantSlug();
+      if (cancelado) return;
+      slugCarrito.current = slug;
+      const { items: guardado, mpPedido } = leerCarritoGuardado(slug);
+      let pedidoMp = null;
+      let lineas = guardado;
+      // El carrito ya genero un pedido de MercadoPago: se mira como quedo.
+      if (mpPedido && lineas.length > 0) {
+        let leido = { pedido: null, fallo: true };
+        try { leido = await fetchOrderTracker(mpPedido); } catch { /* sin red: decide el servidor */ }
+        if (cancelado) return;
+        const decision = decidirPedidoMp(leido.pedido, { fallo: leido.fallo });
+        if (decision === "pagado") {
+          // Se pago aunque el cliente no volvio por /pago/exitoso: el carrito
+          // ya se compro. El pedido queda a la vista para seguirlo.
+          borrarCarrito(slug);
+          addActiveOrder(mpPedido);
+          lineas = [];
+        } else if (decision === "reusar") {
+          pedidoMp = mpPedido;
+        }
+      }
+      if (lineas.length > 0 && cart.length === 0) {
+        const revisado = validarCarrito(lineas, products, { precioDe: getPrice, agotados: soldOutIds });
+        // Si cambio algo (precio, producto que ya no esta) el total del pedido
+        // pendiente ya no es este: el proximo envio arma otro, como en sesion.
+        const intacto = revisado.quitados.length === 0 && revisado.actualizados.length === 0;
+        if (pedidoMp && intacto && revisado.items.length > 0) {
+          mpRestaurado.current = true;
+          setMpPendingOrderId(pedidoMp);
+        }
+        setCart(prev => (prev.length > 0 ? prev : revisado.items));
+        const aviso = avisoDelCarrito(revisado);
+        if (aviso) toast(aviso, { duration: 5000 });
+      }
+      setCarritoListo(true);
+    })();
+    return () => { cancelado = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, error, carritoListo]);
+  useEffect(() => {
+    if (carritoListo) guardarCarrito(slugCarrito.current, cart, Date.now(), { mpPedido: mpPendingOrderId });
+  }, [cart, carritoListo, mpPendingOrderId]);
+  // Antes de irse a MercadoPago: el carrito queda atado al pedido que se va a
+  // pagar. Aprobado o en proceso -> MpStatus lo borra; rechazado -> al volver
+  // se restaura con ese pedido y el reintento lo reusa (no se crea otro).
+  const atarCarritoAlPago = (orderId) => {
+    guardarCarrito(slugCarrito.current, cart, Date.now(), { mpPedido: orderId });
+  };
 
   // Filtrar productos por categoria madre seleccionada.
   // Trim para tolerar trailing spaces en recipe.category (data legacy).
@@ -576,7 +691,7 @@ export default function Catalog() {
       try {
         const pref = await createMpPreference(mpPendingOrderId);
         const target = pref?.init_point || pref?.sandbox_init_point;
-        if (target) { window.location.href = target; return; }
+        if (target) { atarCarritoAlPago(mpPendingOrderId); window.location.href = target; return; }
       } catch (e) {
         console.warn("Reintento MP fallo:", e);
       }
@@ -657,6 +772,7 @@ export default function Catalog() {
           const target = pref?.init_point || pref?.sandbox_init_point;
           if (target) {
             // No reseteamos UI: el cliente vuelve via back_urls a /pago/*
+            atarCarritoAlPago(result.orderId);
             window.location.href = target;
             return;
           }
@@ -790,7 +906,7 @@ export default function Catalog() {
           onClick={() => { setShowCk(false); setCkStep(0); }}
           style={{
             marginTop: 8, padding: "12px 20px", borderRadius: 12, border: "none",
-            background: "var(--ac)", color: "#fff", fontWeight: 700, fontSize: 14,
+            background: "var(--ac)", color: "var(--ac-on)", fontWeight: 700, fontSize: 14,
             cursor: "pointer", fontFamily: "inherit",
           }}
         >Volver al catálogo</button>
@@ -938,6 +1054,11 @@ export default function Catalog() {
   return (
     <>
       <HomeScreenPro settings={sett}
+        loading={loading}
+        error={error}
+        onRetry={reintentarCatalogo}
+        identidad={arranqueCache.identidad}
+        barras={arranqueCache.barras}
         store={storeForHome}
         userName={session?.firstName || (form.name ? form.name.split(" ")[0] : null)}
         session={session}

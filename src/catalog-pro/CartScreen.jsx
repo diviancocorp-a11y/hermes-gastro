@@ -42,7 +42,7 @@ export default function CartScreen({
         <div style={{ fontSize: 48, marginBottom: 14 }}>🛒</div>
         <h2 className="h-2" style={{ margin: "0 0 8px" }}>Tu pedido esta vacio</h2>
         <p className="body-s" style={{ margin: "0 0 20px" }}>Agrega algo del catalogo.</p>
-        <button onClick={onBack} style={{ height: 48, padding: "0 24px", borderRadius: "var(--rs)", border: 0, background: "var(--ac)", color: "#fff", fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 15, cursor: "pointer" }}>
+        <button onClick={onBack} style={{ height: 48, padding: "0 24px", borderRadius: "var(--rs)", border: 0, background: "var(--ac)", color: "var(--ac-on)", fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 15, cursor: "pointer" }}>
           Volver al menu
         </button>
       </div>
@@ -231,7 +231,7 @@ export default function CartScreen({
                     ) : (
                       <button type="button" onClick={() => onAddProduct?.(p)} style={{
                         width: 28, height: 28, borderRadius: 999, border: 0,
-                        background: "var(--ac)", color: "#fff", cursor: "pointer",
+                        background: "var(--ac)", color: "var(--ac-on)", cursor: "pointer",
                         display: "flex", alignItems: "center", justifyContent: "center",
                       }} aria-label="Agregar">
                         <Icon name="plus" size={14} />
@@ -254,7 +254,7 @@ export default function CartScreen({
         <button onClick={() => minOk && onContinue?.()} disabled={!minOk} style={{
           width: "100%", height: 56, borderRadius: "var(--rs)", border: 0,
           background: minOk ? "var(--ac)" : "var(--b2)",
-          color: minOk ? "#fff" : "var(--t3)",
+          color: minOk ? "var(--ac-on)" : "var(--t3)",
           cursor: minOk ? "pointer" : "not-allowed",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           paddingLeft: 22, paddingRight: 18, fontFamily: "var(--font-body)",

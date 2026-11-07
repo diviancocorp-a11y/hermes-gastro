@@ -103,7 +103,7 @@ export default function OrdersScreen({ loadOrders, onBack, onTrack, bottomNav })
                     <span className="body-s" style={{ fontSize: 13 }}>{relDate(o.created_at || o.date)} · {fmtAR(o.total)}</span>
                     <button onClick={() => onTrack?.(o.id)} style={{
                       height: 34, padding: "0 14px", borderRadius: 999, border: 0,
-                      background: "var(--ac)", color: "#fff", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)",
+                      background: "var(--ac)", color: "var(--ac-on)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)",
                     }}>Ver seguimiento</button>
                   </div>
                 </>

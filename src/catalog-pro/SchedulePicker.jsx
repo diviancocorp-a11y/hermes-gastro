@@ -126,7 +126,7 @@ export default function SchedulePicker({
                   aspectRatio: "1", borderRadius: 10, border: 0, fontFamily: "inherit",
                   fontSize: 13, fontWeight: selected ? 800 : 500,
                   background: selected ? "var(--ac)" : "transparent",
-                  color: selected ? "#fff" : enabled ? "var(--tx)" : "var(--t3)",
+                  color: selected ? "var(--ac-on)" : enabled ? "var(--tx)" : "var(--t3)",
                   opacity: enabled || selected ? 1 : 0.45,
                   textDecoration: closed && inWindow(d) ? "line-through" : "none",
                   cursor: enabled ? "pointer" : "default",
@@ -169,7 +169,7 @@ export default function SchedulePicker({
                       padding: "9px 16px", borderRadius: 999, flexShrink: 0, fontFamily: "inherit",
                       border: on ? "0" : "1px solid var(--line)",
                       background: on ? "var(--ac)" : "transparent",
-                      color: on ? "#fff" : "var(--tx)",
+                      color: on ? "var(--ac-on)" : "var(--tx)",
                       fontSize: 13, fontWeight: on ? 800 : 600, cursor: "pointer",
                     }}
                   >

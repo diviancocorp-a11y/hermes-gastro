@@ -61,7 +61,7 @@ export default function PushOptInBanner({ session }) {
     }}>
       <div style={{
         width: 36, height: 36, borderRadius: 999,
-        background: "var(--ac)", color: "#fff",
+        background: "var(--ac)", color: "var(--ac-on)",
         display: "flex", alignItems: "center", justifyContent: "center",
         flexShrink: 0, fontSize: 18,
       }}>
@@ -98,7 +98,7 @@ export default function PushOptInBanner({ session }) {
           disabled={busy}
           style={{
             padding: "8px 12px", fontSize: 12, fontWeight: 700,
-            background: "var(--ac)", color: "#fff",
+            background: "var(--ac)", color: "var(--ac-on)",
             border: 0, borderRadius: 8, cursor: busy ? "wait" : "pointer",
             fontFamily: "inherit",
           }}

@@ -148,7 +148,7 @@ export default function SuperCombos({ combos = [], onSelectProduct, onAddToCart 
               style={{
                 padding: "11px 22px", borderRadius: 999, border: "none",
                 background: combo.soldOut ? "rgba(255,255,255,0.15)" : "var(--ac, #D97706)",
-                color: "#fff", fontSize: 14, fontWeight: 700, cursor: combo.soldOut ? "default" : "pointer",
+                color: combo.soldOut ? "#fff" : "var(--ac-on)", fontSize: 14, fontWeight: 700, cursor: combo.soldOut ? "default" : "pointer",
                 fontFamily: "inherit", opacity: combo.soldOut ? 0.5 : 1,
               }}>
               + Agregar

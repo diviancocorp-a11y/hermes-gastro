@@ -22,6 +22,8 @@ import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { fetchOrderTracker } from "../services/orderTracker";
 import { getGuestUser } from "../lib/guestUser";
 import OrderSentView from "../components/catalog/OrderSentView";
+import { resolveTenantSlug } from "../lib/activeTenant";
+import { borrarCarrito } from "../lib/carritoGuardado";
 
 // Clasifica el estado del pago a partir del pedido real.
 function classify(row) {
@@ -44,6 +46,17 @@ export default function MpStatus({ status }) {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(isSuccess);
   const triesRef = useRef(0);
+
+  // Carrito guardado (src/lib/carritoGuardado.js): antes de ir a MercadoPago
+  // queda atado al pedido. Aprobado o pendiente -> se borra, asi al volver al
+  // catalogo no revive ni se puede mandar dos veces. Fallido -> se deja: el
+  // catalogo lo restaura con ese pedido y el reintento lo reusa.
+  useEffect(() => {
+    if (status !== "exitoso" && status !== "pendiente") return undefined;
+    let vivo = true;
+    resolveTenantSlug().then(slug => { if (vivo) borrarCarrito(slug); }).catch(() => {});
+    return () => { vivo = false; };
+  }, [status]);
 
   // Trae el pedido y, si todavia esta "verificando", reintenta cada 3s (~36s).
   useEffect(() => {

@@ -119,7 +119,7 @@ function SlideToUnlock({ onUnlock, disabled }) {
         style={{
           position: "absolute", top: 4, left: 4 + x,
           width: KNOB, height: KNOB, borderRadius: 99,
-          background: "var(--ac, #D97706)", color: "#fff",
+          background: "var(--ac, #D97706)", color: "var(--ac-on)",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 24, cursor: disabled ? "default" : "grab",
           boxShadow: "0 2px 10px rgba(0,0,0,0.18)",
@@ -245,7 +245,7 @@ export default function BirthdayGift({ email, phone, bizName }) {
             )}
             <button onClick={dismiss} style={{
               marginTop: 16, width: "100%", padding: "12px 0", borderRadius: 99,
-              border: "none", background: "var(--ac, #D97706)", color: "#fff",
+              border: "none", background: "var(--ac, #D97706)", color: "var(--ac-on)",
               fontSize: 15, fontWeight: 600, cursor: "pointer",
             }}>
               ¡A pedir! 🎉

@@ -1,6 +1,6 @@
 // src/catalog-pro/ProductDetailScreen.jsx
 // Detalle de producto — hero inmersivo, header sticky que se opaca al scroll,
-// info, notas, reviews (heurístico), "lo piden con esto", sticky CTA.
+// info, notas, "lo piden con esto", sticky CTA. Sin resenas: el sistema no las tiene.
 //
 // NOTA: si recipe.sizes != null, mostramos selector obligatorio (radio) con
 // los tamaños/presentaciones definidos por el admin. Cada size: {label, qty, price, hint?}.
@@ -15,7 +15,7 @@ import { useState, useRef, useEffect } from "react";
 import BadgeTag from "../components/BadgeTag";
 import Icon from "./Icon";
 import { fmtAR } from "./format";
-import { ProductPhoto, Rating, Stepper, AddRound, SectionHeader, SoldOutBadge } from "./atoms";
+import { ProductPhoto, Stepper, AddRound, SectionHeader, SoldOutBadge } from "./atoms";
 import { mapProduct } from "./homeHelpers";
 import ProductCharacteristics from "./ProductCharacteristics";
 import { getProductFeatures } from "../lib/catalogFacets";
@@ -142,14 +142,13 @@ export default function ProductDetailScreen({
             )}
           </section>
         )}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
-          <Rating value={p.rating} count={p.reviews} />
-          {p.tiempo && (
+        {p.tiempo && (
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--t2)" }}>
               <Icon name="clock" size={12} /> {p.tiempo}
             </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <hr style={{ margin: "24px 22px 0", border: 0, borderTop: "1px solid var(--line)" }} />
@@ -223,35 +222,6 @@ export default function ProductDetailScreen({
         <div style={{ textAlign: "right", fontSize: 11, color: "var(--t3)", marginTop: 4 }}>{notes.length}/140</div>
       </div>
 
-      {/* Reviews (heurístico visual) */}
-      <div style={{ padding: "32px 22px 0" }}>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
-          <h3 style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 20, color: "var(--tx)" }}>Qué dicen</h3>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 22, padding: "16px 18px", background: "var(--b2)", borderRadius: 14 }}>
-          <div>
-            <div style={{ fontFamily: "var(--font-heading)", fontSize: 36, lineHeight: 1, color: "var(--tx)" }}>
-              {p.rating.toFixed(1)}
-            </div>
-            <div className="body-s" style={{ fontSize: 11, marginTop: 4 }}>{p.reviews} opiniones</div>
-          </div>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-            {[5, 4, 3, 2, 1].map(stars => {
-              const pct = stars === 5 ? 78 : stars === 4 ? 16 : stars === 3 ? 4 : 1;
-              return (
-                <div key={stars} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10 }}>
-                  <span style={{ width: 8, color: "var(--t2)" }}>{stars}</span>
-                  <div style={{ flex: 1, height: 4, background: "var(--b3)", borderRadius: 2, overflow: "hidden" }}>
-                    <div style={{ width: `${pct}%`, height: "100%", background: "var(--ac)" }} />
-                  </div>
-                  <span style={{ width: 26, textAlign: "right", color: "var(--t3)" }}>{pct}%</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
       {/* Lo piden con esto */}
       {relatedMapped.length > 0 && (
         <div style={{ padding: "32px 0 0" }}>
@@ -301,7 +271,7 @@ export default function ProductDetailScreen({
           style={{
             flex: 1, height: 52, borderRadius: "var(--rs)", border: 0,
             background: soldOut ? "var(--b3)" : "var(--ac)",
-            color: soldOut ? "var(--t3)" : "#fff",
+            color: soldOut ? "var(--t3)" : "var(--ac-on)",
             display: "flex", alignItems: "center", justifyContent: "space-between",
             paddingLeft: 18, paddingRight: 14, cursor: soldOut ? "not-allowed" : "pointer",
             fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 15,

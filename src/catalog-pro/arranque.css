@@ -1,0 +1,153 @@
+/* ───────────────────────────────────────────────────────────────────
+   Arranque del catalogo: el esqueleto mientras get_catalog no contesto y
+   el aviso cuando no contesto nunca.
+
+   Las alturas copian las del Home cargado a 375 px (CATALOGO-MEJORAS.md,
+   "Skeleton del arranque"): barra 34, header 79, carrusel 160, saludo,
+   buscador 68, recomendaciones 50 y tarjetas de 331x140 con margen de 22.
+   Asi el ojo no ve saltar nada cuando entra la carta, y como el esqueleto
+   se desmonta entero (otro componente), el navegador no cuenta desplazamientos.
+   ─────────────────────────────────────────────────────────────────── */
+
+.cp-root.cp-arranque {
+  min-height: 100dvh;
+  width: 100%;
+  padding-bottom: var(--s7);
+}
+
+/* El bloque gris que respira. Sin movimiento con reduced motion. */
+.cp-root .cp-arr-hueso {
+  display: block;
+  background: linear-gradient(90deg, var(--b2) 25%, var(--b3) 50%, var(--b2) 75%);
+  background-size: 400px 100%;
+  border-radius: var(--rs);
+  animation: cp-arr-brillo 1.4s ease-in-out infinite;
+}
+@keyframes cp-arr-brillo {
+  0% { background-position: -400px 0; }
+  100% { background-position: calc(400px + 100%) 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cp-root .cp-arr-hueso { animation: none; background: var(--b2); }
+}
+
+/* Barras de aviso (envio gratis, encargo, banner): misma altura que la real. */
+.cp-root .cp-arr-barra {
+  height: 34px;
+  background: var(--b2);
+  border-bottom: 1px solid var(--line);
+}
+
+/* Header: logo 36 + nombre + estado, como el sticky del Home. */
+.cp-root .cp-arr-header {
+  min-height: 79px;
+  padding: var(--s4) var(--s4) var(--s2) var(--cp-gutter);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cp-root .cp-arr-logo {
+  width: 36px; height: 36px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--b3);
+  color: var(--tx);
+  font-family: var(--font-heading);
+  font-size: 18px;
+}
+.cp-root .cp-arr-logo img { width: 100%; height: 100%; object-fit: cover; }
+.cp-root .cp-arr-ident { flex: 1; min-width: 0; display: grid; gap: 6px; }
+.cp-root .cp-arr-nombre {
+  font-family: var(--font-heading);
+  font-size: 17px; line-height: 1;
+  color: var(--tx);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cp-root .cp-arr-slogan {
+  font-size: 11.5px; line-height: 1.3; font-weight: 600;
+  color: var(--ac);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cp-root .cp-arr-linea-nombre { width: 55%; height: 17px; }
+.cp-root .cp-arr-linea-estado { width: 40%; height: 12px; }
+.cp-root .cp-arr-cuenta { width: 38px; height: 38px; border-radius: 999px; flex-shrink: 0; }
+
+/* Carrusel: tarjetas de 100x140, 3,5 visibles a 375 px. */
+.cp-root .cp-arr-carrusel {
+  height: 160px;
+  padding: 20px var(--cp-gutter) 0;
+  display: flex;
+  gap: 10px;
+  overflow: hidden;
+}
+.cp-root .cp-arr-historia { flex: 0 0 100px; height: 140px; border-radius: var(--rl); }
+
+/* Saludo: el mismo titulo del Home, que no depende de datos. Clase propia y
+   no .h-1: Tailwind v4 compila .h-1 { height: 4px } y el texto desbordaba.
+   El bloque mide 64 px, lo que ocupa en el Home cargado. */
+.cp-root .cp-arr-saludo { height: 64px; padding: 22px var(--cp-gutter) 0; box-sizing: border-box; }
+.cp-root .cp-arr-saludo-titulo {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--tx);
+}
+.cp-root .cp-arr-saludo em { font-style: italic; color: var(--ac); }
+
+.cp-root .cp-arr-buscador {
+  height: 50px;
+  margin: 0 var(--cp-gutter) 18px;
+  border-radius: 14px;
+}
+.cp-root .cp-arr-recos {
+  height: 50px;
+  margin: 20px var(--cp-gutter) 0;
+  border-radius: 14px;
+}
+
+/* Carta: tarjetas de una columna a 375 px (331 de ancho, foto de 140). */
+.cp-root .cp-arr-carta {
+  padding: var(--s6) var(--cp-gutter) 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+.cp-root .cp-arr-tarjeta { display: grid; gap: var(--s2); }
+.cp-root .cp-arr-foto { height: 140px; border-radius: 12px; }
+.cp-root .cp-arr-linea-producto { width: 70%; height: 17px; margin-top: 6px; }
+.cp-root .cp-arr-linea-precio { width: 30%; height: 14px; }
+
+/* Sin conexion: el aviso ocupa el lugar de la carta, el header se queda. */
+.cp-root .cp-arr-error {
+  margin: var(--s6) var(--cp-gutter) 0;
+  padding: var(--s6) var(--s5);
+  border: 1px solid var(--line);
+  border-radius: var(--rl);
+  background: var(--b2);
+  display: grid;
+  gap: var(--s3);
+  justify-items: start;
+}
+/* Clase propia y no .h-2: Tailwind v4 genera .h-2 { height: 8px } y el
+   titulo de dos lineas se montaba sobre el parrafo. */
+.cp-root .cp-arr-error-titulo {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+  color: var(--tx);
+  text-wrap: balance;
+}
+.cp-root .cp-arr-error .body-m { margin: 0; color: var(--t2); max-width: 40ch; }
+.cp-root .cp-arr-error .btn { margin-top: var(--s2); min-width: 160px; }
+.cp-root .cp-arr-error .btn:focus-visible {
+  outline: 2px solid var(--tx);
+  outline-offset: 2px;
+}

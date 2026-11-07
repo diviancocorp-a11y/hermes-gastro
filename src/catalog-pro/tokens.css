@@ -20,6 +20,10 @@
   --line:#E5E7EB;
   --ac:  #F59E0B;
   --ac2: #D97706;
+  /* Texto e iconos SOBRE --ac (botones primarios, chips activos). El blanco
+     daba 2.15:1 en ambar y 1.83:1 en noche; el test tokensContraste lo exige
+     >= 4.5:1 contra --ac y --ac2 en cada tema. --ac no se toca: es la marca. */
+  --ac-on: var(--tx);
   --al:  rgba(245,158,11,0.10);
   --ok:  #16A34A;
   --warn:#D97706;
@@ -34,6 +38,8 @@
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px;
   --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
   --rs: 6px; --r: 10px; --rl: 16px;
+  /* Margen lateral de la carta (Home, detalle, categorias). */
+  --cp-gutter: 22px;
 
   --sh-sm: 0 1px 2px rgba(31,24,20,0.04), 0 0 0 1px rgba(31,24,20,0.04);
   --sh-md: 0 2px 4px rgba(31,24,20,0.04), 0 8px 24px rgba(31,24,20,0.06);
@@ -67,6 +73,7 @@ body[data-ui-owner="catalog"][data-cp-theme="ambar"] .cp-root {
   --line:#E5E7EB;
   --ac:  #F59E0B;
   --ac2: #D97706;
+  --ac-on: var(--tx);
   --al:  rgba(245,158,11,0.10);
   --ac-soft:    #FFFBEB;
   --ac-soft-fg: #92400E;
@@ -83,6 +90,7 @@ body[data-ui-owner="catalog"][data-cp-theme="noche"] .cp-root {
   --line:#2E2A24;
   --ac:  #E8B947;
   --ac2: #D1A132;
+  --ac-on: var(--bg);
   --al:  rgba(232,185,71,0.12);
   --ac-soft:    #2D2924;
   --ac-soft-fg: #E8B947;
@@ -99,6 +107,7 @@ body[data-ui-owner="catalog"][data-cp-theme="carbon"] .cp-root {
   --line:#E8DFD0;
   --ac:  #2D1B0E;
   --ac2: #3D2914;
+  --ac-on: var(--bg);
   --al:  rgba(45,27,14,0.08);
   --ac-soft:    #F0E5D6;
   --ac-soft-fg: #2D1B0E;
@@ -132,7 +141,7 @@ body[data-ui-owner="catalog"][data-cp-theme="carbon"] .cp-root {
 .cp-root .btn-sm { height: 36px; padding: 0 14px; font-size: 13px; }
 .cp-root .btn-md { height: 44px; padding: 0 18px; font-size: 14px; }
 .cp-root .btn-lg { height: 52px; padding: 0 22px; font-size: 15px; }
-.cp-root .btn-primary { background: var(--ac); color: #fff; }
+.cp-root .btn-primary { background: var(--ac); color: var(--ac-on); }
 .cp-root .btn-primary:hover { background: var(--ac2); }
 .cp-root .btn-primary:active { transform: translateY(1px); }
 .cp-root .btn-secondary { background: transparent; color: var(--tx); border-color: var(--line); }

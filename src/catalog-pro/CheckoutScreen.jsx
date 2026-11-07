@@ -132,7 +132,7 @@ export default function CheckoutScreen(props) {
               <div style={{
                 width: 26, height: 26, borderRadius: "50%",
                 background: done ? "var(--ac)" : active ? "var(--ac)" : "var(--b2)",
-                color: done || active ? (active && !done ? "#fff" : "#fff") : "var(--t3)",
+                color: done || active ? "var(--ac-on)" : "var(--t3)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 12, fontWeight: 700,
                 border: active ? "2px solid var(--ac)" : "1px solid var(--line)",
@@ -178,7 +178,7 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
             background: "var(--b2)", border: "1px solid var(--line)",
           }}>
             <div style={{
-              width: 38, height: 38, borderRadius: "50%", background: "var(--ac)", color: "#fff",
+              width: 38, height: 38, borderRadius: "50%", background: "var(--ac)", color: "var(--ac-on)",
               display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16,
             }}>{(profile?.name || user.email)?.[0]?.toUpperCase() || "U"}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -307,7 +307,7 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
                     }} style={{
                       width: "100%", padding: "11px 14px",
                       background: isSelected ? "var(--ac)" : "var(--b2)",
-                      color: isSelected ? "#fff" : "var(--tx)",
+                      color: isSelected ? "var(--ac-on)" : "var(--tx)",
                       border: `1px solid ${isSelected ? "var(--ac)" : "var(--line)"}`,
                       borderRadius: 12, textAlign: "left", cursor: "pointer", fontSize: 13, lineHeight: 1.4,
                     }}>
@@ -568,7 +568,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
             <button onClick={applyCoupon} disabled={validatingCoupon || !couponCode.trim()} style={{
               height: 38, padding: "0 16px", borderRadius: 8, border: 0,
               background: couponCode.trim() ? "var(--ac)" : "var(--b3)",
-              color: couponCode.trim() ? "#fff" : "var(--t3)",
+              color: couponCode.trim() ? "var(--ac-on)" : "var(--t3)",
               fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit",
             }}>{validatingCoupon ? "..." : "Aplicar"}</button>
           ) : (
@@ -712,7 +712,7 @@ function CardOption({ active, onClick, title, subtitle, icon }) {
         <div style={{ fontSize: 12, color: "var(--t2)", marginTop: 2, lineHeight: 1.4 }}>{subtitle}</div>
       </div>
       {active && (
-        <div style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--ac)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>✓</div>
+        <div style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--ac)", color: "var(--ac-on)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>✓</div>
       )}
     </button>
   );
@@ -723,7 +723,7 @@ function ToggleBtn({ active, onClick, children }) {
     <button type="button" onClick={onClick} style={{
       flex: 1, padding: "12px 14px", borderRadius: 12,
       background: active ? "var(--ac)" : "var(--b2)",
-      color: active ? "#fff" : "var(--tx)",
+      color: active ? "var(--ac-on)" : "var(--tx)",
       border: `1px solid ${active ? "var(--ac)" : "var(--line)"}`,
       fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
     }}>{children}</button>
@@ -738,7 +738,7 @@ function NextButton({ disabled, onClick, label = "Siguiente" }) {
       style={{
         width: "100%", marginTop: 24, height: 52, borderRadius: 14, border: 0,
         background: disabled ? "var(--b3)" : "var(--ac)",
-        color: disabled ? "var(--t3)" : "#fff",
+        color: disabled ? "var(--t3)" : "var(--ac-on)",
         fontFamily: "inherit", fontSize: 15, fontWeight: 600,
         cursor: disabled ? "not-allowed" : "pointer",
         display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -776,7 +776,7 @@ function PayBankBox({ account, amount }) {
           <button onClick={() => copy(r.key, r.value)} style={{
             padding: "8px 14px", borderRadius: 8, border: "1px solid var(--ac)",
             background: copied === r.key ? "var(--ac)" : "transparent",
-            color: copied === r.key ? "#fff" : "var(--ac)",
+            color: copied === r.key ? "var(--ac-on)" : "var(--ac)",
             fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
           }}>{copied === r.key ? "✓ Copiado" : "Copiar"}</button>
         </div>
@@ -856,7 +856,7 @@ const detailBox = {
 
 const btnPrimary = {
   width: "100%", padding: "12px 16px",
-  background: "var(--ac)", color: "#fff",
+  background: "var(--ac)", color: "var(--ac-on)",
   border: 0, borderRadius: 12,
   fontFamily: "inherit", fontSize: 14, fontWeight: 700, cursor: "pointer",
 };

@@ -11,6 +11,9 @@
 //   hasDeal(p), dealPrice(p)  — helpers del Catalog
 //   onAddToCart(p), onOpenCart(), onSearch(), onSelectCategory(name),
 //   onSelectProduct(p), onOpenAccount()
+//   loading, error, onRetry: mientras get_catalog no contesto (o fallo) se
+//     muestra CatalogoArranque, nunca "0 productos" ni el vacio de filtros.
+//   identidad, barras: lo que se sabe del negocio por cp_sett_cache.
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import Icon from "./Icon";
@@ -19,7 +22,7 @@ import CatalogMusicToggle from "./CatalogMusicToggle";
 import { fmtAR } from "./format";
 import { leadHoras, textoAnticipacion } from "../modules/pedidosProgramados";
 import {
-  ProductPhoto, PriceTag, Rating, StickyCart, SectionHeader, AddRound, SoldOutBadge,
+  ProductPhoto, PriceTag, StickyCart, SectionHeader, AddRound, SoldOutBadge,
   abrible,
 } from "./atoms";
 import { mapProduct, buildStories, buildRecos, toneFor } from "./homeHelpers";
@@ -29,6 +32,7 @@ import BadgeTag from "../components/BadgeTag";
 import PromoCarousel from "./PromoCarousel";
 import SuperCombos from "./SuperCombos";
 import OrderStatusCard from "./OrderStatusCard";
+import CatalogoArranque from "./CatalogoArranque";
 import ReservarEntrada from "./ReservarEntrada";
 import { getActiveOrders } from "../lib/activeOrders";
 import ProductCharacteristics from "./ProductCharacteristics";
@@ -56,6 +60,11 @@ export default function HomeScreen({
   cart = [],
   onDecCart,
   onRemoveCart,
+  loading = false,
+  error = null,
+  onRetry,
+  identidad = null,
+  barras = null,
 }) {
   // Link de "seguir mi pedido" si hay un pedido reciente (Catalog lo guarda al confirmar).
   // Pedidos activos (pueden ser varios a la vez): una card de seguimiento
@@ -161,12 +170,25 @@ export default function HomeScreen({
 
   const logoLetter = (store.logoLetter || store.name?.charAt(0) || "H").toUpperCase();
 
+  // Otro componente (no el mismo arbol con otros datos): al llegar la carta
+  // el esqueleto se desmonta entero y no hay nodos que "se muevan" (CLS).
+  if (loading || (error && products.length === 0)) {
+    return (
+      <CatalogoArranque
+        estado={loading ? "cargando" : error === "offline" ? "sin-conexion" : "error"}
+        identidad={identidad}
+        barras={barras}
+        onRetry={onRetry}
+      />
+    );
+  }
+
   return (
     <div className="cp-root cp-surface cp-no-scrollbar" style={{ paddingBottom: 200, minHeight: "100vh", width: "100%" }}>
       {/* ===== BANNER DE BIENVENIDA (settings.banner_text) ===== */}
       {settings?.banner_text && (
         <div style={{
-          padding: "8px 16px", background: "var(--ac)", color: "var(--bg)",
+          padding: "8px 16px", background: "var(--ac)", color: "var(--ac-on)",
           fontSize: 12.5, fontWeight: 600, textAlign: "center",
           letterSpacing: 0.2,
         }}>
@@ -296,7 +318,7 @@ export default function HomeScreen({
             </div>
             <button onClick={() => onReorder?.(lastOrderItems)} style={{
               flexShrink: 0, padding: "10px 14px", borderRadius: 999,
-              background: "var(--ac)", color: "#fff", border: 0,
+              background: "var(--ac)", color: "var(--ac-on)", border: 0,
               fontSize: 13, fontWeight: 600, cursor: "pointer",
               fontFamily: "var(--font-body)",
             }}>
@@ -554,12 +576,12 @@ export default function HomeScreen({
               )}
               {/* Etiqueta COMBO (mismo estilo que +18) para identificarlos en la carta */}
               {p._raw?.is_combo && !p._raw?.requires_age_gate && (
-                <div style={{ position: "absolute", bottom: 8, left: 8, background: "color-mix(in srgb, var(--ac) 92%, #000)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "3px 7px", borderRadius: 999, letterSpacing: "0.04em" }}>
+                <div style={{ position: "absolute", bottom: 8, left: 8, background: "color-mix(in srgb, var(--ac) 92%, #000)", color: "var(--ac-on)", fontSize: 10, fontWeight: 700, padding: "3px 7px", borderRadius: 999, letterSpacing: "0.04em" }}>
                   COMBO
                 </div>
               )}
               {p._raw?.is_combo && p._raw?.requires_age_gate && (
-                <div style={{ position: "absolute", bottom: 8, left: 52, background: "color-mix(in srgb, var(--ac) 92%, #000)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "3px 7px", borderRadius: 999, letterSpacing: "0.04em" }}>
+                <div style={{ position: "absolute", bottom: 8, left: 52, background: "color-mix(in srgb, var(--ac) 92%, #000)", color: "var(--ac-on)", fontSize: 10, fontWeight: 700, padding: "3px 7px", borderRadius: 999, letterSpacing: "0.04em" }}>
                   COMBO
                 </div>
               )}
@@ -572,7 +594,7 @@ export default function HomeScreen({
                   return (
                     <div onClick={(e) => e.stopPropagation()} style={{
                       display: "flex", alignItems: "center", gap: 4,
-                      background: "var(--ac)", color: "#fff",
+                      background: "var(--ac)", color: "var(--ac-on)",
                       borderRadius: 999, padding: "3px 6px",
                       boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                     }}>
@@ -591,10 +613,11 @@ export default function HomeScreen({
                 overflow: "hidden", minHeight: 44,
               }}>{p.name}</div>
               <ProductCharacteristics product={p._raw} />
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-                <Rating value={p.rating} />
-                {p.tiempo && <span className="body-s" style={{ fontSize: 11, color: "var(--t3)" }}>· {p.tiempo}</span>}
-              </div>
+              {p.tiempo && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                  <span className="body-s" style={{ fontSize: 11, color: "var(--t3)" }}>{p.tiempo}</span>
+                </div>
+              )}
               <div style={{ marginTop: 6 }}><PriceTag price={p.price} oldPrice={p.oldPrice} size="sm" /></div>
             </div>
           </div>
@@ -642,7 +665,7 @@ function AiRecosCollapsible({ recos, content, onSelectProduct: _ }) {
       <button onClick={() => setOpen(o => !o)} aria-expanded={open}
         style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "transparent", border: 0, cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ width: 22, height: 22, borderRadius: 999, background: "var(--ac)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ width: 22, height: 22, borderRadius: 999, background: "var(--ac)", color: "var(--ac-on)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Icon name="sparkle" size={12} stroke={2} />
           </span>
           <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ac)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
@@ -668,7 +691,7 @@ const iconBtn = {
 
 const qtyBtnStyle = {
   width: 22, height: 22, borderRadius: 999, border: 0,
-  background: "rgba(255,255,255,0.2)", color: "#fff",
+  background: "rgba(255,255,255,0.2)", color: "inherit",
   fontSize: 14, fontWeight: 700, cursor: "pointer",
   display: "flex", alignItems: "center", justifyContent: "center",
   padding: 0, fontFamily: "inherit",

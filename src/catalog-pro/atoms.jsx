@@ -66,19 +66,6 @@ export function PriceTag({ price, oldPrice, size = "md", tone = "var(--tx)" }) {
   );
 }
 
-// ── Rating — estrella amber + valor + count ──
-export function Rating({ value, count, mode = "inline" }) {
-  return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--t2)" }}>
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="var(--ac)" aria-hidden="true">
-        <path d="M12 2 14.5 8.5 21 9 16 14l1.5 7L12 17l-5.5 4L8 14 3 9l6.5-.5L12 2Z" />
-      </svg>
-      <span style={{ fontWeight: 600, color: "var(--tx)" }}>{Number(value || 0).toFixed(1)}</span>
-      {count != null && mode === "inline" && <span style={{ color: "var(--t3)" }}>({count})</span>}
-    </div>
-  );
-}
-
 // ── StickyCart — barra dark fixed bottom con hint opcional ──
 export function StickyCart({ count = 0, total = 0, label = "Ver pedido", onClick, hint }) {
   return (
@@ -194,7 +181,7 @@ export function AddRound({ size = 32, onClick, dark = true, disabled = false }) 
       aria-label={disabled ? "Producto agotado" : "Agregar al carrito"} style={{
       width: size, height: size, borderRadius: 999,
       background: disabled ? "var(--b3)" : (dark ? "var(--tx)" : "var(--ac)"),
-      color: disabled ? "var(--t3)" : (dark ? "var(--bg)" : "#fff"),
+      color: disabled ? "var(--t3)" : (dark ? "var(--bg)" : "var(--ac-on)"),
       border: dark ? "2px solid var(--bg)" : "none",
       display: "flex", alignItems: "center", justifyContent: "center",
       cursor: disabled ? "not-allowed" : "pointer",

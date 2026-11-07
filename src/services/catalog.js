@@ -17,7 +17,7 @@ import { vincularTelegram } from './telegramLink.js';
  * Retorna: { settings, products, serverNow }, o null si no hay catalogo que
  * mostrar o fallo el RPC.
  */
-export async function fetchCatalog() {
+export async function fetchCatalog({ signal } = {}) {
   try {
     const slug = await resolveTenantSlug();
     if (!slug) {
@@ -25,7 +25,11 @@ export async function fetchCatalog() {
       // va la landing. No es un error.
       return null;
     }
-    const { data, error } = await supabase.rpc('get_catalog', { p_tenant_slug: slug });
+    // signal: el catalogo corta a los 10 s (Catalog.jsx) para no dejar el
+    // esqueleto para siempre si get_catalog no contesta.
+    let consulta = supabase.rpc('get_catalog', { p_tenant_slug: slug });
+    if (signal) consulta = consulta.abortSignal(signal);
+    const { data, error } = await consulta;
     if (error || !data) {
       console.error('get_catalog RPC error:', error?.message);
       return null;

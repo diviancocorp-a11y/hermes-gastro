@@ -64,11 +64,9 @@
 .cp-root .cp-fam-cta {
   width: 100%; min-height: 52px; border-radius: var(--rs); border: 0; cursor: pointer;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 18px; background: var(--ac); color: var(--tx);
+  padding: 0 18px; background: var(--ac); color: var(--ac-on);
   font-family: var(--font-body); font-weight: 500; font-size: 15px;
 }
-body[data-cp-theme="noche"] .cp-root .cp-fam-cta,
-body[data-cp-theme="carbon"] .cp-root .cp-fam-cta { color: var(--bg); }
 .cp-root .cp-fam-cta:disabled { background: var(--b3); color: var(--t2); cursor: not-allowed; }
 .cp-root .cp-fam-cta-total { font-family: var(--font-heading); font-size: 15px; }
 

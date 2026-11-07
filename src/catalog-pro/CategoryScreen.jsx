@@ -8,14 +8,15 @@
 import { useState, useMemo } from "react";
 import BadgeTag from "../components/BadgeTag";
 import Icon from "./Icon";
-import { ProductPhoto, Rating, AddRound, PriceTag, SoldOutBadge, abrible } from "./atoms";
+import { ProductPhoto, AddRound, PriceTag, SoldOutBadge, abrible } from "./atoms";
 import { mapProduct } from "./homeHelpers";
 
+// Sin "Mas pedidos" ni "Mejor valorados": salian de resenas inventadas. El
+// orden por defecto es el que armo el negocio en su carta.
 const SORT_LABELS = {
-  pop: "Más pedidos",
+  carta: "Orden de la carta",
   price_asc: "Precio: menor",
   price_desc: "Precio: mayor",
-  rating: "Mejor valorados",
 };
 
 export default function CategoryScreen({
@@ -25,7 +26,7 @@ export default function CategoryScreen({
   onBack, onSelectProduct, onAddToCart, onOpenSearch,
 }) {
   const [view, setView] = useState("list");
-  const [sort, setSort] = useState("pop");
+  const [sort, setSort] = useState("carta");
   const [sortOpen, setSortOpen] = useState(false);
 
   const mapped = useMemo(
@@ -37,8 +38,6 @@ export default function CategoryScreen({
     const arr = [...mapped];
     if (sort === "price_asc") arr.sort((a, b) => a.price - b.price);
     else if (sort === "price_desc") arr.sort((a, b) => b.price - a.price);
-    else if (sort === "rating") arr.sort((a, b) => b.rating - a.rating);
-    else arr.sort((a, b) => b.reviews - a.reviews);
     return arr;
   }, [mapped, sort]);
 
@@ -127,10 +126,7 @@ export default function CategoryScreen({
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, color: "var(--tx)", lineHeight: 1.3, marginBottom: 4 }}>{p.name}</div>
                 {p.desc && <div className="body-s" style={{ fontSize: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 6 }}>{p.desc}</div>}
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <Rating value={p.rating} />
-                  <PriceTag price={p.price} oldPrice={p.oldPrice} size="sm" />
-                </div>
+                <PriceTag price={p.price} oldPrice={p.oldPrice} size="sm" />
               </div>
               <AddRound size={32} disabled={p.soldOut} onClick={(e) => { e?.stopPropagation?.(); onAddToCart?.(p._raw); }} />
             </div>

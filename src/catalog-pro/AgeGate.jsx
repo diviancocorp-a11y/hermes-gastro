@@ -28,7 +28,7 @@ export default function AgeGate({ onConfirm, title }) {
           onClick={onConfirm}
           style={{
             width: "100%", padding: "14px 18px",
-            background: "var(--ac)", color: "#fff",
+            background: "var(--ac)", color: "var(--ac-on)",
             border: 0, borderRadius: 12,
             fontFamily: "inherit", fontSize: 15, fontWeight: 700,
             cursor: "pointer", marginBottom: 10,

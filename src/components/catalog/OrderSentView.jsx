@@ -136,7 +136,7 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
                   style={{
                     flexShrink: 0, padding: "6px 14px",
                     background: copiedCode ? GREEN : "var(--ac)",
-                    color: "#fff", border: "none", borderRadius: 8,
+                    color: copiedCode ? "#fff" : "var(--ac-on)", border: "none", borderRadius: 8,
                     fontSize: 12, fontWeight: 700, fontFamily: "inherit", cursor: "pointer",
                   }}
                 >
@@ -223,7 +223,7 @@ function saveBtn(enabled, saving) {
   return {
     width: "100%", height: 42, border: 0, borderRadius: 10,
     background: enabled ? "var(--ac)" : "var(--b3)",
-    color: enabled ? "#fff" : "var(--t3)",
+    color: enabled ? "var(--ac-on)" : "var(--t3)",
     fontFamily: "inherit", fontSize: 13, fontWeight: 700,
     cursor: enabled ? "pointer" : "not-allowed", opacity: saving ? 0.7 : 1,
   };

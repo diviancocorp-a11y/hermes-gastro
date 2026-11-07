@@ -1,6 +1,9 @@
 // Catálogo Pro — helpers para mapear datos reales → shape que espera la Home.
-// Los campos que no existen en la DB (rating, tiempo, tone, badge) se generan
-// con heurísticas ESTABLES por id (mismo producto → mismo valor siempre).
+// Los campos visuales que no existen en la DB (tone, badge) se generan con
+// heuristicas ESTABLES por id (mismo producto -> mismo valor siempre).
+// Nunca se inventan datos que el cliente lee como hechos: no hay estrellas ni
+// cantidad de opiniones porque el sistema no guarda resenas de productos
+// (service_reviews es la nota del servicio de un pedido, no de un producto).
 
 import { DEAL_PCT } from "../constants/catalogConstants";
 import { fmtAR } from "../lib/format";
@@ -19,16 +22,6 @@ const TONES = ["#C9744D", "#A85432", "#B5683C", "#8A4A30", "#C58A5E", "#9C5A3C",
 
 export function toneFor(name) {
   return TONES[hashStr(name) % TONES.length];
-}
-
-// Rating fake estable: 4.3 – 4.9
-export function ratingFor(id) {
-  return 4.3 + (hashStr(id) % 7) / 10;
-}
-
-// Reviews fake estable: 12 – 211
-export function reviewsFor(id) {
-  return 12 + (hashStr(id) % 200);
 }
 
 // Tiempo que muestra la tarjeta: solo un servicio, que dice cuanto dura el
@@ -66,8 +59,6 @@ export function mapProduct(p, opts = {}) {
     img: p.image_url || null,
     cat: p.category,
     tone: toneFor(p.name || p.id),
-    rating: ratingFor(p.id),
-    reviews: reviewsFor(p.id),
     tiempo: tiempoFor(p),
     badge: deal ? "Oferta" : null,
     // Sin stock de ingredientes suficiente para 1 unidad
@@ -111,7 +102,6 @@ export function buildRecos(products, hasDeal) {
     "Pedido seguido por clientes como vos",
     "Combina con lo que sueles pedir",
     "Nuevo esta semana",
-    "Bien valorado últimamente",
   ];
   const pool = products.filter(p => p.image_url);
   const picked = [...pool]
