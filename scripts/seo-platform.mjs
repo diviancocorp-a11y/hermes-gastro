@@ -1,6 +1,23 @@
 import path from 'node:path';
 import { SEO_PLATAFORMA, DATOS_ESTRUCTURADOS_PLATAFORMA } from '../src/lib/seoPlataforma.js';
 
+// Las dos woff2 que pinta el primer pantallazo de la landing: Overused Grotesk
+// (interfaz) y Butler Roman (el titulo). Butler Medium no aparece arriba.
+export const FUENTES_PRIMER_PANTALLAZO = [
+  '/fonts/dico/overused-grotesk/OverusedGrotesk-VF.woff2',
+  '/fonts/dico/butler/Butler-Free-Rmn.woff2',
+];
+
+// El shell (index.html) pide a Google las fuentes del catalogo y del admin
+// (DM Sans, DM Serif Display, Instrument Serif). La landing usa solo las
+// propias (src/styles/dico-fonts.css): en su HTML esos pedidos sobran.
+function sinFuentesDeGoogle(html) {
+  return html
+    .replace(/\s*<!-- Google Fonts:[^>]*-->/g, '')
+    .replace(/\s*<link\b[^>]*https:\/\/fonts\.(?:googleapis|gstatic)\.com[^>]*>/g, '')
+    .replace(/\s*<noscript>\s*<\/noscript>/g, '');
+}
+
 const atributo = valor => String(valor).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
 export function crearHtmlPlataforma(html, contenido) {
@@ -21,6 +38,7 @@ export function crearHtmlPlataforma(html, contenido) {
     `<meta name="twitter:image" content="${seo.imagen}">`,
     `<meta name="twitter:image:alt" content="${atributo(seo.imagenAlt)}">`,
     `<script type="application/ld+json">${JSON.stringify(DATOS_ESTRUCTURADOS_PLATAFORMA).replaceAll('<', '\\u003c')}</script>`,
+    ...FUENTES_PRIMER_PANTALLAZO.map(href => `<link rel="preload" href="${href}" as="font" type="font/woff2" crossorigin>`),
   ].join('\n');
   const inicio = html.indexOf('<div id="root">');
   const fin = html.indexOf('</div>', html.indexOf('</style>', inicio));
@@ -30,7 +48,7 @@ export function crearHtmlPlataforma(html, contenido) {
   const cierreBody = html.indexOf('</body>', inicio);
   const despues = script >= 0 ? script : cierreBody;
   if (fin < 0 || despues < 0) throw new Error('No se pudo localizar el loader');
-  return (html.slice(0, inicio) + `<div id="root">${contenido}</div>\n` + html.slice(despues))
+  return sinFuentesDeGoogle(html.slice(0, inicio) + `<div id="root">${contenido}</div>\n` + html.slice(despues))
     .replace(/<html lang="es">/, '<html lang="es-AR">')
     .replace(/<title>[^<]*<\/title>/, `<title>${atributo(seo.titulo)}</title>`)
     .replace(/(<meta (?:name="description"|property="og:description") content=")[^"]*/g, `$1${atributo(seo.descripcion)}`)

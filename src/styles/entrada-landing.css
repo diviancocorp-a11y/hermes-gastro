@@ -1,4 +1,7 @@
-/* Critico: se carga desde el HTML, antes de React. Solo lo activa la home. */
+/* Critico: se carga desde el HTML, antes de React. Solo lo activa la home.
+   La marca termina de armarse a los 900 ms (300 de espera + 600 de cierre) y
+   EntradaLanding abre a los 1200 ms si ya cargo todo: mantener las dos cosas
+   juntas, lo fija src/test/entradaLanding.test.jsx. */
 #dico-entrada[hidden] { display: none; }
 #dico-entrada { position: fixed; inset: 0; z-index: 10000; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; overflow: hidden; color: var(--ds-color-zinc-50, white); font-family: var(--ds-font-ui, sans-serif); animation: de-rescate 480ms ease-out 8s forwards; }
 #dico-entrada::before, #dico-entrada::after { content: ''; position: absolute; left: 0; right: 0; height: 50%; background: var(--ds-color-zinc-950, black); transition: transform 480ms cubic-bezier(.22, 1, .36, 1); }
@@ -6,17 +9,17 @@
 #dico-entrada::after { bottom: 0; }
 /* DIVIANCO se cierra en DICO: DI y CO son recortes del PNG real (corte en x=574
    de 1368, entre la I y la C) y VIAN es un SVG con la tinta medida del logo. */
-.de-centro { position: relative; z-index: 1; width: 100%; text-align: center; animation: de-llegada 700ms cubic-bezier(.22, 1, .36, 1) both; transition: opacity 320ms ease, transform 480ms ease; }
-.de-logo { --w: min(80vw, 170vh); position: relative; display: flex; width: var(--w); margin: 0 auto; animation: de-acerca 1000ms cubic-bezier(.65, 0, .35, 1) 1000ms both; }
+.de-centro { position: relative; z-index: 1; width: 100%; text-align: center; animation: de-llegada 400ms cubic-bezier(.22, 1, .36, 1) both; transition: opacity 320ms ease, transform 480ms ease; }
+.de-logo { --w: min(80vw, 170vh); position: relative; display: flex; width: var(--w); margin: 0 auto; animation: de-acerca 600ms cubic-bezier(.65, 0, .35, 1) 300ms both; }
 /* Solo transform y opacity: DI y CO arrancan separados y se juntan, VIAN se
    achica hacia el centro con los mismos bordes. */
-.de-di, .de-co { position: relative; flex: none; display: flex; overflow: hidden; height: calc(var(--w) * 452 / 1368); filter: drop-shadow(0 12px 32px color-mix(in srgb, var(--ds-color-brand-gold-500, gold) 20%, transparent)); animation: de-junta 1000ms cubic-bezier(.65, 0, .35, 1) 1000ms both; }
+.de-di, .de-co { position: relative; flex: none; display: flex; overflow: hidden; height: calc(var(--w) * 452 / 1368); filter: drop-shadow(0 12px 32px color-mix(in srgb, var(--ds-color-brand-gold-500, gold) 20%, transparent)); animation: de-junta 600ms cubic-bezier(.65, 0, .35, 1) 300ms both; }
 .de-di { width: calc(var(--w) * 574 / 1368); --de-desde: calc(var(--w) * -667 / 1368); }
 .de-co { width: calc(var(--w) * 794 / 1368); --de-desde: calc(var(--w) * 667 / 1368); }
 .de-di > img, .de-co > img { flex: none; display: block; width: var(--w); max-width: none; height: auto; }
 .de-co > img { margin-left: calc(var(--w) * -574 / 1368); }
-.de-vian { position: absolute; top: 0; left: calc(var(--w) * 574 / 1368); display: block; width: calc(var(--w) * 1334 / 1368); height: calc(var(--w) * 452 / 1368); translate: -50% 0; animation: de-cierra 1000ms cubic-bezier(.65, 0, .35, 1) 1000ms both; }
-.de-vian > svg { display: block; width: 100%; height: 100%; fill: white; stroke: var(--ds-color-intelligence-volt, royalblue); stroke-width: 4; stroke-linejoin: round; animation: de-funde 600ms ease-out 1000ms both; }
+.de-vian { position: absolute; top: 0; left: calc(var(--w) * 574 / 1368); display: block; width: calc(var(--w) * 1334 / 1368); height: calc(var(--w) * 452 / 1368); translate: -50% 0; animation: de-cierra 600ms cubic-bezier(.65, 0, .35, 1) 300ms both; }
+.de-vian > svg { display: block; width: 100%; height: 100%; fill: white; stroke: var(--ds-color-intelligence-volt, royalblue); stroke-width: 4; stroke-linejoin: round; animation: de-funde 400ms ease-out 300ms both; }
 .de-aro { position: absolute; left: 48.290%; top: 7.8119%; width: 47.859%; height: auto; aspect-ratio: 1; overflow: visible; fill: none; stroke: var(--ds-color-intelligence-trace, royalblue); stroke-width: 6.97; }
 .de-aro circle { transform-origin: 50px 50px; stroke-dasharray: 20 192; stroke-linecap: round; animation: de-vuelta 1600ms linear infinite; filter: drop-shadow(0 0 3px var(--ds-color-intelligence-trace, royalblue)); }
 .de-centro > p { margin: 28px 0 0; font-size: 14px; color: var(--ds-color-zinc-300, lightgray); letter-spacing: .03em; }

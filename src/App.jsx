@@ -13,9 +13,8 @@ import useTheme from './hooks/useTheme'
 import useTelegramMiniApp from './hooks/useTelegramMiniApp'
 import Catalog from './pages/Catalog'
 import PlatformLanding from './pages/PlatformLanding'
-import Consola from './pages/Consola'
-import Signup from './pages/Signup'
-import Bienvenido from './pages/Bienvenido'
+// Login, QR e info los abren los clientes de los tenants: siguen en el bundle
+// principal para no sumarles un "Cargando..." entre el loader y la pagina.
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import { isPlatformRoot, isConsolaHost, CONSOLA_HOST } from './lib/tenantHost'
@@ -26,6 +25,11 @@ import { resolveThemeOwner, THEME_OWNERS } from './lib/themeOwnership'
 
 // lazyReload (src/lib/lazyReload.js): recarga UNA vez si el chunk ya no
 // existe tras un deploy (HERMES-GASTRO-8).
+// Las paginas propias de la plataforma (consola, registro, bienvenida) van en
+// chunks aparte desde el 6/nov: la landing y el catalogo no las bajan al abrir.
+const Consola = lazyReload(() => import('./pages/Consola'))
+const Signup = lazyReload(() => import('./pages/Signup'))
+const Bienvenido = lazyReload(() => import('./pages/Bienvenido'))
 const PlatformAdmin = lazyReload(() => import('./pages/PlatformAdmin'))
 const InfoPagesAdmin = lazyReload(() => import('./pages/admin/InfoPages'))
 const OrderTracker = lazyReload(() => import('./pages/OrderTracker'))

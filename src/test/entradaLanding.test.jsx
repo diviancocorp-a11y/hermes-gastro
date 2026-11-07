@@ -23,13 +23,13 @@ afterEach(() => {
   else delete document.fonts;
 });
 
-it('espera el hero y las fuentes, abre y libera la pagina', async () => {
+it('con todo cargado abre a los 1,2 s y libera la pagina', async () => {
   await act(async () => render(<_EntradaLanding />));
   const root = document.getElementById('root');
   expect(root.inert).toBe(true);
-  await act(async () => vi.advanceTimersByTimeAsync(1800));
+  await act(async () => vi.advanceTimersByTimeAsync(1100));
   expect(document.getElementById('dico-entrada')).not.toHaveClass('de-salida');
-  await act(async () => vi.advanceTimersByTimeAsync(1000));
+  await act(async () => vi.advanceTimersByTimeAsync(100));
   expect(document.getElementById('dico-entrada')).toHaveClass('de-salida');
   expect(decode).toHaveBeenCalledOnce();
   await act(async () => vi.advanceTimersByTimeAsync(480));
@@ -64,4 +64,30 @@ it('el arranque solo cubre la home y omite anclas, sesiones vistas y movimiento 
   expect(probar('divianco.app', '/', '', true)).toBe(false);
   sessionStorage.setItem('dico:entrada-v1', '1');
   expect(probar('divianco.app', '/')).toBe(false);
+});
+
+it('no corta el cierre de la marca: espera su animacion y una pausa corta', async () => {
+  document.getElementById('dico-entrada').innerHTML = '<div class="de-logo"></div>';
+  let terminar;
+  const cierre = { playState: 'running', effect: { getTiming: () => ({ iterations: 1 }) }, finished: new Promise(r => { terminar = r; }) };
+  const aro = { playState: 'running', effect: { getTiming: () => ({ iterations: Infinity }) }, finished: new Promise(() => {}) };
+  const getAnimations = vi.fn(() => [cierre, aro]);
+  document.querySelector('.de-logo').getAnimations = getAnimations;
+  await act(async () => render(<_EntradaLanding />));
+  expect(getAnimations).toHaveBeenCalledWith({ subtree: true });
+  await act(async () => vi.advanceTimersByTimeAsync(1500));
+  expect(document.getElementById('dico-entrada')).not.toHaveClass('de-salida');
+  await act(async () => { terminar(); await vi.advanceTimersByTimeAsync(150); });
+  expect(document.getElementById('dico-entrada')).not.toHaveClass('de-salida');
+  await act(async () => vi.advanceTimersByTimeAsync(50));
+  expect(document.getElementById('dico-entrada')).toHaveClass('de-salida');
+});
+
+it('la marca termina de armarse antes del minimo de 1,2 s', () => {
+  const css = readFileSync('src/styles/entrada-landing.css', 'utf8');
+  const fines = [...css.matchAll(/animation: (de-(?:llegada|acerca|junta|cierra|funde)) (\d+)ms [^;]*?(?: (\d+)ms)? both;/g)]
+    .map(([, nombre, duracion, demora = '0']) => [nombre, Number(duracion) + Number(demora)]);
+  expect(fines.map(([nombre]) => nombre).sort()).toEqual(['de-acerca', 'de-cierra', 'de-funde', 'de-junta', 'de-llegada']);
+  for (const [nombre, fin] of fines) expect(fin, nombre).toBeLessThanOrEqual(900);
+  expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{ #dico-entrada \{ display: none; \}/);
 });

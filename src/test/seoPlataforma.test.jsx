@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { crearHtmlPlataforma, plataformaSeoPlugin } from '../../scripts/seo-platform.mjs';
+import { existsSync, readFileSync } from 'node:fs';
+import { crearHtmlPlataforma, plataformaSeoPlugin, FUENTES_PRIMER_PANTALLAZO } from '../../scripts/seo-platform.mjs';
 import { SEO_PLATAFORMA } from '../lib/seoPlataforma';
 import { supabase as datosProhibidos } from '../seo/sinDatosVisitante';
 
@@ -51,6 +51,27 @@ describe('SEO de la plataforma sin mezclar tenants', () => {
     handler(asset, {}, next);
     expect(asset.url).toBe('/assets/app.js');
     expect(next).toHaveBeenCalledTimes(2);
+  });
+  it('el HTML de la plataforma no pide fuentes a Google y precarga las propias del primer pantallazo', () => {
+    const shell = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+    // El shell de los tenants (app.html) conserva las suyas: el catalogo y el admin las usan.
+    expect(shell).toMatch(/fonts\.googleapis\.com\/css2\?family=Instrument\+Serif/);
+    expect(shell).toMatch(/fonts\.googleapis\.com\/css2\?family=Inter/);
+    const html = crearHtmlPlataforma(shell, `<main>Tu tiempo vuelve a ser tuyo.</main>`);
+    expect(html).not.toMatch(/fonts\.googleapis|fonts\.gstatic/);
+    expect(html).not.toMatch(/<noscript>\s*<\/noscript>/);
+    expect(FUENTES_PRIMER_PANTALLAZO).toHaveLength(2);
+    for (const href of FUENTES_PRIMER_PANTALLAZO) {
+      expect(html).toContain(`<link rel="preload" href="${href}" as="font" type="font/woff2" crossorigin>`);
+      expect(existsSync(new URL(`../../public${href}`, import.meta.url))).toBe(true);
+    }
+    // Las precargas apuntan a las mismas URLs que declara el @font-face.
+    const fuentes = readFileSync(new URL('../styles/dico-fonts.css', import.meta.url), 'utf8');
+    for (const href of FUENTES_PRIMER_PANTALLAZO) expect(fuentes).toContain(`url('${href}')`);
+  });
+  it('el CSS del catalogo no arrastra fuentes de Google al bundle que baja la landing', () => {
+    const tokens = readFileSync(new URL('../catalog-pro/tokens.css', import.meta.url), 'utf8');
+    expect(tokens).not.toMatch(/@import[^;]*fonts\.googleapis/);
   });
   it('permite descubrir la home pero no anuncia formularios como paginas indexables', () => {
     const robots = readFileSync(new URL('../../public/robots.txt', import.meta.url), 'utf8');

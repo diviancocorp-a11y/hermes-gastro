@@ -5,7 +5,9 @@
    contenedor con className="cp-root".
    ─────────────────────────────────────────────────────────────────── */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Inter, Source Serif 4 y JetBrains Mono se piden desde index.html (6/nov).
+   Un @import aca viajaba en el CSS global y la landing de la plataforma lo
+   pedia a Google sin usarlo, bloqueando su primer pintado. */
 
 .cp-root {
   /* Colores — tema ambar (default, colores naturales de Dico) */

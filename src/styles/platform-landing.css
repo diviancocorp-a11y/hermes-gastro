@@ -54,6 +54,10 @@
   overflow-x: clip;
 }
 
+/* El salto al contenido vive fuera de .pl-root y heredaba DM Sans del body,
+   que el HTML de la plataforma ya no pide a Google. */
+body[data-ui-owner="platform"] .skip-to-content { font-family: var(--ds-font-ui); }
+
 .pl-root *,
 .pl-root *::before,
 .pl-root *::after {

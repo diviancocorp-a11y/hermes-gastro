@@ -49,6 +49,42 @@ import useMediaQuery from '../../lib/useMediaQuery';
 import './physical.css';
 
 /**
+ * El atlas pesa ~2,4 MB. Donde Dico vive lejos del primer pantallazo (la
+ * landing), `diferir` lo pide recien cuando la caja queda a este margen de la
+ * pantalla: a 9 Mbps baja en ~2 s, y dos pantallas de celular de ventaja
+ * alcanzan para que llegue antes de que el personaje se vea.
+ */
+const MARGEN_ATLAS = '1600px 0px';
+
+// Una vez pedido, el atlas esta en cache: las instancias que se montan despues
+// lo usan directo y no esperan al observador.
+let atlasPedido = false;
+
+/**
+ * Si la celda ya puede pintar el atlas. Sin `diferir` es siempre si. Con
+ * `diferir` arranca en no tambien en el prerender del build, para que el HTML
+ * de la landing no lleve el `background-image` y el navegador no lo pida al
+ * abrir. Sin IntersectionObserver no se espera nada.
+ */
+function useAtlasCerca(ref, diferir) {
+  const [cerca, setCerca] = useState(() => !diferir || atlasPedido
+    || (typeof window !== 'undefined' && typeof IntersectionObserver === 'undefined'));
+  useEffect(() => {
+    if (cerca) { atlasPedido = true; return undefined; }
+    const caja = ref.current;
+    if (!caja) return undefined;
+    const observador = new IntersectionObserver(([entrada]) => {
+      if (!entrada?.isIntersecting) return;
+      observador.disconnect();
+      setCerca(true);
+    }, { rootMargin: MARGEN_ATLAS });
+    observador.observe(caja);
+    return () => observador.disconnect();
+  }, [cerca, ref]);
+  return cerca;
+}
+
+/**
  * Donde cae el recorte para una celda, en porcentaje.
  *
  * La formula divide por `columnas - 1` y no por `columnas`: con
@@ -89,7 +125,11 @@ export default function DicoPhysical({
   title = 'Dico',
   animacion = null,
   ritmo = 1,
+  /** Pedir el atlas recien cuando Dico se acerca a la pantalla. */
+  diferir = false,
 }) {
+  const caja = useRef(null);
+  const atlasCerca = useAtlasCerca(caja, diferir);
   const actual = physicalPoseCanonica(pose);
   const menosMovimiento = useMediaQuery('(prefers-reduced-motion: reduce)');
   const quieto = reducedMotion ?? menosMovimiento;
@@ -128,6 +168,7 @@ export default function DicoPhysical({
 
   return (
     <div
+      ref={caja}
       className={['dico-pose', quieto ? 'dico-pose--quieto' : '', className].filter(Boolean).join(' ')}
       role="img"
       aria-label={title}
@@ -138,7 +179,7 @@ export default function DicoPhysical({
         key={movimientoActual}
         className="dico-pose-celda"
         style={{
-          backgroundImage: `url(${DICO_PET_PUBLIC_PATH})`,
+          backgroundImage: atlasCerca ? `url(${DICO_PET_PUBLIC_PATH})` : undefined,
           backgroundSize: `${DICO_PET_ATLAS.columnas * 100}% ${DICO_PET_ATLAS.filas * 100}%`,
           backgroundPosition: `${x}% ${y}%`,
         }}

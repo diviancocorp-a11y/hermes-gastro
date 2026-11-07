@@ -1,9 +1,28 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ShaderBackground from './ShaderBackground';
 import '../../styles/transicion-volt.css';
 
+// El shader compila WebGL al montarse, y esta seccion queda varias pantallas
+// abajo: se monta cuando esta a una pantalla y media, con tiempo para compilar
+// antes de que se vea aunque el scroll sea rapido.
+const MARGEN_SHADER = '1200px';
+
 export default function TransicionVolt() {
   const raiz = useRef(null);
+  // Sin IntersectionObserver (navegador viejo) se monta como antes; en el
+  // prerender del build no hay window y la seccion sale sin canvas.
+  const [encendido, setEncendido] = useState(() => typeof window !== 'undefined' && typeof IntersectionObserver === 'undefined');
+  useEffect(() => {
+    const elemento = raiz.current;
+    if (!elemento || encendido) return undefined;
+    const cerca = new IntersectionObserver(([entrada]) => {
+      if (!entrada?.isIntersecting) return;
+      cerca.disconnect();
+      setEncendido(true);
+    }, { rootMargin: MARGEN_SHADER });
+    cerca.observe(elemento);
+    return () => cerca.disconnect();
+  }, [encendido]);
   useEffect(() => {
     const elemento = raiz.current;
     if (!elemento || typeof IntersectionObserver === 'undefined') return undefined;
@@ -16,7 +35,7 @@ export default function TransicionVolt() {
     return () => { observador.disconnect(); elemento.classList.remove('hv-anim', 'hv-in', 'hv-visible'); };
   }, []);
   return <section className="hv-root" id="machine-soul" aria-label="Machine Soul" ref={raiz}>
-    <div className="hv-efecto" aria-hidden="true"><ShaderBackground /></div>
+    <div className="hv-efecto" aria-hidden="true">{encendido && <ShaderBackground />}</div>
     {/* Linea del ovalo: mismo path que la mascara de .hv-efecto. */}
     {/* El trazo se enciende hacia el centro de cada arco y se apaga en las puntas. */}
     <svg className="hv-ovalo" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">

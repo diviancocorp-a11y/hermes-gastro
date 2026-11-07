@@ -122,7 +122,7 @@ export default function PlatformLanding() {
       <section className={`pl-hero pl-hero-tiempo${diagnosticoAbierto ? ' pl-hero-diagnostico' : ''}`} aria-label="Dico">
         <header className="pl-cabecera">
           <a className="pl-marca" href="/">
-            <img src="/brand/dico/logo/dico-oscuro.png" alt="Dico" width="1368" height="452" />
+            <img src="/brand/dico/logo/dico-oscuro-400.webp" alt="Dico" width="400" height="132" />
           </a>
           <nav className="pl-cabecera-accesos" aria-label="Acceso a Dico">
             <a className="pl-enlace pl-cabecera-link" href="/entrar">Iniciá sesión</a>
