@@ -25,7 +25,11 @@
 @media (prefers-reduced-motion: no-preference) {
   .nc-deslizable { overflow: hidden; mask-image: linear-gradient(90deg, transparent, var(--pl-suelo-continuo) 10%, var(--pl-suelo-continuo) 90%, transparent); }
   .nc-cinta { display: flex; gap: var(--nc-gap); width: max-content; }
-  .nc-cinta .nc-fila { justify-content: flex-start; min-width: 0; padding-inline: 0; animation: nc-cinta 36s linear 3; }
+  /* Cada vuelta mide al menos lo que se ve (100cqi) mas un logo: asi el mismo
+     negocio nunca aparece dos veces a la vez, ni entrando por un borde
+     mientras sale por el otro. Los logos se reparten en ese ancho. */
+  .nc-deslizable { container-type: inline-size; }
+  .nc-cinta .nc-fila { justify-content: space-between; min-width: calc(100cqi + var(--nc-gap)); padding-inline: 0; animation: nc-cinta 36s linear 3; }
   .nc-cinta .nc-copia { display: flex; }
   .nc-deslizable:is(:hover, :focus-within, [data-visible="false"]) .nc-fila { animation-play-state: paused; }
   /* Con foco adentro la cinta se queda quieta y sin mascara: el anillo de foco se ve entero. */

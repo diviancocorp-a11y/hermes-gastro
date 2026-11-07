@@ -38,6 +38,10 @@
   --ds-space-layout-16: 48px;
   --pl-arriba: clamp(112px, 22svh, 220px);
   --pl-columna: 560px;
+  /* Marco comun en pantallas anchas: el de la barra de navegacion. Las
+     secciones alinean su contenido con el logo y la accion de la barra. */
+  --pl-marco: 1440px;
+  --pl-ancho: calc(var(--pl-marco) - 2 * var(--pl-m));
 
   /* Superficie de la pieza oscura: un paso arriba del fondo del producto */
   --pl-pieza-paso: var(--ds-color-neutral-800);
@@ -80,6 +84,12 @@ body[data-ui-owner="platform"] .skip-to-content { font-family: var(--ds-font-ui)
   background: var(--pc-oro);
   color: var(--pc-sobre-oro);
 }
+
+/* Sin viudas: los titulos reparten sus lineas y los parrafos evitan dejar
+   una palabra sola al final. Especificidad cero: un titulo que fije otro
+   text-wrap lo conserva. */
+:where(.pl-root h1, .pl-root h2, .pl-root h3) { text-wrap: balance; }
+:where(.pl-root p) { text-wrap: pretty; }
 
 .pl-root :focus-visible {
   outline: 2px solid var(--pc-tinta);
@@ -955,7 +965,6 @@ body[data-ui-owner="platform"] .skip-to-content { font-family: var(--ds-font-ui)
   isolation: isolate;
   overflow: hidden;
   border: 1px solid var(--pc-oro);
-  outline: none;
   transition: color 320ms ease;
   font-weight: 500;
   white-space: nowrap;
@@ -995,7 +1004,9 @@ body[data-ui-owner="platform"] .skip-to-content { font-family: var(--ds-font-ui)
 .pl-hero-burbuja svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .pl-hero-regresando { animation: pl-boton-regresa 320ms ease; }
 @keyframes pl-boton-regresa { from { opacity: .99; } to { opacity: 1; } }
-.pl-hero-tiempo .pl-hero-origen:focus-visible { outline-offset: var(--ds-space-2); }
+/* Foco del CTA: el mismo anillo volt que la cabecera y la barra sobre oscuro
+   (intelligence-label sobre zinc-950, 9:1). Antes un outline:none lo borraba. */
+.pl-hero-tiempo .pl-hero-origen:focus-visible { outline: 2px solid var(--pc-producto-volt); outline-offset: var(--ds-space-2); border-radius: var(--ds-radius-pill); }
 @media (prefers-reduced-motion: no-preference) {
   .pl-hero-origen:is(:hover, :focus-visible) .pl-hero-guino { animation: pl-dico-guina var(--pc-t-personaje) steps(1) both; }
 }

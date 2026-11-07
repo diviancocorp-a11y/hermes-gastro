@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PLANES_COMERCIALES, pesosDelPlan, precioDelPeriodo } from '../../lib/planesPlataforma';
 import { WHATSAPP_MAGNUS_URL } from '../../lib/contactoPlataforma';
+import { enlaceDeRegistro } from '../../lib/registroPlataforma';
 import { marcarEvento } from '../../lib/analiticaPlataforma';
 import Palabras from './Palabras';
 import '../../styles/planes-negocio.css';
@@ -67,7 +68,7 @@ function Beneficios({ items }) {
   return <ul className="pp-incluye">{items.map(item => <li key={item}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m7 12 3 3 7-7" /></svg>{item}</li>)}</ul>;
 }
 
-export default function PlanesNegocio({ onDiagnostico }) {
+export default function PlanesNegocio({ onDiagnostico, rubroRegistro = null }) {
   const [anual, setAnual] = useState(false);
   const comparativaRef = useRef(null);
   useEffect(() => {
@@ -118,7 +119,7 @@ export default function PlanesNegocio({ onDiagnostico }) {
                 <Beneficios items={plan.incluye.slice(0, 3)} />
                 {plan.id === 'cadena'
                   ? <a className="pp-elegir" href={WHATSAPP_MAGNUS_URL} target="_blank" rel="noopener noreferrer" onClick={() => marcarEvento('whatsapp')}>Hablemos de {plan.nombre} <span aria-hidden="true">↗</span><span className="pl-oculto"> (WhatsApp, abre otra pestaña)</span></a>
-                  : <button type="button" className="pp-elegir" onClick={onDiagnostico}>Elegir {plan.nombre} <span aria-hidden="true">→</span></button>}
+                  : <a className="pp-elegir" href={enlaceDeRegistro(plan.id, anual, rubroRegistro)}>Elegir {plan.nombre} <span aria-hidden="true">→</span></a>}
               </article>
             );
           })}

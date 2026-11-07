@@ -149,7 +149,7 @@ export default function PlatformLanding() {
       <RubrosNegocio onDiagnostico={abrirDiagnostico} enfoqueInicial={rubro} />
       <ComoEmpezar onDiagnostico={abrirDiagnostico} />
       <TransicionVolt />
-      <PlanesNegocio onDiagnostico={abrirDiagnostico} />
+      <PlanesNegocio onDiagnostico={abrirDiagnostico} rubroRegistro={rubro ? RUBRO_DEL_REGISTRO[rubro] : null} />
       <PreguntasNegocio onDiagnostico={abrirDiagnostico} />
       <CierreNegocio onDiagnostico={abrirDiagnostico} />
       <PieNegocio />

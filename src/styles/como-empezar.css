@@ -31,7 +31,7 @@
 }
 /* Texto secundario sobre el azul noche: zinc-50 con 18% de noche. */
 /* Fondo del circulo: el negro con 25% del azul, un pozo oscuro donde el oro da 7.95:1. */
-.ce-dentro { --ce-circulo-fondo: color-mix(in srgb, var(--pl-suelo-continuo) 55%, var(--ds-color-intelligence-noche)); --ce-texto-2: color-mix(in srgb, var(--ds-color-zinc-50) 82%, var(--ds-color-intelligence-noche)); --ce-circulo: clamp(56px, 4.5vw, 76px); max-width: 1600px; margin-inline: auto; text-align: center; }
+.ce-dentro { --ce-circulo-fondo: color-mix(in srgb, var(--pl-suelo-continuo) 55%, var(--ds-color-intelligence-noche)); --ce-texto-2: color-mix(in srgb, var(--ds-color-zinc-50) 82%, var(--ds-color-intelligence-noche)); --ce-circulo: clamp(56px, 4.5vw, 76px); max-width: var(--pl-ancho); margin-inline: auto; text-align: center; }
 .ce-root h2 { margin: 0; font-size: clamp(36px, 4.2vw, 64px); font-weight: 500; line-height: 1.08; letter-spacing: -.035em; }
 .ce-root h2 span { display: block; }
 .ce-root h2 .ce-intro { margin-bottom: 12px; color: var(--ce-texto-2); font-size: clamp(18px, 1.6vw, 24px); font-weight: 400; line-height: 1.4; letter-spacing: -.015em; }

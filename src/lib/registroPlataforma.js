@@ -29,6 +29,14 @@ export function contextoDelRegistro() {
     plan, periodo, diagnostico, desdeDiagnostico: Boolean(r.vertical),
   };
 }
+// Enlace al alta desde una tarjeta de plan: lo que contextoDelRegistro lee
+// (plan, periodo anual solo fuera de Paris, rubro).
+export function enlaceDeRegistro(planId, anual, rubro) {
+  const parametros = new URLSearchParams({ plan: planId });
+  if (anual && planId !== 'digital') parametros.set('periodo', 'anual');
+  if (rubro) parametros.set('rubro', rubro);
+  return `/registro?${parametros}`;
+}
 export function recordarRegistroGoogle(datos) {
   // Nunca persistir contraseña, tokens de autenticacion ni capacidad del diagnostico.
   const { bizName, fullName, email, vertical, modo, country, slug, slugTocado, plan, periodo, diagnostico } = datos;

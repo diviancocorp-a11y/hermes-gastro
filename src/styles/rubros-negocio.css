@@ -7,8 +7,8 @@
   background: var(--rn-fondo); color: var(--rn-tinta);
 }
 /* El dorado presenta el rubro; el producto conserva su superficie oscura. */
-.rn-firma { max-width: 1600px; margin-inline: auto; }
-.rn-cabecera, .rn-experiencia { max-width: 1600px; margin-inline: auto; }
+.rn-firma { max-width: var(--pl-ancho); margin-inline: auto; }
+.rn-cabecera, .rn-experiencia { max-width: var(--pl-ancho); margin-inline: auto; }
 .rn-cabecera { position: relative; isolation: isolate; padding: 32px 0; margin-bottom: 0; color: var(--pc-sobre-oro); }
 .rn-cabecera::before { content: ''; position: absolute; z-index: -1; inset: 0 calc(50% - 50vw) -24px; background: var(--pc-oro); pointer-events: none; }
 .rn-cabecera::after { content: ''; position: absolute; z-index: -1; bottom: -26px; left: calc(50% - 50vw - 220px); width: 220px; height: 2px; background: linear-gradient(90deg, transparent, var(--ds-color-intelligence-volt) 80%, transparent); box-shadow: 0 0 7px var(--ds-color-intelligence-volt); pointer-events: none; animation: rn-pulso-linea 7s linear infinite; }

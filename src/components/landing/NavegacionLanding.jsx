@@ -12,6 +12,33 @@ export default function NavegacionLanding({ raizRef, oculta, onDiagnostico }) {
   const [visible, setVisible] = useState(false);
   const [activa, setActiva] = useState('');
   const progresoRef = useRef(null);
+  const enlacesRef = useRef(null);
+  // En el telefono los enlaces no entran: se deslizan. El borde que tiene mas
+  // contenido se desvanece (data-mas-*), asi se lee que la fila sigue.
+  const [mas, setMas] = useState({ izq: false, der: false });
+
+  useEffect(() => {
+    const fila = enlacesRef.current;
+    if (!fila) return undefined;
+    const medir = () => {
+      const resto = fila.scrollWidth - fila.clientWidth - fila.scrollLeft;
+      const izq = fila.scrollLeft > 1;
+      const der = resto > 1;
+      setMas(previo => previo.izq === izq && previo.der === der ? previo : { izq, der });
+    };
+    medir();
+    // La fuente propia puede cambiar el ancho de la fila sin cambiar su caja.
+    document.fonts?.ready.then(medir);
+    fila.addEventListener('scroll', medir, { passive: true });
+    const observador = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null;
+    observador?.observe(fila);
+    window.addEventListener('resize', medir);
+    return () => {
+      fila.removeEventListener('scroll', medir);
+      observador?.disconnect();
+      window.removeEventListener('resize', medir);
+    };
+  }, []);
 
   useEffect(() => {
     if (oculta) return undefined;
@@ -53,7 +80,7 @@ export default function NavegacionLanding({ raizRef, oculta, onDiagnostico }) {
       <a className="nl-marca" href="#main-content" aria-label="Dico, volver al inicio">
         <img src="/brand/dico/logo/dico-oscuro-400.webp" alt="Dico" width="400" height="132" />
       </a>
-      <nav className="nl-enlaces" aria-label="Secciones de la landing">
+      <nav className="nl-enlaces" ref={enlacesRef} data-mas-izq={mas.izq} data-mas-der={mas.der} aria-label="Secciones de la landing">
         {SECCIONES.map(([id, nombre]) => <a key={id} href={`#${id}`} aria-current={activa === id ? 'location' : undefined}>{nombre}</a>)}
       </nav>
       <button type="button" className="nl-accion" onClick={onDiagnostico} aria-label="Empezar mi diagnóstico"><span className="nl-accion-larga">Empezar mi diagnóstico</span><span className="nl-accion-corta" aria-hidden="true">Diagnóstico</span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button>

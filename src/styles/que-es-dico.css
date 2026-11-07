@@ -18,7 +18,13 @@
 .qd-pestana:hover, .qd-pestana.qd-activo { color: var(--ds-color-zinc-50); }
 /* Pisa el foco general de .pl-root (tinta oscura, invisible sobre el negro). */
 .qd-root .qd-pestana:focus-visible { outline: 2px solid var(--pc-oro); outline-offset: 4px; border-radius: 2px; }
+.qd-root .qd-pausa:focus-visible { outline: 2px solid var(--pc-oro); outline-offset: 4px; }
 .qd-root .qd-panel:focus-visible { outline: 2px solid var(--pc-oro); outline-offset: 8px; border-radius: 2px; }
+/* Pausa: el mismo trazo que las pestanas, sin relleno; area tactil de 48 px. */
+.qd-pausa { display: grid; place-items: center; flex: none; width: var(--ds-control-height-touch); height: var(--ds-control-height-touch); padding: 0; border: 1px solid var(--ds-color-zinc-700); border-radius: var(--ds-radius-pill); background: transparent; color: var(--ds-color-zinc-50); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: border-color 160ms ease, color 160ms ease; }
+.qd-pausa:hover { border-color: var(--pc-oro); color: var(--pc-oro); }
+.qd-pausa svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.qd-pausa .qd-pausa-reanudar { fill: currentColor; }
 .qd-barra { position: relative; display: block; height: 2px; margin-bottom: var(--ds-space-3); overflow: hidden; background: var(--ds-color-zinc-800); }
 .qd-barra > span { position: absolute; inset: 0; background: var(--pc-oro); transform-origin: left; transform: scaleX(0); animation: qd-avance linear forwards; animation-play-state: paused; }
 .qd-corre .qd-barra > span { animation-play-state: running; }
@@ -31,6 +37,7 @@
   .qd-texto { justify-self: stretch; width: auto; max-width: 640px; margin: 0; padding: var(--ds-space-6) var(--pl-m) var(--ds-space-8); }
 }
 @media (prefers-reduced-motion: reduce) {
+  .qd-pausa { transition: none; }
   .qd-panel, .qd-panel.qd-activo { transition: none; transform: none; }
   .qd-barra > span { animation: none; transform: scaleX(1); }
 }

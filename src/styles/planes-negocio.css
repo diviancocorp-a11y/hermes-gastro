@@ -2,7 +2,7 @@
 .pp-root::before { content: ''; position: absolute; z-index: -1; inset: 0; background-image: url('/brand/landing/zinc-grain.svg'); opacity: .025; pointer-events: none; }
 /* La luz azul entra fundida desde arriba: sin corte contra la frase. */
 .pp-luz-fondo { position: absolute; z-index: -1; inset: 0; background: radial-gradient(ellipse 65% 50% at 50% 36%, color-mix(in srgb, var(--ds-color-intelligence-volt) 26%, transparent), transparent 75%); mask-image: linear-gradient(transparent, black 22%); pointer-events: none; }
-.pp-dentro { max-width: 1480px; margin-inline: auto; }
+.pp-dentro { max-width: var(--pl-ancho); margin-inline: auto; }
 .pp-cabecera { text-align: center; }
 .pp-antetitulo { display: block; margin-bottom: 8px; color: var(--ds-color-zinc-400); font-size: 12px; letter-spacing: .24em; text-transform: uppercase; }
 .pp-antetitulo > span { color: var(--pc-oro); }
@@ -41,7 +41,7 @@
 .pp-incluye { display: grid; align-content: start; gap: var(--ds-space-2); padding-top: var(--ds-space-4); border-top: 1px solid var(--ds-color-zinc-800); }
 .pp-incluye li { display: flex; align-items: start; gap: var(--ds-space-3); font-size: var(--ds-type-md); line-height: 1.45; }
 .pp-incluye svg { flex: none; width: 22px; height: 22px; margin-top: 0; fill: none; stroke: var(--pp-acento, var(--pc-oro)); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.pp-elegir { display: flex; align-items: center; justify-content: center; gap: var(--ds-space-2); width: 100%; min-height: 48px; margin: 24px 0 0; padding: var(--ds-space-3); border: 1px solid var(--pp-acento); border-radius: var(--ds-radius-3); background: transparent; color: var(--ds-color-zinc-50); font: inherit; font-weight: 500; cursor: pointer; }
+.pp-elegir { display: flex; align-items: center; justify-content: center; gap: var(--ds-space-2); width: 100%; min-height: 48px; margin: 24px 0 0; padding: var(--ds-space-3); border: 1px solid var(--pp-acento); border-radius: var(--ds-radius-3); background: transparent; color: var(--ds-color-zinc-50); font: inherit; font-weight: 500; text-decoration: none; cursor: pointer; }
 .pp-elegir span { color: var(--pp-acento); }
 .pp-elegir:hover { background: var(--pp-acento); color: var(--pc-sobre-oro); }
 .pp-elegir:hover span { color: inherit; }

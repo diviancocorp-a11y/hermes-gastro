@@ -6,8 +6,10 @@ import '../../styles/que-es-dico.css';
 // tres escenas que rotan en el negro del planeta, a la derecha. En cada escena
 // el sol se corre por el horizonte. La rotacion para con el mouse encima,
 // mientras se mantiene apretado en el telefono, con el foco de teclado
-// adentro, fuera de pantalla y con movimiento reducido. Sin boton de pausa:
-// lo decidio Ricky el 5/nov.
+// adentro, fuera de pantalla y con movimiento reducido. Ademas se detiene del
+// todo al tocar una pestana o el texto, y con el boton de pausa (WCAG 2.2.2:
+// en el telefono no hay hover y 5 s no alcanzan para leer). El 5/nov se habia
+// decidido sin boton; la auditoria del 6/nov lo pidio.
 const ESCENAS = [
   {
     id: 'que-es',
@@ -41,6 +43,8 @@ export default function QueEsDico() {
   const [foco, setFoco] = useState(false);
   const [visible, setVisible] = useState(false);
   const [reducido, setReducido] = useState(false);
+  // Pausa elegida por la persona: no se levanta sola.
+  const [pausado, setPausado] = useState(false);
 
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -60,10 +64,10 @@ export default function QueEsDico() {
     return () => io.disconnect();
   }, []);
 
-  const corre = visible && !puntero && !foco && !reducido;
+  const corre = visible && !puntero && !foco && !reducido && !pausado;
   // La animacion de la barra marca el tiempo: al terminar pasa a la escena siguiente.
   const siguiente = () => setActiva(i => (i + 1) % ESCENAS.length);
-  const elegir = indice => setActiva(indice);
+  const elegir = indice => { setActiva(indice); setPausado(true); };
   const teclas = evento => {
     const paso = { ArrowRight: 1, ArrowLeft: -1 }[evento.key];
     let indice = paso ? (activa + paso + ESCENAS.length) % ESCENAS.length : null;
@@ -72,6 +76,7 @@ export default function QueEsDico() {
     if (indice === null) return;
     evento.preventDefault();
     setActiva(indice);
+    setPausado(true);
     pestanas.current[indice]?.focus();
   };
 
@@ -88,7 +93,7 @@ export default function QueEsDico() {
         luz={ESCENAS[activa].luz} auroraColor="var(--ds-color-brand-gold-300)" backgroundColor="var(--ds-color-intelligence-trace)" />
       <div className="qd-texto" data-reveal="">
         <h2 id="qd-titulo" className="qd-antetitulo">Conocé <span translate="no">Dico</span></h2>
-        <div className="qd-paneles">
+        <div className="qd-paneles" onClick={() => setPausado(true)}>
           {ESCENAS.map((escena, indice) => (
             <div key={escena.id} id={`qd-panel-${escena.id}`} role="tabpanel" aria-labelledby={`qd-tab-${escena.id}`}
               className={`qd-panel${indice === activa ? ' qd-activo' : ''}`} aria-hidden={indice !== activa} inert={indice !== activa}
@@ -112,6 +117,12 @@ export default function QueEsDico() {
               </button>
             ))}
           </div>
+          {!reducido && <button type="button" className="qd-pausa" onClick={() => setPausado(valor => !valor)}
+            aria-label={pausado ? 'Reanudar la rotación de Conocé Dico' : 'Pausar la rotación de Conocé Dico'}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              {pausado ? <path className="qd-pausa-reanudar" d="M8 5.5v13l10.5-6.5z" /> : <path d="M8 5v14M16 5v14" />}
+            </svg>
+          </button>}
         </div>
       </div>
     </section>
