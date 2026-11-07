@@ -6,7 +6,18 @@
 .qd-root > .qd-escena { position: absolute; inset: 0; height: 100%; aspect-ratio: auto; }
 .qd-texto { position: relative; z-index: 1; align-self: center; justify-self: end; width: min(100%, 540px); margin-right: clamp(var(--ds-space-6), 8vw, 140px); padding: var(--ds-space-8) var(--pl-m); }
 .qd-antetitulo { margin: 0 0 var(--ds-space-4); color: var(--pc-oro); font-size: var(--ds-type-sm); font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+/* Flechas a los lados del texto (Ricky, 7/nov): pasan de escena sin esperar
+   la barra. Se meten hasta 12 px en el margen lateral; el titulo y las
+   pestanas se corren lo mismo que el texto para que los tres arranquen en la
+   misma linea. Las flechas miden 44 de ancho (no 48) para dejarle ancho al
+   texto en el telefono; el alto es el tactil del sistema. */
+.qd-texto { --qd-flecha: 44px; --qd-tirar: min(var(--pl-m), var(--ds-space-3)); --qd-lado: calc(var(--qd-flecha) + var(--ds-space-2) - var(--qd-tirar)); }
+.qd-antetitulo, .qd-controles { padding-inline: var(--qd-lado); }
+.qd-cuerpo { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--ds-space-2); margin-inline: calc(-1 * var(--qd-tirar)); }
 .qd-paneles { display: grid; }
+.qd-flecha { display: grid; place-items: center; width: var(--qd-flecha); height: var(--ds-control-height-touch); padding: 0; border: 0; border-radius: var(--ds-radius-pill); background: transparent; color: var(--ds-color-zinc-400); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: color 160ms ease; }
+.qd-flecha:hover { color: var(--pc-oro); }
+.qd-flecha svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .qd-panel { grid-area: 1 / 1; opacity: 0; transform: translateY(10px); visibility: hidden; transition: opacity 520ms ease, transform 640ms cubic-bezier(.22, 1, .36, 1), visibility 0s linear 640ms; }
 .qd-panel.qd-activo { opacity: 1; transform: none; visibility: visible; transition-delay: 120ms, 120ms, 0s; }
 .qd-panel h3 { margin: 0 0 var(--ds-space-4); color: var(--ds-color-zinc-50); font-size: clamp(30px, 3.6vw, 52px); line-height: 1.08; font-weight: 500; letter-spacing: -.035em; text-wrap: balance; }
@@ -18,13 +29,8 @@
 .qd-pestana:hover, .qd-pestana.qd-activo { color: var(--ds-color-zinc-50); }
 /* Pisa el foco general de .pl-root (tinta oscura, invisible sobre el negro). */
 .qd-root .qd-pestana:focus-visible { outline: 2px solid var(--pc-oro); outline-offset: 4px; border-radius: 2px; }
-.qd-root .qd-pausa:focus-visible { outline: 2px solid var(--pc-oro); outline-offset: 4px; }
+.qd-root .qd-flecha:focus-visible { outline: 2px solid var(--pc-oro); outline-offset: 2px; }
 .qd-root .qd-panel:focus-visible { outline: 2px solid var(--pc-oro); outline-offset: 8px; border-radius: 2px; }
-/* Pausa: el mismo trazo que las pestanas, sin relleno; area tactil de 48 px. */
-.qd-pausa { display: grid; place-items: center; flex: none; width: var(--ds-control-height-touch); height: var(--ds-control-height-touch); padding: 0; border: 1px solid var(--ds-color-zinc-700); border-radius: var(--ds-radius-pill); background: transparent; color: var(--ds-color-zinc-50); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: border-color 160ms ease, color 160ms ease; }
-.qd-pausa:hover { border-color: var(--pc-oro); color: var(--pc-oro); }
-.qd-pausa svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.qd-pausa .qd-pausa-reanudar { fill: currentColor; }
 .qd-barra { position: relative; display: block; height: 2px; margin-bottom: var(--ds-space-3); overflow: hidden; background: var(--ds-color-zinc-800); }
 .qd-barra > span { position: absolute; inset: 0; background: var(--pc-oro); transform-origin: left; transform: scaleX(0); animation: qd-avance linear forwards; animation-play-state: paused; }
 .qd-corre .qd-barra > span { animation-play-state: running; }
@@ -37,7 +43,7 @@
   .qd-texto { justify-self: stretch; width: auto; max-width: 640px; margin: 0; padding: var(--ds-space-6) var(--pl-m) var(--ds-space-8); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .qd-pausa { transition: none; }
+  .qd-flecha { transition: none; }
   .qd-panel, .qd-panel.qd-activo { transition: none; transform: none; }
   .qd-barra > span { animation: none; transform: scaleX(1); }
 }

@@ -62,38 +62,46 @@ describe('23. Elegir Paris y Dante lleva al registro con el plan', () => {
   });
 });
 
-describe('21. Conocé Dico se puede pausar', () => {
+describe('21. Conocé Dico: flechas a los lados, sin botón de pausa', () => {
   const corre = contenedor => contenedor.querySelector('.qd-root').classList.contains('qd-corre');
   const verTexto = () => act(() => { observados.forEach(o => o.callback([{ isIntersecting: true }])); });
+  const activa = () => screen.getByRole('tab', { selected: true }).textContent;
 
-  it('el botón de pausa detiene la rotación y la reanuda', () => {
+  it('las flechas pasan de escena en los dos sentidos y frenan la rotación', () => {
     const { container } = render(createElement(QueEsDico));
     verTexto();
     expect(corre(container)).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: /Pausar la rotación/ }));
+    expect(screen.queryByRole('button', { name: /Pausar|Reanudar/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente: Visión' }));
+    expect(activa()).toBe('Visión');
     expect(corre(container)).toBe(false);
-    fireEvent.click(screen.getByRole('button', { name: /Reanudar la rotación/ }));
-    expect(corre(container)).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente: Misión' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente: Qué es' }));
+    expect(activa()).toBe('Qué es');
+    fireEvent.click(screen.getByRole('button', { name: 'Anterior: Misión' }));
+    expect(activa()).toBe('Misión');
   });
 
-  it('tocar una pestaña o el texto la deja quieta hasta reanudar', () => {
+  it('tocar una pestaña o el texto también la deja quieta', () => {
     const { container } = render(createElement(QueEsDico));
     verTexto();
     fireEvent.click(screen.getByRole('tab', { name: /Visión/ }));
     expect(screen.getByRole('tab', { name: /Visión/ })).toHaveAttribute('aria-selected', 'true');
     expect(corre(container)).toBe(false);
-    fireEvent.click(screen.getByRole('button', { name: /Reanudar la rotación/ }));
-    expect(corre(container)).toBe(true);
-    fireEvent.click(container.querySelector('.qd-paneles'));
-    expect(corre(container)).toBe(false);
+    cleanup();
+    const otro = render(createElement(QueEsDico));
+    verTexto();
+    fireEvent.click(otro.container.querySelector('.qd-paneles'));
+    expect(corre(otro.container)).toBe(false);
   });
 
-  it('con movimiento reducido no rota ni muestra el control', () => {
+  it('con movimiento reducido no rota y las flechas siguen andando', () => {
     reducido = true;
     const { container } = render(createElement(QueEsDico));
     verTexto();
     expect(corre(container)).toBe(false);
-    expect(screen.queryByRole('button', { name: /rotación/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente: Visión' }));
+    expect(activa()).toBe('Visión');
   });
 });
 

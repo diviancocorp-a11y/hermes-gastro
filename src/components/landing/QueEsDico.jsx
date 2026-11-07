@@ -7,9 +7,9 @@ import '../../styles/que-es-dico.css';
 // el sol se corre por el horizonte. La rotacion para con el mouse encima,
 // mientras se mantiene apretado en el telefono, con el foco de teclado
 // adentro, fuera de pantalla y con movimiento reducido. Ademas se detiene del
-// todo al tocar una pestana o el texto, y con el boton de pausa (WCAG 2.2.2:
-// en el telefono no hay hover y 5 s no alcanzan para leer). El 5/nov se habia
-// decidido sin boton; la auditoria del 6/nov lo pidio.
+// todo al tocar una pestana, el texto o una flecha (WCAG 2.2.2: en el telefono
+// no hay hover y 5 s no alcanzan para leer). Sin boton de pausa (Ricky, 5/nov y
+// 7/nov): las flechas a los lados del texto pasan de escena y frenan la rotacion.
 const ESCENAS = [
   {
     id: 'que-es',
@@ -43,7 +43,7 @@ export default function QueEsDico() {
   const [foco, setFoco] = useState(false);
   const [visible, setVisible] = useState(false);
   const [reducido, setReducido] = useState(false);
-  // Pausa elegida por la persona: no se levanta sola.
+  // La persona tomo el control (pestana, flecha o texto): no se reanuda sola.
   const [pausado, setPausado] = useState(false);
 
   useEffect(() => {
@@ -68,6 +68,7 @@ export default function QueEsDico() {
   // La animacion de la barra marca el tiempo: al terminar pasa a la escena siguiente.
   const siguiente = () => setActiva(i => (i + 1) % ESCENAS.length);
   const elegir = indice => { setActiva(indice); setPausado(true); };
+  const pasar = paso => elegir((activa + paso + ESCENAS.length) % ESCENAS.length);
   const teclas = evento => {
     const paso = { ArrowRight: 1, ArrowLeft: -1 }[evento.key];
     let indice = paso ? (activa + paso + ESCENAS.length) % ESCENAS.length : null;
@@ -93,7 +94,13 @@ export default function QueEsDico() {
         luz={ESCENAS[activa].luz} auroraColor="var(--ds-color-brand-gold-300)" backgroundColor="var(--ds-color-intelligence-trace)" />
       <div className="qd-texto" data-reveal="">
         <h2 id="qd-titulo" className="qd-antetitulo">Conocé <span translate="no">Dico</span></h2>
-        <div className="qd-paneles" onClick={() => setPausado(true)}>
+        <div className="qd-cuerpo">
+        <button type="button" className="qd-flecha" onClick={() => pasar(-1)} aria-controls="qd-paneles"
+          aria-label={`Anterior: ${ESCENAS[(activa + ESCENAS.length - 1) % ESCENAS.length].nombre}`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 5-7 7 7 7" /></svg>
+        </button>
+        {/* Anuncia el texto nuevo solo cuando la persona tomo el control, nunca en la rotacion. */}
+        <div className="qd-paneles" id="qd-paneles" aria-live={pausado ? 'polite' : 'off'} onClick={() => setPausado(true)}>
           {ESCENAS.map((escena, indice) => (
             <div key={escena.id} id={`qd-panel-${escena.id}`} role="tabpanel" aria-labelledby={`qd-tab-${escena.id}`}
               className={`qd-panel${indice === activa ? ' qd-activo' : ''}`} aria-hidden={indice !== activa} inert={indice !== activa}
@@ -102,6 +109,11 @@ export default function QueEsDico() {
               <p>{escena.texto}</p>
             </div>
           ))}
+        </div>
+        <button type="button" className="qd-flecha" onClick={() => pasar(1)} aria-controls="qd-paneles"
+          aria-label={`Siguiente: ${ESCENAS[(activa + 1) % ESCENAS.length].nombre}`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7" /></svg>
+        </button>
         </div>
         <div className="qd-controles">
           <div className="qd-pestanas" role="tablist" aria-label="Conocé Dico" onKeyDown={teclas}>
@@ -117,12 +129,6 @@ export default function QueEsDico() {
               </button>
             ))}
           </div>
-          {!reducido && <button type="button" className="qd-pausa" onClick={() => setPausado(valor => !valor)}
-            aria-label={pausado ? 'Reanudar la rotación de Conocé Dico' : 'Pausar la rotación de Conocé Dico'}>
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              {pausado ? <path className="qd-pausa-reanudar" d="M8 5.5v13l10.5-6.5z" /> : <path d="M8 5v14M16 5v14" />}
-            </svg>
-          </button>}
         </div>
       </div>
     </section>
