@@ -10,6 +10,14 @@ Nada de esto esta aplicado. Toda la UI pasa por `/diseno` (skill `impeccable`,
 es pulir algo que existe). Las lineas citadas son del 6/nov: verificar antes
 de tocar.
 
+**En pausa (Ricky, 7/nov):** el catalogo no se trabaja hasta que Ricky lo
+retome; el carrito se reorienta a una nueva idea de uso que todavia no esta
+escrita aca. Hay una rama `catalogo/p0-20261107` (`ff93bbb`, **no mergear**)
+con P0-1, P0-2 y P0-3 hechos y auditados, y un carrito guardado con
+MercadoPago que la segunda auditoria rechazo (cobro doble si el pago queda en
+proceso y el cliente vuelve atras). Al retomar: usar 1 a 3 como base y el
+carrito rehacerlo segun la idea nueva.
+
 **Leyenda:** ✔ verificado en el codigo; (P) reportado por las personas o la
 medicion en vivo, sin releer el codigo.
 
