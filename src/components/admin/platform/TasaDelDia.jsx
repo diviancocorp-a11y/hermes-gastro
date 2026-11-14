@@ -40,7 +40,7 @@ export default function TasaDelDia({ tenantId, moneda, showToast, onCargada }) {
 
   const vigente = filas ? elegirVigente(filas) : null;
   const vencida = vigente ? tasaVencida(vigente.effective_date, new Date(), zona) : true;
-  const nueva = Number(texto);
+  const nueva = Number(texto.replace(',', '.'));
   const valida = Number.isFinite(nueva) && nueva > 0;
   const variacion = valida && vigente ? variacionPct(nueva, vigente.rate) : null;
   const grande = variacion != null && Math.abs(variacion) > UMBRAL_VARIACION_PCT;
@@ -86,8 +86,8 @@ export default function TasaDelDia({ tenantId, moneda, showToast, onCargada }) {
         {paso === 'editar' ? (
           <div className="tasa-dia-fila">
             <input
-              id="tasa-manual" type="number" inputMode="decimal" min="0" step="0.01"
-              value={texto} onChange={e => setTexto(e.target.value)} placeholder="0,00"
+              id="tasa-manual" type="text" inputMode="decimal" autoComplete="off"
+              value={texto} onChange={e => { if (/^\d*[.,]?\d*$/.test(e.target.value)) setTexto(e.target.value); }} placeholder="0,00"
             />
             <button type="button" className="ag-btn-primary" disabled={!valida} onClick={() => setPaso('confirmar')}>
               Revisar

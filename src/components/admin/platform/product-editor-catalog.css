@@ -94,6 +94,7 @@
 .pe-precio-aviso[data-estado="sin"],
 .pe-precio-aviso[data-estado="vencida"] {
   color: var(--ag-ink);
-  padding-left: var(--ds-space-2);
-  box-shadow: inset 2px 0 0 var(--ag-c-terra);
+  padding: var(--ds-space-1) var(--ds-space-2);
+  background: var(--ag-warn-bg);
+  border-radius: var(--ag-r-md, 10px);
 }

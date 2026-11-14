@@ -34,7 +34,11 @@ export default function PrecioDoble({ value, onChange, moneda, inputStyle, label
 
   const hayTasa = moneda.tasa > 0;
   const derivado = hayTasa && value !== '' && value != null ? aSecundaria(value, moneda.tasa) : null;
-  const mostrado = textoSec !== null ? textoSec : (derivado == null ? '' : String(derivado));
+  // En reposo se ve con el formato de la moneda (4.312,27); al enfocar pasa a
+  // forma editable (4312,27) para que el punto de miles no se lea como decimal.
+  const editable = derivado == null ? '' : String(derivado).replace('.', ',');
+  const enReposo = derivado == null ? '' : derivado.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const mostrado = textoSec !== null ? textoSec : enReposo;
 
   // Texto y no type=number: en un number, "1000," llega vacio al onChange y
   // borraria lo tipeado; ademas quien tipea Bs. usa la coma.
@@ -61,6 +65,7 @@ export default function PrecioDoble({ value, onChange, moneda, inputStyle, label
           id="pe-price-sec" style={inputStyle} type="text" inputMode="decimal" autoComplete="off"
           value={mostrado} disabled={!hayTasa}
           onChange={e => alTipear(e.target.value)}
+          onFocus={() => setTextoSec(editable)}
           onBlur={() => setTextoSec(null)}
           aria-describedby="pe-price-sec-aviso" placeholder="0"
         />

@@ -142,7 +142,22 @@ describe('PrecioDoble', () => {
   it('tipear en USD calcula los Bs.', () => {
     render(<Harness moneda={conTasa} />);
     fireEvent.change(screen.getByLabelText('Precio (USD)'), { target: { value: '9' } });
-    expect(screen.getByLabelText('Precio (VES)').value).toBe('4312.26');
+    expect(screen.getByLabelText('Precio (VES)').value).toBe('4.312,26'); // en reposo, con el formato de la moneda
+  });
+  it('al enfocar pasa a forma editable y tipear encima no confunde el punto de miles', () => {
+    render(<Harness inicial="9" moneda={conTasa} />);
+    const bs = screen.getByLabelText('Precio (VES)');
+    expect(bs.value).toBe('4.312,26');
+    fireEvent.focus(bs);
+    expect(bs.value).toBe('4312,26');
+    fireEvent.change(bs, { target: { value: '4312,2' } });
+    expect(bs.value).toBe('4312,2');
+    fireEvent.blur(bs);
+    expect(bs.value).toMatch(/^4\.\d{3},\d{2}$/);
+  });
+  it('en reposo siempre 2 decimales y vacio si no hay precio', () => {
+    render(<Harness inicial="0.5" moneda={conTasa} />);
+    expect(screen.getByLabelText('Precio (VES)').value).toBe('239,57');
   });
   it('tipear en Bs. guarda el USD redondeado y NO salta lo que se tipea', () => {
     render(<Harness moneda={conTasa} />);
@@ -162,7 +177,7 @@ describe('PrecioDoble', () => {
     const bs = screen.getByLabelText('Precio (VES)');
     fireEvent.change(bs, { target: { value: '1000' } });
     fireEvent.blur(bs);
-    expect(bs.value).toBe('1001.4');
+    expect(bs.value).toBe('1.001,40');
   });
   it('vaciar el campo Bs. vacia el precio', () => {
     render(<Harness inicial="5" moneda={conTasa} />);
@@ -179,7 +194,7 @@ describe('PrecioDoble', () => {
   it('tasa vencida: avisa pero sigue convirtiendo', () => {
     render(<Harness inicial="9" moneda={{ ...conTasa, vencida: true, fecha: '2026-11-01' }} />);
     expect(screen.getByText(/01\/11\/2026: puede estar desactualizada/)).toBeTruthy();
-    expect(screen.getByLabelText('Precio (VES)').value).toBe('4312.26');
+    expect(screen.getByLabelText('Precio (VES)').value).toBe('4.312,26');
   });
   it('sin moneda secundaria renderiza solo el precio de siempre', () => {
     const { container } = render(<Harness moneda={{ monedaPrincipal: 'ARS', monedaSecundaria: null }} />);
@@ -253,6 +268,18 @@ describe('TasaDelDia', () => {
     expect(guardar.disabled).toBe(true);
     fireEvent.click(screen.getByRole('checkbox'));
     expect(guardar.disabled).toBe(false);
+  });
+  it('la tasa se tipea como texto, con coma o punto', async () => {
+    montar();
+    await screen.findByText('Últimas tasas');
+    const campo = screen.getByLabelText(/Cargar una tasa a mano/);
+    expect(campo.type).toBe('text');
+    fireEvent.change(campo, { target: { value: '490,5' } });
+    expect(campo.value).toBe('490,5');
+    fireEvent.change(campo, { target: { value: '49a' } });
+    expect(campo.value).toBe('490,5');
+    fireEvent.click(screen.getByText('Revisar'));
+    expect(screen.getByText(/Vas a guardar/).textContent).toMatch(/490,5/);
   });
   it('Corregir vuelve al campo sin guardar', async () => {
     montar();
