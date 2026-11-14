@@ -73,9 +73,12 @@ create table if not exists public.exchange_rates (
 create index if not exists exchange_rates_vigente_idx
   on public.exchange_rates (tenant_id, base_currency, quote_currency, effective_date desc, created_at desc);
 
--- Re-correr el sync el mismo dia no duplica filas del mismo proveedor.
+-- Una fila por proveedor y dia: la primera lectura del dia gana y re-correr el
+-- sync no duplica. Parcial a proposito: las manuales no cuentan, porque
+-- corregir una tasa es cargar otra el mismo dia.
 create unique index if not exists exchange_rates_dia_fuente_uidx
-  on public.exchange_rates (tenant_id, base_currency, quote_currency, effective_date, source);
+  on public.exchange_rates (tenant_id, base_currency, quote_currency, effective_date, source)
+  where source <> 'manual';
 
 comment on table public.exchange_rates is
   'Historial de tasas por negocio. Solo se agrega: corregir una tasa es cargar otra '
@@ -97,6 +100,9 @@ create policy exchange_rates_insert on public.exchange_rates
   with check (
     tenant_id in (select private.current_user_tenants())
     and created_by = (select auth.uid())
+    -- Un miembro solo carga tasas manuales: no puede hacerse pasar por el
+    -- proveedor. La function del sync usa service role y no pasa por RLS.
+    and source = 'manual'
   );
 
 /* ───────────── 4. lectura publica para el catalogo ───────────── */

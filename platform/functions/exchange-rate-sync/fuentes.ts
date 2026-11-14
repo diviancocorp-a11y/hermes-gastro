@@ -51,6 +51,31 @@ export function diaEnZona(ahora: Date, zona: string): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: zona, year: "numeric", month: "2-digit", day: "2-digit" }).format(ahora);
 }
 
+export type FilaTasa = {
+  tenant_id: string; base_currency: string; quote_currency: string;
+  rate: number; effective_date: string; source: string; created_by: null;
+};
+
+/**
+ * Guarda la tasa solo si ese proveedor no tiene ya una para ese dia: la
+ * primera lectura del dia gana (el BCV publica a la tarde la tasa del dia
+ * habil siguiente; no debe pisar la de hoy). No usa upsert: PostgREST no
+ * resuelve onConflict contra el indice parcial. 23505 (carrera con otra
+ * corrida) cuenta como ya_estaba.
+ * `sb` es el cliente de supabase-js; tipado minimo para poder testearlo.
+ */
+// deno-lint-ignore no-explicit-any
+export async function guardarTasa(sb: any, f: FilaTasa): Promise<{ estado: "ok" | "ya_estaba" | "error"; error?: string }> {
+  const { data: previa, error: e1 } = await sb.from("exchange_rates").select("id")
+    .eq("tenant_id", f.tenant_id).eq("base_currency", f.base_currency).eq("quote_currency", f.quote_currency)
+    .eq("effective_date", f.effective_date).eq("source", f.source).limit(1).maybeSingle();
+  if (e1) return { estado: "error", error: e1.message };
+  if (previa) return { estado: "ya_estaba" };
+  const { error } = await sb.from("exchange_rates").insert(f);
+  if (!error) return { estado: "ok" };
+  return error.code === "23505" ? { estado: "ya_estaba" } : { estado: "error", error: error.message };
+}
+
 type Fuente = { nombre: string; leer: () => Promise<TasaLeida | null> };
 
 async function traer(url: string, tipo: "json" | "text") {

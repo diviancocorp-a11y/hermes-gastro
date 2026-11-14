@@ -13,8 +13,14 @@
 //  - Si ninguna fuente da un valor valido y razonable, no inserta nada: el
 //    catalogo seguira mostrando la ultima y marcara "por verificar" al vencer.
 //
-// Como se programaria (NO aplicado): cada 6 h, desde un cron del edificio:
-//   select cron.schedule('exchange-rate-sync', '0 */6 * * *', $$
+//  - La primera lectura del dia gana (guardarTasa no pisa): el BCV publica a la
+//    tarde la tasa que rige el dia habil SIGUIENTE, y no debe reemplazar la de
+//    hoy. Por eso el cron corre solo de manana, hora de Caracas (UTC-4):
+//    06:00 y 09:00 = 10:00 y 13:00 UTC. La segunda corrida cubre un fallo de
+//    la primera; si la primera tuvo exito, no cambia nada.
+//
+// Como se programaria (NO aplicado), desde un cron del edificio:
+//   select cron.schedule('exchange-rate-sync', '0 10,13 * * *', $$
 //     select net.http_post(
 //       url := 'https://wwwzdgprsooyjgkuyoav.supabase.co/functions/v1/exchange-rate-sync',
 //       headers := jsonb_build_object('Content-Type','application/json',
@@ -24,7 +30,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { diaEnZona, tasaVigente } from "./fuentes.ts";
+import { diaEnZona, guardarTasa, tasaVigente } from "./fuentes.ts";
 
 function jsonRes(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -72,11 +78,11 @@ Deno.serve(async (req) => {
     const { tasa, errores } = cache.get(clave)!;
     if (!tasa) { resultado.push({ slug: t.slug, estado: "sin_fuente", errores }); continue; }
 
-    const { error: e } = await supabase.from("exchange_rates").upsert({
+    const r = await guardarTasa(supabase, {
       tenant_id: t.id, base_currency: "USD", quote_currency: "VES",
       rate: tasa.rate, effective_date: dia, source: tasa.source, created_by: null,
-    }, { onConflict: "tenant_id,base_currency,quote_currency,effective_date,source" });
-    resultado.push(e ? { slug: t.slug, estado: "error", error: e.message } : { slug: t.slug, estado: "ok", rate: tasa.rate, source: tasa.source });
+    });
+    resultado.push({ slug: t.slug, ...r, rate: tasa.rate, source: tasa.source });
   }
 
   return jsonRes({ ok: true, resultado });
