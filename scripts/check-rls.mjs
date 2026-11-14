@@ -288,6 +288,7 @@ export const DEFINER_APROBADAS = {
   sumar_staff: { tipo: 'se_cuida', porque: 'raise si no es el dueno de Divianco' },
   // ── publicas a proposito ──
   get_catalog: { tipo: 'abierta', porque: 'el catalogo publico: lo que el negocio publica' },
+  get_exchange_rate: { tipo: 'abierta', porque: 'la tasa vigente USD/Bs. del negocio, para que el catalogo muestre el bolivar' },
   get_tenant_brand: { tipo: 'abierta', porque: 'nombre y logo del negocio, para la pantalla de login' },
   get_tenant_by_host: { tipo: 'abierta', porque: 'resuelve el dominio propio a un slug' },
   get_info_page: { tipo: 'abierta', porque: 'solo paginas marcadas visibles' },
