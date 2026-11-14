@@ -1,6 +1,6 @@
 {
   "_comment": "Snapshot del schema del EDIFICIO; datos obtenidos de schema_snapshot() via MCP. Regenerar con npm run schema:sync.",
-  "_refreshed_at": "2026-11-06",
+  "_refreshed_at": "2026-11-14",
   "_migrations_through": "0127",
   "tables": {
     "addresses": [
@@ -203,6 +203,17 @@
       "user_id",
       "nombre",
       "props",
+      "created_at"
+    ],
+    "exchange_rates": [
+      "id",
+      "tenant_id",
+      "base_currency",
+      "quote_currency",
+      "rate",
+      "effective_date",
+      "source",
+      "created_by",
       "created_at"
     ],
     "expenses": [
@@ -437,7 +448,10 @@
       "risk_flags",
       "reviewed_by",
       "reviewed_at",
-      "review_note"
+      "review_note",
+      "fx_rate",
+      "fx_currency",
+      "total_secondary"
     ],
     "organizations": [
       "id",
@@ -505,7 +519,10 @@
       "collector_staff_id",
       "reference",
       "verification_status",
-      "receipt_last_four"
+      "receipt_last_four",
+      "fx_rate",
+      "fx_currency",
+      "amount_secondary"
     ],
     "plans": [
       "id",
@@ -1058,7 +1075,8 @@
       "medio_de_cobro",
       "first_value_at",
       "organization_id",
-      "prueba_hasta"
+      "prueba_hasta",
+      "secondary_currency"
     ],
     "time_entries": [
       "id",
