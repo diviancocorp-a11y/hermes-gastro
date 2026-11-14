@@ -16,7 +16,8 @@ import WelcomeSplash from "../catalog-pro/WelcomeSplash";
 import BirthdayGift from "../catalog-pro/BirthdayGift";
 import { addActiveOrder } from "../lib/activeOrders";
 import "../catalog-pro/tokens.css";
-import HomeScreenPro from "../catalog-pro/HomeScreen";
+import HomeConPlantilla from "../catalog-pro/plantillas/HomeConPlantilla";
+import { plantillaEfectiva } from "../lib/plantillaConfig";
 import AgeGate from "../catalog-pro/AgeGate";
 import WhatsAppFloat from "../catalog-pro/WhatsAppFloat";
 import { ensureMusic, stopMusic, configureMusic } from "../catalog-pro/catalogMusic";
@@ -336,7 +337,7 @@ export default function Catalog() {
           localStorage.setItem('cp_sett_cache', JSON.stringify({
             biz_name: s.biz_name, slogan: s.slogan, logo_url: s.logo_url,
             logo_color: s.logo_color, logo_letter: s.logo_letter,
-            catalog_theme: s.catalog_theme,
+            catalog_theme: s.catalog_theme, catalog_template: s.catalog_template, catalog_template_config: s.catalog_template_config,
           }));
         } catch { /* empty */ }
         setProducts(data.products);
@@ -937,7 +938,7 @@ export default function Catalog() {
 
   return (
     <>
-      <HomeScreenPro settings={sett}
+      <HomeConPlantilla settings={sett}
         store={storeForHome}
         userName={session?.firstName || (form.name ? form.name.split(" ")[0] : null)}
         session={session}
@@ -1069,7 +1070,8 @@ export default function Catalog() {
       <WhatsAppFloat whatsapp={sett?.whatsapp} bizName={sett?.biz_name} />
       {/* logoLetter solo cuando settings ya cargo: evita el flash de la "M"
           antes del logo real en la primera visita (sin cache local) */}
-      <WelcomeSplash bizName={sett?.biz_name || business.name} logoUrl={sett?.logo_url} logoColor={sett?.logo_color} logoLetter={loading && !sett?.logo_url ? null : sett?.logo_letter} duration={2200} />
+      {/* La plantilla trae su propia intro: no se apilan dos. */}
+      {plantillaEfectiva(sett) === "default" && <WelcomeSplash bizName={sett?.biz_name || business.name} logoUrl={sett?.logo_url} logoColor={sett?.logo_color} logoLetter={loading && !sett?.logo_url ? null : sett?.logo_letter} duration={2200} />}
       {/* Regalo de cumpleanos: el server valida birth_date (customers) contra
           hoy; % configurable desde CRM. Solo si hay identidad (login o guest) */}
       <BirthdayGift

@@ -78,3 +78,13 @@ export function leerConfigPlantilla(raw) {
 export function resolverPlantilla(valor) {
   return PLANTILLAS.includes(valor) && valor !== 'default' ? valor : 'default';
 }
+
+/**
+ * Plantilla que realmente se pinta: `pop` solo si el tenant la eligio Y su
+ * config es valida. Config rota = `default` (el catalogo de siempre).
+ */
+export function plantillaEfectiva(settings) {
+  const p = resolverPlantilla(settings?.catalog_template);
+  if (p === 'default') return 'default';
+  return leerConfigPlantilla(settings?.catalog_template_config).error ? 'default' : p;
+}
