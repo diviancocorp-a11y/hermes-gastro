@@ -7,7 +7,7 @@
 // - Una seccion sin datos se oculta sola (flyers vencidos, testimonios vacios).
 // - Vigencias y dias van en la zona horaria del negocio, no del navegador.
 
-import { SECCION_IDS } from '../../lib/plantillaConfig';
+import { SECCION_IDS } from '../../lib/plantillaListas';
 
 /** 'YYYY-MM-DD' de `ahora` en `zona`. */
 export function hoyEnZona(zona = 'America/Caracas', ahora = new Date()) {

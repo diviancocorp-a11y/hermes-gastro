@@ -6,7 +6,7 @@
 // tres sin pisarlos. Los colores derivados se calculan aca, en JS, para poder
 // VERIFICAR el contraste (4.5:1) en vez de confiar en un color-mix a ciegas.
 
-import { FUENTES } from '../../lib/plantillaConfig';
+import { FUENTES } from '../../lib/plantillaListas';
 
 const aRgb = (hex) => {
   const h = String(hex).replace('#', '');

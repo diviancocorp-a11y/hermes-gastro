@@ -9,30 +9,11 @@
 
 import { z } from 'zod';
 
-export const PLANTILLAS = ['default', 'pop'];
+import {
+  PLANTILLAS, SECCION_IDS, FUENTES, RADIOS, MARCA_COLORES, MARCA_URLS, TEXTO_KEYS, SUBMARCA_KEYS, FLYER_KEYS, QUOTE_KEYS, TOP_KEYS,
+} from './plantillaListas';
 
-/** Orden por defecto de la plantilla `pop`. El orden de `secciones` ES el de pantalla. */
-export const SECCION_IDS = ['hero', 'cinta', 'favoritos', 'flyers', 'menu', 'submarca', 'banda', 'testimonios', 'historia'];
-
-// Lista cerrada de Google Fonts: evita pedir fuentes arbitrarias y fija el peso de carga.
-export const FUENTES = [
-  'Montserrat', 'Inter', 'DM Sans', 'Poppins', 'Playfair Display',
-  'Source Serif 4', 'Instrument Serif', 'DM Serif Display', 'Bebas Neue', 'Lora',
-];
-export const RADIOS = ['recto', 'suave', 'pildora'];
-
-export const MARCA_COLORES = ['primario', 'fondo', 'texto', 'acento2'];
-export const MARCA_URLS = ['logo_header', 'logo_footer', 'isotipo'];
-export const TEXTO_KEYS = [
-  'hero_eyebrow', 'hero_titulo', 'hero_lead', 'hero_cta', 'hero_nota', 'hero_sello', 'intro_caption',
-  'favoritos_eyebrow', 'favoritos_titulo', 'favoritos_aside', 'flyers_eyebrow', 'flyers_titulo',
-  'menu_eyebrow', 'menu_titulo', 'menu_lead', 'banda_eyebrow', 'banda_titulo', 'banda_texto', 'banda_imagen',
-  'testimonios_eyebrow', 'testimonios_titulo', 'historia_eyebrow', 'historia_titulo', 'historia_texto', 'historia_sello',
-];
-export const SUBMARCA_KEYS = ['nombre', 'categoria', 'eyebrow', 'titulo', 'texto', 'fondo', 'color', 'logo', 'isotipo'];
-export const FLYER_KEYS = ['titulo', 'texto', 'imagen', 'badge', 'link', 'desde', 'hasta', 'activo'];
-export const QUOTE_KEYS = ['texto', 'nombre'];
-export const TOP_KEYS = ['secciones', 'marca', 'textos', 'anuncios', 'cinta', 'intro', 'flyers', 'testimonios', 'submarca'];
+export { PLANTILLAS, SECCION_IDS, FUENTES, RADIOS, MARCA_COLORES, MARCA_URLS, TEXTO_KEYS, SUBMARCA_KEYS, FLYER_KEYS, QUOTE_KEYS, TOP_KEYS };
 
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const url = z.string().max(500).regex(/^(https:\/\/|\/)/);
