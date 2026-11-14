@@ -12,6 +12,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'rea
 import { lazyReload } from '../lib/lazyReload';
 
 import usePlatformTenant from '../hooks/usePlatformTenant';
+import useMonedaDoble from '../hooks/useMonedaDoble';
 import LoginScreen from '../components/admin/LoginScreen';
 import { ConIntro } from '../components/admin/IntroDico';
 import AdminBackdrop from '../components/admin/shared/AdminBackdrop';
@@ -243,6 +244,8 @@ export default function PlatformAdmin() {
   // = sin plan asignado = tiene todo, que es el caso de los clientes con
   // acuerdo propio: para ellos nada de esto cambia la pantalla.
   const plan = planEfectivo(tenant);
+  // Doble moneda del negocio (Cochi: USD + VES). Sin moneda secundaria no hace nada.
+  const moneda = useMonedaDoble(tenant);
   const diasPrueba = diasDePrueba(tenant);
 
   const [tab, setTab] = useState('products');
@@ -1442,6 +1445,7 @@ export default function PlatformAdmin() {
               ingredientes={ings}
               recetas={recetas}
               settings={sett}
+              moneda={moneda}
               operativo={sistemaOperativo}
               minutosOperando={minutosOperando}
               turno={turno}
@@ -1771,6 +1775,8 @@ export default function PlatformAdmin() {
                     setSettings={setSett}
                     showToast={msg}
                     onSave={guardarSettings}
+                    moneda={moneda}
+                    tenantId={tenantId}
                     onSubirImagen={subirImagenDeMarca}
                     onSubirAudio={subirAudioDeMarca}
                     onAbrirUsuarios={puedeAbrirDestino(roles, 'usuarios') ? () => setTab('usuarios') : null}

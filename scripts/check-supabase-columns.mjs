@@ -36,6 +36,7 @@ const PLATFORM_PATHS = [
   'src/services/platformStaff.js',
   'src/pages/Consola.jsx',
   'src/services/platformSettings.js',
+  'src/services/platformTasas.js',
   'src/services/platformInventory.js',
   'src/services/platformRecipes.js',
   'src/services/recetario.js',

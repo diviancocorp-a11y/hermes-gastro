@@ -19,6 +19,7 @@ import GestionProductosPanel from './GestionProductosPanel';
 import RecetarioPanel from './RecetarioPanel';
 import { puedeEditar, vePrecios } from '../../../modules/roles';
 import useMediaQuery from '../../../lib/useMediaQuery';
+import { aSecundaria, formatearMonto } from '../../../lib/moneda';
 import { CATALOG_PROFILES, resolveCatalogProfile } from '../../../modules/catalogProfiles';
 import './products-catalog-profile.css';
 
@@ -48,6 +49,8 @@ const ProductsPanel = forwardRef(function ProductsPanel({
   onDicoResumenChange = null,
   // Los sectores de produccion (0074), para elegir la estacion del plato.
   sectores = [],
+  // useMonedaDoble: monto secundario al lado del precio. Sin moneda secundaria no se muestra nada.
+  moneda = null,
 }, ref) {
   const confirmSlide = useConfirm();
   const editable = puedeEditar(roles, 'products');
@@ -279,6 +282,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
             ingredientes={ingredientes}
             lineasReceta={isNew ? [] : (recetas?.get(editing.id) || [])}
             settings={settings}
+            moneda={moneda}
             onSave={handleSave}
             onSubirImagen={onSubirImagen}
             onCancel={() => setEditing(null)}
@@ -532,7 +536,12 @@ const ProductsPanel = forwardRef(function ProductsPanel({
                       </> : <small>Sin receta cargada</small>}
                     </span>
                   </div>}
-                  <span className="ag-fila-precio">{money(p.price)}</span>
+                  <span className="ag-fila-precio">
+                    {moneda?.monedaSecundaria ? formatearMonto(p.price, moneda.monedaPrincipal) : money(p.price)}
+                    {moneda?.monedaSecundaria && moneda.tasa > 0 && (
+                      <small className="ag-fila-precio-sec"><span className="ag-sr-only"> equivale a </span>{formatearMonto(aSecundaria(p.price, moneda.tasa), moneda.monedaSecundaria)}</small>
+                    )}
+                  </span>
                   {editable && <div className="ag-fila-acciones">
                     <button
                       type="button"

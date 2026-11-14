@@ -82,3 +82,18 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Precio doble: el aviso de tasa ocupa la fila entera debajo de los dos campos. */
+.pe-precio-aviso {
+  flex: 0 0 100%;
+  margin-top: calc(var(--ds-space-1) * -1);
+  color: var(--ag-ink-3);
+  font-size: var(--ds-type-xs, 11px);
+  line-height: 1.45;
+}
+.pe-precio-aviso[data-estado="sin"],
+.pe-precio-aviso[data-estado="vencida"] {
+  color: var(--ag-ink);
+  padding-left: var(--ds-space-2);
+  box-shadow: inset 2px 0 0 var(--ag-c-terra);
+}

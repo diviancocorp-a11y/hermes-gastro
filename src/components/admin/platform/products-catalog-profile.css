@@ -44,3 +44,12 @@
 .ag-catalog-profile .ag-catalog-profile-error {
   color: var(--ag-c-orders-ink);
 }
+
+/* Monto en la moneda secundaria, chico y debajo del precio principal. */
+.ag-fila-precio-sec {
+  display: block;
+  margin-top: var(--ds-space-1);
+  font-size: var(--ds-type-xs, 11px);
+  font-weight: 500;
+  color: var(--ag-ink-3);
+}

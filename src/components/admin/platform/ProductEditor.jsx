@@ -12,6 +12,7 @@ import './product-editor-catalog.css';
 import ToggleSwitch from '../shared/forms/ToggleSwitch';
 import RecipeEditor from './RecipeEditor';
 import ImagePicker from './ImagePicker';
+import PrecioDoble from './PrecioDoble';
 import {
   normalizarCategoriaProducto,
   normalizarNombreProducto,
@@ -43,6 +44,9 @@ export default function ProductEditor({
   // Los sectores con sus estaciones (0074). Vacio = el negocio todavia no
   // configuro produccion y el campo no se muestra.
   sectores = [],
+  // { monedaPrincipal, monedaSecundaria, tasa, vencida, fecha } de useMonedaDoble.
+  // Sin monedaSecundaria el campo de precio es el de siempre.
+  moneda = null,
 }) {
   const [lineas, setLineas] = useState(() => lineasReceta.map(l => ({
     ...l,
@@ -149,14 +153,11 @@ export default function ProductEditor({
         />
       </div>
 
-      <div style={{ ...row, display: 'flex', gap: 10 }}>
-        <div style={{ flex: 1 }}>
-          <label style={lbl} htmlFor="pe-price">Precio</label>
-          <input
-            id="pe-price" style={input} type="number" inputMode="decimal" min="0" step="0.01"
-            value={form.price} onChange={e => set('price', e.target.value)} placeholder="0"
-          />
-        </div>
+      <div style={{ ...row, display: 'flex', gap: 10, flexWrap: moneda?.monedaSecundaria ? 'wrap' : undefined }}>
+        <PrecioDoble
+          value={form.price} onChange={v => set('price', v)} moneda={moneda}
+          inputStyle={input} labelStyle={lbl}
+        />
         {usaDuracion && (
           <div style={{ flex: 1 }}>
             <label style={lbl} htmlFor="pe-dur">Duración (min)</label>

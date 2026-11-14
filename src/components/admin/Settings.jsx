@@ -26,6 +26,7 @@ import BrandModal from "./shared/BrandModal";
 import DynamicQrs from "./DynamicQrs";
 import InfoPagesAdmin from "../../pages/admin/InfoPages";
 import PaymentAccountsEditor from "../ui/PaymentAccountsEditor";
+import TasaDelDia from "./platform/TasaDelDia";
 
 function Icon({ d, viewBox = "0 0 24 24" }) {
   return (
@@ -68,6 +69,9 @@ function Settings({
   onSubirAudio,
   onAbrirUsuarios = null,
   onAbrirPasarelas = null,
+  // Doble moneda (useMonedaDoble) + tenant: solo con moneda secundaria aparece "Tasa del dia".
+  moneda = null,
+  tenantId = null,
 }) {
   const confirmSlide = useConfirm();
   const [s, setS] = useState({ ...settings });
@@ -207,6 +211,13 @@ function Settings({
               hint="Límites de gasto y piso de ganancia (semáforos del P&L)"
               onClick={() => goTo('usarTargets')}
             />
+            {moneda?.monedaSecundaria && tenantId && <SettingsRow
+              state="sales"
+              icon={<Icon d="M12 1v22 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />}
+              label="Tasa del día"
+              hint={`Cuántos ${moneda.monedaSecundaria} vale 1 ${moneda.monedaPrincipal}: la tasa vigente y su historial`}
+              onClick={() => goTo('tasa')}
+            />}
             {/* "Medios de pago" se mudo a Finanzas → Gastos → 🏦 Cuentas
                 (unica verdad de cuentas para checkout y proveedores) */}
             <SettingsRow
@@ -314,6 +325,11 @@ function Settings({
         setS={setS}
         onBack={goBack}
       />
+      {moneda?.monedaSecundaria && tenantId && (
+        <SubPage open={page === 'tasa'} title="Tasa del día" onBack={goBack}>
+          <TasaDelDia tenantId={tenantId} moneda={moneda} showToast={showToast} onCargada={moneda.recargar} />
+        </SubPage>
+      )}
       <UsarTargetsSubPage
         open={page === 'usarTargets'}
         settings={s}
