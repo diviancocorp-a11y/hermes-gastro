@@ -148,7 +148,7 @@
 /* ---------- menu ---------- */
 .pop-aviso { margin-bottom: 16px; padding: 12px 16px; border-radius: var(--r); background: var(--b2); color: var(--tx); font: 600 14px/1.4 var(--font-body); }
 .pop-aviso--aviso { background: var(--ac-soft); outline: 2px solid var(--ac-text); outline-offset: -2px; }
-.pop-menu__controles { display: grid; gap: 12px; margin-bottom: 8px; }
+.pop-menu__controles { display: grid; gap: 12px; margin-bottom: 8px; position: sticky; top: 64px; z-index: 20; background: var(--bg); padding: 8px 0; }
 .pop-buscar input { width: 100%; min-height: 48px; padding: 0 16px; border: 0; border-radius: var(--r); background: var(--b3); color: var(--tx); font: 500 16px/1 var(--font-body); }
 .pop-buscar input::placeholder { color: var(--tx); opacity: 1; }
 .pop-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: none; }

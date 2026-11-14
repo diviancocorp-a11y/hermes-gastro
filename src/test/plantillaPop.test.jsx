@@ -304,3 +304,45 @@ describe('tenants sin fotos', () => {
     expect(container.querySelector('.pop-hero__imagen img')).not.toBeNull();
   });
 });
+
+describe('submarca y menu sin repetidos', () => {
+  const sub = { nombre: 'Dulce', categoria: 'Postres' };
+  const nombresMenu = (c) => [...c.querySelectorAll('#pop-menu .pop-card__nombre')].map(n => n.textContent);
+  const nombresSub = (c) => [...c.querySelectorAll('#pop-submarca .pop-card__nombre')].map(n => n.textContent);
+
+  it('con la submarca activa, su categoria sale del menu (y de sus chips)', () => {
+    const { container } = render_({}, { submarca: sub });
+    expect(nombresSub(container)).toEqual(['Postre tres']);
+    expect(nombresMenu(container)).toEqual(['Plato uno', 'Plato dos']);
+    expect(within(container.querySelector('#pop-menu')).queryByRole('button', { name: 'Postres' })).not.toBeInTheDocument();
+  });
+  it('con la seccion apagada, los productos vuelven al menu', () => {
+    const { container } = render_({}, { submarca: sub, secciones: [{ id: 'menu' }, { id: 'submarca', on: false }] });
+    expect(container.querySelector('#pop-submarca')).toBeNull();
+    expect(nombresMenu(container)).toContain('Postre tres');
+    expect(within(container.querySelector('#pop-menu')).getByRole('button', { name: 'Postres' })).toBeInTheDocument();
+  });
+  it('sin productos en esa categoria la seccion se oculta y nada se pierde del menu', () => {
+    const { container } = render_({ products: productos.filter(p => p.category !== 'Postres') }, { submarca: sub });
+    expect(container.querySelector('#pop-submarca')).toBeNull();
+    expect(nombresMenu(container)).toEqual(['Plato uno', 'Plato dos']);
+  });
+});
+
+describe('precio de proximamente', () => {
+  const otros = (precio) => [{ id: 'z', name: 'Brownie', sale_price: precio, category: 'Postres', catalog_attributes: { coming_soon: true } }];
+  it('sin precio (0) no muestra precio ni boton Agregar', () => {
+    const { container } = render_({ products: otros(0) });
+    const card = container.querySelector('#pop-menu .pop-card');
+    expect(card.textContent).toMatch(/pr[oó]ximamente/i);
+    expect(card.querySelector('.pop-precio')).toBeNull();
+    expect(card.textContent).not.toMatch(/0[.,]00/);
+    expect(within(card).queryByRole('button', { name: /^Agregar/ })).toBeNull();
+  });
+  it('con precio lo muestra, sin boton Agregar', () => {
+    const { container } = render_({ products: otros(4) });
+    const card = container.querySelector('#pop-menu .pop-card');
+    expect(card.textContent).toMatch(/4/);
+    expect(within(card).queryByRole('button', { name: /^Agregar/ })).toBeNull();
+  });
+});

@@ -24,7 +24,7 @@ export default function PopProductoCard({ v, moneda, cantidadDe, grande = false,
         <h3 className="pop-card__nombre">{v.name}</h3>
         {v.desc && <p className="pop-card__desc">{v.desc}</p>}
         <div className="pop-card__pie">
-          <PrecioCatalogo monto={v.price} viejo={v.oldPrice} moneda={moneda} grande={grande} />
+          {v.price > 0 && <PrecioCatalogo monto={v.price} viejo={v.oldPrice} moneda={moneda} grande={grande} />}
           {puede && cantidad === 0 && (
             <button type="button" className="pop-btn pop-btn--primario" onClick={() => onAgregar?.(v.raw)} aria-label={`Agregar ${v.name}`}>Agregar</button>
           )}

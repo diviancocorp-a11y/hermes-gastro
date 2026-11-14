@@ -32,7 +32,7 @@ import PopFooter from "./PopFooter";
 import PrecioCatalogo from "./PrecioCatalogo";
 
 const FAVORITOS_MAX = 3;
-const SUBMARCA_MAX = 4;
+const categoriaDe = (p) => p.catalog_attributes?.category || p.category;
 
 export default function PlantillaPop({
   config = {}, products = [], categories = [], store = {}, settings = {},
@@ -94,23 +94,35 @@ export default function PlantillaPop({
   const submarcaItems = useMemo(() => {
     if (!submarca.categoria) return [];
     return products
-      .filter((p) => (p.catalog_attributes?.category || p.category) === submarca.categoria)
-      .slice(0, SUBMARCA_MAX).map(vista);
+      .filter((p) => categoriaDe(p) === submarca.categoria).map(vista);
   }, [products, submarca.categoria, vista]);
 
-  // Menu: categoria + buscador (el buscador es del padre si lo pasa).
+  const ids = seccionesVisibles(config, { favoritos: favoritos.length, submarcaProductos: submarcaItems.length }, zona);
+
+  // Menu: categoria + buscador (el buscador es del padre si lo pasa). Si la
+  // submarca se muestra, su categoria sale del menu (no se repite); si esa
+  // seccion esta apagada o sin datos, los productos vuelven al menu.
   const profile = resolveCatalogProfile(settings);
-  const catalogCategories = useMemo(() => getCatalogCategories(products, categories, profile), [products, categories, profile]);
+  const sinSubmarca = ids.includes("submarca") && Boolean(submarca.categoria);
+  const catSubmarca = submarca.categoria;
+  const productosMenu = useMemo(
+    () => (sinSubmarca ? products.filter((p) => categoriaDe(p) !== catSubmarca) : products),
+    [products, sinSubmarca, catSubmarca],
+  );
+  const catalogCategories = useMemo(
+    () => getCatalogCategories(productosMenu, categories, profile).filter((c) => !sinSubmarca || c.name !== catSubmarca),
+    [productosMenu, categories, profile, sinSubmarca, catSubmarca],
+  );
   const [activa, setActiva] = useState("Todos");
   const [busquedaLocal, setBusquedaLocal] = useState("");
   const busqueda = onSearchChange ? (searchQuery || "") : busquedaLocal;
   const cambiarBusqueda = onSearchChange || setBusquedaLocal;
   const itemsMenu = useMemo(() => {
-    const lista = applyCatalogFacets(products, {
+    const lista = applyCatalogFacets(productosMenu, {
       category: activa, categories: catalogCategories, facets: {}, search: busqueda, quickFilter: null, hasDeal,
     });
     return lista.map(vista);
-  }, [products, activa, catalogCategories, busqueda, hasDeal, vista]);
+  }, [productosMenu, activa, catalogCategories, busqueda, hasDeal, vista]);
 
   const cantidadDe = (id) => {
     const it = (cart || []).find((c) => c.id === id || c.product_id === id);
@@ -118,8 +130,6 @@ export default function PlantillaPop({
   };
 
   const flyers = useMemo(() => flyersVigentes(config, zona), [config, zona]);
-  const ids = seccionesVisibles(config, { favoritos: favoritos.length, submarcaProductos: submarcaItems.length }, zona);
-
   const nombre = store.name || settings.biz_name || "Tienda";
   const logo = marca.logo_header || store.logoUrl || null;
   const letra = (store.logoLetter || nombre.charAt(0) || "D").toUpperCase();
