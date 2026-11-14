@@ -72,6 +72,7 @@ const REGLAS = {
   CO: { documentos: ['ci', 'pasaporte'] },
   MX: { documentos: ['ci', 'pasaporte'] },
   ES: { documentos: ['dni', 'pasaporte'] },
+  VE: { documentos: ['ci', 'pasaporte'] },
 };
 
 function reglaDe(codigo) {

@@ -137,7 +137,12 @@ describe('modulosDe cruza rubro y modo', () => {
 
 describe('paises', () => {
   it('los ids coinciden con el CHECK de tenants.country', () => {
-    expect(Object.keys(PAISES).sort()).toEqual(valoresDelCheck('country'));
+    // El CHECK vigente es el de 0126 (suma VE a la lista de 0039).
+    const sql0126 = readFileSync(resolve(__dirname, '../../platform/migrations/0126_venezuela_y_doble_moneda.sql'), 'utf-8').replace(/--[^\n]*/g, '');
+    const m = sql0126.match(/check\s*\(\s*country\s+in\s*\(([^)]*)\)/i);
+    const vigente = [...m[1].matchAll(/'([^']+)'/g)].map(x => x[1]).sort();
+    expect(Object.keys(PAISES).sort()).toEqual(vigente);
+    expect(vigente).toEqual(expect.arrayContaining(valoresDelCheck('country')));
   });
 
   it('cada pais declara moneda, zona, identificador fiscal e IVA', () => {

@@ -38,7 +38,15 @@ export const PAISES = {
   CO: { id: 'CO', label: 'Colombia', currency: 'COP', timezone: 'America/Bogota',       idFiscal: 'NIT',  ivaDefault: 19, fiscal: null },
   MX: { id: 'MX', label: 'México',   currency: 'MXN', timezone: 'America/Mexico_City',  idFiscal: 'RFC',  ivaDefault: 16, fiscal: null },
   ES: { id: 'ES', label: 'España',   currency: 'EUR', timezone: 'Europe/Madrid',        idFiscal: 'NIF',  ivaDefault: 21, fiscal: null },
+  // `secondaryCurrency` es opcional: la moneda en que se muestra ademas de la
+  // principal (el precio vive en `currency`). Ver src/lib/moneda.js.
+  VE: { id: 'VE', label: 'Venezuela', currency: 'USD', secondaryCurrency: 'VES', timezone: 'America/Caracas', idFiscal: 'RIF', ivaDefault: 16, fiscal: null },
 };
+
+/** Moneda secundaria que propone el pais, o null. */
+export function monedaSecundariaDe(country) {
+  return getPais(country).secondaryCurrency || null;
+}
 
 export const PAIS_POR_DEFECTO = 'AR';
 
