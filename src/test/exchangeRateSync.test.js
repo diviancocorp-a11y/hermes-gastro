@@ -8,10 +8,9 @@ const DOLARAPI = {
   moneda: 'USD', fuente: 'oficial', nombre: 'Dólar', compra: null, venta: null,
   promedio: 911.6243, fechaActualizacion: '2026-11-13T00:00:00-04:00',
 };
-// Forma del bloque de la home de bcv.org.ve (fixture: el sitio no se pudo leer
-// desde aca por su cadena de certificados).
 const t = (n, attrs, c) => `<${n}${attrs}>${c}</${n}>`;
-const BCV = t('div', ' id="dolar"', t('div', '', t('strong', '', ' 911,62430000 ')));
+// Estructura real de la home del BCV (13/nov/2026, recortada).
+const BCV = t('div', ' id="dolar"', t('strong', ' class="strong-tb"', '914,02180000') + ' Fecha Valor: ' + t('span', ' property="dc:date" content="2026-11-16T00:00:00-04:00"', 'Lunes, 16 Noviembre 2026'));
 
 describe('parsers', () => {
   it('dolarapi', () => {
@@ -21,7 +20,7 @@ describe('parsers', () => {
     expect(parseDolarApi(null)).toBeNull();
   });
   it('bcv', () => {
-    expect(parseBcv(BCV)?.rate).toBe(911.6243);
+    expect(parseBcv(BCV)).toEqual({ rate: 914.0218, fecha: '2026-11-16', source: 'bcv' });
     expect(parseBcv('nada')).toBeNull();
   });
   it('numeroPositivo', () => {
@@ -56,6 +55,34 @@ describe('guardarTasa: la primera lectura del dia gana', () => {
   it('23505 por carrera cuenta como ya_estaba; otro error es error', async () => {
     expect((await guardarTasa(falso({ errInsert: { code: '23505', message: 'dup' } }), FILA)).estado).toBe('ya_estaba');
     expect((await guardarTasa(falso({ errInsert: { code: '42501', message: 'rls' } }), FILA)).estado).toBe('error');
+  });
+});
+
+describe('orden y cruce de fuentes', () => {
+  const f = (nombre, rate, fecha = null) => ({ nombre, leer: async () => ({ rate, fecha, source: nombre }) });
+  const rota = (nombre) => ({ nombre, leer: async () => { throw new Error('Deno.createHttpClient no disponible'); } });
+  it('gana la primera (bcv) y informa la diferencia con la segunda', async () => {
+    const r = await tasaVigente(910, [f('bcv', 914.0218), f('dolarapi', 911.6243)]);
+    expect(r.tasa.source).toBe('bcv');
+    expect(r.cruce.contra).toBe('dolarapi');
+    expect(r.cruce.diferencia).toBeCloseTo(0.0026, 3);
+    expect(r.cruce.aviso).toBe(false);
+  });
+  it('si difieren mas de 1% se guarda la del bcv igual y queda el aviso', async () => {
+    const r = await tasaVigente(910, [f('bcv', 920), f('dolarapi', 905)]);
+    expect(r.tasa.source).toBe('bcv');
+    expect(r.cruce.aviso).toBe(true);
+  });
+  it('si el cliente TLS falla sigue con el respaldo y lo anota', async () => {
+    const r = await tasaVigente(910, [rota('bcv'), f('dolarapi', 911.6)]);
+    expect(r.tasa.source).toBe('dolarapi');
+    expect(r.cruce).toBeUndefined();
+    expect(r.errores[0]).toContain('createHttpClient');
+  });
+  it('una fuente con Fecha Valor futura todavia no rige', async () => {
+    const r = await tasaVigente(910, [f('bcv', 914, '2026-11-16'), f('dolarapi', 911.6, '2026-11-13')], '2026-11-14');
+    expect(r.tasa.source).toBe('dolarapi');
+    expect(r.errores[0]).toContain('todavia no');
   });
 });
 

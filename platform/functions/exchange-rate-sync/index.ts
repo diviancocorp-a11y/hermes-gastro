@@ -10,6 +10,10 @@
 //  - Nunca pisa una tasa manual del mismo dia: si ya hay una manual para ese
 //    dia, el negocio se saltea. Re-correr el mismo dia es idempotente
 //    (indice unico por dia y fuente).
+//  - Fuentes: bcv.org.ve primero (con su CA intermedia, bcv-ca.ts), dolarapi de
+//    respaldo. Si las dos responden, el resultado trae la diferencia (aviso > 1%)
+//    y se guarda igual la del BCV. Si no se puede crear el cliente TLS, sigue con
+//    el respaldo y lo anota en errores.
 //  - Si ninguna fuente da un valor valido y razonable, no inserta nada: el
 //    catalogo seguira mostrando la ultima y marcara "por verificar" al vencer.
 //
@@ -73,16 +77,16 @@ Deno.serve(async (req) => {
       .eq("effective_date", dia).eq("source", "manual").limit(1).maybeSingle();
     if (manual) { resultado.push({ slug: t.slug, estado: "manual_del_dia" }); continue; }
 
-    const clave = String(ultima);
-    if (!cache.has(clave)) cache.set(clave, await tasaVigente(ultima));
-    const { tasa, errores } = cache.get(clave)!;
+    const clave = `${ultima}|${dia}`;
+    if (!cache.has(clave)) cache.set(clave, await tasaVigente(ultima, undefined, dia));
+    const { tasa, errores, cruce } = cache.get(clave)!;
     if (!tasa) { resultado.push({ slug: t.slug, estado: "sin_fuente", errores }); continue; }
 
     const r = await guardarTasa(supabase, {
       tenant_id: t.id, base_currency: "USD", quote_currency: "VES",
       rate: tasa.rate, effective_date: dia, source: tasa.source, created_by: null,
     });
-    resultado.push({ slug: t.slug, ...r, rate: tasa.rate, source: tasa.source });
+    resultado.push({ slug: t.slug, ...r, rate: tasa.rate, source: tasa.source, errores, cruce });
   }
 
   return jsonRes({ ok: true, resultado });

@@ -1,10 +1,10 @@
 // Fuentes de la tasa USD/VES y validacion. Puro, sin Deno ni Supabase: lo
 // importa la edge function y los tests (src/test/exchangeRateSync.test.js).
 //
-// Primaria: ve.dolarapi.com (JSON, sirve bien por HTTPS). Respaldo: bcv.org.ve,
-// la fuente oficial, pero su certificado llega con la cadena incompleta y el
-// fetch de Deno lo rechaza ("unable to verify the first certificate", visto el
-// 13/nov/2026), asi que solo sirve si algun dia lo arreglan.
+// Primaria: bcv.org.ve, la fuente oficial. Su servidor manda la intermedia
+// equivocada y el fetch normal falla ("unable to verify the first certificate"):
+// se arma el cliente con la intermedia correcta (bcv-ca.ts), sin desactivar la
+// verificacion. Respaldo: ve.dolarapi.com (agregador de una sola persona).
 
 export type TasaLeida = { rate: number; fecha: string | null; source: string };
 
@@ -29,11 +29,14 @@ export function parseDolarApi(json: unknown): TasaLeida | null {
   return { rate, fecha: f ? f[0] : null, source: "dolarapi" };
 }
 
-/** Home de bcv.org.ve: el bloque `id="dolar"` trae <strong> 911,62430000 </strong>. */
+/** Home de bcv.org.ve: el bloque `id="dolar"` trae `<strong class="strong-tb">914,02180000</strong>`
+ *  y despues "Fecha Valor" con `content="2026-11-16T00:00:00-04:00"` (el dia en que rige). */
 export function parseBcv(html: string): TasaLeida | null {
-  const bloque = String(html).match(/id="dolar"[\s\S]{0,600}?<strong>\s*([\d.,]+)\s*<\/strong>/i);
+  const bloque = String(html).match(/id="dolar"[\s\S]{0,900}?<strong[^>]*>\s*([\d.,]+)\s*<\/strong>([\s\S]{0,500})/i);
   const rate = numeroPositivo(bloque?.[1]);
-  return rate == null ? null : { rate, fecha: null, source: "bcv" };
+  if (rate == null) return null;
+  const f = String(bloque?.[2] ?? "").match(/content="(\d{4}-\d{2}-\d{2})T/);
+  return { rate, fecha: f ? f[1] : null, source: "bcv" };
 }
 
 /** Variacion maxima aceptada contra la ultima tasa (20%): el bolivar se mueve
@@ -78,29 +81,68 @@ export async function guardarTasa(sb: any, f: FilaTasa): Promise<{ estado: "ok" 
 
 type Fuente = { nombre: string; leer: () => Promise<TasaLeida | null> };
 
-async function traer(url: string, tipo: "json" | "text") {
-  const r = await fetch(url, { signal: AbortSignal.timeout(10000), headers: { "User-Agent": "dico-exchange-rate-sync" } });
+// deno-lint-ignore no-explicit-any
+async function traer(url: string, tipo: "json" | "text", client?: any) {
+  const r = await fetch(url, {
+    signal: AbortSignal.timeout(10000), headers: { "User-Agent": "dico-exchange-rate-sync" },
+    ...(client ? { client } : {}),
+  });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return tipo === "json" ? r.json() : r.text();
 }
 
+/** BCV con la intermedia que le falta a su cadena (bcv-ca.ts), solo para este
+ *  fetch y con la verificacion TLS activa. Si el runtime no tiene
+ *  Deno.createHttpClient, lanza: tasaVigente lo anota y sigue con el respaldo. */
+async function leerBcv(): Promise<TasaLeida | null> {
+  // deno-lint-ignore no-explicit-any
+  const deno = (globalThis as any).Deno;
+  if (typeof deno?.createHttpClient !== "function") throw new Error("Deno.createHttpClient no disponible");
+  const { BCV_CA_PEM } = await import("./bcv-ca.ts");
+  const client = deno.createHttpClient({ caCerts: [BCV_CA_PEM] });
+  try {
+    return parseBcv(await traer("https://www.bcv.org.ve/", "text", client));
+  } finally {
+    client.close?.();
+  }
+}
+
+/** Orden = prioridad: el BCV oficial primero, dolarapi de respaldo. */
 export const FUENTES: Fuente[] = [
+  { nombre: "bcv", leer: leerBcv },
   { nombre: "dolarapi", leer: async () => parseDolarApi(await traer("https://ve.dolarapi.com/v1/dolares/oficial", "json")) },
-  { nombre: "bcv", leer: async () => parseBcv(await traer("https://www.bcv.org.ve/", "text")) },
 ];
 
-/** Primera fuente que responde con un valor valido y razonable. */
-export async function tasaVigente(ultima: number | null, fuentes: Fuente[] = FUENTES) {
+/** Diferencia relativa entre dos fuentes que se avisa en el resultado (1%). */
+export const DIFERENCIA_AVISO = 0.01;
+
+/**
+ * Lee todas las fuentes. Gana la primera valida (por orden); si hay una
+ * segunda valida, devuelve la diferencia entre ambas y un aviso si pasa 1%
+ * (igual se guarda la primera). Una fuente con "Fecha Valor" posterior a hoy
+ * (el BCV publica a la tarde la tasa del dia habil siguiente) todavia no rige:
+ * se descarta y se sigue con la que sigue.
+ */
+export async function tasaVigente(ultima: number | null, fuentes: Fuente[] = FUENTES, hoy?: string) {
   const errores: string[] = [];
+  const validas: TasaLeida[] = [];
   for (const f of fuentes) {
     try {
       const t = await f.leer();
       if (!t) { errores.push(`${f.nombre}: sin valor`); continue; }
+      if (hoy && t.fecha && t.fecha > hoy) { errores.push(`${f.nombre}: rige desde ${t.fecha}, todavia no`); continue; }
       if (!variacionRazonable(t.rate, ultima)) { errores.push(`${f.nombre}: variacion fuera de rango (${t.rate} vs ${ultima})`); continue; }
-      return { tasa: t, errores };
+      validas.push(t);
     } catch (e) {
       errores.push(`${f.nombre}: ${(e as Error).message}`);
     }
   }
-  return { tasa: null, errores };
+  const [tasa, otra] = validas;
+  if (!tasa) return { tasa: null, errores };
+  if (!otra) return { tasa, errores };
+  const diferencia = Math.abs(tasa.rate - otra.rate) / tasa.rate;
+  return {
+    tasa, errores,
+    cruce: { contra: otra.source, rate: otra.rate, diferencia, aviso: diferencia > DIFERENCIA_AVISO },
+  };
 }
