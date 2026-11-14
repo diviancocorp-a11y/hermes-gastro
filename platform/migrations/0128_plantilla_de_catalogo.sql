@@ -1,6 +1,6 @@
 -- 0128 — Plantilla de catalogo por tenant ("pop"), marca configurable y
 -- atributos de producto para la portada (etiqueta, destacado, proximamente, dias).
--- SIN APLICAR (la aplica la directora tras auditarla). Solo expandir.
+-- Aplicada via MCP el 2026-11-14. Solo expandir.
 --
 -- 1. settings.catalog_template ('default' | 'pop') y settings.catalog_template_config
 --    (jsonb, claves planas y pocas, validado por private.valid_template_config).
