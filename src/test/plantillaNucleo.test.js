@@ -57,6 +57,11 @@ describe('marcaATokens', () => {
     expect(t['--ac-text']).toBe('#111111');
     expect(t['--on-ac']).toBe('#111111');
   });
+  it('un primario que pasa sobre el fondo pero no sobre las tarjetas (--b2) tambien cae al texto', () => {
+    const m = { primario: '#767676', fondo: '#ffffff', texto: '#111111' };
+    expect(contraste(m.primario, m.fondo)).toBeGreaterThanOrEqual(4.5);
+    expect(marcaATokens(m)['--ac-text']).toBe('#111111');
+  });
   it('fuera de la lista cerrada de fuentes no emite nada', () => {
     expect(marcaATokens({ fuente_titulo: 'Comic Sans' })['--font-heading']).toBeUndefined();
   });

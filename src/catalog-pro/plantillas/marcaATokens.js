@@ -69,7 +69,8 @@ export function marcaATokens(marca = {}, tema = 'ambar') {
   // Siempre: color del texto sobre el primario y primario usable como texto,
   // calculados con lo efectivo (marca o tema) para cumplir 4.5:1.
   t['--on-ac'] = textoSobre(primario);
-  t['--ac-text'] = contraste(primario, fondo) >= 4.5 ? primario : texto;
+  // Tambien sobre el gris de las tarjetas (--b2, 5% de texto sobre el fondo).
+  t['--ac-text'] = contraste(primario, fondo) >= 4.5 && contraste(primario, mezclar(texto, fondo, 5)) >= 4.5 ? primario : texto;
 
   if (m.primario) {
     t['--ac'] = primario;
