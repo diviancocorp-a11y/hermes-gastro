@@ -54,7 +54,9 @@
         "deal_pct",
         "store_name",
         "app_url",
-        "catalog_profile"
+        "catalog_profile",
+        "catalog_template",
+        "catalog_template_config"
       ],
       "serverOnly": [
         "id",

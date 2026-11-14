@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────
 
 import { z } from 'zod';
+import { PLANTILLAS, PlantillaConfigSchema } from '../plantillaConfig';
 
 // ─── Helpers reutilizables ───────────────────────────────
 
@@ -256,6 +257,9 @@ export const SettingsInputSchema = z.object({
   payment_accounts: z.array(PaymentAccountSchema).nullable().optional(),
   // Tema visual: ambar (default) | noche | carbon
   catalog_theme: z.enum(['ambar', 'noche', 'carbon']).nullable().optional(),
+  // Plantilla del catalogo (null = default) y su config de marca (0128)
+  catalog_template: z.enum(PLANTILLAS).nullable().optional(),
+  catalog_template_config: PlantillaConfigSchema.nullable().optional(),
   // Identidad social / SEO
   slogan: optionalText(300),
   whatsapp: optionalText(50),
@@ -471,6 +475,14 @@ export const CatalogAttributesSchema = z.object({
   family_pack: z.string().trim().regex(/^[0-9]{1,3}$/).optional(),
   features: z.array(z.enum(['vegetarian', 'vegan', 'gluten_free'])).max(3)
     .refine(values => new Set(values).size === values.length, 'Características repetidas').optional(),
+  // Portada de la plantilla (0128): etiqueta corta, destacado, proximamente y
+  // dias de la semana (0 = domingo) en que se ofrece.
+  tag: z.string().trim().max(24).optional(),
+  featured: z.boolean().optional(),
+  coming_soon: z.boolean().optional(),
+  days: z.array(z.number().int().min(0).max(6)).max(7)
+    .refine(values => new Set(values).size === values.length, 'Dias repetidos').optional(),
+  // Fase 4 (opciones y sugerencias): sumar sus claves debajo de esta linea.
 }).strict();
 
 // Metadatos opcionales: omitirlos conserva lo guardado por clientes anteriores.
