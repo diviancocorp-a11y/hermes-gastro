@@ -1,5 +1,5 @@
 -- 0126 Venezuela y doble moneda (Cochi, fase 1).
--- Pendiente de aplicar
+-- Aplicada via MCP el 2026-11-14
 --
 -- Decision de Ricky: el dolar es la verdad. Un solo precio por producto, en la
 -- moneda principal del negocio (`tenants.currency`, USD para Cochi); el bolivar
