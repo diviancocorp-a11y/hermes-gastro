@@ -9,7 +9,9 @@
 // Props:
 //   product (real DB shape), related (productos reales),
 //   hasDeal(p), dealPrice(p),
-//   onBack(), onAddToCart(product, qty), onSelectRelated(p), onToggleFav(id), isFav
+//   onBack(), onAddToCart(product, qty, size, extra), onSelectRelated(p), onToggleFav(id), isFav
+//   suggestions (get_catalog.suggestions), allProducts (para el producto sugerido), timezone.
+//   extra = { selection, note, suggestion: {rule, product, unitPrice, qty} | null, extrasPrice }
 
 import { useState, useRef, useEffect } from "react";
 import BadgeTag from "../components/BadgeTag";
@@ -17,12 +19,19 @@ import Icon from "./Icon";
 import { fmtAR } from "./format";
 import { ProductPhoto, Rating, Stepper, AddRound, SectionHeader, SoldOutBadge } from "./atoms";
 import { mapProduct } from "./homeHelpers";
+import OpcionesProducto from "./OpcionesProducto";
+import SugerenciaAlPedir from "./SugerenciaAlPedir";
+import {
+  ahoraEnZona, extrasDeSeleccion, limitesDeGrupo, limpiarNota, resolverOpciones,
+  seleccionDesdeEstado, sugerenciaParaProducto,
+} from "../lib/opcionesPedido";
 import ProductCharacteristics from "./ProductCharacteristics";
 import { getProductFeatures } from "../lib/catalogFacets";
 
 export default function ProductDetailScreen({
   product, related = [], hasDeal, dealPrice,
   soldOutIds, // Set de recipe_ids agotados
+  suggestions = [], allProducts = [], timezone = null,
   onBack, onAddToCart, onSelectRelated, onToggleFav, isFav = false,
 }) {
   const p = mapProduct(product, { hasDeal, dealPrice, soldOutIds });
@@ -41,6 +50,11 @@ export default function ProductDetailScreen({
   const [selectedSizeIdx, setSelectedSizeIdx] = useState(0);
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
+  // Opciones del producto (0135) y sugerencia al pedir.
+  const grupos = Array.isArray(product?.option_groups) ? product.option_groups : [];
+  const [opts, setOpts] = useState({});
+  const [intento, setIntento] = useState(false);
+  const [sugOn, setSugOn] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const scrollRef = useRef(null);
 
@@ -54,7 +68,41 @@ export default function ProductDetailScreen({
 
   const selectedSize = sizes ? sizes[selectedSizeIdx] : null;
   const unitPrice = selectedSize ? Number(selectedSize.price) || 0 : p.price;
-  const total = unitPrice * qty;
+  const seleccion = seleccionDesdeEstado(opts);
+  const extras = extrasDeSeleccion(grupos, seleccion);
+  const faltan = new Set(grupos.filter((g) => {
+    const { min, max } = limitesDeGrupo(g);
+    const n = seleccion.filter((x) => x.groupId === g.id).length;
+    return n < min || n > max;
+  }).map((g) => g.id));
+  const regla = suggestions.length
+    ? sugerenciaParaProducto(suggestions, product, allProducts, ahoraEnZona(timezone))
+    : null;
+  const sugProducto = regla ? allProducts.find((x) => x.id === regla.add_product_id) : null;
+  const sugNormal = sugProducto ? dealPrice?.(sugProducto) ?? Number(sugProducto.sale_price) ?? 0 : 0;
+  const sugPrecio = regla && regla.special_price != null ? Math.min(sugNormal, Number(regla.special_price)) : sugNormal;
+  const sugQty = regla ? Math.max(1, regla.max_per_item || 1) * qty : 0;
+  const total = (unitPrice + extras) * qty + (sugOn && regla ? sugPrecio * sugQty : 0);
+  const agregar = () => {
+    if (soldOut) return;
+    if (faltan.size) {
+      setIntento(true);
+      document.getElementById(`opt-${[...faltan][0]}`)?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      return;
+    }
+    const opcionesOk = resolverOpciones(grupos, seleccion);
+    onAddToCart?.(product, qty, selectedSize ? {
+      size_label: selectedSize.label,
+      size_qty:   Number(selectedSize.qty) || 1,
+      size_price: Number(selectedSize.price) || 0,
+    } : null, {
+      selection: seleccion,
+      elegidas: opcionesOk.ok ? opcionesOk.elegidas : [],
+      note: limpiarNota(notes),
+      extrasPrice: extras,
+      suggestion: sugOn && regla ? { rule: regla, product: sugProducto, unitPrice: sugPrecio, qty: sugQty } : null,
+    });
+  };
   const relatedMapped = related.slice(0, 4).map(x => mapProduct(x, { hasDeal, dealPrice, soldOutIds }));
 
   return (
@@ -202,6 +250,16 @@ export default function ProductDetailScreen({
         </div>
       )}
 
+      {grupos.length > 0 && (
+        <OpcionesProducto grupos={grupos} estado={opts} onChange={setOpts} formato={fmtAR}
+          faltan={intento ? faltan : new Set()} />
+      )}
+
+      {regla && sugProducto && (
+        <SugerenciaAlPedir regla={regla} producto={sugProducto} precioNormal={sugNormal}
+          precioEspecial={sugPrecio} marcada={sugOn} onChange={setSugOn} formato={fmtAR} />
+      )}
+
       {/* Notas */}
       <div style={{ padding: "24px 22px 0" }}>
         <h3 style={{ margin: "0 0 6px", fontFamily: "var(--font-heading)", fontSize: 20, color: "var(--tx)" }}>
@@ -293,11 +351,7 @@ export default function ProductDetailScreen({
         <Stepper value={qty} onChange={(v) => setQty(Math.max(1, v))} size="lg" />
         <button
           disabled={soldOut}
-          onClick={soldOut ? undefined : () => onAddToCart?.(product, qty, selectedSize ? {
-            size_label: selectedSize.label,
-            size_qty:   Number(selectedSize.qty) || 1,
-            size_price: Number(selectedSize.price) || 0,
-          } : null)}
+          onClick={soldOut ? undefined : agregar}
           style={{
             flex: 1, height: 52, borderRadius: "var(--rs)", border: 0,
             background: soldOut ? "var(--b3)" : "var(--ac)",

@@ -68,6 +68,7 @@ export default function Catalog() {
     } catch { return fallbackSettings; }
   });
   const [products, setProducts] = useState([]);
+  const [suggestions, setSuggestions] = useState([]); // get_catalog.suggestions (0135)
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const { toast, ToastContainer } = useToast();
@@ -341,6 +342,7 @@ export default function Catalog() {
           }));
         } catch { /* empty */ }
         setProducts(data.products);
+        setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
         if (data.serverNow) { serverNowCargadoEn.current = Date.now(); setServerNow(new Date(data.serverNow)); }
         // Probe if Supabase image transforms are available (Pro plan feature)
         probeImageTransforms(data.settings?.cover_url);
@@ -497,7 +499,7 @@ export default function Catalog() {
   // ProductDetailScreen cuando la receta tiene presentaciones.
   // `quiet` (4to arg): no muestra el toast individual; lo usa la pantalla de familia
   // para avisar UNA sola vez al agregar varios sabores.
-  const addC = useCallback((p, e, size = null, quiet = false) => {
+  const addC = useCallback((p, e, size = null, quiet = false, extra = null) => {
     // Permitir signatura (p, size) — si e es un objeto sin stopPropagation, lo tratamos como size.
     if (e && typeof e === "object" && !("stopPropagation" in e) && !size) {
       size = e; e = null;
@@ -520,10 +522,19 @@ export default function Catalog() {
         return;
       }
     }
-    const finalPrice = size ? size.size_price : getPrice(p);
-    // Cart key: items con tamaños distintos son entradas distintas.
-    const itemKey = size ? `${p.id}__${size.size_label}` : p.id;
-    const displayName = size ? `${p.name} · ${size.size_label}` : p.name;
+    // `extra` (ficha, 0135): opciones elegidas, nota y precio especial de una
+    // sugerencia. El precio es solo la vista previa: submit-order lo recalcula.
+    const extrasPrice = extra?.extrasPrice || 0;
+    const finalPrice = (extra?.unitPrice ?? (size ? size.size_price : getPrice(p))) + extrasPrice;
+    const configuracion = extra
+      ? JSON.stringify([extra.selection || [], extra.note || "", extra.suggestionId || ""])
+      : "";
+    const hayConfig = extra && ((extra.selection || []).length || extra.note || extra.suggestionId);
+    // Cart key: tamaño, opciones, nota y sugerencia distintos son lineas distintas.
+    const partesClave = [size ? size.size_label : "", hayConfig ? configuracion : ""].filter(Boolean);
+    const itemKey = partesClave.length ? `${p.id}__${partesClave.join("__")}` : p.id;
+    const sufijoOpciones = (extra?.elegidas || []).map((o) => (o.qty > 1 ? `${o.label} x${o.qty}` : o.label)).join(", ");
+    const displayName = [p.name, size?.size_label, sufijoOpciones].filter(Boolean).join(" · ");
     if (!quiet) toast(`✓ ${displayName} agregado`);
     setCart(prev => {
       const isNewProduct = !prev.find(i => i.id === itemKey);
@@ -534,6 +545,9 @@ export default function Catalog() {
             product_id: p.id,
             size_label: size?.size_label || null,
             size_qty:   size?.size_qty || 1,
+            ...(extra?.selection?.length ? { selection: extra.selection } : {}),
+            ...(extra?.note ? { note: extra.note } : {}),
+            ...(extra?.suggestionId ? { suggestionId: extra.suggestionId } : {}),
           }]
         : prev.map(i => i.id === itemKey ? { ...i, qty: i.qty + 1 } : i);
       if (isNewProduct && p.related_ids && p.related_ids.length > 0) {
@@ -543,6 +557,16 @@ export default function Catalog() {
       return newCart;
     });
   }, [products, getPrice, toast, soldOutIds]);
+
+  // Ficha de producto -> carrito: el producto con su configuracion (opciones,
+  // nota) y, si la pidio, la sugerencia como linea propia a su precio especial.
+  const agregarDesdeFicha = (p, qty, size, extra) => {
+    for (let i = 0; i < qty; i++) addC(p, null, size, false, extra);
+    if (extra?.suggestion) {
+      const { rule, product: sugerido, unitPrice, qty: unidades } = extra.suggestion;
+      for (let i = 0; i < unidades; i++) addC(sugerido, null, null, true, { unitPrice, suggestionId: rule.id });
+    }
+  };
 
   // Agregar desde upsell y cerrar popup (memoizado)
   const addFromUpsell = useCallback((p) => {
@@ -635,9 +659,14 @@ export default function Catalog() {
       delivery_date: entrega ? (entrega.fechaISO || null) : null,
       user_id: user?.id || null,
       items: cart.map(i => ({
-        recipeId: i.id,
+        // product_id: la clave del carrito (i.id) puede llevar tamaño u opciones.
+        recipeId: i.product_id || i.id,
         qty: i.qty,
-        unitPrice: i.price
+        unitPrice: i.price,
+        // 0135: el servidor valida y recalcula el precio; solo viajan si existen.
+        ...(i.selection?.length ? { selection: i.selection } : {}),
+        ...(i.note ? { note: i.note } : {}),
+        ...(i.suggestionId ? { suggestionId: i.suggestionId } : {}),
       }))
     };
 
@@ -1019,16 +1048,19 @@ export default function Catalog() {
             .slice(0, 4)}
           onBack={() => setCpDetail(null)}
           onSelectRelated={(p) => { setCpDetail(p); window.scrollTo({ top: 0 }); }}
-          onAddToCart={(p, qty = 1, size = null) => {
+          suggestions={suggestions}
+          allProducts={products}
+          timezone={sett.timezone}
+          onAddToCart={(p, qty = 1, size = null, extra = null) => {
             // +18: si pendiente confirmacion, abrir solo el modal y diferir el resto.
             // El onConfirm del AgeGate cierra detail y abre cart despues.
             let alreadyConfirmed = false;
             try { alreadyConfirmed = !!sessionStorage.getItem("hg_age_18_cart"); } catch { /* empty */ }
             if (p?.requires_age_gate && !alreadyConfirmed) {
-              setAgeGatePending({ product: p, size, qty, fromDetail: true });
+              setAgeGatePending({ product: p, size, qty, extra, fromDetail: true });
               return;
             }
-            for (let i = 0; i < qty; i++) addC(p, null, size);
+            agregarDesdeFicha(p, qty, size, extra);
             setCpDetail(null);
             setShowCart(true);
           }}
@@ -1057,9 +1089,10 @@ export default function Catalog() {
           title={ageGatePending.product?.name || "este producto"}
           onConfirm={() => {
             try { sessionStorage.setItem("hg_age_18_cart", "1"); } catch { /* empty */ }
-            const { product, size, qty = 1, fromDetail } = ageGatePending;
+            const { product, size, qty = 1, extra = null, fromDetail } = ageGatePending;
             setAgeGatePending(null);
-            for (let i = 0; i < qty; i++) addC(product, null, size);
+            if (fromDetail) agregarDesdeFicha(product, qty, size, extra);
+            else for (let i = 0; i < qty; i++) addC(product, null, size);
             if (fromDetail) {
               setCpDetail(null);
               setShowCart(true);
