@@ -485,8 +485,29 @@ export const CatalogAttributesSchema = z.object({
   // Fase 4 (opciones y sugerencias): sumar sus claves debajo de esta linea.
 }).strict();
 
+// Opciones por producto (0135). Espejo de private.valid_option_groups.
+const SlugIdSchema = z.string().regex(/^[a-z0-9_-]{1,40}$/);
+export const OptionChoiceSchema = z.object({
+  id: SlugIdSchema,
+  label: z.string().trim().min(1).max(80),
+  price: z.number().min(0).max(1000000).optional(),
+  max_qty: z.number().int().min(1).max(99).optional(),
+}).strict();
+export const OptionGroupSchema = z.object({
+  id: SlugIdSchema,
+  name: z.string().trim().min(1).max(80),
+  type: z.enum(['single', 'multiple']),
+  required: z.boolean().optional(),
+  min: z.number().int().min(0).optional(),
+  max: z.number().int().min(1).optional(),
+  choices: z.array(OptionChoiceSchema).min(1).max(30),
+}).strict();
+export const OptionGroupsSchema = z.array(OptionGroupSchema).max(8)
+  .refine(g => new Set(g.map(x => x.id)).size === g.length, 'Grupos repetidos');
+
 // Metadatos opcionales: omitirlos conserva lo guardado por clientes anteriores.
 export const ProductMetadataInputSchema = z.object({
   allergens: ProductAllergensInputSchema.shape.allergens.optional(),
   catalog_attributes: CatalogAttributesSchema.optional(),
+  option_groups: OptionGroupsSchema.optional(),
 }).strict();

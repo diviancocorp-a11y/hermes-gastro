@@ -1,7 +1,7 @@
 {
   "_comment": "Snapshot del schema del EDIFICIO; datos obtenidos de schema_snapshot() via MCP. Regenerar con npm run schema:sync.",
   "_refreshed_at": "2026-11-15",
-  "_migrations_through": "0134",
+  "_migrations_through": "0135",
   "tables": {
     "addresses": [
       "id",
@@ -402,7 +402,9 @@
       "note",
       "ready_at",
       "station_id",
-      "sector_id"
+      "sector_id",
+      "selection",
+      "suggestion_id"
     ],
     "orders": [
       "id",
@@ -628,7 +630,8 @@
       "allergens",
       "buffer_after_min",
       "is_addon",
-      "catalog_attributes"
+      "catalog_attributes",
+      "option_groups"
     ],
     "profiles": [
       "id",
@@ -1146,6 +1149,23 @@
       "date",
       "created_at",
       "client_request_id"
+    ],
+    "product_suggestions": [
+      "id",
+      "tenant_id",
+      "title",
+      "body",
+      "when_categories",
+      "add_product_id",
+      "special_price",
+      "max_per_item",
+      "days",
+      "start_time",
+      "end_time",
+      "start_date",
+      "end_date",
+      "active",
+      "created_at"
     ]
   }
 }

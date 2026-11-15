@@ -213,7 +213,8 @@
       "schema": "ProductMetadataInputSchema",
       "columns": [
         "allergens",
-        "catalog_attributes"
+        "catalog_attributes",
+        "option_groups"
       ],
       "serverOnly": [],
       "$comment": "Metadatos validados al guardar productos del edificio; alergenos mantienen su API parcial."
