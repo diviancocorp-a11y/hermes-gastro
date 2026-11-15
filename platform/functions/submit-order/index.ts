@@ -20,6 +20,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { ahoraEnZona, aplicarSugerencias, resolverOpciones, textoParaCocina, type Regla } from "./opciones.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -69,7 +70,7 @@ Deno.serve(async (req) => {
 
     const { data: tenant, error: tenantErr } = await supabase
       .from("tenants")
-      .select("id, settings")
+      .select("id, settings, timezone")
       .eq("slug", tenantSlug)
       .single();
     if (tenantErr || !tenant) return jsonRes({ error: "Local no encontrado" }, 404);
@@ -218,7 +219,7 @@ Deno.serve(async (req) => {
     // El filtro por tenant_id es lo que impide pedir un producto de OTRO local.
     const { data: dbProducts, error: prodErr } = await supabase
       .from("products")
-      .select("id, name, price, category, active, requires_age_gate")
+      .select("id, name, price, category, active, requires_age_gate, option_groups")
       .eq("tenant_id", tenantId)
       .in("id", productIds);
     if (prodErr || !dbProducts) return jsonRes({ error: "Error al obtener productos" }, 500);
@@ -226,21 +227,67 @@ Deno.serve(async (req) => {
     const productMap: Record<string, Record<string, unknown>> = {};
     for (const p of dbProducts) productMap[p.id] = p;
 
+    // Sugerencias al pedir (0135): solo se consultan si algun item trae una.
+    // Una sugerencia vencida o invalida NO rechaza el pedido: esa linea se cobra
+    // al precio normal y la respuesta lo avisa en `warnings`.
+    const suggestionIds = [...new Set(
+      items.map((it: Record<string, unknown>) => it.suggestionId).filter((v: unknown) =>
+        typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v)
+      ),
+    )];
+    let reglas: Regla[] = [];
+    if (suggestionIds.length) {
+      const { data: reglasDb } = await supabase
+        .from("product_suggestions")
+        .select("id, when_categories, add_product_id, special_price, max_per_item, days, start_time, end_time, start_date, end_date, active")
+        .eq("tenant_id", tenantId)
+        .eq("active", true)
+        .in("id", suggestionIds);
+      reglas = (reglasDb || []).map((r) => ({ ...r, special_price: r.special_price == null ? null : Number(r.special_price) })) as Regla[];
+    }
+    const lineasSug = items.map((item: Record<string, unknown>) => {
+      const prod = productMap[String(item.recipeId || item.productId)];
+      return {
+        productId: String(item.recipeId || item.productId),
+        categoria: (prod?.category as string) ?? null,
+        qty: Math.max(1, Math.min(999, Math.round(Number(item.qty) || 1))),
+        suggestionId: typeof item.suggestionId === "string" ? item.suggestionId : null,
+      };
+    });
+    const sugerencias = aplicarSugerencias(lineasSug, reglas, ahoraEnZona(tenant.timezone as string | null));
+    const warnings: { code: string; productId: string }[] = [];
+
     let serverSubtotal = 0;
     const validatedItems = [];
-    for (const item of items) {
+    for (const [idx, item] of items.entries()) {
       const pid = item.recipeId || item.productId;
       const prod = productMap[pid];
       if (!prod) return jsonRes({ error: `Producto no encontrado: ${pid}` }, 400);
       if (!prod.active) return jsonRes({ error: "Uno de los productos no esta disponible" }, 400);
       const qty = Math.max(1, Math.min(999, Math.round(item.qty || 1)));
       const basePrice = Number(prod.price) || 0;
-      const unitPrice = hasDealToday(prod.category as string)
+      const precioDelDia = hasDealToday(prod.category as string)
         ? Math.round(basePrice * (1 - dealPct / 100))
         : basePrice;
-      const subtotal = qty * unitPrice;
+      // El descuento del dia y el precio especial de la sugerencia no se
+      // acumulan: gana el menor. Los extras de las opciones se suman al final
+      // y el descuento NO los toca.
+      const { regla, aviso } = sugerencias[idx];
+      if (aviso) warnings.push({ code: aviso, productId: pid });
+      const precioBase = regla && regla.special_price != null
+        ? Math.min(precioDelDia, regla.special_price)
+        : precioDelDia;
+      const opciones = resolverOpciones(prod.option_groups, item.selection);
+      if (!opciones.ok) return jsonRes({ error: `${prod.name}: ${opciones.error}` }, 400);
+      const unitPrice = Math.round((precioBase + opciones.extras) * 100) / 100;
+      const subtotal = Math.round(qty * unitPrice * 100) / 100;
       serverSubtotal += subtotal;
-      validatedItems.push({ productId: pid, name: prod.name, qty, unitPrice, subtotal });
+      validatedItems.push({
+        productId: pid, name: prod.name, qty, unitPrice, subtotal,
+        selection: opciones.elegidas.length ? opciones.elegidas : null,
+        suggestionId: regla ? regla.id : null,
+        note: textoParaCocina(opciones.elegidas, item.note),
+      });
     }
 
     // ── Cupon (scopeado al tenant) ──────────────────────────────────
@@ -377,6 +424,10 @@ Deno.serve(async (req) => {
       unit_price: it.unitPrice,
       unit_cost: Math.round((unitCostByProduct[it.productId] || 0) * 100) / 100,
       subtotal: it.subtotal,
+      // Solo cuando hay algo que guardar: un item viejo inserta exactamente lo de siempre.
+      ...(it.selection ? { selection: it.selection } : {}),
+      ...(it.suggestionId ? { suggestion_id: it.suggestionId } : {}),
+      ...(it.note ? { note: it.note } : {}),
     }));
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
     if (itemsError) {
@@ -423,6 +474,7 @@ Deno.serve(async (req) => {
       delivery_cost: deliveryCost,
       review_status: tableVisit ? "pending" : "not_required",
       risk_flags: riskFlags,
+      ...(warnings.length ? { warnings } : {}),
     });
   } catch (err) {
     console.error("submit-order error:", err);
