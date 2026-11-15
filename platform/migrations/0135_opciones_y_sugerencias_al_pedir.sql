@@ -88,6 +88,29 @@ create policy product_suggestions_write on public.product_suggestions
   for all using (tenant_id in (select private.current_user_tenants()))
   with check (tenant_id in (select private.current_user_tenants()));
 
+-- La FK sola deja que add_product_id apunte a un producto de OTRO tenant y la
+-- policy solo mira tenant_id de la fila: este trigger exige que el producto
+-- sugerido sea del mismo tenant. Security invoker: el que escribe ya tiene RLS
+-- sobre products, asi que un producto ajeno ni lo ve y falla igual.
+create function private.suggestion_product_same_tenant()
+returns trigger language plpgsql security invoker set search_path = ''
+as $t$
+begin
+  if not exists (
+    select 1 from public.products p
+     where p.id = new.add_product_id and p.tenant_id = new.tenant_id
+  ) then
+    raise exception 'add_product_id no pertenece al tenant de la sugerencia' using errcode = '23514';
+  end if;
+  return new;
+end $t$;
+revoke all on function private.suggestion_product_same_tenant() from public, anon;
+grant execute on function private.suggestion_product_same_tenant() to authenticated, service_role;
+drop trigger if exists trg_suggestion_product_same_tenant on public.product_suggestions;
+create trigger trg_suggestion_product_same_tenant
+  before insert or update of add_product_id, tenant_id on public.product_suggestions
+  for each row execute function private.suggestion_product_same_tenant();
+
 alter table public.order_items add column if not exists selection jsonb;
 alter table public.order_items add column if not exists suggestion_id uuid references public.product_suggestions(id) on delete set null;
 

@@ -248,3 +248,12 @@ describe('submit-order con opciones y sugerencias', () => {
     expect(r.status).toBe(400);
   });
 });
+
+describe('migracion 0135', () => {
+  const sql = readFileSync('platform/migrations/0135_opciones_y_sugerencias_al_pedir.sql', 'utf8');
+  it('la sugerencia no puede apuntar a un producto de otro tenant (trigger)', () => {
+    expect(sql).toMatch(/before insert or update of add_product_id, tenant_id on public\.product_suggestions/);
+    expect(sql).toMatch(/p\.id = new\.add_product_id and p\.tenant_id = new\.tenant_id/);
+    expect(sql).toMatch(/revoke all on function private\.suggestion_product_same_tenant\(\) from public, anon/);
+  });
+});
