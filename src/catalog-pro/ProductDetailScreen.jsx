@@ -87,7 +87,9 @@ export default function ProductDetailScreen({
     if (soldOut) return;
     if (faltan.size) {
       setIntento(true);
-      document.getElementById(`opt-${[...faltan][0]}`)?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      const grupo = document.getElementById(`opt-${[...faltan][0]}`);
+      grupo?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      grupo?.querySelector("input")?.focus({ preventScroll: true });
       return;
     }
     const opcionesOk = resolverOpciones(grupos, seleccion);

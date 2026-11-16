@@ -34,7 +34,7 @@ describe('ficha con opciones', () => {
     const onAdd = ficha();
     fireEvent.click(screen.getByText('Agregar al pedido'));
     expect(onAdd).not.toHaveBeenCalled();
-    expect(screen.getAllByText(/Obligatorio/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Falta elegir/i).length).toBe(1);
   });
 
   it('manda seleccion, nota y extras; la sugerencia viaja como linea propia', () => {

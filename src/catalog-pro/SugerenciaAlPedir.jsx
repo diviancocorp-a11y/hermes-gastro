@@ -25,7 +25,7 @@ export default function SugerenciaAlPedir({ regla, producto, precioNormal, preci
         <span style={{ textAlign: "right", flexShrink: 0 }}>
           <span style={{ display: "block", fontWeight: 700, fontSize: 14.5, color: "var(--tx)" }}>+{formato(precioEspecial)}</span>
           {ahorro > 0 && (
-            <span style={{ display: "block", fontSize: 11.5, fontWeight: 700, color: "var(--ok, #2A9D6E)" }}>Ahorrás {formato(ahorro)}</span>
+            <span style={{ display: "block", fontSize: 11.5, fontWeight: 700, color: "var(--tx)" }}>Ahorrás {formato(ahorro)}</span>
           )}
         </span>
       </label>

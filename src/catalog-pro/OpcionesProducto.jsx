@@ -52,14 +52,15 @@ export default function OpcionesProducto({ grupos, estado, onChange, formato, fa
           : "Opcional";
         const tope = g.type === "multiple" && max < g.choices.length ? ` · hasta ${max}` : "";
         return (
-          <fieldset key={g.id} id={`opt-${g.id}`} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+          <fieldset key={g.id} id={`opt-${g.id}`} aria-invalid={pendiente || undefined} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
             <legend style={{ padding: 0, width: "100%" }}>
               <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 20, color: "var(--tx)" }}>{g.name}</span>
                 <span style={{
                   fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0,
-                  color: pendiente ? "var(--err, #C0392B)" : g.required || min > 0 ? "var(--ac)" : "var(--t2)",
-                }}>{regla}{tope}</span>
+                  color: pendiente ? "var(--tx)" : g.required || min > 0 ? "var(--ac)" : "var(--t2)",
+                  textDecoration: pendiente ? "underline wavy var(--err, #C0392B)" : "none",
+                }} role={pendiente ? "alert" : undefined}>{pendiente ? "Falta elegir" : regla}{tope}</span>
               </span>
             </legend>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -90,8 +91,8 @@ export default function OpcionesProducto({ grupos, estado, onChange, formato, fa
                     {activa && !tipoSingle && maxQty > 1 && (
                       <Cantidad
                         valor={qty} max={maxQty} etiqueta={c.label}
-                        onMenos={(e) => { e.preventDefault(); poner(g.id, c.id, qty - 1, g); }}
-                        onMas={(e) => { e.preventDefault(); poner(g.id, c.id, qty + 1, g); }}
+                        onMenos={(e) => { e.preventDefault(); e.stopPropagation(); poner(g.id, c.id, qty - 1, g); }}
+                        onMas={(e) => { e.preventDefault(); e.stopPropagation(); poner(g.id, c.id, qty + 1, g); }}
                       />
                     )}
                   </label>

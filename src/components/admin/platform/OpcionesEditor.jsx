@@ -12,7 +12,12 @@ export default function OpcionesEditor({ grupos, onChange, moneda = '' }) {
   const cambiarOpcion = (i, j, parche) => cambiarGrupo(i, {
     choices: grupos[i].choices.map((c, k) => (k === j ? { ...c, ...parche } : c)),
   });
-  const quitarGrupo = (i) => onChange(grupos.filter((_, k) => k !== i));
+  const quitarGrupo = (i) => {
+    const g = grupos[i];
+    const conDatos = g.name || g.choices.some((c) => c.label);
+    if (conDatos && !window.confirm(`¿Quitar el grupo "${g.name || 'sin nombre'}" y sus opciones?`)) return;
+    onChange(grupos.filter((_, k) => k !== i));
+  };
   const quitarOpcion = (i, j) => cambiarGrupo(i, { choices: grupos[i].choices.filter((_, k) => k !== j) });
   const sumarOpcion = (i) => cambiarGrupo(i, { choices: [...grupos[i].choices, { label: '', price: '', max_qty: '' }] });
 

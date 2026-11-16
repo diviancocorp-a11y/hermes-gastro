@@ -58,7 +58,8 @@
   border-radius: var(--ag-r-md, 10px);
   background: transparent;
   color: var(--ag-ink-2);
-  font-size: 20px;
+  font-size: var(--ds-type-lg, 20px);
+  min-height: var(--ds-control-height-touch);
   cursor: pointer;
 }
 .oe-quitar:disabled { opacity: 0.4; cursor: not-allowed; }
