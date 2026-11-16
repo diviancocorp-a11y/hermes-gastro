@@ -13,6 +13,7 @@ import {
 } from '../../../services/platformAdmin';
 import PantallaDeCobro from './PantallaDeCobro';
 import { vePrecios } from '../../../modules/roles';
+import { formatearMonto } from '../../../lib/moneda';
 
 const LABELS = {
   [PlatformOrderStatus.PENDING_REVIEW]: 'Por revisar',
@@ -75,11 +76,27 @@ const RISK_LABELS = {
   age_restricted: 'Producto con control de edad',
 };
 
-function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, conImportes = true }) {
+function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, onSetDeliveryCost, moneda = null, conImportes = true }) {
   const [open, setOpen] = useState(false);
+  const [costoEnvio, setCostoEnvio] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const [errorEnvio, setErrorEnvio] = useState('');
+  // Un tenant en pesos se ve como siempre; con otra moneda principal, sin redondear a enteros.
+  const principal = moneda?.monedaPrincipal;
+  const fmt = (n) => (principal && principal !== 'ARS' ? formatearMonto(n, principal) : money(n));
+  const envioPendiente = order.delivery_pending === true;
+  const cargarEnvio = async () => {
+    const n = Number(String(costoEnvio).replace(',', '.'));
+    if (costoEnvio === '' || !Number.isFinite(n) || n < 0) { setErrorEnvio('Escribí el costo del envío (0 si va sin cargo).'); return; }
+    setGuardando(true); setErrorEnvio('');
+    const res = await onSetDeliveryCost(order.id, n);
+    setGuardando(false);
+    if (res?.__error) setErrorEnvio(res.message || 'No se pudo cargar el envío');
+  };
   const [items, setItems] = useState(null);
   const next = nextOrderStatus(order.status);
-  const puedeCobrar = !!onCobrar && OPEN_ORDER_STATUSES.includes(order.status);
+  // Con el envio por confirmar el total es parcial: no se cobra hasta cargarlo.
+  const puedeCobrar = !!onCobrar && OPEN_ORDER_STATUSES.includes(order.status) && order.delivery_pending !== true;
   const porRevisar = order.status === PlatformOrderStatus.PENDING_REVIEW;
 
   const toggle = async () => {
@@ -113,13 +130,19 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, conImportes
           <div style={{ fontSize: 12, color: 'var(--ag-ink-3)', marginTop: 2 }}>
             {when(order.created_at)} · {order.delivery === 'envio' ? 'Envío' : 'Retiro'}
             {conImportes && <> · {order.payment}</>}
+            {envioPendiente && <> · <strong style={{ color: '#B15A00' }}>Envío por confirmar</strong></>}
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
           {/* La cocina no ve importes (nota 1 de la matriz de 6f): prepara, no
               cobra, y el margen no tiene por que pasar por ahi. */}
           {conImportes && (
-            <div style={{ fontSize: 14, color: 'var(--ag-ink)' }}>{money(order.total)}</div>
+            <div style={{ fontSize: 14, color: 'var(--ag-ink)' }}>
+              {fmt(order.total)}{envioPendiente ? ' + envío' : ''}
+              {order.total_secondary != null && order.fx_currency && (
+                <div style={{ fontSize: 11, color: 'var(--ag-ink-3)' }}>{formatearMonto(order.total_secondary, order.fx_currency)}</div>
+              )}
+            </div>
           )}
           <div style={{ marginTop: 3 }}><StatusChip status={order.status} /></div>
         </div>
@@ -139,12 +162,40 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, conImportes
           <dl style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--ag-ink-3)' }}>
             {order.customer_phone && <Line label="Teléfono" value={order.customer_phone} />}
             {order.delivery === 'envio' && order.delivery_address && <Line label="Dirección" value={order.delivery_address} />}
-            {conImportes && Number(order.delivery_cost) > 0 && <Line label="Envío" value={money(order.delivery_cost)} />}
-            {conImportes && Number(order.discount) > 0 && <Line label="Descuento" value={`- ${money(order.discount)}`} />}
-            {conImportes && Number(order.tip_amount) > 0 && <Line label="Propina" value={money(order.tip_amount)} />}
+            {conImportes && Number(order.delivery_cost) > 0 && <Line label="Envío" value={fmt(order.delivery_cost)} />}
+            {conImportes && Number(order.discount) > 0 && <Line label="Descuento" value={`- ${fmt(order.discount)}`} />}
+            {conImportes && Number(order.tip_amount) > 0 && <Line label="Propina" value={fmt(order.tip_amount)} />}
+            {conImportes && order.total_secondary != null && order.fx_currency && (
+              <Line label={`Total en ${order.fx_currency}${envioPendiente ? ' (parcial)' : ''}`} value={formatearMonto(order.total_secondary, order.fx_currency)} />
+            )}
+            {conImportes && order.fx_rate > 0 && order.fx_currency && (
+              <Line label="Tasa del pedido" value={`1 ${principal || ''} = ${formatearMonto(order.fx_rate, order.fx_currency)}`.trim()} />
+            )}
             {order.note && <Line label="Nota" value={order.note} />}
             {order.is_gift && <Line label="Regalo" value={order.gift_note || 'Sí'} />}
           </dl>
+
+          {envioPendiente && conImportes && onSetDeliveryCost && (
+            <div style={{ marginTop: 10, padding: '10px 11px', borderLeft: '2px solid #B15A00', background: 'var(--ag-bg-soft)' }}>
+              <label htmlFor={`envio-${order.id}`} style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ag-ink)' }}>
+                Costo del envío{principal ? ` (${principal})` : ''}
+              </label>
+              <span style={{ display: 'block', fontSize: 11, color: 'var(--ag-ink-3)', margin: '2px 0 8px' }}>
+                Se carga una sola vez; el total final se calcula con la tasa de este pedido.
+              </span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  id={`envio-${order.id}`} type="number" inputMode="decimal" min="0" step="0.01"
+                  value={costoEnvio} onChange={e => setCostoEnvio(e.target.value)} placeholder="0.00"
+                  style={{ flex: 1, minWidth: 0, minHeight: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--ag-line)', background: 'var(--ag-bg-card)', color: 'var(--ag-ink)', font: 'inherit' }}
+                />
+                <button type="button" className="ag-btn-primary" disabled={guardando} onClick={cargarEnvio} style={{ minHeight: 44 }}>
+                  {guardando ? 'Cargando…' : 'Cargar envío'}
+                </button>
+              </div>
+              {errorEnvio && <span role="alert" style={{ display: 'block', marginTop: 6, fontSize: 12, color: '#C62828' }}>{errorEnvio}</span>}
+            </div>
+          )}
 
           {porRevisar && (
             <div style={{ marginTop: 10, padding: '9px 10px', borderLeft: '2px solid #D84A3A', background: 'var(--ag-bg-soft)' }}>
@@ -179,7 +230,7 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, conImportes
               style={{ width: '100%', marginTop: 12 }}
               onClick={() => onCobrar(order)}
             >
-              Cobrar {money(order.total)}
+              Cobrar {fmt(order.total)}
             </button>
           )}
 
@@ -226,7 +277,7 @@ function Line({ label, value }) {
 
 export default function OrdersPanel({
   orders, loading, onSetStatus, showToast,
-  onReview,
+  onReview, onSetDeliveryCost = null, moneda = null,
   // Cobrar es opcional: sin `tenantId` el panel se comporta como antes. Asi el
   // catalogo de un negocio que todavia no usa caja no muestra un boton que no
   // lleva a ningun lado.
@@ -241,7 +292,9 @@ export default function OrdersPanel({
 
   const openOrders = orders.filter(o => OPEN_ORDER_STATUSES.includes(o.status))
     .sort((a, b) => Number(b.status === PlatformOrderStatus.PENDING_REVIEW)
-      - Number(a.status === PlatformOrderStatus.PENDING_REVIEW));
+      - Number(a.status === PlatformOrderStatus.PENDING_REVIEW)
+      || Number(b.delivery_pending === true) - Number(a.delivery_pending === true));
+  const conEnvioPendiente = orders.filter(o => o.delivery_pending === true && o.status !== PlatformOrderStatus.CANCELLED).length;
   const closedOrders = orders.filter(o => !OPEN_ORDER_STATUSES.includes(o.status));
 
   const advance = async (order, next) => {
@@ -289,6 +342,11 @@ export default function OrdersPanel({
           fontFamily: "'DM Sans', sans-serif", fontWeight: 800, fontSize: 18,
           margin: 0, color: 'var(--ag-ink)', letterSpacing: '-0.01em',
         }}>Pedidos</h2>
+        {conEnvioPendiente > 0 && conImportes && (
+          <p role="status" style={{ margin: '6px 0 0', fontSize: 12.5, color: '#B15A00' }}>
+            {conEnvioPendiente === 1 ? '1 pedido espera' : `${conEnvioPendiente} pedidos esperan`} el costo del envío.
+          </p>
+        )}
       </div>
 
       <div>
@@ -317,6 +375,8 @@ export default function OrdersPanel({
                   key={o.id} order={o} onAdvance={advance} onCancel={cancel}
                   conImportes={conImportes}
                   onReview={onReview ? review : null}
+                  onSetDeliveryCost={onSetDeliveryCost}
+                  moneda={moneda}
                   onCobrar={tenantId && conImportes ? setCobrando : null}
                 />
               ))}
@@ -333,6 +393,7 @@ export default function OrdersPanel({
               {closedOrders.map(o => (
                 <OrderCard
                   key={o.id} order={o} onAdvance={advance} onCancel={cancel}
+                  moneda={moneda}
                   conImportes={conImportes}
                 />
               ))}

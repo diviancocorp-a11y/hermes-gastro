@@ -41,7 +41,7 @@ import useMediaQuery from '../lib/useMediaQuery';
 import { intervencionDe, sigueVigente } from '../modules/dico/intervenciones';
 import {
   fetchProducts, upsertProduct, setProductActive, archiveProduct,
-  fetchOrders, setOrderStatus, reviewTableOrder, OPEN_ORDER_STATUSES, PlatformOrderStatus,
+  fetchOrders, setOrderStatus, setDeliveryCost, reviewTableOrder, OPEN_ORDER_STATUSES, PlatformOrderStatus,
   fetchOrderItemsByOrder,
 } from '../services/platformAdmin';
 import { fetchSales, createSale, completeOrder } from '../services/platformSales';
@@ -1009,6 +1009,14 @@ export default function PlatformAdmin() {
     return true;
   }, []);
 
+  // Envio a confirmar (Cochi f5): el local carga el costo y el pedido pasa a total final.
+  const handleSetDeliveryCost = useCallback(async (id, cost) => {
+    const res = await setDeliveryCost(id, cost);
+    if (res?.__error) return res;
+    setOrders(list => list.map(o => (o.id === id ? { ...o, ...res } : o)));
+    return true;
+  }, []);
+
   // ── Etapa 4: venta manual ──
   const crearVenta = useCallback((s) => createSale(tenantId, s), [tenantId]);
 
@@ -1470,6 +1478,8 @@ export default function PlatformAdmin() {
               loading={loadingOrders}
               onSetStatus={handleSetOrderStatus}
               onReview={handleReviewOrder}
+              onSetDeliveryCost={handleSetDeliveryCost}
+              moneda={moneda}
               showToast={msg}
               tenantId={tenantId}
               roles={roles}
