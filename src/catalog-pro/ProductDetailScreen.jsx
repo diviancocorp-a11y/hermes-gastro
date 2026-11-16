@@ -16,7 +16,7 @@
 import { useState, useRef, useEffect } from "react";
 import BadgeTag from "../components/BadgeTag";
 import Icon from "./Icon";
-import { fmtAR } from "./format";
+import { Monto, useMoneda } from "./MonedaCatalogo";
 import { ProductPhoto, Rating, Stepper, AddRound, SectionHeader, SoldOutBadge } from "./atoms";
 import { mapProduct } from "./homeHelpers";
 import OpcionesProducto from "./OpcionesProducto";
@@ -34,6 +34,7 @@ export default function ProductDetailScreen({
   suggestions = [], allProducts = [], timezone = null,
   onBack, onAddToCart, onSelectRelated, onToggleFav, isFav = false,
 }) {
+  const { texto } = useMoneda();
   const p = mapProduct(product, { hasDeal, dealPrice, soldOutIds });
   const soldOut = p.soldOut;
   const attributes = product.catalog_attributes || {};
@@ -245,11 +246,11 @@ export default function ProductDetailScreen({
                     {sz.hint && <div style={{ fontSize: 11.5, color: "var(--t2)", marginTop: 2 }}>{sz.hint}</div>}
                     {saving > 0 && (
                       <div style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--ok, #2A9D6E)" }}>
-                        Ahorrás {fmtAR(saving)} <span style={{ opacity: 0.8 }}>({savingPct}%)</span>
+                        Ahorrás {texto(saving)} <span style={{ opacity: 0.8 }}>({savingPct}%)</span>
                       </div>
                     )}
                   </div>
-                  <span style={{ fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 15, color: "var(--tx)", flexShrink: 0 }}>{fmtAR(price)}</span>
+                  <span style={{ fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 15, color: "var(--tx)", flexShrink: 0 }}><Monto valor={price} /></span>
                 </label>
               );
             })}
@@ -258,13 +259,13 @@ export default function ProductDetailScreen({
       )}
 
       {grupos.length > 0 && (
-        <OpcionesProducto grupos={grupos} estado={opts} onChange={setOpts} formato={fmtAR}
+        <OpcionesProducto grupos={grupos} estado={opts} onChange={setOpts} formato={texto}
           faltan={intento ? faltan : new Set()} />
       )}
 
       {regla && sugProducto && (
         <SugerenciaAlPedir regla={regla} producto={sugProducto} precioNormal={sugNormal}
-          precioEspecial={sugPrecio} marcada={sugOn} onChange={setSugOn} formato={fmtAR} />
+          precioEspecial={sugPrecio} marcada={sugOn} onChange={setSugOn} formato={texto} />
       )}
 
       {/* Notas */}
@@ -340,7 +341,7 @@ export default function ProductDetailScreen({
                     fontFamily: "var(--font-heading)", fontSize: 14, color: "var(--tx)", lineHeight: 1.2,
                     display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 34,
                   }}>{x.name}</div>
-                  <div style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: "var(--tx)" }}>{fmtAR(x.price)}</div>
+                  <div style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: "var(--tx)" }}><Monto valor={x.price} /></div>
                 </div>
               </div>
             ))}
@@ -369,7 +370,7 @@ export default function ProductDetailScreen({
           }}
         >
           <span>{soldOut ? "Agotado" : "Agregar al pedido"}</span>
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: 15 }}>{soldOut ? "" : fmtAR(total)}</span>
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 15 }}>{soldOut ? "" : <Monto valor={total} className="cp-monto--hereda" />}</span>
         </button>
       </div>
     </div>

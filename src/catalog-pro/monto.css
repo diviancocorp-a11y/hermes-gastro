@@ -1,0 +1,17 @@
+/* Monto en doble moneda (MonedaCatalogo.jsx). Tokens del catalogo (cp-root). */
+.cp-monto { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 1px; line-height: 1.15; }
+.cp-monto__p { font-variant-numeric: tabular-nums; }
+.cp-monto__s { font: 600 12px/1.2 var(--font-body, inherit); color: var(--t2); font-variant-numeric: tabular-nums; }
+.cp-monto__s--vieja { color: var(--t3); }
+/* Sobre un fondo de color (boton): el secundario hereda el color del texto. */
+.cp-monto--hereda .cp-monto__s { color: inherit; opacity: 0.85; }
+.cp-aviso-tasa { margin: 8px 0 0; font: 500 12px/1.4 var(--font-body, inherit); color: var(--t2); }
+.cp-aviso-tasa--aviso { color: var(--tx); }
+
+/* Confirmacion del pedido (OrderSentView): total final y boton de WhatsApp. */
+.cp-resumen-pedido { margin-bottom: 14px; padding: 14px 16px; background: var(--b2); border: 1px solid var(--line); border-radius: 12px; text-align: left; }
+.cp-resumen-pedido__fila { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; color: var(--tx); font: 600 15px/1.3 var(--font-body, inherit); }
+.cp-resumen-pedido__fila strong { font-family: var(--font-heading, inherit); font-size: 20px; font-weight: 400; text-align: right; }
+.cp-resumen-pedido__nota { margin: 8px 0 0; font: 500 12px/1.4 var(--font-body, inherit); color: var(--t2); }
+.cp-wsp-pedido { display: flex; align-items: center; justify-content: center; min-height: 48px; margin-bottom: 14px; padding: 12px 18px; border-radius: 12px; background: #0e7a3e; color: #fff; font: 700 14px/1.2 var(--font-body, inherit); text-decoration: none; }
+.cp-wsp-pedido:focus-visible { outline: 2px solid var(--ac); outline-offset: 3px; }

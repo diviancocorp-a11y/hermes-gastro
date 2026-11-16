@@ -194,7 +194,8 @@ begin
     'delivery_cost',       v_o.delivery_cost,
     'delivery_pending',    v_o.delivery_pending,
     'fx_currency',         v_o.fx_currency,
-    'total_secondary',     v_o.total_secondary
+    'total_secondary',     v_o.total_secondary,
+    'currency',            (select t.currency from public.tenants t where t.id = v_t)
   );
 end $function$;
 

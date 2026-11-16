@@ -10,7 +10,8 @@
 
 import { useState, useEffect } from "react";
 import Icon from "./Icon";
-import { fmtAR } from "./format";
+import { Monto, AvisoTasa, useMoneda } from "./MonedaCatalogo";
+import { aSecundaria, formatearMonto } from "../lib/moneda";
 import SchedulePicker from "./SchedulePicker";
 import { leadHoras as leerLeadHoras, entregaReal, textoAnticipacion } from "../modules/pedidosProgramados";
 
@@ -253,7 +254,8 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
 }
 
 // ─── PASO 1: Entrega ───────────────────────────────────────────────
-function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryKm, haversine, STORE_LAT, STORE_LNG, calcDeliveryCost, estimateDelivery, calcingDelivery, deliveryCost, deliveryKm, zonaFuera, zonaAviso, aplicarZona, verificarZona, geoLoading, setGeoLoading, canNext, onNext, settings, envioGratis }) {
+function Step1Entrega({ envioAConfirmar, form, sf, user, addresses, setDeliveryCost, setDeliveryKm, haversine, STORE_LAT, STORE_LNG, calcDeliveryCost, estimateDelivery, calcingDelivery, deliveryCost, deliveryKm, zonaFuera, zonaAviso, aplicarZona, verificarZona, geoLoading, setGeoLoading, canNext, onNext, settings, envioGratis }) {
+  const { texto } = useMoneda();
   // Si el local no tiene local fisico, forzamos delivery (sin chance de retiro).
   const hasPhysical = settings?.has_physical_store !== false;
   useEffect(() => {
@@ -384,6 +386,14 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
             </div>
           )}
           {calcingDelivery && <div style={{ marginTop: 10, fontSize: 13, color: "var(--ac)", fontWeight: 600 }}>Calculando costo...</div>}
+          {!calcingDelivery && envioAConfirmar && (
+            <div role="note" style={{ marginTop: 12, padding: "12px 14px", background: "var(--b2)", borderRadius: 12, border: "1px solid var(--line)" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)" }}>Costo de envío</div>
+              <div style={{ fontSize: 12.5, color: "var(--t2)", marginTop: 4, lineHeight: 1.4 }}>
+                Lo confirma {settings?.biz_name || "el local"} después de recibir el pedido. Hasta entonces el total no lo incluye.
+              </div>
+            </div>
+          )}
           {/* Envio gratis: o ya se lo ganó, o se le avisa desde cuanto aplica. */}
           {!calcingDelivery && envioGratis && (
             <div style={{ marginTop: 12, padding: "12px 14px", background: "var(--b2)", borderRadius: 12, border: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -393,7 +403,7 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
           )}
           {!envioGratis && Number(settings?.free_delivery_over) > 0 && (
             <div style={{ marginTop: 10, fontSize: 12.5, color: "var(--t2)", fontWeight: 600 }}>
-              Envío gratis en compras de más de {fmtAR(Number(settings.free_delivery_over))}
+              Envío gratis en compras de más de {texto(Number(settings.free_delivery_over))}
             </div>
           )}
           {!calcingDelivery && deliveryKm !== null && deliveryCost > 0 && (
@@ -403,7 +413,7 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)" }}>Costo de envío</div>
                   <div style={{ fontSize: 11, color: "var(--t3)", marginTop: 2 }}>~{deliveryKm} km desde el local</div>
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: "var(--ac)" }}>{fmtAR(deliveryCost)}</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "var(--ac)" }}><Monto valor={deliveryCost} /></div>
               </div>
             </div>
           )}
@@ -416,7 +426,8 @@ function Step1Entrega({ form, sf, user, addresses, setDeliveryCost, setDeliveryK
 }
 
 // ─── PASO 2: Pago ──────────────────────────────────────────────────
-function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected, accounts, selectedAccount, ct, ctWithDelivery, deliveryCost, envioGratis, deliveryKm, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, needsReceipt, cart, scheduleMode, settings, onSubmit, sending, orderErr }) {
+function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLabel, mpConnected, accounts, selectedAccount, ct, ctWithDelivery, deliveryCost, envioGratis, deliveryKm, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, needsReceipt, cart, scheduleMode, settings, onSubmit, sending, orderErr }) {
+  const { texto } = useMoneda();
   return (
     <>
       <div style={section}>
@@ -441,6 +452,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
           {accounts.map(acc => {
             const sub = acc.alias ? "Alias: " + acc.alias
               : acc.cbu ? "CBU ···" + String(acc.cbu).slice(-4)
+              : acc.detalles?.[0] ? `${acc.detalles[0].label}: ${acc.detalles[0].value}`
               : "Coordiná con el local";
             return (
               <CardOption
@@ -486,7 +498,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
           <div style={{ fontSize: 13, color: "var(--t2)", lineHeight: 1.5 }}>
             Al confirmar te vamos a redirigir al <strong style={{ color: "var(--tx)" }}>checkout seguro de MercadoPago</strong>. Tarjeta de credito, debito, dinero en cuenta o efectivo en Rapipago/Pago Facil.
           </div>
-          <div style={{ marginTop: 14, fontWeight: 700, color: "var(--tx)" }}>Monto a pagar: <span style={{ color: "var(--ac)" }}>{fmtAR(ctWithDelivery)}</span></div>
+          <div style={{ marginTop: 14, fontWeight: 700, color: "var(--tx)" }}>Monto a pagar: <span style={{ color: "var(--ac)" }}><Monto valor={ctWithDelivery} /></span></div>
         </div>
       )}
 
@@ -543,12 +555,12 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
                 style={{ flex: 1, height: 44, border: 0, padding: 0, background: "transparent", fontFamily: "inherit", fontSize: 15, color: "var(--tx)", outline: "none" }}
               />
             </div>
-            <p style={{ fontSize: 11, color: "var(--t3)", margin: "6px 2px 0" }}>Maximo {fmtAR(tipCap)} (total del pedido).</p>
+            <p style={{ fontSize: 11, color: "var(--t3)", margin: "6px 2px 0" }}>Maximo {texto(tipCap)} (total del pedido).</p>
           </div>
         )}
         {tipAmount > 0 && (
           <p style={{ ...hint("ok"), marginTop: 8 }}>
-            Dejás <strong>{fmtAR(tipAmount)}</strong> de propina
+            Dejás <strong>{texto(tipAmount)}</strong> de propina
           </p>
         )}
       </div>
@@ -579,7 +591,7 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
           )}
         </div>
         {couponErr && <p style={hint("err")}>{couponErr}</p>}
-        {coupon && <p style={hint("ok")}>Descuento {coupon.discount_pct}% — ahorrás {fmtAR(discount)}</p>}
+        {coupon && <p style={hint("ok")}>Descuento {coupon.discount_pct}% — ahorrás {texto(discount)}</p>}
       </div>
 
       {/* Productos + total (este es el paso final; reemplaza al resumen) */}
@@ -591,13 +603,19 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
               <span style={{ fontWeight: 600, color: "var(--tx)" }}>{it.name}</span>
               <span style={{ color: "var(--t3)", fontSize: 12 }}> x{it.qty}</span>
             </div>
-            <span style={{ fontWeight: 700, color: "var(--tx)" }}>{fmtAR(it.price * it.qty)}</span>
+            <span style={{ fontWeight: 700, color: "var(--tx)" }}><Monto valor={it.price * it.qty} /></span>
           </div>
         ))}
         {form.delivery === "envio" && deliveryCost > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 13 }}>
             <span style={{ color: "var(--t2)" }}>Envío {deliveryKm ? `(~${deliveryKm} km)` : ""}</span>
-            <span style={{ fontWeight: 700, color: "var(--tx)" }}>{fmtAR(deliveryCost)}</span>
+            <span style={{ fontWeight: 700, color: "var(--tx)" }}><Monto valor={deliveryCost} /></span>
+          </div>
+        )}
+        {form.delivery === "envio" && envioAConfirmar && (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 13 }}>
+            <span style={{ color: "var(--t2)" }}>Envío</span>
+            <span style={{ fontWeight: 700, color: "var(--tx)" }}>A confirmar por el local</span>
           </div>
         )}
         {envioGratis && (
@@ -609,20 +627,21 @@ function Step2Pago({ form, sf, payments, paymentIcon, paymentLabel, mpConnected,
         {coupon && discount > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "var(--ok, #2A9D6E)" }}>
             <span>Cupón -{coupon.discount_pct}%</span>
-            <span>−{fmtAR(discount)}</span>
+            <span>−<Monto valor={discount} /></span>
           </div>
         )}
         {tipAmount > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: "var(--t2)" }}>
             <span>{tipCustom != null ? "Propina" : `Propina (${tip}%)`}</span>
-            <span style={{ color: "var(--tx)" }}>{fmtAR(tipAmount)}</span>
+            <span style={{ color: "var(--tx)" }}><Monto valor={tipAmount} /></span>
           </div>
         )}
         <hr style={{ margin: "10px 0", border: 0, borderTop: "1px solid var(--line)" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)" }}>Total a pagar</span>
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: 26, color: "var(--tx)" }}>{fmtAR(ctWithDelivery)}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)" }}>{envioAConfirmar && form.delivery === "envio" ? "Total parcial (sin envío)" : "Total a pagar"}</span>
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 26, color: "var(--tx)" }}><Monto valor={ctWithDelivery} /></span>
         </div>
+        <AvisoTasa />
       </div>
 
       {/* Comprobante: debajo del total. Solo cuentas manuales lo piden (desbloquea el boton). */}
@@ -750,6 +769,11 @@ function NextButton({ disabled, onClick, label = "Siguiente" }) {
 }
 
 function PayBankBox({ account, amount }) {
+  const { texto, secundaria, tasa } = useMoneda();
+  // Cuenta en la moneda secundaria (pago movil en bolivares): se transfiere el monto convertido.
+  const enSecundaria = Boolean(secundaria && account.moneda === secundaria && tasa?.rate);
+  const montoCuenta = enSecundaria ? formatearMonto(aSecundaria(amount, tasa.rate), secundaria) : texto(amount);
+  const extra = (Array.isArray(account.detalles) ? account.detalles : []).map((d, i) => ({ key: "d" + i, label: d.label, value: d.value }));
   const [copied, setCopied] = useState("");
   const copy = (key, val) => {
     if (!val) return;
@@ -760,6 +784,7 @@ function PayBankBox({ account, amount }) {
   const rows = [
     account.alias ? { key: "alias", label: "Alias", value: account.alias } : null,
     account.cbu ? { key: "cbu", label: "CBU / CVU", value: account.cbu } : null,
+    ...extra,
   ].filter(Boolean);
   return (
     <div style={detailBox}>
@@ -781,8 +806,14 @@ function PayBankBox({ account, amount }) {
           }}>{copied === r.key ? "✓ Copiado" : "Copiar"}</button>
         </div>
       ))}
+      {extra.length > 0 && (
+        <button type="button" onClick={() => copy("todo", rows.map(r => `${r.label}: ${r.value}`).join("\n"))} style={{
+          width: "100%", minHeight: 44, marginBottom: 8, borderRadius: 8, border: "1px solid var(--line)", background: "transparent",
+          color: "var(--tx)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+        }}>{copied === "todo" ? "✓ Datos copiados" : "Copiar todos los datos"}</button>
+      )}
       <div style={{ marginTop: 6, fontSize: 14, color: "var(--tx)", fontWeight: 700 }}>
-        Monto a transferir: <span style={{ color: "var(--ac)" }}>{fmtAR(amount)}</span>
+        Monto a transferir: <span style={{ color: "var(--ac)" }}>{montoCuenta}</span>
       </div>
 
     </div>

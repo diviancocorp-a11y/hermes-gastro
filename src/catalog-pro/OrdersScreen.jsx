@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from "react";
 import Icon from "./Icon";
-import { fmtAR } from "./format";
+import { MontoCongelado, useMoneda } from "./MonedaCatalogo";
 
 const STATUS_STEPS = ["received", "preparing", "ready", "completed"];
 const STATUS_LABEL = { received: "Recibido", preparing: "Preparando", ready: "Listo", completed: "Entregado" };
@@ -30,6 +30,7 @@ function relDate(str) {
 }
 
 export default function OrdersScreen({ loadOrders, onBack, onTrack, bottomNav }) {
+  const { texto, principal } = useMoneda();
   const [tab, setTab] = useState("active");
   const [orders, setOrders] = useState(null); // null=loading
 
@@ -100,7 +101,7 @@ export default function OrdersScreen({ loadOrders, onBack, onTrack, bottomNav })
                     ))}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span className="body-s" style={{ fontSize: 13 }}>{relDate(o.created_at || o.date)} · {fmtAR(o.total)}</span>
+                    <span className="body-s" style={{ fontSize: 13 }}>{relDate(o.created_at || o.date)} · {texto(o.total)}</span>
                     <button onClick={() => onTrack?.(o.id)} style={{
                       height: 34, padding: "0 14px", borderRadius: 999, border: 0,
                       background: "var(--ac)", color: "#fff", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)",
@@ -119,7 +120,7 @@ export default function OrdersScreen({ loadOrders, onBack, onTrack, bottomNav })
                       }}>{o.status === "cancelled" ? "Cancelado" : "Entregado"}</span>
                       <span className="body-s" style={{ fontSize: 11 }}>{relDate(o.created_at || o.date)}</span>
                     </div>
-                    <div style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "var(--tx)" }}>{fmtAR(o.total)}</div>
+                    <div style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "var(--tx)" }}><MontoCongelado valor={o.total} principal={principal} secundario={o.total_secondary} monedaSecundaria={o.fx_currency} /></div>
                   </div>
                   <button onClick={() => onTrack?.(o.id)} style={{
                     height: 34, padding: "0 14px", borderRadius: 999, border: "1px solid var(--line)",

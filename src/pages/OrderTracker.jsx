@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { formatOrderCode } from "../lib/utils";
-import { fmtAR } from "../lib/format";
+import { MontoCongelado, textoPrincipal } from "../catalog-pro/MonedaCatalogo";
 import business from "@business";
 import { cancelOwnOrder, useRegretCountdown } from "../catalog-pro/regretOrder";
 import usePedidoEnVivo from "../hooks/usePedidoEnVivo";
@@ -145,12 +145,12 @@ export default function OrderTracker() {
           {items.map((it, i) => (
             <div key={i} className="tracker-item">
               <span>{it.name || "Producto"} × {it.qty}</span>
-              <span>{fmtAR(it.qty * it.unit_price)}</span>
+              <span>{textoPrincipal(it.qty * it.unit_price, order.currency)}</span>
             </div>
           ))}
           <div className="tracker-item tracker-total">
             <span>Total</span>
-            <span>{fmtAR(order.total)}</span>
+            <span><MontoCongelado valor={order.total} principal={order.currency} secundario={order.total_secondary} monedaSecundaria={order.fx_currency} /></span>
           </div>
         </div>
         {order.note && (

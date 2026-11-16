@@ -11,10 +11,13 @@ import { setGuestUser, getGuestUser } from "../../lib/guestUser";
 import OrderStatusCard from "../../catalog-pro/OrderStatusCard";
 import { cancelOwnOrder, useRegretCountdown } from "../../catalog-pro/regretOrder";
 import PushOptInBanner from "../../catalog-pro/PushOptInBanner";
+import { MontoCongelado, useMoneda } from "../../catalog-pro/MonedaCatalogo";
+import { armarMensajePedido, urlWhatsApp } from "../../lib/mensajePedido";
 
 const GREEN = "#16A34A";
 
-export default function OrderSentView({ orderId, form, receiptFile, onReset, settings = {}, paymentConfirmed = false }) {
+export default function OrderSentView({ orderId, form, receiptFile, onReset, settings = {}, paymentConfirmed = false, respuesta = null, items = [] }) {
+  const { principal } = useMoneda();
   const [copiedCode, setCopiedCode] = useState(false);
   // Arrepentimiento: el pedido se acaba de crear, ventana de 60s desde ahora.
   // Si venimos de un pago YA confirmado (retorno de MercadoPago) NO ofrecemos
@@ -34,6 +37,19 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
   const storeAddress = settings?.store_address || "";
   const mapsHref = storeAddress
     ? ("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(storeAddress))
+    : null;
+
+  // Doble moneda o envio a confirmar: el servidor devuelve el total final y la
+  // tasa congelada. Un tenant sin ninguna de las dos no ve este bloque.
+  const pendiente = respuesta?.delivery_pending === true;
+  const resumenMonedas = Boolean(respuesta && respuesta.total != null && (respuesta.fx !== undefined || pendiente));
+  const urlWsp = respuesta && settings?.pedido_por_whatsapp === true
+    ? urlWhatsApp(settings?.whatsapp, armarMensajePedido({
+      negocio: settings?.biz_name || "", codigo: formatOrderCode(orderId),
+      cliente: { nombre: form?.name || "", telefono: form?.phone || "" },
+      modo: form?.delivery === "envio" ? "envio" : "retiro", direccion: form?.address || "",
+      items, respuesta, principal, notas: form?.note || "",
+    }))
     : null;
 
   const copyCode = () => {
@@ -147,6 +163,35 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
                 Usá este código para reclamos, factura o seguimiento.
               </p>
             </div>
+
+            {resumenMonedas && (
+              <div className="cp-resumen-pedido" data-testid="order-summary">
+                <div className="cp-resumen-pedido__fila">
+                  <span>{pendiente ? "Total parcial" : "Total"}</span>
+                  <strong>
+                    <MontoCongelado valor={respuesta.total} principal={principal}
+                      secundario={respuesta.fx?.total_secondary} monedaSecundaria={respuesta.fx?.currency} />
+                  </strong>
+                </div>
+                {pendiente && (
+                  <p className="cp-resumen-pedido__nota">
+                    El envío todavía no tiene precio: {settings?.biz_name || "el local"} te escribe con el costo y el total final.
+                  </p>
+                )}
+                {respuesta.fx === null && (
+                  <p className="cp-resumen-pedido__nota">El monto en {settings?.secondary_currency} te lo confirma el local.</p>
+                )}
+                {respuesta.fx?.status === "vencida" && (
+                  <p className="cp-resumen-pedido__nota">La tasa de cambio está por verificar: el local confirma el monto en {respuesta.fx.currency}.</p>
+                )}
+              </div>
+            )}
+
+            {urlWsp && (
+              <a className="cp-wsp-pedido" href={urlWsp} target="_blank" rel="noopener noreferrer">
+                Enviar el pedido por WhatsApp
+              </a>
+            )}
 
             {form.delivery === "retiro" && storeAddress && (
               <div style={{

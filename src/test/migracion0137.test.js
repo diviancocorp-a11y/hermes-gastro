@@ -25,6 +25,9 @@ describe('0137', () => {
     expect(sql).toMatch(/'total_secondary', {5}v_o\.total_secondary/);
     expect(sql).toMatch(/'delivery_pending', {4}v_o\.delivery_pending/);
   });
+  it('el tracker emite la moneda principal para mostrar el pedido sin provider', () => {
+    expect(sql).toMatch(/'currency',\s+\(select t\.currency from public\.tenants t where t\.id = v_t\)/);
+  });
   it('no pierde ninguna clave de get_catalog respecto de la 0135', () => {
     const clave = (txt) => new Set([...txt.matchAll(/^\s+'([a-z_]+)',/gm)].map(m => m[1]));
     const desde = (txt, ini) => txt.slice(txt.indexOf(ini));
