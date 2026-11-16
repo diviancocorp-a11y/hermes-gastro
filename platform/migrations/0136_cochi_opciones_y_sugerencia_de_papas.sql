@@ -1,5 +1,5 @@
 -- 0136 — Cochi: opciones de sus 5 productos y la sugerencia de papas (datos).
--- PENDIENTE de aplicar (la aplica el director despues de la 0135 y de auditar).
+-- Aplicada via MCP el 2026-11-16 (despues de la 0135 y de publicar submit-order).
 -- Solo datos del tenant `cochi`; no toca esquema. Matchea por NOMBRE del
 -- producto en la base y avisa (NOTICE) lo que no encuentra, sin fallar.
 --
