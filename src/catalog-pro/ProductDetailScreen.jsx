@@ -250,7 +250,7 @@ export default function ProductDetailScreen({
                       </div>
                     )}
                   </div>
-                  <span style={{ fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 15, color: "var(--tx)", flexShrink: 0 }}><Monto valor={price} /></span>
+                  <span style={{ fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 15, color: "var(--tx)", flexShrink: 0 }}><Monto valor={price} className="cp-monto--der" /></span>
                 </label>
               );
             })}
@@ -370,7 +370,7 @@ export default function ProductDetailScreen({
           }}
         >
           <span>{soldOut ? "Agotado" : "Agregar al pedido"}</span>
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: 15 }}>{soldOut ? "" : <Monto valor={total} className="cp-monto--hereda" />}</span>
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 15 }}>{soldOut ? "" : <Monto valor={total} className="cp-monto--hereda cp-monto--der" />}</span>
         </button>
       </div>
     </div>

@@ -85,7 +85,7 @@ export default function CartScreen({
                   <span style={{ minWidth: 22, textAlign: "center", fontWeight: 600, fontSize: 13 }}>{it.qty}</span>
                   <button onClick={() => onUpdateQty?.(it.id, it.qty + 1)} style={stepBtn}><Icon name="plus" size={13} /></button>
                 </div>
-                <span style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 15, color: "var(--tx)" }}><Monto valor={it.price * it.qty} /></span>
+                <span style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 15, color: "var(--tx)" }}><Monto valor={it.price * it.qty} className="cp-monto--der" /></span>
               </div>
             </div>
           </div>
@@ -128,7 +128,7 @@ export default function CartScreen({
           <div className="caption" style={{ marginBottom: 12, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--t3)" }}>Subtotal</div>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
             <span style={{ fontSize: 13, color: "var(--t2)" }}>{count} {count === 1 ? "producto" : "productos"}</span>
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 28, color: "var(--tx)" }}><Monto valor={subtotal} /></span>
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 28, color: "var(--tx)" }}><Monto valor={subtotal} className="cp-monto--der" /></span>
           </div>
           <p style={{ margin: "10px 0 0", fontSize: 11, color: "var(--t3)", lineHeight: 1.4 }}>
             Envío, cupón y propina se calculan en el siguiente paso.

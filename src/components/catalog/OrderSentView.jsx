@@ -165,11 +165,11 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
             </div>
 
             {resumenMonedas && (
-              <div className="cp-resumen-pedido" data-testid="order-summary">
+              <div className="cp-resumen-pedido" data-testid="order-summary" role="status">
                 <div className="cp-resumen-pedido__fila">
                   <span>{pendiente ? "Total parcial" : "Total"}</span>
                   <strong>
-                    <MontoCongelado valor={respuesta.total} principal={principal}
+                    <MontoCongelado className="cp-monto--der" valor={respuesta.total} principal={principal}
                       secundario={respuesta.fx?.total_secondary} monedaSecundaria={respuesta.fx?.currency} />
                   </strong>
                 </div>

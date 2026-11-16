@@ -130,7 +130,7 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, onSetDelive
           <div style={{ fontSize: 12, color: 'var(--ag-ink-3)', marginTop: 2 }}>
             {when(order.created_at)} · {order.delivery === 'envio' ? 'Envío' : 'Retiro'}
             {conImportes && <> · {order.payment}</>}
-            {envioPendiente && <> · <strong style={{ color: '#B15A00' }}>Envío por confirmar</strong></>}
+            {envioPendiente && <> · <strong style={{ color: 'var(--ag-warn)' }}>Envío por confirmar</strong></>}
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -176,7 +176,7 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, onSetDelive
           </dl>
 
           {envioPendiente && conImportes && onSetDeliveryCost && (
-            <div style={{ marginTop: 10, padding: '10px 11px', borderLeft: '2px solid #B15A00', background: 'var(--ag-bg-soft)' }}>
+            <div style={{ marginTop: 10, padding: '10px 11px', borderLeft: '2px solid var(--ag-warn)', background: 'var(--ag-bg-soft)' }}>
               <label htmlFor={`envio-${order.id}`} style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ag-ink)' }}>
                 Costo del envío{principal ? ` (${principal})` : ''}
               </label>
@@ -193,7 +193,7 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, onSetDelive
                   {guardando ? 'Cargando…' : 'Cargar envío'}
                 </button>
               </div>
-              {errorEnvio && <span role="alert" style={{ display: 'block', marginTop: 6, fontSize: 12, color: '#C62828' }}>{errorEnvio}</span>}
+              {errorEnvio && <span role="alert" style={{ display: 'block', marginTop: 6, fontSize: 12, color: 'var(--ag-bad)' }}>{errorEnvio}</span>}
             </div>
           )}
 
@@ -343,7 +343,7 @@ export default function OrdersPanel({
           margin: 0, color: 'var(--ag-ink)', letterSpacing: '-0.01em',
         }}>Pedidos</h2>
         {conEnvioPendiente > 0 && conImportes && (
-          <p role="status" style={{ margin: '6px 0 0', fontSize: 12.5, color: '#B15A00' }}>
+          <p role="status" style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--ag-warn)' }}>
             {conEnvioPendiente === 1 ? '1 pedido espera' : `${conEnvioPendiente} pedidos esperan`} el costo del envío.
           </p>
         )}

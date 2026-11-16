@@ -16,7 +16,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import Icon from "./Icon";
 import AccountMenu from "./AccountMenu";
 import CatalogMusicToggle from "./CatalogMusicToggle";
-import { fmtAR } from "./format";
+import { useMoneda } from "./MonedaCatalogo";
 import { leadHoras, textoAnticipacion } from "../modules/pedidosProgramados";
 import {
   ProductPhoto, PriceTag, Rating, StickyCart, SectionHeader, AddRound, SoldOutBadge,
@@ -57,6 +57,7 @@ export default function HomeScreen({
   onDecCart,
   onRemoveCart,
 }) {
+  const { texto } = useMoneda();
   // Link de "seguir mi pedido" si hay un pedido reciente (Catalog lo guarda al confirmar).
   // Pedidos activos (pueden ser varios a la vez): una card de seguimiento
   // por cada uno; cada card se auto-oculta al completarse/cancelarse
@@ -192,7 +193,7 @@ export default function HomeScreen({
           borderBottom: "1px solid var(--line)",
           fontSize: 12.5, fontWeight: 600, textAlign: "center", letterSpacing: 0.2,
         }}>
-          Envío gratis en compras de más de {fmtAR(Number(settings.free_delivery_over))}
+          Envío gratis en compras de más de {texto(Number(settings.free_delivery_over))}
         </div>
       )}
 
@@ -526,7 +527,7 @@ export default function HomeScreen({
                     letterSpacing: "-0.005em", minHeight: 44,
                   }}>{f.name}</div>
                   <div style={{ marginTop: 6, fontSize: 13, color: "var(--t2)" }}>
-                    desde <span style={{ fontWeight: 600, color: "var(--tx)" }}>{fmtAR(f.minPrice)}</span>
+                    desde <span style={{ fontWeight: 600, color: "var(--tx)" }}>{texto(f.minPrice)}</span>
                   </div>
                 </div>
               </div>

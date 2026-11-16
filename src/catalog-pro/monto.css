@@ -1,8 +1,11 @@
 /* Monto en doble moneda (MonedaCatalogo.jsx). Tokens del catalogo (cp-root). */
-.cp-monto { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 1px; line-height: 1.15; }
-.cp-monto__p { font-variant-numeric: tabular-nums; }
-.cp-monto__s { font: 600 12px/1.2 var(--font-body, inherit); color: var(--t2); font-variant-numeric: tabular-nums; }
-.cp-monto__s--vieja { color: var(--t3); }
+.cp-monto { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.15; }
+.cp-monto__p { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cp-monto__s { font: 600 12px/1.2 var(--font-body, inherit); color: var(--t2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Tasa vencida: se marca con cursiva y el texto "tasa anterior", no con un gris que no llega a AA. */
+.cp-monto__s--vieja { font-style: italic; }
+/* Montos que van pegados a la derecha de una fila (carrito, resumen, totales). */
+.cp-monto--der { align-items: flex-end; text-align: right; }
 /* Sobre un fondo de color (boton): el secundario hereda el color del texto. */
 .cp-monto--hereda .cp-monto__s { color: inherit; opacity: 0.85; }
 .cp-aviso-tasa { margin: 8px 0 0; font: 500 12px/1.4 var(--font-body, inherit); color: var(--t2); }

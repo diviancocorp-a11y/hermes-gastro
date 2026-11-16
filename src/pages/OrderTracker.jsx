@@ -150,7 +150,7 @@ export default function OrderTracker() {
           ))}
           <div className="tracker-item tracker-total">
             <span>Total</span>
-            <span><MontoCongelado valor={order.total} principal={order.currency} secundario={order.total_secondary} monedaSecundaria={order.fx_currency} /></span>
+            <span><MontoCongelado className="cp-monto--der" valor={order.total} principal={order.currency} secundario={order.total_secondary} monedaSecundaria={order.fx_currency} /></span>
           </div>
         </div>
         {order.note && (

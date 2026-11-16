@@ -413,7 +413,7 @@ function Step1Entrega({ envioAConfirmar, form, sf, user, addresses, setDeliveryC
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)" }}>Costo de envío</div>
                   <div style={{ fontSize: 11, color: "var(--t3)", marginTop: 2 }}>~{deliveryKm} km desde el local</div>
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: "var(--ac)" }}><Monto valor={deliveryCost} /></div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "var(--ac)" }}><Monto valor={deliveryCost} className="cp-monto--der" /></div>
               </div>
             </div>
           )}
@@ -603,13 +603,13 @@ function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLa
               <span style={{ fontWeight: 600, color: "var(--tx)" }}>{it.name}</span>
               <span style={{ color: "var(--t3)", fontSize: 12 }}> x{it.qty}</span>
             </div>
-            <span style={{ fontWeight: 700, color: "var(--tx)" }}><Monto valor={it.price * it.qty} /></span>
+            <span style={{ fontWeight: 700, color: "var(--tx)" }}><Monto valor={it.price * it.qty} className="cp-monto--der" /></span>
           </div>
         ))}
         {form.delivery === "envio" && deliveryCost > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 13 }}>
             <span style={{ color: "var(--t2)" }}>Envío {deliveryKm ? `(~${deliveryKm} km)` : ""}</span>
-            <span style={{ fontWeight: 700, color: "var(--tx)" }}><Monto valor={deliveryCost} /></span>
+            <span style={{ fontWeight: 700, color: "var(--tx)" }}><Monto valor={deliveryCost} className="cp-monto--der" /></span>
           </div>
         )}
         {form.delivery === "envio" && envioAConfirmar && (
@@ -627,19 +627,19 @@ function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLa
         {coupon && discount > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "var(--ok, #2A9D6E)" }}>
             <span>Cupón -{coupon.discount_pct}%</span>
-            <span>−<Monto valor={discount} /></span>
+            <span>−<Monto valor={discount} className="cp-monto--der" /></span>
           </div>
         )}
         {tipAmount > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: "var(--t2)" }}>
             <span>{tipCustom != null ? "Propina" : `Propina (${tip}%)`}</span>
-            <span style={{ color: "var(--tx)" }}><Monto valor={tipAmount} /></span>
+            <span style={{ color: "var(--tx)" }}><Monto valor={tipAmount} className="cp-monto--der" /></span>
           </div>
         )}
         <hr style={{ margin: "10px 0", border: 0, borderTop: "1px solid var(--line)" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)" }}>{envioAConfirmar && form.delivery === "envio" ? "Total parcial (sin envío)" : "Total a pagar"}</span>
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: 26, color: "var(--tx)" }}><Monto valor={ctWithDelivery} /></span>
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 26, color: "var(--tx)" }}><Monto valor={ctWithDelivery} className="cp-monto--der" /></span>
         </div>
         <AvisoTasa />
       </div>

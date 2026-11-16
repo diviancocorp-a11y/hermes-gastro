@@ -120,7 +120,7 @@ export default function OrdersScreen({ loadOrders, onBack, onTrack, bottomNav })
                       }}>{o.status === "cancelled" ? "Cancelado" : "Entregado"}</span>
                       <span className="body-s" style={{ fontSize: 11 }}>{relDate(o.created_at || o.date)}</span>
                     </div>
-                    <div style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "var(--tx)" }}><MontoCongelado valor={o.total} principal={principal} secundario={o.total_secondary} monedaSecundaria={o.fx_currency} /></div>
+                    <div style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "var(--tx)" }}><MontoCongelado className="cp-monto--der" valor={o.total} principal={principal} secundario={o.total_secondary} monedaSecundaria={o.fx_currency} /></div>
                   </div>
                   <button onClick={() => onTrack?.(o.id)} style={{
                     height: 34, padding: "0 14px", borderRadius: 999, border: "1px solid var(--line)",
