@@ -2,9 +2,9 @@
 // Dos capas: la logica pura de platform/functions/submit-order/opciones.ts y el
 // handler real de submit-order con un supabase falso (lo que importa: el precio
 // lo calcula el servidor, el item viejo sigue andando, el texto de cocina).
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { transformWithOxc } from 'vite';
+import { cargarHandler, crearEstado } from './helpers/submitOrderHarness.js';
 import {
   resolverOpciones, textoParaCocina, reglaVigente, aplicarSugerencias, ahoraEnZona,
 } from '../../platform/functions/submit-order/opciones.ts';
@@ -120,53 +120,12 @@ describe('sugerencias', () => {
   });
 });
 
-// ── Handler real con supabase falso ─────────────────────────────────────
-const estado = vi.hoisted(() => ({ tablas: {}, inserts: [] }));
-
-const createClient = () => ({
-    rpc: async () => ({ data: true }),
-    functions: { invoke: async () => ({}) },
-    from(tabla) {
-      const q = { _insert: null };
-      const fin = () => {
-        if (q._insert) {
-          estado.inserts.push({ tabla, filas: q._insert });
-          return { data: tabla === 'orders' ? { id: 'ord-1' } : null, error: null };
-        }
-        const d = estado.tablas[tabla];
-        return { data: d ?? null, error: null };
-      };
-      const api = new Proxy(q, {
-        get(_, prop) {
-          if (prop === 'then') return (res) => res(fin());
-          if (prop === 'insert') return (v) => { q._insert = v; return api; };
-          if (prop === 'single' || prop === 'maybeSingle') return async () => fin();
-          return () => api;
-        },
-      });
-      return api;
-    },
-  });
-
+// ── Handler real con supabase falso (helpers/submitOrderHarness.js) ──────
+const estado = crearEstado();
 let handler;
 beforeEach(async () => {
-  estado.inserts = [];
-  estado.tablas = {};
-  globalThis.Deno = { env: { get: () => 'x' }, serve: (h) => { handler = h; } };
-  // index.ts importa jsr: y esm.sh, que Node no resuelve: se transpila con
-  // esbuild y se le inyectan el supabase falso y la logica pura real.
-  const fuente = readFileSync('platform/functions/submit-order/index.ts', 'utf8')
-    .split('\n').map((l) => {
-      if (l.startsWith('import "jsr:')) return '';
-      if (l.startsWith('import { createClient }')) return 'const { createClient } = globalThis.__fake;';
-      if (l.includes('from "./opciones.ts"')) {
-        return 'const { ahoraEnZona, aplicarSugerencias, resolverOpciones, textoParaCocina } = globalThis.__fake.opciones;';
-      }
-      return l;
-    }).join('\n');
-  const js = (await transformWithOxc(fuente, 'submit-order.ts')).code;
-  globalThis.__fake = { createClient, opciones: { ahoraEnZona, aplicarSugerencias, resolverOpciones, textoParaCocina } };
-  new Function(js)();
+  Object.assign(estado, crearEstado());
+  handler = await cargarHandler(estado);
 });
 
 const UUID = (n) => `00000000-0000-4000-8000-00000000000${n}`;
