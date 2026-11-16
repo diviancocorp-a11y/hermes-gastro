@@ -91,16 +91,21 @@ export default function ProductDetailScreen({
       return;
     }
     const opcionesOk = resolverOpciones(grupos, seleccion);
-    onAddToCart?.(product, qty, selectedSize ? {
+    const talle = selectedSize ? {
       size_label: selectedSize.label,
       size_qty:   Number(selectedSize.qty) || 1,
       size_price: Number(selectedSize.price) || 0,
-    } : null, {
+    } : null;
+    const nota = limpiarNota(notes);
+    const suggestion = sugOn && regla ? { rule: regla, product: sugProducto, unitPrice: sugPrecio, qty: sugQty } : null;
+    // Sin opciones, nota ni sugerencia el contrato es el de siempre (3 argumentos).
+    if (!seleccion.length && !nota && !suggestion) { onAddToCart?.(product, qty, talle); return; }
+    onAddToCart?.(product, qty, talle, {
       selection: seleccion,
       elegidas: opcionesOk.ok ? opcionesOk.elegidas : [],
-      note: limpiarNota(notes),
+      note: nota,
       extrasPrice: extras,
-      suggestion: sugOn && regla ? { rule: regla, product: sugProducto, unitPrice: sugPrecio, qty: sugQty } : null,
+      suggestion,
     });
   };
   const relatedMapped = related.slice(0, 4).map(x => mapProduct(x, { hasDeal, dealPrice, soldOutIds }));

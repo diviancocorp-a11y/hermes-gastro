@@ -65,8 +65,7 @@ describe('ficha con opciones', () => {
       soldOutIds={new Set()} hasDeal={() => false} dealPrice={(p) => Number(p.sale_price)} onAddToCart={onAdd} />);
     fireEvent.click(screen.getByText('Agregar al pedido'));
     expect(onAdd).toHaveBeenCalledTimes(1);
-    expect(onAdd.mock.calls[0][3].selection).toEqual([]);
-    expect(onAdd.mock.calls[0][3].suggestion).toBeNull();
+    expect(onAdd.mock.calls[0]).toHaveLength(3); // contrato de siempre
   });
 
   it('el maximo de un grupo deshabilita las demas casillas', () => {
