@@ -1,0 +1,58 @@
+/* Editor de opciones del producto (0135). Tokens del panel: --ag-*, --ds-*. */
+.oe-grupo {
+  margin: 0 0 var(--ds-space-4);
+  padding: var(--ds-space-4);
+  min-width: 0;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-md, 10px);
+  background: var(--ag-bg-card);
+}
+.oe-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.oe-fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-3);
+  margin-block-end: var(--ds-space-3);
+}
+.oe-fila--centro { align-items: flex-end; }
+.oe-fila--entre { justify-content: space-between; margin-block-end: 0; }
+.oe-crece { flex: 1 1 180px; min-width: 0; }
+.oe-corto { flex: 0 0 96px; }
+.oe-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  min-height: var(--ds-control-height-touch);
+  font-size: var(--ds-type-sm);
+  color: var(--ag-ink);
+}
+.oe-check input { width: 20px; height: 20px; }
+.oe-opciones { list-style: none; margin: 0 0 var(--ds-space-3); padding: 0; }
+.oe-opcion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--ds-space-2);
+  margin-block-end: var(--ds-space-3);
+}
+.oe-quitar {
+  flex: 0 0 var(--ds-control-height-touch);
+  width: var(--ds-control-height-touch);
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-r-md, 10px);
+  background: transparent;
+  color: var(--ag-ink-2);
+  font-size: 20px;
+  cursor: pointer;
+}
+.oe-quitar:disabled { opacity: 0.4; cursor: not-allowed; }
+.oe-peligro { color: var(--ag-danger, #b3261e); }
+@media (max-width: 480px) {
+  .oe-corto { flex: 1 1 88px; }
+}

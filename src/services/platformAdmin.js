@@ -26,7 +26,7 @@
 
 import { supabase } from '../lib/supabase';
 import { resolveTenantSlug } from '../lib/activeTenant';
-import { ProductAllergensInputSchema, CatalogAttributesSchema } from '../lib/schemas/index.js';
+import { ProductAllergensInputSchema, CatalogAttributesSchema, OptionGroupsSchema } from '../lib/schemas/index.js';
 
 /**
  * Falla fuerte si falta el tenant. Un tenantId undefined haria una consulta
@@ -149,7 +149,7 @@ export async function fetchMyTenant() {
 
 /* ─────────────────────────── Productos ─────────────────────────── */
 
-const PRODUCT_COLS = 'id, type, name, price, active, is_archived, category, description, image_url, requires_age_gate, duration_min, stock, station_id, allergens, catalog_attributes, created_at';
+const PRODUCT_COLS = 'id, type, name, price, active, is_archived, category, description, image_url, requires_age_gate, duration_min, stock, station_id, allergens, catalog_attributes, option_groups, created_at';
 
 function compactarTexto(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');
@@ -235,6 +235,9 @@ export function validateProduct(p, products = []) {
   if (p?.catalog_attributes !== undefined && !CatalogAttributesSchema.safeParse(p.catalog_attributes).success) {
     errs.push('Clasificación o características del catálogo inválidas');
   }
+  if (p?.option_groups !== undefined && !OptionGroupsSchema.safeParse(p.option_groups).success) {
+    errs.push('Las opciones del producto son inválidas: revisá nombres, precios y que cada grupo tenga opciones');
+  }
   return errs;
 }
 
@@ -263,6 +266,9 @@ function toRow(p, tenantId) {
       ? ProductAllergensInputSchema.parse({ allergens: p.allergens }) : {}),
     ...(p.catalog_attributes !== undefined
       ? { catalog_attributes: CatalogAttributesSchema.parse(p.catalog_attributes) } : {}),
+    // Columna 0135. Explicita: sin esto el upsert la descarta sin error.
+    ...(p.option_groups !== undefined
+      ? { option_groups: OptionGroupsSchema.parse(p.option_groups) } : {}),
   };
 }
 
@@ -281,6 +287,60 @@ export async function upsertProduct(tenantId, product) {
     return { __error: 'db', message: error.message };
   }
   return data;
+}
+
+// ── Sugerencias al pedir (0135) ─────────────────────────────────────
+// Una regla por producto sugerido en la UI: "cuando piden de estas categorias,
+// ofrecer ESTE producto a este precio". La tabla admite mas (dias, horas,
+// fechas); la UI las suma cuando haga falta.
+const COLS_SUGERENCIA = 'id, tenant_id, title, body, when_categories, add_product_id, special_price, max_per_item, active';
+
+export async function fetchSugerenciaDeProducto(tenantId, productId) {
+  const { data, error } = await supabase
+    .from('product_suggestions')
+    .select(COLS_SUGERENCIA)
+    .eq('tenant_id', tenantId)
+    .eq('add_product_id', productId)
+    .order('created_at')
+    .limit(1)
+    .maybeSingle();
+  if (error) { console.error('fetchSugerenciaDeProducto:', error.message); return null; }
+  return data;
+}
+
+export function validarSugerencia(s) {
+  const errs = [];
+  if (!String(s?.title || '').trim()) errs.push('La sugerencia necesita un título');
+  if (!Array.isArray(s?.when_categories) || s.when_categories.length === 0) errs.push('Elegí en qué categorías se ofrece');
+  const precio = s?.special_price;
+  if (precio !== '' && precio != null && !(Number(precio) >= 0)) errs.push('El precio especial tiene que ser 0 o más');
+  const max = Number(s?.max_per_item);
+  if (!Number.isInteger(max) || max < 1 || max > 20) errs.push('El máximo por producto va de 1 a 20');
+  return errs;
+}
+
+export async function saveSugerencia(tenantId, productId, s) {
+  const errs = validarSugerencia(s);
+  if (errs.length) return { __error: 'validation', message: errs.join('. ') };
+  const row = {
+    ...(s.id ? { id: s.id } : {}),
+    tenant_id: tenantId,
+    add_product_id: productId,
+    title: String(s.title).trim().slice(0, 80),
+    body: String(s.body || '').trim().slice(0, 200) || null,
+    when_categories: s.when_categories,
+    special_price: s.special_price === '' || s.special_price == null ? null : Number(s.special_price),
+    max_per_item: Number(s.max_per_item),
+    active: s.active !== false,
+  };
+  const { data, error } = await supabase.from('product_suggestions').upsert(row).select(COLS_SUGERENCIA).single();
+  if (error) { console.error('saveSugerencia:', error.message); return { __error: 'db', message: error.message }; }
+  return data;
+}
+
+export async function deleteSugerencia(tenantId, id) {
+  const { error } = await supabase.from('product_suggestions').delete().eq('tenant_id', tenantId).eq('id', id);
+  return error ? { __error: 'db', message: error.message } : { ok: true };
 }
 
 export async function setProductActive(id, active) {

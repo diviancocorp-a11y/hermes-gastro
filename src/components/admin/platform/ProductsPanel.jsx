@@ -274,6 +274,7 @@ const ProductsPanel = forwardRef(function ProductsPanel({
         </div>
         <div className="ag-page-over-body">
           <ProductEditor
+            tenantId={tenantId}
             sectores={sectores}
             product={isNew ? null : editing}
             products={products}

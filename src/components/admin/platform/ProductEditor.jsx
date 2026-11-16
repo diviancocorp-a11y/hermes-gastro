@@ -13,6 +13,9 @@ import ToggleSwitch from '../shared/forms/ToggleSwitch';
 import RecipeEditor from './RecipeEditor';
 import ImagePicker from './ImagePicker';
 import PrecioDoble from './PrecioDoble';
+import OpcionesEditor from './OpcionesEditor';
+import SugerenciaEditor from './SugerenciaEditor';
+import { gruposAFormulario, normalizarGrupos } from '../../../lib/opcionesEditor';
 import {
   normalizarCategoriaProducto,
   normalizarNombreProducto,
@@ -37,7 +40,7 @@ const input = {
 const row = { marginBottom: 14 };
 
 export default function ProductEditor({
-  product, products = [], vertical, categories = [], onSave, onCancel,
+  product, products = [], vertical, categories = [], onSave, onCancel, tenantId = null,
   ingredientes = [], lineasReceta = [], settings = null,
   // Sin uploader, ImagePicker se cae al input de URL de siempre.
   onSubirImagen = null,
@@ -63,6 +66,7 @@ export default function ProductEditor({
     station_id: product?.station_id ?? '',
     description: product?.description ?? '',
     image_url: product?.image_url ?? '',
+    option_groups: gruposAFormulario(product?.option_groups),
     catalog_attributes: {
       ...(product?.catalog_attributes || {}),
       features: getProductFeatures(product || {}),
@@ -107,11 +111,16 @@ export default function ProductEditor({
       // Vacio va como null: un string vacio en una FK uuid revienta el upsert.
       station_id: form.station_id || null,
     };
+    // Columna 0135: solo viaja si hay algo que guardar o que borrar, asi un
+    // producto sin opciones se guarda igual que siempre.
+    const grupos = normalizarGrupos(form.option_groups);
+    if (grupos.length || product?.option_groups?.length) normalizado.option_groups = grupos;
+    else delete normalizado.option_groups;
     const problems = [
       ...validateProduct(normalizado, products),
       ...(conReceta ? validateLineas(lineas) : []),
     ];
-    setForm(normalizado);
+    setForm({ ...normalizado, option_groups: gruposAFormulario(grupos) });
     if (problems.length) { setErrs(problems); return; }
     setErrs([]);
     setSaving(true);
@@ -223,6 +232,12 @@ export default function ProductEditor({
             })}
           </div>
         </section>
+      )}
+
+      <OpcionesEditor grupos={form.option_groups} onChange={(v) => set('option_groups', v)} moneda={settings?.currency || ''} />
+
+      {product?.id && tenantId && (
+        <SugerenciaEditor tenantId={tenantId} product={product} categories={categories} />
       )}
 
       {profile.features.length > 0 && (
