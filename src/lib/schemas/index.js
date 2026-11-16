@@ -294,6 +294,10 @@ export const SettingsInputSchema = z.object({
   lead_time_hours: z.number().min(0).max(72).nullable().optional(),
   // Envio gratis: el subtotal de productos tiene que SUPERAR este monto. 0 = no ofrece.
   free_delivery_over: z.number().min(0).nullable().optional(),
+  // Envio a confirmar (Cochi f5): el envio entra sin costo y el local lo carga despues.
+  delivery_a_confirmar: z.boolean().nullable().optional(),
+  // La confirmacion del pedido ofrece el boton de WhatsApp con el detalle.
+  pedido_por_whatsapp: z.boolean().nullable().optional(),
   // Zona de entrega: { partidos: [...], notice } — partidos vacio = entrega en todos lados
   delivery_zone: z.object({
     partidos: z.array(z.string().max(80)).max(60),
