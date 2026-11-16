@@ -1,5 +1,5 @@
 -- 0135 — Grupos de opciones por producto y sugerencias al pedir (Cochi fase 4).
--- PENDIENTE de aplicar (la aplica el director despues de auditar). Solo expandir:
+-- Aplicada via MCP el 2026-11-15. Solo expandir:
 -- columnas y tabla nuevas con default/null, y get_catalog con la misma firma
 -- sumando solo claves nuevas. El deploy anterior y la function vieja siguen andando.
 --
