@@ -94,7 +94,14 @@ export async function submitOrder(orderData) {
         payment: validated.payment,
         payment_account_id: validated.payment_account_id || null,
         note: validated.note,
-        items: validated.items.map(item => ({ recipeId: item.recipeId, qty: item.qty })),
+        // selection / note / suggestionId solo viajan si existen: un item de siempre sale igual.
+        items: validated.items.map(item => ({
+          recipeId: item.recipeId,
+          qty: item.qty,
+          ...(item.selection?.length ? { selection: item.selection } : {}),
+          ...(item.note ? { note: item.note } : {}),
+          ...(item.suggestionId ? { suggestionId: item.suggestionId } : {}),
+        })),
         coupon_code: validated.coupon_code || null,
         is_gift: validated.is_gift || false,
         gift_note: validated.gift_note || '',
@@ -104,6 +111,7 @@ export async function submitOrder(orderData) {
         address: validated.address || null,
         delivery_cost: validated.delivery_cost || 0,
         tip_pct: validated.tip_pct || 0,
+        ...(validated.fx_visto ? { fx_visto: validated.fx_visto } : {}),
         table_code: validated.table_code || null,
         client_request_id: claveDeIdempotencia('checkout', firmaDelPedido(validated)),
       },
@@ -150,7 +158,20 @@ export async function submitOrder(orderData) {
     // del pedido y no puede demorar la pantalla de "listo".
     void vincularTelegram(validated.phone);
 
-    return { ok: true, orderId: data.orderId };
+    // Lo que el servidor calculo (total final, tasa congelada, envio por
+    // confirmar, avisos): la confirmacion y el mensaje de WhatsApp salen de aca.
+    // Una respuesta vieja, sin esas claves, devuelve lo de siempre.
+    return {
+      ok: true,
+      orderId: data.orderId,
+      ...(data.total !== undefined ? { total: data.total } : {}),
+      ...(data.discount !== undefined ? { discount: data.discount } : {}),
+      ...(data.tip !== undefined ? { tip: data.tip } : {}),
+      ...(data.delivery_cost !== undefined ? { delivery_cost: data.delivery_cost } : {}),
+      ...(data.delivery_pending ? { delivery_pending: true } : {}),
+      ...(data.fx !== undefined ? { fx: data.fx } : {}),
+      ...(data.warnings ? { warnings: data.warnings } : {}),
+    };
 
   } catch (err) {
     console.error('Error inesperado en submitOrder:', err);
