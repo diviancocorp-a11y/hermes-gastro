@@ -35,6 +35,15 @@ function jsonRes(body: unknown, status = 200, extra: Record<string, string> = {}
   });
 }
 
+// Texto de entrada: null/undefined -> "" ; string -> recortado ; cualquier otra
+// cosa (numero, objeto, lista) -> null = tipo malo, que el handler responde 400.
+// Antes un `.trim()` sobre un numero reventaba en el catch general como 500.
+function texto(v: unknown, max: number): string | null {
+  if (v === null || v === undefined) return "";
+  if (typeof v !== "string") return null;
+  return v.trim().slice(0, max);
+}
+
 function getClientIp(req: Request) {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     || req.headers.get("cf-connecting-ip")
@@ -62,10 +71,13 @@ Deno.serve(async (req) => {
       return jsonRes({ error: "Demasiados pedidos. Espera un momento antes de intentar de nuevo." }, 429, { "Retry-After": "60" });
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return jsonRes({ error: "Pedido invalido" }, 400);
+    }
 
     // ── Tenant: sin esto no se escribe nada ─────────────────────────
-    const tenantSlug = (body.tenant_slug || "").trim().toLowerCase();
+    const tenantSlug = (texto(body.tenant_slug, 100) ?? "").toLowerCase();
     if (!tenantSlug) return jsonRes({ error: "Falta tenant_slug" }, 400);
 
     const { data: tenant, error: tenantErr } = await supabase
@@ -156,9 +168,18 @@ Deno.serve(async (req) => {
     }
 
     // ── Datos del cliente ───────────────────────────────────────────
-    const customer = (body.customer || "").trim().slice(0, 200);
-    const phone = (body.phone || "").replace(/\D/g, "").slice(0, 20);
-    const email = body.email ? body.email.trim().toLowerCase().slice(0, 200) : null;
+    const customerTxt = texto(body.customer, 200);
+    const phoneTxt = texto(body.phone, 60);
+    const emailTxt = texto(body.email, 200);
+    const noteTxt = texto(body.note, 500);
+    const giftNoteTxt = texto(body.gift_note, 300);
+    const addressTxt = texto(body.address, 500);
+    if ([customerTxt, phoneTxt, emailTxt, noteTxt, giftNoteTxt, addressTxt].includes(null)) {
+      return jsonRes({ error: "Datos invalidos: nombre, telefono, email, direccion y notas tienen que ser texto" }, 400);
+    }
+    const customer = customerTxt as string;
+    const phone = (phoneTxt as string).replace(/\D/g, "").slice(0, 20);
+    const email = emailTxt ? (emailTxt as string).toLowerCase() : null;
     if (!customer || !phone) {
       return jsonRes({ error: "Faltan datos: nombre y telefono son obligatorios" }, 400);
     }
@@ -188,12 +209,12 @@ Deno.serve(async (req) => {
     // MercadoPago nace pending_payment: mp-webhook la pasa a 'new' al aprobar.
     const isMP = payment === "mercadopago";
 
-    const note = body.note ? String(body.note).trim().slice(0, 500) : null;
+    const note = noteTxt || null;
     const isGift = body.is_gift === true;
-    const giftNote = body.gift_note ? String(body.gift_note).trim().slice(0, 300) : "";
+    const giftNote = giftNoteTxt as string;
     const deliveryDate = body.delivery_date || null;
     const userId = body.user_id || null;
-    const address = body.address ? String(body.address).trim().slice(0, 500) : null;
+    const address = addressTxt || null;
 
     // Costo de envio clampeado server-side: el server no conoce la distancia
     // (el geocoding es client-side) pero ningun envio puede salir mas que el
@@ -212,6 +233,9 @@ Deno.serve(async (req) => {
     const items = body.items;
     if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
       return jsonRes({ error: "El pedido debe tener entre 1 y 50 productos" }, 400);
+    }
+    if (items.some((it: unknown) => !it || typeof it !== "object" || Array.isArray(it))) {
+      return jsonRes({ error: "Cada producto del pedido tiene que ser un objeto" }, 400);
     }
     // recipeId es el nombre historico del campo en el front; aca es product id.
     const productIds = [...new Set(items.map((it: Record<string, unknown>) => it.recipeId || it.productId))];
