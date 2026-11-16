@@ -14,6 +14,16 @@ export function redondear(n) {
   return signo * Math.round((Math.abs(x) + Number.EPSILON) * 100) / 100;
 }
 
+/**
+ * Redondeo de un monto de pedido (cupon, propina, precio del dia, envio).
+ * ARS (o sin moneda): ENTERO, igual que el Math.round de siempre. Cualquier
+ * otra moneda: 2 decimales. Espejo de redondearMoneda() de
+ * platform/functions/submit-order/montos.ts (un test los compara).
+ */
+export function redondearMoneda(n, moneda) {
+  return !moneda || moneda === 'ARS' ? Math.round(n) : redondear(n);
+}
+
 const tasaValida = (rate) => Number.isFinite(Number(rate)) && Number(rate) > 0;
 
 /** Monto en la principal -> secundaria. Sin tasa valida devuelve null. */
