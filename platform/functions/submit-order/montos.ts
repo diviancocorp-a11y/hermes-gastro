@@ -37,6 +37,12 @@ export function cerrarTotal(n: number, moneda: string | null | undefined): numbe
   return esArs(moneda) ? n : redondear(n);
 }
 
+/** Espejo de esEnvioGratis() de src/modules/origenDelEnvio.js: el neto de productos SUPERA el umbral (0 o invalido = no ofrece). */
+export function esEnvioGratis(neto: number, umbral: unknown): boolean {
+  const u = Number(umbral);
+  return Number.isFinite(u) && u > 0 && Number(neto) > u;
+}
+
 const dia = (d: Date, zona: string) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: zona, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 const aDias = (ymd: string) => { const [y, m, d] = ymd.split("-").map(Number); return Date.UTC(y, m - 1, d) / 86400000; };

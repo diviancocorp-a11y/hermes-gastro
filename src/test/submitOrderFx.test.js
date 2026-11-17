@@ -102,6 +102,25 @@ describe('envio a confirmar', () => {
     expect(r.delivery_pending).toBeUndefined();
     expect(Object.keys(orden())).not.toContain('delivery_pending');
   });
+  it('con el flag pero superando el umbral de envio gratis: no queda pendiente', async () => {
+    // subtotal 9.50 > 5: el envio es gratis, no hay nada que confirmar
+    await montar({ tenant: { settings: { delivery_a_confirmar: true, free_delivery_over: 5 } }, tasas: tasaHoy(800) });
+    const r = await (await pedir({ delivery: 'envio', delivery_cost: 0, address: 'Calle 1' })).json();
+    expect(r.delivery_pending).toBeUndefined();
+    expect(r).toMatchObject({ total: 9.5, delivery_cost: 0 });
+    expect(Object.keys(orden())).not.toContain('delivery_pending');
+  });
+  it('con el flag y por debajo del umbral (o igual): queda pendiente', async () => {
+    await montar({ tenant: { settings: { delivery_a_confirmar: true, free_delivery_over: 9.5 } }, tasas: tasaHoy(800) });
+    expect((await (await pedir({ delivery: 'envio', address: 'Calle 1' })).json()).delivery_pending).toBe(true);
+    await montar({ tenant: { settings: { delivery_a_confirmar: true, free_delivery_over: 0 } }, tasas: tasaHoy(800) });
+    expect((await (await pedir({ delivery: 'envio', address: 'Calle 1' })).json()).delivery_pending).toBe(true);
+  });
+  it('el umbral se mide despues del cupon, como en el catalogo', async () => {
+    // 9.50 - 10% = 8.55: supera 8 pero no 9
+    await montar({ tenant: { settings: { delivery_a_confirmar: true, free_delivery_over: 9 } }, tasas: tasaHoy(800), coupon: { id: UUID(7), discount_pct: 10, expires_at: null, email: null } });
+    expect((await (await pedir({ delivery: 'envio', address: 'Calle 1', coupon_code: 'AMIGOS' })).json()).delivery_pending).toBe(true);
+  });
   it('sin el flag: usa el costo acotado de siempre', async () => {
     await montar({ tenant: { settings: { delivery_pricing: [{ max_km: null, cost: 5 }] } }, tasas: tasaHoy(800) });
     const r = await (await pedir({ delivery: 'envio', delivery_cost: 3.5, address: 'Calle 1' })).json();

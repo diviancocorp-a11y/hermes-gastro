@@ -20,7 +20,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { cerrarTotal, congelarTasa, elegirTasa, limpiarDetalles, limpiarMoneda, redondearMoneda } from "./montos.ts";
+import { cerrarTotal, congelarTasa, elegirTasa, esEnvioGratis, limpiarDetalles, limpiarMoneda, redondearMoneda } from "./montos.ts";
 import { ahoraEnZona, aplicarSugerencias, resolverOpciones, textoParaCocina, type Regla } from "./opciones.ts";
 
 const CORS = {
@@ -234,10 +234,9 @@ Deno.serve(async (req) => {
     const maxDeliveryCost = pricingTable.length > 0
       ? Math.max(...pricingTable.map((s: Record<string, unknown>) => Number(s?.cost) || 0))
       : 50000;
-    // Envio a confirmar: el local lo carga despues (set_delivery_cost). El costo
-    // que mande el cliente se ignora y el total queda parcial.
-    const deliveryPending = delivery === "envio" && cfg.delivery_a_confirmar === true;
-    const deliveryCost = delivery === "envio" && !deliveryPending
+    // Costo que manda el cliente, acotado. Se usa salvo que el envio quede "a
+    // confirmar" (mas abajo, cuando ya se conoce el neto de productos).
+    const deliveryCostCliente = delivery === "envio"
       ? Math.max(0, Math.min(maxDeliveryCost, redondearMoneda(Number(body.delivery_cost) || 0, moneda)))
       : 0;
 
@@ -348,6 +347,13 @@ Deno.serve(async (req) => {
         }
       }
     }
+
+    // Envio a confirmar: el local lo carga despues (set_delivery_cost). El costo
+    // que mande el cliente se ignora y el total queda parcial. Si el pedido
+    // supera el umbral de envio gratis no hay nada que confirmar.
+    const envioGratis = esEnvioGratis(Math.max(0, serverSubtotal - validDiscount), cfg.free_delivery_over);
+    const deliveryPending = delivery === "envio" && cfg.delivery_a_confirmar === true && !envioGratis;
+    const deliveryCost = deliveryPending ? 0 : deliveryCostCliente;
 
     const tipAmount = redondearMoneda(serverSubtotal * tipPct / 100, moneda);
     const finalTotal = cerrarTotal(Math.max(0, serverSubtotal - validDiscount) + tipAmount + deliveryCost, moneda);
