@@ -63,6 +63,18 @@ export async function createOwner({ email, name, vertical, slug, password }) {
   return { userId, tenantId, email, password: pass, generatedPassword: !password }
 }
 
+// El subdominio del tenant tiene que estar cargado en Vercel para tener
+// certificado (scripts/dominios-tenants.mjs). Si falla, el alta ya esta hecha:
+// avisa y morning-health lo reintenta en el proximo turno.
+async function dominioDelTenant(slug) {
+  const { asegurarDominios, dominioDe } = await import('../../scripts/dominios-tenants.mjs')
+  const r = await asegurarDominios([slug])
+  if (r.sinToken) console.log(`\nSin VERCEL_TOKEN: ${dominioDe(slug)} no se cargo en Vercel. Lo hace morning-health en el proximo turno, o correr node scripts/dominios-tenants.mjs con el token.`)
+  else if (r.agregados.length) console.log(`\nDominio cargado en Vercel: ${r.agregados.join(', ')}`)
+  else if (!r.errores.length) console.log(`\nDominio ya cargado en Vercel: ${dominioDe(slug)}`)
+  for (const e of r.errores) console.log(`\nNo se pudo cargar el dominio en Vercel: ${e}`)
+}
+
 // ---- CLI ----
 function arg(name) {
   const i = process.argv.indexOf('--' + name)
@@ -84,6 +96,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       console.log('OK owner creado:')
       console.log(JSON.stringify(r, null, 2))
       if (r.generatedPassword) console.log('\nGuarda la password generada: no se vuelve a mostrar.')
+      return dominioDelTenant(arg('slug'))
     })
     .catch((e) => {
       console.error('ERROR:', e.message)

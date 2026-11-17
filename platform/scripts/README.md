@@ -36,6 +36,13 @@ node platform/scripts/create-owner.mjs \
 `--vertical` = gastro | barber | retail. `--password` opcional (si no, se genera
 una y se imprime una sola vez). Devuelve `{ userId, tenantId, email, password }`.
 
+Al terminar carga `<slug>.divianco.app` en el proyecto `hermes-platform` de
+Vercel (`scripts/dominios-tenants.mjs`, necesita `VERCEL_TOKEN`). Con el DNS en
+Cloudflare el comodin `*.divianco.app` no tiene certificado: cada subdominio
+tiene que estar cargado o el sitio no abre (mia-estudio, 17/nov). Sin token el
+alta sigue y morning-health lo carga en el proximo turno; cubre tambien los
+tenants que se dan de alta solos desde la web.
+
 ### Test de aislamiento e2e
 
 ```

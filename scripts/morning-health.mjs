@@ -45,6 +45,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { tenantsAMirar } from './tenants-vivos.mjs';
+import { asegurarDominios } from './dominios-tenants.mjs';
 import { resumirEventos, lineasDeBloqueos } from '../platform/functions/gerente-webhook/eventos.js';
 import { traerPruebasPorVencer, lineasDePruebas } from './pruebas-por-vencer.mjs';
 import { armarPrueba, dsnDelCodigo } from './sentry-prueba.mjs';
@@ -106,6 +107,12 @@ async function main() {
     // abre una cursiva que nunca se cierra y el mensaje entero se rechaza.
     problemas.push('Ningun negocio para mirar: la base no dio ninguno activo y SMOKE\\_TENANTS esta vacia');
   }
+  // Cada subdominio tiene que estar cargado en Vercel para tener certificado
+  // (el comodin no vale con el DNS en Cloudflare). Se agrega antes de probarlo.
+  const dom = await asegurarDominios([...TENANTS, ...lista.enCarga]).catch((e) => ({ faltaban: [], agregados: [], errores: [`dominios: ${e.message}`] }));
+  if (dom.sinToken) detalles.push('dominios: sin VERCEL\\_TOKEN, no se revisan');
+  if (dom.agregados.length) detalles.push(`dominios agregados en Vercel: ${dom.agregados.join(', ')}`);
+  for (const e of dom.errores) problemas.push(`Dominio en Vercel: ${e}`);
   const tenants = await Promise.all(TENANTS.map(async (slug) => {
     const [front, rpc] = await Promise.all([
       httpCheck(`https://${slug}.divianco.app`),
@@ -268,7 +275,9 @@ async function httpCheck(url) {
     const r = await fetch(url, { method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(10000) });
     return r.ok ? '✓' : `HTTP ${r.status}`;
   } catch (e) {
-    return `error: ${e.name}`;
+    // fetch tira TypeError para todo; la causa real (certificado vencido,
+    // DNS, timeout) viene en e.cause.code.
+    return `error: ${e.cause?.code || e.name}`;
   }
 }
 
