@@ -1,0 +1,11 @@
+{
+  "_que_es": "Avisos de npm audit que el CI deja pasar hasta `vence`. Cada uno con motivo. Vencido, vuelve a fallar. Lo lee scripts/check-audit.mjs.",
+  "excepciones": [
+    {
+      "id": "GHSA-fc5q-39xc-vjpf",
+      "paquete": "picomatch",
+      "vence": "2026-12-01",
+      "motivo": "ReDoS en todas las versiones <=4.0.7, sin version corregida al 17/nov. Solo lo usan vite, vitest y lint-staged (devDependencies) con patrones de nuestra config; no llega al navegador ni a las functions. Decision de Ricky del 17/nov."
+    }
+  ]
+}
