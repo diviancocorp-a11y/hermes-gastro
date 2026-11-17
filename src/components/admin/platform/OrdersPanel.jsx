@@ -76,8 +76,8 @@ const RISK_LABELS = {
   age_restricted: 'Producto con control de edad',
 };
 
-function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, onSetDeliveryCost, moneda = null, conImportes = true }) {
-  const [open, setOpen] = useState(false);
+function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, onSetDeliveryCost, moneda = null, conImportes = true, abiertoInicial = false, itemsIniciales = null }) {
+  const [open, setOpen] = useState(abiertoInicial);
   const [costoEnvio, setCostoEnvio] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState('');
@@ -93,7 +93,7 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, onSetDelive
     setGuardando(false);
     if (res?.__error) setErrorEnvio(res.message || 'No se pudo cargar el envío');
   };
-  const [items, setItems] = useState(null);
+  const [items, setItems] = useState(itemsIniciales);
   const next = nextOrderStatus(order.status);
   // Con el envio por confirmar el total es parcial: no se cobra hasta cargarlo.
   const puedeCobrar = !!onCobrar && OPEN_ORDER_STATUSES.includes(order.status) && order.delivery_pending !== true;
@@ -278,6 +278,8 @@ function Line({ label, value }) {
 export default function OrdersPanel({
   orders, loading, onSetStatus, showToast,
   onReview, onSetDeliveryCost = null, moneda = null,
+  // Solo para la vista previa (npm run pantalla): una tarjeta ya abierta, con sus items.
+  abiertoId = null, itemsIniciales = null,
   // Cobrar es opcional: sin `tenantId` el panel se comporta como antes. Asi el
   // catalogo de un negocio que todavia no usa caja no muestra un boton que no
   // lleva a ningun lado.
@@ -377,6 +379,8 @@ export default function OrdersPanel({
                   onReview={onReview ? review : null}
                   onSetDeliveryCost={onSetDeliveryCost}
                   moneda={moneda}
+                  abiertoInicial={o.id === abiertoId}
+                  itemsIniciales={o.id === abiertoId ? itemsIniciales : null}
                   onCobrar={tenantId && conImportes ? setCobrando : null}
                 />
               ))}
