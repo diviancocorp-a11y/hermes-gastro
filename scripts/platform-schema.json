@@ -1,7 +1,7 @@
 {
   "_comment": "Snapshot del schema del EDIFICIO; datos obtenidos de schema_snapshot() via MCP. Regenerar con npm run schema:sync.",
-  "_refreshed_at": "2026-11-15",
-  "_migrations_through": "0142",
+  "_refreshed_at": "2026-11-17",
+  "_migrations_through": "0143",
   "tables": {
     "addresses": [
       "id",
@@ -567,6 +567,23 @@
       "credit_id",
       "created_at"
     ],
+    "product_suggestions": [
+      "id",
+      "tenant_id",
+      "title",
+      "body",
+      "when_categories",
+      "add_product_id",
+      "special_price",
+      "max_per_item",
+      "days",
+      "start_time",
+      "end_time",
+      "start_date",
+      "end_date",
+      "active",
+      "created_at"
+    ],
     "product_variants": [
       "id",
       "tenant_id",
@@ -790,8 +807,6 @@
       "min_product_margin_pct",
       "telegram",
       "free_delivery_over",
-      "delivery_a_confirmar",
-      "pedido_por_whatsapp",
       "delivery_zone",
       "lead_time_hours",
       "music_url",
@@ -801,7 +816,9 @@
       "music_volume",
       "catalog_profile",
       "catalog_template",
-      "catalog_template_config"
+      "catalog_template_config",
+      "delivery_a_confirmar",
+      "pedido_por_whatsapp"
     ],
     "staff": [
       "id",
@@ -1152,23 +1169,6 @@
       "date",
       "created_at",
       "client_request_id"
-    ],
-    "product_suggestions": [
-      "id",
-      "tenant_id",
-      "title",
-      "body",
-      "when_categories",
-      "add_product_id",
-      "special_price",
-      "max_per_item",
-      "days",
-      "start_time",
-      "end_time",
-      "start_date",
-      "end_date",
-      "active",
-      "created_at"
     ]
   }
 }
