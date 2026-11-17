@@ -14,7 +14,7 @@ import { useState } from "react";
 import { updateSettings } from "../../services/settings";
 
 function emptyAccount() {
-  return { id: "", label: "", banco: "", titular: "", alias: "", cbu: "", active: true, sort: 0, scope: "ambos" };
+  return { id: "", label: "", banco: "", titular: "", alias: "", cbu: "", active: true, sort: 0, scope: "ambos", moneda: "", detalles: [] };
 }
 
 // Donde se usa cada cuenta. Sin scope (cuentas viejas) = "ambos" (compat).
@@ -30,7 +30,8 @@ const scopeLabel = (s) => SCOPES.find(x => x.id === (s || "ambos"))?.label || "A
 // Es el editor mas sensible de todos: estas cuentas son las que el cliente ve
 // al pagar. Si guardaba por su cuenta contra la base equivocada, el dueno
 // cargaba su CBU, veia el toast de exito y el checkout seguia sin cuentas.
-export default function PaymentAccountsEditor({ settings, setSettings, showToast, onSave = updateSettings }) {
+// monedas: las del negocio ([principal, secundaria]); con dos, cada cuenta dice en cual cobra.
+export default function PaymentAccountsEditor({ settings, setSettings, showToast, onSave = updateSettings, monedas = [] }) {
   const confirmSlide = useConfirm();
   const accounts = Array.isArray(settings?.payment_accounts) ? settings.payment_accounts : [];
   const [editing, setEditing] = useState(null);
@@ -54,7 +55,10 @@ export default function PaymentAccountsEditor({ settings, setSettings, showToast
   const save = async () => {
     const e = editing;
     if (!e.banco.trim()) { showToast?.("Poné el nombre visible (banco o billetera)"); return; }
-    if (!e.alias.trim() && !e.cbu.trim()) { showToast?.("Cargá alias o CBU/CVU"); return; }
+    const detalles = (Array.isArray(e.detalles) ? e.detalles : [])
+      .map(d => ({ label: String(d.label || "").trim().slice(0, 40), value: String(d.value || "").trim().slice(0, 80) }))
+      .filter(d => d.label && d.value).slice(0, 6);
+    if (!e.alias.trim() && !e.cbu.trim() && detalles.length === 0) { showToast?.("Cargá alias, CBU/CVU o datos de la cuenta"); return; }
     const acc = {
       ...e,
       label: e.label.trim(),
@@ -62,6 +66,8 @@ export default function PaymentAccountsEditor({ settings, setSettings, showToast
       titular: e.titular.trim(),
       alias: e.alias.trim(),
       cbu: e.cbu.trim(),
+      detalles,
+      moneda: monedas.includes(e.moneda) ? e.moneda : "",
     };
     let next;
     if (e.id) {
@@ -121,6 +127,41 @@ export default function PaymentAccountsEditor({ settings, setSettings, showToast
           onChange={ev => setField("cbu", ev.target.value.replace(/\D/g, "").slice(0, 22))}
           placeholder="22 dígitos"
           disabled={saving} style={{ marginBottom: 16, width: "100%" }} />
+
+        <label className="ag-field-lbl">Otros datos (pago móvil, cédula, teléfono…)</label>
+        <div style={{ fontSize: 11, color: "var(--ag-ink-3)", marginBottom: 6 }}>
+          Cada fila se muestra al cliente con su botón de copiar. Hasta 6.
+        </div>
+        {(e.detalles || []).map((d, i) => (
+          <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+            <input className="ag-field-input" aria-label={`Dato ${i + 1}: nombre`} value={d.label} placeholder="Ej: Cédula / RIF"
+              onChange={ev => setField("detalles", e.detalles.map((x, j) => (j === i ? { ...x, label: ev.target.value.slice(0, 40) } : x)))}
+              disabled={saving} style={{ flex: 1, minWidth: 0 }} />
+            <input className="ag-field-input" aria-label={`Dato ${i + 1}: valor`} value={d.value} placeholder="Ej: J-12345678-9"
+              onChange={ev => setField("detalles", e.detalles.map((x, j) => (j === i ? { ...x, value: ev.target.value.slice(0, 80) } : x)))}
+              disabled={saving} style={{ flex: 1, minWidth: 0 }} />
+            <button type="button" aria-label={`Quitar dato ${i + 1}`} disabled={saving}
+              onClick={() => setField("detalles", e.detalles.filter((_, j) => j !== i))}
+              style={{ width: 44, minHeight: 44, borderRadius: 10, border: "1px solid var(--ag-line)", background: "var(--ag-bg)", color: "var(--ag-ink-2)", cursor: "pointer" }}>×</button>
+          </div>
+        ))}
+        {(e.detalles || []).length < 6 && (
+          <button type="button" disabled={saving} onClick={() => setField("detalles", [...(e.detalles || []), { label: "", value: "" }])}
+            style={{ minHeight: 44, marginBottom: 16, padding: "0 14px", borderRadius: 10, border: "1px dashed var(--ag-line)", background: "none", color: "var(--ag-ink-2)", fontFamily: "inherit", fontSize: 12, cursor: "pointer" }}>
+            + Agregar dato
+          </button>
+        )}
+
+        {monedas.length > 1 && (
+          <>
+            <label className="ag-field-lbl" htmlFor="acc-moneda">Moneda en la que se cobra</label>
+            <select id="acc-moneda" className="ag-field-input" value={monedas.includes(e.moneda) ? e.moneda : ""}
+              onChange={ev => setField("moneda", ev.target.value)} disabled={saving} style={{ marginBottom: 16, width: "100%" }}>
+              <option value="">{monedas[0]} (la del negocio)</option>
+              {monedas.slice(1).map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </>
+        )}
 
         {/* Scope: donde se usa la cuenta (checkout / proveedores / ambos) */}
         <label className="ag-field-lbl">¿Para qué se usa?</label>

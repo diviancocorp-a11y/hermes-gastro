@@ -147,7 +147,8 @@ async function main() {
       name: 'dico-doble-supabase',
       enforce: 'pre',
       resolveId(id) {
-        if (/(^|[/\\])lib[/\\]supabase(\.js)?$/.test(id)) {
+        // './supabase' es como lo importan los hermanos de src/lib (activeTenant.js).
+        if (/(^|[/\\])(lib[/\\])?supabase(\.js)?$/.test(id) && !id.includes('@supabase')) {
           return path.join(RAIZ, 'scripts/pantalla/supabase-doble.mjs');
         }
         return null;

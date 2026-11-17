@@ -371,7 +371,7 @@ export function categoriesFrom(products) {
 
 /* ──────────────────────────── Pedidos ──────────────────────────── */
 
-const ORDER_COLS = 'id, created_at, status, channel, customer_name, customer_phone, customer_email, total, subtotal, discount, delivery, delivery_address, delivery_cost, delivery_date, payment, note, is_gift, gift_note, tip_amount, resource_id, staff_id, visit_id, review_status, risk_flags, reviewed_at, review_note';
+const ORDER_COLS = 'id, created_at, status, channel, customer_name, customer_phone, customer_email, total, subtotal, discount, delivery, delivery_address, delivery_cost, delivery_date, payment, note, is_gift, gift_note, tip_amount, resource_id, staff_id, visit_id, review_status, risk_flags, reviewed_at, review_note, delivery_pending, fx_rate, fx_currency, total_secondary';
 
 export async function fetchOrders(tenantId, { limit = 100 } = {}) {
   exigirTenant(tenantId, 'fetchOrders');
@@ -413,6 +413,22 @@ export async function fetchOrderItemsByOrder(tenantId) {
     mapa.get(it.order_id).push(it);
   }
   return mapa;
+}
+
+/**
+ * Carga el costo de envio de un pedido que entro con el envio por confirmar
+ * (RPC set_delivery_cost, 0137): una sola vez, recalcula total y total en la
+ * otra moneda con la tasa congelada del pedido. Devuelve la fila actualizada.
+ */
+export async function setDeliveryCost(orderId, cost) {
+  const n = Number(cost);
+  if (!Number.isFinite(n) || n < 0) return { __error: 'validation', message: 'El costo del envío tiene que ser un número de 0 en adelante' };
+  const { data, error } = await supabase.rpc('set_delivery_cost', { p_order_id: orderId, p_cost: n });
+  if (error) {
+    console.error('setDeliveryCost:', error.message);
+    return { __error: 'db', message: error.message };
+  }
+  return data;
 }
 
 export async function setOrderStatus(id, status) {

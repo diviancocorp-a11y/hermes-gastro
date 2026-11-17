@@ -20,6 +20,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { cerrarTotal, congelarTasa, elegirTasa, esEnvioGratis, limpiarDetalles, limpiarMoneda, redondearMoneda } from "./montos.ts";
 import { ahoraEnZona, aplicarSugerencias, resolverOpciones, textoParaCocina, type Regla } from "./opciones.ts";
 
 const CORS = {
@@ -33,6 +34,15 @@ function jsonRes(body: unknown, status = 200, extra: Record<string, string> = {}
     status,
     headers: { "Content-Type": "application/json", ...CORS, ...extra },
   });
+}
+
+// Texto de entrada: null/undefined -> "" ; string -> recortado ; cualquier otra
+// cosa (numero, objeto, lista) -> null = tipo malo, que el handler responde 400.
+// Antes un `.trim()` sobre un numero reventaba en el catch general como 500.
+function texto(v: unknown, max: number): string | null {
+  if (v === null || v === undefined) return "";
+  if (typeof v !== "string") return null;
+  return v.trim().slice(0, max);
 }
 
 function getClientIp(req: Request) {
@@ -62,21 +72,29 @@ Deno.serve(async (req) => {
       return jsonRes({ error: "Demasiados pedidos. Espera un momento antes de intentar de nuevo." }, 429, { "Retry-After": "60" });
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return jsonRes({ error: "Pedido invalido" }, 400);
+    }
 
     // ── Tenant: sin esto no se escribe nada ─────────────────────────
-    const tenantSlug = (body.tenant_slug || "").trim().toLowerCase();
+    const tenantSlug = (texto(body.tenant_slug, 100) ?? "").toLowerCase();
     if (!tenantSlug) return jsonRes({ error: "Falta tenant_slug" }, 400);
 
     const { data: tenant, error: tenantErr } = await supabase
       .from("tenants")
-      .select("id, settings, timezone")
+      .select("id, settings, timezone, currency, secondary_currency")
       .eq("slug", tenantSlug)
       .single();
     if (tenantErr || !tenant) return jsonRes({ error: "Local no encontrado" }, 404);
 
     const tenantId = tenant.id;
     const cfg = tenant.settings || {};
+    // Moneda principal del tenant: define el redondeo (ARS = entero como siempre,
+    // el resto 2 decimales) y si hay que congelar una tasa.
+    const moneda = (tenant.currency as string | null) || null;
+    const secundaria = (tenant.secondary_currency as string | null) || null;
+    const doble = !!secundaria && secundaria !== moneda;
 
     // ── Idempotencia (Etapa 0) ──────────────────────────────────────
     // El navegador genera una clave por checkout. Sin esto, un doble click o
@@ -156,9 +174,18 @@ Deno.serve(async (req) => {
     }
 
     // ── Datos del cliente ───────────────────────────────────────────
-    const customer = (body.customer || "").trim().slice(0, 200);
-    const phone = (body.phone || "").replace(/\D/g, "").slice(0, 20);
-    const email = body.email ? body.email.trim().toLowerCase().slice(0, 200) : null;
+    const customerTxt = texto(body.customer, 200);
+    const phoneTxt = texto(body.phone, 60);
+    const emailTxt = texto(body.email, 200);
+    const noteTxt = texto(body.note, 500);
+    const giftNoteTxt = texto(body.gift_note, 300);
+    const addressTxt = texto(body.address, 500);
+    if ([customerTxt, phoneTxt, emailTxt, noteTxt, giftNoteTxt, addressTxt].includes(null)) {
+      return jsonRes({ error: "Datos invalidos: nombre, telefono, email, direccion y notas tienen que ser texto" }, 400);
+    }
+    const customer = customerTxt as string;
+    const phone = (phoneTxt as string).replace(/\D/g, "").slice(0, 20);
+    const email = emailTxt ? (emailTxt as string).toLowerCase() : null;
     if (!customer || !phone) {
       return jsonRes({ error: "Faltan datos: nombre y telefono son obligatorios" }, 400);
     }
@@ -169,7 +196,7 @@ Deno.serve(async (req) => {
     const paymentAccounts = Array.isArray(cfg.payment_accounts) ? cfg.payment_accounts : [];
     let payment = "efectivo";
     let paymentAccountId: string | null = null;
-    let paymentAccountSnapshot: Record<string, string> | null = null;
+    let paymentAccountSnapshot: Record<string, unknown> | null = null;
     if (body.payment_account_id) {
       const acc = paymentAccounts.find((a: Record<string, unknown>) =>
         a.id === body.payment_account_id
@@ -182,18 +209,23 @@ Deno.serve(async (req) => {
         id: acc.id, label: acc.label || "", banco: acc.banco || "",
         titular: acc.titular || "", alias: acc.alias || "", cbu: acc.cbu || "",
       };
+      // Cuentas con pago movil, etc.: solo se suman las claves si la cuenta las tiene.
+      const detalles = limpiarDetalles(acc.detalles);
+      if (detalles.length) paymentAccountSnapshot.detalles = detalles;
+      const monedaCuenta = limpiarMoneda(acc.moneda);
+      if (monedaCuenta) paymentAccountSnapshot.moneda = monedaCuenta;
     } else if (["efectivo", "transferencia", "mercadopago", "tarjeta"].includes(body.payment)) {
       payment = body.payment;
     }
     // MercadoPago nace pending_payment: mp-webhook la pasa a 'new' al aprobar.
     const isMP = payment === "mercadopago";
 
-    const note = body.note ? String(body.note).trim().slice(0, 500) : null;
+    const note = noteTxt || null;
     const isGift = body.is_gift === true;
-    const giftNote = body.gift_note ? String(body.gift_note).trim().slice(0, 300) : "";
+    const giftNote = giftNoteTxt as string;
     const deliveryDate = body.delivery_date || null;
     const userId = body.user_id || null;
-    const address = body.address ? String(body.address).trim().slice(0, 500) : null;
+    const address = addressTxt || null;
 
     // Costo de envio clampeado server-side: el server no conoce la distancia
     // (el geocoding es client-side) pero ningun envio puede salir mas que el
@@ -202,8 +234,10 @@ Deno.serve(async (req) => {
     const maxDeliveryCost = pricingTable.length > 0
       ? Math.max(...pricingTable.map((s: Record<string, unknown>) => Number(s?.cost) || 0))
       : 50000;
-    const deliveryCost = delivery === "envio"
-      ? Math.max(0, Math.min(maxDeliveryCost, Math.round(Number(body.delivery_cost) || 0)))
+    // Costo que manda el cliente, acotado. Se usa salvo que el envio quede "a
+    // confirmar" (mas abajo, cuando ya se conoce el neto de productos).
+    const deliveryCostCliente = delivery === "envio"
+      ? Math.max(0, Math.min(maxDeliveryCost, redondearMoneda(Number(body.delivery_cost) || 0, moneda)))
       : 0;
 
     const tipPct = Math.max(0, Math.min(100, Number(body.tip_pct) || 0));
@@ -212,6 +246,9 @@ Deno.serve(async (req) => {
     const items = body.items;
     if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
       return jsonRes({ error: "El pedido debe tener entre 1 y 50 productos" }, 400);
+    }
+    if (items.some((it: unknown) => !it || typeof it !== "object" || Array.isArray(it))) {
+      return jsonRes({ error: "Cada producto del pedido tiene que ser un objeto" }, 400);
     }
     // recipeId es el nombre historico del campo en el front; aca es product id.
     const productIds = [...new Set(items.map((it: Record<string, unknown>) => it.recipeId || it.productId))];
@@ -255,7 +292,7 @@ Deno.serve(async (req) => {
       };
     });
     const sugerencias = aplicarSugerencias(lineasSug, reglas, ahoraEnZona(tenant.timezone as string | null));
-    const warnings: { code: string; productId: string }[] = [];
+    const warnings: { code: string; productId?: string }[] = [];
 
     let serverSubtotal = 0;
     const validatedItems = [];
@@ -267,7 +304,7 @@ Deno.serve(async (req) => {
       const qty = Math.max(1, Math.min(999, Math.round(item.qty || 1)));
       const basePrice = Number(prod.price) || 0;
       const precioDelDia = hasDealToday(prod.category as string)
-        ? Math.round(basePrice * (1 - dealPct / 100))
+        ? redondearMoneda(basePrice * (1 - dealPct / 100), moneda)
         : basePrice;
       // El descuento del dia y el precio especial de la sugerencia no se
       // acumulan: gana el menor. Los extras de las opciones se suman al final
@@ -305,14 +342,46 @@ Deno.serve(async (req) => {
         const isExpired = coupon.expires_at && new Date(coupon.expires_at) < new Date();
         const emailMatch = !coupon.email || !email || coupon.email.toLowerCase() === email;
         if (!isExpired && emailMatch) {
-          validDiscount = Math.round(serverSubtotal * (Number(coupon.discount_pct) / 100));
+          validDiscount = redondearMoneda(serverSubtotal * (Number(coupon.discount_pct) / 100), moneda);
           validCouponId = coupon.id;
         }
       }
     }
 
-    const tipAmount = Math.round(serverSubtotal * tipPct / 100);
-    const finalTotal = Math.max(0, serverSubtotal - validDiscount) + tipAmount + deliveryCost;
+    // Envio a confirmar: el local lo carga despues (set_delivery_cost). El costo
+    // que mande el cliente se ignora y el total queda parcial. Si el pedido
+    // supera el umbral de envio gratis no hay nada que confirmar.
+    const envioGratis = esEnvioGratis(Math.max(0, serverSubtotal - validDiscount), cfg.free_delivery_over);
+    const deliveryPending = delivery === "envio" && cfg.delivery_a_confirmar === true && !envioGratis;
+    const deliveryCost = deliveryPending ? 0 : deliveryCostCliente;
+
+    const tipAmount = redondearMoneda(serverSubtotal * tipPct / 100, moneda);
+    const finalTotal = cerrarTotal(Math.max(0, serverSubtotal - validDiscount) + tipAmount + deliveryCost, moneda);
+
+    // ── Tasa congelada (doble moneda) ───────────────────────────────
+    // Siempre del servidor: lo que el cliente haya visto no entra en la cuenta.
+    // Sin tasa o vencida el pedido ENTRA igual (no se pierde la venta) y la
+    // respuesta lo avisa en `warnings`.
+    let fx = null as ReturnType<typeof congelarTasa>;
+    if (doble) {
+      let filas: Record<string, unknown>[] = [];
+      try {
+        const { data } = await supabase.from("exchange_rates")
+          .select("rate, effective_date, source, created_at")
+          .eq("tenant_id", tenantId).eq("base_currency", moneda).eq("quote_currency", secundaria)
+          .order("effective_date", { ascending: false }).limit(20);
+        filas = (data as Record<string, unknown>[]) || [];
+      } catch (e) {
+        console.warn("exchange_rates (non-blocking):", (e as Error)?.message);
+      }
+      const tasa = elegirTasa(filas as never);
+      fx = congelarTasa(finalTotal, tasa, secundaria as string, new Date(), (tenant.timezone as string) || undefined);
+      if (!fx) warnings.push({ code: "sin_tasa" });
+      else if (fx.estado === "vencida") warnings.push({ code: "tasa_vencida" });
+      // Informativo: la tasa que vio el cliente. Si cambio, se le avisa; no se acepta.
+      const visto = Number(body.fx_visto);
+      if (fx && visto > 0 && Math.abs(visto - fx.fx_rate) > 0.000001) warnings.push({ code: "tasa_cambio" });
+    }
 
     // La revision es obligatoria para toda comanda autogestionada en mesa.
     // Las senales solo priorizan la bandeja: nunca reemplazan al camarero.
@@ -363,6 +432,9 @@ Deno.serve(async (req) => {
         staff_id: tableVisit?.responsible_staff_id || null,
         review_status: tableVisit ? "pending" : "not_required",
         risk_flags: riskFlags,
+        // Solo cuando aplican: un pedido de un tenant sin doble moneda inserta lo de siempre.
+        ...(fx ? { fx_rate: fx.fx_rate, fx_currency: fx.fx_currency, total_secondary: fx.total_secondary } : {}),
+        ...(deliveryPending ? { delivery_pending: true } : {}),
       })
       .select("id")
       .single();
@@ -474,6 +546,8 @@ Deno.serve(async (req) => {
       delivery_cost: deliveryCost,
       review_status: tableVisit ? "pending" : "not_required",
       risk_flags: riskFlags,
+      ...(doble ? { fx: fx ? { rate: fx.fx_rate, currency: fx.fx_currency, total_secondary: fx.total_secondary, date: fx.fecha, status: fx.estado } : null } : {}),
+      ...(deliveryPending ? { delivery_pending: true } : {}),
       ...(warnings.length ? { warnings } : {}),
     });
   } catch (err) {

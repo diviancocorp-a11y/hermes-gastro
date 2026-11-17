@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import Icon from "./Icon";
-import { fmtAR } from "./format";
+import { Monto, useMoneda } from "./MonedaCatalogo";
 
 // ── ProductPhoto — imagen con fallback a tone gradient + fade-in ──
 // dim: atenua la foto (grayscale + opacity) para productos agotados.
@@ -51,15 +51,16 @@ export function SoldOutBadge({ compact = false }) {
 
 // ── PriceTag — precio AR + tachado opcional ──
 export function PriceTag({ price, oldPrice, size = "md", tone = "var(--tx)" }) {
+  const { texto } = useMoneda();
   const fs = size === "lg" ? 18 : size === "sm" ? 13 : 15;
   return (
     <div style={{ display: "inline-flex", alignItems: "baseline", gap: 8 }}>
       <span style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: fs, color: tone, letterSpacing: "-0.005em" }}>
-        {fmtAR(price)}
+        <Monto valor={price} />
       </span>
       {oldPrice ? (
         <span style={{ fontSize: fs - 2, color: "var(--t3)", textDecoration: "line-through" }}>
-          {fmtAR(oldPrice)}
+          {texto(oldPrice)}
         </span>
       ) : null}
     </div>
@@ -105,7 +106,7 @@ export function StickyCart({ count = 0, total = 0, label = "Ver pedido", onClick
           fontSize: 12, fontWeight: 600,
         }}>{count}</div>
         <div style={{ flex: 1, textAlign: "left", fontWeight: 500, fontSize: 14 }}>{label}</div>
-        <div style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>{fmtAR(total)}</div>
+        <div style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}><Monto valor={total} className="cp-monto--hereda cp-monto--der" /></div>
       </button>
     </div>
   );

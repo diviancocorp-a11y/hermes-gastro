@@ -11,7 +11,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Icon from "./Icon";
-import { fmtAR } from "./format";
+import { useMoneda } from "./MonedaCatalogo";
 import { ProductPhoto, Stepper, SoldOutBadge } from "./atoms";
 import { mapProduct, toneFor } from "./homeHelpers";
 import { familyTotal, packSummary, packTexts, shortNames } from "../lib/catalogFamilies";
@@ -20,6 +20,7 @@ import "./family.css";
 export default function FamilyScreen({
   family, hasDeal, dealPrice, soldOutIds, onBack, onAddToCart, onConfirm,
 }) {
+  const { texto } = useMoneda();
   const { name, members = [], pack = null, image = null } = family || {};
   const [qtys, setQtys] = useState({});
   const backRef = useRef(null);
@@ -102,7 +103,7 @@ export default function FamilyScreen({
                     {r.soldOut && <SoldOutBadge compact />}
                   </div>
                   {r.desc ? <p className="cp-fam-desc">{r.desc}</p> : null}
-                  <div className="cp-fam-price">{fmtAR(r.price)}</div>
+                  <div className="cp-fam-price">{texto(r.price)}</div>
                 </div>
                 <Stepper
                   size="lg" value={q} label={r.short}
@@ -134,7 +135,7 @@ export default function FamilyScreen({
       <div className="cp-fam-bar">
         <button type="button" className="cp-fam-cta" disabled={units === 0} onClick={agregar}>
           <span>Agregar al pedido</span>
-          <span className="cp-fam-cta-total">{units === 0 ? "" : `· ${fmtAR(amount)}`}</span>
+          <span className="cp-fam-cta-total">{units === 0 ? "" : `· ${texto(amount)}`}</span>
         </button>
       </div>
     </div>

@@ -125,7 +125,7 @@ export async function fetchOrderHistory({ user }) {
   if (!user) return [];
   const { data, error } = await supabase
     .from('orders')
-    .select('id, created_at, total, status, delivery, payment, customer_name')
+    .select('id, created_at, total, total_secondary, fx_currency, status, delivery, payment, customer_name')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(50);

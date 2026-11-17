@@ -382,7 +382,8 @@ function Settings({
             <h2 className="ag-page-over-title">Cuentas de pago</h2>
           </div>
           <div className="ag-page-over-body">
-            <PaymentAccountsEditor settings={settings} setSettings={setSettings} showToast={showToast} onSave={onSave} />
+            <PaymentAccountsEditor settings={settings} setSettings={setSettings} showToast={showToast} onSave={onSave}
+              monedas={[moneda?.monedaPrincipal, moneda?.monedaSecundaria].filter(Boolean)} />
           </div>
         </div>
       )}

@@ -186,7 +186,32 @@ const cargarMuestra = (r) => async () => ({ ok: true, data: r });
  * mirarlo. `anchos` son los que de verdad cambian el layout, no una lista de
  * dispositivos: mirar a 1440 y a 1366 no dice nada nuevo.
  */
+// Pedidos de Cochi (USD + VES): uno con el envio por confirmar, abierto para
+// cargar el costo, y uno ya cerrado con su total final en las dos monedas.
+const PEDIDO_BASE = {
+  tenant_id: 't', status: 'new', channel: 'catalog', customer_phone: '584141234567', delivery: 'envio',
+  delivery_address: 'Av. Francisco de Miranda 100, Caracas', payment: 'efectivo', discount: 0, tip_amount: 0,
+  created_at: '2026-11-16T15:10:00Z',
+};
+const PEDIDOS_COCHI = [
+  { ...PEDIDO_BASE, id: 'p1', customer_name: 'Ana Prueba', subtotal: 17, total: 17, delivery_cost: 0, delivery_pending: true,
+    fx_rate: 798.5724, fx_currency: 'VES', total_secondary: 13575.73 },
+  { ...PEDIDO_BASE, id: 'p2', customer_name: 'Luis Pérez', subtotal: 8.5, total: 11.5, delivery_cost: 3, delivery_pending: false,
+    fx_rate: 798.5724, fx_currency: 'VES', total_secondary: 9183.58, created_at: '2026-11-16T14:40:00Z' },
+];
+
 export const MUESTRAS = {
+  'pedidos-envio': {
+    modulo: 'src/components/admin/platform/OrdersPanel.jsx',
+    titulo: 'Pedidos · envío por confirmar (USD + VES)',
+    props: {
+      orders: PEDIDOS_COCHI, loading: false, tenantId: 't', hayTurnoAbierto: true,
+      moneda: { monedaPrincipal: 'USD', monedaSecundaria: 'VES' },
+      abiertoId: 'p1',
+      itemsIniciales: [{ id: 'i1', name_snapshot: 'Bandeja 3 carnes · Alitas', qty: 1, unit_price: 17, subtotal: 17 }],
+    },
+    anchos: [390],
+  },
   stock: {
     modulo: 'src/components/admin/platform/StockPanel.jsx',
     titulo: 'Stock · escritorio',

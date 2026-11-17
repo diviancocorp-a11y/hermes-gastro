@@ -51,6 +51,16 @@ const hexColor = z.string().regex(/^#[0-9A-Fa-f]{3,8}$/, 'Color hex inválido').
 export const OrderItemInputSchema = z.object({
   recipeId: uuid,
   qty: z.number().int().min(1, 'Cantidad mínima: 1').max(100, 'Cantidad máxima: 100'),
+  // Fase 4 (opciones y sugerencias): el servidor valida y recalcula el precio.
+  // Sin declararlos Zod los descartaba en silencio y la ficha con opciones
+  // nunca llegaba a submit-order (patron Zod-strip, bug recurrente).
+  selection: z.array(z.object({
+    groupId: z.string().min(1).max(40),
+    choiceId: z.string().min(1).max(40),
+    qty: z.number().int().min(1).max(99).optional(),
+  })).max(30).optional(),
+  note: optionalText(400),
+  suggestionId: optionalUuid,
 });
 
 /** Pedido enviado desde el catálogo público */
@@ -76,6 +86,8 @@ export const OrderInputSchema = z.object({
   address: optionalText(500),
   // Costo de envio calculado en el cliente; el server lo clampa y lo suma al total.
   delivery_cost: z.number().min(0).max(50000).optional().default(0),
+  // Tasa que vio el cliente (informativa): el servidor congela la suya y avisa si cambio.
+  fx_visto: z.number().positive().optional(),
   // Propina en % — antes bypasseaba la validacion (se leia de orderData crudo).
   tip_pct: z.number().min(0).max(100).optional().default(0),
   // Presente solo cuando el pedido nace desde el QR fisico de una mesa.
@@ -294,6 +306,10 @@ export const SettingsInputSchema = z.object({
   lead_time_hours: z.number().min(0).max(72).nullable().optional(),
   // Envio gratis: el subtotal de productos tiene que SUPERAR este monto. 0 = no ofrece.
   free_delivery_over: z.number().min(0).nullable().optional(),
+  // Envio a confirmar (Cochi f5): el envio entra sin costo y el local lo carga despues.
+  delivery_a_confirmar: z.boolean().nullable().optional(),
+  // La confirmacion del pedido ofrece el boton de WhatsApp con el detalle.
+  pedido_por_whatsapp: z.boolean().nullable().optional(),
   // Zona de entrega: { partidos: [...], notice } — partidos vacio = entrega en todos lados
   delivery_zone: z.object({
     partidos: z.array(z.string().max(80)).max(60),

@@ -12,7 +12,7 @@
 //   onBack(), onUpdateQty(id, qty), onContinue(), onSeguirAgregando()
 
 import Icon from "./Icon";
-import { fmtAR } from "./format";
+import { Monto, AvisoTasa, useMoneda } from "./MonedaCatalogo";
 import { toneFor } from "./homeHelpers";
 
 export default function CartScreen({
@@ -25,6 +25,7 @@ export default function CartScreen({
   // Form del pedido — para regalo + notas a la cocina (antes vivian en checkout step 3)
   form = {}, sf = () => {}, ffGift = false,
 }) {
+  const { texto } = useMoneda();
   const count = items.reduce((s, it) => s + it.qty, 0);
   // Upsell: NO se filtra lo que ya esta en el carrito (fix 12/jun) — antes
   // el producto desaparecia al agregar 1 unidad y no dejaba sumar mas.
@@ -84,7 +85,7 @@ export default function CartScreen({
                   <span style={{ minWidth: 22, textAlign: "center", fontWeight: 600, fontSize: 13 }}>{it.qty}</span>
                   <button onClick={() => onUpdateQty?.(it.id, it.qty + 1)} style={stepBtn}><Icon name="plus" size={13} /></button>
                 </div>
-                <span style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 15, color: "var(--tx)" }}>{fmtAR(it.price * it.qty)}</span>
+                <span style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 15, color: "var(--tx)" }}><Monto valor={it.price * it.qty} className="cp-monto--der" /></span>
               </div>
             </div>
           </div>
@@ -106,9 +107,9 @@ export default function CartScreen({
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, fontSize: 12.5 }}>
               <span style={{ fontWeight: 600, color: minOk ? "var(--ok, #2A9D6E)" : "var(--ac)" }}>
-                {minOk ? "✓ Minimo de pedido alcanzado" : `Faltan ${fmtAR(missing)} para el minimo`}
+                {minOk ? "✓ Minimo de pedido alcanzado" : `Faltan ${texto(missing)} para el minimo`}
               </span>
-              <span style={{ color: "var(--t3)", fontSize: 11 }}>{fmtAR(subtotal)} / {fmtAR(minOrder)}</span>
+              <span style={{ color: "var(--t3)", fontSize: 11 }}>{texto(subtotal)} / {texto(minOrder)}</span>
             </div>
             <div style={{ height: 6, background: "var(--b2)", borderRadius: 999, overflow: "hidden" }}>
               <div style={{
@@ -127,11 +128,12 @@ export default function CartScreen({
           <div className="caption" style={{ marginBottom: 12, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--t3)" }}>Subtotal</div>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
             <span style={{ fontSize: 13, color: "var(--t2)" }}>{count} {count === 1 ? "producto" : "productos"}</span>
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 28, color: "var(--tx)" }}>{fmtAR(subtotal)}</span>
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 28, color: "var(--tx)" }}><Monto valor={subtotal} className="cp-monto--der" /></span>
           </div>
           <p style={{ margin: "10px 0 0", fontSize: 11, color: "var(--t3)", lineHeight: 1.4 }}>
             Envío, cupón y propina se calculan en el siguiente paso.
           </p>
+          <AvisoTasa />
         </div>
 
         {/* Notas a la cocina */}
@@ -210,7 +212,7 @@ export default function CartScreen({
                 <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
                   <div style={{ fontFamily: "var(--font-heading)", fontSize: 13, color: "var(--tx)", lineHeight: 1.2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 32 }}>{p.name}</div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--tx)" }}>{fmtAR(p.sale_price)}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--tx)" }}><Monto valor={p.sale_price} /></span>
                     {qtyInCart(p.id) > 0 ? (
                       /* Ya en el carrito: mini stepper para sumar/restar sin salir */
                       <div style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--ac)", borderRadius: 999, overflow: "hidden" }}>
@@ -264,7 +266,7 @@ export default function CartScreen({
             <span style={{ fontSize: 15, fontWeight: 600 }}>{count} {count === 1 ? "item" : "items"}</span>
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 22 }}>{fmtAR(subtotal)}</span>
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 22 }}>{texto(subtotal)}</span>
             <Icon name="arrow-right" size={18} />
           </span>
         </button>

@@ -86,6 +86,28 @@ export function waPhoneAr(raw) {
   return "549" + d;
 }
 
+// ─── Telefono → internacional segun el pais del TENANT ───────────────
+// waPhoneAr le antepone 549 a todo: un numero venezolano (0414 1234567)
+// salia como 5494141234567. El prefijo sale del pais del negocio
+// (settings.country, ISO alfa-2, ya viaja en get_catalog):
+//   - sin pais, AR o desconocido: waPhoneAr tal cual (lo de siempre).
+//   - otro pais: si el numero ya trae codigo de pais (con "+" o "00", o
+//     empieza con el codigo y tiene largo de numero completo) se respeta;
+//     si no, se le quita el 0 de larga distancia y se antepone el codigo.
+const CODIGO_TEL = { UY: "598", CL: "56", PY: "595", BO: "591", PE: "51", CO: "57", MX: "52", ES: "34", VE: "58" };
+export function waPhone(raw, country) {
+  const code = CODIGO_TEL[String(country || "").toUpperCase()];
+  if (!code) return waPhoneAr(raw);
+  const crudo = String(raw ?? "").trim();
+  let d = crudo.replace(/\D/g, "");
+  if (!d) return null;
+  if (crudo.startsWith("+")) return d;                       // ya internacional
+  if (d.startsWith("00")) return d.slice(2);                 // prefijo internacional
+  if (d.startsWith(code) && d.length - code.length >= 8) return d; // ya trae el codigo
+  d = d.replace(/^0+/, "");                                  // 0 de larga distancia
+  return d ? code + d : null;
+}
+
 // Link wa.me listo para abrir. null si no hay telefono.
 export const waLink = (raw) => { const p = waPhoneAr(raw); return p ? `https://wa.me/${p}` : null; };
 

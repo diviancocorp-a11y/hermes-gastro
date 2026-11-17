@@ -596,6 +596,23 @@ function BrandModal({ open, onClose, settings, setSettings, showToast, onSave, o
                     </div>
                   </div>
 
+                  {/* Envio a confirmar (settings.delivery_a_confirmar) y pedido por WhatsApp (settings.pedido_por_whatsapp) */}
+                  <div style={{ paddingTop: 10 }}>
+                    <ToggleSwitch
+                      checked={s.delivery_a_confirmar === true}
+                      onChange={(v) => set("delivery_a_confirmar", v)}
+                      label="Confirmo el costo del envío después"
+                      hint="El pedido entra sin costo de envío y el total queda parcial. Lo cargás desde Pedidos y el cliente ve el total final."
+                    />
+                    <div style={{ height: 10 }} />
+                    <ToggleSwitch
+                      checked={s.pedido_por_whatsapp === true}
+                      onChange={(v) => set("pedido_por_whatsapp", v)}
+                      label="Ofrecer enviar el pedido por WhatsApp"
+                      hint="Al confirmar, el cliente ve un botón que abre WhatsApp con el detalle del pedido. Usa el número de WhatsApp del negocio."
+                    />
+                  </div>
+
                   {/* Zona de entrega (settings.delivery_zone) */}
                   <div style={{ paddingTop: 10 }}>
                     <div className="ag-cat-row-label" style={{ marginBottom: 2 }}>Zona de entrega</div>

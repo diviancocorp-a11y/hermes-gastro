@@ -6,7 +6,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import Icon from "./Icon";
-import { fmtAR } from "./format";
+import { useMoneda } from "./MonedaCatalogo";
 import { ProductPhoto, AddRound, SoldOutBadge } from "./atoms";
 import { mapProduct } from "./homeHelpers";
 
@@ -42,6 +42,7 @@ export default function SearchScreen({
   soldOutIds, // Set de recipe_ids agotados
   onBack, onSelectProduct, onSelectCategory, onAddToCart,
 }) {
+  const { texto } = useMoneda();
   const [q, setQ] = useState("");
   const [recents, setRecents] = useState(getRecents());
   const inputRef = useRef(null);
@@ -106,7 +107,7 @@ export default function SearchScreen({
                     {highlight(p.name, q)}
                   </div>
                   <div style={{ fontSize: 12, color: "var(--t2)", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
-                    {fmtAR(m.price)}
+                    {texto(m.price)}
                     {m.soldOut && <SoldOutBadge compact />}
                   </div>
                 </div>

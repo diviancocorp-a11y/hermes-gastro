@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Icon, formatInt, optimizeImage, originalImageUrl, disableImageTransforms, probeImageTransforms, waPhoneAr } from "../lib/utils";
+import { Icon, formatInt, optimizeImage, originalImageUrl, disableImageTransforms, probeImageTransforms, waPhone } from "../lib/utils";
 import { preloadImages } from "../lib/preloadImages";
 import { fetchCatalog, submitOrder, validateCouponPublic } from "../lib/catalogService";
 import { fetchMpStatusPublic, createMpPreference } from "../services/paymentIntegrations";
@@ -46,9 +46,24 @@ import { applyTenantHead } from "../lib/tenantHead";
 import { leadHoras, fechaYMinutos, estadoDelLocal, horasDisponibles, entregaReal } from "../modules/pedidosProgramados";
 import { resolveTenantSlug } from "../lib/activeTenant";
 import useFeature from "../hooks/useFeature";
+import { MonedaCatalogoProvider, useMoneda } from "../catalog-pro/MonedaCatalogo";
+import { redondearMoneda } from "../lib/moneda";
 
+// El provider de moneda necesita `settings`, que se carga adentro: el contenido
+// los avisa hacia arriba y el provider envuelve TODAS las vistas (carga, ficha,
+// carrito, checkout, confirmacion) sin tocar cada return.
 export default function Catalog() {
+  const [settingsMoneda, setSettingsMoneda] = useState(null);
+  return (
+    <MonedaCatalogoProvider settings={settingsMoneda}>
+      <CatalogContenido onSettings={setSettingsMoneda} />
+    </MonedaCatalogoProvider>
+  );
+}
+
+function CatalogContenido({ onSettings }) {
   const navigate = useNavigate();
+  const { tasa: tasaVista } = useMoneda();
   const { user, profile, addresses, isFavorite, toggleFavorite, getOrderHistory, phoneSession, session, sessionLogout } = useAuth();
 
   // --- Feature flags ---
@@ -67,6 +82,7 @@ export default function Catalog() {
       return cached ? { ...fallbackSettings, ...cached } : fallbackSettings;
     } catch { return fallbackSettings; }
   });
+  useEffect(() => { onSettings?.(sett); }, [sett, onSettings]);
   const [products, setProducts] = useState([]);
   const [suggestions, setSuggestions] = useState([]); // get_catalog.suggestions (0135)
   const [loading, setLoading] = useState(true);
@@ -104,6 +120,7 @@ export default function Catalog() {
   const [showCk, setShowCk] = useState(false);
   const [sent, setSent] = useState(false);
   const [orderId, setOrderId] = useState(null);
+  const [orderResp, setOrderResp] = useState(null); // respuesta del servidor: total final, tasa, envio pendiente
   const [sending, setSending] = useState(false);
   // MP Checkout Pro: si hay integración activa, redirigimos al init_point.
   // Si no, fallback al flujo manual (alias + comprobante).
@@ -115,6 +132,7 @@ export default function Catalog() {
   useEffect(() => { setMpPendingOrderId(null); }, [cart]);
   const [orderErr, setOrderErr] = useState("");
   const [form, setForm] = useState({ ...DEFAULT_FORM });
+  const [sentItems, setSentItems] = useState([]); // lineas del pedido enviado (para el mensaje de WhatsApp)
   const [sentForm, setSentForm] = useState(null); // snapshot del form al confirmar (el form vivo se resetea)
   const [scheduleMode, setScheduleMode] = useState("now"); // "now" | "later"
   const [ckStep, setCkStep] = useState(0); // 0=Datos, 1=Entrega, 2=Pago, 3=Resumen
@@ -423,11 +441,11 @@ export default function Catalog() {
   // acumulan). Mismo Math.round que submit-order valida server-side.
   const getPrice = useCallback((p) => {
     const own = Number(p?.discount_pct) || 0;
-    if (own > 0) return Math.round(p.sale_price * (1 - own / 100));
+    if (own > 0) return redondearMoneda(p.sale_price * (1 - own / 100), sett?.currency);
     const parent = subToParent[p.category] || p.category;
-    if (parent && dealCats.has(parent)) return Math.round(p.sale_price * (1 - DEAL_PCT / 100));
+    if (parent && dealCats.has(parent)) return redondearMoneda(p.sale_price * (1 - DEAL_PCT / 100), sett?.currency);
     return p.sale_price;
-  }, [dealCats, subToParent]);
+  }, [dealCats, subToParent, sett?.currency]);
 
   // Filtrar productos por categoria madre seleccionada.
   // Trim para tolerar trailing spaces en recipe.category (data legacy).
@@ -460,24 +478,26 @@ export default function Catalog() {
 
   // Totales del carrito (memoizado). Propina se decide en step 3 (Pago),
   // se calcula sobre subtotal sin descuentos.
-  const { cc, discount, ct, tipAmount, ctWithDelivery, envioGratis, costoEnvio } = useMemo(() => {
+  const { cc, discount, ct, tipAmount, ctWithDelivery, envioGratis, costoEnvio, envioPendiente } = useMemo(() => {
     const cc = cart.reduce((s, i) => s + i.qty, 0);
     const ctBase = cart.reduce((s, i) => s + i.qty * i.price, 0);
-    const discount = coupon ? Math.round(ctBase * coupon.discount_pct / 100) : 0;
+    const discount = coupon ? redondearMoneda(ctBase * coupon.discount_pct / 100, sett?.currency) : 0;
     const ct = ctBase - discount;
     // Envio gratis: el pedido que SUPERA el umbral del negocio (0 = sin umbral).
     const envioGratis = esEnvioGratis(ct, sett?.free_delivery_over);
-    const costoEnvio = form.delivery === "envio" && !envioGratis ? deliveryCost : 0;
+    // Envio a confirmar: el local lo carga despues; el total del pedido es parcial.
+    const envioPendiente = form.delivery === "envio" && !envioGratis && sett?.delivery_a_confirmar === true;
+    const costoEnvio = form.delivery === "envio" && !envioGratis && !envioPendiente ? deliveryCost : 0;
     const baseTotal = ct + costoEnvio;
     // Propina: monto fijo (cpTipCustom) tiene prioridad sobre el % (cpTip).
     const tipRaw = cpTipCustom != null
       ? cpTipCustom
-      : Math.round(ctBase * (cpTip || 0) / 100);
+      : redondearMoneda(ctBase * (cpTip || 0) / 100, sett?.currency);
     // Tope de seguridad: la propina no puede superar el total del pedido.
     const tipAmount = Math.max(0, Math.min(tipRaw, baseTotal));
     const ctWithDelivery = baseTotal + tipAmount;
-    return { cc, discount, ct, tipAmount, ctWithDelivery, envioGratis, costoEnvio };
-  }, [cart, coupon, deliveryCost, form.delivery, cpTip, cpTipCustom, sett?.free_delivery_over]);
+    return { cc, discount, ct, tipAmount, ctWithDelivery, envioGratis, costoEnvio, envioPendiente };
+  }, [cart, coupon, deliveryCost, form.delivery, cpTip, cpTipCustom, sett?.free_delivery_over, sett?.currency, sett?.delivery_a_confirmar]);
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -635,7 +655,7 @@ export default function Catalog() {
     // por sufijo (phone_key en las RPCs) tolera datos viejos en crudo, asi que
     // esto no fragmenta nada. Si viene vacio/invalido, cae al valor crudo y que
     // la validacion (phoneNumber) lo rechace.
-    const normalizedPhone = waPhoneAr(form.phone) || form.phone;
+    const normalizedPhone = waPhone(form.phone, sett?.country) || form.phone;
 
     const orderData = {
       customer: form.name,
@@ -658,6 +678,8 @@ export default function Catalog() {
       total: ctWithDelivery,
       delivery_date: entrega ? (entrega.fechaISO || null) : null,
       user_id: user?.id || null,
+      // Informativo: la tasa que vio el cliente. El servidor congela la suya y avisa si cambio.
+      ...(tasaVista?.rate ? { fx_visto: tasaVista.rate } : {}),
       items: cart.map(i => ({
         // product_id: la clave del carrito (i.id) puede llevar tamaño u opciones.
         recipeId: i.product_id || i.id,
@@ -733,6 +755,8 @@ export default function Catalog() {
         }
       }
       setOrderId(result.orderId);
+      setOrderResp(result);
+      setSentItems(cart.map((i) => ({ name: i.name, qty: i.qty, note: i.note || "" })));
       try { addActiveOrder(result.orderId); } catch { /* ignore */ }
       // Mostrar animación de confirmación
       setConfirmAnim(true);
@@ -800,7 +824,7 @@ export default function Catalog() {
   if (confirmAnim) return <ConfirmationAnimation />;
 
   // --- VISTA: PEDIDO ENVIADO ---
-  if (sent) return <OrderSentView orderId={orderId} form={sentForm || form} receiptFile={receiptFile} settings={sett} onReset={() => { setSent(false); setOrderId(null); setShowCk(false); }} />;
+  if (sent) return <OrderSentView orderId={orderId} respuesta={orderResp} items={sentItems} form={sentForm || form} receiptFile={receiptFile} settings={sett} onReset={() => { setSent(false); setOrderId(null); setOrderResp(null); setShowCk(false); }} />;
 
   // --- VISTA: CATALOGO SIN UBICACION ---
   // El negocio no cargo desde donde sale el envio: no se arma un pedido que la
@@ -855,7 +879,8 @@ export default function Catalog() {
         setGeoLoading={setGeoLoading}
         estimateDelivery={estimateDelivery}
         calcingDelivery={calcingDelivery}
-        deliveryCost={envioGratis ? 0 : deliveryCost}
+        deliveryCost={envioGratis || envioPendiente ? 0 : deliveryCost}
+        envioAConfirmar={envioPendiente}
         envioGratis={envioGratis && form.delivery === "envio"}
         zonaFuera={zonaFuera}
         zonaAviso={sett?.delivery_zone?.notice || null}
