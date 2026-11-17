@@ -12,7 +12,7 @@ import OrderStatusCard from "../../catalog-pro/OrderStatusCard";
 import { cancelOwnOrder, useRegretCountdown } from "../../catalog-pro/regretOrder";
 import PushOptInBanner from "../../catalog-pro/PushOptInBanner";
 import { MontoCongelado, useMoneda } from "../../catalog-pro/MonedaCatalogo";
-import { armarMensajePedido, urlWhatsApp } from "../../lib/mensajePedido";
+import { urlWhatsAppDePedido } from "../../lib/confirmacionPedido";
 
 const GREEN = "#16A34A";
 
@@ -43,14 +43,7 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
   // tasa congelada. Un tenant sin ninguna de las dos no ve este bloque.
   const pendiente = respuesta?.delivery_pending === true;
   const resumenMonedas = Boolean(respuesta && respuesta.total != null && (respuesta.fx !== undefined || pendiente));
-  const urlWsp = respuesta && settings?.pedido_por_whatsapp === true
-    ? urlWhatsApp(settings?.whatsapp, armarMensajePedido({
-      negocio: settings?.biz_name || "", codigo: formatOrderCode(orderId),
-      cliente: { nombre: form?.name || "", telefono: form?.phone || "" },
-      modo: form?.delivery === "envio" ? "envio" : "retiro", direccion: form?.address || "",
-      items, respuesta, principal, notas: form?.note || "",
-    }))
-    : null;
+  const urlWsp = urlWhatsAppDePedido({ settings, orderId, form, items, respuesta, principal });
 
   const copyCode = () => {
     try {
@@ -92,7 +85,9 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
             : wasPaidDigital && receiptFile
             ? "Tu comprobante fue recibido. Lo estamos verificando y tu pedido pasará a preparación en breve."
             : wasPaidDigital
-            ? "Recordá subir el comprobante de pago para que procesemos tu pedido más rápido."
+            ? (settings?.pedido_por_whatsapp === true
+              ? "Mandanos el comprobante de pago por WhatsApp para que procesemos tu pedido más rápido."
+              : "Recordá subir el comprobante de pago para que procesemos tu pedido más rápido.")
             : "Estamos preparando todo con mucho amor."}
         </p>
 
@@ -188,9 +183,12 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
             )}
 
             {urlWsp && (
-              <a className="cp-wsp-pedido" href={urlWsp} target="_blank" rel="noopener noreferrer">
-                Enviar el pedido por WhatsApp
-              </a>
+              <>
+                <p className="cp-wsp-pedido__ayuda">¿No se abrió WhatsApp? Tocá acá para mandar tu pedido.</p>
+                <a className="cp-wsp-pedido" href={urlWsp} target="_blank" rel="noopener noreferrer">
+                  Enviar el pedido por WhatsApp
+                </a>
+              </>
             )}
 
             {form.delivery === "retiro" && storeAddress && (

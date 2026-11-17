@@ -42,6 +42,22 @@ export function requiereOpciones(producto) {
   return grupos.some((g) => Array.isArray(g?.choices) && limitesDeGrupo(g).min >= 1);
 }
 
+/**
+ * La sugerencia lista para sumar de un toque (agregar rapido): la regla, el
+ * producto sugerido, su precio especial (nunca mayor al normal) y cuantas
+ * unidades (max_per_item, igual que desde la ficha). null si no hay o si el
+ * sugerido esta agotado. `precioDe(producto)` da el precio normal del dia.
+ */
+export function sugerenciaRapida(reglas, producto, productos, ahora, precioDe, agotados) {
+  const rule = sugerenciaParaProducto(reglas, producto, productos, ahora);
+  if (!rule) return null;
+  const sugerido = productos.find((p) => p.id === rule.add_product_id);
+  if (!sugerido || agotados?.has?.(sugerido.id)) return null;
+  const normal = Number(precioDe(sugerido)) || 0;
+  const unitPrice = rule.special_price != null ? Math.min(normal, Number(rule.special_price)) : normal;
+  return { rule, product: sugerido, normal, unitPrice, qty: Math.max(1, rule.max_per_item || 1) };
+}
+
 /** Primera regla vigente que aplica al producto (categoria) y cuyo producto existe. */
 export function sugerenciaParaProducto(reglas, producto, productos, ahora) {
   return (reglas || []).find((r) =>

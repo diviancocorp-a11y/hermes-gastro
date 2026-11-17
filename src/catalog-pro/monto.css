@@ -18,3 +18,13 @@
 .cp-resumen-pedido__nota { margin: 8px 0 0; font: 500 12px/1.4 var(--font-body, inherit); color: var(--t2); }
 .cp-wsp-pedido { display: flex; align-items: center; justify-content: center; min-height: 48px; margin-bottom: 14px; padding: 12px 18px; border-radius: 12px; background: #0e7a3e; color: #fff; font: 700 14px/1.2 var(--font-body, inherit); text-decoration: none; }
 .cp-wsp-pedido:focus-visible { outline: 2px solid var(--ac); outline-offset: 3px; }
+
+/* Aviso de combo al agregar de un toque (ComboAviso.jsx): chico, no tapa la carta ni bloquea. */
+.cp-combo-aviso { position: fixed; left: 12px; right: 12px; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); z-index: 235; max-width: 440px; margin: 0 auto; display: flex; align-items: center; gap: 8px; padding: 10px 8px 10px 14px; border-radius: 14px; background: var(--bg); color: var(--tx); border: 1.5px solid var(--ac); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); }
+.cp-combo-aviso__texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font: 500 13px/1.3 var(--font-body, inherit); color: var(--t2); }
+.cp-combo-aviso__texto strong { font: 700 14px/1.2 var(--font-body, inherit); color: var(--tx); }
+.cp-combo-aviso__sumar { flex-shrink: 0; min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--ac); color: #fff; font: 700 14px/1 var(--font-body, inherit); cursor: pointer; }
+.cp-combo-aviso__cerrar { flex-shrink: 0; width: 44px; height: 44px; border: 0; background: transparent; color: var(--t2); font-size: 16px; cursor: pointer; }
+.cp-combo-aviso__sumar:focus-visible, .cp-combo-aviso__cerrar:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+.cp-wsp-pedido__ayuda { margin: 0 0 8px; font: 500 13px/1.4 var(--font-body, inherit); color: var(--t2); }
+.cp-comprobante-opcional { font: 500 12px/1.4 var(--font-body, inherit); color: var(--t2); margin: 2px 0 10px; }

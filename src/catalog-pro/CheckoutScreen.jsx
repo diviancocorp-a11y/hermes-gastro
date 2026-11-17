@@ -14,6 +14,7 @@ import { Monto, AvisoTasa, useMoneda } from "./MonedaCatalogo";
 import { aSecundaria, formatearMonto } from "../lib/moneda";
 import SchedulePicker from "./SchedulePicker";
 import { leadHoras as leerLeadHoras, entregaReal, textoAnticipacion } from "../modules/pedidosProgramados";
+import { comprobanteObligatorio } from "../lib/confirmacionPedido";
 
 const STEPS = ["Datos", "Entrega", "Pago"];
 
@@ -427,6 +428,8 @@ function Step1Entrega({ envioAConfirmar, form, sf, user, addresses, setDeliveryC
 
 // ─── PASO 2: Pago ──────────────────────────────────────────────────
 function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLabel, mpConnected, accounts, selectedAccount, ct, ctWithDelivery, deliveryCost, envioGratis, deliveryKm, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, needsReceipt, cart, scheduleMode, settings, onSubmit, sending, orderErr }) {
+  // Con pedido por WhatsApp el comprobante es opcional (tambien se manda por el chat).
+  const exigeComprobante = comprobanteObligatorio(needsReceipt, settings);
   const { texto } = useMoneda();
   return (
     <>
@@ -648,7 +651,9 @@ function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLa
       {needsReceipt && (
         <div style={section}>
           <div style={miniLabel}>Comprobante de pago</div>
-          <p style={{ fontSize: 12, color: "var(--t3)", margin: "2px 0 10px" }}>Cargá la foto o PDF de tu comprobante para desbloquear el botón.</p>
+          {exigeComprobante
+            ? <p style={{ fontSize: 12, color: "var(--t3)", margin: "2px 0 10px" }}>Cargá la foto o PDF de tu comprobante para desbloquear el botón.</p>
+            : <p className="cp-comprobante-opcional">Es opcional: podés subirlo acá o mandarlo por WhatsApp.</p>}
           <ReceiptUploader
             receiptFile={receiptFile} setReceiptFile={setReceiptFile}
             receiptPreview={receiptPreview} setReceiptPreview={setReceiptPreview}
@@ -678,16 +683,16 @@ function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLa
       {orderErr && <div style={{ background: "var(--err-soft, rgba(220,38,38,0.1))", color: "var(--err, #C62828)", fontSize: 13, padding: "10px 14px", borderRadius: 10, marginBottom: 12, textAlign: "center", border: "1px solid var(--err, #C62828)" }}>{orderErr}</div>}
 
       <button
-        disabled={sending || ctWithDelivery === 0 || (needsReceipt && !receiptFile)}
+        disabled={sending || ctWithDelivery === 0 || (exigeComprobante && !receiptFile)}
         onClick={onSubmit}
         style={{
           ...btnPrimary,
-          background: (sending || ctWithDelivery === 0 || (needsReceipt && !receiptFile)) ? "var(--b3)" : "var(--ok, #2A9D6E)",
-          color: (sending || ctWithDelivery === 0 || (needsReceipt && !receiptFile)) ? "var(--t3)" : "#fff",
-          cursor: (sending || ctWithDelivery === 0 || (needsReceipt && !receiptFile)) ? "not-allowed" : "pointer",
+          background: (sending || ctWithDelivery === 0 || (exigeComprobante && !receiptFile)) ? "var(--b3)" : "var(--ok, #2A9D6E)",
+          color: (sending || ctWithDelivery === 0 || (exigeComprobante && !receiptFile)) ? "var(--t3)" : "#fff",
+          cursor: (sending || ctWithDelivery === 0 || (exigeComprobante && !receiptFile)) ? "not-allowed" : "pointer",
           fontSize: 16, height: 56,
         }}
-      >{sending ? "Enviando..." : (needsReceipt && !receiptFile ? "Cargá el comprobante" : "Completar pedido")}</button>
+      >{sending ? "Enviando..." : (exigeComprobante && !receiptFile ? "Cargá el comprobante" : "Completar pedido")}</button>
     </>
   );
 }
