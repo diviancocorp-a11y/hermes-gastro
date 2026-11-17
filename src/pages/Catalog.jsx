@@ -18,6 +18,7 @@ import { addActiveOrder } from "../lib/activeOrders";
 import "../catalog-pro/tokens.css";
 import HomeConPlantilla from "../catalog-pro/plantillas/HomeConPlantilla";
 import { plantillaEfectiva } from "../lib/plantillaConfig";
+import { requiereOpciones } from "../lib/opcionesPedido";
 import AgeGate from "../catalog-pro/AgeGate";
 import WhatsAppFloat from "../catalog-pro/WhatsAppFloat";
 import { ensureMusic, stopMusic, configureMusic } from "../catalog-pro/catalogMusic";
@@ -578,6 +579,13 @@ function CatalogContenido({ onSettings }) {
     });
   }, [products, getPrice, toast, soldOutIds]);
 
+  // Atajo "+" de las tarjetas: un producto con opciones obligatorias no entra
+  // sin elegirlas, abre la ficha. El resto se agrega como siempre.
+  const agregarRapido = (p) => {
+    if (requiereOpciones(p)) { setCpScreen(null); setCpDetail(p); window.scrollTo({ top: 0 }); return; }
+    addC(p);
+  };
+
   // Ficha de producto -> carrito: el producto con su configuracion (opciones,
   // nota) y, si la pidio, la sugerencia como linea propia a su precio especial.
   const agregarDesdeFicha = (p, qty, size, extra) => {
@@ -1005,7 +1013,7 @@ function CatalogContenido({ onSettings }) {
         hasDeal={hasDeal}
         dealPrice={getPrice}
         soldOutIds={soldOutIds}
-        onAddToCart={(p) => addC(p)}
+        onAddToCart={agregarRapido}
         onDecCart={(productId) => {
           const item = cart.find(i => i.id === productId);
           if (item) updQ(item.id, item.qty - 1);
@@ -1043,7 +1051,7 @@ function CatalogContenido({ onSettings }) {
           onBack={() => setCpScreen(null)}
           onSelectProduct={(p) => { setCpScreen(null); setCpDetail(p); }}
           onSelectCategory={(name) => { const cat = categories.find(c => c.name === name); setCpScreen({ type: "category", name, displayName: cat?.displayName || name, subs: cat?.subs || [] }); }}
-          onAddToCart={(p) => addC(p)}
+          onAddToCart={agregarRapido}
         />
       )}
       {cpScreen && cpScreen.type === "category" && (
@@ -1057,7 +1065,7 @@ function CatalogContenido({ onSettings }) {
           onBack={() => setCpScreen(null)}
           onOpenSearch={() => setCpScreen("search")}
           onSelectProduct={(p) => setCpDetail(p)}
-          onAddToCart={(p) => addC(p)}
+          onAddToCart={agregarRapido}
         />
       )}
       {cpDetail && (

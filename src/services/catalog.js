@@ -33,6 +33,7 @@ export async function fetchCatalog() {
     return {
       settings: data.settings || {},
       products: data.products || [],
+      suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
       serverNow: data.serverNow || new Date().toISOString(),
     };
   } catch (err) {

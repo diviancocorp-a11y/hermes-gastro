@@ -36,6 +36,12 @@ export function limitesDeGrupo(g) {
   };
 }
 
+/** El producto tiene algun grupo que hay que elegir (required o min >= 1): no se agrega sin pasar por la ficha. */
+export function requiereOpciones(producto) {
+  const grupos = Array.isArray(producto?.option_groups) ? producto.option_groups : [];
+  return grupos.some((g) => Array.isArray(g?.choices) && limitesDeGrupo(g).min >= 1);
+}
+
 /** Primera regla vigente que aplica al producto (categoria) y cuyo producto existe. */
 export function sugerenciaParaProducto(reglas, producto, productos, ahora) {
   return (reglas || []).find((r) =>
