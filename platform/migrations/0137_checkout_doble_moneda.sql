@@ -1,5 +1,5 @@
 -- 0137 — Cochi fase 5: checkout con doble moneda y "envio a confirmar".
--- PENDIENTE de aplicar (la aplica Ricky; cuando se aplique, actualizar esta cabecera).
+-- Aplicada via MCP el 2026-11-16
 --
 -- Todo es EXPANDIR: columnas nuevas nullables o con default, funciones con la
 -- misma firma que solo suman claves, una funcion nueva. Nada se borra ni se
