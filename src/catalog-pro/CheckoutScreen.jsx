@@ -591,8 +591,8 @@ function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLa
               fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit",
             }}>{validatingCoupon ? "..." : "Aplicar"}</button>
           ) : (
-            <button type="button" aria-label={`Quitar cupón ${coupon.code || ""}`.trim()} onClick={() => { setCoupon(null); setCouponCode(""); }} style={{
-              height: 44, padding: "0 14px", borderRadius: 8, border: 0,
+            <button onClick={() => { setCoupon(null); setCouponCode(""); }} style={{
+              height: 38, padding: "0 14px", borderRadius: 8, border: 0,
               background: couponMinimo != null ? "var(--b3)" : "var(--ok, #2A9D6E)",
               color: couponMinimo != null ? "var(--t2)" : "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer",
             }}>{couponMinimo != null ? "" : "✓ "}{etiquetaCupon(coupon, texto)}</button>
