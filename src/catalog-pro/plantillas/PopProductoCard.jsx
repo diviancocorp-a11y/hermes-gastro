@@ -5,7 +5,7 @@
 import PrecioCatalogo from "./PrecioCatalogo";
 import { requiereOpciones } from "../../lib/opcionesPedido";
 
-export default function PopProductoCard({ v, moneda, cantidadDe, grande = false, onAgregar, onQuitar, onAbrir }) {
+export default function PopProductoCard({ v, moneda, cantidadDe, grande = false, isotipo, onAgregar, onQuitar, onAbrir }) {
   const cantidad = cantidadDe?.(v.id) || 0;
   const puede = v.disp.puede && !v.soldOut;
   const etiqueta = v.soldOut ? "AGOTADO" : v.disp.etiqueta;
@@ -15,15 +15,17 @@ export default function PopProductoCard({ v, moneda, cantidadDe, grande = false,
     ? <span className="pop-card__estado">{etiqueta}</span>
     : (v.tag && <span className="pop-card__tag">{v.tag}</span>);
   return (
-    <article className={`pop-card${grande ? " pop-card--grande" : ""}${puede ? "" : " pop-card--off"}${v.img ? "" : " pop-card--sinfoto"}`} data-revelar>
+    <article className={`pop-card${grande ? " pop-card--grande" : ""}${puede ? "" : " pop-card--off"}${v.img || isotipo ? "" : " pop-card--sinfoto"}`} data-revelar>
       <button type="button" className="pop-card__foto" onClick={() => onAbrir?.(v.raw)} aria-label={`Ver detalle de ${v.name}${etiqueta ? ` (${etiqueta.toLowerCase()})` : ""}`}>
         {v.img
           ? <img src={v.img} alt="" width="480" height="360" loading="lazy" decoding="async" />
-          : <span className="pop-card__sinfoto" aria-hidden="true">{Array.from(v.name)[0] || "•"}</span>}
-        {v.img && chip}
+          : isotipo
+            ? <span className="pop-card__isotipo" aria-hidden="true"><img src={isotipo} alt="" width="96" height="96" loading="lazy" decoding="async" /></span>
+            : <span className="pop-card__sinfoto" aria-hidden="true">{Array.from(v.name)[0] || "•"}</span>}
+        {(v.img || isotipo) && chip}
       </button>
       <div className="pop-card__cuerpo">
-        {!v.img && chip}
+        {!v.img && !isotipo && chip}
         <h3 className="pop-card__nombre">{v.name}</h3>
         {v.desc && <p className="pop-card__desc">{v.desc}</p>}
         <div className="pop-card__pie">

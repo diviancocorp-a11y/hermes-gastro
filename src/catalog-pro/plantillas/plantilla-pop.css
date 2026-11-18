@@ -65,6 +65,11 @@
 .pop-header__pedido { flex-shrink: 0; }
 .pop-header__cuenta { display: grid; place-items: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 999px; background: var(--on-ac); color: var(--ac); font: 800 13px/1 var(--font-body); }
 .pop-header__total { display: none; }
+.pop-header__menu:focus-visible { outline: 2px solid var(--ac-text); outline-offset: 2px; }
+.pop-header__menu { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border: 0; border-radius: var(--r); background: transparent; color: var(--tx); cursor: pointer; }
+.pop-nav-movil { position: absolute; left: 0; right: 0; top: 100%; display: grid; padding: 4px var(--pop-pad) 12px; background: var(--bg); border-bottom: 1px solid var(--line); box-shadow: 0 14px 24px -18px rgb(0 0 0 / 0.35); }
+.pop-nav-movil a { display: flex; align-items: center; min-height: 52px; border-bottom: 1px solid var(--line); font: 700 17px/1 var(--font-body); color: var(--tx); text-decoration: none; }
+.pop-nav-movil a:last-child { border-bottom: 0; }
 
 /* ---------- hero ---------- */
 .pop-hero { display: grid; gap: 28px; max-width: var(--pop-max); margin: 0 auto; padding: 28px var(--pop-pad) 48px; }
@@ -107,6 +112,8 @@
 .pop-card__foto:focus-visible { outline-offset: -4px; }
 .pop-card__foto:hover img { transform: scale(1.04); }
 .pop-card__sinfoto { display: grid; place-items: center; width: 100%; height: 100%; font: 800 56px/1 var(--font-heading); color: var(--tx); }
+.pop-card__isotipo { display: grid; place-items: center; width: 100%; height: 100%; background: var(--pop-acento, var(--ac)); }
+.pop-card__isotipo img { width: 34%; max-width: 96px; height: auto; object-fit: contain; opacity: 0.9; }
 .pop-card__estado, .pop-card__tag { position: absolute; left: 10px; top: 10px; padding: 6px 10px; border-radius: var(--rs); font: 800 12px/1 var(--font-body); }
 .pop-card__estado { background: var(--tx); color: var(--bg); }
 .pop-card__tag { background: var(--ac); color: var(--on-ac); }
@@ -217,6 +224,7 @@
 @media (min-width: 720px) {
   .pop-root { --pop-pad: 32px; }
   .pop-nav { display: flex; }
+  .pop-header__menu, .pop-nav-movil { display: none; }
   .pop-header__total { display: inline; }
   .pop-grilla, .pop-submarca__items { grid-template-columns: repeat(2, 1fr); }
   .pop-favoritos__grilla { grid-template-columns: 1.4fr 1fr; }
@@ -249,3 +257,6 @@
   .pop-cinta__tira[aria-hidden] { display: none; }
   .pop-cinta__tira { flex-wrap: wrap; padding-inline: var(--pop-pad); }
 }
+
+/* sin foto y con isotipo de marca: banda baja de color, como una foto de poco alto */
+.pop-card__foto:has(.pop-card__isotipo) { aspect-ratio: 2 / 1; }

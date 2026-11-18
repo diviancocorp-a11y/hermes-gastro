@@ -17,6 +17,7 @@ import BirthdayGift from "../catalog-pro/BirthdayGift";
 import { addActiveOrder } from "../lib/activeOrders";
 import "../catalog-pro/tokens.css";
 import HomeConPlantilla from "../catalog-pro/plantillas/HomeConPlantilla";
+import useMarcaGlobal from "../catalog-pro/plantillas/useMarcaGlobal";
 import { plantillaEfectiva } from "../lib/plantillaConfig";
 import { requiereOpciones, sugerenciaRapida, ahoraEnZona } from "../lib/opcionesPedido";
 import ComboAviso from "../catalog-pro/ComboAviso";
@@ -86,6 +87,7 @@ function CatalogContenido({ onSettings }) {
     } catch { return fallbackSettings; }
   });
   useEffect(() => { onSettings?.(sett); }, [sett, onSettings]);
+  useMarcaGlobal(sett); // la marca de la plantilla tambien en ficha, carrito y checkout
   const [products, setProducts] = useState([]);
   const [suggestions, setSuggestions] = useState([]); // get_catalog.suggestions (0135)
   const [loading, setLoading] = useState(true);
@@ -1101,6 +1103,7 @@ function CatalogContenido({ onSettings }) {
       {cpDetail && (
         <ProductDetailScreenPro
           product={cpDetail}
+          sinOpiniones={plantillaEfectiva(sett) !== "default"}
           soldOutIds={soldOutIds}
           hasDeal={hasDeal}
           dealPrice={getPrice}
