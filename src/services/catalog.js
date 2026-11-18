@@ -123,14 +123,16 @@ export async function submitOrder(orderData) {
       // "producto no disponible", "cuenta de pago no valida") viene en
       // error.context — propagarlo para que el checkout lo muestre (Sprint 4).
       let serverMsg = null;
+      let cuponMotivo = null;
       try {
         if (error.context && typeof error.context.json === 'function') {
           const body = await error.context.json();
           serverMsg = body?.error || null;
+          cuponMotivo = body?.cupon || null;
         }
       } catch { /* body no-json: usamos generico */ }
       console.error('submitOrder edge function error:', serverMsg || error);
-      return { ok: false, orderId: null, error: serverMsg };
+      return { ok: false, orderId: null, error: serverMsg, ...(cuponMotivo ? { cupon: cuponMotivo } : {}) };
     }
 
     if (!data?.ok) {
@@ -180,24 +182,31 @@ export async function submitOrder(orderData) {
   }
 }
 
-export async function validateCouponPublic(code, email) {
+/**
+ * Pregunta al servidor si un cupon aplica (RPC validar_cupon, 0144). Devuelve
+ * { ok: true, cupon } con sus condiciones, o { ok: false, motivo }. Antes se
+ * leia `coupons` directo y para un invitado la RLS no devolvia nada.
+ * El minimo de compra lo juzga el checkout con su subtotal (src/lib/cupones.js);
+ * quien decide al final es submit-order.
+ */
+export async function validateCouponPublic(code, email, phone = null) {
   try {
     const validation = validateInput(CouponValidateSchema, { code, email }, 'validateCouponPublic');
-    if (!validation.ok) return null;
+    if (!validation.ok) return { ok: false, motivo: 'no_existe' };
     const { code: cleanCode, email: cleanEmail } = validation.data;
-
-    const { data, error } = await supabase
-      .from('coupons')
-      .select('id, code, discount_pct, email, used, expires_at')
-      .eq('code', cleanCode.toUpperCase().trim())
-      .eq('used', false)
-      .single();
-    if (error || !data) return null;
-    if (data.email && cleanEmail && data.email.toLowerCase() !== cleanEmail.toLowerCase()) return null;
-    if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
-    return { id: data.id, discount_pct: data.discount_pct };
+    const slug = await resolveTenantSlug();
+    const { data, error } = await supabase.rpc('validar_cupon', {
+      p_tenant_slug: slug,
+      p_code: cleanCode.toUpperCase().trim(),
+      p_phone: phone ? String(phone).replace(/\D/g, '').slice(0, 20) || null : null,
+      p_email: cleanEmail || null,
+    });
+    if (error || !data) return { ok: false, motivo: 'error' };
+    if (!data.ok) return { ok: false, motivo: data.motivo };
+    const { ok: _ok, ...cupon } = data;
+    return { ok: true, cupon };
   } catch (err) {
     console.error('Error en validateCouponPublic:', err);
-    return null;
+    return { ok: false, motivo: 'error' };
   }
 }
