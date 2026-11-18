@@ -18,7 +18,9 @@ import { addActiveOrder } from "../lib/activeOrders";
 import "../catalog-pro/tokens.css";
 import HomeConPlantilla from "../catalog-pro/plantillas/HomeConPlantilla";
 import { plantillaEfectiva } from "../lib/plantillaConfig";
-import { requiereOpciones } from "../lib/opcionesPedido";
+import { requiereOpciones, sugerenciaRapida, ahoraEnZona } from "../lib/opcionesPedido";
+import ComboAviso from "../catalog-pro/ComboAviso";
+import { urlWhatsAppDePedido, guardarConfirmacion, leerConfirmacion, borrarConfirmacion } from "../lib/confirmacionPedido";
 import AgeGate from "../catalog-pro/AgeGate";
 import WhatsAppFloat from "../catalog-pro/WhatsAppFloat";
 import { ensureMusic, stopMusic, configureMusic } from "../catalog-pro/catalogMusic";
@@ -64,7 +66,7 @@ export default function Catalog() {
 
 function CatalogContenido({ onSettings }) {
   const navigate = useNavigate();
-  const { tasa: tasaVista } = useMoneda();
+  const { tasa: tasaVista, principal: monedaPrincipal, texto: textoMoneda } = useMoneda();
   const { user, profile, addresses, isFavorite, toggleFavorite, getOrderHistory, phoneSession, session, sessionLogout } = useAuth();
 
   // --- Feature flags ---
@@ -119,9 +121,12 @@ function CatalogContenido({ onSettings }) {
   const [cpTip, setCpTip] = useState(0); // % propina elegido (presets). Ignorado si cpTipCustom != null
   const [cpTipCustom, setCpTipCustom] = useState(null); // monto fijo de propina en $ (null = usa %)
   const [showCk, setShowCk] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [orderId, setOrderId] = useState(null);
-  const [orderResp, setOrderResp] = useState(null); // respuesta del servidor: total final, tasa, envio pendiente
+  // Si volvio de WhatsApp y la pagina se recargo, la confirmacion del pedido se
+  // restaura en vez de dejar un carrito vacio sin contexto.
+  const [restaurada] = useState(leerConfirmacion);
+  const [sent, setSent] = useState(Boolean(restaurada));
+  const [orderId, setOrderId] = useState(restaurada?.orderId || null);
+  const [orderResp, setOrderResp] = useState(restaurada?.respuesta || null); // respuesta del servidor: total final, tasa, envio pendiente
   const [sending, setSending] = useState(false);
   // MP Checkout Pro: si hay integración activa, redirigimos al init_point.
   // Si no, fallback al flujo manual (alias + comprobante).
@@ -133,8 +138,8 @@ function CatalogContenido({ onSettings }) {
   useEffect(() => { setMpPendingOrderId(null); }, [cart]);
   const [orderErr, setOrderErr] = useState("");
   const [form, setForm] = useState({ ...DEFAULT_FORM });
-  const [sentItems, setSentItems] = useState([]); // lineas del pedido enviado (para el mensaje de WhatsApp)
-  const [sentForm, setSentForm] = useState(null); // snapshot del form al confirmar (el form vivo se resetea)
+  const [sentItems, setSentItems] = useState(restaurada?.items || []); // lineas del pedido enviado (para el mensaje de WhatsApp)
+  const [sentForm, setSentForm] = useState(restaurada?.form || null); // snapshot del form al confirmar (el form vivo se resetea)
   const [scheduleMode, setScheduleMode] = useState("now"); // "now" | "later"
   const [ckStep, setCkStep] = useState(0); // 0=Datos, 1=Entrega, 2=Pago, 3=Resumen
   const [faqOpen, setFaqOpen] = useState(null); // índice de FAQ abierta
@@ -233,6 +238,7 @@ function CatalogContenido({ onSettings }) {
     return style;
   }, []);
 
+  const [combo, setCombo] = useState(null); // sugerencia ofrecida tras agregar rapido
   const [upsell, setUpsell] = useState(null); // {product, suggestions[]}
   const [ageGatePending, setAgeGatePending] = useState(null); // {product, size} - add diferido por +18
   // Quick reorder: ultimo pedido del user (max 4 items, solo si esta logueado)
@@ -581,10 +587,22 @@ function CatalogContenido({ onSettings }) {
 
   // Atajo "+" de las tarjetas: un producto con opciones obligatorias no entra
   // sin elegirlas, abre la ficha. El resto se agrega como siempre.
+  // Si el producto tiene una sugerencia vigente (papas con el shawarma), un
+  // aviso chico ofrece sumarla de un toque; no bloquea ni se repite si ya esta.
   const agregarRapido = (p) => {
     if (requiereOpciones(p)) { setCpScreen(null); setCpDetail(p); window.scrollTo({ top: 0 }); return; }
     addC(p);
+    if (p?.requires_age_gate || soldOutIds.has(p?.id)) return;
+    const s = sugerenciaRapida(suggestions, p, products, ahoraEnZona(sett?.timezone), getPrice, soldOutIds);
+    setCombo(s && !cart.some((i) => i.suggestionId === s.rule.id) ? s : null);
   };
+  const sumarCombo = () => {
+    if (!combo) return;
+    for (let i = 0; i < combo.qty; i++) addC(combo.product, null, null, true, { unitPrice: combo.unitPrice, suggestionId: combo.rule.id });
+    toast(`✓ ${combo.product.name} agregado`);
+    setCombo(null);
+  };
+  const cerrarCombo = useCallback(() => setCombo(null), []);
 
   // Ficha de producto -> carrito: el producto con su configuracion (opciones,
   // nota) y, si la pidio, la sugerencia como linea propia a su precio especial.
@@ -764,7 +782,8 @@ function CatalogContenido({ onSettings }) {
       }
       setOrderId(result.orderId);
       setOrderResp(result);
-      setSentItems(cart.map((i) => ({ name: i.name, qty: i.qty, note: i.note || "" })));
+      const itemsEnviados = cart.map((i) => ({ name: i.name, qty: i.qty, note: i.note || "" }));
+      setSentItems(itemsEnviados);
       try { addActiveOrder(result.orderId); } catch { /* ignore */ }
       // Mostrar animación de confirmación
       setConfirmAnim(true);
@@ -782,6 +801,16 @@ function CatalogContenido({ onSettings }) {
         setConfirmAnim(false);
         setSent(true);
       }, 2500);
+      // Pedido por WhatsApp (flag del local): se abre solo, en la misma pestana
+      // (un window.open despues de un await lo bloquea el navegador movil). El
+      // snapshot hace que al volver se vea la confirmacion y no un carrito vacio.
+      const urlWsp = urlWhatsAppDePedido({
+        settings: sett, orderId: result.orderId, form, items: itemsEnviados, respuesta: result, principal: monedaPrincipal,
+      });
+      if (urlWsp) {
+        guardarConfirmacion({ orderId: result.orderId, respuesta: result, items: itemsEnviados, form: { ...form } });
+        window.location.href = urlWsp;
+      }
     } else {
       // Mensaje util del server si existe (rate limit, producto no disponible,
       // cuenta de pago invalida...) — antes se descartaba y el cliente veia
@@ -822,7 +851,7 @@ function CatalogContenido({ onSettings }) {
     backLayers.push(() => { setShowCk(false); setCkStep(0); });
     for (let i = 0; i < ckStep; i++) backLayers.push(() => setCkStep(s => Math.max(0, s - 1)));
   }
-  if (sent) backLayers.push(() => { setSent(false); setOrderId(null); setShowCk(false); });
+  if (sent) backLayers.push(() => { setSent(false); setOrderId(null); setShowCk(false); borrarConfirmacion(); });
   if (upsell) backLayers.push(() => setUpsell(null));
   if (ageGatePending) backLayers.push(() => setAgeGatePending(null));
   if (showMenu) backLayers.push(() => setShowMenu(false));
@@ -832,7 +861,7 @@ function CatalogContenido({ onSettings }) {
   if (confirmAnim) return <ConfirmationAnimation />;
 
   // --- VISTA: PEDIDO ENVIADO ---
-  if (sent) return <OrderSentView orderId={orderId} respuesta={orderResp} items={sentItems} form={sentForm || form} receiptFile={receiptFile} settings={sett} onReset={() => { setSent(false); setOrderId(null); setOrderResp(null); setShowCk(false); }} />;
+  if (sent) return <OrderSentView orderId={orderId} respuesta={orderResp} items={sentItems} form={sentForm || form} receiptFile={receiptFile} settings={sett} onReset={() => { borrarConfirmacion(); setSent(false); setOrderId(null); setOrderResp(null); setShowCk(false); }} />;
 
   // --- VISTA: CATALOGO SIN UBICACION ---
   // El negocio no cargo desde donde sale el envio: no se arma un pedido que la
@@ -1034,6 +1063,7 @@ function CatalogContenido({ onSettings }) {
         onSelectFamily={(f) => { setCpFamily(f); window.scrollTo({ top: 0 }); }}
         onOpenAccount={(tab) => navigate(tab ? `/mi-cuenta?tab=${tab}` : "/mi-cuenta")}
       />
+      <ComboAviso sugerencia={combo} formato={textoMoneda} onSumar={sumarCombo} onCerrar={cerrarCombo} />
       {cpScreen === "orders" && (
         <OrdersScreenPro
           loadOrders={getOrderHistory}
