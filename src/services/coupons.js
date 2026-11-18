@@ -159,3 +159,11 @@ export async function guardarCupon(input) {
   }
   return { ok: true, cupon: data };
 }
+
+/** Moneda principal del negocio activo (tenants.currency). ARS si no se puede leer. */
+export async function monedaDelNegocio() {
+  const tenantId = await resolveTenantId();
+  if (!tenantId) return 'ARS';
+  const { data } = await supabase.from('tenants').select('currency').eq('id', tenantId).maybeSingle();
+  return data?.currency || 'ARS';
+}

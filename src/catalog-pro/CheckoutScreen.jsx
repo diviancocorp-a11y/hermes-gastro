@@ -431,7 +431,10 @@ function Step1Entrega({ envioAConfirmar, form, sf, user, addresses, setDeliveryC
 function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLabel, mpConnected, accounts, selectedAccount, ct, ctWithDelivery, deliveryCost, envioGratis, deliveryKm, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, couponMinimo, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, needsReceipt, cart, scheduleMode, settings, onSubmit, sending, orderErr }) {
   // Con pedido por WhatsApp el comprobante es opcional (tambien se manda por el chat).
   const exigeComprobante = comprobanteObligatorio(needsReceipt, settings);
-  const { texto } = useMoneda();
+  const { texto, doble } = useMoneda();
+  // Monto dentro de una oracion: "$5.00 (Bs. 1.182,30)". <Monto> apila las dos
+  // monedas y en medio de un texto parte la linea.
+  const enLinea = (v) => { const d = doble(v); return d.secundario ? `${d.principal} (${d.secundario})` : d.principal; };
   return (
     <>
       <div style={section}>
@@ -590,19 +593,20 @@ function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLa
           ) : (
             <button type="button" aria-label={`Quitar cupón ${coupon.code || ""}`.trim()} onClick={() => { setCoupon(null); setCouponCode(""); }} style={{
               height: 44, padding: "0 14px", borderRadius: 8, border: 0,
-              background: "var(--ok, #2A9D6E)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer",
-            }}>✓ {etiquetaCupon(coupon, texto)}</button>
+              background: couponMinimo != null ? "var(--b3)" : "var(--ok, #2A9D6E)",
+              color: couponMinimo != null ? "var(--t2)" : "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer",
+            }}>{couponMinimo != null ? "" : "✓ "}{etiquetaCupon(coupon, texto)}</button>
           )}
         </div>
         {couponErr && <p style={hint("err")}>{couponErr}</p>}
         {coupon && couponMinimo != null && (
-          <p style={hint("err")}>Este cupón es para compras desde <Monto valor={couponMinimo} /> en productos.</p>
+          <p style={hint("err")}>Este cupón es para compras desde {enLinea(couponMinimo)} en productos.</p>
         )}
         {coupon && couponMinimo == null && (
           <p style={hint("ok")}>
             {coupon.discount_type === "fixed" ? "Ahorrás " : `Descuento ${coupon.discount_pct}% — ahorrás `}
-            <Monto valor={discount} />
-            {Number(coupon.min_subtotal) > 0 && <> · compra mínima <Monto valor={Number(coupon.min_subtotal)} /></>}
+            {enLinea(discount)}
+            {Number(coupon.min_subtotal) > 0 && ` · compra mínima ${texto(Number(coupon.min_subtotal))}`}
           </p>
         )}
       </div>

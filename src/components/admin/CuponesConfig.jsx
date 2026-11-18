@@ -3,8 +3,7 @@
 // Tipo porcentaje o monto fijo, minimo de compra, usos totales y por
 // telefono, vigencia y email personal. Guarda guardarCupon (valida el Zod).
 import { useState, useEffect } from "react";
-import { listarCupones, guardarCupon } from "../../services/coupons";
-import { fetchSettings } from "../../services/settings";
+import { listarCupones, guardarCupon, monedaDelNegocio } from "../../services/coupons";
 import { formatearMonto } from "../../lib/moneda";
 import { etiquetaCupon } from "../../lib/cupones";
 import DecimalInput from "../ui/DecimalInput";
@@ -66,7 +65,7 @@ export default function CuponesConfig({ showToast }) {
   useEffect(() => {
     if (!abierto || cupones !== null) return;
     listarCupones().then(setCupones).catch(() => { setCupones([]); setError("No pudimos cargar los cupones."); });
-    fetchSettings().then(s => { if (s?.currency) setMoneda(s.currency); });
+    monedaDelNegocio().then(setMoneda).catch(() => {});
   }, [abierto, cupones]);
 
   const texto = (n) => formatearMonto(n, moneda);
