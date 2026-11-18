@@ -1,6 +1,8 @@
 // src/services/coupons.js
 import { supabase } from '../lib/supabase';
 import business from '@business';
+import { resolveTenantId } from '../lib/activeTenant.js';
+import { CouponCreateSchema, validateInput } from '../lib/schemas/index.js';
 
 const PAGE_SIZE = 50;
 
@@ -118,4 +120,42 @@ export async function fetchCoupons({ before, limit = PAGE_SIZE } = {}) {
   }
 
   return rows;
+}
+
+// ── Panel: cupones ampliados (0144) ─────────────────────────────────
+// Tipo pct | fixed (monto en la moneda principal), minimo de compra, usos
+// totales y por telefono, vigencia desde/hasta. Lo valida CouponCreateSchema;
+// el tenant sale de resolveTenantId (la RLS igual lo exige).
+
+const COLUMNAS_CUPON = 'id, code, discount_type, discount_pct, discount_amount, min_subtotal, max_uses, max_uses_per_phone, uses_count, starts_at, expires_at, email, used, created_at';
+
+export async function listarCupones() {
+  const tenantId = await resolveTenantId();
+  if (!tenantId) return [];
+  const { data, error } = await supabase.from('coupons').select(COLUMNAS_CUPON)
+    .eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(200);
+  if (error) { console.error('listarCupones:', error.message); return []; }
+  return data || [];
+}
+
+/** Crea (sin id) o edita (con id). Devuelve { ok, cupon } o { ok: false, error }. */
+export async function guardarCupon(input) {
+  const v = validateInput(CouponCreateSchema, input, 'guardarCupon');
+  if (!v.ok) return { ok: false, error: String(v.errors?.[0] || '').split(': ').slice(1).join(': ') || 'Revisá los datos del cupón' };
+  const fila = { ...v.data, code: v.data.code.toUpperCase().trim() };
+  delete fila.order_id;
+  if (fila.discount_type === 'fixed') fila.discount_pct = 0;
+  else fila.discount_amount = 0;
+  const tenantId = await resolveTenantId();
+  if (!tenantId) return { ok: false, error: 'No encontramos el negocio activo' };
+  const q = input.id
+    ? supabase.from('coupons').update(fila).eq('id', input.id).eq('tenant_id', tenantId)
+    : supabase.from('coupons').insert({ ...fila, tenant_id: tenantId });
+  const { data, error } = await q.select(COLUMNAS_CUPON).single();
+  if (error) {
+    if (error.code === '23505') return { ok: false, error: 'Ya hay un cupón con ese código' };
+    console.error('guardarCupon:', error.message);
+    return { ok: false, error: 'No se pudo guardar el cupón' };
+  }
+  return { ok: true, cupon: data };
 }

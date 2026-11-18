@@ -51,6 +51,7 @@ import { resolveTenantSlug } from "../lib/activeTenant";
 import useFeature from "../hooks/useFeature";
 import { MonedaCatalogoProvider, useMoneda } from "../catalog-pro/MonedaCatalogo";
 import { redondearMoneda } from "../lib/moneda";
+import { evaluarCupon, mensajeCupon } from "../lib/cupones";
 
 // El provider de moneda necesita `settings`, que se carga adentro: el contenido
 // los avisa hacia arriba y el provider envuelve TODAS las vistas (carga, ficha,
@@ -258,7 +259,7 @@ function CatalogContenido({ onSettings }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
   const [couponCode, setCouponCode] = useState("");
-  const [coupon, setCoupon] = useState(null); // {id, discount_pct}
+  const [coupon, setCoupon] = useState(null); // condiciones de validar_cupon (0144)
   const [couponErr, setCouponErr] = useState("");
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [showTrackerInput, setShowTrackerInput] = useState(false);
@@ -485,10 +486,14 @@ function CatalogContenido({ onSettings }) {
 
   // Totales del carrito (memoizado). Propina se decide en step 3 (Pago),
   // se calcula sobre subtotal sin descuentos.
-  const { cc, discount, ct, tipAmount, ctWithDelivery, envioGratis, costoEnvio, envioPendiente } = useMemo(() => {
+  const { cc, discount, ct, tipAmount, ctWithDelivery, envioGratis, costoEnvio, envioPendiente, couponMinimo } = useMemo(() => {
     const cc = cart.reduce((s, i) => s + i.qty, 0);
     const ctBase = cart.reduce((s, i) => s + i.qty * i.price, 0);
-    const discount = coupon ? redondearMoneda(ctBase * coupon.discount_pct / 100, sett?.currency) : 0;
+    // Mismo calculo que submit-order (src/lib/cupones.js es su espejo). Si el
+    // carrito baja del minimo, el cupon queda puesto pero no descuenta.
+    const evCupon = coupon ? evaluarCupon(coupon, { subtotal: ctBase, moneda: sett?.currency }) : null;
+    const discount = evCupon?.ok ? evCupon.descuento : 0;
+    const couponMinimo = evCupon && !evCupon.ok && evCupon.motivo === "minimo" ? evCupon.minimo : null;
     const ct = ctBase - discount;
     // Envio gratis: el pedido que SUPERA el umbral del negocio (0 = sin umbral).
     const envioGratis = esEnvioGratis(ct, sett?.free_delivery_over);
@@ -503,16 +508,16 @@ function CatalogContenido({ onSettings }) {
     // Tope de seguridad: la propina no puede superar el total del pedido.
     const tipAmount = Math.max(0, Math.min(tipRaw, baseTotal));
     const ctWithDelivery = baseTotal + tipAmount;
-    return { cc, discount, ct, tipAmount, ctWithDelivery, envioGratis, costoEnvio, envioPendiente };
+    return { cc, discount, ct, tipAmount, ctWithDelivery, envioGratis, costoEnvio, envioPendiente, couponMinimo };
   }, [cart, coupon, deliveryCost, form.delivery, cpTip, cpTipCustom, sett?.free_delivery_over, sett?.currency, sett?.delivery_a_confirmar]);
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
     setValidatingCoupon(true); setCouponErr("");
-    const result = await validateCouponPublic(couponCode, form.email);
+    const result = await validateCouponPublic(couponCode, form.email, form.phone);
     setValidatingCoupon(false);
-    if (result) { setCoupon(result); setCouponErr(""); }
-    else setCouponErr("Cupón inválido, vencido o no corresponde a tu email.");
+    if (result.ok) { setCoupon(result.cupon); setCouponErr(""); }
+    else setCouponErr(mensajeCupon(result.motivo));
   };
 
   // Obtener cantidad de un producto específico en el carrito (O(1) con mapa)
@@ -816,6 +821,9 @@ function CatalogContenido({ onSettings }) {
       // cuenta de pago invalida...) — antes se descartaba y el cliente veia
       // siempre el generico (Sprint 4).
       console.error("Pedido no se guardó en Supabase:", result?.error);
+      // El servidor rechazo el cupon (vencio, se agoto, no llega al minimo):
+      // se saca del pedido y el motivo queda junto al campo del cupon.
+      if (result?.cupon) { setCoupon(null); setCouponErr(result.error || mensajeCupon(result.cupon)); }
       setOrderErr(result?.error || "No pudimos procesar tu pedido. Revisá tu conexión e intentá de nuevo.");
     }
   };
@@ -950,6 +958,7 @@ function CatalogContenido({ onSettings }) {
         validatingCoupon={validatingCoupon}
         couponErr={couponErr}
         setCouponErr={setCouponErr}
+        couponMinimo={couponMinimo}
         ffGift={ffGift}
         tip={cpTip}
         setTip={setCpTip}

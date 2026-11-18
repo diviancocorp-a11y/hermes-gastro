@@ -67,6 +67,8 @@ const PLATFORM_PATHS = [
   'src/services/push.js',
   'src/services/adminUsers.js',
   'src/services/catalog.js',
+  // Cupones ampliados (0144): el panel lee las columnas nuevas del edificio.
+  'src/services/coupons.js',
 ];
 
 /* ── Archivos que le hablan a las DOS bases. No es un error de clasificacion:
