@@ -22,6 +22,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { cerrarTotal, congelarTasa, elegirTasa, esEnvioGratis, limpiarDetalles, limpiarMoneda, redondearMoneda } from "./montos.ts";
 import { ahoraEnZona, aplicarSugerencias, resolverOpciones, textoParaCocina, type Regla } from "./opciones.ts";
+import { evaluarCupon, mensajeCupon, textoMonto } from "./cupones.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -328,24 +329,27 @@ Deno.serve(async (req) => {
     }
 
     // ── Cupon (scopeado al tenant) ──────────────────────────────────
+    // El servidor manda (0144): tipo, vigencia, minimo y usos. Si el cliente
+    // mando un cupon que no aplica, el pedido se RECHAZA con el motivo: antes
+    // se descartaba en silencio y el cliente pagaba mas de lo que vio.
     let validDiscount = 0;
     let validCouponId: string | null = null;
-    if (body.coupon_code) {
+    const couponCode = typeof body.coupon_code === "string" ? body.coupon_code.toUpperCase().trim() : "";
+    const rechazoCupon = (motivo: string, minimo?: number) => jsonRes({
+      error: mensajeCupon(motivo, minimo ? textoMonto(minimo, moneda) : ""),
+      cupon: motivo,
+    }, 409);
+    if (couponCode) {
       const { data: coupon } = await supabase
         .from("coupons")
-        .select("id, discount_pct, expires_at, email")
+        .select("id, discount_pct, expires_at, email, used, discount_type, discount_amount, min_subtotal, max_uses, uses_count, starts_at")
         .eq("tenant_id", tenantId)
-        .eq("code", String(body.coupon_code).toUpperCase().trim())
-        .eq("used", false)
+        .eq("code", couponCode)
         .maybeSingle();
-      if (coupon) {
-        const isExpired = coupon.expires_at && new Date(coupon.expires_at) < new Date();
-        const emailMatch = !coupon.email || !email || coupon.email.toLowerCase() === email;
-        if (!isExpired && emailMatch) {
-          validDiscount = redondearMoneda(serverSubtotal * (Number(coupon.discount_pct) / 100), moneda);
-          validCouponId = coupon.id;
-        }
-      }
+      const ev = evaluarCupon(coupon, { subtotal: serverSubtotal, moneda, email });
+      if (!ev.ok) return rechazoCupon(ev.motivo, ev.minimo);
+      validDiscount = ev.descuento;
+      validCouponId = coupon.id;
     }
 
     // Envio a confirmar: el local lo carga despues (set_delivery_cost). El costo
@@ -399,6 +403,30 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Uso del cupon: atomico (reservar_cupon toma la fila) ─────────
+    // Va justo antes del insert: si dos pedidos pelean el ultimo uso, uno
+    // solo lo consigue. Si el pedido despues no se crea, el uso se devuelve.
+    let redemptionId: string | null = null;
+    if (validCouponId) {
+      const { data: reserva, error: resErr } = await supabase.rpc("reservar_cupon", {
+        p_tenant_id: tenantId, p_coupon_id: validCouponId, p_phone: phone || null,
+      });
+      if (resErr) {
+        console.error("reservar_cupon:", resErr);
+        return jsonRes({ error: "No pudimos aplicar el cupón. Probá de nuevo." }, 500);
+      }
+      if (!reserva?.ok) return rechazoCupon(String(reserva?.motivo || ""));
+      redemptionId = reserva.redemption_id || null;
+    }
+    const liberarCupon = async () => {
+      if (!redemptionId) return;
+      try {
+        await supabase.rpc("liberar_cupon", { p_redemption_id: redemptionId });
+      } catch (e) {
+        console.error("liberar_cupon:", (e as Error)?.message);
+      }
+    };
+
     // ── Insert ──────────────────────────────────────────────────────
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -439,6 +467,7 @@ Deno.serve(async (req) => {
       .select("id")
       .single();
     if (orderError || !order) {
+      await liberarCupon();
       // 23505 aca solo puede ser el indice unico de client_request_id: dos
       // requests con la misma clave entraron en paralelo y el select de arriba
       // no llego a ver al otro. El que pierde devuelve el pedido del que gano
@@ -456,10 +485,10 @@ Deno.serve(async (req) => {
       return jsonRes({ error: "Error al crear el pedido" }, 500);
     }
 
-    if (validCouponId) {
-      await supabase.from("coupons")
-        .update({ used: true, used_at: new Date().toISOString() })
-        .eq("id", validCouponId)
+    if (redemptionId) {
+      await supabase.from("coupon_redemptions")
+        .update({ order_id: order.id })
+        .eq("id", redemptionId)
         .eq("tenant_id", tenantId);
     }
 
@@ -507,6 +536,7 @@ Deno.serve(async (req) => {
       // Sin transaccion entre inserts: si fallan los items, la orden huerfana
       // se borra a mano para no dejar un pedido vacio en el panel.
       await supabase.from("orders").delete().eq("id", order.id);
+      await liberarCupon();
       return jsonRes({ error: "Error al crear los items" }, 500);
     }
 

@@ -220,6 +220,29 @@
       ],
       "serverOnly": [],
       "$comment": "Metadatos validados al guardar productos del edificio; alergenos mantienen su API parcial."
+    },
+    "coupons": {
+      "schema": "CouponCreateSchema",
+      "columns": [
+        "code",
+        "discount_type",
+        "discount_pct",
+        "discount_amount",
+        "min_subtotal",
+        "max_uses",
+        "max_uses_per_phone",
+        "starts_at",
+        "email",
+        "expires_at"
+      ],
+      "serverOnly": [
+        "id",
+        "tenant_id",
+        "used",
+        "used_at",
+        "uses_count",
+        "created_at"
+      ]
     }
   }
 }

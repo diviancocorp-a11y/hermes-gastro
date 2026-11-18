@@ -1,7 +1,7 @@
 {
   "_comment": "Snapshot del schema del EDIFICIO; datos obtenidos de schema_snapshot() via MCP. Regenerar con npm run schema:sync.",
   "_refreshed_at": "2026-11-17",
-  "_migrations_through": "0143",
+  "_migrations_through": "0144",
   "tables": {
     "addresses": [
       "id",
@@ -147,6 +147,14 @@
       "cambios",
       "created_at"
     ],
+    "coupon_redemptions": [
+      "id",
+      "tenant_id",
+      "coupon_id",
+      "order_id",
+      "phone",
+      "created_at"
+    ],
     "coupons": [
       "id",
       "tenant_id",
@@ -156,7 +164,14 @@
       "used",
       "used_at",
       "expires_at",
-      "created_at"
+      "created_at",
+      "discount_type",
+      "discount_amount",
+      "min_subtotal",
+      "max_uses",
+      "max_uses_per_phone",
+      "starts_at",
+      "uses_count"
     ],
     "diagnosticos": [
       "id",

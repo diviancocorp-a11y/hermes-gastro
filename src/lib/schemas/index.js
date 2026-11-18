@@ -217,13 +217,27 @@ export const SaleInputSchema = z.object({
 // SCHEMAS ADMIN — Cupones
 // ═══════════════════════════════════════════════════════
 
+// 0144: tipo (pct | fixed en la moneda principal), minimo, usos y vigencia.
+// discount_pct en 0 es valido para un cupon fijo; la regla cruzada va en el refine.
 export const CouponCreateSchema = z.object({
   code: requiredText(30),
-  discount_pct: z.number().int().min(1).max(100),
+  discount_type: z.enum(['pct', 'fixed']).optional(),
+  discount_pct: z.number().int().min(0).max(100),
+  discount_amount: z.number().min(0).max(99999999).optional(),
+  min_subtotal: z.number().min(0).max(99999999).nullable().optional(),
+  max_uses: z.number().int().min(1).nullable().optional(),
+  max_uses_per_phone: z.number().int().min(1).nullable().optional(),
+  starts_at: z.string().datetime({ offset: true }).nullable().optional(),
   email: optionalEmail,
   order_id: optionalUuid,
-  expires_at: z.string().datetime().nullable().optional(),
-});
+  expires_at: z.string().datetime({ offset: true }).nullable().optional(),
+}).refine(
+  (c) => (c.discount_type === 'fixed' ? (c.discount_amount || 0) > 0 : c.discount_pct >= 1),
+  { message: 'El descuento tiene que ser mayor a cero', path: ['discount_pct'] },
+).refine(
+  (c) => !c.starts_at || !c.expires_at || new Date(c.starts_at) < new Date(c.expires_at),
+  { message: 'La fecha de inicio tiene que ser anterior al vencimiento', path: ['expires_at'] },
+);
 
 
 // ═══════════════════════════════════════════════════════
