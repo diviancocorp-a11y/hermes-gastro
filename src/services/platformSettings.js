@@ -15,6 +15,7 @@
 // cambios — NO escribir ese jsonb a mano, se pisa en el proximo guardado.
 
 import { supabase } from '../lib/supabase';
+import { PLANTILLAS } from '../lib/plantillaListas';
 
 // Columnas que el panel puede escribir. Lista blanca explicita: evita mandar
 // tenant_id o updated_at en un patch, y deja el punto unico donde se agrega
@@ -23,7 +24,7 @@ export const CAMPOS_EDITABLES = [
   // Identidad y marca
   'biz_name', 'logo_letter', 'logo_color', 'logo_url', 'favicon_url',
   'cover_url', 'og_image_url', 'slogan', 'banner_text', 'banner_color',
-  'catalog_font', 'catalog_theme',
+  'catalog_font', 'catalog_theme', 'catalog_template', 'catalog_template_config',
   // Redes
   'whatsapp', 'instagram', 'facebook', 'tiktok', 'linkedin', 'twitter', 'youtube', 'telegram',
   // Local y horarios
@@ -48,7 +49,7 @@ export const CAMPOS_EDITABLES = [
 // sin haber validado nada — un verde que miente es peor que un rojo.
 // Que no se separe de CAMPOS_EDITABLES lo cuida un test (settings.test.js),
 // mismo patron que los slugs reservados y los estados de pedido.
-const COLS = 'tenant_id, biz_name, logo_letter, logo_color, logo_url, favicon_url, cover_url, og_image_url, slogan, banner_text, banner_color, catalog_font, catalog_theme, whatsapp, instagram, facebook, tiktok, linkedin, twitter, youtube, telegram, store_open, store_hours, show_hours_on_catalog, has_physical_store, store_address, prep_time_min, delivery_time_min, min_order_amount, hidden_cats, cat_names, cat_images, cat_groups, catalog_profile, daily_deals, deal_pct, payment_methods, catalog_payment_methods, payment_accounts, delivery_pricing, free_delivery_over, delivery_zone, lead_time_hours, delivery_a_confirmar, pedido_por_whatsapp, music_url, catalog_music, music_volume, promo_cumple, promo_programados, coupon_default_pct, birthday_coupon_pct, waste_pct, expense_pct, min_product_margin_pct, usar_targets, exp_cats, ing_cats, updated_at';
+const COLS = 'tenant_id, biz_name, logo_letter, logo_color, logo_url, favicon_url, cover_url, og_image_url, slogan, banner_text, banner_color, catalog_font, catalog_theme, catalog_template, catalog_template_config, whatsapp, instagram, facebook, tiktok, linkedin, twitter, youtube, telegram, store_open, store_hours, show_hours_on_catalog, has_physical_store, store_address, prep_time_min, delivery_time_min, min_order_amount, hidden_cats, cat_names, cat_images, cat_groups, catalog_profile, daily_deals, deal_pct, payment_methods, catalog_payment_methods, payment_accounts, delivery_pricing, free_delivery_over, delivery_zone, lead_time_hours, delivery_a_confirmar, pedido_por_whatsapp, music_url, catalog_music, music_volume, promo_cumple, promo_programados, coupon_default_pct, birthday_coupon_pct, waste_pct, expense_pct, min_product_margin_pct, usar_targets, exp_cats, ing_cats, updated_at';
 
 export { COLS as SELECT_COLS };
 
@@ -102,6 +103,9 @@ export function validateSettings(patch) {
 
   if (patch.catalog_theme != null && !TEMAS_CATALOGO.includes(patch.catalog_theme)) {
     errs.push(`Tema invalido: ${patch.catalog_theme}`);
+  }
+  if (patch.catalog_template != null && !PLANTILLAS.includes(patch.catalog_template)) {
+    errs.push(`Plantilla invalida: ${patch.catalog_template}`);
   }
   // logo_color es hex LIBRE — no confundir con catalog_theme, que esta acotado.
   if (patch.logo_color != null && patch.logo_color !== '' && !/^#[0-9a-f]{6}$/i.test(patch.logo_color)) {
