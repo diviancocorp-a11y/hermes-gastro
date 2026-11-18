@@ -33,6 +33,7 @@ export default function ProductDetailScreen({
   soldOutIds, // Set de recipe_ids agotados
   suggestions = [], allProducts = [], timezone = null,
   onBack, onAddToCart, onSelectRelated, onToggleFav, isFav = false,
+  sinOpiniones = false, // plantilla de marca: no se muestran calificaciones inventadas
 }) {
   const { texto } = useMoneda();
   const p = mapProduct(product, { hasDeal, dealPrice, soldOutIds });
@@ -199,7 +200,7 @@ export default function ProductDetailScreen({
           </section>
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
-          <Rating value={p.rating} count={p.reviews} />
+          {!sinOpiniones && <Rating value={p.rating} count={p.reviews} />}
           {p.tiempo && (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--t2)" }}>
               <Icon name="clock" size={12} /> {p.tiempo}
@@ -290,6 +291,7 @@ export default function ProductDetailScreen({
       </div>
 
       {/* Reviews (heurístico visual) */}
+      {!sinOpiniones && (
       <div style={{ padding: "32px 22px 0" }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
           <h3 style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: 20, color: "var(--tx)" }}>Qué dicen</h3>
@@ -317,6 +319,7 @@ export default function ProductDetailScreen({
           </div>
         </div>
       </div>
+      )}
 
       {/* Lo piden con esto */}
       {relatedMapped.length > 0 && (
