@@ -1,7 +1,7 @@
 {
   "_comment": "Snapshot del schema del EDIFICIO; datos obtenidos de schema_snapshot() via MCP. Regenerar con npm run schema:sync.",
   "_refreshed_at": "2026-11-17",
-  "_migrations_through": "0143",
+  "_migrations_through": "0145",
   "tables": {
     "addresses": [
       "id",

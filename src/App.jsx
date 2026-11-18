@@ -32,6 +32,7 @@ const Signup = lazyReload(() => import('./pages/Signup'))
 const Bienvenido = lazyReload(() => import('./pages/Bienvenido'))
 const PlatformAdmin = lazyReload(() => import('./pages/PlatformAdmin'))
 const InfoPagesAdmin = lazyReload(() => import('./pages/admin/InfoPages'))
+const VistaPreviaPlantillaPagina = lazyReload(() => import('./pages/admin/VistaPreviaPlantillaPagina'))
 const OrderTracker = lazyReload(() => import('./pages/OrderTracker'))
 const MyAccount = lazyReload(() => import('./pages/MyAccount'))
 const MpStatus = lazyReload(() => import('./pages/MpStatus'))
@@ -153,6 +154,7 @@ export default function App() {
                   el 29/sep: ningun build lo servia y viajaba en el bundle. */}
               <Route path="/admin" element={<PlatformAdmin />} />
               <Route path="/admin/personalizacion" element={<Navigate to="/admin" replace />} />
+              <Route path="/admin/vista-previa-plantilla" element={<VistaPreviaPlantillaPagina />} />
               <Route path="/admin/paginas" element={<InfoPagesAdmin />} />
               <Route path="/order/:id" element={<OrderTracker />} />
               <Route path="/mi-cuenta" element={<MyAccount />} />

@@ -846,6 +846,13 @@ export default function PlatformAdmin() {
     return r;
   }, [tenantId, msg]);
 
+  // Para el editor de la plantilla: devuelve el rechazo tal cual ({__error,message}) en vez de un toast.
+  const guardarPlantilla = useCallback(async (valores) => {
+    const r = await saveSettings(tenantId, valores);
+    if (!r?.__error) setSett(r);
+    return r;
+  }, [tenantId]);
+
   // ── Acciones de productos ──
   const handleSaveProduct = useCallback(async (form, lineas) => {
     const saved = await upsertProduct(tenant.id, form);
@@ -1788,6 +1795,9 @@ export default function PlatformAdmin() {
                     moneda={moneda}
                     tenantId={tenantId}
                     onSubirImagen={subirImagenDeMarca}
+                    puedeEditarPlantilla={roles.includes('owner')}
+                    onSavePlantilla={guardarPlantilla}
+                    productos={products}
                     onSubirAudio={subirAudioDeMarca}
                     onAbrirUsuarios={puedeAbrirDestino(roles, 'usuarios') ? () => setTab('usuarios') : null}
                     onAbrirPasarelas={puedeAbrirDestino(roles, 'cobros') ? () => setTab('cobros') : null}
