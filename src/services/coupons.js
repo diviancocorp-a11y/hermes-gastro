@@ -134,7 +134,7 @@ export async function listarCupones() {
   if (!tenantId) return [];
   const { data, error } = await supabase.from('coupons').select(COLUMNAS_CUPON)
     .eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(200);
-  if (error) { console.error('listarCupones:', error.message); return []; }
+  if (error) { console.error('listarCupones:', error.message); throw error; }
   return data || [];
 }
 

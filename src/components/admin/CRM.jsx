@@ -12,6 +12,7 @@ import { paymentLabel, paymentIcon } from "../../lib/payments";
 import { fetchCoupons, createCustomerCoupon, describeCoupon } from "../../services/coupons";
 import { fetchSettings, updateSettings } from "../../services/settings";
 import DecimalInput from "../ui/DecimalInput";
+import CuponesConfig from "./CuponesConfig";
 
 const CRM_PER_PAGE = 30;
 const DANGEROUS_PCT = 50;
@@ -205,6 +206,7 @@ function CRM({ orders, showToast, onFetchStats = fetchCustomerStats, permiteCump
       )}
 
       {permiteCumple && <BirthdayGiftConfig showToast={showToast} />}
+      <CuponesConfig showToast={showToast} />
 
       <div style={{ position: "relative", marginBottom: 10 }}>
         <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--ag-ink-3)", pointerEvents: "none" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

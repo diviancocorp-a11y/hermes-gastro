@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import Icon from "./Icon";
 import { Monto, AvisoTasa, useMoneda } from "./MonedaCatalogo";
 import { aSecundaria, formatearMonto } from "../lib/moneda";
+import { etiquetaCupon } from "../lib/cupones";
 import SchedulePicker from "./SchedulePicker";
 import { leadHoras as leerLeadHoras, entregaReal, textoAnticipacion } from "../modules/pedidosProgramados";
 import { comprobanteObligatorio } from "../lib/confirmacionPedido";
@@ -55,7 +56,7 @@ export default function CheckoutScreen(props) {
     receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus,
     // cart / totales
     cart, ct, ctWithDelivery, discount, deliveryKmDisplay,
-    coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr,
+    coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, couponMinimo,
     ffGift,
     // settings (para min_order_amount)
     settings,
@@ -427,7 +428,7 @@ function Step1Entrega({ envioAConfirmar, form, sf, user, addresses, setDeliveryC
 }
 
 // ─── PASO 2: Pago ──────────────────────────────────────────────────
-function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLabel, mpConnected, accounts, selectedAccount, ct, ctWithDelivery, deliveryCost, envioGratis, deliveryKm, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, needsReceipt, cart, scheduleMode, settings, onSubmit, sending, orderErr }) {
+function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLabel, mpConnected, accounts, selectedAccount, ct, ctWithDelivery, deliveryCost, envioGratis, deliveryKm, tipAmount, receiptFile, setReceiptFile, receiptPreview, setReceiptPreview, receiptStatus, coupon, couponCode, setCouponCode, setCoupon, applyCoupon, validatingCoupon, couponErr, setCouponErr, couponMinimo, discount, ffGift, tip, setTip, tipCustom, setTipCustom, tipCap, needsReceipt, cart, scheduleMode, settings, onSubmit, sending, orderErr }) {
   // Con pedido por WhatsApp el comprobante es opcional (tambien se manda por el chat).
   const exigeComprobante = comprobanteObligatorio(needsReceipt, settings);
   const { texto } = useMoneda();
@@ -587,14 +588,23 @@ function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLa
               fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit",
             }}>{validatingCoupon ? "..." : "Aplicar"}</button>
           ) : (
-            <button onClick={() => { setCoupon(null); setCouponCode(""); }} style={{
-              height: 38, padding: "0 14px", borderRadius: 8, border: 0,
+            <button type="button" aria-label={`Quitar cupón ${coupon.code || ""}`.trim()} onClick={() => { setCoupon(null); setCouponCode(""); }} style={{
+              height: 44, padding: "0 14px", borderRadius: 8, border: 0,
               background: "var(--ok, #2A9D6E)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer",
-            }}>✓ -{coupon.discount_pct}%</button>
+            }}>✓ {etiquetaCupon(coupon, texto)}</button>
           )}
         </div>
         {couponErr && <p style={hint("err")}>{couponErr}</p>}
-        {coupon && <p style={hint("ok")}>Descuento {coupon.discount_pct}% — ahorrás {texto(discount)}</p>}
+        {coupon && couponMinimo != null && (
+          <p style={hint("err")}>Este cupón es para compras desde <Monto valor={couponMinimo} /> en productos.</p>
+        )}
+        {coupon && couponMinimo == null && (
+          <p style={hint("ok")}>
+            {coupon.discount_type === "fixed" ? "Ahorrás " : `Descuento ${coupon.discount_pct}% — ahorrás `}
+            <Monto valor={discount} />
+            {Number(coupon.min_subtotal) > 0 && <> · compra mínima <Monto valor={Number(coupon.min_subtotal)} /></>}
+          </p>
+        )}
       </div>
 
       {/* Productos + total (este es el paso final; reemplaza al resumen) */}
@@ -629,7 +639,7 @@ function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLa
         )}
         {coupon && discount > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "var(--ok, #2A9D6E)" }}>
-            <span>Cupón -{coupon.discount_pct}%</span>
+            <span>Cupón {coupon.discount_type === "fixed" ? coupon.code : etiquetaCupon(coupon)}</span>
             <span>−<Monto valor={discount} className="cp-monto--der" /></span>
           </div>
         )}
