@@ -1,4 +1,4 @@
--- PENDIENTE de aplicar (la aplica el director con ok de Ricky, via MCP: es aditiva)
+-- Aplicada via MCP el 2026-11-18
 -- Fase 6 de Cochi: cupones ampliados.
 --
 -- Hasta aca un cupon era: discount_pct, expires_at, email y un booleano
