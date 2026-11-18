@@ -1,5 +1,5 @@
 -- 0145 — Solo el duenio cambia la plantilla del catalogo.
--- PENDIENTE de aplicar (la aplica el director, no esta sesion). Solo expandir.
+-- Aplicada via MCP el 2026-11-18
 --
 -- La policy settings_update (0050) deja escribir a duenio Y encargado. El editor
 -- de marca (fase 7) es solo del duenio: la pantalla lo esconde, y este trigger
