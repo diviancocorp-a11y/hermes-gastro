@@ -17,12 +17,15 @@
  * Resumen del mes → Exportar.
  */
 import { useConfirm } from "../ConfirmSlideProvider";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { lazyReload } from "../../lib/lazyReload";
 import SettingsRow from "./shared/forms/SettingsRow";
 import TimePicker from "./shared/forms/TimePicker";
 import CatChipsEditor from "../ui/CatChipsEditor";
 import DecimalInput from "../ui/DecimalInput";
 import BrandModal from "./shared/BrandModal";
+
+const PlantillaEditor = lazyReload(() => import("./platform/PlantillaEditor"));
 import DynamicQrs from "./DynamicQrs";
 import InfoPagesAdmin from "../../pages/admin/InfoPages";
 import PaymentAccountsEditor from "../ui/PaymentAccountsEditor";
@@ -72,10 +75,15 @@ function Settings({
   // Doble moneda (useMonedaDoble) + tenant: solo con moneda secundaria aparece "Tasa del dia".
   moneda = null,
   tenantId = null,
+  // Editor de la plantilla del catalogo: solo el duenio (la base tambien lo exige).
+  puedeEditarPlantilla = false,
+  onSavePlantilla = null,
+  productos = [],
 }) {
   const confirmSlide = useConfirm();
   const [s, setS] = useState({ ...settings });
   const [page, setPage] = useState('root'); // 'root' | 'hours' | 'expCats' | 'ingCats' | 'costs' | 'usarTargets'
+  const [plantillaOpen, setPlantillaOpen] = useState(false); // Plantilla del catalogo (solo duenio)
   const [brandOpen, setBrandOpen] = useState(false); // Personalizacion (marca, logo, tema del catalogo)
   const [qrsOpen, setQrsOpen] = useState(false); // overlay QRs dinamicos (vive en Operacion)
   const [pagesOpen, setPagesOpen] = useState(false); // overlay Paginas informativas (debajo de QRs)
@@ -112,7 +120,7 @@ function Settings({
     <div className="ag-subpage-stack">
 
       {/* ── ROOT ── */}
-      <div className={`ag-subpage is-root ${page !== 'root' || brandOpen ? 'has-child' : ''}`}>
+      <div className={`ag-subpage is-root ${page !== 'root' || brandOpen || plantillaOpen ? 'has-child' : ''}`}>
         <div className="ag-subpage-body" style={{ paddingTop: 6 }}>
           <div style={{ padding: "0 4px 14px", display: "flex", alignItems: "center", gap: 10 }}>
             {onBack && (
@@ -155,6 +163,13 @@ function Settings({
               label="Personalización"
               hint="Nombre, logo, portada y tema del catálogo"
               onClick={() => setBrandOpen(true)}
+            />}
+            {puedeEditarPlantilla && onSubirImagen && <SettingsRow
+              state="recipes"
+              icon={<Icon d="M3 3h18v18H3z M3 9h18 M9 21V9" />}
+              label="Plantilla del catálogo"
+              hint="Colores, textos, imágenes y secciones de la portada"
+              onClick={() => setPlantillaOpen(true)}
             />}
             <SettingsRow
               state="stock"
@@ -354,6 +369,23 @@ function Settings({
               onSubirAudio={onSubirAudio}
               onClose={() => setBrandOpen(false)}
             />
+          </div>
+        </div>
+      )}
+
+      {plantillaOpen && puedeEditarPlantilla && (
+        <div className="ag-subpage is-child is-open">
+          <div className="ag-subpage-body">
+            <Suspense fallback={<div role="status" style={{ padding: 24, color: 'var(--ag-ink-3)' }}>Cargando…</div>}>
+              <PlantillaEditor
+                settings={settings}
+                productos={productos}
+                onSave={onSavePlantilla || onSave}
+                onSubirImagen={onSubirImagen}
+                showToast={showToast}
+                onBack={() => setPlantillaOpen(false)}
+              />
+            </Suspense>
           </div>
         </div>
       )}
