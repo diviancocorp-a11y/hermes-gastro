@@ -1,5 +1,6 @@
 // src/catalog-pro/plantillas/PopHeader.jsx
 // Barra de anuncios + header con nav y boton de pedido.
+import { useEffect, useRef, useState } from "react";
 import PrecioCatalogo from "./PrecioCatalogo";
 
 const ETIQUETAS = { favoritos: "Favoritos", flyers: "Novedades", menu: "Menú", historia: "Nosotros" };
@@ -14,6 +15,14 @@ function IconoBolsa() {
 
 export default function PopHeader({ nombre, logo, letra, anuncios = [], ids = [], cartCount, cartTotal, moneda, onOpenCart }) {
   const enlaces = ids.filter((id) => ETIQUETAS[id]);
+  const [abierto, setAbierto] = useState(false);
+  const botonRef = useRef(null);
+  useEffect(() => {
+    if (!abierto) return undefined;
+    const alTeclear = (e) => { if (e.key === "Escape") { setAbierto(false); botonRef.current?.focus(); } };
+    document.addEventListener("keydown", alTeclear);
+    return () => document.removeEventListener("keydown", alTeclear);
+  }, [abierto]);
   return (
     <>
       {anuncios.length > 0 && (
@@ -39,6 +48,18 @@ export default function PopHeader({ nombre, logo, letra, anuncios = [], ids = []
           {cartCount > 0 && <span className="pop-header__cuenta" aria-label={`${cartCount} en el pedido`}>{cartCount}</span>}
           {cartCount > 0 && <span className="pop-header__total"><PrecioCatalogo monto={cartTotal} moneda={{ ...moneda, secundaria: null }} /></span>}
         </button>
+        {enlaces.length > 0 && (
+          <button ref={botonRef} type="button" className="pop-header__menu" aria-expanded={abierto} aria-controls="pop-nav-movil" aria-label={abierto ? "Cerrar el menú" : "Abrir el menú"} onClick={() => setAbierto((v) => !v)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              {abierto ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+            </svg>
+          </button>
+        )}
+        {abierto && (
+          <nav className="pop-nav-movil" id="pop-nav-movil" aria-label="Secciones">
+            {enlaces.map((id) => <a key={id} href={`#pop-${id}`} onClick={() => setAbierto(false)}>{ETIQUETAS[id]}</a>)}
+          </nav>
+        )}
       </header>
     </>
   );

@@ -133,7 +133,7 @@ export default function PlantillaPop({
   const nombre = store.name || settings.biz_name || "Tienda";
   const logo = marca.logo_header || store.logoUrl || null;
   const letra = (store.logoLetter || nombre.charAt(0) || "D").toUpperCase();
-  const comun = { moneda, onAgregar: onAddToCart, onQuitar: onDecCart, onAbrir: onSelectProduct };
+  const comun = { moneda, isotipo: marca.isotipo, onAgregar: onAddToCart, onQuitar: onDecCart, onAbrir: onSelectProduct };
 
   const seccion = (id) => {
     switch (id) {
@@ -147,7 +147,7 @@ export default function PlantillaPop({
         return <PopMenu key={id} textos={textos} categorias={catalogCategories} activa={activa} onCategoria={setActiva}
           busqueda={busqueda} onBusqueda={cambiarBusqueda} items={itemsMenu} cargando={products.length === 0}
           aviso={aviso} cantidadDe={cantidadDe} {...comun} />;
-      case "submarca": return <PopSubmarca key={id} submarca={submarca} items={submarcaItems} cantidadDe={cantidadDe} {...comun} />;
+      case "submarca": return <PopSubmarca key={id} submarca={submarca} items={submarcaItems} cantidadDe={cantidadDe} {...comun} isotipo={submarca?.isotipo} />;
       case "banda": return <PopBanda key={id} textos={textos} />;
       case "testimonios": return <PopTestimonios key={id} textos={textos} citas={(config.testimonios || []).filter((q) => q?.texto)} />;
       case "historia": return <PopHistoria key={id} textos={textos} />;
