@@ -285,7 +285,7 @@ export default function CatalogFooter({ settings = {}, plana = false }) {
           paddingTop: 14, paddingBottom: plana ? 14 : 22,
           borderTop: plana ? undefined : "1px solid var(--line)",
           fontSize: plana ? 13 : 10.5, color: "var(--t3)", letterSpacing: "0.04em",
-          textAlign: plana ? "left" : "center",
+          textAlign: "center",
         }}>
           © {year} {bizName}. Todos los derechos reservados.
         </div>
