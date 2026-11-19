@@ -2,6 +2,7 @@
 // Historia del negocio. Con isotipo, el sello es un circulo con el texto girando
 // alrededor; con `acento` (estilo de impacto) se abre con la cinta de contorno.
 // Sin isotipo conserva el sello suelto de siempre.
+import { useId } from "react";
 import PopCinta from "./PopCinta";
 import conAcento from "./conAcento";
 
@@ -9,13 +10,14 @@ const RADIO = 122;
 const PERIMETRO = Math.round(2 * Math.PI * RADIO);
 
 function SelloCircular({ isotipo, texto }) {
+  const id = useId();
   const vuelta = texto ? `${texto} · ${texto} · ` : "";
   return (
     <div className="pop-historia__sello" aria-hidden="true">
       {vuelta && (
         <svg className="pop-historia__anillo" viewBox="0 0 300 300" focusable="false">
-          <defs><path id="pop-anillo" d={`M150,150m-${RADIO},0a${RADIO},${RADIO} 0 1,1 ${RADIO * 2},0a${RADIO},${RADIO} 0 1,1 -${RADIO * 2},0`} /></defs>
-          <text><textPath href="#pop-anillo" textLength={PERIMETRO} lengthAdjust="spacing">{vuelta}</textPath></text>
+          <defs><path id={id} d={`M150,150m-${RADIO},0a${RADIO},${RADIO} 0 1,1 ${RADIO * 2},0a${RADIO},${RADIO} 0 1,1 -${RADIO * 2},0`} /></defs>
+          <text><textPath href={`#${id}`} textLength={PERIMETRO} lengthAdjust="spacing">{vuelta}</textPath></text>
         </svg>
       )}
       <img src={isotipo} alt="" width="190" height="190" loading="lazy" decoding="async" />

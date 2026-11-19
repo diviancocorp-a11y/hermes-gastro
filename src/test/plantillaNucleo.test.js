@@ -19,9 +19,10 @@ describe('contraste', () => {
 });
 
 describe('marcaATokens', () => {
-  it('sin marca solo emite los dos tokens de contraste: el tema manda', () => {
-    expect(Object.keys(marcaATokens({}, 'noche')).sort()).toEqual(['--ac-text', '--on-ac']);
-    expect(Object.keys(marcaATokens(undefined)).sort()).toEqual(['--ac-text', '--on-ac']);
+  it('sin marca solo emite los tokens de contraste y la tinta/papel del tema: el resto lo manda el tema', () => {
+    expect(Object.keys(marcaATokens({}, 'noche')).sort()).toEqual(['--ac-text', '--on-ac', '--pop-claro', '--pop-oscuro']);
+    expect(Object.keys(marcaATokens(undefined)).sort()).toEqual(['--ac-text', '--on-ac', '--pop-claro', '--pop-oscuro']);
+    expect(marcaATokens({}, 'noche')['--pop-oscuro']).toBe('#161412');
   });
   it('los temas base coinciden con tokens.css', () => {
     const css = readFileSync(resolve(__dirname, '../catalog-pro/tokens.css'), 'utf-8');

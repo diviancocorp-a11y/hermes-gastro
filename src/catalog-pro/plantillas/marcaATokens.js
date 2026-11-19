@@ -72,6 +72,10 @@ export function marcaATokens(marca = {}, tema = 'ambar') {
   // Tambien sobre el gris de las tarjetas (--b2, 5% de texto sobre el fondo).
   t['--ac-text'] = contraste(primario, fondo) >= 4.5 && contraste(primario, mezclar(texto, fondo, 5)) >= 4.5 ? primario : texto;
 
+  // Tinta y papel de la marca: el mas oscuro y el mas claro de fondo/texto, sea cual sea el tema.
+  t['--pop-oscuro'] = luz(fondo) < luz(texto) ? fondo : texto;
+  t['--pop-claro'] = luz(fondo) < luz(texto) ? texto : fondo;
+
   if (m.primario) {
     t['--ac'] = primario;
     t['--ac2'] = mezclar(primario, '#000000', 82);

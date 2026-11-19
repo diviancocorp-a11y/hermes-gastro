@@ -186,7 +186,7 @@
 .pop-chip__n { font-size: 12px; font-weight: 600; opacity: 0.68; }
 
 /* menu sobre fondo de tinta (marca.menu_oscuro): las tarjetas conservan su papel */
-.pop-menu-fondo--oscuro { margin-top: 56px; background: var(--tx); color: var(--bg); }
+.pop-menu-fondo--oscuro { margin-top: 56px; background: var(--pop-tinta); color: var(--pop-papel); }
 .pop-menu-fondo--oscuro .pop-seccion { padding-block: 64px 56px; }
 .pop-menu-fondo--oscuro .pop-kicker, .pop-menu-fondo--oscuro .pop-titulo { color: var(--bg); }
 .pop-menu-fondo--oscuro .pop-acento { color: var(--ac); }
@@ -194,7 +194,7 @@
 .pop-menu-fondo--oscuro .pop-aviso { background: color-mix(in srgb, var(--bg) 9%, transparent); color: var(--bg); }
 .pop-menu-fondo--oscuro .pop-aviso--aviso { outline-color: var(--bg); }
 .pop-menu-fondo--oscuro .pop-menu__controles { background: var(--tx); }
-.pop-menu-fondo--oscuro .pop-buscar input { border: 1px solid color-mix(in srgb, var(--bg) 22%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--bg) 8%, transparent); color: var(--bg); }
+.pop-menu-fondo--oscuro .pop-buscar input { border: 1px solid color-mix(in srgb, var(--bg) 50%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--bg) 8%, transparent); color: var(--bg); }
 .pop-menu-fondo--oscuro .pop-buscar input::placeholder { color: var(--bg); opacity: 0.6; }
 .pop-menu-fondo--oscuro .pop-chip { border: 1px solid color-mix(in srgb, var(--bg) 30%, transparent); background: transparent; color: var(--bg); }
 .pop-menu-fondo--oscuro .pop-chip[aria-pressed="true"] { border-color: var(--ac); background: var(--ac); color: var(--on-ac); }
@@ -239,7 +239,7 @@
 .pop-sello--historia { position: static; margin-top: 28px; transform: rotate(6deg); }
 
 /* ---------- footer y barra ---------- */
-.pop-root { --pop-tinta: var(--tx); --pop-papel: var(--bg); }
+.pop-root { --pop-tinta: var(--pop-oscuro, var(--tx)); --pop-papel: var(--pop-claro, var(--bg)); }
 /* cierre oscuro: dentro del footer se invierten los tokens, asi CatalogFooter (que lee --tx, --line...) se lee sobre tinta */
 .pop-footer {
   --bg: var(--pop-tinta); --tx: var(--pop-papel); --ac-text: var(--ac);
@@ -314,12 +314,18 @@
 .pop-quieto .pop-cinta__pista, .pop-quieto .pop-anuncios__pista { flex-wrap: wrap; width: auto; }
 .pop-quieto .pop-cinta__tira[aria-hidden], .pop-quieto .pop-anuncios__tira[aria-hidden] { display: none; }
 .pop-quieto .pop-cinta__tira, .pop-quieto .pop-anuncios__tira { flex-wrap: wrap; padding-inline: var(--pop-pad); }
+.pop-quieto .pop-anuncios__tira { flex-shrink: 1; }
+.pop-quieto .pop-anuncios__tira li::after { margin: 0 12px; }
+.pop-quieto .pop-cinta__tira li[aria-hidden], .pop-quieto .pop-anuncios__tira li[aria-hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .pop-root *, .pop-root *::before, .pop-root *::after { animation: none !important; transition: none !important; }
   .pop-intro { display: none; }
   .pop-cinta__pista, .pop-anuncios__pista { flex-wrap: wrap; width: auto; }
   .pop-cinta__tira[aria-hidden], .pop-anuncios__tira[aria-hidden] { display: none; }
   .pop-cinta__tira, .pop-anuncios__tira { flex-wrap: wrap; padding-inline: var(--pop-pad); }
+  .pop-anuncios__tira { flex-shrink: 1; }
+  .pop-anuncios__tira li::after { margin: 0 12px; }
+  .pop-cinta__tira li[aria-hidden], .pop-anuncios__tira li[aria-hidden] { display: none; }
 }
 
 /* sin foto y con isotipo de marca: banda baja de color, como una foto de poco alto */
