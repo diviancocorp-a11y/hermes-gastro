@@ -239,9 +239,31 @@
 .pop-sello--historia { position: static; margin-top: 28px; transform: rotate(6deg); }
 
 /* ---------- footer y barra ---------- */
-.pop-footer { margin-top: 32px; display: grid; justify-items: start; gap: 12px; padding: 32px var(--pop-pad) 0; }
-.pop-footer__nombre { font: 800 clamp(2.4rem, 12vw, 5rem)/0.95 var(--font-heading); letter-spacing: -0.035em; }
-.pop-footer > :last-child { justify-self: stretch; }
+.pop-root { --pop-tinta: var(--tx); --pop-papel: var(--bg); }
+/* cierre oscuro: dentro del footer se invierten los tokens, asi CatalogFooter (que lee --tx, --line...) se lee sobre tinta */
+.pop-footer {
+  --bg: var(--pop-tinta); --tx: var(--pop-papel); --ac-text: var(--ac);
+  --b2: color-mix(in srgb, var(--pop-papel) 9%, var(--pop-tinta)); --b3: color-mix(in srgb, var(--pop-papel) 15%, var(--pop-tinta));
+  --line: color-mix(in srgb, var(--pop-papel) 22%, var(--pop-tinta));
+  --t2: color-mix(in srgb, var(--pop-papel) 78%, var(--pop-tinta)); --t3: color-mix(in srgb, var(--pop-papel) 62%, var(--pop-tinta));
+  margin-top: 56px; background: var(--bg); color: var(--tx);
+}
+.pop-footer__in { max-width: var(--pop-max); margin: 0 auto; padding: 56px var(--pop-pad) 0; }
+.pop-footer__cuerpo { display: grid; gap: 36px; padding-bottom: 32px; }
+.pop-footer__logo { width: auto; height: 54px; max-width: 100%; }
+.pop-footer__nombre { font: 800 clamp(2rem, 9vw, 3rem)/1 var(--font-heading); letter-spacing: -0.03em; }
+.pop-footer__lema { margin-top: 12px; font: 600 15px/1.4 var(--font-body); color: var(--t2); }
+.pop-footer__nav { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.pop-footer__etiqueta { margin-bottom: 8px; font: 800 12px/1 var(--font-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--t2); }
+.pop-footer__nav a, .pop-footer__nav button { padding: 0; border: 0; background: none; color: var(--tx); font: 600 16px/1 var(--font-body); text-decoration: none; cursor: pointer; }
+.pop-footer__nav a:hover, .pop-footer__nav button:hover { text-decoration: underline; text-underline-offset: 4px; }
+.pop-footer__titulo { margin-bottom: 18px; font: 800 clamp(1.7rem, 6vw, 2.2rem)/1.05 var(--font-heading); letter-spacing: -0.03em; }
+.pop-btn--claro { background: var(--tx); color: var(--bg); }
+.pop-btn--claro:hover { box-shadow: inset 0 0 0 2px var(--bg); }
+.pop-footer__herramientas { display: flex; flex-wrap: wrap; gap: 12px; padding-bottom: 28px; }
+.pop-footer__tool { min-height: 44px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--tx); font: 700 14px/1 var(--font-body); cursor: pointer; }
+.pop-footer__tool:hover { background: var(--b2); }
+.pop-footer :focus-visible { outline-color: var(--tx); }
 .pop-barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 8px var(--pop-pad) calc(8px + env(safe-area-inset-bottom)); background: var(--bg); }
 .pop-barra__btn { width: 100%; min-height: 52px; justify-content: space-between; }
 .pop-barra__btn .pop-precio__p { font-size: 1rem; }
@@ -281,6 +303,7 @@
   .pop-hero { grid-template-columns: 1.1fr 0.9fr; align-items: center; gap: 48px; padding-top: 56px; }
   .pop-grilla { grid-template-columns: repeat(3, 1fr); }
   .pop-testimonios__lista { grid-template-columns: repeat(3, 1fr); }
+  .pop-footer__cuerpo { grid-template-columns: 1fr 0.65fr 0.9fr; gap: 50px; }
   .pop-barra { display: none; }
   .pop-root.pop-con-barra { padding-bottom: 0; }
 }
