@@ -189,7 +189,7 @@
 .pop-menu-fondo--oscuro { margin-top: 56px; background: var(--pop-tinta); color: var(--pop-papel); }
 .pop-menu-fondo--oscuro .pop-seccion { padding-block: 64px 56px; }
 .pop-menu-fondo--oscuro .pop-kicker, .pop-menu-fondo--oscuro .pop-titulo { color: var(--bg); }
-.pop-menu-fondo--oscuro .pop-acento { color: var(--ac); }
+.pop-menu-fondo--oscuro .pop-acento, .pop-footer .pop-acento { color: var(--ac); }
 .pop-menu-fondo--oscuro .pop-seccion__aside, .pop-menu-fondo--oscuro .pop-menu__cuenta, .pop-menu-fondo--oscuro .pop-vacio { color: color-mix(in srgb, var(--bg) 80%, transparent); }
 .pop-menu-fondo--oscuro .pop-aviso { background: color-mix(in srgb, var(--bg) 9%, transparent); color: var(--bg); }
 .pop-menu-fondo--oscuro .pop-aviso--aviso { outline-color: var(--bg); }
@@ -253,7 +253,7 @@
 /* enlaces y botones del cierre: 44 px de alto (la regla de abajo solo alcanza a <footer> anidados) */
 .pop-footer a, .pop-footer button { display: inline-flex; align-items: center; min-height: 44px; }
 .pop-footer .cp-footer-plana a:hover, .pop-footer .cp-footer-plana button:hover { text-decoration: underline; text-underline-offset: 4px; }
-.pop-footer .cp-footer-plana { border-top: 1px solid var(--line); padding-top: 32px; }
+
 .pop-footer__logo { width: auto; height: 54px; max-width: 100%; }
 .pop-footer__nombre { font: 800 clamp(2rem, 9vw, 3rem)/1 var(--font-heading); letter-spacing: -0.03em; }
 .pop-footer__lema { margin-top: 12px; font: 600 15px/1.4 var(--font-body); color: var(--t2); }

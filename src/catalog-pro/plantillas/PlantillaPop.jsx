@@ -174,7 +174,7 @@ export default function PlantillaPop({
         {!ids.includes("hero") && <h1 className="pop-sr">{nombre}</h1>}
         {ids.map(seccion)}
       </main>
-      <PopFooter nombre={nombre} logo={marca.logo_footer || logo} textos={textos} settings={settings} quieto={quieto} onAlternar={alternar} />
+      <PopFooter nombre={nombre} logo={marca.logo_footer || logo} textos={textos} settings={settings} quieto={quieto} onAlternar={alternar} acento={acento} />
       {cartCount > 0 && (
         <div className="pop-barra">
           <button type="button" className="pop-btn pop-btn--primario pop-barra__btn" onClick={onOpenCart}>

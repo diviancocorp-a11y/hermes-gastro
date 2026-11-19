@@ -52,7 +52,7 @@ describe("PopHistoria", () => {
 });
 
 describe("PopFooter", () => {
-  it("muestra lema, llamada a pedir que lleva al menu y pausar; sin lista de atajos ni burbuja de Dico", () => {
+  it("muestra lema, llamada a pedir que lleva al menu y pausar; sin lista de atajos", () => {
     const onAlternar = vi.fn();
     const { container } = render(<PopFooter nombre="Cochi" textos={{ footer_lema: "El antojo tiene nombre.", footer_titulo: "¿Listo?", footer_boton: "Arma tu pedido", footer_nav: "LA SIGUIENTE JUGADA" }}
       settings={{ biz_name: "Cochi", logo_letter: "C" }} onAlternar={onAlternar} />);
@@ -63,10 +63,28 @@ describe("PopFooter", () => {
     fireEvent.click(screen.getByRole("button", { name: /Pausar animaciones/ }));
     expect(onAlternar).toHaveBeenCalled();
     expect(screen.queryByText(/Instalar/)).toBeNull();
-    // la promo de Dico es un enlace suelto, no una banda con logo
+    // la promo de Dico es la banda de siempre (con su logo), no un enlace suelto
     const promo = screen.getByRole("link", { name: /Dico para tu local/ });
-    expect(promo.querySelector("img, svg")).toBeNull();
+    expect(promo.textContent).toContain("Catálogo, pedidos, stock");
     expect(container.querySelectorAll("footer")).toHaveLength(1);
+  });
+});
+
+describe("footer: libro de quejas y acento del titulo", () => {
+  const props = { nombre: "Cochi", textos: { footer_titulo: "¿Listo para pedir algo brutal?" }, onAlternar: () => {} };
+  it("el libro de quejas solo sale en Argentina o sin pais", () => {
+    const { unmount } = render(<PopFooter {...props} settings={{ biz_name: "Cochi", country: "VE" }} />);
+    expect(screen.queryByText("Libro de quejas")).toBeNull();
+    unmount();
+    render(<PopFooter {...props} settings={{ biz_name: "Cochi", country: "AR" }} />);
+    expect(screen.getByText("Libro de quejas")).toBeTruthy();
+    cleanup();
+    render(<PopFooter {...props} settings={{ biz_name: "Cochi" }} />);
+    expect(screen.getByText("Libro de quejas")).toBeTruthy();
+  });
+  it("con acento, la ultima palabra del titulo del cierre va marcada", () => {
+    const { container } = render(<PopFooter {...props} acento settings={{ biz_name: "Cochi", country: "VE" }} />);
+    expect(container.querySelector(".pop-footer__titulo em.pop-acento").textContent).toBe("brutal?");
   });
 });
 

@@ -4,8 +4,9 @@
 // (CatalogFooter plana, con la tipografia de la marca) y la promo de Dico como enlace. WhatsAppFloat lo monta Catalog.
 import { useEffect, useState } from "react";
 import CatalogFooter from "../CatalogFooter";
+import conAcento from "./conAcento";
 
-export default function PopFooter({ nombre, logo, textos = {}, settings, quieto, onAlternar }) {
+export default function PopFooter({ nombre, logo, textos = {}, settings, quieto, onAlternar, acento = false }) {
   // "Instalar en mi celular": solo cuando el navegador ofrece instalar la app.
   const [instalable, setInstalable] = useState(null);
   useEffect(() => {
@@ -36,7 +37,7 @@ export default function PopFooter({ nombre, logo, textos = {}, settings, quieto,
             </button>
           </div>
           <div className="pop-footer__cta">
-            {textos.footer_titulo && <p className="pop-footer__titulo">{textos.footer_titulo}</p>}
+            {textos.footer_titulo && <p className="pop-footer__titulo">{conAcento(textos.footer_titulo, acento)}</p>}
             <a className="pop-btn pop-btn--claro" href="#pop-menu">{textos.footer_boton || "Hacer mi pedido"} <span aria-hidden="true">↗</span></a>
           </div>
         </div>

@@ -200,6 +200,9 @@ export default function CatalogFooter({ settings = {}, plana = false }) {
   const termsDeDico = TENANTS_CON_TERMINOS_DE_DICO.has(getTenantSlugSync());
   const copy = bizCopy(settings, termsDeDico);
 
+  // El libro de quejas es de la defensa del consumidor argentina: solo AR (o sin pais cargado).
+  const pais = String(settings.country || "").trim().toUpperCase();
+  const esArgentina = pais === "" || pais === "AR";
   const bizName = settings.biz_name || "Negocio";
   const bizWhatsapp = (settings.whatsapp || "").replace(/\D/g, "");
   const bizInstagram = settings.instagram || "";
@@ -254,7 +257,7 @@ export default function CatalogFooter({ settings = {}, plana = false }) {
             { label: "Términos y condiciones", onClick: () => open("terms") },
             { label: "Política de privacidad", onClick: () => open("privacy") },
             { label: "Política de cookies", onClick: () => open("cookies") },
-            ...(termsDeDico ? [] : [{ label: "Libro de quejas", href: DEFENSA_CONSUMIDOR_AR, external: true }]),
+            ...(termsDeDico || !esArgentina ? [] : [{ label: "Libro de quejas", href: DEFENSA_CONSUMIDOR_AR, external: true }]),
           ]} />
 
           <FooterCol plana={plana} title="Ayuda" items={[
@@ -280,20 +283,14 @@ export default function CatalogFooter({ settings = {}, plana = false }) {
         {/* Copyright del negocio */}
         <div style={{
           paddingTop: 14, paddingBottom: plana ? 14 : 22,
-          borderTop: "1px solid var(--line)",
+          borderTop: plana ? undefined : "1px solid var(--line)",
           fontSize: plana ? 13 : 10.5, color: "var(--t3)", letterSpacing: "0.04em",
-          textAlign: plana ? "left" : "center",
+          textAlign: "center",
         }}>
           © {year} {bizName}. Todos los derechos reservados.
         </div>
 
-        {/* ─── PROMO DE DICO (plataforma) ─── */}
-        {plana ? (
-          <a href={DICO_URL} target="_blank" rel="noopener noreferrer"
-            style={{ color: "var(--tx)", fontSize: 15, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 4 }}>
-            ¿Tenés un negocio? Dico para tu local → <span className="pop-sr">(se abre en otra pestaña)</span>
-          </a>
-        ) : (
+        {/* ─── BANDA DICO (plataforma) ─── */}
         <a
           href={DICO_URL}
           target="_blank"
@@ -322,7 +319,6 @@ export default function CatalogFooter({ settings = {}, plana = false }) {
           </div>
           <div style={{ color: "#F59E0B", fontWeight: 800, fontSize: 18, flexShrink: 0 }}>→</div>
         </a>
-        )}
       </Raiz>
 
       {/* ─── MODALES ─── */}
@@ -341,7 +337,7 @@ function FooterCol({ title, items, accent = "#F59E0B", plana = false }) {
     <div>
       <div style={{
         fontSize: plana ? 12 : 10.5, fontWeight: 800, letterSpacing: plana ? "0.16em" : "0.12em",
-        textTransform: "uppercase", color: plana ? "var(--t2)" : accent, marginBottom: 10,
+        textTransform: "uppercase", color: plana ? "var(--ac)" : accent, marginBottom: 10,
       }}>
         {title}
       </div>
