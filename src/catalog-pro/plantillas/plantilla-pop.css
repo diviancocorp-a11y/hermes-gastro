@@ -174,8 +174,15 @@
 .pop-skeleton::after { content: ""; display: block; height: 156px; }
 @keyframes pop-pulso { 50% { opacity: 0.5; } }
 
+/* cinta de contorno (estilo de impacto): texto hueco con trazo de marca, en sentido contrario */
+.pop-cinta--contorno { background: transparent; color: transparent; padding: 20px 0; }
+.pop-cinta--contorno .pop-cinta__pista { animation-direction: reverse; }
+.pop-cinta--contorno .pop-cinta__tira { gap: 0; font-size: clamp(2rem, 7vw, 2.9rem); letter-spacing: -0.03em; -webkit-text-stroke: 1.6px var(--ac); }
+.pop-cinta--contorno .pop-cinta__tira li::after { content: "✦"; margin: 0 36px; color: var(--ac); -webkit-text-stroke: 0; }
+
 /* titulares con acento y chips con conteo */
-.pop-acento { font-style: normal; color: var(--ac-text); }
+/* titulares grandes: alcanza 3:1, asi que va el primario y no el texto de 4.5:1 */
+.pop-acento { font-style: normal; color: var(--ac); }
 .pop-chip__n { font-size: 12px; font-weight: 600; opacity: 0.68; }
 
 /* menu sobre fondo de tinta (marca.menu_oscuro): las tarjetas conservan su papel */
@@ -219,6 +226,14 @@
 
 /* ---------- historia ---------- */
 .pop-historia { position: relative; padding-bottom: 56px; }
+.pop-historia--con-sello { display: grid; gap: 32px; align-items: center; }
+.pop-historia__sello { position: relative; display: grid; place-items: center; justify-self: center; width: min(100%, 320px); aspect-ratio: 1; border-radius: 50%; background: var(--pop-acento, var(--b3)); box-shadow: 0 26px 50px -28px color-mix(in srgb, var(--tx) 50%, transparent); }
+.pop-historia__sello::after { content: ""; position: absolute; inset: 11%; border-radius: 50%; border: 2px dashed color-mix(in srgb, var(--tx) 30%, transparent); }
+.pop-historia__anillo { position: absolute; inset: 0; width: 100%; height: 100%; animation: pop-gira 30s linear infinite; }
+.pop-historia__anillo text { font: 900 13px/1 var(--font-body); letter-spacing: 0.15em; fill: color-mix(in srgb, var(--tx) 70%, var(--bg)); }
+.pop-historia__sello img { position: relative; z-index: 1; width: 54%; height: auto; }
+.pop-historia__cta { margin-top: 18px; padding-inline: 0; font-size: 17px; }
+@keyframes pop-gira { to { transform: rotate(360deg); } }
 .pop-historia__parrafo { max-width: 52ch; margin-top: 14px; font-size: 1.1rem; line-height: 1.55; color: var(--tx); }
 .pop-sello--suelto { position: static; justify-self: start; transform: rotate(-6deg); }
 .pop-sello--historia { position: static; margin-top: 28px; transform: rotate(6deg); }
@@ -255,6 +270,7 @@
   .pop-favoritos__grilla { grid-template-columns: 1.4fr 1fr; }
   .pop-favoritos__grilla .pop-card--grande:not(.pop-card--sinfoto) { grid-row: span 2; }
   .pop-testimonios__lista { grid-template-columns: repeat(2, 1fr); }
+  .pop-historia--con-sello { grid-template-columns: 0.8fr 1.2fr; gap: 10%; }
   .pop-banda { grid-template-columns: 1fr 1fr; align-items: stretch; }
   .pop-banda__img { height: 100%; aspect-ratio: auto; }
   .pop-banda__texto { align-self: center; padding: 56px var(--pop-pad); }

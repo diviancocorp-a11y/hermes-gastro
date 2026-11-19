@@ -34,7 +34,7 @@ export default function PopMenu({
           {categorias.map((c) => (
             <button key={c.name} type="button" className="pop-chip" aria-pressed={activa === c.name} onClick={() => onCategoria(c.name)}>
               {c.displayName || c.name}
-              {c.count != null && <span className="pop-chip__n"> {c.count}</span>}
+              {c.count != null && <span className="pop-chip__n" aria-hidden="true"> {c.count}</span>}
             </button>
           ))}
         </div>

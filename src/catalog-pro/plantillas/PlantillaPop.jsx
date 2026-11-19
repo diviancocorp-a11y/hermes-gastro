@@ -157,7 +157,7 @@ export default function PlantillaPop({
       case "submarca": return <PopSubmarca key={id} submarca={submarca} items={submarcaItems} cantidadDe={cantidadDe} {...comun} isotipo={submarca?.isotipo} />;
       case "banda": return <PopBanda key={id} textos={textos} />;
       case "testimonios": return <PopTestimonios key={id} textos={textos} citas={(config.testimonios || []).filter((q) => q?.texto)} />;
-      case "historia": return <PopHistoria key={id} textos={textos} />;
+      case "historia": return <PopHistoria key={id} textos={textos} isotipo={marca.isotipo} cinta={config.cinta} acento={acento} />;
       default: return null;
     }
   };
