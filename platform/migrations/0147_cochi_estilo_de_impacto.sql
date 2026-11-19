@@ -1,5 +1,5 @@
 -- 0147 — Cochi: estilo de impacto en la plantilla pop (solo datos).
--- PENDIENTE: sin aplicar. Requiere la 0146 aplicada antes (acepta las claves nuevas).
+-- Aplicada via MCP el 2026-11-19
 --
 -- Activa en Cochi lo que el sitio original tiene y la plantilla ahora sabe pintar:
 --   marca.menu_oscuro, marca.titulo_acento, marca.anuncios_acento

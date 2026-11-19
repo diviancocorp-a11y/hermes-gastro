@@ -1,5 +1,5 @@
 -- 0146 — Plantilla de catalogo: tres interruptores de marca y cinco textos mas.
--- PENDIENTE: sin aplicar a la base (la aplica Ricky/el director).
+-- Aplicada via MCP el 2026-11-19
 --
 -- Aditiva: private.valid_template_config acepta un superset de lo que aceptaba
 -- (misma firma, `create or replace`), asi que el codigo viejo sigue andando.
