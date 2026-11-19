@@ -52,7 +52,7 @@ describe("PopHistoria", () => {
 });
 
 describe("PopFooter", () => {
-  it("muestra lema, llamada a pedir que lleva al menu y pausar; sin lista de atajos ni burbuja de Dico", () => {
+  it("muestra lema, llamada a pedir que lleva al menu y pausar; sin lista de atajos", () => {
     const onAlternar = vi.fn();
     const { container } = render(<PopFooter nombre="Cochi" textos={{ footer_lema: "El antojo tiene nombre.", footer_titulo: "¿Listo?", footer_boton: "Arma tu pedido", footer_nav: "LA SIGUIENTE JUGADA" }}
       settings={{ biz_name: "Cochi", logo_letter: "C" }} onAlternar={onAlternar} />);
@@ -63,9 +63,9 @@ describe("PopFooter", () => {
     fireEvent.click(screen.getByRole("button", { name: /Pausar animaciones/ }));
     expect(onAlternar).toHaveBeenCalled();
     expect(screen.queryByText(/Instalar/)).toBeNull();
-    // la promo de Dico es un enlace suelto, no una banda con logo
+    // la promo de Dico es la banda de siempre (con su logo), no un enlace suelto
     const promo = screen.getByRole("link", { name: /Dico para tu local/ });
-    expect(promo.querySelector("img, svg")).toBeNull();
+    expect(promo.textContent).toContain("Catálogo, pedidos, stock");
     expect(container.querySelectorAll("footer")).toHaveLength(1);
   });
 });
