@@ -2,6 +2,7 @@
 // Barra de anuncios + header con nav y boton de pedido.
 import { useEffect, useRef, useState } from "react";
 import PrecioCatalogo from "./PrecioCatalogo";
+import PopAnuncios from "./PopAnuncios";
 
 const ETIQUETAS = { favoritos: "Favoritos", flyers: "Novedades", menu: "Menú", historia: "Nosotros" };
 
@@ -13,10 +14,27 @@ function IconoBolsa() {
   );
 }
 
-export default function PopHeader({ nombre, logo, letra, anuncios = [], ids = [], cartCount, cartTotal, moneda, onOpenCart }) {
+export default function PopHeader({ nombre, logo, letra, anuncios = [], ids = [], cartCount, cartTotal, moneda, onOpenCart, acentoAnuncios = false }) {
   const enlaces = ids.filter((id) => ETIQUETAS[id]);
   const [abierto, setAbierto] = useState(false);
   const botonRef = useRef(null);
+  const cabeceraRef = useRef(null);
+  // Linea de progreso de lectura: la hoja dibuja la raya con --sp (0 a 1).
+  useEffect(() => {
+    const el = cabeceraRef.current;
+    if (!el) return undefined;
+    let raf = 0;
+    const pintar = () => {
+      raf = 0;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      el.style.setProperty("--sp", String(max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0));
+    };
+    const alScroll = () => { if (!raf) raf = requestAnimationFrame(pintar); };
+    pintar();
+    window.addEventListener("scroll", alScroll, { passive: true });
+    window.addEventListener("resize", alScroll);
+    return () => { window.removeEventListener("scroll", alScroll); window.removeEventListener("resize", alScroll); if (raf) cancelAnimationFrame(raf); };
+  }, []);
   useEffect(() => {
     if (!abierto) return undefined;
     const alTeclear = (e) => { if (e.key === "Escape") { setAbierto(false); botonRef.current?.focus(); } };
@@ -25,14 +43,8 @@ export default function PopHeader({ nombre, logo, letra, anuncios = [], ids = []
   }, [abierto]);
   return (
     <>
-      {anuncios.length > 0 && (
-        <div className="pop-anuncios" role="region" aria-label="Anuncios">
-          <ul className="pop-anuncios__lista">
-            {anuncios.map((a, i) => <li key={i}>{a}</li>)}
-          </ul>
-        </div>
-      )}
-      <header className="pop-header">
+      <PopAnuncios frases={anuncios} acento={acentoAnuncios} />
+      <header className="pop-header" ref={cabeceraRef}>
         <a className="pop-header__marca" href="#pop-inicio" aria-label={`${nombre}, ir al inicio`}>
           {logo
             ? <img src={logo} alt="" height="36" className="pop-header__logo" />

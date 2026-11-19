@@ -1,13 +1,15 @@
 // src/catalog-pro/plantillas/PopHero.jsx
 // Portada: titular grande, una accion y una imagen dominante con sello.
-export default function PopHero({ textos = {}, nombre, lead, imagen, abierto }) {
+import conAcento from "./conAcento";
+
+export default function PopHero({ textos = {}, nombre, lead, imagen, abierto, acento = false }) {
   const titulo = textos.hero_titulo || nombre;
   const bajada = textos.hero_lead || lead;
   return (
     <section className={`pop-hero${imagen ? "" : " pop-hero--solo"}`} id="pop-inicio" aria-labelledby="pop-h1">
       <div className="pop-hero__texto" data-revelar>
         {textos.hero_eyebrow && <p className="pop-hero__kicker">{textos.hero_eyebrow}</p>}
-        <h1 id="pop-h1" className="pop-hero__titulo">{titulo}</h1>
+        <h1 id="pop-h1" className="pop-hero__titulo">{conAcento(titulo, acento)}</h1>
         {bajada && <p className="pop-hero__lead">{bajada}</p>}
         <div className="pop-hero__acciones">
           <a className="pop-btn pop-btn--primario pop-btn--grande" href="#pop-menu">{textos.hero_cta || "Ver el menú y pedir"}</a>

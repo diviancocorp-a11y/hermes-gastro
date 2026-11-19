@@ -18,11 +18,13 @@ export const RADIOS = ['recto', 'suave', 'pildora'];
 
 export const MARCA_COLORES = ['primario', 'fondo', 'texto', 'acento2'];
 export const MARCA_URLS = ['logo_header', 'logo_footer', 'isotipo'];
+export const MARCA_BOOLS = ['menu_oscuro', 'titulo_acento', 'anuncios_acento'];
 export const TEXTO_KEYS = [
   'hero_eyebrow', 'hero_titulo', 'hero_lead', 'hero_cta', 'hero_nota', 'hero_sello', 'intro_caption',
   'favoritos_eyebrow', 'favoritos_titulo', 'favoritos_aside', 'flyers_eyebrow', 'flyers_titulo',
   'menu_eyebrow', 'menu_titulo', 'menu_lead', 'banda_eyebrow', 'banda_titulo', 'banda_texto', 'banda_imagen',
   'testimonios_eyebrow', 'testimonios_titulo', 'historia_eyebrow', 'historia_titulo', 'historia_texto', 'historia_sello',
+  'historia_cta', 'footer_nav', 'footer_titulo', 'footer_boton', 'footer_lema',
 ];
 export const SUBMARCA_KEYS = ['nombre', 'categoria', 'eyebrow', 'titulo', 'texto', 'fondo', 'color', 'logo', 'isotipo'];
 export const FLYER_KEYS = ['titulo', 'texto', 'imagen', 'badge', 'link', 'desde', 'hasta', 'activo'];

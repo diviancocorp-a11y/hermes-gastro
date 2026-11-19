@@ -1175,7 +1175,7 @@ function CatalogContenido({ onSettings }) {
           }}
         />
       )}
-      <WhatsAppFloat whatsapp={sett?.whatsapp} bizName={sett?.biz_name} />
+      <WhatsAppFloat whatsapp={sett?.whatsapp} bizName={sett?.biz_name} etiqueta={plantillaEfectiva(sett) !== "default" ? "¿Dudas?" : undefined} />
       {/* logoLetter solo cuando settings ya cargo: evita el flash de la "M"
           antes del logo real en la primera visita (sin cache local) */}
       {/* La plantilla trae su propia intro: no se apilan dos. */}

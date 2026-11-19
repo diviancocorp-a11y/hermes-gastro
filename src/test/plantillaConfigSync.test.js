@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  TOP_KEYS, SECCION_IDS, MARCA_COLORES, MARCA_URLS, FUENTES, TEXTO_KEYS, SUBMARCA_KEYS, FLYER_KEYS, QUOTE_KEYS,
+  TOP_KEYS, SECCION_IDS, MARCA_COLORES, MARCA_URLS, MARCA_BOOLS, FUENTES, TEXTO_KEYS, SUBMARCA_KEYS, FLYER_KEYS, QUOTE_KEYS,
   RADIOS, PLANTILLAS, PlantillaConfigSchema, leerConfigPlantilla, resolverPlantilla,
 } from '../lib/plantillaConfig';
 import { CatalogAttributesSchema } from '../lib/schemas';
@@ -12,15 +12,18 @@ import { CatalogAttributesSchema } from '../lib/schemas';
 const MIGRACION = resolve(__dirname, '../../platform/migrations/0128_plantilla_de_catalogo.sql');
 const sql = readFileSync(MIGRACION, 'utf-8').replace(/--[^\n]*/g, '');
 
+// El validador vigente es el de la ultima migracion que lo redefine (0146 amplio las listas).
+const sqlValidador = readFileSync(resolve(__dirname, '../../platform/migrations/0146_plantilla_interruptores_de_marca.sql'), 'utf-8').replace(/--[^\n]*/g, '');
+
 function arraySql(nombre) {
-  const m = sql.match(new RegExp(String.raw`${nombre}\s+text\[\]\s*:=\s*array\[([\s\S]*?)\]\s*;`));
-  if (!m) throw new Error(`No se encontro ${nombre} en 0128`);
+  const m = sqlValidador.match(new RegExp(String.raw`${nombre}\s+text\[\]\s*:=\s*array\[([\s\S]*?)\]\s*;`));
+  if (!m) throw new Error(`No se encontro ${nombre} en 0146`);
   return [...m[1].matchAll(/'([^']+)'/g)].map(x => x[1]);
 }
 
 describe('plantillaConfig: SQL y JS coinciden', () => {
   const pares = {
-    top_keys: TOP_KEYS, seccion_ids: SECCION_IDS, marca_colores: MARCA_COLORES, marca_urls: MARCA_URLS,
+    top_keys: TOP_KEYS, seccion_ids: SECCION_IDS, marca_colores: MARCA_COLORES, marca_urls: MARCA_URLS, marca_bools: MARCA_BOOLS,
     fuentes: FUENTES, texto_keys: TEXTO_KEYS, submarca_keys: SUBMARCA_KEYS, flyer_keys: FLYER_KEYS, quote_keys: QUOTE_KEYS,
   };
   for (const [nombre, js] of Object.entries(pares)) {

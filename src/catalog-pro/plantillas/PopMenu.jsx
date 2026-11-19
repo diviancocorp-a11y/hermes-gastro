@@ -3,16 +3,18 @@
 // El filtrado lo hace PlantillaPop (getCatalogCategories / applyCatalogFacets);
 // aca solo se pinta.
 import PopProductoCard from "./PopProductoCard";
+import conAcento from "./conAcento";
 
 export default function PopMenu({
   textos = {}, categorias = [], activa, onCategoria, busqueda, onBusqueda,
-  items = [], cargando, aviso, ...resto
+  items = [], cargando, aviso, oscuro = false, acento = false, ...resto
 }) {
   return (
-    <section className="pop-seccion pop-menu" id="pop-menu" aria-labelledby="pop-menu-t">
+    <section className={`pop-menu-fondo${oscuro ? " pop-menu-fondo--oscuro" : ""}`} id="pop-menu" aria-labelledby="pop-menu-t">
+    <div className="pop-seccion pop-menu">
       <div className="pop-seccion__cabeza" data-revelar>
         {textos.menu_eyebrow && <p className="pop-kicker">{textos.menu_eyebrow}</p>}
-        <h2 id="pop-menu-t" className="pop-titulo">{textos.menu_titulo || "Nuestro menú"}</h2>
+        <h2 id="pop-menu-t" className="pop-titulo">{conAcento(textos.menu_titulo || "Nuestro menú", acento)}</h2>
         {textos.menu_lead && <p className="pop-seccion__aside">{textos.menu_lead}</p>}
       </div>
 
@@ -32,6 +34,7 @@ export default function PopMenu({
           {categorias.map((c) => (
             <button key={c.name} type="button" className="pop-chip" aria-pressed={activa === c.name} onClick={() => onCategoria(c.name)}>
               {c.displayName || c.name}
+              {c.count != null && <span className="pop-chip__n" aria-hidden="true"> {c.count}</span>}
             </button>
           ))}
         </div>
@@ -52,6 +55,7 @@ export default function PopMenu({
           {items.map((v) => <PopProductoCard key={v.id} v={v} {...resto} />)}
         </div>
       )}
+    </div>
     </section>
   );
 }

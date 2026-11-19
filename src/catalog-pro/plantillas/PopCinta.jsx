@@ -5,7 +5,7 @@
 // repeticion es legible para lectores de pantalla.
 const MIN_ITEMS = 10;
 
-export default function PopCinta({ frases = [] }) {
+export default function PopCinta({ frases = [], contorno = false }) {
   if (!frases.length) return null;
   const reps = Math.max(1, Math.ceil(MIN_ITEMS / frases.length));
   const letras = frases.reduce((n, f) => n + f.length, 0) * reps;
@@ -18,7 +18,7 @@ export default function PopCinta({ frases = [] }) {
     </ul>
   );
   return (
-    <section className="pop-cinta" aria-label="Destacados">
+    <section className={`pop-cinta${contorno ? " pop-cinta--contorno" : ""}`} aria-label={contorno ? undefined : "Destacados"} aria-hidden={contorno || undefined}>
       <div className="pop-cinta__pista" style={estilo}>{copia(false)}{copia(true)}</div>
     </section>
   );

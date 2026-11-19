@@ -2,15 +2,17 @@
 // Flyers vigentes en un carrusel con scroll-snap (sin JS de carrusel: el
 // desplazamiento es nativo y accesible por teclado).
 
+import conAcento from "./conAcento";
+
 // Solo enlaces https, relativos o ancla: lo demas (javascript:, etc.) no se enlaza.
 const enlaceSeguro = (l) => (typeof l === "string" && /^(https:\/\/|\/|#)/.test(l) ? l : null);
 
-export default function PopFlyers({ textos = {}, flyers = [] }) {
+export default function PopFlyers({ textos = {}, flyers = [], acento = false }) {
   return (
     <section className="pop-seccion pop-flyers" id="pop-flyers" aria-labelledby="pop-fly-t">
       <div className="pop-seccion__cabeza" data-revelar>
         {textos.flyers_eyebrow && <p className="pop-kicker">{textos.flyers_eyebrow}</p>}
-        <h2 id="pop-fly-t" className="pop-titulo">{textos.flyers_titulo || "Novedades"}</h2>
+        <h2 id="pop-fly-t" className="pop-titulo">{conAcento(textos.flyers_titulo || "Novedades", acento)}</h2>
       </div>
       <div className="pop-flyers__carril" role="region" aria-label="Novedades, desplazá para ver más" tabIndex={0}>
       <ul className="pop-flyers__lista">
