@@ -101,7 +101,7 @@
 @keyframes pop-cinta { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
 /* ---------- secciones ---------- */
-.pop-hero, .pop-seccion, .pop-submarca, .pop-banda { scroll-margin-top: 72px; }
+.pop-hero, .pop-seccion, .pop-submarca, .pop-banda, .pop-menu-fondo { scroll-margin-top: 72px; }
 .pop-seccion { max-width: var(--pop-max); margin: 0 auto; padding: 56px var(--pop-pad) 24px; content-visibility: auto; contain-intrinsic-size: auto 720px; }
 .pop-seccion__cabeza { margin-bottom: 24px; }
 .pop-kicker { margin-bottom: 6px; font: 700 15px/1.3 var(--font-body); color: var(--ac-text); }
@@ -173,6 +173,27 @@
 .pop-skeleton::before { content: ""; display: block; aspect-ratio: 4 / 3; background: var(--b3); }
 .pop-skeleton::after { content: ""; display: block; height: 156px; }
 @keyframes pop-pulso { 50% { opacity: 0.5; } }
+
+/* titulares con acento y chips con conteo */
+.pop-acento { font-style: normal; color: var(--ac-text); }
+.pop-chip__n { font-size: 12px; font-weight: 600; opacity: 0.68; }
+
+/* menu sobre fondo de tinta (marca.menu_oscuro): las tarjetas conservan su papel */
+.pop-menu-fondo--oscuro { margin-top: 56px; background: var(--tx); color: var(--bg); }
+.pop-menu-fondo--oscuro .pop-seccion { padding-block: 64px 56px; }
+.pop-menu-fondo--oscuro .pop-kicker, .pop-menu-fondo--oscuro .pop-titulo { color: var(--bg); }
+.pop-menu-fondo--oscuro .pop-acento { color: var(--ac); }
+.pop-menu-fondo--oscuro .pop-seccion__aside, .pop-menu-fondo--oscuro .pop-menu__cuenta, .pop-menu-fondo--oscuro .pop-vacio { color: color-mix(in srgb, var(--bg) 80%, transparent); }
+.pop-menu-fondo--oscuro .pop-aviso { background: color-mix(in srgb, var(--bg) 9%, transparent); color: var(--bg); }
+.pop-menu-fondo--oscuro .pop-aviso--aviso { outline-color: var(--bg); }
+.pop-menu-fondo--oscuro .pop-menu__controles { background: var(--tx); }
+.pop-menu-fondo--oscuro .pop-buscar input { border: 1px solid color-mix(in srgb, var(--bg) 22%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--bg) 8%, transparent); color: var(--bg); }
+.pop-menu-fondo--oscuro .pop-buscar input::placeholder { color: var(--bg); opacity: 0.6; }
+.pop-menu-fondo--oscuro .pop-chip { border: 1px solid color-mix(in srgb, var(--bg) 30%, transparent); background: transparent; color: var(--bg); }
+.pop-menu-fondo--oscuro .pop-chip[aria-pressed="true"] { border-color: var(--ac); background: var(--ac); color: var(--on-ac); }
+.pop-menu-fondo--oscuro :focus-visible { outline-color: var(--bg); }
+.pop-menu-fondo--oscuro .pop-card :focus-visible { outline-color: var(--ac-text); }
+.pop-menu-fondo--oscuro .pop-skeleton { background: color-mix(in srgb, var(--bg) 10%, transparent); }
 
 /* ---------- submarca ---------- */
 .pop-submarca { display: grid; gap: 28px; margin-top: 56px; padding: 48px var(--pop-pad); background: var(--pop-sub-fondo, var(--tx)); color: var(--pop-sub-texto, var(--bg)); content-visibility: auto; contain-intrinsic-size: auto 720px; }

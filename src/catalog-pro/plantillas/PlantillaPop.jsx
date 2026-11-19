@@ -45,6 +45,7 @@ export default function PlantillaPop({
   const anima = useRevelar(raizRef, quieto);
   const marca = useMemo(() => config.marca || {}, [config.marca]);
   const textos = config.textos || {};
+  const acento = Boolean(marca.titulo_acento);
   const zona = settings.timezone;
 
   // Tokens de marca sobre el tema del tenant.
@@ -124,6 +125,12 @@ export default function PlantillaPop({
     return lista.map(vista);
   }, [productosMenu, activa, catalogCategories, busqueda, hasDeal, vista]);
 
+  // Conteo por categoria para los chips (la de "Todos" es el total del menu).
+  const categoriasConConteo = useMemo(() => catalogCategories.map((c) => ({
+    ...c,
+    count: applyCatalogFacets(productosMenu, { category: c.name, categories: catalogCategories, facets: {}, search: "", quickFilter: null, hasDeal }).length,
+  })), [catalogCategories, productosMenu, hasDeal]);
+
   const cantidadDe = (id) => {
     const it = (cart || []).find((c) => c.id === id || c.product_id === id);
     return it ? it.qty : 0;
@@ -139,12 +146,12 @@ export default function PlantillaPop({
     switch (id) {
       case "hero":
         return <PopHero key={id} textos={textos} nombre={nombre} lead={settings.slogan} abierto={typeof store.isOpen === "boolean" ? store.isOpen : undefined}
-          imagen={favoritos[0]?.img || products.find((p) => p.image_url)?.image_url} />;
+          imagen={favoritos[0]?.img || products.find((p) => p.image_url)?.image_url} acento={acento} />;
       case "cinta": return <PopCinta key={id} frases={config.cinta} />;
-      case "favoritos": return <PopFavoritos key={id} textos={textos} items={favoritos} cantidadDe={cantidadDe} {...comun} />;
-      case "flyers": return <PopFlyers key={id} textos={textos} flyers={flyers} />;
+      case "favoritos": return <PopFavoritos key={id} textos={textos} items={favoritos} acento={acento} cantidadDe={cantidadDe} {...comun} />;
+      case "flyers": return <PopFlyers key={id} textos={textos} flyers={flyers} acento={acento} />;
       case "menu":
-        return <PopMenu key={id} textos={textos} categorias={catalogCategories} activa={activa} onCategoria={setActiva}
+        return <PopMenu key={id} textos={textos} categorias={categoriasConConteo} oscuro={Boolean(marca.menu_oscuro)} acento={acento} activa={activa} onCategoria={setActiva}
           busqueda={busqueda} onBusqueda={cambiarBusqueda} items={itemsMenu} cargando={products.length === 0}
           aviso={aviso} cantidadDe={cantidadDe} {...comun} />;
       case "submarca": return <PopSubmarca key={id} submarca={submarca} items={submarcaItems} cantidadDe={cantidadDe} {...comun} isotipo={submarca?.isotipo} />;
