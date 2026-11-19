@@ -70,6 +70,24 @@ describe("PopFooter", () => {
   });
 });
 
+describe("footer: libro de quejas y acento del titulo", () => {
+  const props = { nombre: "Cochi", textos: { footer_titulo: "¿Listo para pedir algo brutal?" }, onAlternar: () => {} };
+  it("el libro de quejas solo sale en Argentina o sin pais", () => {
+    const { unmount } = render(<PopFooter {...props} settings={{ biz_name: "Cochi", country: "VE" }} />);
+    expect(screen.queryByText("Libro de quejas")).toBeNull();
+    unmount();
+    render(<PopFooter {...props} settings={{ biz_name: "Cochi", country: "AR" }} />);
+    expect(screen.getByText("Libro de quejas")).toBeTruthy();
+    cleanup();
+    render(<PopFooter {...props} settings={{ biz_name: "Cochi" }} />);
+    expect(screen.getByText("Libro de quejas")).toBeTruthy();
+  });
+  it("con acento, la ultima palabra del titulo del cierre va marcada", () => {
+    const { container } = render(<PopFooter {...props} acento settings={{ biz_name: "Cochi", country: "VE" }} />);
+    expect(container.querySelector(".pop-footer__titulo em.pop-acento").textContent).toBe("brutal?");
+  });
+});
+
 describe("WhatsAppFloat", () => {
   const tactil = (v) => vi.stubGlobal("matchMedia", (q) => ({ matches: v && q.includes("hover: none"), addEventListener() {}, removeEventListener() {} }));
   it("sin etiqueta no cambia: un enlace directo", () => {

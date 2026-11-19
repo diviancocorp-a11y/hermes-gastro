@@ -200,6 +200,9 @@ export default function CatalogFooter({ settings = {}, plana = false }) {
   const termsDeDico = TENANTS_CON_TERMINOS_DE_DICO.has(getTenantSlugSync());
   const copy = bizCopy(settings, termsDeDico);
 
+  // El libro de quejas es de la defensa del consumidor argentina: solo AR (o sin pais cargado).
+  const pais = String(settings.country || "").trim().toUpperCase();
+  const esArgentina = pais === "" || pais === "AR";
   const bizName = settings.biz_name || "Negocio";
   const bizWhatsapp = (settings.whatsapp || "").replace(/\D/g, "");
   const bizInstagram = settings.instagram || "";
@@ -254,7 +257,7 @@ export default function CatalogFooter({ settings = {}, plana = false }) {
             { label: "Términos y condiciones", onClick: () => open("terms") },
             { label: "Política de privacidad", onClick: () => open("privacy") },
             { label: "Política de cookies", onClick: () => open("cookies") },
-            ...(termsDeDico ? [] : [{ label: "Libro de quejas", href: DEFENSA_CONSUMIDOR_AR, external: true }]),
+            ...(termsDeDico || !esArgentina ? [] : [{ label: "Libro de quejas", href: DEFENSA_CONSUMIDOR_AR, external: true }]),
           ]} />
 
           <FooterCol plana={plana} title="Ayuda" items={[

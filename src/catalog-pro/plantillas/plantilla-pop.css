@@ -189,7 +189,7 @@
 .pop-menu-fondo--oscuro { margin-top: 56px; background: var(--pop-tinta); color: var(--pop-papel); }
 .pop-menu-fondo--oscuro .pop-seccion { padding-block: 64px 56px; }
 .pop-menu-fondo--oscuro .pop-kicker, .pop-menu-fondo--oscuro .pop-titulo { color: var(--bg); }
-.pop-menu-fondo--oscuro .pop-acento { color: var(--ac); }
+.pop-menu-fondo--oscuro .pop-acento, .pop-footer .pop-acento { color: var(--ac); }
 .pop-menu-fondo--oscuro .pop-seccion__aside, .pop-menu-fondo--oscuro .pop-menu__cuenta, .pop-menu-fondo--oscuro .pop-vacio { color: color-mix(in srgb, var(--bg) 80%, transparent); }
 .pop-menu-fondo--oscuro .pop-aviso { background: color-mix(in srgb, var(--bg) 9%, transparent); color: var(--bg); }
 .pop-menu-fondo--oscuro .pop-aviso--aviso { outline-color: var(--bg); }
