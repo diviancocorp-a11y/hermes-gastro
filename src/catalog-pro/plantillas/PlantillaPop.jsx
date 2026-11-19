@@ -162,7 +162,7 @@ export default function PlantillaPop({
     <div className={clases} style={tokens} ref={raizRef}>
       {config.intro !== false && <PopIntro imagen={marca.isotipo || marca.logo_header} nombre={nombre} quieto={quieto} />}
       <PopHeader nombre={nombre} logo={logo} letra={letra} anuncios={config.anuncios} ids={ids}
-        cartCount={cartCount} cartTotal={cartTotal} moneda={moneda} onOpenCart={onOpenCart} />
+        cartCount={cartCount} cartTotal={cartTotal} moneda={moneda} onOpenCart={onOpenCart} acentoAnuncios={Boolean(marca.anuncios_acento)} />
       <main className="pop-main">
         {!ids.includes("hero") && <h1 className="pop-sr">{nombre}</h1>}
         {ids.map(seccion)}
