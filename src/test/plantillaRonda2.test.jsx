@@ -52,16 +52,21 @@ describe("PopHistoria", () => {
 });
 
 describe("PopFooter", () => {
-  it("muestra lema, atajos y la llamada a pedir que lleva al menu", () => {
-    const onOpenCart = vi.fn();
-    render(<PopFooter nombre="Cochi" textos={{ footer_lema: "El antojo tiene nombre.", footer_titulo: "¿Listo?", footer_boton: "Arma tu pedido" }}
-      settings={{ biz_name: "Cochi" }} onOpenCart={onOpenCart} onAlternar={() => {}} submarcaNombre="Cochi Dulce" />);
+  it("muestra lema, llamada a pedir que lleva al menu y pausar; sin lista de atajos ni burbuja de Dico", () => {
+    const onAlternar = vi.fn();
+    const { container } = render(<PopFooter nombre="Cochi" textos={{ footer_lema: "El antojo tiene nombre.", footer_titulo: "¿Listo?", footer_boton: "Arma tu pedido", footer_nav: "LA SIGUIENTE JUGADA" }}
+      settings={{ biz_name: "Cochi", logo_letter: "C" }} onAlternar={onAlternar} />);
     expect(screen.getByText("El antojo tiene nombre.")).toBeTruthy();
     expect(screen.getByRole("link", { name: /Arma tu pedido/ }).getAttribute("href")).toBe("#pop-menu");
-    fireEvent.click(screen.getByRole("button", { name: "Mi pedido" }));
-    expect(onOpenCart).toHaveBeenCalled();
-    expect(screen.getByRole("link", { name: "Cochi Dulce" })).toBeTruthy();
+    expect(screen.queryByText("LA SIGUIENTE JUGADA")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Ver menú" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Pausar animaciones/ }));
+    expect(onAlternar).toHaveBeenCalled();
     expect(screen.queryByText(/Instalar/)).toBeNull();
+    // la promo de Dico es un enlace suelto, no una banda con logo
+    const promo = screen.getByRole("link", { name: /Dico para tu local/ });
+    expect(promo.querySelector("img, svg")).toBeNull();
+    expect(container.querySelectorAll("footer")).toHaveLength(1);
   });
 });
 

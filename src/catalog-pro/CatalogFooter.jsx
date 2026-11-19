@@ -190,7 +190,9 @@ function FaqList({ items }) {
   );
 }
 
-export default function CatalogFooter({ settings = {} }) {
+// `plana` (plantillas de marca): sin burbuja con el logo, sin caja ni fondo propio, con la
+// tipografia del contexto y la promo de Dico como enlace. Sin ella, el footer de siempre.
+export default function CatalogFooter({ settings = {}, plana = false }) {
   const [modal, setModal] = useState(null);
   const year = new Date().getFullYear();
   const open = (k) => setModal(k);
@@ -208,11 +210,13 @@ export default function CatalogFooter({ settings = {} }) {
   const bizTelegram = settings.telegram || "";
   // Color de marca del tenant — si no está, cae al ámbar de Dico
   const accentColor = settings.logo_color || "#F59E0B";
+  const Raiz = plana ? "div" : "footer"; // plana vive dentro del <footer> de la plantilla
 
   return (
     <>
-      <footer
-        style={{
+      <Raiz
+        className={plana ? "cp-footer-plana" : undefined}
+        style={plana ? { padding: "0 0 24px", color: "inherit", fontFamily: "inherit" } : {
           marginTop: 32,
           padding: "40px 22px 24px",
           background: hexToRgba(accentColor, 0.08, "rgba(245,158,11,0.05)"),
@@ -221,6 +225,7 @@ export default function CatalogFooter({ settings = {} }) {
         }}
       >
         {/* ─── HERO CIRCULAR (logo grande + redes) ─── */}
+        {!plana && (
         <CircularHero
           logoUrl={settings.logo_url}
           bizName={bizName}
@@ -237,30 +242,31 @@ export default function CatalogFooter({ settings = {} }) {
             { key: "tg", url: bizTelegram ? `https://t.me/${bizTelegram}` : null, label: "Telegram", svg: <SvgTg /> },
           ]}
         />
+        )}
 
         {/* ─── BLOQUE DEL NEGOCIO ─── */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-          gap: 22, marginBottom: 28, marginTop: 36,
+          gap: 22, marginBottom: 28, marginTop: plana ? 0 : 36,
         }}>
-          <FooterCol title="Legal" items={[
+          <FooterCol plana={plana} title="Legal" items={[
             { label: "Términos y condiciones", onClick: () => open("terms") },
             { label: "Política de privacidad", onClick: () => open("privacy") },
             { label: "Política de cookies", onClick: () => open("cookies") },
             ...(termsDeDico ? [] : [{ label: "Libro de quejas", href: DEFENSA_CONSUMIDOR_AR, external: true }]),
           ]} />
 
-          <FooterCol title="Ayuda" items={[
+          <FooterCol plana={plana} title="Ayuda" items={[
             ...(settings?.online_booking ? [{ label: "Reservar turno", href: "/reservar" }] : []),
             { label: "Preguntas frecuentes", onClick: () => open("faq") },
           ]} />
 
-          <FooterCol title={bizName} items={[
+          <FooterCol plana={plana} title={bizName} items={[
             { label: "Trabajá con nosotros", onClick: () => open("worksWithUs") },
           ]} />
 
-          <FooterCol title="Contacto" items={[
+          <FooterCol plana={plana} title="Contacto" items={[
             ...(bizWhatsapp ? [{ label: "WhatsApp", href: `https://wa.me/${bizWhatsapp}`, external: true }] : []),
             ...(bizInstagram ? [{ label: "Instagram", href: `https://instagram.com/${bizInstagram}`, external: true }] : []),
             ...(bizFacebook ? [{ label: "Facebook", href: `https://facebook.com/${bizFacebook}`, external: true }] : []),
@@ -273,15 +279,21 @@ export default function CatalogFooter({ settings = {} }) {
 
         {/* Copyright del negocio */}
         <div style={{
-          paddingTop: 14, paddingBottom: 22,
+          paddingTop: 14, paddingBottom: plana ? 14 : 22,
           borderTop: "1px solid var(--line)",
-          fontSize: 10.5, color: "var(--t3)", letterSpacing: "0.04em",
-          textAlign: "center",
+          fontSize: plana ? 13 : 10.5, color: "var(--t3)", letterSpacing: "0.04em",
+          textAlign: plana ? "left" : "center",
         }}>
           © {year} {bizName}. Todos los derechos reservados.
         </div>
 
-        {/* ─── BANDA DICO (plataforma) ─── */}
+        {/* ─── PROMO DE DICO (plataforma) ─── */}
+        {plana ? (
+          <a href={DICO_URL} target="_blank" rel="noopener noreferrer"
+            style={{ color: "var(--tx)", fontSize: 15, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 4 }}>
+            ¿Tenés un negocio? Dico para tu local → <span className="pop-sr">(se abre en otra pestaña)</span>
+          </a>
+        ) : (
         <a
           href={DICO_URL}
           target="_blank"
@@ -310,7 +322,8 @@ export default function CatalogFooter({ settings = {} }) {
           </div>
           <div style={{ color: "#F59E0B", fontWeight: 800, fontSize: 18, flexShrink: 0 }}>→</div>
         </a>
-      </footer>
+        )}
+      </Raiz>
 
       {/* ─── MODALES ─── */}
       {modal === "terms" && <Modal title="Términos y condiciones" onClose={close}>{copy.terms}</Modal>}
@@ -322,17 +335,17 @@ export default function CatalogFooter({ settings = {} }) {
   );
 }
 
-function FooterCol({ title, items, accent = "#F59E0B" }) {
+function FooterCol({ title, items, accent = "#F59E0B", plana = false }) {
   if (!items?.length) return null;
   return (
     <div>
       <div style={{
-        fontSize: 10.5, fontWeight: 800, letterSpacing: "0.12em",
-        textTransform: "uppercase", color: accent, marginBottom: 10,
+        fontSize: plana ? 12 : 10.5, fontWeight: 800, letterSpacing: plana ? "0.16em" : "0.12em",
+        textTransform: "uppercase", color: plana ? "var(--t2)" : accent, marginBottom: 10,
       }}>
         {title}
       </div>
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: plana ? 0 : 8 }}>
         {items.map((it, i) => (
           <li key={i}>
             {it.href ? (
@@ -340,9 +353,9 @@ function FooterCol({ title, items, accent = "#F59E0B" }) {
                 href={it.href}
                 target={it.external ? "_blank" : undefined}
                 rel={it.external ? "noopener noreferrer" : undefined}
-                style={{ color: "var(--t2)", textDecoration: "none", fontSize: 12.5, display: "inline-block", lineHeight: 1.4 }}
+                style={{ color: plana ? "var(--tx)" : "var(--t2)", textDecoration: "none", fontSize: plana ? 15 : 12.5, fontWeight: plana ? 600 : undefined, display: plana ? undefined : "inline-block", lineHeight: 1.4 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = "var(--tx)"}
-                onMouseLeave={(e) => e.currentTarget.style.color = "var(--t2)"}
+                onMouseLeave={(e) => e.currentTarget.style.color = plana ? "var(--tx)" : "var(--t2)"}
               >
                 {it.label}
               </a>
@@ -352,11 +365,11 @@ function FooterCol({ title, items, accent = "#F59E0B" }) {
                 onClick={it.onClick}
                 style={{
                   background: "transparent", border: 0, padding: 0,
-                  color: "var(--t2)", fontSize: 12.5, lineHeight: 1.4,
+                  color: plana ? "var(--tx)" : "var(--t2)", fontSize: plana ? 15 : 12.5, fontWeight: plana ? 600 : undefined, lineHeight: 1.4,
                   cursor: "pointer", fontFamily: "inherit", textAlign: "left",
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = "var(--tx)"}
-                onMouseLeave={(e) => e.currentTarget.style.color = "var(--t2)"}
+                onMouseLeave={(e) => e.currentTarget.style.color = plana ? "var(--tx)" : "var(--t2)"}
               >
                 {it.label}
               </button>
