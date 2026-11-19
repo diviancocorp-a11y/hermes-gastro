@@ -10,10 +10,10 @@
 import { z } from 'zod';
 
 import {
-  PLANTILLAS, SECCION_IDS, FUENTES, RADIOS, MARCA_COLORES, MARCA_URLS, TEXTO_KEYS, SUBMARCA_KEYS, FLYER_KEYS, QUOTE_KEYS, TOP_KEYS,
+  PLANTILLAS, SECCION_IDS, FUENTES, RADIOS, MARCA_COLORES, MARCA_URLS, MARCA_BOOLS, TEXTO_KEYS, SUBMARCA_KEYS, FLYER_KEYS, QUOTE_KEYS, TOP_KEYS,
 } from './plantillaListas';
 
-export { PLANTILLAS, SECCION_IDS, FUENTES, RADIOS, MARCA_COLORES, MARCA_URLS, TEXTO_KEYS, SUBMARCA_KEYS, FLYER_KEYS, QUOTE_KEYS, TOP_KEYS };
+export { PLANTILLAS, SECCION_IDS, FUENTES, RADIOS, MARCA_COLORES, MARCA_URLS, MARCA_BOOLS, TEXTO_KEYS, SUBMARCA_KEYS, FLYER_KEYS, QUOTE_KEYS, TOP_KEYS };
 
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const url = z.string().max(500).regex(/^(https:\/\/|\/)/);
@@ -28,6 +28,7 @@ export const PlantillaConfigSchema = z.object({
     fuente_titulo: z.enum(FUENTES), fuente_texto: z.enum(FUENTES),
     radio: z.enum(RADIOS),
     logo_header: url, logo_footer: url, isotipo: url,
+    ...Object.fromEntries(MARCA_BOOLS.map(k => [k, z.boolean()])),
   }).partial().strict(),
   textos: z.object(Object.fromEntries(TEXTO_KEYS.map(k => [k, k === 'banda_imagen' ? url : texto]))).partial().strict(),
   anuncios: z.array(frase).max(12),
