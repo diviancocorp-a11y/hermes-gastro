@@ -19,6 +19,11 @@ const PROTEINA = {
 const PRODUCTOS = [
   { id: 'b3', name: 'Bandeja 3 carnes', price: 12, category: 'Bandejas', active: true, option_groups: [PROTEINA] },
   { id: 'ma', name: 'Malta', price: 1.5, category: 'Bebidas', active: true, option_groups: [] },
+  { id: 'te', name: 'Tequeños (6 u.)', price: 5, category: 'Para picar', active: true, option_groups: [] },
+  { id: 'ar', name: 'Arepa reina', price: 5, category: 'Arepas', active: true, option_groups: [{
+    id: 'g-salsa', name: 'Salsa', type: 'single', required: false,
+    choices: [{ id: 'ajo', label: 'Ajo' }, { id: 'picante', label: 'Picante' }],
+  }] },
 ];
 const MONEDA = { monedaPrincipal: 'USD', monedaSecundaria: 'VES', tasa: 800, vencida: false, fecha: '2026-11-26' };
 
@@ -111,7 +116,7 @@ describe('NuevoPedido', () => {
     montar();
     tocar(/^Bandeja 3 carnes/);
     tocar(/^Agregar/);
-    expect(screen.getByRole('alert').textContent).toMatch(/Elegí al menos 1 en "Elegí la proteína"/);
+    expect(screen.getByRole('alert').textContent).toMatch(/Elegí al menos 1 en “Elegí la proteína”/);
     tocar('Volver a la lista');
     expect(screen.getByText('Tocá un producto para sumarlo')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Continuar' }).disabled).toBe(true);
@@ -187,5 +192,80 @@ describe('NuevoPedido', () => {
     const p = montar();
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(p.onCerrar).toHaveBeenCalled();
+  });
+});
+
+describe('NuevoPedido: correcciones de la auditoria', () => {
+  it('con una categoria elegida, escribir busca en toda la carta', () => {
+    montar();
+    tocar('Bandejas');
+    expect(screen.queryByRole('button', { name: /^Tequeños/ })).toBeNull();
+    fireEvent.change(screen.getByLabelText('Buscar producto'), { target: { value: 'tequ' } });
+    expect(screen.getByRole('button', { name: /^Tequeños/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Todo' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Bandejas' }).getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('Escape en el buscador con texto solo borra el texto', () => {
+    const p = montar();
+    const buscar = screen.getByLabelText('Buscar producto');
+    fireEvent.change(buscar, { target: { value: 'mal' } });
+    buscar.focus();
+    fireEvent.keyDown(buscar, { key: 'Escape' });
+    expect(buscar.value).toBe('');
+    expect(p.onCerrar).not.toHaveBeenCalled();
+  });
+
+  it('quitar una linea se dice "Quitar", se puede deshacer y el foco no se pierde', async () => {
+    montar();
+    tocar(/^Malta/);
+    tocar(/^Tequeños/);
+    tocar('Continuar');
+    tocar('Quitar Malta');
+    expect(screen.getByText('Quitaste Malta.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Quitar Malta' })).toBeNull();
+    await waitFor(() => expect(document.activeElement?.getAttribute('aria-label')).toBe('Quitar Tequeños (6 u.)'));
+    tocar('Deshacer');
+    expect(screen.getByRole('button', { name: 'Quitar Malta' })).toBeTruthy();
+    expect(screen.queryByText('Quitaste Malta.')).toBeNull();
+  });
+
+  it('en un grupo de eleccion unica opcional se puede volver a "ninguna"', () => {
+    montar();
+    tocar('Elegir opciones de Arepa reina');
+    const ajo = screen.getByLabelText('Ajo');
+    fireEvent.click(ajo);
+    expect(ajo.checked).toBe(true);
+    fireEvent.click(ajo);
+    expect(ajo.checked).toBe(false);
+  });
+
+  // jsdom no dispara popstate en history.back(): el back con que se limpio la
+  // pantalla del test anterior deja la ventana de "back propio" abierta hasta
+  // que vence. En el navegador la cierra el popstate al llegar.
+  const esperarVentana = () => new Promise((r) => { setTimeout(r, 450); });
+
+  it('el atras del sistema pregunta si hay algo cargado', async () => {
+    await esperarVentana();
+    const p = montar();
+    expect(window.history.state?.dicoNuevoPedido).toBe(true);
+    tocar(/^Malta/);
+    window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
+    expect(await screen.findByText(/Descartar este pedido/)).toBeTruthy();
+    expect(p.onCerrar).not.toHaveBeenCalled();
+    // Sigue abierta: la entrada vuelve a estar para el proximo atras.
+    expect(window.history.state?.dicoNuevoPedido).toBe(true);
+  });
+
+  it('vacio, el atras del sistema cierra', async () => {
+    await esperarVentana();
+    const p = montar();
+    window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
+    await waitFor(() => expect(p.onCerrar).toHaveBeenCalled());
+  });
+
+  it('en pesos los montos van enteros, como en la tarjeta', () => {
+    montar({ moneda: { monedaPrincipal: 'ARS' }, productos: [{ id: 'x', name: 'Medialuna', price: 1250.5, category: 'A', active: true }] });
+    expect(screen.getByText('$1.251')).toBeTruthy();
   });
 });

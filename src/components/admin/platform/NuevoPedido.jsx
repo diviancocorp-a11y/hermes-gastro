@@ -42,7 +42,22 @@ const NOMBRE_MONEDA = { VES: 'Bs.', USD: 'dólares', ARS: 'pesos' };
 const conTildes = (s) => String(s || '')
   .replace(/\bElegi\b/g, 'Elegí')
   .replace(/\bmaximo\b/g, 'máximo')
-  .replace(/\bOpcion invalida\b/g, 'Opción inválida');
+  .replace(/\bOpcion invalida\b/g, 'Opción inválida')
+  .replace(/"([^"]*)"/g, '“$1”');
+
+// Las entradas que el panel agrega al historial (ver el efecto del gesto
+// atras). Cuando la pantalla saca la suya con history.back(), el popstate que
+// provoca no es del usuario. Es una bandera y no un contador a proposito: ese
+// popstate suele llegar cuando la pantalla ya se desmonto, y un contador
+// quedaria en 1 y se comeria el proximo atras de verdad. La bandera la apaga
+// un listener de un solo uso, haya o no pantalla montada, y vence sola por si
+// el popstate no llega nunca: una bandera trabada se comeria el atras real.
+let backPropioHasta = 0;
+const VENCE_BACK_PROPIO_MS = 400;
+const MARCA_HISTORIAL = 'dicoNuevoPedido';
+
+// Cuanto queda a la vista el "Deshacer" despues de quitar una linea.
+const DESHACER_MS = 6000;
 
 const fechaCorta = (f) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(f || ''));
@@ -55,6 +70,7 @@ function textoRegla(g) {
     if (min === max) return `Obligatorio · elegí ${min}`;
     return `Obligatorio · elegí entre ${min} y ${max}`;
   }
+  if (g.type === 'single') return 'Opcional · tocá de nuevo para sacarla';
   return max >= g.choices.length ? 'Opcional' : `Opcional · hasta ${max}`;
 }
 
@@ -79,16 +95,27 @@ function carritoInicial(spec, productos) {
 }
 
 function Stepper({ valor, min = 0, max = 999, onCambiar, nombre, quitarAlMinimo = false }) {
-  const menos = quitarAlMinimo && valor <= 1 ? `Quitar ${nombre}` : `Restar uno de ${nombre}`;
+  // En 1, el "−" de una linea del carrito la borra entera (con sus opciones):
+  // se dice con la palabra, no con el mismo signo que resta.
+  const quita = quitarAlMinimo && valor <= 1;
   return (
     <span className="ag-np-stepper">
-      <button
-        type="button" aria-label={menos}
-        disabled={!quitarAlMinimo && valor <= min}
-        onClick={() => onCambiar(valor - 1)}
-      >
-        <span aria-hidden="true">−</span>
-      </button>
+      {quita ? (
+        <button
+          type="button" className="ag-np-stepper-quitar" aria-label={`Quitar ${nombre}`}
+          onClick={() => onCambiar(0)}
+        >
+          Quitar
+        </button>
+      ) : (
+        <button
+          type="button" aria-label={`Restar uno de ${nombre}`}
+          disabled={!quitarAlMinimo && valor <= min}
+          onClick={() => onCambiar(valor - 1)}
+        >
+          <span aria-hidden="true">−</span>
+        </button>
+      )}
       <output aria-label={`Cantidad de ${nombre}`}>{valor}</output>
       <button
         type="button" aria-label={`Sumar uno de ${nombre}`}
@@ -119,7 +146,7 @@ function LineaSecundaria({ total, moneda, enPie = true }) {
 }
 
 function GrupoDeOpciones({ uid, grupo, estado, onElegir, falta, fmt }) {
-  const { max } = limitesDeGrupo(grupo);
+  const { min, max } = limitesDeGrupo(grupo);
   const elegidas = estado || {};
   const cuantas = Object.values(elegidas).filter((q) => q > 0).length;
   const lleno = grupo.type !== 'single' && cuantas >= max;
@@ -171,6 +198,10 @@ function GrupoDeOpciones({ uid, grupo, estado, onElegir, falta, fmt }) {
                 checked={qty > 0}
                 disabled={!esRadio && !qty && lleno}
                 onChange={(e) => onElegir(grupo, c, esRadio ? 1 : (e.target.checked ? 1 : 0))}
+                // Un radio elegido no dispara onChange al tocarlo otra vez. En un
+                // grupo opcional ese toque es "ninguna": sin esto, una vez
+                // elegida no habia forma de volver a no querer nada.
+                onClick={esRadio && min === 0 && qty > 0 ? () => onElegir(grupo, c, 0) : undefined}
               />
               <span className={`ag-np-marca${esRadio ? '' : ' ag-np-marca--cuadrada'}`} aria-hidden="true" />
               <span className="ag-np-eleccion-texto">{c.label}</span>
@@ -211,7 +242,10 @@ export default function NuevoPedido({
   const uid = useId();
   const ini = estadoInicial || {};
   const principal = moneda?.monedaPrincipal || 'ARS';
-  const fmt = (n) => formatearMonto(n, principal);
+  // ARS va entero, igual que la tarjeta de Pedidos (money de OrdersPanel).
+  const fmt = (n) => (principal === 'ARS'
+    ? `$${Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`
+    : formatearMonto(n, principal));
 
   const cargables = useMemo(() => productosCargables(productos), [productos]);
   const categorias = useMemo(() => categoriasDe(cargables), [cargables]);
@@ -236,6 +270,7 @@ export default function NuevoPedido({
   const [errorServidor, setErrorServidor] = useState(ini.errorServidor || null);
   const [descartando, setDescartando] = useState(false);
   const [anuncio, setAnuncio] = useState('');
+  const [quitada, setQuitada] = useState(null); // { linea, indice } para deshacer
 
   // El estado se actualiza async: dos toques rapidos en "Cargar" verian
   // `enviando` en false los dos. El ref corta el segundo en el acto.
@@ -248,11 +283,20 @@ export default function NuevoPedido({
   const telefonoRef = useRef(null);
   const direccionRef = useRef(null);
   const carritoRef = useRef(null);
+  const cerrarRef = useRef(null);
+  const pedidoTituloRef = useRef(null);
+  const lineasRef = useRef(null);
   const volverAProducto = useRef(null);
+  const atrasRef = useRef(null);
 
   const total = totalCarrito(carrito);
   const unidades = unidadesCarrito(carrito);
-  const visibles = filtrarProductos(cargables, { texto, categoria });
+  // Escribir busca en TODA la carta: con "Bandejas" elegida, "tequ" tiene que
+  // encontrar los tequeños. Mientras hay texto la categoria no filtra y los
+  // chips marcan "Todo".
+  const buscando = texto.trim() !== '';
+  const categoriaVista = buscando ? null : categoria;
+  const visibles = filtrarProductos(cargables, { texto, categoria: categoriaVista });
   const enCarrito = useMemo(() => {
     const m = new Map();
     for (const l of carrito) m.set(l.productId, (m.get(l.productId) || 0) + l.qty);
@@ -282,12 +326,44 @@ export default function NuevoPedido({
 
   // ── Productos ──────────────────────────────────────────────────────
   const sumar = (linea) => {
-    setCarrito((c) => agregarLinea(c, linea));
-    setAnuncio(`${linea.nombre}: agregado.`);
+    const nuevo = agregarLinea(carrito, linea);
+    setCarrito(nuevo);
+    const u = unidadesCarrito(nuevo);
+    setAnuncio(`${linea.nombre}: agregado. ${u === 1 ? '1 producto' : `${u} productos`}, ${fmt(totalCarrito(nuevo))}.`);
   };
 
-  const abrirFicha = (p) => {
-    volverAProducto.current = p.id;
+  // ── Lineas del carrito: quitar con deshacer ────────────────────────
+  const cambiarLinea = (linea, indice, qty) => {
+    if (qty > 0) { setCarrito((c) => cambiarCantidad(c, linea.key, qty)); return; }
+    setCarrito((c) => cambiarCantidad(c, linea.key, 0));
+    setQuitada({ linea, indice });
+    setAnuncio(`${linea.nombre}: quitado.`);
+    // El boton que se toco ya no existe: el foco va a la linea que quedo en
+    // ese lugar, a la anterior, o al titulo "Pedido" si no queda ninguna.
+    requestAnimationFrame(() => {
+      const items = lineasRef.current?.children || [];
+      const destino = items[indice] || items[indice - 1];
+      const boton = destino?.querySelector('button');
+      if (boton) boton.focus();
+      else pedidoTituloRef.current?.focus();
+    });
+  };
+  const deshacer = () => {
+    if (!quitada) return;
+    const { linea, indice } = quitada;
+    setCarrito((c) => (c.some((l) => l.key === linea.key)
+      ? c : [...c.slice(0, indice), linea, ...c.slice(indice)]));
+    setQuitada(null);
+    setAnuncio(`${linea.nombre}: volvió al pedido.`);
+  };
+  useEffect(() => {
+    if (!quitada) return undefined;
+    const t = setTimeout(() => setQuitada(null), DESHACER_MS);
+    return () => clearTimeout(t);
+  }, [quitada]);
+
+  const abrirFicha = (p, desdeOpciones = false) => {
+    volverAProducto.current = `${uid}-${desdeOpciones ? 'o' : 'p'}-${p.id}`;
     setAbierto(p);
     setOpciones({});
     setQtyFicha(1);
@@ -299,7 +375,7 @@ export default function NuevoPedido({
   const cerrarFicha = () => {
     const id = volverAProducto.current;
     setAbierto(null);
-    requestAnimationFrame(() => document.getElementById(`${uid}-p-${id}`)?.focus());
+    requestAnimationFrame(() => document.getElementById(id)?.focus());
   };
 
   const tocarProducto = (p) => {
@@ -394,13 +470,69 @@ export default function NuevoPedido({
     if (hayAlgoCargado) { setDescartando(true); return; }
     onCerrar?.();
   };
-  // Escape y el fondo: primero deshacen lo ultimo que se abrio.
-  const alEscape = () => {
-    if (enviandoRef.current) return;
-    if (descartando) { setDescartando(false); return; }
-    if (abierto) { cerrarFicha(); return; }
-    cerrarTodo();
+  const seguirCargando = () => {
+    setDescartando(false);
+    requestAnimationFrame(() => cerrarRef.current?.focus());
   };
+  // Escape, el fondo y el gesto atras: primero deshacen lo ultimo que se
+  // abrio. Devuelve true si la pantalla sigue abierta.
+  const retroceder = () => {
+    if (enviandoRef.current) return true;
+    if (descartando) { seguirCargando(); return true; }
+    if (abierto) { cerrarFicha(); return true; }
+    if (hayAlgoCargado) { setDescartando(true); return true; }
+    onCerrar?.();
+    return false;
+  };
+  const alEscape = () => {
+    // Escape en el buscador con texto solo borra el texto. El trap del Dialog
+    // escucha en captura, asi que se resuelve aca y no en el input.
+    if (texto && typeof document !== 'undefined' && document.activeElement === buscarRef.current) {
+      setTexto('');
+      return;
+    }
+    retroceder();
+  };
+
+  // ── Gesto atras del sistema (Android) y recarga ────────────────────
+  // Sin esto el atras del telefono sale del panel y se pierde lo cargado: la
+  // pantalla no es una ruta. Al abrir se agrega una entrada al historial; el
+  // atras la consume y se trata como Escape (con algo cargado, pregunta). Si
+  // la pantalla sigue abierta, se vuelve a agregar.
+  useEffect(() => { atrasRef.current = retroceder; });
+  useEffect(() => {
+    if (sinPortal || typeof window === 'undefined' || !window.history?.pushState) return undefined;
+    const empujar = () => window.history.pushState(
+      { ...(window.history.state || {}), [MARCA_HISTORIAL]: true }, '',
+    );
+    empujar();
+    const alVolver = () => {
+      if (Date.now() < backPropioHasta) return;
+      if (atrasRef.current?.()) empujar();
+    };
+    window.addEventListener('popstate', alVolver);
+    return () => {
+      window.removeEventListener('popstate', alVolver);
+      // Cerrada por la X, por Descartar o al cargar: la entrada propia sale
+      // del historial para que el proximo atras haga lo de siempre.
+      if (window.history.state?.[MARCA_HISTORIAL]) {
+        backPropioHasta = Date.now() + VENCE_BACK_PROPIO_MS;
+        const apagar = () => {
+          window.removeEventListener('popstate', apagar);
+          // Despues de que todos los listeners vieron este popstate.
+          setTimeout(() => { backPropioHasta = 0; }, 0);
+        };
+        window.addEventListener('popstate', apagar);
+        window.history.back();
+      }
+    };
+  }, [sinPortal]);
+  useEffect(() => {
+    if (!hayAlgoCargado || typeof window === 'undefined') return undefined;
+    const alSalir = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', alSalir);
+    return () => window.removeEventListener('beforeunload', alSalir);
+  }, [hayAlgoCargado]);
 
   // ── Piezas ─────────────────────────────────────────────────────────
   const enFicha = paso === 'productos' && !!abierto;
@@ -424,7 +556,7 @@ export default function NuevoPedido({
           <h2 id={`${uid}-titulo`} ref={tituloRef} tabIndex={-1} className="ag-np-titulo">Nuevo pedido</h2>
           <p className="ag-np-subtitulo">{subtitulo}</p>
         </div>
-        <button type="button" className="ag-np-icono" aria-label="Cerrar" onClick={cerrarTodo}>
+        <button type="button" ref={cerrarRef} className="ag-np-icono" aria-label="Cerrar" onClick={cerrarTodo}>
           <span aria-hidden="true">×</span>
         </button>
       </div>
@@ -435,7 +567,7 @@ export default function NuevoPedido({
             <label htmlFor={`${uid}-buscar`} className="ag-sr-only">Buscar producto</label>
             <input
               id={`${uid}-buscar`} ref={buscarRef} type="search" className="ag-np-input"
-              placeholder="Buscar producto" autoComplete="off" enterKeyHint="search"
+              placeholder="Buscar producto…" autoComplete="off" enterKeyHint="search"
               value={texto} onChange={(e) => setTexto(e.target.value)}
             />
             {texto && (
@@ -450,15 +582,15 @@ export default function NuevoPedido({
           {categorias.length > 1 && (
             <div className="ag-np-chips" role="group" aria-label="Categorías">
               <button
-                type="button" className="ag-np-chip" aria-pressed={categoria === null}
-                onClick={() => setCategoria(null)}
+                type="button" className="ag-np-chip" aria-pressed={categoriaVista === null}
+                onClick={() => { setTexto(''); setCategoria(null); }}
               >
                 Todo
               </button>
               {categorias.map((c) => (
                 <button
-                  key={c} type="button" className="ag-np-chip" aria-pressed={categoria === c}
-                  onClick={() => setCategoria(categoria === c ? null : c)}
+                  key={c} type="button" className="ag-np-chip" aria-pressed={categoriaVista === c}
+                  onClick={() => { setTexto(''); setCategoria(categoriaVista === c ? null : c); }}
                 >
                   {c}
                 </button>
@@ -517,9 +649,9 @@ export default function NuevoPedido({
                 </button>
                 {opcionales && (
                   <button
-                    type="button" className="ag-np-prod-opciones"
+                    id={`${uid}-o-${p.id}`} type="button" className="ag-np-prod-opciones"
                     aria-label={`Elegir opciones de ${p.name}`}
-                    onClick={() => abrirFicha(p)}
+                    onClick={() => abrirFicha(p, true)}
                   >
                     Opciones
                   </button>
@@ -649,14 +781,14 @@ export default function NuevoPedido({
         </div>
 
         <section aria-labelledby={`${uid}-h-pedido`}>
-          <h3 id={`${uid}-h-pedido`} className="ag-np-bloque-titulo">Pedido</h3>
+          <h3 id={`${uid}-h-pedido`} ref={pedidoTituloRef} tabIndex={-1} className="ag-np-bloque-titulo">Pedido</h3>
           {carrito.length === 0 ? (
             <div className="ag-np-vacio">
               <p>El pedido quedó vacío.</p>
             </div>
           ) : (
-            <ul className="ag-np-lineas">
-              {carrito.map((l) => (
+            <ul className="ag-np-lineas" ref={lineasRef}>
+              {carrito.map((l, i) => (
                 <li key={l.key} className="ag-np-linea">
                   <span className="ag-np-linea-nombre">{l.nombre}</span>
                   <span className="ag-np-linea-subtotal">{fmt(l.unitPrice * l.qty)}</span>
@@ -664,7 +796,7 @@ export default function NuevoPedido({
                   <span className="ag-np-linea-pie">
                     <Stepper
                       valor={l.qty} quitarAlMinimo nombre={l.nombre}
-                      onCambiar={(n) => setCarrito((c) => cambiarCantidad(c, l.key, n))}
+                      onCambiar={(n) => cambiarLinea(l, i, n)}
                     />
                     <span className="ag-np-unitario">{fmt(l.unitPrice)} c/u</span>
                   </span>
@@ -704,7 +836,7 @@ export default function NuevoPedido({
           ¿Descartar este pedido? Se pierde lo que cargaste.
         </p>
         <div className="ag-np-pie-fila">
-          <button type="button" ref={seguirRef} className="ag-np-secundario" onClick={() => setDescartando(false)}>
+          <button type="button" ref={seguirRef} className="ag-np-secundario" onClick={seguirCargando}>
             Seguir cargando
           </button>
           <button type="button" className="ag-np-peligro" onClick={() => onCerrar?.()}>
@@ -728,6 +860,12 @@ export default function NuevoPedido({
     pie = (
       <div className="ag-np-pie">
         {errorServidor && <p role="alert" className="ag-np-error">{errorServidor}</p>}
+        {quitada && (
+          <div className="ag-np-deshacer">
+            <p>Quitaste {quitada.linea.nombre}.</p>
+            <button type="button" className="ag-np-secundario" onClick={deshacer}>Deshacer</button>
+          </div>
+        )}
         {carrito.length > 0 && <LineaSecundaria total={total} moneda={moneda} />}
         <button
           type="button" className="ag-np-accion ag-np-accion--ancha"
@@ -741,8 +879,7 @@ export default function NuevoPedido({
     pie = (
       <div className="ag-np-pie">
         <div className="ag-np-pie-fila">
-          <div className="ag-np-totales" aria-live="polite" aria-atomic="true">
-            <span className="ag-sr-only">{anuncio}</span>
+          <div className="ag-np-totales">
             {unidades > 0 ? (
               <>
                 <span className="ag-np-unidades">{unidades === 1 ? '1 producto' : `${unidades} productos`}</span>
@@ -763,6 +900,9 @@ export default function NuevoPedido({
 
   const contenido = (
     <>
+      {/* Region viva FIJA: montada siempre, para que se anuncie tambien lo que
+          se agrega desde la ficha (cuyo pie no tiene totales). */}
+      <p className="ag-sr-only" aria-live="polite" aria-atomic="true">{anuncio}</p>
       {cabeza}
       {lista}
       {ficha}

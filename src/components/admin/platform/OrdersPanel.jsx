@@ -361,7 +361,7 @@ export default function OrdersPanel({
       <div style={{ marginBottom: 14 }}>
         <div className="ag-pedidos-cabecera">
           <h2 style={{
-            fontFamily: "'DM Sans', sans-serif", fontWeight: 800, fontSize: 18,
+            fontWeight: 800, fontSize: 18,
             margin: 0, color: 'var(--ag-ink)', letterSpacing: '-0.01em',
           }}>Pedidos</h2>
           {puedeCargar && (

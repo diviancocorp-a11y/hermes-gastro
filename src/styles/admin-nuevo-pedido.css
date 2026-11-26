@@ -119,6 +119,13 @@
 .ag-np-input[aria-invalid="true"] { border-color: var(--ag-bad); }
 textarea.ag-np-input { resize: vertical; line-height: 1.45; }
 .ag-np-buscar .ag-np-input { padding-right: var(--ds-control-height-touch); }
+/* type="search" trae su propia x en Chrome/Safari: con la nuestra eran dos. */
+.ag-np-buscar .ag-np-input::-webkit-search-cancel-button,
+.ag-np-buscar .ag-np-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
 .ag-np-buscar .ag-np-icono {
   position: absolute;
   top: 0;
@@ -226,7 +233,9 @@ textarea.ag-np-input { resize: vertical; line-height: 1.45; }
   display: block;
   margin-top: var(--ag-sp-1);
   font-size: var(--ds-type-sm);
-  color: var(--ag-ink-3);
+  /* ink-2 y no ink-3: sobre el tono de la fila (y sobre el tinte de oro) el
+     ink-3 daba 4.27:1, por debajo del 4.5 de texto normal. */
+  color: var(--ag-ink-2);
   overflow-wrap: anywhere;
 }
 
@@ -397,7 +406,7 @@ textarea.ag-np-input { resize: vertical; line-height: 1.45; }
 .ag-np-eleccion-sub {
   display: block;
   font-size: var(--ds-type-sm);
-  color: var(--ag-ink-3);
+  color: var(--ag-ink-2);
 }
 .ag-np-eleccion-precio {
   font-size: var(--ds-type-sm);
@@ -412,7 +421,8 @@ textarea.ag-np-input { resize: vertical; line-height: 1.45; }
   width: var(--ag-sp-5);
   height: var(--ag-sp-5);
   box-sizing: border-box;
-  border: 2px solid var(--ag-line-strong);
+  /* ink-3 y no line-strong: el borde de un control sin elegir pide 3:1. */
+  border: 2px solid var(--ag-ink-3);
   border-radius: var(--ds-radius-pill);
   color: var(--ag-surface);
   font-size: var(--ds-type-xs);
@@ -508,7 +518,7 @@ textarea.ag-np-input { resize: vertical; line-height: 1.45; }
 .ag-np-linea-detalle {
   grid-column: 1 / -1;
   font-size: var(--ds-type-sm);
-  color: var(--ag-ink-3);
+  color: var(--ag-ink-2);
   overflow-wrap: anywhere;
 }
 .ag-np-linea-pie {
@@ -521,7 +531,7 @@ textarea.ag-np-input { resize: vertical; line-height: 1.45; }
 }
 .ag-np-unitario {
   font-size: var(--ds-type-sm);
-  color: var(--ag-ink-3);
+  color: var(--ag-ink-2);
   font-variant-numeric: tabular-nums;
 }
 .ag-np-estimado {
@@ -566,6 +576,13 @@ textarea.ag-np-input { resize: vertical; line-height: 1.45; }
   cursor: pointer;
 }
 .ag-np-stepper button:disabled { color: var(--ag-ink-3); cursor: not-allowed; opacity: 0.5; }
+.ag-np-stepper button.ag-np-stepper-quitar {
+  width: auto;
+  padding: 0 var(--ag-sp-3);
+  color: var(--ag-bad);
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-nav);
+}
 .ag-np-stepper output {
   min-width: var(--ag-sp-6);
   text-align: center;
@@ -629,7 +646,7 @@ textarea.ag-np-input { resize: vertical; line-height: 1.45; }
   background: var(--ag-chassis);
   color: var(--ag-chassis-ink);
 }
-.ag-np-pie *:focus-visible { outline-color: var(--ms-gold); }
+.ag-dialog-panel.ag-np .ag-np-pie *:focus-visible { outline-color: var(--ms-gold); }
 .ag-np-pie-fila {
   display: flex;
   align-items: center;
@@ -680,6 +697,20 @@ textarea.ag-np-input { resize: vertical; line-height: 1.45; }
 }
 .ag-np-aviso { background: var(--ag-warn-bg); color: var(--ag-warn); }
 .ag-np-error { background: var(--ag-bad-bg); color: var(--ag-bad); }
+.ag-np-deshacer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ag-sp-3);
+}
+.ag-np-deshacer p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--ds-type-sm);
+  color: var(--ag-chassis-ink);
+  overflow-wrap: anywhere;
+}
 .ag-np-descartar-texto {
   margin: 0;
   font-size: var(--ds-type-md);
@@ -712,6 +743,13 @@ textarea.ag-np-input { resize: vertical; line-height: 1.45; }
   font-size: var(--ds-type-sm);
   color: var(--ag-ink-3);
 }
+
+/* Sin la espera del doble toque para zoom: se toca rapido y seguido. */
+.ag-np-prod,
+.ag-np-prod-opciones,
+.ag-np-chip,
+.ag-np-stepper button,
+.ag-np-eleccion { touch-action: manipulation; }
 
 @media (prefers-reduced-motion: reduce) {
   .ag-np-prod,
