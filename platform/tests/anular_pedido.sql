@@ -1,4 +1,4 @@
--- Test de la 0149: anular un pedido completado lo saca de Ventas y de Caja,
+-- Test de la 0149 y la 0150 (marca de seguimiento): anular un pedido completado lo saca de Ventas y de Caja,
 -- devuelve el stock y no se puede repetir. Correr cada vez que se toca
 -- anular_pedido, complete_order o el libro de stock.
 --
@@ -38,6 +38,10 @@ declare
   v_corto  text;
   v_activ  text;
   v_mozo_r text;
+  v_nombre text;
+  v_correo text;
+  v_rol    text;
+  v_cuando timestamptz;
   v_falla  text := '';
 begin
   -- ── siembra ──
@@ -49,6 +53,19 @@ begin
   insert into public.tenant_members (tenant_id, user_id, role, roles) values
     (v_t, v_user, 'owner',     array['owner']),
     (v_t, v_mozo, 'attendant', array['attendant']);
+
+  -- Marca de seguimiento (0150): perfil del duenio y, si la transaccion deja
+  -- insertar en auth.users, su correo canonico. Si no deja, el correo sale de
+  -- profiles.email (el fallback del RPC) y el test sigue valiendo.
+  insert into public.profiles (id, tenant_id, full_name, email)
+    values (v_user, v_t, 'Dueña Test', 'duena.test@example.com')
+    on conflict (id) do update set full_name = 'Dueña Test', email = 'duena.test@example.com';
+  begin
+    insert into auth.users (id, email) values (v_user, 'duena.test@example.com')
+      on conflict (id) do nothing;
+  exception when others then
+    null;
+  end;
 
   insert into public.ingredients (id, tenant_id, name, stock, cost) values
     (v_pan,   v_t, 'Pan',   10, 100),
@@ -114,6 +131,9 @@ begin
   select count(*) into v_ventas from public.sales where order_id = v_order;
   select count(*) into v_pagos  from public.payments where order_id = v_order;
   select status, cancel_reason into v_status, v_motivo from public.orders where id = v_order;
+  select cancelled_by_name, cancelled_by_email, cancelled_by_role, cancelled_at
+    into v_nombre, v_correo, v_rol, v_cuando
+    from public.orders where id = v_order;
   select jsonb_object_agg(name, stock) into v_stock
     from (select name, stock from public.ingredients where tenant_id = v_t
           union all
@@ -130,6 +150,14 @@ begin
   if v_pagos <> 0 then v_falla := v_falla || format(' payments=%s (esperaba 0);', v_pagos); end if;
   if v_status <> 'cancelled' then v_falla := v_falla || format(' status=%s;', v_status); end if;
   if v_motivo is distinct from 'cargado dos veces' then v_falla := v_falla || format(' motivo=%s;', v_motivo); end if;
+  if v_nombre is distinct from 'Dueña Test' then v_falla := v_falla || format(' cancelled_by_name=%s;', v_nombre); end if;
+  if v_correo is distinct from 'duena.test@example.com' then v_falla := v_falla || format(' cancelled_by_email=%s;', v_correo); end if;
+  if v_rol is distinct from 'Dueño' then v_falla := v_falla || format(' cancelled_by_role=%s;', v_rol); end if;
+  if v_cuando is null then v_falla := v_falla || ' cancelled_at nulo;'; end if;
+  if v_res->'anulado_por'->>'nombre' is distinct from 'Dueña Test'
+     or v_res->'anulado_por'->>'rol' is distinct from 'Dueño' then
+    v_falla := v_falla || format(' anulado_por=%s;', v_res->'anulado_por');
+  end if;
   if v_returns <> 2 then v_falla := v_falla || format(' movimientos_return=%s (esperaba 2);', v_returns); end if;
   -- pan 10, carne 5 y gaseosa 7: vuelven a donde estaban.
   if not ((v_stock->>'Pan')::numeric = 10 and (v_stock->>'Carne')::numeric = 5
