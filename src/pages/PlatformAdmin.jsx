@@ -71,6 +71,7 @@ import {
   fetchTableVisits,
 } from '../services/platformSalon';
 import { fetchSettings, saveSettings, fetchTenantBrand } from '../services/platformSettings';
+import { crearPedidoManual } from '../services/platformPedidoManual';
 import { VerCatalogo } from '../components/admin/platform/TopbarNegocio';
 import { AvisoDePrueba } from '../components/admin/platform/BloqueoDePlan';
 import { planEfectivo, planTieneFuncion, diasDePrueba } from '../modules/planes';
@@ -1494,6 +1495,11 @@ export default function PlatformAdmin() {
               // Cada cobro mueve el esperado del cajon: si la caja no se
               // refresca, el cajero arquea contra un numero viejo.
               onCobrado={loadCaja}
+              productos={products}
+              settings={sett}
+              tenantSlug={tenant?.slug}
+              onCrearPedidoManual={crearPedidoManual}
+              onPedidoCreado={loadOrders}
             />
           )}
           {tab === 'stock' && (

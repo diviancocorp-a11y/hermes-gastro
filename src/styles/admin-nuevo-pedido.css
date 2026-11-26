@@ -1,0 +1,763 @@
+/* ─── Nuevo pedido: carga manual desde Pedidos ──────────────────────────
+ * La pantalla de `NuevoPedido.jsx`. Se monta por PORTAL (Dialog), asi que
+ * vive bajo `.ag-overlay-root` y NO bajo `.ag-root`: los ajustes de
+ * `.ag-root .ag-btn-primary` (oro con tinta oscura) no le llegan. Por eso los
+ * botones son propios (`.ag-np-accion`) y no las clases compartidas: con
+ * `.ag-btn-primary` fuera de `.ag-root` el texto sale blanco sobre oro.
+ *
+ * TRES DECISIONES
+ * 1. Densidad `touch` (DICO-DESIGN-SYSTEM §5): todo control mide 48 px. Se
+ *    carga con una mano y con el cliente esperando en el chat.
+ * 2. La barra de abajo es CHASIS (`--ag-chassis`), el mismo material que la
+ *    bottom nav a la que tapa. El total vive ahi como en el visor de una caja:
+ *    un solo numero grande, siempre en el mismo lugar, con la accion al lado.
+ * 3. Una sola forma de "elegido": tinte de oro + borde de oro, la misma que
+ *    usa el cobro para el medio de pago. Categorias, opciones, entrega, pago y
+ *    origen se leen igual; no hay que aprender cinco controles.
+ *
+ * Tokens: color y estado de `--ag-*` (admin-tokens), escalas de `--ds-*`
+ * (dico-tokens: radio, tipo, alto de control) y pesos de `--ms-w-*`.
+ * ─────────────────────────────────────────────────────────────────── */
+
+/* Pantalla completa en el telefono, hoja centrada desde tablet. Especificidad
+   de tres clases a proposito: `admin-shared.css` puede cargar despues de esta
+   hoja y sus reglas del dialogo tienen dos. */
+.ag-dialog-panel.ag-dialog-panel--sheet.ag-np {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  height: 100dvh;
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 0;
+  background: var(--ag-surface);
+}
+
+@media (min-width: 600px) {
+  .ag-dialog-backdrop:has(> .ag-dialog-panel--sheet.ag-np) { align-items: center; }
+  .ag-dialog-panel.ag-dialog-panel--sheet.ag-np {
+    height: min(880px, calc(100dvh - var(--ag-sp-6) * 2));
+    border-radius: var(--ds-radius-4);
+  }
+}
+
+/* Foco: el oro puro da 1.8:1 sobre la superficie clara. El borde de acento es
+   el mismo tono oscurecido (5.54:1) y en oscuro vuelve a ser el oro. */
+.ag-dialog-panel.ag-np *:focus-visible {
+  outline: 2px solid var(--ag-accent-border);
+  outline-offset: 2px;
+}
+
+/* ── Cabecera ───────────────────────────────────────────────────── */
+.ag-np-cabeza {
+  flex-shrink: 0;
+  display: grid;
+  gap: var(--ag-sp-3);
+  padding: var(--ag-sp-2) var(--ag-sp-4) var(--ag-sp-3);
+  background: var(--ag-surface);
+}
+.ag-np-cabeza-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-1);
+}
+.ag-np-titulos { flex: 1; min-width: 0; }
+.ag-np-titulo {
+  margin: 0;
+  font-size: var(--ds-type-lg);
+  font-weight: var(--ms-w-metric);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--ag-ink);
+}
+.ag-np-titulo:focus { outline: none; }
+.ag-np-subtitulo {
+  margin: 0;
+  font-size: var(--ds-type-sm);
+  color: var(--ag-ink-3);
+}
+
+.ag-np-icono {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: var(--ds-control-height-touch);
+  height: var(--ds-control-height-touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ds-radius-pill);
+  background: transparent;
+  color: var(--ag-ink);
+  font: inherit;
+  font-size: var(--ds-type-xl);
+  line-height: 1;
+  cursor: pointer;
+}
+.ag-np-icono:hover { background: var(--ag-surface-2); }
+
+/* ── Buscador y categorias ──────────────────────────────────────── */
+.ag-np-buscar { position: relative; }
+
+.ag-np-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--ds-control-height-touch);
+  padding: var(--ag-sp-2) var(--ag-sp-3);
+  border: 1px solid var(--ag-line-strong);
+  border-radius: var(--ds-radius-3);
+  background: var(--ag-surface);
+  color: var(--ag-ink);
+  font: inherit;
+  /* 1rem y no el 15px de la escala: Safari de iOS hace zoom en cualquier
+     campo de menos de 16px al tocarlo, y la pantalla se corre de lugar. */
+  font-size: 1rem;
+}
+.ag-np-input::placeholder { color: var(--ag-ink-3); }
+.ag-np-input[aria-invalid="true"] { border-color: var(--ag-bad); }
+textarea.ag-np-input { resize: vertical; line-height: 1.45; }
+.ag-np-buscar .ag-np-input { padding-right: var(--ds-control-height-touch); }
+/* type="search" trae su propia x en Chrome/Safari: con la nuestra eran dos. */
+.ag-np-buscar .ag-np-input::-webkit-search-cancel-button,
+.ag-np-buscar .ag-np-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+.ag-np-buscar .ag-np-icono {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: var(--ds-type-lg);
+  color: var(--ag-ink-3);
+}
+
+.ag-np-chips {
+  display: flex;
+  gap: var(--ag-sp-2);
+  overflow-x: auto;
+  margin: 0 calc(var(--ag-sp-4) * -1);
+  padding: 0 var(--ag-sp-4);
+  scroll-padding-inline: var(--ag-sp-4);
+  scrollbar-width: none;
+}
+.ag-np-chips::-webkit-scrollbar { display: none; }
+
+.ag-np-chip {
+  flex-shrink: 0;
+  min-height: var(--ds-control-height-touch);
+  padding: 0 var(--ag-sp-4);
+  border: 2px solid transparent;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ag-surface-2);
+  color: var(--ag-ink);
+  font: inherit;
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-ctrl);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ag-np-chip[aria-pressed="true"] {
+  background: var(--ag-accent-soft);
+  border-color: var(--ag-accent-border);
+  font-weight: var(--ms-w-nav);
+}
+
+/* ── Cuerpo con scroll ──────────────────────────────────────────── */
+.ag-np-cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--ag-sp-1) var(--ag-sp-4) var(--ag-sp-6);
+}
+.ag-np-cuerpo[hidden] { display: none; }
+
+/* ── Lista de productos ─────────────────────────────────────────── */
+.ag-np-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--ag-sp-1);
+}
+.ag-np-fila { display: flex; gap: var(--ag-sp-1); }
+
+/* Sin bordes: las filas se separan por un escalon de tono. Lo que ya esta en
+   el pedido se tine de oro, que es la respuesta al toque que se ve de reojo. */
+.ag-np-prod {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ag-sp-3);
+  min-height: var(--ds-control-height-touch);
+  padding: var(--ag-sp-3);
+  border: 0;
+  border-radius: var(--ds-radius-3);
+  background: var(--ag-surface-2);
+  color: var(--ag-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ag-t-fast) var(--ag-ease), transform var(--ag-t-fast) var(--ag-ease);
+}
+.ag-np-prod:active { transform: scale(0.985); }
+.ag-np-prod.en-pedido { background: var(--ag-accent-soft); }
+.ag-np-prod--con-foto { grid-template-columns: auto minmax(0, 1fr) auto; }
+
+.ag-np-foto {
+  display: block;
+  width: var(--ds-control-height-touch);
+  height: var(--ds-control-height-touch);
+  border-radius: var(--ds-radius-2);
+  object-fit: cover;
+  background: var(--ag-surface-2);
+}
+
+.ag-np-prod-texto { min-width: 0; }
+.ag-np-prod-nombre {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: var(--ds-type-md);
+  font-weight: var(--ms-w-ctrl);
+  line-height: 1.3;
+}
+.ag-np-prod-pista {
+  display: block;
+  margin-top: var(--ag-sp-1);
+  font-size: var(--ds-type-sm);
+  /* ink-2 y no ink-3: sobre el tono de la fila (y sobre el tinte de oro) el
+     ink-3 daba 4.27:1, por debajo del 4.5 de texto normal. */
+  color: var(--ag-ink-2);
+  overflow-wrap: anywhere;
+}
+
+.ag-np-prod-lado {
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-2);
+}
+.ag-np-precio {
+  font-size: var(--ds-type-md);
+  font-weight: var(--ms-w-metric);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ag-np-cuenta {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--ag-sp-6);
+  padding: var(--ag-sp-1) var(--ag-sp-2);
+  box-sizing: border-box;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ag-accent);
+  color: var(--ms-zinc-950);
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-metric);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.ag-np-chevron {
+  font-size: var(--ds-type-lg);
+  color: var(--ag-ink-3);
+  line-height: 1;
+}
+
+.ag-np-prod-opciones {
+  flex-shrink: 0;
+  min-width: var(--ds-control-height-touch);
+  padding: 0 var(--ag-sp-3);
+  border: 0;
+  border-radius: var(--ds-radius-3);
+  background: var(--ag-surface-2);
+  color: var(--ag-ink-2);
+  font: inherit;
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-ctrl);
+  cursor: pointer;
+}
+
+.ag-np-vacio {
+  display: grid;
+  justify-items: start;
+  gap: var(--ag-sp-3);
+  padding: var(--ag-sp-6) 0;
+  font-size: var(--ds-type-md);
+  color: var(--ag-ink-2);
+}
+.ag-np-vacio p { margin: 0; }
+
+/* ── Ficha de opciones ──────────────────────────────────────────── */
+.ag-np-ficha {
+  display: grid;
+  gap: var(--ag-sp-6);
+  padding-top: var(--ag-sp-2);
+}
+.ag-np-ficha-nombre {
+  margin: 0;
+  font-size: var(--ds-type-xl);
+  font-weight: var(--ms-w-metric);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  color: var(--ag-ink);
+}
+.ag-np-ficha-nombre:focus { outline: none; }
+.ag-np-ficha-precio {
+  margin: var(--ag-sp-1) 0 0;
+  font-size: var(--ds-type-md);
+  color: var(--ag-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-np-grupo,
+.ag-np-bloque {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ag-np-grupo > legend,
+.ag-np-bloque > legend,
+.ag-np-bloque-titulo {
+  padding: 0;
+  margin: 0 0 var(--ag-sp-2);
+  font-size: var(--ds-type-md);
+  font-weight: var(--ms-w-nav);
+  color: var(--ag-ink);
+}
+.ag-np-grupo-regla {
+  margin: calc(var(--ag-sp-1) * -1) 0 var(--ag-sp-2);
+  font-size: var(--ds-type-sm);
+  color: var(--ag-ink-3);
+}
+.ag-np-grupo.falta .ag-np-grupo-regla {
+  color: var(--ag-bad);
+  font-weight: var(--ms-w-ctrl);
+}
+
+.ag-np-cantidad {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ag-sp-3);
+}
+.ag-np-cantidad-etiqueta {
+  font-size: var(--ds-type-md);
+  font-weight: var(--ms-w-nav);
+}
+
+/* ── Elecciones: opciones, pago, entrega, origen ────────────────── */
+.ag-np-elecciones {
+  display: grid;
+  gap: var(--ag-sp-2);
+}
+
+/* El input nativo queda (teclado, lector, formulario) pero no se ve: lo que
+   se ve es la fila entera, que es el blanco de 48 px. */
+.ag-np-nativo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ag-np-eleccion {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ag-sp-3);
+  min-height: var(--ds-control-height-touch);
+  padding: var(--ag-sp-2) var(--ag-sp-3);
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  border-radius: var(--ds-radius-3);
+  background: var(--ag-surface-2);
+  color: var(--ag-ink);
+  font-size: var(--ds-type-md);
+  cursor: pointer;
+}
+.ag-np-eleccion:has(> input:checked) {
+  background: var(--ag-accent-soft);
+  border-color: var(--ag-accent-border);
+}
+.ag-np-eleccion:has(> input:focus-visible) {
+  outline: 2px solid var(--ag-accent-border);
+  outline-offset: 2px;
+}
+.ag-np-eleccion:has(> input:disabled) { opacity: 0.5; cursor: not-allowed; }
+.ag-np-eleccion--cantidad { grid-template-columns: minmax(0, 1fr) auto; cursor: default; }
+.ag-np-eleccion--cantidad.con-cantidad {
+  background: var(--ag-accent-soft);
+  border-color: var(--ag-accent-border);
+}
+
+.ag-np-eleccion-texto { min-width: 0; overflow-wrap: anywhere; }
+.ag-np-eleccion-sub {
+  display: block;
+  font-size: var(--ds-type-sm);
+  color: var(--ag-ink-2);
+}
+.ag-np-eleccion-precio {
+  font-size: var(--ds-type-sm);
+  color: var(--ag-ink-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ag-np-marca {
+  display: grid;
+  place-items: center;
+  width: var(--ag-sp-5);
+  height: var(--ag-sp-5);
+  box-sizing: border-box;
+  /* ink-3 y no line-strong: el borde de un control sin elegir pide 3:1. */
+  border: 2px solid var(--ag-ink-3);
+  border-radius: var(--ds-radius-pill);
+  color: var(--ag-surface);
+  font-size: var(--ds-type-xs);
+  font-weight: var(--ms-w-metric);
+  line-height: 1;
+}
+.ag-np-marca--cuadrada { border-radius: var(--ds-radius-1); }
+.ag-np-eleccion:has(> input:checked) .ag-np-marca {
+  border-color: var(--ag-accent-border);
+  background: var(--ag-accent-border);
+}
+/* Radio: el punto es el fondo visto a traves de un anillo de superficie. */
+.ag-np-eleccion:has(> input[type="radio"]:checked) .ag-np-marca {
+  box-shadow: inset 0 0 0 3px var(--ag-surface);
+}
+.ag-np-eleccion:has(> input[type="checkbox"]:checked) .ag-np-marca::after { content: '✓'; }
+
+/* Segmentado: dos o tres opciones cortas que se eligen sin leer. */
+.ag-np-seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--ag-sp-2);
+}
+.ag-np-seg .ag-np-eleccion {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  text-align: center;
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-ctrl);
+}
+.ag-np-seg .ag-np-eleccion:has(> input:checked) { font-weight: var(--ms-w-nav); }
+
+/* ── Datos del pedido ───────────────────────────────────────────── */
+.ag-np-datos {
+  display: grid;
+  gap: var(--ag-sp-6);
+  padding-top: var(--ag-sp-2);
+}
+.ag-np-campos {
+  display: grid;
+  gap: var(--ag-sp-3);
+}
+.ag-np-campo {
+  display: grid;
+  gap: var(--ag-sp-1);
+}
+.ag-np-etiqueta {
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-ctrl);
+  color: var(--ag-ink-2);
+}
+.ag-np-etiqueta small {
+  font-size: inherit;
+  font-weight: var(--ms-w-body);
+  color: var(--ag-ink-3);
+}
+.ag-np-error-campo {
+  margin: 0;
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-ctrl);
+  color: var(--ag-bad);
+}
+
+/* El pedido al final, justo arriba del boton que lo carga: lo ultimo que se
+   lee antes de confirmar es lo que se va a cargar. */
+.ag-np-lineas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--ag-sp-1);
+}
+.ag-np-linea {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--ag-sp-1) var(--ag-sp-3);
+  padding: var(--ag-sp-3);
+  border-radius: var(--ds-radius-3);
+  background: var(--ag-surface-2);
+}
+.ag-np-linea-nombre {
+  font-size: var(--ds-type-md);
+  font-weight: var(--ms-w-ctrl);
+  overflow-wrap: anywhere;
+}
+.ag-np-linea-subtotal {
+  font-size: var(--ds-type-md);
+  font-weight: var(--ms-w-metric);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ag-np-linea-detalle {
+  grid-column: 1 / -1;
+  font-size: var(--ds-type-sm);
+  color: var(--ag-ink-2);
+  overflow-wrap: anywhere;
+}
+.ag-np-linea-pie {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ag-sp-3);
+  margin-top: var(--ag-sp-1);
+}
+.ag-np-unitario {
+  font-size: var(--ds-type-sm);
+  color: var(--ag-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.ag-np-estimado {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--ag-sp-3);
+  padding: var(--ag-sp-3) var(--ag-sp-3) 0;
+  font-size: var(--ds-type-md);
+  font-weight: var(--ms-w-nav);
+  font-variant-numeric: tabular-nums;
+}
+.ag-np-aclaracion {
+  margin: var(--ag-sp-2) 0 0;
+  padding: 0 var(--ag-sp-3);
+  font-size: var(--ds-type-sm);
+  line-height: 1.45;
+  color: var(--ag-ink-3);
+}
+
+/* ── Stepper ────────────────────────────────────────────────────── */
+.ag-np-stepper {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  border: 1px solid var(--ag-line-strong);
+  border-radius: var(--ds-radius-3);
+  background: var(--ag-surface);
+}
+.ag-np-stepper button {
+  display: inline-grid;
+  place-items: center;
+  width: var(--ds-control-height-touch);
+  height: var(--ds-control-height-touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ds-radius-3);
+  background: transparent;
+  color: var(--ag-ink);
+  font: inherit;
+  font-size: var(--ds-type-lg);
+  cursor: pointer;
+}
+.ag-np-stepper button:disabled { color: var(--ag-ink-3); cursor: not-allowed; opacity: 0.5; }
+.ag-np-stepper button.ag-np-stepper-quitar {
+  width: auto;
+  padding: 0 var(--ag-sp-3);
+  color: var(--ag-bad);
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-nav);
+}
+.ag-np-stepper output {
+  min-width: var(--ag-sp-6);
+  text-align: center;
+  font-size: var(--ds-type-md);
+  font-weight: var(--ms-w-metric);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Botones ────────────────────────────────────────────────────── */
+.ag-np-accion,
+.ag-np-secundario,
+.ag-np-peligro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ag-sp-2);
+  min-height: var(--ds-control-height-touch);
+  padding: 0 var(--ag-sp-5);
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-2);
+  font: inherit;
+  font-size: var(--ds-type-md);
+  font-weight: var(--ms-w-nav);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform var(--ag-t-fast) var(--ag-ease), filter var(--ag-t-fast) var(--ag-ease);
+}
+.ag-np-accion {
+  background: var(--ag-accent);
+  color: var(--ms-zinc-950);
+}
+.ag-np-accion:hover { filter: brightness(1.05); }
+.ag-np-accion:active,
+.ag-np-secundario:active,
+.ag-np-peligro:active { transform: scale(0.98); }
+.ag-np-accion:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+}
+.ag-np-accion--ancha { width: 100%; }
+.ag-np-secundario {
+  background: transparent;
+  border-color: var(--ag-line-strong);
+  color: var(--ag-ink);
+}
+.ag-np-peligro {
+  background: var(--ag-bad);
+  color: var(--ag-bad-ink);
+}
+
+/* ── Barra de abajo: chasis ─────────────────────────────────────── */
+.ag-np-pie {
+  flex-shrink: 0;
+  display: grid;
+  gap: var(--ag-sp-2);
+  padding: var(--ag-sp-3) var(--ag-sp-4) calc(var(--ag-sp-3) + env(safe-area-inset-bottom, 0px));
+  background: var(--ag-chassis);
+  color: var(--ag-chassis-ink);
+}
+.ag-dialog-panel.ag-np .ag-np-pie *:focus-visible { outline-color: var(--ms-gold); }
+.ag-np-pie-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--ag-sp-3);
+}
+.ag-np-pie-fila > .ag-np-accion,
+.ag-np-pie-fila > .ag-np-secundario,
+.ag-np-pie-fila > .ag-np-peligro { flex: 1; }
+.ag-np-pie-fila > .ag-np-totales + .ag-np-accion { flex: 0 0 auto; }
+.ag-np-pie .ag-np-secundario {
+  border-color: var(--ag-chassis-ink-2);
+  color: var(--ag-chassis-ink);
+}
+
+.ag-np-totales {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.ag-np-unidades,
+.ag-np-tasa {
+  margin: 0;
+  font-size: var(--ds-type-sm);
+  color: var(--ag-chassis-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.ag-np-total {
+  font-size: var(--ds-type-metric);
+  font-weight: var(--ms-w-metric);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--ag-chassis-ink);
+}
+
+/* Sobre el chasis los rojos y naranjas del tema claro no llegan a 4.5:1, asi
+   que avisos y errores van como etiqueta: tinte de estado y tinta de estado,
+   el par que ya esta medido para los dos temas. */
+.ag-np-aviso,
+.ag-np-error {
+  justify-self: start;
+  margin: 0;
+  padding: var(--ag-sp-1) var(--ag-sp-2);
+  border-radius: var(--ds-radius-1);
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-ctrl);
+  line-height: 1.35;
+}
+.ag-np-aviso { background: var(--ag-warn-bg); color: var(--ag-warn); }
+.ag-np-error { background: var(--ag-bad-bg); color: var(--ag-bad); }
+.ag-np-deshacer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ag-sp-3);
+}
+.ag-np-deshacer p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--ds-type-sm);
+  color: var(--ag-chassis-ink);
+  overflow-wrap: anywhere;
+}
+.ag-np-descartar-texto {
+  margin: 0;
+  font-size: var(--ds-type-md);
+  font-weight: var(--ms-w-ctrl);
+}
+
+/* ── En la lista de Pedidos ─────────────────────────────────────── */
+.ag-pedidos-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ag-sp-3);
+}
+.ag-btn-primary.ag-pedidos-nuevo {
+  flex-shrink: 0;
+  /* Es inline-flex: el espacio entre el "+" y el texto se colapsa. */
+  gap: var(--ag-sp-1);
+  min-height: var(--ds-control-height-touch);
+  padding: 0 var(--ag-sp-4);
+  font-size: var(--ds-type-sm);
+}
+/* El origen se lee primero en la linea de datos, en tinta media: se encuentra
+   de un vistazo y no compite con el chip de estado, que es el que tiene color. */
+.ag-pedidos-origen {
+  color: var(--ag-ink-2);
+  font-weight: var(--ms-w-ctrl);
+}
+.ag-pedidos-vacio-manual {
+  margin: var(--ag-sp-2) 0 0;
+  font-size: var(--ds-type-sm);
+  color: var(--ag-ink-3);
+}
+
+/* Sin la espera del doble toque para zoom: se toca rapido y seguido. */
+.ag-np-prod,
+.ag-np-prod-opciones,
+.ag-np-chip,
+.ag-np-stepper button,
+.ag-np-eleccion { touch-action: manipulation; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ag-np-prod,
+  .ag-np-accion,
+  .ag-np-secundario,
+  .ag-np-peligro { transition: none; }
+  .ag-np-prod:active,
+  .ag-np-accion:active,
+  .ag-np-secundario:active,
+  .ag-np-peligro:active { transform: none; }
+}

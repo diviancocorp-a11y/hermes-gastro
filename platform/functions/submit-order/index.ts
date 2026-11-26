@@ -46,6 +46,22 @@ function texto(v: unknown, max: number): string | null {
   return v.trim().slice(0, max);
 }
 
+// ── Pedido cargado a mano desde el panel (WhatsApp, telefono, local) ──
+// Mismo camino que el catalogo (precios, opciones, cupon, tasa congelada) para
+// que no haya dos lugares que calculen un total. Lo que cambia es quien lo
+// carga: con `origen` el request tiene que traer el access token de un usuario
+// del panel con rol de caja. El pedido queda con channel = 'manual_' + origen
+// ('manual_whatsapp', 'manual_telefono', 'manual_local') y status 'new'.
+// Sin `origen` nada de esto corre y el pedido es de catalogo como siempre.
+const ORIGENES_MANUALES = ["whatsapp", "telefono", "local"];
+const ROLES_PEDIDO_MANUAL = ["owner", "manager", "cashier"];
+
+function bearerDe(req: Request): string | null {
+  const h = req.headers.get("authorization") || "";
+  const m = /^Bearer\s+(.+)$/i.exec(h.trim());
+  return m ? m[1].trim() : null;
+}
+
 function getClientIp(req: Request) {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     || req.headers.get("cf-connecting-ip")
@@ -96,6 +112,38 @@ Deno.serve(async (req) => {
     const moneda = (tenant.currency as string | null) || null;
     const secundaria = (tenant.secondary_currency as string | null) || null;
     const doble = !!secundaria && secundaria !== moneda;
+
+    // ── Origen manual: solo con sesion de staff del MISMO tenant ─────
+    // Va antes de cualquier lectura o escritura de negocio. El token de un
+    // invitado (la key publishable) no es de un usuario y getUser lo rechaza.
+    let origen: string | null = null;
+    if (body.origen !== undefined && body.origen !== null) {
+      if (typeof body.origen !== "string" || !ORIGENES_MANUALES.includes(body.origen)) {
+        return jsonRes({ error: "Origen invalido: whatsapp, telefono o local" }, 400);
+      }
+      const token = bearerDe(req);
+      let staffId: string | null = null;
+      if (token) {
+        const { data: authData, error: authErr } = await supabase.auth.getUser(token);
+        if (!authErr) staffId = authData?.user?.id ?? null;
+      }
+      if (!staffId) {
+        return jsonRes({ error: "Para cargar un pedido a mano hace falta entrar al panel" }, 403);
+      }
+      const { data: membresias } = await supabase
+        .from("tenant_members")
+        .select("roles")
+        .eq("tenant_id", tenantId)
+        .eq("user_id", staffId);
+      const puede = (membresias || []).some((m: { roles?: unknown }) =>
+        Array.isArray(m.roles) && m.roles.some((r) => ROLES_PEDIDO_MANUAL.includes(r as string))
+      );
+      if (!puede) {
+        return jsonRes({ error: "Tu usuario no puede cargar pedidos en este local" }, 403);
+      }
+      if (body.table_code) return jsonRes({ error: "Un pedido cargado a mano no va a una mesa" }, 400);
+      origen = body.origen;
+    }
 
     // ── Idempotencia (Etapa 0) ──────────────────────────────────────
     // El navegador genera una clave por checkout. Sin esto, un doble click o
@@ -225,7 +273,8 @@ Deno.serve(async (req) => {
     const isGift = body.is_gift === true;
     const giftNote = giftNoteTxt as string;
     const deliveryDate = body.delivery_date || null;
-    const userId = body.user_id || null;
+    // En un pedido manual el usuario de la sesion es el del panel, no el cliente.
+    const userId = origen ? null : (body.user_id || null);
     const address = addressTxt || null;
 
     // Costo de envio clampeado server-side: el server no conoce la distancia
@@ -432,8 +481,8 @@ Deno.serve(async (req) => {
       .from("orders")
       .insert({
         tenant_id: tenantId,
-        status: tableVisit ? "pending_review" : (isMP ? "pending_payment" : "new"),
-        channel: "catalog",
+        status: origen ? "new" : (tableVisit ? "pending_review" : (isMP ? "pending_payment" : "new")),
+        channel: origen ? `manual_${origen}` : "catalog",
         customer_name: customer,
         customer_phone: phone,
         customer_email: email,
@@ -543,7 +592,7 @@ Deno.serve(async (req) => {
     // Push al admin: best-effort. El tenant_id NO es opcional — sin el,
     // send-push no sabe a que negocio avisarle y corta con 400 (nunca manda
     // a todos, que seria notificarle a los clientes de otro local).
-    if (!isMP || tableVisit) {
+    if (!isMP || tableVisit || origen) {
       try {
         let assignedUserId: string | null = null;
         if (tableVisit?.responsible_staff_id) {
