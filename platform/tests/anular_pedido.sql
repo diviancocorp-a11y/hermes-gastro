@@ -62,9 +62,9 @@ begin
 
   insert into public.orders (id, tenant_id, status, payment, delivery, channel)
     values (v_order, v_t, 'active', 'efectivo', 'retiro', 'counter');
-  insert into public.order_items (tenant_id, order_id, product_id, name_snapshot, unit_price, qty) values
-    (v_t, v_order, v_hamb, 'Hamburguesa', 1000, 2),
-    (v_t, v_order, v_gas,  'Gaseosa',      300, 3);
+  insert into public.order_items (tenant_id, order_id, product_id, name_snapshot, unit_price, qty, subtotal) values
+    (v_t, v_order, v_hamb, 'Hamburguesa', 1000, 2, 2000),
+    (v_t, v_order, v_gas,  'Gaseosa',      300, 3,  900);
   insert into public.orders (id, tenant_id, status, payment, delivery, channel)
     values (v_activo, v_t, 'active', 'efectivo', 'retiro', 'counter');
 

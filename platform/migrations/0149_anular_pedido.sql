@@ -1,4 +1,4 @@
--- PENDIENTE de aplicar (la aplica el director via MCP con ok de Ricky)
+-- Aplicada via MCP el 26/nov/2026 (ok de Ricky). Test: platform/tests/anular_pedido.sql -> OK.
 --
 -- 0149: anular un pedido YA COMPLETADO.
 --
