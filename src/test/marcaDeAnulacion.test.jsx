@@ -47,8 +47,8 @@ describe('fechaHoraDelLocal', () => {
     expect(fechaHoraDelLocal(null, 'America/Caracas')).toBe('');
     expect(fechaHoraDelLocal('nada', 'America/Caracas')).toBe('');
   });
-  it('una zona invalida no rompe: cae en la del navegador', () => {
-    expect(fechaHoraDelLocal('2026-11-26T22:56:00Z', 'No/Existe')).toMatch(/^\d{2}\/\d{2} \d{2}:\d{2}$/);
+  it('una zona invalida cae en UTC, nunca en la del navegador', () => {
+    expect(fechaHoraDelLocal('2026-11-26T22:56:00Z', 'No/Existe')).toBe('26/11 22:56');
   });
 });
 
@@ -78,7 +78,7 @@ describe('tarjeta anulada, cerrada', () => {
 describe('tarjeta anulada, abierta', () => {
   it('bloque Anulacion como lista de definiciones con todos los datos', () => {
     panel([anulado], { abiertoId: 'a1' });
-    const bloque = screen.getByRole('region', { name: 'Anulación' });
+    const bloque = screen.getByRole('group', { name: 'Anulación' });
     const dl = bloque.querySelector('dl');
     const pares = [...dl.querySelectorAll('dt')].map(dt => [dt.textContent, dt.nextElementSibling.textContent]);
     expect(pares).toEqual([
@@ -93,7 +93,7 @@ describe('tarjeta anulada, abierta', () => {
   });
   it('un pedido viejo muestra solo el motivo', () => {
     panel([{ ...anulado, cancelled_at: null, cancelled_by_name: null, cancelled_by_email: null, cancelled_by_role: null }], { abiertoId: 'a1' });
-    const bloque = screen.getByRole('region', { name: 'Anulación' });
+    const bloque = screen.getByRole('group', { name: 'Anulación' });
     const terminos = within(bloque).getAllByRole('term').map(t => t.textContent);
     expect(terminos).toEqual(['Motivo']);
   });

@@ -242,7 +242,9 @@ export function fechaHoraDelLocal(valor, timezone, { conAnio = false } = {}) {
     hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
   }).formatToParts(d);
   let p;
-  try { p = partes(timezone); } catch { p = partes(undefined); }
+  // Zona invalida: UTC y no la del navegador. Es un dato de auditoria y no
+  // puede quedar en una hora ambigua.
+  try { p = partes(timezone); } catch { p = partes('UTC'); }
   const v = (tipo) => p.find((x) => x.type === tipo)?.value || '';
   const dia = `${v('day')}/${v('month')}${conAnio ? `/${v('year')}` : ''}`;
   return `${dia} ${v('hour')}:${v('minute')}`;

@@ -39,8 +39,8 @@ export default function MarcaDeAnulacion({ pedido, timezone, abierta = false }) 
   ].filter(([, valor]) => valor);
 
   return (
-    <section className="ag-anulacion" aria-labelledby={titulo}>
-      <h4 id={titulo} className="ag-anulacion-titulo">Anulación</h4>
+    <div className="ag-anulacion" role="group" aria-labelledby={titulo}>
+      <p id={titulo} className="ag-anulacion-titulo">Anulación</p>
       <dl className="ag-anulacion-lista">
         {filas.map(([etiqueta, valor]) => (
           <div key={etiqueta} className="ag-anulacion-fila">
@@ -49,6 +49,6 @@ export default function MarcaDeAnulacion({ pedido, timezone, abierta = false }) 
           </div>
         ))}
       </dl>
-    </section>
+    </div>
   );
 }

@@ -332,7 +332,7 @@ export const MUESTRAS = {
         { ...PEDIDO_BASE, id: 'c2', status: 'cancelled', customer_name: 'Luis Pérez', subtotal: 8.5, total: 8.5,
           delivery_cost: 0, delivery_pending: false, cancel_reason: 'Se cargó dos veces',
           cancelled_at: '2026-11-26T22:56:00Z', cancelled_by_name: 'Ricardo Rodríguez',
-          cancelled_by_email: 'ricardo@example.com', cancelled_by_role: 'Dueño' },
+          cancelled_by_email: 'ricardo.rodriguez.administracion.general@grupo-divianco-ejemplo.com', cancelled_by_role: 'Dueño' },
       ],
       loading: false, tenantId: 't', hayTurnoAbierto: true, roles: ['owner'],
       onAnular: () => {},
