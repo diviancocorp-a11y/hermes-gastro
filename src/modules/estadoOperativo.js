@@ -223,3 +223,27 @@ export function horaCortaDelLocal(fecha = new Date(), timezone) {
     hourCycle: 'h23',
   }).format(fecha);
 }
+
+// Fecha y hora en el reloj del LOCAL ("26/11 18:56", o con anio "26/11/2026 18:56").
+// No es la del navegador ni UTC: un pedido anulado a las 23:30 en Caracas ya es
+// del dia siguiente en UTC. Se arma con partes para no depender de la coma que
+// pone cada version de Intl. Un valor que no es fecha devuelve ''.
+export function fechaHoraDelLocal(valor, timezone, { conAnio = false } = {}) {
+  if (!valor) return '';
+  // Postgres puede mandar "2026-08-15 10:27:15+00" (espacio en vez de T).
+  let norm = typeof valor === 'string' && !valor.includes('T') ? valor.replace(' ', 'T') : valor;
+  // ...y el offset puede venir como "+00" a secas, que V8 no parsea.
+  if (typeof norm === 'string' && norm.includes(':') && /[+-]\d{2}$/.test(norm)) norm += ':00';
+  const d = new Date(norm);
+  if (Number.isNaN(d.getTime())) return '';
+  const partes = (tz) => new Intl.DateTimeFormat('es-AR', {
+    timeZone: tz || undefined,
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(d);
+  let p;
+  try { p = partes(timezone); } catch { p = partes(undefined); }
+  const v = (tipo) => p.find((x) => x.type === tipo)?.value || '';
+  const dia = `${v('day')}/${v('month')}${conAnio ? `/${v('year')}` : ''}`;
+  return `${dia} ${v('hour')}:${v('minute')}`;
+}

@@ -1002,8 +1002,17 @@ export default function PlatformAdmin() {
   const handleAnularPedido = useCallback(async (order, motivo) => {
     const res = await anularPedido(order.id, motivo);
     if (res?.__error) return res;
+    // La marca de seguimiento viene en la respuesta (0150): foto del momento,
+    // sin recargar. Un RPC viejo sin `anulado_por` deja la tarjeta sin "por".
+    const por = res?.anulado_por;
     setOrders(list => list.map(o => (o.id === order.id
-      ? { ...o, status: PlatformOrderStatus.CANCELLED, cancel_reason: motivo } : o)));
+      ? {
+        ...o, status: PlatformOrderStatus.CANCELLED, cancel_reason: motivo,
+        cancelled_at: por?.cuando ?? new Date().toISOString(),
+        cancelled_by_name: por?.nombre ?? null,
+        cancelled_by_email: por?.correo ?? null,
+        cancelled_by_role: por?.rol ?? null,
+      } : o)));
     setVentas(prev => prev.filter(v => v.order_id !== order.id));
     // Refrescos best-effort: la anulacion ya esta hecha, un fallo de red aca
     // no tiene que quedar como rechazo sin atrapar.
@@ -1518,6 +1527,7 @@ export default function PlatformAdmin() {
               onCrearPedidoManual={crearPedidoManual}
               onPedidoCreado={loadOrders}
               onAnular={handleAnularPedido}
+              timezone={timezone}
             />
           )}
           {tab === 'stock' && (
