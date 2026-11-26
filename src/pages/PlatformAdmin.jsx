@@ -44,7 +44,7 @@ import {
   fetchOrders, setOrderStatus, setDeliveryCost, reviewTableOrder, OPEN_ORDER_STATUSES, PlatformOrderStatus,
   fetchOrderItemsByOrder,
 } from '../services/platformAdmin';
-import { fetchSales, createSale, completeOrder } from '../services/platformSales';
+import { fetchSales, createSale, completeOrder, anularPedido } from '../services/platformSales';
 import { fetchCustomerStats, fetchClientesConEstado } from '../services/platformCrm';
 import { fetchWaste, registerWaste } from '../services/platformWaste';
 import { uploadTenantImage, uploadTenantAudio } from '../services/platformStorage';
@@ -996,6 +996,21 @@ export default function PlatformAdmin() {
     return res;
   }, [loadCaja, loadIngs, msg, perfilFiscal, plan, tenantId]);
 
+  // Anular un pedido ya completado: la RPC lo saca de Ventas y de Caja y
+  // devuelve el stock (0149). Aca se refleja lo mismo en pantalla sin esperar
+  // a la proxima carga. El error vuelve al dialogo, que lo muestra y queda abierto.
+  const handleAnularPedido = useCallback(async (order, motivo) => {
+    const res = await anularPedido(order.id, motivo);
+    if (res?.__error) return res;
+    setOrders(list => list.map(o => (o.id === order.id
+      ? { ...o, status: PlatformOrderStatus.CANCELLED, cancel_reason: motivo } : o)));
+    setVentas(prev => prev.filter(v => v.order_id !== order.id));
+    loadIngs();
+    loadCaja();
+    msg('Pedido anulado');
+    return res;
+  }, [loadCaja, loadIngs, msg]);
+
   useEffect(() => {
     if (!turno?.id || !yoEnElEquipo?.id) { setMiEsperado(null); return; }
     esperadoDeMiMiniCaja(turno.id, yoEnElEquipo.id).then(setMiEsperado);
@@ -1500,6 +1515,7 @@ export default function PlatformAdmin() {
               tenantSlug={tenant?.slug}
               onCrearPedidoManual={crearPedidoManual}
               onPedidoCreado={loadOrders}
+              onAnular={handleAnularPedido}
             />
           )}
           {tab === 'stock' && (

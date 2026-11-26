@@ -300,6 +300,39 @@ export const MUESTRAS = {
     },
     anchos: [390],
   },
+  'pedidos-anular': {
+    modulo: 'src/components/admin/platform/OrdersPanel.jsx',
+    titulo: 'Pedidos · completado con Anular y uno ya anulado',
+    props: {
+      orders: [
+        { ...PEDIDO_BASE, id: 'c1', status: 'completed', customer_name: 'Ana Prueba', subtotal: 17, total: 17,
+          delivery_cost: 0, delivery_pending: false },
+        { ...PEDIDO_BASE, id: 'c2', status: 'cancelled', customer_name: 'Luis Pérez', subtotal: 8.5, total: 8.5,
+          delivery_cost: 0, delivery_pending: false, cancel_reason: 'Se cargó dos veces' },
+      ],
+      loading: false, tenantId: 't', hayTurnoAbierto: true, roles: ['owner'],
+      onAnular: () => {},
+      moneda: { monedaPrincipal: 'USD', monedaSecundaria: 'VES' },
+      abiertoId: 'c1',
+      itemsIniciales: [{ id: 'i1', name_snapshot: 'Bandeja 3 carnes · Alitas', qty: 1, unit_price: 17, subtotal: 17 }],
+    },
+    anchos: [390, 900],
+  },
+  'anular-pedido': {
+    modulo: 'src/components/admin/platform/AnularPedido.jsx',
+    titulo: 'Anular pedido · pide el motivo',
+    props: { pedido: { id: 'c1', customer_name: 'Ana Prueba' }, onConfirmar: () => {}, onCerrar: () => {}, sinPortal: true },
+    anchos: [390, 900],
+  },
+  'anular-pedido-listo': {
+    modulo: 'src/components/admin/platform/AnularPedido.jsx',
+    titulo: 'Anular pedido · con motivo',
+    props: {
+      pedido: { id: 'c1', customer_name: 'María Fernanda Rodríguez de los Ángeles' },
+      onConfirmar: () => {}, onCerrar: () => {}, sinPortal: true, motivoInicial: 'Se cargó dos veces',
+    },
+    anchos: [390],
+  },
   stock: {
     modulo: 'src/components/admin/platform/StockPanel.jsx',
     titulo: 'Stock · escritorio',

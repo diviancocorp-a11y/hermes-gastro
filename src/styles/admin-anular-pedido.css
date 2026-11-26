@@ -1,0 +1,125 @@
+/* ─── Anular pedido: confirmacion con motivo ────────────────────────────
+ * Se monta por Dialog (portal), bajo `.ag-overlay-root` y no bajo `.ag-root`,
+ * asi que los botones son propios y no las clases compartidas.
+ *
+ * Es una accion rara y sin vuelta atras: en la tarjeta es un boton secundario
+ * (`.ag-anular-abrir`) y solo aca aparece el rojo, en la accion que confirma.
+ * Tokens de `--ag-*` y escalas `--ds-*`; ningun color propio.
+ * ─────────────────────────────────────────────────────────────────── */
+
+/* En la tarjeta: texto con borde fino, sin relleno. Compite con nada. */
+.ag-anular-abrir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ds-control-height-touch);
+  padding: 0 var(--ag-sp-4);
+  box-sizing: border-box;
+  border: 1px solid var(--ag-line-strong);
+  border-radius: var(--ds-radius-2);
+  background: transparent;
+  color: var(--ag-ink-2);
+  font: inherit;
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-ctrl);
+  cursor: pointer;
+}
+.ag-anular-abrir:hover { background: var(--ag-bg-soft); color: var(--ag-ink); }
+.ag-anular-abrir:focus-visible,
+.ag-anular *:focus-visible {
+  outline: 2px solid var(--ag-accent-border);
+  outline-offset: 2px;
+}
+
+/* Lo que dice una tarjeta ya anulada. */
+.ag-anular-motivo {
+  margin: var(--ag-sp-3) 0 0;
+  font-size: var(--ds-type-sm);
+  color: var(--ag-ink-3);
+}
+
+/* ── Dialogo ────────────────────────────────────────────────────── */
+.ag-dialog-panel.ag-dialog-panel--center.ag-anular { max-width: 440px; }
+
+.ag-anular-form { display: grid; gap: var(--ag-sp-4); }
+.ag-anular-titulo {
+  margin: 0;
+  font-size: var(--ds-type-lg);
+  font-weight: var(--ms-w-nav);
+  line-height: 1.3;
+  color: var(--ag-ink);
+  text-wrap: balance;
+}
+.ag-anular-efecto {
+  margin: 0;
+  font-size: var(--ds-type-md);
+  line-height: 1.45;
+  color: var(--ag-ink-2);
+}
+
+.ag-anular-campo { display: grid; gap: var(--ag-sp-1); }
+.ag-anular-etiqueta {
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-ctrl);
+  color: var(--ag-ink-2);
+}
+.ag-anular-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--ds-control-height-touch);
+  padding: var(--ag-sp-2) var(--ag-sp-3);
+  border: 1px solid var(--ag-line-strong);
+  border-radius: var(--ds-radius-3);
+  background: var(--ag-surface);
+  color: var(--ag-ink);
+  font: inherit;
+  /* 1rem: Safari de iOS hace zoom en campos de menos de 16px. */
+  font-size: 1rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+.ag-anular-input::placeholder { color: var(--ag-ink-3); }
+.ag-anular-input[aria-invalid="true"] { border-color: var(--ag-bad); }
+
+.ag-anular-error {
+  margin: 0;
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-ctrl);
+  color: var(--ag-bad);
+}
+
+.ag-anular-acciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ag-sp-2);
+}
+.ag-anular-volver,
+.ag-anular-confirmar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ds-control-height-touch);
+  padding: 0 var(--ag-sp-4);
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-2);
+  font: inherit;
+  font-size: var(--ds-type-md);
+  font-weight: var(--ms-w-nav);
+  cursor: pointer;
+}
+.ag-anular-volver {
+  background: transparent;
+  border-color: var(--ag-line-strong);
+  color: var(--ag-ink);
+}
+.ag-anular-confirmar {
+  background: var(--ag-bad);
+  color: var(--ag-bad-ink);
+}
+.ag-anular-confirmar:disabled,
+.ag-anular-volver:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
