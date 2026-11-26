@@ -1005,8 +1005,10 @@ export default function PlatformAdmin() {
     setOrders(list => list.map(o => (o.id === order.id
       ? { ...o, status: PlatformOrderStatus.CANCELLED, cancel_reason: motivo } : o)));
     setVentas(prev => prev.filter(v => v.order_id !== order.id));
-    loadIngs();
-    loadCaja();
+    // Refrescos best-effort: la anulacion ya esta hecha, un fallo de red aca
+    // no tiene que quedar como rechazo sin atrapar.
+    Promise.resolve(loadIngs()).catch(() => {});
+    Promise.resolve(loadCaja()).catch(() => {});
     msg('Pedido anulado');
     return res;
   }, [loadCaja, loadIngs, msg]);

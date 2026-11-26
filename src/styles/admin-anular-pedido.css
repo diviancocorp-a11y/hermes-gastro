@@ -80,7 +80,11 @@
   resize: vertical;
 }
 .ag-anular-input::placeholder { color: var(--ag-ink-3); }
-.ag-anular-input[aria-invalid="true"] { border-color: var(--ag-bad); }
+.ag-anular-ayuda {
+  margin: 0;
+  font-size: var(--ds-type-sm);
+  color: var(--ag-ink-3);
+}
 
 .ag-anular-error {
   margin: 0;
@@ -118,8 +122,15 @@
   background: var(--ag-bad);
   color: var(--ag-bad-ink);
 }
-.ag-anular-confirmar:disabled,
+/* Deshabilitado: sin opacidad, con tintas del sistema; el texto de ayuda
+   dice por que. */
+.ag-anular-confirmar:disabled {
+  background: var(--ag-bg-soft);
+  border-color: var(--ag-line);
+  color: var(--ag-ink-3);
+  cursor: not-allowed;
+}
 .ag-anular-volver:disabled {
-  opacity: 0.45;
+  color: var(--ag-ink-3);
   cursor: not-allowed;
 }

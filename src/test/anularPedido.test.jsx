@@ -113,6 +113,24 @@ describe('dialogo AnularPedido', () => {
     expect(screen.getByRole('button', { name: 'Anular pedido' }).disabled).toBe(false);
   });
 
+  it('si onConfirmar rechaza, se ve el error y el boton vuelve a quedar habilitado', async () => {
+    const onConfirmar = vi.fn().mockRejectedValue(new Error('red caida'));
+    const onCerrar = vi.fn();
+    render(<AnularPedido pedido={pedido} onConfirmar={onConfirmar} onCerrar={onCerrar} />);
+    fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'por error' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Anular pedido' }));
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Probá de nuevo/);
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Anular pedido' }).disabled).toBe(false);
+  });
+
+  it('la ayuda aparece mientras el motivo no alcanza', () => {
+    render(<AnularPedido pedido={pedido} onConfirmar={vi.fn()} onCerrar={vi.fn()} />);
+    expect(screen.getByText('Escribí al menos 3 caracteres')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'por error' } });
+    expect(screen.queryByText('Escribí al menos 3 caracteres')).toBeNull();
+  });
+
   it('Escape cierra', () => {
     const onCerrar = vi.fn();
     render(<AnularPedido pedido={pedido} onConfirmar={vi.fn()} onCerrar={onCerrar} />);

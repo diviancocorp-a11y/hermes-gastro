@@ -35,9 +35,15 @@ export default function AnularPedido({
     enCurso.current = true;
     setEnviando(true);
     setError('');
-    const res = await onConfirmar(pedido, limpio);
-    enCurso.current = false;
-    setEnviando(false);
+    let res;
+    try {
+      res = await onConfirmar(pedido, limpio);
+    } catch {
+      res = { __error: 'red', message: 'No se pudo anular el pedido. Probá de nuevo.' };
+    } finally {
+      enCurso.current = false;
+      setEnviando(false);
+    }
     if (res?.__error) { setError(res.message || 'No se pudo anular el pedido'); return; }
     onCerrar();
   };
@@ -61,9 +67,11 @@ export default function AnularPedido({
             placeholder="Ej.: se cargó dos veces"
             autoFocus
             disabled={enviando}
-            aria-describedby={error ? `${uid}-error` : undefined}
-            aria-invalid={error ? 'true' : undefined}
+            aria-describedby={limpio ? undefined : `${uid}-ayuda`}
           />
+          {!limpio && (
+            <p id={`${uid}-ayuda`} className="ag-anular-ayuda">Escribí al menos 3 caracteres</p>
+          )}
         </div>
 
         {error && <p id={`${uid}-error`} role="alert" className="ag-anular-error">{error}</p>}
@@ -96,6 +104,7 @@ export default function AnularPedido({
     <Dialog
       open
       onClose={enviando ? undefined : onCerrar}
+      cerrarConBackdrop={!motivo.trim()}
       labelledBy={`${uid}-titulo`}
       describedBy={`${uid}-efecto`}
       variante="center"
