@@ -134,3 +134,39 @@
   color: var(--ag-ink-3);
   cursor: not-allowed;
 }
+
+/* ── Marca de seguimiento de un pedido anulado (0150) ─────────────────
+ * Cerrada: dos lineas en texto secundario (quien y cuando; motivo).
+ * Abierta: "Anulacion" como lista de definiciones. Todo con tokens --ag-*. */
+.ag-anulacion-linea .ag-anular-motivo { margin-top: var(--ag-sp-3); }
+.ag-anulacion-motivo-linea {
+  margin: var(--ag-sp-1) 0 0;
+  font-size: var(--ds-type-sm);
+  color: var(--ag-ink-2);
+  overflow-wrap: anywhere;
+}
+
+.ag-anulacion {
+  margin: 0 0 var(--ag-sp-3);
+  padding-bottom: var(--ag-sp-3);
+  border-bottom: 1px solid var(--ag-line);
+}
+.ag-anulacion-titulo {
+  margin: 0 0 var(--ag-sp-2);
+  font-size: var(--ds-type-sm);
+  font-weight: var(--ms-w-nav);
+  color: var(--ag-ink);
+}
+.ag-anulacion-lista { margin: 0; display: grid; gap: var(--ag-sp-1); }
+.ag-anulacion-fila {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, max-content) minmax(0, 1fr);
+  gap: var(--ag-sp-3);
+  font-size: var(--ds-type-sm);
+}
+.ag-anulacion-fila dt { color: var(--ag-ink-3); }
+.ag-anulacion-fila dd {
+  margin: 0;
+  color: var(--ag-ink-2);
+  overflow-wrap: anywhere;
+}
