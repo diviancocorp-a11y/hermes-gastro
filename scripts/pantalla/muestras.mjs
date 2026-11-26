@@ -188,6 +188,8 @@ const cargarMuestra = (r) => async () => ({ ok: true, data: r });
  */
 // Pedidos de Cochi (USD + VES): uno con el envio por confirmar, abierto para
 // cargar el costo, y uno ya cerrado con su total final en las dos monedas.
+// Cada uno con un origen distinto (catalogo, WhatsApp, telefono): la etiqueta
+// del origen se mira en la tarjeta cerrada y en la abierta.
 const PEDIDO_BASE = {
   tenant_id: 't', status: 'new', channel: 'catalog', customer_phone: '584141234567', delivery: 'envio',
   delivery_address: 'Av. Francisco de Miranda 100, Caracas', payment: 'efectivo', discount: 0, tip_amount: 0,
@@ -197,10 +199,96 @@ const PEDIDOS_COCHI = [
   { ...PEDIDO_BASE, id: 'p1', customer_name: 'Ana Prueba', subtotal: 17, total: 17, delivery_cost: 0, delivery_pending: true,
     fx_rate: 798.5724, fx_currency: 'VES', total_secondary: 13575.73 },
   { ...PEDIDO_BASE, id: 'p2', customer_name: 'Luis Pérez', subtotal: 8.5, total: 11.5, delivery_cost: 3, delivery_pending: false,
-    fx_rate: 798.5724, fx_currency: 'VES', total_secondary: 9183.58, created_at: '2026-11-16T14:40:00Z' },
+    fx_rate: 798.5724, fx_currency: 'VES', total_secondary: 9183.58, created_at: '2026-11-16T14:40:00Z',
+    channel: 'manual_whatsapp' },
+  { ...PEDIDO_BASE, id: 'p3', customer_name: 'María Fernanda Rodríguez de los Ángeles', status: 'preparing',
+    delivery: 'retiro', delivery_address: null, subtotal: 9.5, total: 9.5, delivery_cost: 0, delivery_pending: false,
+    fx_rate: 798.5724, fx_currency: 'VES', total_secondary: 7586.44, created_at: '2026-11-16T15:25:00Z',
+    channel: 'manual_telefono' },
 ];
 
+// Carga a mano (Cochi). La carta tiene el nombre largo que no entra, un
+// producto con opciones obligatorias (la proteina) y extras con precio, uno
+// con opciones solo opcionales y categorias de sobra para el scroll de chips.
+const PROTEINA = {
+  id: 'g-prot', name: 'Elegí la proteína', type: 'single', required: true,
+  choices: [
+    { id: 'pollo', label: 'Pollo a la brasa' },
+    { id: 'mechada', label: 'Carne mechada' },
+    { id: 'cochino', label: 'Cochino frito', price: 1.5 },
+  ],
+};
+const EXTRAS = {
+  id: 'g-extras', name: 'Extras', type: 'multiple', required: false, max: 3,
+  choices: [
+    { id: 'tostones', label: 'Tostones', price: 1.5 },
+    { id: 'guayanes', label: 'Queso guayanés', price: 2 },
+    { id: 'aguacate', label: 'Aguacate', price: 1 },
+    { id: 'ajo', label: 'Salsa de ajo', price: 0.5, max_qty: 3 },
+  ],
+};
+const prod = (o) => ({ active: true, is_archived: false, type: 'product', image_url: null, option_groups: [], ...o });
+const CARTA_COCHI = [
+  prod({ id: 'b3', name: 'Bandeja 3 carnes', price: 12, category: 'Bandejas', option_groups: [PROTEINA, EXTRAS] }),
+  prod({ id: 'bc', name: 'Bandeja criolla con arroz, caraotas, tajadas y huevo frito (para compartir)', price: 18.5, category: 'Bandejas' }),
+  prod({ id: 'bi', name: 'Bandeja infantil', price: 7, category: 'Bandejas' }),
+  prod({ id: 'ap', name: 'Arepa de pabellón', price: 5.5, category: 'Arepas', option_groups: [EXTRAS] }),
+  prod({ id: 'ar', name: 'Arepa reina pepiada', price: 5, category: 'Arepas' }),
+  prod({ id: 'ca', name: 'Cachapa con queso de mano', price: 6.5, category: 'Cachapas' }),
+  prod({ id: 'te', name: 'Tequeños (6 u.)', price: 5, category: 'Para picar' }),
+  prod({ id: 'pa', name: 'Papelón con limón', price: 2, category: 'Bebidas' }),
+  prod({ id: 'ma', name: 'Malta', price: 1.5, category: 'Bebidas' }),
+  prod({ id: 'qu', name: 'Quesillo', price: 3, category: 'Postres' }),
+  // No se cargan: inactivo y servicio con turno.
+  prod({ id: 'x1', name: 'Hallaca (temporada)', price: 4, category: 'Arepas', active: false }),
+];
+const SETTINGS_COCHI = {
+  payment_accounts: [
+    { id: 'c1', label: 'Pago móvil', banco: 'Banesco', moneda: 'VES', active: true, scope: 'clientes' },
+    { id: 'c2', label: 'Zelle', banco: 'Bank of America', moneda: 'USD', active: true },
+    { id: 'c3', label: 'Pagos a proveedores', banco: 'Mercantil', moneda: 'VES', active: true, scope: 'proveedores' },
+  ],
+};
+const MONEDA_COCHI = { monedaPrincipal: 'USD', monedaSecundaria: 'VES', tasa: 798.5724, vencida: false, fecha: '2026-11-26' };
+const CARRITO_COCHI = [
+  { productoId: 'b3', qty: 1, seleccion: [{ groupId: 'g-prot', choiceId: 'pollo', qty: 1 }, { groupId: 'g-extras', choiceId: 'tostones', qty: 1 }] },
+  { productoId: 'bi', qty: 2 },
+];
+const NUEVO_PEDIDO = {
+  productos: CARTA_COCHI, settings: SETTINGS_COCHI, moneda: MONEDA_COCHI, tenantSlug: 'cochi', sinPortal: true,
+};
+
 export const MUESTRAS = {
+  'nuevo-pedido-productos': {
+    modulo: 'src/components/admin/platform/NuevoPedido.jsx',
+    titulo: 'Nuevo pedido · productos (Bandejas, 2 líneas)',
+    props: { ...NUEVO_PEDIDO, estadoInicial: { categoria: 'Bandejas', carrito: CARRITO_COCHI } },
+    anchos: [390],
+  },
+  'nuevo-pedido-opciones': {
+    modulo: 'src/components/admin/platform/NuevoPedido.jsx',
+    titulo: 'Nuevo pedido · opciones obligatorias sin elegir',
+    props: {
+      ...NUEVO_PEDIDO,
+      estadoInicial: {
+        carrito: CARRITO_COCHI, productoAbiertoId: 'b3', intentoFicha: true,
+        opciones: { 'g-extras': { tostones: 1, ajo: 2 } },
+      },
+    },
+    anchos: [390],
+  },
+  'nuevo-pedido-datos': {
+    modulo: 'src/components/admin/platform/NuevoPedido.jsx',
+    titulo: 'Nuevo pedido · datos con errores',
+    props: {
+      ...NUEVO_PEDIDO,
+      estadoInicial: {
+        paso: 'datos', carrito: CARRITO_COCHI, intentado: true,
+        form: { cliente: 'María Fernanda Rodríguez de los Ángeles', telefono: '0414', entrega: 'envio', pago: 'c1' },
+      },
+    },
+    anchos: [390],
+  },
   'pedidos-envio': {
     modulo: 'src/components/admin/platform/OrdersPanel.jsx',
     titulo: 'Pedidos · envío por confirmar (USD + VES)',

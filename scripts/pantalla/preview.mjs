@@ -39,6 +39,10 @@ const SALIDA = path.join(RAIZ, '.preview');
 
 // El orden importa: primitivas, tokens, compartidos y al final los de pantalla.
 const CSS_BASE = [
+  // Las escalas del nucleo (--ds-radius-*, --ds-type-*, alto de control). En
+  // la app llegan globales por index.css; sin esta linea una pantalla que las
+  // use sale sin radios ni tamanos y parece rota.
+  'src/styles/dico-tokens.css',
   'src/styles/machine-soul.css',
   'src/styles/admin-tokens.css',
   'src/styles/admin-shared.css',
@@ -53,6 +57,7 @@ const CSS_PANTALLAS = [
   'src/styles/admin-sectores.css',
   'src/styles/admin-resultado.css',
   'src/styles/admin-plan.css',
+  'src/styles/admin-nuevo-pedido.css',
   // Define .ag-sr-only, que en la app es global. Sin ella los textos para
   // lectores de pantalla salen visibles y la vista previa miente.
   'src/styles/admin-sidebar.css',

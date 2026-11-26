@@ -14,6 +14,9 @@ import {
 import PantallaDeCobro from './PantallaDeCobro';
 import { vePrecios } from '../../../modules/roles';
 import { formatearMonto } from '../../../lib/moneda';
+import { etiquetaOrigen, puedeCargarPedidoManual } from '../../../lib/pedidoManual';
+import NuevoPedido from './NuevoPedido';
+import '../../../styles/admin-nuevo-pedido.css';
 
 const LABELS = {
   [PlatformOrderStatus.PENDING_REVIEW]: 'Por revisar',
@@ -98,6 +101,7 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, onSetDelive
   // Con el envio por confirmar el total es parcial: no se cobra hasta cargarlo.
   const puedeCobrar = !!onCobrar && OPEN_ORDER_STATUSES.includes(order.status) && order.delivery_pending !== true;
   const porRevisar = order.status === PlatformOrderStatus.PENDING_REVIEW;
+  const origen = etiquetaOrigen(order.channel);
 
   const toggle = async () => {
     const opening = !open;
@@ -128,6 +132,7 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, onSetDelive
             {order.customer_name || 'Sin nombre'}
           </div>
           <div style={{ fontSize: 12, color: 'var(--ag-ink-3)', marginTop: 2 }}>
+            {origen && <><span className="ag-pedidos-origen">{origen}</span> · </>}
             {when(order.created_at)} · {order.delivery === 'envio' ? 'Envío' : 'Retiro'}
             {conImportes && <> · {order.payment}</>}
             {envioPendiente && <> · <strong style={{ color: 'var(--ag-warn)' }}>Envío por confirmar</strong></>}
@@ -287,10 +292,24 @@ export default function OrdersPanel({
   // 6f: sin roles se comporta como antes (todo visible). El recorte es de
   // pantalla; lo que de verdad protege los datos son las policies de 0050.
   roles = null,
+  // Carga a mano (WhatsApp, telefono, local). Sin `onCrearPedidoManual` el
+  // boton no aparece y el panel queda como antes.
+  productos = [], settings = null, tenantSlug = null,
+  onCrearPedidoManual = null, onPedidoCreado = null,
 }) {
   const confirmSlide = useConfirm();
   const [cobrando, setCobrando] = useState(null);
+  const [cargandoNuevo, setCargandoNuevo] = useState(false);
   const conImportes = roles === null ? true : vePrecios(roles);
+  const puedeCargar = !!onCrearPedidoManual && (roles === null || puedeCargarPedidoManual(roles));
+  const fmtTotal = (n) => (moneda?.monedaPrincipal && moneda.monedaPrincipal !== 'ARS'
+    ? formatearMonto(n, moneda.monedaPrincipal) : money(n));
+
+  const pedidoCreado = (resultado, cuerpo) => {
+    const total = Number.isFinite(Number(resultado?.total)) ? ` · ${fmtTotal(resultado.total)}` : '';
+    showToast?.(`Pedido de ${cuerpo?.customer || 'cliente'} cargado${total}`);
+    onPedidoCreado?.();
+  };
 
   const openOrders = orders.filter(o => OPEN_ORDER_STATUSES.includes(o.status))
     .sort((a, b) => Number(b.status === PlatformOrderStatus.PENDING_REVIEW)
@@ -340,10 +359,17 @@ export default function OrdersPanel({
   return (
     <div style={{ padding: '12px 16px 6px', position: 'relative', zIndex: 2 }}>
       <div style={{ marginBottom: 14 }}>
-        <h2 style={{
-          fontFamily: "'DM Sans', sans-serif", fontWeight: 800, fontSize: 18,
-          margin: 0, color: 'var(--ag-ink)', letterSpacing: '-0.01em',
-        }}>Pedidos</h2>
+        <div className="ag-pedidos-cabecera">
+          <h2 style={{
+            fontFamily: "'DM Sans', sans-serif", fontWeight: 800, fontSize: 18,
+            margin: 0, color: 'var(--ag-ink)', letterSpacing: '-0.01em',
+          }}>Pedidos</h2>
+          {puedeCargar && (
+            <button type="button" className="ag-btn-primary ag-pedidos-nuevo" onClick={() => setCargandoNuevo(true)}>
+              <span aria-hidden="true">+</span> Nuevo pedido
+            </button>
+          )}
+        </div>
         {conEnvioPendiente > 0 && conImportes && (
           <p role="status" style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--ag-warn)' }}>
             {conEnvioPendiente === 1 ? '1 pedido espera' : `${conEnvioPendiente} pedidos esperan`} el costo del envío.
@@ -363,6 +389,11 @@ export default function OrdersPanel({
             <div style={{ fontSize: 13, color: 'var(--ag-ink-3)' }}>
               Cuando alguien compre en tu catálogo, aparece acá.
             </div>
+            {puedeCargar && (
+              <p className="ag-pedidos-vacio-manual">
+                Si te escriben por WhatsApp o te llaman, cargalo con Nuevo pedido.
+              </p>
+            )}
           </div>
         )}
 
@@ -414,6 +445,18 @@ export default function OrdersPanel({
           onCerrar={() => setCobrando(null)}
           onCobrado={onCobrado}
           onCompletar={completar}
+        />
+      )}
+
+      {cargandoNuevo && (
+        <NuevoPedido
+          productos={productos}
+          settings={settings}
+          moneda={moneda}
+          tenantSlug={tenantSlug}
+          onConfirmar={onCrearPedidoManual}
+          onCreado={pedidoCreado}
+          onCerrar={() => setCargandoNuevo(false)}
         />
       )}
     </div>
