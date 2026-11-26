@@ -246,32 +246,38 @@ grant execute on function public.anular_pedido(uuid, text) to authenticated;
 
 -- ── Backfill: anulaciones ya hechas con cancelled_by y sin marca ──
 update public.orders o
-   set cancelled_by_name = coalesce(nullif(btrim(p.full_name), ''), nullif(btrim(p.name), ''),
-                                    split_part(u.email, '@', 1)),
-       cancelled_by_email = coalesce(u.email, p.email),
-       cancelled_by_role = (
-         select case x.rol
-                  when 'owner'      then 'Dueño'
-                  when 'manager'    then 'Encargado'
-                  when 'cashier'    then 'Cajero'
-                  when 'attendant'  then 'Mozo'
-                  when 'kitchen'    then 'Cocina'
-                  when 'marketer'   then 'Marketing'
-                  when 'accountant' then 'Contador'
-                  when 'staff'      then 'Equipo'
-                  else x.rol
-                end
-           from public.tenant_members tm
-           cross join lateral unnest(
-             case when coalesce(array_length(tm.roles, 1), 0) > 0
-                  then tm.roles else array[tm.role] end) as x(rol)
-          where tm.tenant_id = o.tenant_id
-            and tm.user_id = o.cancelled_by
-          order by array_position(
-            array['owner','manager','cashier','attendant','kitchen','marketer','accountant'], x.rol)
-          limit 1)
-  from (select 1) uno
-  left join auth.users u on u.id = o.cancelled_by
-  left join public.profiles p on p.id = o.cancelled_by
- where o.cancelled_by is not null
-   and o.cancelled_by_name is null;
+   set cancelled_by_name = m.nombre,
+       cancelled_by_email = m.correo,
+       cancelled_by_role = m.rol
+  from (
+    select o2.id,
+           coalesce(nullif(btrim(p.full_name), ''), nullif(btrim(p.name), ''),
+                    split_part(u.email, '@', 1)) as nombre,
+           coalesce(u.email, p.email) as correo,
+           (select case x.rol
+                     when 'owner'      then 'Dueño'
+                     when 'manager'    then 'Encargado'
+                     when 'cashier'    then 'Cajero'
+                     when 'attendant'  then 'Mozo'
+                     when 'kitchen'    then 'Cocina'
+                     when 'marketer'   then 'Marketing'
+                     when 'accountant' then 'Contador'
+                     when 'staff'      then 'Equipo'
+                     else x.rol
+                   end
+              from public.tenant_members tm
+              cross join lateral unnest(
+                case when coalesce(array_length(tm.roles, 1), 0) > 0
+                     then tm.roles else array[tm.role] end) as x(rol)
+             where tm.tenant_id = o2.tenant_id
+               and tm.user_id = o2.cancelled_by
+             order by array_position(
+               array['owner','manager','cashier','attendant','kitchen','marketer','accountant'], x.rol)
+             limit 1) as rol
+      from public.orders o2
+      left join auth.users u on u.id = o2.cancelled_by
+      left join public.profiles p on p.id = o2.cancelled_by
+     where o2.cancelled_by is not null
+       and o2.cancelled_by_name is null
+  ) m
+ where o.id = m.id;
