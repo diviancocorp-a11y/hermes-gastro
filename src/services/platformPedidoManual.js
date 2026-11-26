@@ -9,6 +9,12 @@ import { firmaPedidoManual } from '../lib/pedidoManual';
 
 const SCOPE = 'pedido-manual';
 
+/** Cuanto se espera a submit-order antes de devolverle el control a la pantalla. */
+export const LIMITE_MS = 20000;
+
+/** El pedido pudo haber entrado: no se dice "fallo" porque no se sabe. */
+export const ERROR_SIN_RESPUESTA = 'No sabemos si entró: revisá Pedidos antes de reintentar.';
+
 /**
  * @param {object} cuerpo  salida de cuerpoPedidoManual()
  * @returns {Promise<{ ok: true, orderId, total, fx?, warnings? } | { ok: false, error: string }>}
@@ -19,10 +25,25 @@ export async function crearPedidoManual(cuerpo) {
     const token = ses?.session?.access_token;
     if (!token) return { ok: false, error: 'La sesión venció. Volvé a entrar al panel.' };
 
-    const { data, error } = await supabase.functions.invoke('submit-order', {
-      headers: { Authorization: `Bearer ${token}` },
-      body: { ...cuerpo, client_request_id: claveDeIdempotencia(SCOPE, firmaPedidoManual(cuerpo)) },
+    // Con la red colgada la pantalla quedaba enviando para siempre (X y Escape
+    // bloqueados). A los LIMITE_MS se corta la espera: el signal aborta el
+    // fetch y la carrera cubre a un cliente que no lo respete. El reintento es
+    // seguro: la clave de idempotencia NO se reinicia hasta que entra.
+    const control = typeof AbortController === 'function' ? new AbortController() : null;
+    let reloj;
+    const vencido = new Promise((resolve) => {
+      reloj = setTimeout(() => { control?.abort(); resolve({ __vencido: true }); }, LIMITE_MS);
     });
+    const respuesta = await Promise.race([
+      supabase.functions.invoke('submit-order', {
+        headers: { Authorization: `Bearer ${token}` },
+        body: { ...cuerpo, client_request_id: claveDeIdempotencia(SCOPE, firmaPedidoManual(cuerpo)) },
+        ...(control ? { signal: control.signal } : {}),
+      }),
+      vencido,
+    ]).finally(() => clearTimeout(reloj));
+    if (respuesta?.__vencido || control?.signal.aborted) return { ok: false, error: ERROR_SIN_RESPUESTA };
+    const { data, error } = respuesta;
 
     if (error) {
       let msg = null;
