@@ -61,7 +61,9 @@ describe('boton Anular en la tarjeta', () => {
   });
   it('un pedido anulado muestra el motivo', () => {
     panel({}, [{ ...base, status: 'cancelled', cancel_reason: 'Se cargó dos veces' }]);
-    expect(screen.getByText('Anulado: Se cargó dos veces')).toBeTruthy();
+    // La tarjeta del helper viene abierta: el motivo sale en el bloque Anulacion.
+    expect(screen.getByRole('group', { name: 'Anulación' })).toBeTruthy();
+    expect(screen.getByText('Se cargó dos veces')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Anular' })).toBeNull();
   });
   it('al tocarlo abre el dialogo con el motivo en foco', async () => {

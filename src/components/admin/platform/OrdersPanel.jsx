@@ -18,6 +18,7 @@ import { etiquetaOrigen, puedeCargarPedidoManual } from '../../../lib/pedidoManu
 import NuevoPedido from './NuevoPedido';
 import AnularPedido from './AnularPedido';
 import { puedeAnularPedido } from '../../../lib/anularPedido';
+import MarcaDeAnulacion from './MarcaDeAnulacion';
 import '../../../styles/admin-nuevo-pedido.css';
 
 const LABELS = {
@@ -81,7 +82,7 @@ const RISK_LABELS = {
   age_restricted: 'Producto con control de edad',
 };
 
-function OrderCard({ order, onAdvance, onCancel, onAnular = null, onCobrar, onReview, onSetDeliveryCost, moneda = null, conImportes = true, abiertoInicial = false, itemsIniciales = null }) {
+function OrderCard({ order, onAdvance, onCancel, onAnular = null, timezone, onCobrar, onReview, onSetDeliveryCost, moneda = null, conImportes = true, abiertoInicial = false, itemsIniciales = null }) {
   const [open, setOpen] = useState(abiertoInicial);
   const [costoEnvio, setCostoEnvio] = useState('');
   const [guardando, setGuardando] = useState(false);
@@ -104,6 +105,9 @@ function OrderCard({ order, onAdvance, onCancel, onAnular = null, onCobrar, onRe
   const puedeCobrar = !!onCobrar && OPEN_ORDER_STATUSES.includes(order.status) && order.delivery_pending !== true;
   const porRevisar = order.status === PlatformOrderStatus.PENDING_REVIEW;
   const origen = etiquetaOrigen(order.channel);
+  // Con motivo o con marca: una cancelacion comun (sin motivo) no muestra nada.
+  const anulado = order.status === PlatformOrderStatus.CANCELLED
+    && !!(order.cancel_reason || order.cancelled_by_name);
 
   const toggle = async () => {
     const opening = !open;
@@ -155,12 +159,11 @@ function OrderCard({ order, onAdvance, onCancel, onAnular = null, onCobrar, onRe
         </div>
       </button>
 
-      {order.status === PlatformOrderStatus.CANCELLED && order.cancel_reason && (
-        <p className="ag-anular-motivo">Anulado: {order.cancel_reason}</p>
-      )}
+      {anulado && !open && <MarcaDeAnulacion pedido={order} timezone={timezone} />}
 
       {open && (
         <div style={{ marginTop: 11, paddingTop: 11, borderTop: '1px solid var(--ag-line)' }}>
+          {anulado && <MarcaDeAnulacion pedido={order} timezone={timezone} abierta />}
           {items === null && <p style={{ fontSize: 12, color: 'var(--ag-ink-3)', margin: 0 }}>Cargando ítems...</p>}
           {items?.length === 0 && <p style={{ fontSize: 12, color: 'var(--ag-ink-3)', margin: 0 }}>Sin ítems.</p>}
           {items?.map(it => (
@@ -310,6 +313,8 @@ export default function OrdersPanel({
   // Anular un pedido completado (dueño y encargado). Sin `onAnular` o sin el
   // rol, el boton no aparece.
   onAnular = null,
+  // Zona horaria del local: la hora de la anulacion se muestra en su reloj.
+  timezone = undefined,
 }) {
   const confirmSlide = useConfirm();
   const [cobrando, setCobrando] = useState(null);
@@ -445,6 +450,7 @@ export default function OrdersPanel({
                 <OrderCard
                   key={o.id} order={o} onAdvance={advance} onCancel={cancel}
                   onAnular={puedeAnular ? setAnulando : null}
+                  timezone={timezone}
                   moneda={moneda}
                   conImportes={conImportes}
                   abiertoInicial={o.id === abiertoId}
