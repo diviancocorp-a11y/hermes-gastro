@@ -10,7 +10,9 @@ import * as opciones from '../../../platform/functions/submit-order/opciones.ts'
 export function crearEstado() {
   // reservar_cupon (0144) por defecto da el uso: los tests de cupones lo pisan.
   return {
-    tablas: {}, inserts: [], rpcs: [],
+    tablas: {}, inserts: [], rpcs: [], filtros: [],
+    // usuarios[token] = { id } : lo que devuelve auth.getUser(token). Sin la clave, token invalido.
+    usuarios: {},
     rpcRespuestas: { reservar_cupon: () => ({ data: { ok: true, redemption_id: 'red-1' }, error: null }) },
   };
 }
@@ -24,6 +26,12 @@ function crearCliente(estado) {
       return r ? r(args) : { data: true };
     },
     functions: { invoke: async () => ({}) },
+    auth: {
+      getUser: async (token) => {
+        const user = estado.usuarios?.[token];
+        return user ? { data: { user }, error: null } : { data: { user: null }, error: { message: 'invalid JWT' } };
+      },
+    },
     from(tabla) {
       const q = { _insert: null };
       const fin = () => {
@@ -41,6 +49,8 @@ function crearCliente(estado) {
           if (prop === 'insert') return (v) => { q._insert = v; return api; };
           if (prop === 'update') return (v) => { (estado.updates ||= []).push({ tabla, valores: v }); return api; };
           if (prop === 'single' || prop === 'maybeSingle') return async () => fin();
+          // Los .eq quedan registrados: la base filtra, el test comprueba que se pidio el filtro.
+          if (prop === 'eq') return (col, val) => { estado.filtros.push({ tabla, col, val }); return api; };
           return () => api;
         },
       });
