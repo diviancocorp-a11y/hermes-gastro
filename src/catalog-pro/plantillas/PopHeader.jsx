@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import PrecioCatalogo from "./PrecioCatalogo";
 import PopAnuncios from "./PopAnuncios";
+import CatalogMusicToggle from "../CatalogMusicToggle";
 
 const ETIQUETAS = { favoritos: "Favoritos", flyers: "Novedades", menu: "Menú", historia: "Nosotros" };
 
@@ -14,7 +15,7 @@ function IconoBolsa() {
   );
 }
 
-export default function PopHeader({ nombre, logo, letra, anuncios = [], ids = [], cartCount, cartTotal, moneda, onOpenCart, acentoAnuncios = false }) {
+export default function PopHeader({ nombre, logo, letra, anuncios = [], ids = [], cartCount, cartTotal, moneda, onOpenCart, acentoAnuncios = false, musica = false }) {
   const enlaces = ids.filter((id) => ETIQUETAS[id]);
   const [abierto, setAbierto] = useState(false);
   const botonRef = useRef(null);
@@ -54,12 +55,15 @@ export default function PopHeader({ nombre, logo, letra, anuncios = [], ids = []
         <nav className="pop-nav" aria-label="Secciones">
           {enlaces.map((id) => <a key={id} href={`#pop-${id}`}>{ETIQUETAS[id]}</a>)}
         </nav>
-        <button type="button" className="pop-btn pop-btn--primario pop-header__pedido" onClick={onOpenCart}>
-          <IconoBolsa />
-          <span>Mi pedido</span>
-          {cartCount > 0 && <span className="pop-header__cuenta" aria-label={`${cartCount} en el pedido`}>{cartCount}</span>}
-          {cartCount > 0 && <span className="pop-header__total"><PrecioCatalogo monto={cartTotal} moneda={{ ...moneda, secundaria: null }} /></span>}
-        </button>
+        <div className="pop-header__acciones">
+          {musica && <CatalogMusicToggle className="pop-header__musica" />}
+          <button type="button" className="pop-btn pop-btn--primario pop-header__pedido" onClick={onOpenCart}>
+            <IconoBolsa />
+            <span>Mi pedido</span>
+            {cartCount > 0 && <span className="pop-header__cuenta" aria-label={`${cartCount} en el pedido`}>{cartCount}</span>}
+            {cartCount > 0 && <span className="pop-header__total"><PrecioCatalogo monto={cartTotal} moneda={{ ...moneda, secundaria: null }} /></span>}
+          </button>
+        </div>
         {enlaces.length > 0 && (
           <button ref={botonRef} type="button" className="pop-header__menu" aria-expanded={abierto} aria-controls="pop-nav-movil" aria-label={abierto ? "Cerrar el menú" : "Abrir el menú"} onClick={() => setAbierto((v) => !v)}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">

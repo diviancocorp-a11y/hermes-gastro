@@ -65,7 +65,23 @@
 .pop-nav { display: none; gap: 4px; }
 .pop-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: var(--r); font: 600 15px/1 var(--font-body); color: var(--tx); text-decoration: none; }
 .pop-nav a:hover { background: var(--b3); }
+.pop-header__acciones { display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
 .pop-header__pedido { flex-shrink: 0; }
+/* Musica: 44 px reales (el .cp-music base es de 38) y foco con el token de la marca. */
+.pop-header__musica, .pop-header__musica[data-on="false"] { width: 44px; height: 44px; color: var(--tx); }
+.pop-header__musica::after { inset: 0; }
+.pop-header__musica:focus-visible { outline-color: var(--ac-text); }
+/* Celular angosto: gana "Mi pedido" y el logo. La musica queda como icono sin
+   borde (sigue con 44 px de area tactil) y el boton de pedido se aprieta. */
+@media (max-width: 479px) {
+  .pop-header { gap: 8px; }
+  .pop-header__acciones { gap: 2px; }
+  .pop-header__musica { border-color: transparent; }
+  .pop-header__pedido { padding: 0 12px; gap: 6px; }
+  .pop-header__letra { flex-shrink: 0; }
+  .pop-header__logo { object-fit: contain; object-position: left center; }
+}
+.pop-footer__tool:focus-visible { outline: 2px solid var(--ac-text); outline-offset: 2px; }
 .pop-header::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--ac); transform-origin: 0 50%; transform: scaleX(var(--sp, 0)); pointer-events: none; }
 .pop-header__cuenta { display: grid; place-items: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 999px; background: var(--on-ac); color: var(--ac); font: 800 13px/1 var(--font-body); }
 .pop-header__total { display: none; }

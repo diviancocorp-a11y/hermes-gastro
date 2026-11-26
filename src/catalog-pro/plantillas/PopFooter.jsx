@@ -5,8 +5,19 @@
 import { useEffect, useState } from "react";
 import CatalogFooter from "../CatalogFooter";
 import conAcento from "./conAcento";
+import useCatalogMusic from "../useCatalogMusic";
 
-export default function PopFooter({ nombre, logo, textos = {}, settings, quieto, onAlternar, acento = false }) {
+// Mismo estado que el boton del header: los dos leen el singleton de catalogMusic.
+function HerramientaMusica() {
+  const [on, alternar] = useCatalogMusic();
+  return (
+    <button type="button" className="pop-footer__tool" aria-pressed={on} onClick={alternar}>
+      {on ? "Silenciar música" : "Activar música"}
+    </button>
+  );
+}
+
+export default function PopFooter({ nombre, logo, textos = {}, settings, quieto, onAlternar, acento = false, musica = false }) {
   // "Instalar en mi celular": solo cuando el navegador ofrece instalar la app.
   const [instalable, setInstalable] = useState(null);
   useEffect(() => {
@@ -32,6 +43,7 @@ export default function PopFooter({ nombre, logo, textos = {}, settings, quieto,
           </div>
           <div className="pop-footer__herramientas">
             {instalable && <button type="button" className="pop-footer__tool" onClick={instalar}>Instalar {nombre} en mi celular</button>}
+            {musica && <HerramientaMusica />}
             <button type="button" className="pop-footer__tool" aria-pressed={quieto} onClick={onAlternar}>
               {quieto ? "Reanudar animaciones" : "Pausar animaciones"}
             </button>
