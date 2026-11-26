@@ -6,7 +6,7 @@ const { mockFrom, mockRpc } = vi.hoisted(() => ({ mockFrom: vi.fn(), mockRpc: vi
 vi.mock('../lib/supabase', () => ({ supabase: { from: mockFrom, rpc: mockRpc } }));
 
 import {
-  fetchSales, createSale, validateSale, completeOrder,
+  fetchSales, createSale, validateSale, completeOrder, anularPedido,
   productosComoRecetas, pedidosParaVentas,
   SELECT_COLS,
 } from '../services/platformSales';
@@ -104,6 +104,38 @@ describe('completeOrder', () => {
   it('sin orderId no llama a la RPC', async () => {
     const res = await completeOrder(null);
     expect(res.__error).toBe('validation');
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+});
+
+describe('anularPedido', () => {
+  it('llama a la RPC con el pedido y el motivo sin espacios sobrantes', async () => {
+    mockRpc.mockResolvedValue({ data: { ok: true, ventas: 2, pagos: 1 }, error: null });
+    const res = await anularPedido('o1', '  cargado dos veces ');
+    expect(mockRpc).toHaveBeenCalledWith('anular_pedido', { p_order_id: 'o1', p_motivo: 'cargado dos veces' });
+    expect(res).toEqual({ ok: true, ventas: 2, pagos: 1 });
+  });
+
+  it('traduce los codigos de error de la RPC', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'sin_permiso' } });
+    const sinPermiso = await anularPedido('o1', 'por error');
+    expect(sinPermiso.__error).toBe('sin_permiso');
+    expect(sinPermiso.message).toMatch(/dueño o el encargado/);
+
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'P0001: tiene_factura' } });
+    const factura = await anularPedido('o1', 'por error');
+    expect(factura.message).toMatch(/nota de crédito/);
+  });
+
+  it('error desconocido: devuelve el mensaje de la base', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'boom' } });
+    const res = await anularPedido('o1', 'por error');
+    expect(res).toEqual({ __error: 'db', message: 'boom' });
+  });
+
+  it('sin pedido o con motivo corto no llama a la RPC', async () => {
+    expect((await anularPedido(null, 'por error')).__error).toBe('validation');
+    expect((await anularPedido('o1', ' x ')).__error).toBe('falta_motivo');
     expect(mockRpc).not.toHaveBeenCalled();
   });
 });

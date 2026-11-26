@@ -371,7 +371,7 @@ export function categoriesFrom(products) {
 
 /* ──────────────────────────── Pedidos ──────────────────────────── */
 
-const ORDER_COLS = 'id, created_at, status, channel, customer_name, customer_phone, customer_email, total, subtotal, discount, delivery, delivery_address, delivery_cost, delivery_date, payment, note, is_gift, gift_note, tip_amount, resource_id, staff_id, visit_id, review_status, risk_flags, reviewed_at, review_note, delivery_pending, fx_rate, fx_currency, total_secondary';
+const ORDER_COLS = 'id, created_at, status, channel, customer_name, customer_phone, customer_email, total, subtotal, discount, delivery, delivery_address, delivery_cost, delivery_date, payment, note, is_gift, gift_note, tip_amount, resource_id, staff_id, visit_id, review_status, risk_flags, reviewed_at, review_note, delivery_pending, fx_rate, fx_currency, total_secondary, cancel_reason';
 
 export async function fetchOrders(tenantId, { limit = 100 } = {}) {
   exigirTenant(tenantId, 'fetchOrders');

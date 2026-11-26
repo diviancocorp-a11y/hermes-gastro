@@ -16,6 +16,8 @@ import { vePrecios } from '../../../modules/roles';
 import { formatearMonto } from '../../../lib/moneda';
 import { etiquetaOrigen, puedeCargarPedidoManual } from '../../../lib/pedidoManual';
 import NuevoPedido from './NuevoPedido';
+import AnularPedido from './AnularPedido';
+import { puedeAnularPedido } from '../../../lib/anularPedido';
 import '../../../styles/admin-nuevo-pedido.css';
 
 const LABELS = {
@@ -79,7 +81,7 @@ const RISK_LABELS = {
   age_restricted: 'Producto con control de edad',
 };
 
-function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, onSetDeliveryCost, moneda = null, conImportes = true, abiertoInicial = false, itemsIniciales = null }) {
+function OrderCard({ order, onAdvance, onCancel, onAnular = null, onCobrar, onReview, onSetDeliveryCost, moneda = null, conImportes = true, abiertoInicial = false, itemsIniciales = null }) {
   const [open, setOpen] = useState(abiertoInicial);
   const [costoEnvio, setCostoEnvio] = useState('');
   const [guardando, setGuardando] = useState(false);
@@ -152,6 +154,10 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, onSetDelive
           <div style={{ marginTop: 3 }}><StatusChip status={order.status} /></div>
         </div>
       </button>
+
+      {order.status === PlatformOrderStatus.CANCELLED && order.cancel_reason && (
+        <p className="ag-anular-motivo">Anulado: {order.cancel_reason}</p>
+      )}
 
       {open && (
         <div style={{ marginTop: 11, paddingTop: 11, borderTop: '1px solid var(--ag-line)' }}>
@@ -263,6 +269,11 @@ function OrderCard({ order, onAdvance, onCancel, onCobrar, onReview, onSetDelive
                   Cancelar
                 </button>
               )}
+              {onAnular && order.status === PlatformOrderStatus.COMPLETED && (
+                <button type="button" className="ag-anular-abrir" onClick={() => onAnular(order)}>
+                  Anular
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -296,12 +307,17 @@ export default function OrdersPanel({
   // boton no aparece y el panel queda como antes.
   productos = [], settings = null, tenantSlug = null,
   onCrearPedidoManual = null, onPedidoCreado = null,
+  // Anular un pedido completado (dueño y encargado). Sin `onAnular` o sin el
+  // rol, el boton no aparece.
+  onAnular = null,
 }) {
   const confirmSlide = useConfirm();
   const [cobrando, setCobrando] = useState(null);
   const [cargandoNuevo, setCargandoNuevo] = useState(false);
+  const [anulando, setAnulando] = useState(null);
   const conImportes = roles === null ? true : vePrecios(roles);
   const puedeCargar = !!onCrearPedidoManual && (roles === null || puedeCargarPedidoManual(roles));
+  const puedeAnular = !!onAnular && roles !== null && puedeAnularPedido(roles);
   const fmtTotal = (n) => (moneda?.monedaPrincipal && moneda.monedaPrincipal !== 'ARS'
     ? formatearMonto(n, moneda.monedaPrincipal) : money(n));
 
@@ -428,8 +444,11 @@ export default function OrdersPanel({
               {closedOrders.map(o => (
                 <OrderCard
                   key={o.id} order={o} onAdvance={advance} onCancel={cancel}
+                  onAnular={puedeAnular ? setAnulando : null}
                   moneda={moneda}
                   conImportes={conImportes}
+                  abiertoInicial={o.id === abiertoId}
+                  itemsIniciales={o.id === abiertoId ? itemsIniciales : null}
                 />
               ))}
             </div>
@@ -445,6 +464,14 @@ export default function OrdersPanel({
           onCerrar={() => setCobrando(null)}
           onCobrado={onCobrado}
           onCompletar={completar}
+        />
+      )}
+
+      {anulando && (
+        <AnularPedido
+          pedido={anulando}
+          onConfirmar={onAnular}
+          onCerrar={() => setAnulando(null)}
         />
       )}
 

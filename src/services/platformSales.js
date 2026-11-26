@@ -114,6 +114,41 @@ export async function completeOrder(orderId) {
   return { ok: true, sales: data || [] };
 }
 
+/* ───────────────────── Anular un pedido completado ───────────────── */
+
+const MENSAJES_ANULAR = {
+  pedido_no_encontrado: 'No se encontró el pedido',
+  sin_permiso: 'Solo el dueño o el encargado pueden anular un pedido',
+  no_completado: 'Solo se puede anular un pedido ya completado',
+  ya_anulado: 'Este pedido ya estaba anulado',
+  falta_motivo: 'Escribí el motivo (entre 3 y 300 caracteres)',
+  tiene_factura: 'Este pedido tiene factura: se anula con una nota de crédito',
+};
+
+/**
+ * Anula un pedido completado (RPC `anular_pedido`): lo saca de Ventas y de
+ * Caja, devuelve el stock y guarda el motivo. Todo en una transaccion.
+ * Devuelve `{ ok: true, ventas, total_ventas, pagos, stock_devuelto }` o
+ * `{ __error, message }`.
+ */
+export async function anularPedido(orderId, motivo) {
+  if (!orderId) return { __error: 'validation', message: 'Falta el pedido' };
+  const texto = String(motivo ?? '').trim();
+  if (texto.length < 3) return { __error: 'falta_motivo', message: MENSAJES_ANULAR.falta_motivo };
+
+  const { data, error } = await supabase.rpc('anular_pedido', {
+    p_order_id: orderId,
+    p_motivo: texto,
+  });
+
+  if (error) {
+    console.error('anularPedido:', error.message);
+    const codigo = Object.keys(MENSAJES_ANULAR).find(c => error.message.includes(c));
+    return { __error: codigo || 'db', message: MENSAJES_ANULAR[codigo] || error.message };
+  }
+  return { ok: true, ...(data || {}) };
+}
+
 /* ──────────────── Adaptadores para las pantallas legacy ──────────── */
 //
 // SalesView y MonthSummary son pantallas del legacy y hablan su idioma:

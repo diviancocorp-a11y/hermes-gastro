@@ -262,6 +262,7 @@ export const DEFINER_APROBADAS = {
   register_stock_movement: { tipo: 'se_cuida', porque: 'raise si p_tenant_id no es del usuario' },
   count_push_subscriptions: { tipo: 'se_cuida', porque: 'raise si el slug no es de un negocio del usuario' },
   crear_sectores_tipicos: { tipo: 'se_cuida', porque: 'pertenencia y rol owner/manager' },
+  anular_pedido: { tipo: 'se_cuida', porque: 'el pedido tiene que ser de un negocio del usuario y rol owner/manager' },
   complete_order: { tipo: 'se_cuida', porque: 'el pedido tiene que ser de un negocio del usuario, con rol de caja' },
   comandas_abiertas: { tipo: 'se_cuida', porque: 'filtra por current_user_tenants: a otro le devuelve vacio' },
   comandas_por_imprimir: { tipo: 'se_cuida', porque: 'filtra por current_user_tenants: a otro le devuelve vacio' },
