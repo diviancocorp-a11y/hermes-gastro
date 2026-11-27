@@ -581,8 +581,15 @@
    y atrapa al page-over dentro, permitiendo que el topbar (z=5 fuera de main)
    lo cubra visualmente. Esta regla hace que el overlay sea un verdadero
    takeover full-screen. */
+/* La sidebar de escritorio (fija, z 5, fuera de main) y la hoja de Agenda
+   (.ag-agd-velo, sin portal) caen en el mismo caso desde que .ag-main dejo
+   de tener backdrop-filter: antes ese filtro los encerraba contra el main. */
 body:has(.ag-page-over) .ag-topbar,
-body:has(.ag-page-over) .ag-bottom-nav {
+body:has(.ag-page-over) .ag-bottom-nav,
+body:has(.ag-page-over) .ag-sidebar,
+body:has(.ag-agd-velo) .ag-topbar,
+body:has(.ag-agd-velo) .ag-bottom-nav,
+body:has(.ag-agd-velo) .ag-sidebar {
   display: none;
 }
 @keyframes ag-page-over-in {
