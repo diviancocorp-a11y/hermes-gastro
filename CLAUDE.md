@@ -213,6 +213,7 @@ seguir solo.
 | Sumar una skill, plugin, MCP o repo de terceros | El criterio de entrada (abajo): tabla de ya evaluadas, `gh api repos/<dueno>/<repo>` para licencia y ultimo push, instrucciones se copian, software va a `prueba/<herramienta>` |
 | SEO, posicionamiento, palabras clave, sitemap, meta tags | skill `marketing:seo-audit`; si cambia `index.html` o la landing, ademas `/diseno` |
 | Propuesta comercial, presentacion, deck, diapositivas | skill `propuesta-divianco` (o `pptx` si pide el archivo); no va al repo: Google Drive |
+| Un cambio de varios pasos (codigo, base, UI), o "exploracion con Haiku, aplicacion con Sonnet" | `/orquestar`: Opus piensa, audita, aplica a la base y mergea; Haiku explora; Sonnet construye en su worktree y abre el PR |
 
 - **Ruteo** (hook `UserPromptSubmit`, `orquestador.mjs ruteo`): inyecta solo
   la indicacion que aplica; si no aplica ninguna, no dice nada. Una skill que
