@@ -147,7 +147,11 @@
   border: 1px solid var(--ag-line);
   border-radius: var(--ag-r-lg);
   box-shadow: var(--ag-sh-sm);
-  backdrop-filter: saturate(1.08);
+  /* Sin backdrop-filter: crea un containing block para position:fixed y los
+     fijos de adentro (menu de tres puntos de Productos, .ag-page-over) se
+     ubicaban contra el main y no contra la pantalla; en el telefono, con la
+     lista scrolleada, el menu salia fuera de vista. El fondo es opaco, asi
+     que el filtro no se veia. */
 }
 
 .ag-workspace-head {
