@@ -169,12 +169,12 @@ export default function PlantillaPop({
     <div className={clases} style={tokens} ref={raizRef}>
       {config.intro !== false && <PopIntro imagen={marca.isotipo || marca.logo_header} nombre={nombre} quieto={quieto} />}
       <PopHeader nombre={nombre} logo={logo} letra={letra} anuncios={config.anuncios} ids={ids}
-        cartCount={cartCount} cartTotal={cartTotal} moneda={moneda} onOpenCart={onOpenCart} acentoAnuncios={Boolean(marca.anuncios_acento)} />
+        cartCount={cartCount} cartTotal={cartTotal} moneda={moneda} onOpenCart={onOpenCart} acentoAnuncios={Boolean(marca.anuncios_acento)} musica={settings.catalog_music !== false} />
       <main className="pop-main">
         {!ids.includes("hero") && <h1 className="pop-sr">{nombre}</h1>}
         {ids.map(seccion)}
       </main>
-      <PopFooter nombre={nombre} logo={marca.logo_footer || logo} textos={textos} settings={settings} quieto={quieto} onAlternar={alternar} acento={acento} />
+      <PopFooter nombre={nombre} logo={marca.logo_footer || logo} textos={textos} settings={settings} quieto={quieto} onAlternar={alternar} acento={acento} musica={settings.catalog_music !== false} />
       {cartCount > 0 && (
         <div className="pop-barra">
           <button type="button" className="pop-btn pop-btn--primario pop-barra__btn" onClick={onOpenCart}>
