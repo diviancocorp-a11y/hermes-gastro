@@ -42,36 +42,38 @@ describe('musica en la plantilla pop', () => {
     const { container } = pop();
     const boton = delHeader(container).querySelector('button.cp-music');
     expect(boton).toBeInTheDocument();
-    expect(boton).toHaveAttribute('aria-label', 'Silenciar música');
+    expect(boton).toHaveAccessibleName('Música');
     expect(boton).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('no lo muestra, ni en el footer, cuando catalog_music es false', () => {
     const { container } = pop({ catalog_music: false });
     expect(container.querySelector('.cp-music')).toBeNull();
-    expect(screen.queryByRole('button', { name: /música/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /música/i })).toBeNull();
   });
 
-  it('al tocarlo llama a toggleMusic y cambia aria-pressed y aria-label', () => {
+  it('al tocarlo llama a toggleMusic y cambia solo aria-pressed (el nombre no cambia)', () => {
     const { container } = pop();
     const boton = delHeader(container).querySelector('button.cp-music');
     fireEvent.click(boton);
     expect(musica.toggle).toHaveBeenCalledTimes(1);
     expect(boton).toHaveAttribute('aria-pressed', 'false');
-    expect(boton).toHaveAttribute('aria-label', 'Activar música');
+    expect(boton).toHaveAccessibleName('Música');
     fireEvent.click(boton);
     expect(boton).toHaveAttribute('aria-pressed', 'true');
-    expect(boton).toHaveAttribute('aria-label', 'Silenciar música');
+    expect(boton).toHaveAccessibleName('Música');
   });
 
   it('el footer comparte el estado con el header', () => {
     const { container } = pop();
     const header = delHeader(container).querySelector('button.cp-music');
     const footer = container.querySelector('.pop-footer button.pop-footer__tool[aria-pressed]');
-    expect(footer).toHaveTextContent('Silenciar música');
+    expect(footer).toHaveAccessibleName('Música');
+    expect(footer).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(footer);
     expect(musica.toggle).toHaveBeenCalledTimes(1);
-    expect(footer).toHaveTextContent('Activar música');
+    expect(footer).toHaveAccessibleName('Música');
+    expect(footer).toHaveAttribute('aria-pressed', 'false');
     expect(header).toHaveAttribute('aria-pressed', 'false');
   });
 });
@@ -79,14 +81,15 @@ describe('musica en la plantilla pop', () => {
 describe('musica en la plantilla clasica', () => {
   it('sigue teniendo su boton y se puede silenciar', () => {
     render(<HomeScreen products={productos} settings={{}} />);
-    const boton = screen.getByRole('button', { name: 'Silenciar música' });
+    const boton = screen.getByRole('button', { name: 'Música' });
+    expect(boton).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(boton);
     expect(musica.toggle).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: 'Activar música' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'Música' })).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('no lo monta con catalog_music en false', () => {
     render(<HomeScreen products={productos} settings={{ catalog_music: false }} />);
-    expect(screen.queryByRole('button', { name: /música/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /música/i })).toBeNull();
   });
 });

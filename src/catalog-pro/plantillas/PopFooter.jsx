@@ -6,13 +6,15 @@ import { useEffect, useState } from "react";
 import CatalogFooter from "../CatalogFooter";
 import conAcento from "./conAcento";
 import useCatalogMusic from "../useCatalogMusic";
+import IconoMusica from "../IconoMusica";
 
 // Mismo estado que el boton del header: los dos leen el singleton de catalogMusic.
 function HerramientaMusica() {
   const [on, alternar] = useCatalogMusic();
   return (
-    <button type="button" className="pop-footer__tool" aria-pressed={on} onClick={alternar}>
-      {on ? "Silenciar música" : "Activar música"}
+    <button type="button" className="pop-footer__tool pop-footer__tool--musica" aria-pressed={on} onClick={alternar}>
+      <IconoMusica on={on} size={16} />
+      Música
     </button>
   );
 }
