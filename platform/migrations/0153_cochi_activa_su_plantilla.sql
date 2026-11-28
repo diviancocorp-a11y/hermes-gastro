@@ -1,4 +1,4 @@
--- PENDIENTE de aplicar (la aplica el director via MCP con ok de Ricky)
+-- Aplicada via MCP el 28/nov/2026 (ok de Ricky), despues del deploy a56601d. Verificado: cochi.divianco.app pinta .plantilla-cochi con los 29 productos.
 -- 0153 — Cochi pasa de la plantilla `pop` a su plantilla propia `cochi`.
 -- Solo datos. Se aplica DESPUES de la 0152 y DESPUES del deploy del front que
 -- trae PlantillaCochi: hoy ese componente es pop con otro nombre, asi que el
