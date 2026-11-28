@@ -1,4 +1,6 @@
 {
   "_comentario": "Quien puede tocar que desde un fork. Lo edita Ricky: una entrada por login de GitHub del disenador. Formato: \"<login-github>\": { \"tenant\": \"cochi\", \"carpetas\": [\"src/catalog-pro/plantillas/cochi/\"] }. Sin entrada, el PR del fork se rechaza solo (scripts/check-carpetas-de-fork.mjs). Las carpetas se comparan por prefijo exacto.",
-  "disenadores": {}
+  "disenadores": {
+    "CochiDarkitchen": { "tenant": "cochi", "carpetas": ["src/catalog-pro/plantillas/cochi/"] }
+  }
 }
