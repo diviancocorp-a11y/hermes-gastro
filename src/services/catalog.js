@@ -5,6 +5,7 @@ import { setGuestUser } from '../lib/guestUser.js';
 import { resolveTenantSlug } from '../lib/activeTenant.js';
 import { claveDeIdempotencia, reiniciarClave } from '../lib/idempotencia.js';
 import { vincularTelegram } from './telegramLink.js';
+import { esVistaPrevia, MENSAJE_VISTA_PREVIA } from '../lib/vistaPrevia.js';
 
 /**
  * Trae los datos que necesita el catálogo público: la configuración del
@@ -70,6 +71,9 @@ function firmaDelPedido(p) {
  * @returns {{ ok: boolean, orderId: string|null }}
  */
 export async function submitOrder(orderData) {
+  // Vista previa (?tenant= en localhost o *.vercel.app): nada se escribe.
+  // Catalog.jsx muestra `error` en el checkout (setOrderErr).
+  if (esVistaPrevia()) return { ok: false, orderId: null, error: MENSAJE_VISTA_PREVIA };
   try {
     // Validar inputs con Zod antes de enviar al servidor
     const validation = validateInput(OrderInputSchema, orderData, 'submitOrder');

@@ -13,6 +13,7 @@
 // IMPORTANTE: cp-root para recibir los tokens del tema.
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
+import { esVistaPrevia } from "../lib/vistaPrevia";
 
 const todayKey = () => {
   const d = new Date();
@@ -20,6 +21,7 @@ const todayKey = () => {
 };
 
 async function callBirthdayGift(payload) {
+  if (esVistaPrevia()) return null; // vista previa: no se escribe
   try {
     const { data, error } = await supabase.functions.invoke("birthday-gift", { body: payload });
     if (error) return null;
