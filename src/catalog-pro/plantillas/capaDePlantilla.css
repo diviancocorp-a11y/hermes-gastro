@@ -1,0 +1,10 @@
+/* Capa decorativa de una plantilla (ver CapaDePlantilla.jsx). Va DETRAS del
+   contenido real: cada pantalla es su propio contexto de apilamiento, asi que
+   con z-index -1 todo lo que la pantalla pinta (campos, botones, precios) queda
+   por encima sin tocar sus estilos. El isolate va solo con una plantilla activa
+   (html[data-plantilla]): para los demas tenants la pantalla queda identica. */
+html[data-plantilla] [data-pantalla] { isolation: isolate; }
+.capa-plantilla {
+  position: fixed; inset: 0; z-index: -1;
+  pointer-events: none; overflow: hidden;
+}

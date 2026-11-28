@@ -34,6 +34,8 @@ const PlatformAdmin = lazyReload(() => import('./pages/PlatformAdmin'))
 const InfoPagesAdmin = lazyReload(() => import('./pages/admin/InfoPages'))
 const VistaPreviaPlantillaPagina = lazyReload(() => import('./pages/admin/VistaPreviaPlantillaPagina'))
 const OrderTracker = lazyReload(() => import('./pages/OrderTracker'))
+// Pantallas del pedido con datos de ejemplo, solo en vista previa (?tenant=): para el disenador de una plantilla exclusiva.
+const VistaPreviaPantalla = lazyReload(() => import('./pages/VistaPreviaPantalla'))
 const MyAccount = lazyReload(() => import('./pages/MyAccount'))
 const MpStatus = lazyReload(() => import('./pages/MpStatus'))
 // Reserva online de turnos (publica, sin cuenta): el flujo y la pagina del turno.
@@ -157,6 +159,7 @@ export default function App() {
               <Route path="/admin/vista-previa-plantilla" element={<VistaPreviaPlantillaPagina />} />
               <Route path="/admin/paginas" element={<InfoPagesAdmin />} />
               <Route path="/order/:id" element={<OrderTracker />} />
+              <Route path="/vista-previa/:pantalla" element={<VistaPreviaPantalla />} />
               <Route path="/mi-cuenta" element={<MyAccount />} />
               <Route path="/pago/exitoso" element={<MpStatus status="exitoso" />} />
               <Route path="/pago/fallido" element={<MpStatus status="fallido" />} />

@@ -42,7 +42,7 @@ export default function OpcionesProducto({ grupos, estado, onChange, formato, fa
   };
 
   return (
-    <div style={RAIZ}>
+    <div data-parte="opciones" style={RAIZ}>
       {grupos.map((g) => {
         const { min, max } = limitesDeGrupo(g);
         const elegidas = Object.keys(estado[g.id] || {}).length;

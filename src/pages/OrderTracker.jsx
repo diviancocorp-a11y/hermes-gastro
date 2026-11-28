@@ -5,6 +5,10 @@ import { MontoCongelado, textoPrincipal } from "../catalog-pro/MonedaCatalogo";
 import business from "@business";
 import { cancelOwnOrder, useRegretCountdown } from "../catalog-pro/regretOrder";
 import usePedidoEnVivo from "../hooks/usePedidoEnVivo";
+import usePantallasDePlantilla, {
+  PantallasDePlantillaContext, plantillaExclusivaDe, useSlugDelTenant,
+} from "../catalog-pro/plantillas/pantallasDePlantilla";
+import CapaDePlantilla from "../catalog-pro/plantillas/CapaDePlantilla";
 
 // ─── Mapa de estados ──────────────────────────────────
 const STEPS = [
@@ -28,6 +32,12 @@ export default function OrderTracker() {
   // polling, porque Realtime aplica la RLS y el comprador sin sesion no
   // recibia nada).
   const { pedido, cargando: loading, noEncontrado: notFound, cambio } = usePedidoEnVivo(id);
+
+  // Estetica de la plantilla exclusiva del tenant (si la tiene). Esta pagina vive
+  // fuera del catalogo y no trae `settings`: la plantilla se deduce del tenant
+  // (la exclusiva cuyo dueno es el slug de esta carga). Ver pantallasDePlantilla.js.
+  const slug = useSlugDelTenant();
+  const decoraciones = usePantallasDePlantilla({ plantilla: plantillaExclusivaDe(slug), slug });
 
   // El cancelado del boton de arrepentimiento se ve al toque, sin esperar la
   // proxima consulta.
@@ -62,9 +72,25 @@ export default function OrderTracker() {
     if (ok) setCanceladoAca(true);
   };
 
+  return (
+    <PantallasDePlantillaContext.Provider value={decoraciones}>
+      <OrderTrackerVista
+        loading={loading} notFound={notFound} order={order} items={items}
+        pulse={pulse} waNumber={waNumber} regretLeft={regretLeft}
+        cancelling={cancelling} onRegret={onRegret}
+      />
+    </PantallasDePlantillaContext.Provider>
+  );
+}
+
+/**
+ * La pantalla en si, sin datos propios: la usan el contenedor de arriba y la
+ * vista previa (`/vista-previa/seguimiento`, con un pedido de ejemplo).
+ */
+export function OrderTrackerVista({ loading, notFound, order, items = [], pulse = false, waNumber = "", regretLeft = 0, cancelling = false, onRegret = () => {} }) {
   // ─── Loading ──────────────────────────────────────
   if (loading) return (
-    <div className="tracker-shell cp-root">
+    <div className="tracker-shell cp-root" data-pantalla="seguimiento">
       <div className="tracker-loading">
         <div className="tracker-logo">📦</div>
         <p>Buscando tu pedido<Dots /></p>
@@ -74,7 +100,7 @@ export default function OrderTracker() {
 
   // ─── No encontrado ────────────────────────────────
   if (notFound) return (
-    <div className="tracker-shell cp-root">
+    <div className="tracker-shell cp-root" data-pantalla="seguimiento">
       <div className="tracker-notfound">
         <div style={{ fontSize: 56 }}>🔍</div>
         <h2>Pedido no encontrado</h2>
@@ -88,7 +114,8 @@ export default function OrderTracker() {
   const stepIdx     = isCancelled ? -1 : (STEP_IDX[order.status] ?? 0);
 
   return (
-    <div className="tracker-shell cp-root">
+    <div className="tracker-shell cp-root" data-pantalla="seguimiento" data-estado={order.status}>
+      <CapaDePlantilla lugar="seguimiento" datos={{ estado: String(order.status ?? ""), entrega: order.delivery === "envio" ? "envio" : "retiro" }} />
       {/* Header */}
       <div className="tracker-header">
         <div>
@@ -98,7 +125,7 @@ export default function OrderTracker() {
       </div>
 
       {/* Card principal */}
-      <div className={`tracker-card ${pulse ? "tracker-pulse" : ""}`}>
+      <div data-parte="estado" className={`tracker-card ${pulse ? "tracker-pulse" : ""}`}>
         {isCancelled ? (
           <div className="tracker-cancelled">
             <div style={{ fontSize: 48 }}>❌</div>

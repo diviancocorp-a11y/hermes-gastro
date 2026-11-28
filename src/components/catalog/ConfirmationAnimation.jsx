@@ -2,12 +2,14 @@
 // Pantalla de "pedido confirmado": fondo verde + check que sube de abajo hacia
 // arriba y se dibuja. El sonido lo dispara Catalog (public/order-confirmed.mp3).
 import business from "@business";
+import CapaDePlantilla from "../../catalog-pro/plantillas/CapaDePlantilla";
 
 export default function ConfirmationAnimation() {
   const green = "#16A34A";
   return (
     <div
       data-testid="order-confirmation"
+      data-pantalla="confirmando"
       style={{ position: "fixed", inset: 0, background: green, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", zIndex: 250, overflow: "hidden" }}
     >
       <style>{`
@@ -30,6 +32,7 @@ export default function ConfirmationAnimation() {
           .hg-check-path { animation: none !important; stroke-dashoffset: 0 !important; }
         }
       `}</style>
+      <CapaDePlantilla lugar="confirmando" datos={{}} />
       <div className="hg-check-rise" style={{ marginBottom: 28 }}>
         <svg width="148" height="148" viewBox="0 0 148 148" aria-hidden="true">
           <circle cx="74" cy="74" r="66" fill="#fff" />

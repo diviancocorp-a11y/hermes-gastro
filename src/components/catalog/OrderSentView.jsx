@@ -13,6 +13,8 @@ import { cancelOwnOrder, useRegretCountdown } from "../../catalog-pro/regretOrde
 import PushOptInBanner from "../../catalog-pro/PushOptInBanner";
 import { MontoCongelado, useMoneda } from "../../catalog-pro/MonedaCatalogo";
 import { urlWhatsAppDePedido } from "../../lib/confirmacionPedido";
+import { esVistaPrevia } from "../../lib/vistaPrevia";
+import CapaDePlantilla from "../../catalog-pro/plantillas/CapaDePlantilla";
 
 const GREEN = "#16A34A";
 
@@ -57,6 +59,7 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
     <div
       className="cp-root cp-surface"
       data-testid="order-confirmation"
+      data-pantalla="pedido-recibido"
       style={{
         position: "fixed", inset: 0, background: "var(--bg)", color: "var(--tx)",
         zIndex: 250, overflowY: "auto",
@@ -64,6 +67,11 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
         padding: "32px 18px",
       }}
     >
+      <CapaDePlantilla lugar="pedido-recibido" datos={{
+        codigo: orderId ? formatOrderCode(orderId) : "",
+        entrega: form?.delivery === "envio" ? "envio" : "retiro",
+        nombreLocal: String(settings?.biz_name ?? ""),
+      }} />
       <div style={{ width: "100%", maxWidth: 440, textAlign: "center" }}>
 
         <div style={{
@@ -75,7 +83,7 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
           {Icon.check({ size: 44, color: "#fff" })}
         </div>
 
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 28, margin: "0 0 12px", color: "var(--tx)" }}>
+        <h2 data-parte="titulo" style={{ fontFamily: "var(--font-heading)", fontSize: 28, margin: "0 0 12px", color: "var(--tx)" }}>
           ¡Pedido confirmado!
         </h2>
 
@@ -96,7 +104,7 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
             {/* StatusCard de seguimiento (card-24 adaptado) */}
             {!cancelled ? (
               <>
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: regretLeft > 0 ? 10 : 18 }}>
+                <div data-parte="seguimiento" style={{ display: "flex", justifyContent: "center", marginBottom: regretLeft > 0 ? 10 : 18 }}>
                   <OrderStatusCard href={"/order/" + orderId} />
                 </div>
                 {/* Arrepentimiento: 60s para cancelar si se equivoco */}
@@ -125,13 +133,13 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
             {/* Opt-in de push EN EL MOMENTO JUSTO (12/jun): recien hizo el
                 pedido y quiere saber cuando esta listo. Antes el banner solo
                 vivia en Mi Cuenta y nadie lo veia (0-2 suscriptores). */}
-            {!cancelled && (
+            {!cancelled && !esVistaPrevia() && (
               <div style={{ maxWidth: 420, margin: "0 auto" }}>
                 <PushOptInBanner session={{ phone: form?.phone || getGuestUser()?.phone || null }} />
               </div>
             )}
 
-            <div style={{
+            <div data-parte="codigo" style={{
               padding: "14px 16px", background: "var(--b2)",
               border: "1px solid var(--line)", borderRadius: 12,
               marginBottom: 14, textAlign: "center",
@@ -160,7 +168,7 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
             </div>
 
             {resumenMonedas && (
-              <div className="cp-resumen-pedido" data-testid="order-summary" role="status">
+              <div className="cp-resumen-pedido" data-testid="order-summary" data-parte="total" role="status">
                 <div className="cp-resumen-pedido__fila">
                   <span>{pendiente ? "Total parcial" : "Total"}</span>
                   <strong>

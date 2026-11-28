@@ -14,6 +14,7 @@
 import Icon from "./Icon";
 import { Monto, AvisoTasa, useMoneda } from "./MonedaCatalogo";
 import { toneFor } from "./homeHelpers";
+import CapaDePlantilla from "./plantillas/CapaDePlantilla";
 
 export default function CartScreen({
   items = [],
@@ -39,7 +40,8 @@ export default function CartScreen({
 
   if (items.length === 0) {
     return (
-      <div className="cp-root cp-surface" style={{ position: "fixed", inset: 0, width: "100%", zIndex: 240, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
+      <div className="cp-root cp-surface" data-pantalla="carrito" style={{ position: "fixed", inset: 0, width: "100%", zIndex: 240, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
+        <CapaDePlantilla lugar="carrito" datos={{ cantidad: 0 }} />
         <div style={{ fontSize: 48, marginBottom: 14 }}>🛒</div>
         <h2 className="h-2" style={{ margin: "0 0 8px" }}>Tu pedido esta vacio</h2>
         <p className="body-s" style={{ margin: "0 0 20px" }}>Agrega algo del catalogo.</p>
@@ -51,7 +53,8 @@ export default function CartScreen({
   }
 
   return (
-    <div className="cp-root cp-surface cp-no-scrollbar" style={{ position: "fixed", inset: 0, width: "100%", zIndex: 240, overflowY: "auto", paddingBottom: 130 }}>
+    <div className="cp-root cp-surface cp-no-scrollbar" data-pantalla="carrito" style={{ position: "fixed", inset: 0, width: "100%", zIndex: 240, overflowY: "auto", paddingBottom: 130 }}>
+      <CapaDePlantilla lugar="carrito" datos={{ cantidad: count }} />
       {/* Header */}
       <div style={{ padding: "16px 14px 10px", display: "flex", alignItems: "center", gap: 10, position: "sticky", top: 0, background: "var(--bg)", zIndex: 5, borderBottom: "1px solid var(--line)" }}>
         <button onClick={onBack} style={iconBtn} aria-label="Atras"><Icon name="arrow-left" size={18} /></button>
@@ -69,7 +72,7 @@ export default function CartScreen({
       </div>
 
       {/* Items */}
-      <div style={{ padding: "8px 22px 0" }}>
+      <div data-parte="lista" style={{ padding: "8px 22px 0" }}>
         {items.map((it, i) => (
           <div key={it.id} style={{ display: "flex", gap: 14, padding: "16px 0", borderBottom: i < items.length - 1 ? "1px solid var(--line)" : "none" }}>
             <div style={{ width: 72, height: 72, flexShrink: 0, borderRadius: 12, overflow: "hidden", background: toneFor(it.name) }}>
@@ -123,7 +126,7 @@ export default function CartScreen({
       )}
 
       {/* Subtotal — sin cupon/propina/envio (eso se decide en el checkout) */}
-      <div style={{ padding: "20px 22px 12px" }}>
+      <div data-parte="subtotal" style={{ padding: "20px 22px 12px" }}>
         <div style={{ background: "var(--b2)", borderRadius: 14, padding: "18px" }}>
           <div className="caption" style={{ marginBottom: 12, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--t3)" }}>Subtotal</div>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
@@ -253,7 +256,7 @@ export default function CartScreen({
         background: "var(--bg)", borderTop: "1px solid var(--line)",
         padding: "14px 22px max(20px, env(safe-area-inset-bottom))",
       }}>
-        <button onClick={() => minOk && onContinue?.()} disabled={!minOk} style={{
+        <button data-parte="continuar" onClick={() => minOk && onContinue?.()} disabled={!minOk} style={{
           width: "100%", height: 56, borderRadius: "var(--rs)", border: 0,
           background: minOk ? "var(--ac)" : "var(--b2)",
           color: minOk ? "#fff" : "var(--t3)",

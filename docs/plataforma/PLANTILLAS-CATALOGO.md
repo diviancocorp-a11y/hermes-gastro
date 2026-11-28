@@ -138,3 +138,11 @@ slug `cochi`). Su diseñador externo trabaja en un fork y solo toca
 - **Activacion.** Se publica el deploy con 0152 ya aplicada y despues se aplica
   la 0153 (Cochi pasa de `pop` a `cochi`). Mientras el componente no reemplace
   secciones, se ve igual que `pop`. Volver atras: `catalog_template = 'pop'`.
+
+### Pantallas del pedido: solo estetica (28/nov/2026)
+
+El diseñador de una plantilla exclusiva tambien puede cambiar **como se ven** la ficha, el carrito, el checkout, "confirmando", el pedido recibido y el seguimiento; nunca lo que hacen. Las pantallas llevan `data-pantalla` y `data-parte` (tabla en `cochi/LEEME.md`) y `usePantallasDePlantilla` (`plantillas/pantallasDePlantilla.js`) pone `html[data-plantilla]` solo si la plantilla es exclusiva y el tenant es su dueño; con otro tenant ni se baja el chunk `cochi/pantallas`.
+- La capa decorativa (`CapaDePlantilla.jsx`) va detras (`z-index:-1`), `inert`, `aria-hidden`, con `datos` congelados y sin callbacks; si tira, se reporta a Sentry (`source: capa-plantilla`) y la pantalla sigue.
+- `/vista-previa/:pantalla` (`confirmando`, `pedido-recibido`, `seguimiento`) muestra la pantalla real con datos de ejemplo; solo con `?tenant=` en localhost o `*.vercel.app`, y no consulta ni escribe pedidos.
+- `OrderTracker` quedo partido en contenedor (datos) y `OrderTrackerVista` (presentacional). Sin `settings` en `/order/:id`, la plantilla se deduce del slug del tenant.
+- Revision del PR del diseñador: rechazar todo lo que oculte o tape algo funcional (`display:none`, `opacity:0`, tamaño 0, fuera de pantalla, capas encima).
