@@ -104,3 +104,37 @@ que cumpla el contrato. Resumen de la config:
 Carrito, checkout, ficha de producto y pedidos son los de siempre (fases
 siguientes del trabajo de Cochi). No incluye mascota ni SVG a medida: la intro
 usa el isotipo del tenant.
+
+## Plantillas exclusivas y diseñador externo
+
+Una plantilla exclusiva es de UN solo tenant. Hoy: `cochi` (solo el tenant con
+slug `cochi`). Su diseñador externo trabaja en un fork y solo toca
+`src/catalog-pro/plantillas/cochi/` (instrucciones para el y para su IA en el
+`LEEME.md` de esa carpeta).
+
+- **Elegir la plantilla.** `PLANTILLAS_EXCLUSIVAS` en `src/lib/plantillaListas.js`
+  (plantilla -> slug). El editor del panel solo muestra el radio al tenant dueño,
+  y la base lo hace cumplir: el trigger `settings_plantilla_exclusiva` (migracion
+  0152) rechaza con 42501 que otro tenant ponga `cochi`, tambien sin sesion.
+  Test de la base: `platform/tests/plantilla_exclusiva.sql`.
+- **Como se arma.** `PlantillaCochi` es `PlantillaPop` con `componentes` (reemplazo
+  de secciones) y la clase `.plantilla-cochi`. El mapa nombre -> componente esta
+  en `plantillasCargables.js` y lo usan el catalogo y la vista previa del editor.
+- **El fork.** El diseñador abre un PR desde su fork. El workflow
+  `.github/workflows/carpetas-de-fork.yml` (`pull_request_target`, sin ejecutar
+  codigo del PR) corre `scripts/check-carpetas-de-fork.mjs` y rechaza el PR si
+  toca algo fuera de lo que `scripts/disenadores.json` le habilita. Ricky agrega
+  el login de GitHub del diseñador ahi; sin entrada, el PR se rechaza.
+  Para que el rechazo bloquee el merge, marcar el check `Carpetas de fork` como
+  requerido en la proteccion de la rama `main`.
+- **Ver el PR.** Vercel deja un preview. Con `?tenant=cochi` en la URL
+  (`src/lib/vistaPrevia.js`, solo en localhost y `*.vercel.app`) se ve el
+  catalogo de Cochi. En vista previa no se escribe nada: pedidos, cancelaciones
+  y reservas devuelven "Esto es una vista previa".
+- **Datos nuevos.** Si el diseño pide un dato que no existe, el componente usa
+  `conEjemplo(valorReal, ejemplo)` y el diseñador documenta el pedido en
+  `cochi/necesita.md` (campos, tipos, ejemplo, quien lo carga). El cableado al
+  backend lo hace Divianco; si `necesita.md` no esta, el PR no esta listo.
+- **Activacion.** Se publica el deploy con 0152 ya aplicada y despues se aplica
+  la 0153 (Cochi pasa de `pop` a `cochi`). Mientras el componente no reemplace
+  secciones, se ve igual que `pop`. Volver atras: `catalog_template = 'pop'`.
