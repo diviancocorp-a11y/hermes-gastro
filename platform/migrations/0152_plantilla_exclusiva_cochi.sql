@@ -1,4 +1,4 @@
--- PENDIENTE de aplicar (la aplica el director via MCP con ok de Ricky)
+-- Aplicada via MCP el 28/nov/2026 (ok de Ricky). Test: platform/tests/plantilla_exclusiva.sql -> OK.
 -- 0152 — Plantilla exclusiva `cochi`: el nombre nuevo entra a la lista y solo el
 -- tenant con slug 'cochi' puede usarla.
 --
