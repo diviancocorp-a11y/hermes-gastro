@@ -77,7 +77,7 @@ export default function Catalog() {
 function CatalogContenido({ onSettings }) {
   const navigate = useNavigate();
   const { tasa: tasaVista, principal: monedaPrincipal, texto: textoMoneda } = useMoneda();
-  const { user, profile, addresses, isFavorite, toggleFavorite, getOrderHistory, phoneSession, session, sessionLogout, updateProfile } = useAuth();
+  const { user, profile, addresses, isFavorite, toggleFavorite, getOrderHistory, phoneSession, session, sessionLogout, updateProfile, perfilListo } = useAuth();
 
   // --- Feature flags ---
   const ffGift = useFeature('GIFT_MODE');
@@ -926,6 +926,7 @@ function CatalogContenido({ onSettings }) {
         onClose={() => { setShowCk(false); setCkStep(0); }}
         user={user}
         profile={profile}
+        perfilListo={perfilListo}
         form={form}
         sf={sf}
         navigate={navigate}

@@ -13,6 +13,8 @@ export function AuthProvider({ children }) {
   const [addresses, setAddresses] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Usuario cuyo perfil ya termino de cargar (haya fila en profiles o no).
+  const [perfilCargadoDe, setPerfilCargadoDe] = useState(null);
 
   const guestUser = useGuestUser();
   const phoneSession = (!user && guestUser?.id) ? guestUser : null;
@@ -71,6 +73,8 @@ export function AuthProvider({ children }) {
       setProfile(p); setAddresses(a); setFavorites(f);
     } catch (e) {
       console.warn("Error cargando datos de usuario:", e);
+    } finally {
+      setPerfilCargadoDe(userId);
     }
   };
 
@@ -187,6 +191,8 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, profile, addresses, favorites, loading,
+      // false mientras el perfil del usuario actual esta en vuelo; sin fila queda en true.
+      perfilListo: !user || perfilCargadoDe === user.id,
       phoneSession, isPhoneOnly: !!phoneSession,
       session, sessionLogout,
       sendMagicLink, signOut, phoneSignOut,
