@@ -8,8 +8,9 @@ solo y se rechaza si las rompe.
 
 - **Es** la portada (la home) del catalogo de Cochi: todo lo que esta en esta
   carpeta, `src/catalog-pro/plantillas/cochi/`.
-- **No es** el checkout, la ficha de producto, el carrito ni el panel de
-  administracion. Eso no se toca, ni "un poquito".
+- **No es** la logica del checkout, la ficha de producto, el carrito ni el
+  panel de administracion. Eso no se toca, ni "un poquito". Como se **ven** las
+  pantallas del pedido si podes cambiarlo: ver "Otras pantallas (solo estetica)".
 - Hoy la portada de Cochi es la plantilla `pop` con otro nombre: no cambia
   nada hasta que registres tus propios componentes.
 
@@ -67,6 +68,91 @@ Lo que no registras sigue siendo `pop`.
 - **Imagenes en `cochi/assets/`**, livianas: webp, menos de 300 KB cada una.
 - La raiz del catalogo ya trae la clase `cp-root` y los tokens de color
   (`--ac`, `--bg`, `--tx`, `--t2`, `--line`...): usalos en vez de colores fijos.
+
+## Otras pantallas (solo estetica)
+
+Ademas de la portada podes cambiar **como se ven** la ficha de producto, el
+carrito, el checkout, la animacion de "confirmando", el pedido recibido y el
+seguimiento. **No podes cambiar lo que hacen**: ni los pasos, ni los datos que
+se escriben, ni los botones, ni las conexiones. Las pantallas siguen siendo de
+Divianco; vos solo aportas CSS y capas decorativas desde esta carpeta
+(`pantallas.css` y `pantallas.js`).
+
+Cuando estas en Cochi, `<html>` lleva `data-plantilla="cochi"` y cada pantalla
+lleva `data-pantalla`. Algunas partes llevan ademas `data-parte`:
+
+| `data-pantalla` | Partes (`data-parte`) | Notas |
+|---|---|---|
+| `ficha` | `foto`, `titulo`, `descripcion`, `opciones`, `agregar` | |
+| `carrito` | `lista`, `subtotal`, `continuar` | tambien el carrito vacio |
+| `checkout` | `encabezado`, `indicador`, `siguiente`, `error`, `completar` | `data-paso="datos"`, `"entrega"` o `"pago"`; el paso activo del indicador lleva `aria-current="step"` |
+| `confirmando` | | la animacion de 2,5 s tras enviar. **No trae tokens** (el verde y el blanco estan escritos en la pantalla): para cambiarlos hace falta `!important` |
+| `pedido-recibido` | `titulo`, `codigo`, `total`, `seguimiento` | `total` solo aparece con doble moneda o envio a confirmar |
+| `seguimiento` | `estado` | `data-estado="new"`, `"preparing"`, `"active"`, `"completed"` o `"cancelled"`; ademas las clases `tracker-*` |
+
+### Cambiar colores y tipografia: primero los tokens
+
+Casi todo se pinta con los tokens (`--bg --tx --t2 --t3 --ac --line --b2 --b3
+--err --ok --font-heading --font-body --rs`). Se cambian por pantalla en
+`pantallas.css`, sin tocar cada elemento:
+
+```css
+html[data-plantilla="cochi"] [data-pantalla="pedido-recibido"] {
+  --bg: #d4120a;
+  --tx: #fff;
+  --font-heading: "Bebas Neue", sans-serif;
+}
+```
+
+`!important` solo cuando un estilo escrito en la pantalla no usa token. Todo
+selector empieza con `html[data-plantilla="cochi"]`, los `@keyframes` llevan
+prefijo `cochi-` y las animaciones se apagan con `prefers-reduced-motion`.
+
+### Sumar una decoracion (el cerdito, una animacion de fondo)
+
+En `pantallas.js` registra un componente por lugar en `DECORACIONES`. Recibe
+`{ datos }`, que son solo valores para mostrar (texto, numeros), congelados:
+
+```jsx
+import CochiPedidoRecibido from "./CochiPedidoRecibido";
+export const DECORACIONES = { "pedido-recibido": CochiPedidoRecibido };
+
+export default function CochiPedidoRecibido({ datos }) {
+  // datos.codigo, datos.entrega ("retiro" | "envio"), datos.nombreLocal
+  return <img src={cerdito} alt="" className="cochi-cerdito" />;
+}
+```
+
+| Lugar | `datos` |
+|---|---|
+| `ficha` | `{ nombre, categoria }` |
+| `carrito` | `{ cantidad }` |
+| `checkout` | `{ paso }` |
+| `confirmando` | `{}` |
+| `pedido-recibido` | `{ codigo, entrega, nombreLocal }` |
+| `seguimiento` | `{ estado, entrega }` |
+
+La capa ocupa toda la pantalla y va **detras** del contenido: no recibe clics,
+no se lee con lector de pantalla y si tu componente tira un error, la pantalla
+sigue funcionando sin la capa. Los fondos opacos de la pantalla (barra de abajo,
+tarjetas) la tapan: usa los tokens o `[data-parte]` para dejar pasar el fondo.
+
+### Como verlas
+
+- Ficha, carrito y checkout: `http://localhost:5173/?tenant=cochi`, agregando un
+  producto como cualquier cliente.
+- Las que necesitan un pedido enviado (en vista previa los pedidos no se
+  envian) tienen una ruta con **datos de ejemplo**:
+  - `/vista-previa/pedido-recibido?tenant=cochi`
+  - `/vista-previa/confirmando?tenant=cochi`
+  - `/vista-previa/seguimiento?tenant=cochi` (con `&estado=new|preparing|active|completed|cancelled`)
+
+### Prohibido (si se rompe, el PR se rechaza en la revision)
+
+Nada de ocultar ni tapar campos, botones, precios, totales, codigos o pasos:
+`display: none`, `visibility: hidden`, `opacity: 0`, tamano 0, mover fuera de
+pantalla o poner una capa encima. Tampoco se cambia el orden de los pasos ni lo
+que se escribe en ellos.
 
 ## Datos que YA existen (revisalo antes de pedir datos nuevos)
 
