@@ -169,7 +169,7 @@ function OrderCard({ order, onAdvance, onCancel, onAnular = null, timezone, onCo
           {items?.map(it => (
             <div key={it.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--ag-ink-2)', marginBottom: 4 }}>
               <span>{it.qty}× {it.name_snapshot || 'Producto'}</span>
-              {conImportes && <span>{money(it.subtotal ?? it.unit_price * it.qty)}</span>}
+              {conImportes && <span>{fmt(it.subtotal ?? it.unit_price * it.qty)}</span>}
             </div>
           ))}
 

@@ -37,6 +37,7 @@ import { useToast } from "../hooks/useToast";
 import useAndroidBack from "../hooks/useAndroidBack";
 import ConfirmationAnimation from "../components/catalog/ConfirmationAnimation";
 import OrderSentView from "../components/catalog/OrderSentView";
+import { datosParaGuardarEnPerfil } from "../lib/perfilCheckout";
 
 // ── Shared constants ──
 import {
@@ -76,7 +77,7 @@ export default function Catalog() {
 function CatalogContenido({ onSettings }) {
   const navigate = useNavigate();
   const { tasa: tasaVista, principal: monedaPrincipal, texto: textoMoneda } = useMoneda();
-  const { user, profile, addresses, isFavorite, toggleFavorite, getOrderHistory, phoneSession, session, sessionLogout } = useAuth();
+  const { user, profile, addresses, isFavorite, toggleFavorite, getOrderHistory, phoneSession, session, sessionLogout, updateProfile, perfilListo } = useAuth();
 
   // --- Feature flags ---
   const ffGift = useFeature('GIFT_MODE');
@@ -794,6 +795,16 @@ function CatalogContenido({ onSettings }) {
           console.warn("Error subiendo comprobante (no bloquea):", e);
         }
       }
+      // Cuenta registrada con perfil incompleto: lo que completo en el checkout
+      // se guarda para la proxima. Best effort, nunca cambia el exito del pedido.
+      if (user) {
+        const paraPerfil = datosParaGuardarEnPerfil(profile, form);
+        if (Object.keys(paraPerfil).length > 0) {
+          Promise.resolve()
+            .then(() => updateProfile(paraPerfil))
+            .catch((e) => console.error("guardar perfil tras pedido:", e));
+        }
+      }
       setOrderId(result.orderId);
       setOrderResp(result);
       const itemsEnviados = cart.map((i) => ({ name: i.name, qty: i.qty, note: i.note || "" }));
@@ -915,6 +926,7 @@ function CatalogContenido({ onSettings }) {
         onClose={() => { setShowCk(false); setCkStep(0); }}
         user={user}
         profile={profile}
+        perfilListo={perfilListo}
         form={form}
         sf={sf}
         navigate={navigate}

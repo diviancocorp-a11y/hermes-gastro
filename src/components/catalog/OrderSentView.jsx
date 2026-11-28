@@ -89,14 +89,14 @@ export default function OrderSentView({ orderId, form, receiptFile, onReset, set
 
         <p style={{ fontSize: 14, color: "var(--t2)", lineHeight: 1.6, margin: "0 0 24px" }}>
           {paymentConfirmed
-            ? "¡Recibimos tu pago! Estamos preparando todo con mucho amor."
+            ? "¡Recibimos tu pago! Tu pedido ya está en la fila del local."
             : wasPaidDigital && receiptFile
             ? "Tu comprobante fue recibido. Lo estamos verificando y tu pedido pasará a preparación en breve."
             : wasPaidDigital
             ? (settings?.pedido_por_whatsapp === true
               ? "Mandanos el comprobante de pago por WhatsApp para que procesemos tu pedido más rápido."
               : "Recordá subir el comprobante de pago para que procesemos tu pedido más rápido.")
-            : "Estamos preparando todo con mucho amor."}
+            : "Recibimos tu pedido. Te avisamos cuando el local lo empiece a preparar."}
         </p>
 
         {orderId && (

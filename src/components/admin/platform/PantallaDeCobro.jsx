@@ -52,6 +52,8 @@ export default function PantallaDeCobro({
 }) {
   const tituloId = useId();
   const [medios, setMedios] = useState([]);
+  // Hasta que la consulta responde no se sabe si hay medios: no avisar "no hay".
+  const [cargandoMedios, setCargandoMedios] = useState(true);
   const [pagos, setPagos] = useState([]);
   const [saldo, setSaldo] = useState(null);
   const [metodo, setMetodo] = useState(null);
@@ -83,11 +85,15 @@ export default function PantallaDeCobro({
 
   useEffect(() => {
     if (!tenantId) return;
+    setCargandoMedios(true);
     fetchMediosDePago(tenantId).then((ms) => {
       setMedios(ms);
       // Un solo medio no es una eleccion: se preselecciona.
       if (ms.length === 1) setMetodo(ms[0].id);
-    });
+    }).catch((e) => {
+      console.error('fetchMediosDePago:', e);
+      setMedios([]);
+    }).finally(() => setCargandoMedios(false));
   }, [tenantId]);
 
   useEffect(() => { recargar(); }, [recargar]);
@@ -259,7 +265,11 @@ export default function PantallaDeCobro({
               <span style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 7 }}>
                 ¿Con qué paga?
               </span>
-              {medios.length === 0 ? (
+              {medios.length === 0 && cargandoMedios ? (
+                <p role="status" aria-live="polite" style={{ fontSize: 12.5, margin: 0, color: 'var(--ag-ink-3)' }}>
+                  Cargando medios de pago…
+                </p>
+              ) : medios.length === 0 ? (
                 <div style={{
                   fontSize: 12.5, padding: '9px 11px', borderRadius: 8,
                   background: 'var(--ag-warn-bg, #FFF3E0)', color: 'var(--ag-warn, #B15A00)',

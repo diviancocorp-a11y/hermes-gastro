@@ -157,7 +157,7 @@ export default function OrderStatusCard({ href, compact = false, title, descript
         {title || "¡Pedido en marcha!"}
       </h3>
       <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "var(--t2, #8A7A66)", lineHeight: 1.5, maxWidth: 250 }}>
-        {description || "Lo estamos preparando. Seguí el estado en vivo y enterate apenas salga."}
+        {description || "Seguí el estado en vivo: te mostramos cuando entre a cocina y cuando esté listo."}
       </p>
       <a href={href} style={{
         display: "inline-block", marginTop: 16, padding: "10px 18px",
