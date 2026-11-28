@@ -41,7 +41,7 @@ import useMediaQuery from '../lib/useMediaQuery';
 import { intervencionDe, sigueVigente } from '../modules/dico/intervenciones';
 import {
   fetchProducts, upsertProduct, setProductActive, archiveProduct,
-  fetchOrders, setOrderStatus, setDeliveryCost, reviewTableOrder, OPEN_ORDER_STATUSES, PlatformOrderStatus,
+  fetchOrders, setDeliveryCost, reviewTableOrder, OPEN_ORDER_STATUSES, PlatformOrderStatus,
   fetchOrderItemsByOrder,
 } from '../services/platformAdmin';
 import { fetchSales, createSale, completeOrder, anularPedido } from '../services/platformSales';
@@ -76,7 +76,7 @@ import { VerCatalogo } from '../components/admin/platform/TopbarNegocio';
 import { AvisoDePrueba } from '../components/admin/platform/BloqueoDePlan';
 import { planEfectivo, planTieneFuncion, diasDePrueba } from '../modules/planes';
 import {
-  fetchTicketsDeCocina, marcarPlato, cerrarTicket, etiquetaDePasador,
+  fetchTicketsDeCocina, marcarPlato, cerrarTicket, etiquetaDePasador, avanzarPedido,
 } from '../services/platformKds';
 import {
   fetchSectores, guardarSector, guardarEstacion, desactivarSector,
@@ -991,10 +991,19 @@ export default function PlatformAdmin() {
       }
       return true;
     }
-    const res = await setOrderStatus(id, next);
-    if (res === true) setOrders(list => list.map(o => (o.id === id ? { ...o, status: next } : o)));
+    // Preparar baja el pedido a cocina y Listo cierra su ticket (sin esto el
+    // KDS no lo veia nunca): se recarga lo que esas RPC tocaron.
+    const pedido = orders.find(o => o.id === id);
+    const res = await avanzarPedido(tenantId, pedido || { id }, next);
+    if (res === true) {
+      setOrders(list => list.map(o => (o.id === id ? { ...o, status: next } : o)));
+      if (next === PlatformOrderStatus.PREPARING || (next === PlatformOrderStatus.ACTIVE && pedido?.kitchen_at)) {
+        loadOrders();
+        loadCocina();
+      }
+    }
     return res;
-  }, [loadCaja, loadIngs, msg, perfilFiscal, plan, tenantId]);
+  }, [loadCaja, loadIngs, loadOrders, loadCocina, msg, orders, perfilFiscal, plan, tenantId]);
 
   // Anular un pedido ya completado: la RPC lo saca de Ventas y de Caja y
   // devuelve el stock (0149). Aca se refleja lo mismo en pantalla sin esperar
