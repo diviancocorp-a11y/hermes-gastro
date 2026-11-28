@@ -31,6 +31,14 @@ import PopHistoria from "./PopHistoria";
 import PopFooter from "./PopFooter";
 import PrecioCatalogo from "./PrecioCatalogo";
 
+// Secciones por defecto. Otra plantilla (ej. cochi) puede reemplazar cualquiera
+// pasando `componentes={{ Hero: MiHero }}`: lo que no reemplaza queda como pop.
+const COMPONENTES_POP = {
+  Intro: PopIntro, Header: PopHeader, Hero: PopHero, Cinta: PopCinta, Favoritos: PopFavoritos,
+  Flyers: PopFlyers, Menu: PopMenu, Submarca: PopSubmarca, Banda: PopBanda,
+  Testimonios: PopTestimonios, Historia: PopHistoria, Footer: PopFooter,
+};
+
 const FAVORITOS_MAX = 3;
 const categoriaDe = (p) => p.catalog_attributes?.category || p.category;
 
@@ -39,7 +47,9 @@ export default function PlantillaPop({
   cart = [], cartCount = 0, cartTotal = 0, hasDeal, dealPrice, soldOutIds,
   onAddToCart, onDecCart, onOpenCart, onSelectProduct,
   searchQuery, onSearchChange,
+  componentes, className,
 }) {
+  const C = useMemo(() => ({ ...COMPONENTES_POP, ...(componentes || {}) }), [componentes]);
   const raizRef = useRef(null);
   const { quieto, alternar } = usePausarAnimaciones();
   const anima = useRevelar(raizRef, quieto);
@@ -145,36 +155,36 @@ export default function PlantillaPop({
   const seccion = (id) => {
     switch (id) {
       case "hero":
-        return <PopHero key={id} textos={textos} nombre={nombre} lead={settings.slogan} abierto={typeof store.isOpen === "boolean" ? store.isOpen : undefined}
+        return <C.Hero key={id} textos={textos} nombre={nombre} lead={settings.slogan} abierto={typeof store.isOpen === "boolean" ? store.isOpen : undefined}
           imagen={favoritos[0]?.img || products.find((p) => p.image_url)?.image_url} acento={acento} />;
-      case "cinta": return <PopCinta key={id} frases={config.cinta} />;
-      case "favoritos": return <PopFavoritos key={id} textos={textos} items={favoritos} acento={acento} cantidadDe={cantidadDe} {...comun} />;
-      case "flyers": return <PopFlyers key={id} textos={textos} flyers={flyers} acento={acento} />;
+      case "cinta": return <C.Cinta key={id} frases={config.cinta} />;
+      case "favoritos": return <C.Favoritos key={id} textos={textos} items={favoritos} acento={acento} cantidadDe={cantidadDe} {...comun} />;
+      case "flyers": return <C.Flyers key={id} textos={textos} flyers={flyers} acento={acento} />;
       case "menu":
-        return <PopMenu key={id} textos={textos} categorias={categoriasConConteo} oscuro={Boolean(marca.menu_oscuro)} acento={acento} activa={activa} onCategoria={setActiva}
+        return <C.Menu key={id} textos={textos} categorias={categoriasConConteo} oscuro={Boolean(marca.menu_oscuro)} acento={acento} activa={activa} onCategoria={setActiva}
           busqueda={busqueda} onBusqueda={cambiarBusqueda} items={itemsMenu} cargando={products.length === 0}
           aviso={aviso} cantidadDe={cantidadDe} {...comun} />;
-      case "submarca": return <PopSubmarca key={id} submarca={submarca} items={submarcaItems} cantidadDe={cantidadDe} {...comun} isotipo={submarca?.isotipo} />;
-      case "banda": return <PopBanda key={id} textos={textos} />;
-      case "testimonios": return <PopTestimonios key={id} textos={textos} citas={(config.testimonios || []).filter((q) => q?.texto)} />;
-      case "historia": return <PopHistoria key={id} textos={textos} isotipo={marca.isotipo} cinta={config.cinta} acento={acento} />;
+      case "submarca": return <C.Submarca key={id} submarca={submarca} items={submarcaItems} cantidadDe={cantidadDe} {...comun} isotipo={submarca?.isotipo} />;
+      case "banda": return <C.Banda key={id} textos={textos} />;
+      case "testimonios": return <C.Testimonios key={id} textos={textos} citas={(config.testimonios || []).filter((q) => q?.texto)} />;
+      case "historia": return <C.Historia key={id} textos={textos} isotipo={marca.isotipo} cinta={config.cinta} acento={acento} />;
       default: return null;
     }
   };
 
-  const clases = ["cp-root", "pop-root", quieto ? "pop-quieto" : "", anima ? "pop-anima" : "", cartCount > 0 ? "pop-con-barra" : ""]
+  const clases = ["cp-root", "pop-root", quieto ? "pop-quieto" : "", anima ? "pop-anima" : "", cartCount > 0 ? "pop-con-barra" : "", className || ""]
     .filter(Boolean).join(" ");
 
   return (
     <div className={clases} style={tokens} ref={raizRef}>
-      {config.intro !== false && <PopIntro imagen={marca.isotipo || marca.logo_header} nombre={nombre} quieto={quieto} />}
-      <PopHeader nombre={nombre} logo={logo} letra={letra} anuncios={config.anuncios} ids={ids}
+      {config.intro !== false && <C.Intro imagen={marca.isotipo || marca.logo_header} nombre={nombre} quieto={quieto} />}
+      <C.Header nombre={nombre} logo={logo} letra={letra} anuncios={config.anuncios} ids={ids}
         cartCount={cartCount} cartTotal={cartTotal} moneda={moneda} onOpenCart={onOpenCart} acentoAnuncios={Boolean(marca.anuncios_acento)} musica={settings.catalog_music !== false} />
       <main className="pop-main">
         {!ids.includes("hero") && <h1 className="pop-sr">{nombre}</h1>}
         {ids.map(seccion)}
       </main>
-      <PopFooter nombre={nombre} logo={marca.logo_footer || logo} textos={textos} settings={settings} quieto={quieto} onAlternar={alternar} acento={acento} musica={settings.catalog_music !== false} />
+      <C.Footer nombre={nombre} logo={marca.logo_footer || logo} textos={textos} settings={settings} quieto={quieto} onAlternar={alternar} acento={acento} musica={settings.catalog_music !== false} />
       {cartCount > 0 && (
         <div className="pop-barra">
           <button type="button" className="pop-btn pop-btn--primario pop-barra__btn" onClick={onOpenCart}>

@@ -5,6 +5,7 @@ import {
   TOP_KEYS, SECCION_IDS, MARCA_COLORES, MARCA_URLS, MARCA_BOOLS, FUENTES, TEXTO_KEYS, SUBMARCA_KEYS, FLYER_KEYS, QUOTE_KEYS,
   RADIOS, PLANTILLAS, PlantillaConfigSchema, leerConfigPlantilla, resolverPlantilla,
 } from '../lib/plantillaConfig';
+import { PLANTILLAS_EXCLUSIVAS } from '../lib/plantillaListas';
 import { CatalogAttributesSchema } from '../lib/schemas';
 
 // Las listas cerradas viven en JS y en SQL (0128). Si divergen, el panel acepta
@@ -14,6 +15,9 @@ const sql = readFileSync(MIGRACION, 'utf-8').replace(/--[^\n]*/g, '');
 
 // El validador vigente es el de la ultima migracion que lo redefine (0146 amplio las listas).
 const sqlValidador = readFileSync(resolve(__dirname, '../../platform/migrations/0146_plantilla_interruptores_de_marca.sql'), 'utf-8').replace(/--[^\n]*/g, '');
+
+// La lista de nombres de plantilla vigente es la de la ultima migracion que redefine el check (0152).
+const sqlPlantillas = readFileSync(resolve(__dirname, '../../platform/migrations/0152_plantilla_exclusiva_cochi.sql'), 'utf-8').replace(/--[^\n]*/g, '');
 
 function arraySql(nombre) {
   const m = sqlValidador.match(new RegExp(String.raw`${nombre}\s+text\[\]\s*:=\s*array\[([\s\S]*?)\]\s*;`));
@@ -32,8 +36,18 @@ describe('plantillaConfig: SQL y JS coinciden', () => {
   it('radios y plantillas', () => {
     expect(sql).toContain(`in ('recto','suave','pildora')`);
     expect(RADIOS).toEqual(['recto', 'suave', 'pildora']);
+    // 0128 nacio con ('default','pop'); la lista vigente es la de 0152 (suma 'cochi').
     expect(sql).toContain(`catalog_template in ('default','pop')`);
-    expect(PLANTILLAS).toEqual(['default', 'pop']);
+    const lista = sqlPlantillas.match(/catalog_template in \(([^)]*)\)/)?.[1] ?? '';
+    expect([...lista.matchAll(/'([^']+)'/g)].map(x => x[1])).toEqual(PLANTILLAS);
+    expect(PLANTILLAS).toEqual(['default', 'pop', 'cochi']);
+  });
+  it('las plantillas exclusivas son una plantilla de la lista y la base las hace cumplir', () => {
+    for (const [plantilla, slug] of Object.entries(PLANTILLAS_EXCLUSIVAS)) {
+      expect(PLANTILLAS).toContain(plantilla);
+      expect(sqlPlantillas).toContain(`new.catalog_template = '${plantilla}'`);
+      expect(sqlPlantillas).toContain(`is distinct from '${slug}'`);
+    }
   });
   it('claves de catalog_attributes de la portada', () => {
     for (const k of ['tag', 'featured', 'coming_soon', 'days']) {

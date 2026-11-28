@@ -9,6 +9,7 @@
 import { supabase } from '../lib/supabase';
 import { resolveTenantSlug } from '../lib/activeTenant';
 import { claveDeIdempotencia, reiniciarClave } from '../lib/idempotencia.js';
+import { esVistaPrevia, MENSAJE_VISTA_PREVIA } from '../lib/vistaPrevia.js';
 
 const CLAVE_RESERVA = 'reserva-online';
 
@@ -63,6 +64,7 @@ export const fetchPublicSlots = ({ serviceId, desde, hasta, staffId = null, loca
  * un doble toque o un reintento de red no crean dos. Se reinicia al tomarse.
  */
 export async function createBooking(datos) {
+  if (esVistaPrevia()) return { ok: false, error: MENSAJE_VISTA_PREVIA, code: 'vista_previa' };
   const r = await llamar('create', {
     service_id: datos.serviceId,
     staff_id: datos.staffId || null,
@@ -87,4 +89,6 @@ export async function createBooking(datos) {
 export const fetchBooking = (token) => llamar('get', { token });
 
 /** Cancelar con el token, dentro del plazo que fija el negocio. */
-export const cancelBooking = (token) => llamar('cancel', { token });
+export const cancelBooking = (token) => (esVistaPrevia()
+  ? Promise.resolve({ ok: false, error: MENSAJE_VISTA_PREVIA, code: 'vista_previa' })
+  : llamar('cancel', { token }));

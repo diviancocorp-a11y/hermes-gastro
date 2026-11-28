@@ -4,7 +4,14 @@
 // a Zod: asi el catalogo de los demas tenants no baja un archivo mas. Se comparan
 // contra private.valid_template_config en src/test/plantillaConfigSync.test.js.
 
-export const PLANTILLAS = ['default', 'pop'];
+export const PLANTILLAS = ['default', 'pop', 'cochi'];
+
+/**
+ * Plantillas exclusivas: nombre de la plantilla -> slug del UNICO tenant que
+ * puede usarla. El editor del panel solo la ofrece a ese tenant y la base lo
+ * hace cumplir (trigger de la migracion 0152).
+ */
+export const PLANTILLAS_EXCLUSIVAS = { cochi: 'cochi' };
 
 /** Orden por defecto de la plantilla `pop`. El orden de `secciones` ES el de pantalla. */
 export const SECCION_IDS = ['hero', 'cinta', 'favoritos', 'flyers', 'menu', 'submarca', 'banda', 'testimonios', 'historia'];

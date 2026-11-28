@@ -1,5 +1,5 @@
 // src/catalog-pro/plantillas/VistaPreviaPlantilla.jsx
-// Vista previa en vivo de la plantilla `pop` para el editor del panel.
+// Vista previa en vivo de la plantilla elegida (`pop`, `cochi`) para el editor del panel.
 // Vive aca y no en components/admin porque PlantillaPop exige `cp-root` y los
 // tokens del catalogo, y el panel tiene prohibido `cp-root` (pinta fondo blanco
 // y tapa los --ag-*). Un marco de 390 px aisla uno del otro.
@@ -10,13 +10,14 @@
 //
 // Sin interaccion: el contenido va `inert` (sin foco ni clicks), sin carrito,
 // sin navegar y sin la intro animada.
-import { lazy, Suspense, useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { TEMAS_BASE } from "./marcaATokens";
+import { PLANTILLAS_CARGABLES } from "./plantillasCargables";
 
-const PlantillaPop = lazy(() => import("./PlantillaPop"));
 const nada = () => {};
 
-export default function VistaPreviaPlantilla({ settings = {}, config = {}, products = [], categories = [], store, completa = false }) {
+export default function VistaPreviaPlantilla({ settings = {}, config = {}, products = [], categories = [], store, completa = false, plantilla = "pop" }) {
+  const Plantilla = PLANTILLAS_CARGABLES[plantilla] || PLANTILLAS_CARGABLES.pop;
   const tema = TEMAS_BASE[settings.catalog_theme] ? settings.catalog_theme : "ambar";
   const base = TEMAS_BASE[tema];
   const configVista = useMemo(() => ({
@@ -29,7 +30,7 @@ export default function VistaPreviaPlantilla({ settings = {}, config = {}, produ
     <div className={completa ? "vp-completa" : "vp-marco"} data-testid="vista-previa-contenido">
       <div className="vp-contenido" inert aria-hidden="true">
         <Suspense fallback={<div className="vp-cargando">Cargando vista previa…</div>}>
-          <PlantillaPop
+          <Plantilla
             config={configVista} settings={settings} products={products} categories={categories} store={tienda}
             cart={[]} cartCount={0} cartTotal={0}
             onAddToCart={nada} onDecCart={nada} onOpenCart={nada} onSelectProduct={nada}

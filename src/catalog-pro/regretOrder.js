@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { resolveTenantSlug } from "../lib/activeTenant";
 import { removeActiveOrder } from "../lib/activeOrders";
+import { esVistaPrevia } from "../lib/vistaPrevia";
 
 export const REGRET_WINDOW_MS = 60 * 1000;
 
@@ -16,6 +17,7 @@ export const REGRET_WINDOW_MS = 60 * 1000;
  * que se prepara igual). false si ya no se puede o si no se pudo preguntar.
  */
 export async function cancelOwnOrder(orderId) {
+  if (esVistaPrevia()) return false; // vista previa: no se escribe
   try {
     const slug = await resolveTenantSlug();
     if (!slug || !orderId) return false;

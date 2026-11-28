@@ -13,6 +13,7 @@
 import business from '@business';
 import { supabase } from './supabase';
 import { classifyHost } from './tenantHost';
+import { tenantDeVistaPrevia } from './vistaPrevia';
 
 let cachedSlug;          // undefined = sin resolver todavia; null = raiz
 let inflight = null;     // promesa compartida: N llamadas -> 1 sola query
@@ -27,9 +28,10 @@ export function getTenantSlugSync() {
   );
   if (kind === 'tenant') return slug;
   if (kind === 'root') return null;
-  // unknown: local, preview o dominio propio. El slug del build es lo mejor
-  // que tenemos sin preguntar.
-  return business.slug || null;
+  // unknown: local, preview o dominio propio. Primero `?tenant=` (solo en
+  // localhost y *.vercel.app, ver vistaPrevia.js); despues el slug del build,
+  // que es lo mejor que tenemos sin preguntar.
+  return tenantDeVistaPrevia() || business.slug || null;
 }
 
 /**
@@ -47,7 +49,11 @@ export async function resolveTenantSlug() {
   if (kind === 'tenant') { cachedSlug = slug; return cachedSlug; }
   if (kind === 'root')   { cachedSlug = null; return cachedSlug; }
 
-  // Host desconocido. Si el build ya trae slug (dev/preview), no gastamos
+  // Host desconocido. Vista previa con `?tenant=` (solo localhost y *.vercel.app).
+  const previa = tenantDeVistaPrevia();
+  if (previa) { cachedSlug = previa; return cachedSlug; }
+
+  // Si el build ya trae slug (dev/preview), no gastamos
   // una query: ese es el tenant que se quiere ver.
   if (business.slug) { cachedSlug = business.slug; return cachedSlug; }
 

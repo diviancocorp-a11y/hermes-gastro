@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  PLANTILLAS, SECCION_IDS, FUENTES, RADIOS, TEXTO_KEYS,
+  PLANTILLAS, PLANTILLAS_EXCLUSIVAS, SECCION_IDS, FUENTES, RADIOS, TEXTO_KEYS,
 } from '../../../lib/plantillaListas';
 import {
   avisosDeContraste, borradorAConfig, configsIguales, mensajeDeServidor, validarBorrador,
@@ -20,6 +20,7 @@ import './plantilla-editor.css';
 const PLANTILLA_INFO = {
   default: { nombre: 'Clásica', texto: 'El catálogo de siempre, con los colores de tu tema.' },
   pop: { nombre: 'Pop', texto: 'Portada con héroe, cinta, favoritos y banda. Usa toda tu marca.' },
+  cochi: { nombre: 'Cochi (exclusiva)', texto: 'La portada hecha a medida para Cochi.' },
 };
 const SECCION_NOMBRE = {
   hero: 'Portada', cinta: 'Cinta de frases', favoritos: 'Favoritos', flyers: 'Flyers y promos', menu: 'Menú',
@@ -132,16 +133,19 @@ function Seccion({ titulo, ayuda, children, id }) {
   );
 }
 
-const baseDe = (settings) => ({
-  plantilla: PLANTILLAS.includes(settings?.catalog_template) ? settings.catalog_template : 'default',
+// Una plantilla exclusiva solo se ofrece (y se respeta) en el tenant al que pertenece.
+const disponibleEn = (p, slug) => !PLANTILLAS_EXCLUSIVAS[p] || PLANTILLAS_EXCLUSIVAS[p] === slug;
+
+const baseDe = (settings, slug) => ({
+  plantilla: PLANTILLAS.includes(settings?.catalog_template) && disponibleEn(settings.catalog_template, slug) ? settings.catalog_template : 'default',
   config: borradorAConfig(settings?.catalog_template_config || {}),
 });
 
 export default function PlantillaEditor({
-  settings, onSave, onSubirImagen, showToast, onBack, productos = [], cargando = false,
+  settings, onSave, onSubirImagen, showToast, onBack, productos = [], cargando = false, tenantSlug = null,
 }) {
   const uid = useId().replace(/:/g, '');
-  const [base, setBase] = useState(() => baseDe(settings));
+  const [base, setBase] = useState(() => baseDe(settings, tenantSlug));
   const [plantilla, setPlantilla] = useState(base.plantilla);
   const [borrador, setBorrador] = useState(base.config);
   const [guardando, setGuardando] = useState(false);
@@ -291,7 +295,7 @@ export default function PlantillaEditor({
         <form className="pe-form" inert={vistaAbierta || undefined} onSubmit={(ev) => { ev.preventDefault(); guardar(); }} noValidate>
           <Seccion id={idc('pl')} titulo="Plantilla" ayuda="Podés cambiar de plantilla sin perder lo que cargaste: la marca queda guardada.">
             <div role="radiogroup" aria-labelledby={idc('pl')} className="pe-tarjetas">
-              {PLANTILLAS.map((p) => (
+              {PLANTILLAS.filter((p) => disponibleEn(p, tenantSlug)).map((p) => (
                 <label key={p} className={`pe-tarjeta ${plantilla === p ? 'is-activa' : ''}`}>
                   <input type="radio" name={idc('plantilla')} value={p} checked={plantilla === p} onChange={() => { setErrorServidor(''); setPlantilla(p); }} />
                   <span className="pe-tarjeta__nombre">{PLANTILLA_INFO[p].nombre}</span>

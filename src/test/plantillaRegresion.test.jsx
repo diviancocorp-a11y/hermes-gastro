@@ -62,8 +62,12 @@ describe('C. Catalog.jsx', () => {
     const catalog = readFileSync(resolve(__dirname, '../pages/Catalog.jsx'), 'utf-8');
     expect(catalog).not.toMatch(/from\s+["'][^"']*PlantillaPop["']/);
     const wrapper = readFileSync(resolve(__dirname, '../catalog-pro/plantillas/HomeConPlantilla.jsx'), 'utf-8');
-    expect(wrapper).toMatch(/lazyReload\(\(\)\s*=>\s*import\(["']\.\/PlantillaPop["']\)\)/);
+    // El mapa de plantillas (plantillasCargables.js) es quien las carga, siempre con import() dinamico.
+    expect(wrapper).toMatch(/from ["']\.\/plantillasCargables["']/);
     expect(wrapper).not.toMatch(/^import .* from ["']\.\/PlantillaPop["']/m);
+    const mapa = readFileSync(resolve(__dirname, '../catalog-pro/plantillas/plantillasCargables.js'), 'utf-8');
+    expect(mapa).toMatch(/lazyReload\(\(\)\s*=>\s*import\(["']\.\/PlantillaPop["']\)\)/);
+    expect(mapa).not.toMatch(/^import .* from ["']\.\/(PlantillaPop|cochi\/PlantillaCochi)["']/m);
   });
 });
 
