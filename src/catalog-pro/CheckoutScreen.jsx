@@ -17,6 +17,7 @@ import SchedulePicker from "./SchedulePicker";
 import { leadHoras as leerLeadHoras, entregaReal, textoAnticipacion } from "../modules/pedidosProgramados";
 import { comprobanteObligatorio } from "../lib/confirmacionPedido";
 import CapaDePlantilla from "./plantillas/CapaDePlantilla";
+import { faltantesDelPerfil } from "../lib/perfilCheckout";
 
 const STEPS = ["Datos", "Entrega", "Pago"];
 // Ids estables de cada paso para `data-paso` (la plantilla los apunta con CSS).
@@ -162,6 +163,8 @@ export default function CheckoutScreen(props) {
 // ─── PASO 0: Datos ─────────────────────────────────────────────────
 function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, setScheduleMode, storeStatus, minDate, availableHours, selectedDayInfo, storeHours, getAvailableHours, canNext, onNext, minOrder, minOk, ct, settings }) {
   const encargo = leerLeadHoras(settings);
+  // Cuenta registrada: los campos que su perfil no tiene se piden en este paso.
+  const faltaPerfil = user ? faltantesDelPerfil(profile) : { name: false, phone: false };
   return (
     <>
       {minOrder > 0 && !minOk && (
@@ -194,6 +197,23 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
             </div>
             <div style={{ fontSize: 10.5, color: "var(--ok, #2A9D6E)", fontWeight: 700, background: "var(--ac-soft, var(--b2))", padding: "4px 10px", borderRadius: 999, border: "1px solid var(--ok, #2A9D6E)" }}>Registrado</div>
           </div>
+          {/* Perfil incompleto: solo los campos que faltan (calculado desde el
+              perfil, no desde el form, para que no desaparezcan al tipear). */}
+          {(faltaPerfil.name || faltaPerfil.phone) && (
+            <div style={{ marginTop: 16 }}>
+              <label style={labelStyle}>Completá tus datos</label>
+              {faltaPerfil.name && (
+                <input style={input} value={form.name} onChange={e => sf("name", e.target.value.slice(0, 200))} placeholder="Nombre y Apellido" aria-label="Nombre y Apellido" autoFocus />
+              )}
+              {faltaPerfil.phone && (
+                <input style={{ ...input, marginTop: faltaPerfil.name ? 10 : 0 }} type="tel" value={form.phone} onChange={e => sf("phone", e.target.value.replace(/\D/g, "").slice(0, 15))} placeholder="Telefono (Ej: 1155443322)" aria-label="Telefono" maxLength={15} autoFocus={!faltaPerfil.name} />
+              )}
+              {faltaPerfil.phone && form.phone && form.phone.length < 10 && (
+                <p style={hint("err")}>Minimo 10 digitos · ({form.phone.length}/10)</p>
+              )}
+              <p style={{ ...hint("neutral"), marginTop: 8 }}>Los guardamos en tu cuenta para la próxima.</p>
+            </div>
+          )}
         </div>
       ) : (
         <>
