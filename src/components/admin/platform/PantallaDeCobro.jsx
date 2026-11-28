@@ -90,6 +90,9 @@ export default function PantallaDeCobro({
       setMedios(ms);
       // Un solo medio no es una eleccion: se preselecciona.
       if (ms.length === 1) setMetodo(ms[0].id);
+    }).catch((e) => {
+      console.error('fetchMediosDePago:', e);
+      setMedios([]);
     }).finally(() => setCargandoMedios(false));
   }, [tenantId]);
 
