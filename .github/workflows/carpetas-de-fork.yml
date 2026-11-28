@@ -1,0 +1,45 @@
+name: Carpetas de fork
+
+# Un disenador externo trabaja en un fork y abre un PR. Este chequeo rechaza el
+# PR si toca algo fuera de las carpetas que Ricky le habilito en
+# scripts/disenadores.json.
+#
+# Por que pull_request_target y no pull_request: en un PR de un fork, el evento
+# pull_request corre SIN token (solo lectura y sin secretos), asi que no podria
+# listar los archivos del PR por la API. pull_request_target corre en el
+# contexto del repo base y si tiene token.
+#
+# Por que NO se hace checkout del head del PR: pull_request_target tiene
+# permisos, y ejecutar codigo del fork con ellos le daria al fork el control del
+# repo. Aca el checkout es solo de la rama base (main): el script y
+# disenadores.json que se ejecutan son los nuestros, y del PR solo se lee la
+# lista de nombres de archivo por la API. Nunca agregar `ref:` del head ni
+# `npm install` / `npm run` de nada que venga del PR.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  carpetas:
+    # Los PRs del propio repo (Ricky, Claude, Codex) no pasan por este gate.
+    if: github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout de la rama base (nunca del PR)
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Revisar que el PR solo toque sus carpetas
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_LOGIN: ${{ github.event.pull_request.user.login }}
+        run: node scripts/check-carpetas-de-fork.mjs

@@ -73,6 +73,25 @@ export default defineConfig([
     },
   },
 
+  // ── Espacio del disenador de Cochi ──────────────────────
+  // Recibe todo por props y `config`: no habla con la base ni con la red. El
+  // cableado a datos nuevos lo hace Divianco (ver LEEME.md y necesita.md).
+  {
+    files: ['src/catalog-pro/plantillas/cochi/**/*.{js,jsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          { group: ['**/lib/supabase', '**/lib/supabase.js', '**/services/*', '**/services', '@supabase/*'], message: 'Esta carpeta no habla con la base: los datos llegan por props y config. Si necesitas un dato nuevo, usa conEjemplo y documentalo en necesita.md (ver LEEME.md).' },
+        ],
+      }],
+      'no-restricted-globals': ['error',
+        ...['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource'].map((name) => ({
+          name, message: 'Esta carpeta no usa la red: los datos llegan por props y config (ver LEEME.md).',
+        })),
+      ],
+    },
+  },
+
   // ── Unit tests (vitest + jsdom) ─────────────────────────
   {
     files: ['src/test/**/*.{js,jsx}'],
