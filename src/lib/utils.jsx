@@ -95,6 +95,10 @@ export function waPhoneAr(raw) {
 //     empieza con el codigo y tiene largo de numero completo) se respeta;
 //     si no, se le quita el 0 de larga distancia y se antepone el codigo.
 const CODIGO_TEL = { UY: "598", CL: "56", PY: "595", BO: "591", PE: "51", CO: "57", MX: "52", ES: "34", VE: "58" };
+// Largo maximo del numero nacional (sin el 0 inicial) por pais: si despues de
+// sacar los ceros hay MAS digitos, el numero ya trae su codigo de pais (por
+// ejemplo uno argentino cargado en un negocio venezolano) y no se prefija.
+const LARGO_NACIONAL_MAX = { UY: 8, CL: 9, PY: 9, BO: 8, PE: 9, CO: 10, MX: 10, ES: 9, VE: 10 };
 export function waPhone(raw, country) {
   const code = CODIGO_TEL[String(country || "").toUpperCase()];
   if (!code) return waPhoneAr(raw);
@@ -105,7 +109,10 @@ export function waPhone(raw, country) {
   if (d.startsWith("00")) return d.slice(2);                 // prefijo internacional
   if (d.startsWith(code) && d.length - code.length >= 8) return d; // ya trae el codigo
   d = d.replace(/^0+/, "");                                  // 0 de larga distancia
-  return d ? code + d : null;
+  if (!d) return null;
+  const max = LARGO_NACIONAL_MAX[String(country).toUpperCase()];
+  if (max && d.length > max) return d;                       // ya internacional (otro pais)
+  return code + d;
 }
 
 // Link wa.me listo para abrir. null si no hay telefono.

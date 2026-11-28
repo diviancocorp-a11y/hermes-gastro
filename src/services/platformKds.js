@@ -10,6 +10,7 @@
 // cancelar un pedido no es una carencia: es el limite.
 
 import { supabase } from '../lib/supabase';
+import { setOrderStatus } from './platformAdmin';
 
 // Literal a proposito: check-supabase-columns solo resuelve constantes de
 // modulo con string literal.
@@ -50,7 +51,9 @@ export async function fetchTicketsDeCocina(tenantId, { branchId = null } = {}) {
     .select(`${COLS_TICKET}, order_items(${COLS_ITEM}), resources(name), staff(name)`)
     .eq('tenant_id', tenantId)
     .not('kitchen_at', 'is', null)
-    .is('ready_at', null);
+    .is('ready_at', null)
+    // Un pedido cancelado desde Pedidos no puede quedar zombi en la cocina.
+    .neq('status', 'cancelled');
   if (branchId) q = q.eq('branch_id', branchId);
 
   const { data, error } = await q.order('kitchen_at');
@@ -125,6 +128,31 @@ export async function cerrarTicket(tenantId, orderId, sectorId = null) {
   const { data, error } = await supabase.rpc('cerrar_ticket_de_cocina', args);
   if (error) { console.error('cerrarTicket:', error.message); return { __error: 'db', message: traducir(error.message) }; }
   return data;
+}
+
+/**
+ * Mover un pedido de estado desde la pantalla de Pedidos, tocando la cocina
+ * cuando corresponde. "Preparar" y "Listo" eran un update pelado de `status`:
+ * el pedido quedaba en 'preparing' pero sin `kitchen_at`, y el KDS (que solo
+ * lista lo que bajo a cocina) decia "No hay nada en cocina".
+ *
+ *   preparing                  -> baja a cocina (RPC, sella kitchen_at)
+ *   active con kitchen_at      -> cierra el ticket (RPC, sella ready_at)
+ *   cualquier otro (o 'active' en pedidos viejos sin kitchen_at) -> update
+ *
+ * Devuelve `true` o `{ __error, message }`, el mismo contrato que
+ * setOrderStatus, para que quien la llama no distinga.
+ */
+export async function avanzarPedido(tenantId, order, next) {
+  if (next === 'preparing') {
+    const r = await bajarACocina(tenantId, order.id);
+    return r?.__error ? r : true;
+  }
+  if (next === 'active' && order?.kitchen_at) {
+    const r = await cerrarTicket(tenantId, order.id, null);
+    return r?.__error ? r : true;
+  }
+  return setOrderStatus(order.id, next);
 }
 
 /* ────────────────────── Reglas de la pantalla ─────────────────────── */
