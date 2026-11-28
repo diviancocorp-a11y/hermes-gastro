@@ -1831,6 +1831,7 @@ export default function PlatformAdmin() {
                     onSubirImagen={subirImagenDeMarca}
                     puedeEditarPlantilla={roles.includes('owner')}
                     onSavePlantilla={guardarPlantilla}
+                    tenantSlug={tenant?.slug}
                     productos={products}
                     onSubirAudio={subirAudioDeMarca}
                     onAbrirUsuarios={puedeAbrirDestino(roles, 'usuarios') ? () => setTab('usuarios') : null}

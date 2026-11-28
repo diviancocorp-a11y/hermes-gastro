@@ -1,0 +1,6 @@
+/* src/catalog-pro/plantillas/cochi/cochi.css
+   Estilos de la plantilla exclusiva de Cochi. Reglas:
+   - TODO selector va bajo `.plantilla-cochi` (la raiz que pone PlantillaCochi).
+   - Los keyframes llevan prefijo `cochi-` (ej. `@keyframes cochi-flota`).
+   - Las animaciones respetan "reducir movimiento" (ver LEEME.md).
+   Ver LEEME.md en esta carpeta. */

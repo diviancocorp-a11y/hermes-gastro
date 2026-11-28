@@ -78,6 +78,7 @@ function Settings({
   // Editor de la plantilla del catalogo: solo el duenio (la base tambien lo exige).
   puedeEditarPlantilla = false,
   onSavePlantilla = null,
+  tenantSlug = null,
   productos = [],
 }) {
   const confirmSlide = useConfirm();
@@ -381,6 +382,7 @@ function Settings({
                 settings={settings}
                 productos={productos}
                 onSave={onSavePlantilla || onSave}
+                tenantSlug={tenantSlug}
                 onSubirImagen={onSubirImagen}
                 showToast={showToast}
                 onBack={() => setPlantillaOpen(false)}

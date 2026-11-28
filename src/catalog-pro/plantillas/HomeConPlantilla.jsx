@@ -5,15 +5,13 @@
 // - `default` (o ausente, o desconocida): HomeScreen, sin tocar nada.
 // - Config rota: HomeScreen y un aviso a Sentry. Nunca una pantalla en blanco.
 // - Plantilla que lanza al renderizar: la guardia cae a HomeScreen y reporta.
-// - La plantilla es un chunk aparte: el catalogo de los demas tenants no lo baja.
+// - Las plantillas (pop, cochi) estan en plantillasCargables; cada una es un chunk aparte: el catalogo de los demas tenants no lo baja.
 import { Component, Suspense, useEffect, useMemo } from "react";
 import HomeScreen from "../HomeScreen";
-import { lazyReload } from "../../lib/lazyReload";
 import { captureException, captureMessage } from "../../lib/observability";
 import { leerConfigPlantilla, resolverPlantilla } from "../../lib/plantillaConfig";
 
-const PlantillaPop = lazyReload(() => import("./PlantillaPop"));
-const PLANTILLAS_CARGABLES = { pop: PlantillaPop };
+import { PLANTILLAS_CARGABLES } from "./plantillasCargables";
 
 class Guardia extends Component {
   state = { fallo: false };

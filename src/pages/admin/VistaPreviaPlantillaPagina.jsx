@@ -24,7 +24,7 @@ export default function VistaPreviaPlantillaPagina() {
   if (!estado) return null;
   return (
     <VistaPreviaPlantilla
-      completa settings={estado.settings} config={estado.config || {}}
+      completa settings={estado.settings} config={estado.config || {}} plantilla={estado.settings?.catalog_template}
       products={estado.products || []} categories={estado.categories || []}
     />
   );
