@@ -1,0 +1,12 @@
+/* src/catalog-pro/plantillas/cochi/pantallas.css
+   Estetica de las pantallas del pedido de Cochi. Reglas (ver LEEME.md):
+   - Todo selector empieza con html[data-plantilla="cochi"].
+   - Primero se cambian los TOKENS de cada pantalla (--bg --tx --t2 --t3 --ac
+     --line --b2 --b3 --font-heading ...), por ejemplo:
+       html[data-plantilla="cochi"] [data-pantalla="pedido-recibido"] { --bg: #d4120a; --tx: #fff; }
+   - !important solo cuando un estilo inline no usa token.
+   - Los @keyframes llevan prefijo cochi-.
+   - Respetar prefers-reduced-motion.
+   - PROHIBIDO ocultar o tapar campos, botones, precios, totales, codigos o
+     pasos: display:none, visibility:hidden, opacity:0, tamano 0, fuera de
+     pantalla o capas encima. */

@@ -18,6 +18,7 @@ import { addActiveOrder } from "../lib/activeOrders";
 import "../catalog-pro/tokens.css";
 import HomeConPlantilla from "../catalog-pro/plantillas/HomeConPlantilla";
 import useMarcaGlobal from "../catalog-pro/plantillas/useMarcaGlobal";
+import usePantallasDePlantilla, { PantallasDePlantillaContext, useSlugDelTenant } from "../catalog-pro/plantillas/pantallasDePlantilla";
 import { plantillaEfectiva } from "../lib/plantillaConfig";
 import { requiereOpciones, sugerenciaRapida, ahoraEnZona } from "../lib/opcionesPedido";
 import ComboAviso from "../catalog-pro/ComboAviso";
@@ -59,9 +60,15 @@ import { evaluarCupon, mensajeCupon } from "../lib/cupones";
 // carrito, checkout, confirmacion) sin tocar cada return.
 export default function Catalog() {
   const [settingsMoneda, setSettingsMoneda] = useState(null);
+  // Estetica de la plantilla exclusiva en ficha, carrito, checkout y confirmacion:
+  // vive aca (y no en CatalogContenido) para cubrir todos sus early returns.
+  const slug = useSlugDelTenant();
+  const decoraciones = usePantallasDePlantilla({ plantilla: settingsMoneda?.catalog_template, slug });
   return (
     <MonedaCatalogoProvider settings={settingsMoneda}>
-      <CatalogContenido onSettings={setSettingsMoneda} />
+      <PantallasDePlantillaContext.Provider value={decoraciones}>
+        <CatalogContenido onSettings={setSettingsMoneda} />
+      </PantallasDePlantillaContext.Provider>
     </MonedaCatalogoProvider>
   );
 }
