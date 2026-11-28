@@ -17,6 +17,14 @@ describe('waPhone', () => {
     // un numero argentino que un cliente de un negocio venezolano escribe completo
     expect(waPhone('+54 9 11 5555-0000', 'VE')).toBe('5491155550000');
   });
+  it('un numero que ya es internacional de otro pais no se prefija', () => {
+    // largo > maximo nacional del pais: ya trae su codigo (aca, Argentina)
+    expect(waPhone('5490000000000', 'VE')).toBe('5490000000000');
+    expect(waPhone('04141234567', 'VE')).toBe('584141234567');
+    expect(waPhone('4141234567', 'VE')).toBe('584141234567');
+    expect(waPhone('5491155550000', 'UY')).toBe('5491155550000');
+    expect(waPhone('98765432', 'UY')).toBe('59898765432');
+  });
   it('Argentina, sin pais o pais desconocido: identico a waPhoneAr de hoy', () => {
     for (const raw of ['3814123456', '03814123456', '5493814123456', '+54 9 381 412-3456', '54 381 4123456', '+54 11 5412 3456', '1155550000', '']) {
       expect(waPhone(raw, 'AR')).toBe(waPhoneAr(raw));
