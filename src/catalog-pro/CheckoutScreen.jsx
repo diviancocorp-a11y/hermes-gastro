@@ -8,7 +8,7 @@
 // 71 referencias a tokens --ag-* del admin. El catalogo cambiaba de tema pero
 // al entrar al checkout el cliente "salia" del tema.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import Icon from "./Icon";
 import { Monto, AvisoTasa, useMoneda } from "./MonedaCatalogo";
 import { aSecundaria, formatearMonto } from "../lib/moneda";
@@ -161,10 +161,13 @@ export default function CheckoutScreen(props) {
 }
 
 // ─── PASO 0: Datos ─────────────────────────────────────────────────
-function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, setScheduleMode, storeStatus, minDate, availableHours, selectedDayInfo, storeHours, getAvailableHours, canNext, onNext, minOrder, minOk, ct, settings }) {
+function Step0Datos({ user, profile, perfilListo, form, sf, cart, navigate, scheduleMode, setScheduleMode, storeStatus, minDate, availableHours, selectedDayInfo, storeHours, getAvailableHours, canNext, onNext, minOrder, minOk, ct, settings }) {
   const encargo = leerLeadHoras(settings);
   // Cuenta registrada: los campos que su perfil no tiene se piden en este paso.
-  const faltaPerfil = user ? faltantesDelPerfil(profile) : { name: false, phone: false };
+  // Hasta que el perfil termina de cargar no se sabe que falta: no se pinta nada.
+  const faltaPerfil = user && perfilListo ? faltantesDelPerfil(profile) : { name: false, phone: false };
+  const idDatos = useId();
+  const idTelHint = useId();
   return (
     <>
       {minOrder > 0 && !minOk && (
@@ -200,16 +203,16 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
           {/* Perfil incompleto: solo los campos que faltan (calculado desde el
               perfil, no desde el form, para que no desaparezcan al tipear). */}
           {(faltaPerfil.name || faltaPerfil.phone) && (
-            <div style={{ marginTop: 16 }}>
-              <label style={labelStyle}>Completá tus datos</label>
+            <div role="group" aria-labelledby={idDatos} style={{ marginTop: 16 }}>
+              <span id={idDatos} style={{ ...labelStyle, display: "block" }}>Completá tus datos</span>
               {faltaPerfil.name && (
-                <input style={input} value={form.name} onChange={e => sf("name", e.target.value.slice(0, 200))} placeholder="Nombre y Apellido" aria-label="Nombre y Apellido" autoFocus />
+                <input style={input} value={form.name} onChange={e => sf("name", e.target.value.slice(0, 200))} placeholder="Nombre y Apellido" aria-label="Nombre y Apellido" autoComplete="name" autoFocus />
               )}
               {faltaPerfil.phone && (
-                <input style={{ ...input, marginTop: faltaPerfil.name ? 10 : 0 }} type="tel" value={form.phone} onChange={e => sf("phone", e.target.value.replace(/\D/g, "").slice(0, 15))} placeholder="Telefono (Ej: 1155443322)" aria-label="Telefono" maxLength={15} autoFocus={!faltaPerfil.name} />
+                <input style={{ ...input, marginTop: faltaPerfil.name ? 10 : 0 }} type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={e => sf("phone", e.target.value.replace(/\D/g, "").slice(0, 15))} placeholder="Teléfono (Ej: 1155443322)" aria-label="Teléfono (Ej: 1155443322)" aria-describedby={form.phone && form.phone.length < 10 ? idTelHint : undefined} maxLength={15} autoFocus={!faltaPerfil.name} />
               )}
               {faltaPerfil.phone && form.phone && form.phone.length < 10 && (
-                <p style={hint("err")}>Minimo 10 digitos · ({form.phone.length}/10)</p>
+                <p id={idTelHint} style={hint("err")}>Mínimo 10 dígitos · ({form.phone.length}/10)</p>
               )}
               <p style={{ ...hint("neutral"), marginTop: 8 }}>Los guardamos en tu cuenta para la próxima.</p>
             </div>
@@ -219,8 +222,8 @@ function Step0Datos({ user, profile, form, sf, cart, navigate, scheduleMode, set
         <>
           <div style={section}>
             <label style={labelStyle}>Tus datos</label>
-            <input style={input} value={form.name} onChange={e => sf("name", e.target.value.slice(0, 200))} placeholder="Nombre y Apellido" autoFocus />
-            <input style={{ ...input, marginTop: 10 }} type="tel" value={form.phone} onChange={e => sf("phone", e.target.value.replace(/\D/g, "").slice(0, 15))} placeholder="Telefono (Ej: 1155443322)" maxLength={15} />
+            <input style={input} value={form.name} onChange={e => sf("name", e.target.value.slice(0, 200))} placeholder="Nombre y Apellido" autoComplete="name" autoFocus />
+            <input style={{ ...input, marginTop: 10 }} type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={e => sf("phone", e.target.value.replace(/\D/g, "").slice(0, 15))} placeholder="Telefono (Ej: 1155443322)" maxLength={15} />
             {form.phone && form.phone.length < 10 && (
               <p style={hint("err")}>Minimo 10 digitos · ({form.phone.length}/10)</p>
             )}

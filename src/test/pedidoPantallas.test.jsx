@@ -28,12 +28,12 @@ const FORM_VACIO = { name: '', phone: '', email: '', delivery: 'retiro', payment
 const USER = { id: 'u1', email: 'ana@correo.com' };
 
 // El form vive en el estado, como en Catalog: tipear tiene que habilitar "Siguiente".
-function Checkout({ profile, inicial = FORM_VACIO }) {
+function Checkout({ profile, inicial = FORM_VACIO, perfilListo = true }) {
   const [form, setForm] = useState(inicial);
   const sf = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   return (
     <CheckoutScreen
-      step={0} onStepChange={() => {}} onClose={() => {}} user={USER} profile={profile} form={form} sf={sf} navigate={() => {}}
+      step={0} onStepChange={() => {}} onClose={() => {}} user={USER} profile={profile} perfilListo={perfilListo} form={form} sf={sf} navigate={() => {}}
       settings={{}} scheduleMode="now" setScheduleMode={() => {}} storeStatus={{ open: true }} addresses={[]}
       cart={[]} ct={10} ctWithDelivery={10} discount={0} coupon={null} couponCode="" tipAmount={0}
       setCouponCode={() => {}} setCoupon={() => {}} setCouponErr={() => {}} onSubmit={() => {}}
@@ -53,22 +53,33 @@ describe('Checkout con sesion: pide solo lo que le falta al perfil', () => {
     // el campo no desaparece mientras se tipea
     expect(screen.getByLabelText('Nombre y Apellido').value).toBe('Ana Perez');
     expect(siguiente().disabled).toBe(true);
-    fireEvent.change(screen.getByLabelText('Telefono'), { target: { value: '04141234567' } });
+    fireEvent.change(screen.getByLabelText(/^Teléfono/), { target: { value: '04141234567' } });
     expect(siguiente().disabled).toBe(false);
+  });
+
+  it('perfil sin cargar (null y no listo): no se pinta ningun input; listo y sin fila: los dos', () => {
+    const { unmount } = render(<Checkout profile={null} perfilListo={false} />);
+    expect(screen.queryByText('Completá tus datos')).toBeNull();
+    expect(screen.queryByLabelText('Nombre y Apellido')).toBeNull();
+    unmount();
+    render(<Checkout profile={null} perfilListo />);
+    expect(screen.getByLabelText('Nombre y Apellido').getAttribute('autocomplete')).toBe('name');
+    expect(screen.getByLabelText(/^Teléfono/).getAttribute('inputmode')).toBe('tel');
+    expect(screen.getByRole('group', { name: 'Completá tus datos' })).toBeTruthy();
   });
 
   it('perfil completo: no hay inputs (como hoy)', () => {
     render(<Checkout profile={{ name: 'Ana Perez', phone: '1155443322' }} inicial={{ ...FORM_VACIO, name: 'Ana Perez', phone: '1155443322' }} />);
     expect(screen.queryByText('Completá tus datos')).toBeNull();
-    expect(screen.queryByLabelText('Telefono')).toBeNull();
+    expect(screen.queryByLabelText(/^Teléfono/)).toBeNull();
     expect(siguiente().disabled).toBe(false);
   });
 
   it('falta solo el telefono: solo ese input', () => {
     render(<Checkout profile={{ name: 'Ana Perez', phone: '' }} inicial={{ ...FORM_VACIO, name: 'Ana Perez' }} />);
     expect(screen.queryByLabelText('Nombre y Apellido')).toBeNull();
-    fireEvent.change(screen.getByLabelText('Telefono'), { target: { value: '12' } });
-    expect(screen.getByText(/Minimo 10 digitos/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/^Teléfono/), { target: { value: '12' } });
+    expect(screen.getByText(/Mínimo 10 dígitos/)).toBeTruthy();
     expect(siguiente().disabled).toBe(true);
   });
 });
