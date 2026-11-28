@@ -186,6 +186,28 @@ describe('PantallaDeCobro — lo que puede salir mal se dice', () => {
     expect(await screen.findByText(/no tiene medios de pago cargados/)).toBeInTheDocument();
   });
 
+  it('mientras los medios cargan no dice que no hay: texto neutro y despues el aviso', async () => {
+    let resolver;
+    caja.fetchMediosDePago.mockReturnValue(new Promise((res) => { resolver = res; }));
+    montar();
+    const cargando = await screen.findByText(/Cargando medios de pago/);
+    expect(cargando.getAttribute('role')).toBe('status');
+    expect(screen.queryByText(/no tiene medios de pago cargados/)).toBeNull();
+    resolver([]);
+    expect(await screen.findByText(/no tiene medios de pago cargados/)).toBeInTheDocument();
+    expect(screen.queryByText(/Cargando medios de pago/)).toBeNull();
+  });
+
+  it('mientras los medios cargan y despues llegan: aparecen los medios, sin aviso', async () => {
+    let resolver;
+    caja.fetchMediosDePago.mockReturnValue(new Promise((res) => { resolver = res; }));
+    montar();
+    expect(await screen.findByText(/Cargando medios de pago/)).toBeInTheDocument();
+    resolver(MEDIOS);
+    expect(await screen.findByRole('button', { name: /Efectivo/ })).toBeInTheDocument();
+    expect(screen.queryByText(/no tiene medios de pago cargados/)).toBeNull();
+  });
+
   it('avisa que el cobro no entra en ningun arqueo si la caja esta cerrada', async () => {
     montar({ hayTurnoAbierto: false });
     expect(await screen.findByText(/no va a\s+entrar en el arqueo/)).toBeInTheDocument();
