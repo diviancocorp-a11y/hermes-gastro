@@ -16,8 +16,11 @@ import { etiquetaCupon } from "../lib/cupones";
 import SchedulePicker from "./SchedulePicker";
 import { leadHoras as leerLeadHoras, entregaReal, textoAnticipacion } from "../modules/pedidosProgramados";
 import { comprobanteObligatorio } from "../lib/confirmacionPedido";
+import CapaDePlantilla from "./plantillas/CapaDePlantilla";
 
 const STEPS = ["Datos", "Entrega", "Pago"];
+// Ids estables de cada paso para `data-paso` (la plantilla los apunta con CSS).
+const PASOS = ["datos", "entrega", "pago"];
 
 // Genera 7 dias hacia adelante para el dropdown de programar.
 // La gente no programa pedidos a mas de 1 semana; ofrecer mas confunde.
@@ -111,9 +114,10 @@ export default function CheckoutScreen(props) {
     : null;
 
   return (
-    <div className="cp-root cp-surface cp-no-scrollbar" style={{ position: "fixed", inset: 0, zIndex: 240, overflowY: "auto", paddingBottom: 130 }}>
+    <div className="cp-root cp-surface cp-no-scrollbar" data-pantalla="checkout" data-paso={PASOS[step]} style={{ position: "fixed", inset: 0, zIndex: 240, overflowY: "auto", paddingBottom: 130 }}>
+      <CapaDePlantilla lugar="checkout" datos={{ paso: PASOS[step] }} />
       {/* Header sticky */}
-      <div style={{ position: "sticky", top: 0, zIndex: 5, background: "var(--bg)", borderBottom: "1px solid var(--line)", padding: "14px 18px 12px", display: "flex", alignItems: "center", gap: 12 }}>
+      <div data-parte="encabezado" style={{ position: "sticky", top: 0, zIndex: 5, background: "var(--bg)", borderBottom: "1px solid var(--line)", padding: "14px 18px 12px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={goBack} aria-label="Atras" style={iconBtn}><Icon name="arrow-left" size={18} /></button>
         <div style={{ flex: 1, fontFamily: "var(--font-heading)", fontSize: 18, color: "var(--tx)" }}>{STEPS[step]}</div>
         {helpHref && (
@@ -126,12 +130,12 @@ export default function CheckoutScreen(props) {
       </div>
 
       {/* Indicador del stepper */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 22px 4px", gap: 8 }}>
+      <div data-parte="indicador" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 22px 4px", gap: 8 }}>
         {STEPS.map((s, i) => {
           const done = i < step;
           const active = i === step;
           return (
-            <div key={s} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <div key={s} aria-current={active ? "step" : undefined} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
               <div style={{
                 width: 26, height: 26, borderRadius: "50%",
                 background: done ? "var(--ac)" : active ? "var(--ac)" : "var(--b2)",
@@ -694,9 +698,10 @@ function Step2Pago({ envioAConfirmar, form, sf, payments, paymentIcon, paymentLa
         <div style={{ ...summaryVal, fontSize: 12, color: "var(--t3)" }}>{form.phone}{form.email ? ` · ${form.email}` : ""}</div>
       </div>
 
-      {orderErr && <div style={{ background: "var(--err-soft, rgba(220,38,38,0.1))", color: "var(--err, #C62828)", fontSize: 13, padding: "10px 14px", borderRadius: 10, marginBottom: 12, textAlign: "center", border: "1px solid var(--err, #C62828)" }}>{orderErr}</div>}
+      {orderErr && <div data-parte="error" style={{ background: "var(--err-soft, rgba(220,38,38,0.1))", color: "var(--err, #C62828)", fontSize: 13, padding: "10px 14px", borderRadius: 10, marginBottom: 12, textAlign: "center", border: "1px solid var(--err, #C62828)" }}>{orderErr}</div>}
 
       <button
+        data-parte="completar"
         disabled={sending || ctWithDelivery === 0 || (exigeComprobante && !receiptFile)}
         onClick={onSubmit}
         style={{
@@ -771,6 +776,7 @@ function ToggleBtn({ active, onClick, children }) {
 function NextButton({ disabled, onClick, label = "Siguiente" }) {
   return (
     <button
+      data-parte="siguiente"
       disabled={disabled}
       onClick={onClick}
       style={{

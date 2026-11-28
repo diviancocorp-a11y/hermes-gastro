@@ -27,6 +27,7 @@ import {
 } from "../lib/opcionesPedido";
 import ProductCharacteristics from "./ProductCharacteristics";
 import { getProductFeatures } from "../lib/catalogFacets";
+import CapaDePlantilla from "./plantillas/CapaDePlantilla";
 
 export default function ProductDetailScreen({
   product, related = [], hasDeal, dealPrice,
@@ -115,11 +116,12 @@ export default function ProductDetailScreen({
   const relatedMapped = related.slice(0, 4).map(x => mapProduct(x, { hasDeal, dealPrice, soldOutIds }));
 
   return (
-    <div className="cp-root cp-surface cp-no-scrollbar" ref={scrollRef} style={{
+    <div className="cp-root cp-surface cp-no-scrollbar" data-pantalla="ficha" ref={scrollRef} style={{
       position: "fixed", inset: 0, width: "100%", zIndex: 240, overflowY: "auto", paddingBottom: 110,
     }}>
+      <CapaDePlantilla lugar="ficha" datos={{ nombre: String(p.name ?? ""), categoria: String(product?.category ?? "") }} />
       {/* Hero */}
-      <div style={{ position: "relative", height: 320 }}>
+      <div data-parte="foto" style={{ position: "relative", height: 320 }}>
         <ProductPhoto src={p.img} height={320} radius={0} tone={p.tone} dim={soldOut} />
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 120, background: "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 100%)" }} />
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 100, background: "linear-gradient(180deg, transparent 0%, var(--bg) 100%)" }} />
@@ -173,7 +175,7 @@ export default function ProductDetailScreen({
             </BadgeTag>
           </div>
         )}
-        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 34, lineHeight: 1.25, letterSpacing: "-0.01em", margin: "0 0 10px", paddingBottom: "0.06em", color: "var(--tx)" }}>
+        <h1 data-parte="titulo" style={{ fontFamily: "var(--font-heading)", fontSize: 34, lineHeight: 1.25, letterSpacing: "-0.01em", margin: "0 0 10px", paddingBottom: "0.06em", color: "var(--tx)" }}>
           {p.name}
           {product?.requires_age_gate && (
             <span style={{
@@ -185,7 +187,7 @@ export default function ProductDetailScreen({
             }}>+18</span>
           )}
         </h1>
-        {p.desc && <p className="body-l" style={{ color: "var(--t2)", margin: 0, fontSize: 15 }}>{p.desc}</p>}
+        {p.desc && <p data-parte="descripcion" className="body-l" style={{ color: "var(--t2)", margin: 0, fontSize: 15 }}>{p.desc}</p>}
         {(classification.length > 0 || features.length > 0) && (
           <section className="cp-product-details" aria-label="Características">
             <h2 className="cp-product-details-title">Características</h2>
@@ -361,6 +363,7 @@ export default function ProductDetailScreen({
       }}>
         <Stepper value={qty} onChange={(v) => setQty(Math.max(1, v))} size="lg" />
         <button
+          data-parte="agregar"
           disabled={soldOut}
           onClick={soldOut ? undefined : agregar}
           style={{
